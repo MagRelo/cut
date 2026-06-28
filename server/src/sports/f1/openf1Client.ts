@@ -1,4 +1,4 @@
-import { CIRCUIT_SLUG_TO_ID, parseF1ExternalId } from "./circuitSlugs.js";
+import { parseF1SessionExternalId } from "./externalId.js";
 
 const JOLPICA_BASE = process.env.JOLPICA_BASE_URL ?? "https://api.jolpi.ca/ergast/f1";
 const OPENF1_BASE = "https://api.openf1.org/v1";
@@ -12,18 +12,14 @@ export type JolpicaRace = {
   Circuit: { circuitId: string; circuitName: string };
 };
 
-export type OpenF1Meeting = {
-  meeting_key: number;
-  meeting_name: string;
-  circuit_short_name: string;
-  country_name: string;
-  date_start: string;
-  date_end: string;
-};
-
 export type OpenF1Session = {
   session_key: number;
+  meeting_key: number;
+  year: number;
   session_name: string;
+  session_type: string;
+  country_name: string;
+  circuit_short_name: string;
   date_start: string;
   date_end: string;
 };
@@ -103,7 +99,14 @@ export async function fetchJson<T>(url: string, retries = 3): Promise<T> {
       continue;
     }
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status} for ${url}`);
+      let detail = "";
+      try {
+        const body = (await res.json()) as { detail?: string };
+        if (body.detail) detail = ` — ${body.detail}`;
+      } catch {
+        // ignore non-JSON error bodies
+      }
+      throw new Error(`HTTP ${res.status} for ${url}${detail}`);
     }
     return res.json() as Promise<T>;
   }
@@ -114,71 +117,87 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function resolveJolpicaRace(year: number, circuitSlug: string): Promise<JolpicaRace> {
-  const circuitId = CIRCUIT_SLUG_TO_ID[circuitSlug];
-  if (!circuitId) {
-    throw new Error(`Unknown circuit slug "${circuitSlug}" — add to CIRCUIT_SLUG_TO_ID`);
-  }
+function isRaceSession(session: OpenF1Session): boolean {
+  return session.session_type === "Race" || session.session_name === "Race";
+}
 
+function utcCalendarDate(isoDate: string): string {
+  return isoDate.slice(0, 10);
+}
+
+export function matchJolpicaRaceByDate(
+  races: JolpicaRace[],
+  raceDateUtc: string,
+): JolpicaRace | null {
+  return races.find((race) => utcCalendarDate(race.date) === raceDateUtc) ?? null;
+}
+
+export async function fetchJolpicaSeasonRaces(year: number): Promise<JolpicaRace[]> {
   const data = await fetchJson<{
     MRData: { RaceTable: { Races: JolpicaRace[] } };
   }>(`${JOLPICA_BASE}/${year}.json`);
+  return data.MRData.RaceTable.Races;
+}
 
-  const race = data.MRData.RaceTable.Races.find((r) => r.Circuit.circuitId === circuitId);
+export async function resolveJolpicaRaceBySessionDate(
+  year: number,
+  dateStart: string,
+): Promise<JolpicaRace> {
+  const races = await fetchJolpicaSeasonRaces(year);
+  const raceDate = utcCalendarDate(dateStart);
+  const race = matchJolpicaRaceByDate(races, raceDate);
   if (!race) {
-    throw new Error(`No ${year} race found for circuitId ${circuitId}`);
+    throw new Error(`No Jolpica race found for ${year} on ${raceDate}`);
   }
   return race;
 }
 
-export async function resolveOpenF1Meeting(year: number, circuitSlug: string): Promise<OpenF1Meeting> {
-  const meetings = await fetchJson<OpenF1Meeting[]>(`${OPENF1_BASE}/meetings?year=${year}`);
-  const circuitId = CIRCUIT_SLUG_TO_ID[circuitSlug];
-
-  const meeting = meetings.find((m) => {
-    const name = m.meeting_name.toLowerCase();
-    const circuit = m.circuit_short_name.toLowerCase();
-    return (
-      name.includes(circuitSlug.replace(/-/g, " ")) ||
-      (circuitId && circuit.includes(circuitId.replace(/_/g, ""))) ||
-      (circuitSlug === "british" && m.country_name === "United Kingdom")
-    );
-  });
-
-  if (!meeting) {
-    throw new Error(`No OpenF1 meeting for ${year} / ${circuitSlug}`);
-  }
-  return meeting;
-}
-
-export async function fetchRaceSession(meetingKey: number): Promise<OpenF1Session> {
+export async function fetchSessionByKey(sessionKey: number): Promise<OpenF1Session> {
   const sessions = await fetchJson<OpenF1Session[]>(
-    `${OPENF1_BASE}/sessions?meeting_key=${meetingKey}&session_name=Race`,
+    `${OPENF1_BASE}/sessions?session_key=${sessionKey}`,
   );
-  if (!sessions.length) {
-    throw new Error(`No Race session for meeting_key ${meetingKey}`);
-  }
   const session = sessions[0];
   if (!session) {
-    throw new Error(`No Race session for meeting_key ${meetingKey}`);
+    throw new Error(`No OpenF1 session for session_key ${sessionKey}`);
   }
   return session;
 }
 
+export async function fetchRaceSessionsForYear(year: number): Promise<OpenF1Session[]> {
+  const sessions = await fetchJson<OpenF1Session[]>(
+    `${OPENF1_BASE}/sessions?year=${year}&session_type=Race`,
+  );
+  return [...sessions].sort((a, b) => a.date_start.localeCompare(b.date_start));
+}
+
+function formatRaceName(session: OpenF1Session): string {
+  const country = session.country_name?.trim();
+  if (country) {
+    return `${country} Grand Prix`;
+  }
+  return session.session_name;
+}
+
 export async function resolveRaceContext(externalId: string): Promise<ResolvedRaceContext> {
-  const { year, circuitSlug } = parseF1ExternalId(externalId);
-  const jolpicaRace = await resolveJolpicaRace(year, circuitSlug);
-  const meeting = await resolveOpenF1Meeting(year, circuitSlug);
-  await delay(500);
-  const session = await fetchRaceSession(meeting.meeting_key);
+  const sessionKey = parseF1SessionExternalId(externalId);
+  const session = await fetchSessionByKey(sessionKey);
+
+  if (!isRaceSession(session)) {
+    throw new Error(
+      `session_key ${sessionKey} is "${session.session_name}" (${session.session_type}), not a Race session`,
+    );
+  }
+
+  await delay(300);
+  const jolpicaRace = await resolveJolpicaRaceBySessionDate(session.year, session.date_start);
 
   return {
-    season: year,
+    season: session.year,
     round: Number(jolpicaRace.round),
-    meetingKey: meeting.meeting_key,
+    meetingKey: session.meeting_key,
     sessionKey: session.session_key,
     circuitId: jolpicaRace.Circuit.circuitId,
-    raceName: jolpicaRace.raceName,
+    raceName: jolpicaRace.raceName || formatRaceName(session),
     raceStart: session.date_start,
     raceEnd: session.date_end,
   };

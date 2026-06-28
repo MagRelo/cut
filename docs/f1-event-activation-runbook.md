@@ -17,14 +17,14 @@ Run server commands from repo root with `pnpm --filter server run …` or from `
 | Item | Value |
 |------|--------|
 | **Sport** | `f1` |
-| **externalId** | `{year}-{circuit-slug}-gp` — e.g. `2026-monaco-gp`, `2024-british-gp` |
-| **Slug lookup** | [Jolpica schedule](https://api.jolpi.ca/ergast/f1/current.json) + circuit map in `server/src/sports/f1/circuitSlugs.ts` |
-| **Init command** | `pnpm --filter server run service:init-event f1 2026-monaco-gp` |
+| **externalId** | OpenF1 Race `session_key` — e.g. `9558` (2024 British GP) |
+| **Session lookup** | `pnpm --filter server run script:f1-list-races 2026` |
+| **Init command** | `pnpm --filter server run service:init-event f1 9558` |
 | **Active flag** | `CompetitionEvent.isActive = true` (set by init; clears other active F1 events) |
 | **Field sync** | ~20 drivers (`EventParticipant` rows) |
 | **Score sync** | Not part of init — cron or `service:sync-f1-scores` |
-| **Dry run** | `pnpm --filter server run script:f1-dry-run 2024-british-gp` |
-| **Data spike** | `pnpm --filter server run script:f1-data-spike 2024-british-gp` |
+| **Dry run** | `pnpm --filter server run script:f1-dry-run 9558` |
+| **Data spike** | `pnpm --filter server run script:f1-data-spike 9558` |
 | **Sport hub** | `/sports/f1` |
 | **Admin dashboard** | `GET /api/admin/dashboard` (pass `eventId` if needed) |
 
@@ -32,8 +32,7 @@ Run server commands from repo root with `pnpm --filter server run …` or from `
 
 ## Prerequisites
 
-- [ ] **externalId** confirmed — see [Resolving externalId](#1-resolve-externalid) below
-- [ ] **Circuit slug** exists in `server/src/sports/f1/circuitSlugs.ts` (add new tracks before first init)
+- [ ] **session_key** confirmed — see [Resolve session_key](#1-resolve-session_key) below
 - [ ] **Sport row** exists — `pnpm --filter server run db:seed` creates `Sport` id `f1` with `isEnabled: true`
 - [ ] **Local DB** running with platform schema migrated
 - [ ] **OpenF1 access** — no API key required for historical/post-race sync; live race window needs `OPENF1_API_TOKEN` (paid tier)
@@ -77,33 +76,35 @@ pnpm --filter server run script:remove-f1-data -- --execute
 
 Work top to bottom. Check boxes as you go; add notes in [Run log](#run-log) at the bottom.
 
-### 1. Resolve externalId
+### 1. Resolve session_key
 
-**Pattern:** `{year}-{circuit-slug}-gp`
+F1 `externalId` is the OpenF1 **Race** `session_key` (plain integer). Golf uses PGA Tour IDs — conventions differ by sport.
 
-| Source | Use for |
-|--------|---------|
-| [Jolpica current season](https://api.jolpi.ca/ergast/f1/current.json) | Race calendar, round numbers, circuit IDs |
-| [OpenF1 meetings](https://api.openf1.org/v1/meetings?year=2026) | Cross-check meeting keys and race dates |
-| `server/src/sports/f1/circuitSlugs.ts` | Map slug in externalId → Jolpica `circuitId` |
+```bash
+pnpm --filter server run script:f1-list-races 2026
+```
+
+| Column | Use |
+|--------|-----|
+| `session_key` | Copy into `init-event` command — this becomes `CompetitionEvent.externalId` |
+| `country` / `circuit` | Confirm you picked the right Grand Prix |
+| `date_start` | Race start time (UTC) |
 
 **Examples:**
 
-| Race | externalId |
-|------|------------|
-| British GP 2024 | `2024-british-gp` |
-| Monaco GP 2026 | `2026-monaco-gp` |
-| United States GP | `2026-united-states-gp` |
+| Race | session_key | Init |
+|------|-------------|------|
+| British GP 2024 | `9558` | `service:init-event f1 9558` |
+| Monaco GP 2026 | *(run list-races)* | `service:init-event f1 <key>` |
 
-- [ ] Year and circuit slug chosen
-- [ ] Slug present in `CIRCUIT_SLUG_TO_ID` (add entry if missing)
+- [ ] Race `session_key` copied from list-races output
 - [ ] Optional: spike API connectivity before init:
 
 ```bash
-pnpm --filter server run script:f1-data-spike 2026-monaco-gp
+pnpm --filter server run script:f1-data-spike 9558
 ```
 
-**Event preview JSON (optional, not in v1):** Golf loads `server/src/tournamentSummaries/{externalId}.json` at init. F1 has no equivalent pipeline yet — event name, dates, and circuit come from OpenF1/Jolpica metadata. A future F1 preview skill could mirror golf's tournament-summary flow.
+**Event preview JSON (optional, not in v1):** Golf loads `server/src/tournamentSummaries/{externalId}.json` at init. F1 has no equivalent pipeline yet — event name, dates, and circuit come from OpenF1/Jolpica metadata.
 
 ---
 
@@ -120,7 +121,7 @@ pnpm --filter server run db:seed
 ### 3. Run `service:init-event`
 
 ```bash
-pnpm --filter server run service:init-event f1 __________-__________-gp
+pnpm --filter server run service:init-event f1 <session_key>
 ```
 
 **What init does (F1 plugin):**
@@ -196,7 +197,7 @@ Testnet off-chain settlement (no on-chain tx): see `server/src/scripts/settleCon
 Validates lineups, scoring, ranking, and tie-break without a live race:
 
 ```bash
-pnpm --filter server run script:f1-dry-run 2024-british-gp
+pnpm --filter server run script:f1-dry-run 9558
 ```
 
 Cleanup test artifacts:
@@ -266,20 +267,21 @@ pnpm --filter server run service:update-contest-lineups
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| `Unknown circuit slug` | Missing entry in `circuitSlugs.ts` | Add slug → Jolpica `circuitId` mapping |
-| Init finds 0 drivers | Wrong year/meeting or API outage | Run data spike; check OpenF1 `meetings?year=` |
+| `Invalid F1 externalId` | Non-numeric or slug-style ID | Use Race `session_key` from `script:f1-list-races` |
+| `not a Race session` | Qualifying/practice key passed | Re-run list-races; pick `session_type=Race` row |
+| Init finds 0 drivers | Wrong session_key or API outage | Run data spike; verify key in OpenF1 |
 | Scores all null after init | Expected — init does not sync scores | Run `service:sync-f1-scores` or wait for cron |
 | Grid positions null | OpenF1 `starting_grid` empty for session | Cosmetic for v1; sort falls back to standings |
 | Contest won't activate | Event not `LIVE` yet | Wait for race start; check metadata `raceStart` |
 | Contest won't settle | Event not `COMPLETE` or no on-chain contract | Sync scores; verify classification flag |
-| Live sync 401/403 | Missing `OPENF1_API_TOKEN` | Add paid OpenF1 token for live window |
+| Any OpenF1 401 during race weekend | Live session in progress — OpenF1 blocks unauthenticated access globally (even for historical `session_key`) | Wait for session to end, or set `OPENF1_API_TOKEN` |
 | HTTP 429 from OpenF1 | Rate limit | Backoff; cron interval is usually sufficient |
 
 ---
 
 ## Run log
 
-| Date | externalId | Operator | Notes |
-|------|------------|----------|-------|
-| 2026-06-28 | `2024-british-gp` | Stage 8 dry run | Local dev; `script:f1-dry-run` passed |
-| 2026-06-27 | `2026-austrian-gp` | Local activation | Init + metadata sync; 22 drivers; race 2026-06-28 |
+| Date | session_key | Operator | Notes |
+|------|-------------|----------|-------|
+| 2026-06-28 | `9558` | Stage 8 dry run | Local dev; `script:f1-dry-run` passed |
+| 2026-06-27 | *(legacy slug)* | Local activation | Superseded by OpenF1 session_key convention |

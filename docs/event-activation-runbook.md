@@ -1,6 +1,6 @@
 # Event activation runbook
 
-Operator checklist for switching Play The Cut to a new competition week on the **platform schema** (`CompetitionEvent`, sport plugins). PGA Golf is the first supported sport; **Formula 1** has a dedicated runbook: [f1-event-activation-runbook.md](./f1-event-activation-runbook.md).
+Operator checklist for switching Play The Cut to a new competition week on the **platform schema** (`CompetitionEvent`, sport plugins). PGA Golf is the first supported sport; **Formula 1** has a dedicated runbook: [f1-event-activation-runbook.md](./f1-event-activation-runbook.md). F1 uses OpenF1 Race `session_key` as `externalId` (not PGA Tour-style IDs).
 
 **Legacy doc:** [tournament-activation-runbook.md](./tournament-activation-runbook.md) (pre-rewrite `Tournament` model — reference only).
 

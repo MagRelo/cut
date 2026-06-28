@@ -26,7 +26,7 @@ PGA Golf remains the reference implementation. F1 registers alongside it in serv
 | Dimension | v1 decision |
 |-----------|-------------|
 | **Event unit** | Single race (Sunday main event) |
-| **externalId** | `{year}-{circuit-slug}-gp` — e.g. `2026-monaco-gp` ([brief](docs/f1-competition-brief.md)) |
+| **externalId** | OpenF1 Race `session_key` — e.g. `9558` ([brief](docs/f1-competition-brief.md)) |
 | **sportId** | `f1` |
 | **Field size** | ~20 drivers per race |
 | **Roster** | 4 drivers (mirror golf unless brief changes) |
@@ -34,7 +34,7 @@ PGA Golf remains the reference implementation. F1 registers alongside it in serv
 | **Direction** | Higher wins |
 | **Lifecycle** | `SCHEDULED` before race → `LIVE` from race start → `COMPLETE` after official classification |
 | **Live sync** | 5-minute cron; position updates during race; points finalized at race end |
-| **Tie-break** | Winning lineup total points (`{ type: "winningLineupPoints", value }`, range 1–120) |
+| **Tie-break** | Winning lineup total (`{ type: "winningLineupTotal", value }`, range per `Sport.predictionRules`) |
 
 ---
 
@@ -129,7 +129,7 @@ Resolved in [docs/f1-competition-brief.md](docs/f1-competition-brief.md) and [do
 | Topic | Status |
 |-------|--------|
 | **Data API** | OpenF1 primary; Jolpica for schedule/slug resolution |
-| **Dry-run race** | `2024-british-gp` — meeting_key 1240, session_key 9558 |
+| **Dry-run race** | `9558` — 2024 British GP (meeting_key 1240) |
 | **Live races** | `OPENF1_API_TOKEN` required during live session window — evaluate before first live GP |
 
 ---

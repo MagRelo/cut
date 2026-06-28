@@ -75,7 +75,7 @@ Running list of resources and steps for the F1 race-day plugin. Narrative and ra
 - [x] Save filled brief — `docs/f1-competition-brief.md`
 - [x] Score 12-row fit worksheet (rows 1–12)
 - [x] Confirm event unit: race day only
-- [x] Confirm `externalId` pattern — `{year}-{circuit-slug}-gp`
+- [x] Confirm `externalId` pattern — OpenF1 Race `session_key` (e.g. `9558`)
 - [x] Confirm `sportId` — `f1`
 - [x] Confirm roster size and rules — 4 drivers, flat pool, no duplicates
 - [x] Confirm scoring table — standard F1 finish points + fastest-lap bonus
@@ -83,7 +83,7 @@ Running list of resources and steps for the F1 race-day plugin. Narrative and ra
 - [x] Confirm tie-break prediction — `winningLineupPoints`, range 1–120
 - [x] Confirm `SCHEDULED → LIVE → COMPLETE` triggers — race start / official classification
 - [x] Confirm picker sort keys — championship → grid → constructor → name
-- [x] Confirm target race for dry-run — `2024-british-gp` (historical replay)
+- [x] Confirm target race for dry-run — OpenF1 session_key `9558` (2024 British GP)
 - [x] Write Stage 1 journal entry
 
 ---
@@ -177,7 +177,7 @@ Running list of resources and steps for the F1 race-day plugin. Narrative and ra
 
 ## Stage 8 — Dry run
 
-- [x] Pick target race (`externalId` from brief) — `2024-british-gp`
+- [x] Pick target race (`externalId` from brief) — OpenF1 session_key `9558`
 - [x] `pnpm run service:init-event f1 <externalId>`
 - [x] Confirm `CompetitionEvent.isActive = true`
 - [x] Confirm field sync (~20 drivers in candidate pool)

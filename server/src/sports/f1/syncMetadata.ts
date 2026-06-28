@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { F1_SPORT_ID } from "@cut/sport-f1";
 import {
-  fetchRaceSession,
+  fetchSessionByKey,
   fetchSessionResults,
   resolveRaceContext,
 } from "./openf1Client.js";
@@ -23,7 +23,7 @@ export async function syncF1EventMetadata(eventId: string) {
     f1Meta = { ...resolved, classificationComplete: false };
   }
 
-  const session = await fetchRaceSession(f1Meta.meetingKey);
+  const session = await fetchSessionByKey(f1Meta.sessionKey);
   const results = await fetchSessionResults(f1Meta.sessionKey);
   const classificationComplete = results.length > 0;
 

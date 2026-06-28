@@ -11,12 +11,12 @@
 | Role | Source | Base URL |
 |------|--------|----------|
 | **Primary (v1)** | OpenF1 | `https://api.openf1.org/v1` |
-| **Schedule / slug resolution** | Jolpica (Ergast-compatible) | `https://api.jolpi.ca/ergast/f1` |
+| **Schedule / round lookup** | Jolpica (Ergast-compatible) | `https://api.jolpi.ca/ergast/f1` |
 | **Auth (v1)** | None for historical data | — |
 
-**Rationale:** OpenF1 covers 2023+ with drivers, session metadata, live positions, and `session_result` rows that include **points with fastest-lap bonus already applied** (verified against 2024 British GP — Sainz P5 = 11 pts). Historical access is free with no API key. Jolpica fills schedule discovery and maps `externalId` slugs to season/round when OpenF1 `meeting_key` is unknown.
+**Rationale:** OpenF1 covers 2023+ with drivers, session metadata, live positions, and `session_result` rows that include **points with fastest-lap bonus already applied** (verified against 2024 British GP — Sainz P5 = 11 pts). Historical access is free with no API key. Jolpica supplies season round numbers for driver standings when matched by race date.
 
-Live races during the 30-minute pre/post session window require OpenF1 paid subscription for real-time endpoints. Historical replay and post-race sync work without auth — sufficient for Stage 8 dry-run on `2024-british-gp` and initial production if races are synced after classification.
+During a **live F1 session** (practice, qualifying, or race), OpenF1 restricts **all** API access — including historical sessions — to authenticated users until that session ends. Outside live weekends, historical replay and post-race sync work without auth (e.g. dry-run on session_key `9558`). Production live races need `OPENF1_API_TOKEN`.
 
 ---
 
@@ -43,15 +43,22 @@ Implement exponential backoff on HTTP 429. Five-minute cron is well within free-
 
 ## externalId resolution
 
-**Pattern:** `{year}-{circuit-slug}-gp` — e.g. `2024-british-gp`
+**Pattern:** OpenF1 Race `session_key` as a plain numeric string — e.g. `9558` (2024 British GP).
+
+Golf uses PGA Tour IDs (`R2026033`); F1 uses OpenF1 session keys. Sports can differ — the platform stores whatever the sport plugin resolves.
+
+**Operator lookup:**
+
+```bash
+pnpm --filter server run script:f1-list-races 2026
+```
 
 **Resolution flow at `initEvent`:**
 
-1. Parse year and circuit slug from `externalId`.
-2. **Jolpica:** `GET /{year}.json` → find race where `Circuit.circuitId` matches slug map (e.g. `british` → `silverstone`).
-3. **OpenF1:** `GET /meetings?year={year}` → match `country_name` / `circuit_short_name` / `meeting_name`.
-4. **OpenF1:** `GET /sessions?meeting_key={key}&session_name=Race` → store `session_key` on event metadata.
-5. Persist on `CompetitionEvent.metadata`:
+1. Parse `externalId` as positive integer `session_key`.
+2. **OpenF1:** `GET /sessions?session_key={key}` — validate `session_type` / `session_name` is Race.
+3. **Jolpica:** `GET /{year}.json` — match race by UTC calendar date on `date_start` (for round number and `circuitId`).
+4. Persist on `CompetitionEvent.metadata`:
 
 ```json
 {
@@ -68,7 +75,11 @@ Implement exponential backoff on HTTP 429. Five-minute cron is well within free-
 }
 ```
 
-**Circuit slug map (v1):** maintain a small lookup table in the F1 package (`british` → `silverstone`, `monaco` → `monaco`, etc.). Expand as races are activated.
+**Init command:**
+
+```bash
+pnpm --filter server run service:init-event f1 9558
+```
 
 ---
 
@@ -106,10 +117,11 @@ Use Jolpica `driverId` (e.g. `hamilton`) as secondary key if needed for cross-so
 
 ---
 
-## Verified spike: `2024-british-gp`
+## Verified spike: session_key `9558` (2024 British GP)
 
 | Field | Value |
 |-------|-------|
+| externalId | `9558` |
 | Jolpica season/round | 2024 / 12 |
 | OpenF1 `meeting_key` | 1240 |
 | OpenF1 race `session_key` | 9558 |
@@ -120,7 +132,8 @@ Use Jolpica `driverId` (e.g. `hamilton`) as secondary key if needed for cross-so
 Run spike locally:
 
 ```bash
-pnpm --filter server run script:f1-data-spike 2024-british-gp
+pnpm --filter server run script:f1-list-races 2024
+pnpm --filter server run script:f1-data-spike 9558
 ```
 
 ---
@@ -129,7 +142,7 @@ pnpm --filter server run script:f1-data-spike 2024-british-gp
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `OPENF1_API_TOKEN` | No (v1 historical) | Bearer token for live session window; add when running live races |
+| `OPENF1_API_TOKEN` | No (off weekends) | Required while any F1 session is live — OpenF1 blocks unauthenticated access globally until it ends |
 | `JOLPICA_BASE_URL` | No | Default `https://api.jolpi.ca/ergast/f1` |
 
 No secrets required for historical dry-run.
@@ -138,7 +151,6 @@ No secrets required for historical dry-run.
 
 ## Known gaps
 
-- **Circuit slug map** must be maintained for new tracks / renamed GPs.
 - **Provisional vs final points** during LIVE — position-based estimate until `session_result` lands; UI should label provisional scores.
 - **Live window auth** — production live races need OpenF1 subscription evaluation before first live GP.
 - **Jolpica `points` field** does not include fastest-lap bonus — prefer OpenF1 `session_result.points` for finals.

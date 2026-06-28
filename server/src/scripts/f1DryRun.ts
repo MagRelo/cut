@@ -1,9 +1,9 @@
 /**
- * Stage 8 end-to-end dry run for F1 on a historical race (default: 2024-british-gp).
+ * Stage 8 end-to-end dry run for F1 on a historical race (default: session_key 9558).
  *
  * Usage:
  *   pnpm --filter server run script:f1-dry-run
- *   pnpm --filter server run script:f1-dry-run 2024-british-gp
+ *   pnpm --filter server run script:f1-dry-run 9558
  *   pnpm --filter server run script:f1-dry-run -- --cleanup
  */
 
@@ -17,7 +17,7 @@ import { runSportEventPipeline } from "../services/cron/runSportEventPipeline.js
 import { batchActivateContests } from "../services/batch/batchActivateContests.js";
 import { batchSettleContests } from "../services/batch/batchSettleContests.js";
 
-const DRY_RUN_CONTEST_NAME = "F1 Dry Run — British GP 2024";
+const DRY_RUN_CONTEST_NAME = "F1 Dry Run — British GP 2024 (9558)";
 const DRY_RUN_CONTEST_ADDRESS = "0x000000000000000000000000000000000000f108";
 const BASE_SEPOLIA_CHAIN_ID = 84532;
 
@@ -39,7 +39,7 @@ function parseArgs(): { externalId: string; cleanup: boolean } {
   const cleanup = args.includes("--cleanup");
   const positional = args.filter((a) => !a.startsWith("--"));
   return {
-    externalId: positional[0] ?? "2024-british-gp",
+    externalId: positional[0] ?? "9558",
     cleanup,
   };
 }

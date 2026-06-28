@@ -1,5 +1,35 @@
 import { describe, expect, it } from "vitest";
-import { mapJolpicaStandingsByDriverNumber } from "./openf1Client.js";
+import { mapJolpicaStandingsByDriverNumber, matchJolpicaRaceByDate } from "./openf1Client.js";
+import type { JolpicaRace } from "./openf1Client.js";
+
+describe("matchJolpicaRaceByDate", () => {
+  const races: JolpicaRace[] = [
+    {
+      season: "2024",
+      round: "11",
+      raceName: "Austrian Grand Prix",
+      date: "2024-06-30",
+      Circuit: { circuitId: "red_bull_ring", circuitName: "Red Bull Ring" },
+    },
+    {
+      season: "2024",
+      round: "12",
+      raceName: "British Grand Prix",
+      date: "2024-07-07",
+      Circuit: { circuitId: "silverstone", circuitName: "Silverstone" },
+    },
+  ];
+
+  it("matches race by UTC calendar date", () => {
+    const race = matchJolpicaRaceByDate(races, "2024-07-07");
+    expect(race?.round).toBe("12");
+    expect(race?.Circuit.circuitId).toBe("silverstone");
+  });
+
+  it("returns null when no race matches", () => {
+    expect(matchJolpicaRaceByDate(races, "2024-08-01")).toBeNull();
+  });
+});
 
 describe("mapJolpicaStandingsByDriverNumber", () => {
   it("maps permanentNumber to championship position and wins", () => {

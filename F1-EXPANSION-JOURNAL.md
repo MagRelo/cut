@@ -377,3 +377,22 @@ Copy for each new stage entry:
 ### Checklist impact
 
 - Tie-break plumbing is sport-agnostic; new sports only add `predictionRules` to seed.
+
+---
+
+## Stage 11 — OpenF1 session_key externalId (2026-06-28)
+
+### Predicted needs
+
+- Drop custom `{year}-{circuit-slug}-gp` convention; use native OpenF1 ID like golf uses PGA Tour IDs.
+- Remove `circuitSlugs.ts` maintenance burden.
+
+### Actual findings
+
+- `externalId` is now OpenF1 Race `session_key` (e.g. `9558`).
+- `resolveRaceContext` fetches `GET /sessions?session_key=` directly; Jolpica round matched by race date.
+- Added `script:f1-list-races` for operator lookup; deleted `circuitSlugs.ts`.
+
+### Checklist impact
+
+- F1 ops: list-races → copy session_key → init-event. No slug map updates.

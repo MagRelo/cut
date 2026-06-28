@@ -21,7 +21,7 @@ Pick four drivers for this week's Grand Prix; your lineup scores the sum of thei
 
 | Field | Decision |
 |-------|----------|
-| **External ID pattern** | `{year}-{circuit-slug}-gp` — e.g. `2026-monaco-gp`, `2026-british-gp` |
+| **External ID pattern** | OpenF1 Race `session_key` — e.g. `9558` (2024 British GP). Lookup: `script:f1-list-races {year}` |
 | **sportId** | `f1` |
 | **Slug** | `f1` |
 | **Typical duration** | ~2 hours (single race session) |
@@ -102,7 +102,7 @@ Same platform mechanic as golf: user submits a guess at the **winning lineup's t
 | **Refresh expectations** | 5-minute cron; sufficient for position drama during race |
 | **Known gaps / manual ops** | Data API unchosen until Stage 2. Stewards' post-race penalties may delay `COMPLETE` — follow API's "final" flag. |
 
-**Dry-run target:** `2024-british-gp` for historical replay during development (Ergast-friendly). Stage 8 may use a live or recent race if API supports it.
+**Dry-run target:** OpenF1 session_key `9558` (2024 British GP). Lookup: `script:f1-list-races 2024`.
 
 ---
 
