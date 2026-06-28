@@ -142,7 +142,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
             ) : null}
 
             {viewModel.layout.showResultsTab ? (
-              <TabPanel className="p-0 focus:outline-none">
+              <TabPanel className="p-4 focus:outline-none">
                 <ContestResultsPanel contest={contest} />
               </TabPanel>
             ) : null}
