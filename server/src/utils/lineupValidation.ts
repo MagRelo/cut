@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { golfPredictionValue } from "@cut/sport-pga-golf";
+import { predictionNumericValue } from "./sportPrediction.js";
 import { prisma } from "../lib/prisma.js";
 
 export function normalizePlayerSet(playerIds: string[]): string {
@@ -74,7 +74,7 @@ export async function isDuplicateLineup(
       participantIds,
       prediction,
       lineupParticipantIds,
-      golfPredictionValue(lineup.prediction),
+      predictionNumericValue(lineup.prediction),
     );
   });
 }
@@ -120,7 +120,7 @@ export async function isDuplicateInContest(
       participantIds,
       prediction,
       lineupParticipantIds,
-      golfPredictionValue(contestLineup.lineup.prediction),
+      predictionNumericValue(contestLineup.lineup.prediction),
     );
   });
 }

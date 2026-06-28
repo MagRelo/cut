@@ -1,7 +1,7 @@
 import type { Candidate } from "@cut/sport-sdk";
 import type { PlatformLineup, PlatformLineupPick } from "../types/event";
 import { candidatesForLineupPicks } from "./candidateUtils";
-import { golfPredictionValue } from "./golfPrediction";
+import { predictionNumericValue } from "./sportPrediction";
 
 export function buildCandidatesByEventParticipantId(
   candidates: Candidate[],
@@ -10,7 +10,7 @@ export function buildCandidatesByEventParticipantId(
 }
 
 export function platformLineupPrediction(lineup: PlatformLineup): number | null {
-  return golfPredictionValue(lineup.prediction);
+  return predictionNumericValue(lineup.prediction);
 }
 
 export function platformLineupEventParticipantIds(lineup: PlatformLineup): string[] {

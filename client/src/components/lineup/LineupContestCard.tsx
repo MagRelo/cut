@@ -29,11 +29,14 @@ import { useLineupData } from "../../hooks/useLineupData";
 import { useEventCandidatesQuery } from "../../hooks/useSportData";
 import { useLineupSlotEditor } from "../../hooks/useLineupSlotEditor";
 import { SportPredictionField } from "../platform/SportPredictionField";
-import { golfPredictionValue, toGolfPrediction } from "../../lib/golfPrediction";
 import {
-  defaultWinningScorePredictionForLineup,
-  DUPLICATE_LINEUP_PREDICTION_MESSAGE,
-} from "../../utils/winningScorePrediction";
+  defaultPredictionForLineupId,
+  defaultPredictionMidpoint,
+  predictionValueForSport,
+  toPredictionForSport,
+} from "../../lib/sportPrediction";
+import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/winningScorePrediction";
+import { useSportRosterRules } from "../../hooks/useSportRosterRules";
 
 import { getLineupNumberLabel } from "../../lib/lineupDisplay";
 
@@ -82,6 +85,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     [candidates],
   );
   const { updateLineup, lineups } = useLineupData({ eventId });
+  const rosterRules = useSportRosterRules(sportId);
   const status = eventStatus;
 
   const platformLineup = lineup.lineup && "picks" in lineup.lineup ? lineup.lineup : null;
@@ -103,12 +107,12 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     const fromListValue = fromList ? platformLineupPrediction(fromList) : null;
     const fromLineup =
       platformLineup && "prediction" in platformLineup
-        ? golfPredictionValue(platformLineup.prediction)
+        ? predictionValueForSport(sportId, platformLineup.prediction)
         : null;
     const value = fromListValue ?? fromLineup;
     if (value != null) return value;
-    return lineupId ? defaultWinningScorePredictionForLineup(lineupId) : 120;
-  }, [platformLineup, lineupId, lineups]);
+    return lineupId ? defaultPredictionForLineupId(sportId, lineupId) : defaultPredictionMidpoint(sportId);
+  }, [platformLineup, lineupId, lineups, sportId]);
 
   const [prediction, setPrediction] = useState(serverPrediction);
 
@@ -120,6 +124,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const slotEditor = useLineupSlotEditor({
     lineupId,
     contestId: platformLineup?.contestId ?? contestId,
+    slotCount: rosterRules.slotCount,
     initialCandidates,
     fieldCandidates: candidates,
     lineups,
@@ -346,16 +351,19 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
               </div>
               {canEditSlots ? (
                 <SportPredictionField
-                  value={toGolfPrediction(prediction)}
+                  value={toPredictionForSport(sportId, prediction)}
                   onChange={(value) => {
-                    const next = golfPredictionValue(value);
+                    const next = predictionValueForSport(sportId, value);
                     if (next != null) setPrediction(next);
                   }}
                   disabled={slotActionsDisabled}
                   error={sliderError}
                 />
               ) : (
-                <SportPredictionField value={toGolfPrediction(serverPrediction)} readOnly />
+                <SportPredictionField
+                  value={toPredictionForSport(sportId, serverPrediction)}
+                  readOnly
+                />
               )}
             </TabPanel>
 

@@ -1,9 +1,9 @@
-import { golfPredictionValue } from "@cut/sport-pga-golf";
 import { prisma } from "../../lib/prisma.js";
+import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/winningScorePrediction.js";
 import {
-  DUPLICATE_LINEUP_PREDICTION_MESSAGE,
-  randomWinningScorePrediction,
-} from "../../utils/winningScorePrediction.js";
+  defaultPredictionForSport,
+  predictionValueForSport,
+} from "../../utils/sportPrediction.js";
 import { isDuplicateLineup } from "../../utils/lineupValidation.js";
 import {
   formatLineupResponse,
@@ -22,11 +22,11 @@ export type CreateLineupInput = {
   contestId?: string;
 };
 
-function resolvePrediction(prediction: unknown | undefined) {
+function resolvePrediction(sportId: string, prediction: unknown | undefined) {
   if (prediction !== undefined) {
     return prediction as object;
   }
-  return { type: "winningScore", value: randomWinningScorePrediction() };
+  return defaultPredictionForSport(sportId);
 }
 
 export async function createLineupForEvent(input: CreateLineupInput) {
@@ -58,8 +58,8 @@ export async function createLineupForEvent(input: CreateLineupInput) {
     return { error: "validation" as const, messages: validated.messages };
   }
 
-  const prediction = resolvePrediction(input.prediction);
-  const predictionValue = golfPredictionValue(prediction);
+  const prediction = resolvePrediction(event.sportId, input.prediction);
+  const predictionValue = predictionValueForSport(event.sportId, prediction);
 
   const isDuplicate = await isDuplicateLineup(
     input.userId,

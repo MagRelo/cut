@@ -9,10 +9,12 @@ import { captureLineupCreated, captureLineupUpdated } from "../lib/analytics/pos
 import { createLineupForEvent, cloneLineupById, updateLineupById } from "../lib/lineupApi";
 import { useOptionalEventScope } from "../contexts/EventScopeContext";
 import { buildOptimisticPicks } from "../lib/lineupUtils";
+import { toPredictionForSport } from "../lib/sportPrediction";
 
 interface CreateLineupParams {
   eventId: string;
   contestId?: string;
+  sportId?: string;
   picks: string[];
   name?: string;
   winningScorePrediction?: number;
@@ -27,6 +29,7 @@ interface CloneLineupParams {
 
 interface UpdateLineupParams {
   lineupId: string;
+  sportId?: string;
   picks: string[];
   name?: string;
   winningScorePrediction?: number;
@@ -91,6 +94,7 @@ export function useCreateLineup() {
     mutationFn: async ({
       eventId,
       contestId,
+      sportId,
       picks,
       name,
       winningScorePrediction,
@@ -98,6 +102,7 @@ export function useCreateLineup() {
       return await createLineupForEvent({
         eventId,
         contestId,
+        sportId,
         picks,
         name,
         winningScorePrediction,
@@ -206,6 +211,7 @@ export function useUpdateLineup() {
   return useMutation({
     mutationFn: async ({
       lineupId,
+      sportId,
       picks,
       name,
       winningScorePrediction,
@@ -217,6 +223,7 @@ export function useUpdateLineup() {
       return await updateLineupById({
         lineupId,
         eventId: ctx.eventId,
+        sportId: sportId ?? scopeSportId,
         picks,
         name,
         winningScorePrediction,
@@ -248,8 +255,13 @@ export function useUpdateLineup() {
                   ...lineup,
                   name: name || lineup.name,
                   picks: buildOptimisticPicks(picks, candidates),
-                  ...(winningScorePrediction !== undefined
-                    ? { prediction: { type: "winningScore", value: winningScorePrediction } }
+                  ...(winningScorePrediction !== undefined && scopeSportId
+                    ? {
+                        prediction: toPredictionForSport(
+                          scopeSportId,
+                          winningScorePrediction,
+                        ),
+                      }
                     : {}),
                 }
               : lineup,

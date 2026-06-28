@@ -160,17 +160,17 @@ Running list of resources and steps for the F1 race-day plugin. Narrative and ra
 
 ## Stage 7 — Platform cleanup
 
-- [ ] `client/src/lib/eventMetadata.ts` — sport-aware event status (not golf-only)
-- [ ] `client/src/components/platform/SportPredictionField.tsx` — delegate to sport UI plugin
-- [ ] `client/src/lib/lineupApi.ts` — sport-aware prediction serialization
-- [ ] `client/src/components/lineup/LineupContestCard.tsx` — remove direct golf prediction imports
-- [ ] `client/src/hooks/useLineupSlotEditor.ts` — read slot count from `rosterRules`
-- [ ] `server/src/services/lineups/createLineupForEvent.ts` — sport-aware prediction parsing
-- [ ] `server/src/services/lineups/updateLineupById.ts` — sport-aware prediction parsing
-- [ ] `server/src/utils/lineupValidation.ts` — sport-aware prediction parsing
-- [ ] `server/src/routes/contest.ts` — sport-aware tie-break display
-- [ ] Audit onboarding/FAQ copy for golf-only language (optional for v1)
-- [ ] Write Stage 7 journal entry
+- [x] `client/src/lib/eventMetadata.ts` — sport-aware event status (not golf-only)
+- [x] `client/src/components/platform/SportPredictionField.tsx` — delegate to sport UI plugin
+- [x] `client/src/lib/lineupApi.ts` — sport-aware prediction serialization
+- [x] `client/src/components/lineup/LineupContestCard.tsx` — remove direct golf prediction imports
+- [x] `client/src/hooks/useLineupSlotEditor.ts` — read slot count from `rosterRules`
+- [x] `server/src/services/lineups/createLineupForEvent.ts` — sport-aware prediction parsing
+- [x] `server/src/services/lineups/updateLineupById.ts` — sport-aware prediction parsing
+- [x] `server/src/utils/lineupValidation.ts` — sport-aware prediction parsing
+- [x] `server/src/routes/contest.ts` — sport-aware tie-break display
+- [x] Audit onboarding/FAQ copy for golf-only language (optional for v1)
+- [x] Write Stage 7 journal entry
 
 ---
 

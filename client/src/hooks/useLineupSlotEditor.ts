@@ -8,14 +8,15 @@ import {
 } from "../lib/lineupUtils";
 import { lineupsInSameContestScope } from "../lib/lineupContestScope";
 
-const SLOT_COUNT = 4;
-
-function padToSlots(candidates: Candidate[]): Array<Candidate | null> {
+function padToSlots(
+  candidates: Candidate[],
+  slotCount: number,
+): Array<Candidate | null> {
   const slots: Array<Candidate | null> = [...candidates];
-  while (slots.length < SLOT_COUNT) {
+  while (slots.length < slotCount) {
     slots.push(null);
   }
-  return slots.slice(0, SLOT_COUNT);
+  return slots.slice(0, slotCount);
 }
 
 function eventParticipantIdsFromSlots(slots: Array<Candidate | null>): string[] {
@@ -31,6 +32,7 @@ interface UpdateLineupOptions {
 interface UseLineupSlotEditorOptions {
   lineupId: string;
   contestId?: string | null;
+  slotCount: number;
   initialCandidates: Candidate[];
   fieldCandidates: Candidate[];
   lineups: PlatformLineupListItem[];
@@ -45,6 +47,7 @@ interface UseLineupSlotEditorOptions {
 export function useLineupSlotEditor({
   lineupId,
   contestId,
+  slotCount,
   initialCandidates,
   fieldCandidates,
   lineups,
@@ -52,7 +55,7 @@ export function useLineupSlotEditor({
   updateLineup,
 }: UseLineupSlotEditorOptions) {
   const [slots, setSlots] = useState<Array<Candidate | null>>(() =>
-    padToSlots(initialCandidates),
+    padToSlots(initialCandidates, slotCount),
   );
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -62,8 +65,8 @@ export function useLineupSlotEditor({
 
   useEffect(() => {
     if (isSaving) return;
-    setSlots(padToSlots(initialCandidates));
-  }, [lineupId, initialCandidateKey, isSaving, initialCandidates]);
+    setSlots(padToSlots(initialCandidates, slotCount));
+  }, [lineupId, initialCandidateKey, isSaving, initialCandidates, slotCount]);
 
   const checkForDuplicateLineup = useCallback(
     (eventParticipantIds: string[], prediction: number): boolean => {
@@ -137,6 +140,7 @@ export function useLineupSlotEditor({
 
       const paddedSlots = padToSlots(
         newSlots.filter((candidate): candidate is Candidate => candidate !== null),
+        slotCount,
       );
 
       setSlots(paddedSlots);
@@ -144,10 +148,10 @@ export function useLineupSlotEditor({
       if (ok) {
         setSelectedSlotIndex(null);
       } else {
-        setSlots(padToSlots(initialCandidates));
+        setSlots(padToSlots(initialCandidates, slotCount));
       }
     },
-    [fieldCandidates, initialCandidates, isSaving, saveSlots, selectedSlotIndex, slots],
+    [fieldCandidates, initialCandidates, isSaving, saveSlots, selectedSlotIndex, slotCount, slots],
   );
 
   const selectedEventParticipantIds = slots

@@ -10,7 +10,7 @@ import {
 } from "../../lib/candidateUtils";
 import { useCandidateSort } from "../../hooks/useCandidateSort";
 import { lineupDisplayScore } from "../../lib/lineupScore";
-import { golfPredictionValue } from "../../lib/golfPrediction";
+import { predictionValueForSport } from "../../lib/sportPrediction";
 import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
 import { SportParticipantRow } from "../platform/SportParticipantRow";
 import { EntryHeader } from "./EntryHeader";
@@ -65,7 +65,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
 
   const winningScorePrediction =
     lineup.lineup && "prediction" in lineup.lineup
-      ? golfPredictionValue(lineup.lineup.prediction)
+      ? predictionValueForSport(sportId, lineup.lineup.prediction)
       : null;
 
   const openDetailModal = (candidate: Candidate) => {

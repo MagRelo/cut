@@ -1,6 +1,6 @@
 import apiClient from "../utils/apiClient";
 import type { PlatformLineup } from "../types/event";
-import { toGolfPrediction } from "./golfPrediction";
+import { toPredictionForSport } from "./sportPrediction";
 
 export async function createLineupForEvent(params: {
   eventId: string;
@@ -16,7 +16,7 @@ export async function createLineupForEvent(params: {
       picks: params.picks,
       name: params.name,
       contestId: params.contestId,
-      prediction: toGolfPrediction(params.winningScorePrediction),
+      prediction: toPredictionForSport(params.sportId ?? "pga-golf", params.winningScorePrediction),
     },
   );
 
@@ -36,7 +36,7 @@ export async function updateLineupById(params: {
     {
       picks: params.picks,
       name: params.name,
-      prediction: toGolfPrediction(params.winningScorePrediction),
+      prediction: toPredictionForSport(params.sportId ?? "pga-golf", params.winningScorePrediction),
     },
   );
 

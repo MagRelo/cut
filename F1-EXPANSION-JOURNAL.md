@@ -266,3 +266,34 @@ Copy for each new stage entry:
 - Stage 6 checklist items marked complete.
 - Stage 7 remains: lineup API, slot editor, contest tie-break display, remaining golf leaks.
 - Stage 8 dry-run can proceed after Stage 7 or with known prediction gaps.
+
+---
+
+## Stage 7 — Platform cleanup (2026-06-28)
+
+### Predicted needs
+
+- ~9 platform files hardcode golf prediction (`winningScore`) or golf event status.
+- F1 uses `winningLineupPoints` (1–120); golf uses `winningScore` (1–250).
+- Slot editor hardcoded 4 slots; F1 seed has `minPicks: 4` same count but should read `rosterRules` from DB.
+- `SportPredictionField` already delegated to plugin — needed sport-aware fallback only.
+
+### Actual findings
+
+- Added `server/src/utils/sportPrediction.ts` and `client/src/lib/sportPrediction.ts` as shared sport-dispatch layer.
+- Server: `createLineupForEvent`, `updateLineupById`, `lineupValidation`, `contest` route use sport-aware or dual-type prediction parsing.
+- Client: `lineupApi`, `lineupUtils`, `LineupContestCard`, `ContestEntryModal`, `useLineupMutations` updated; no direct `golfPrediction` in platform lineup flow.
+- `useLineupSlotEditor` accepts `slotCount` from new `useSportRosterRules(sportId)` hook (reads `GET /sports`).
+- `eventMetadata.ts` already had F1 status from Stage 6 — confirmed complete.
+- Onboarding/FAQ: no blocking golf-only copy in lineup/contest flows; sport picker is DB-driven.
+
+### Gaps / surprises
+
+- Parameter name `winningScorePrediction` kept across API for backward compat — value maps to correct JSON type per sport.
+- `lineupApi` defaults to `pga-golf` if `sportId` omitted — callers should pass sportId (mutations use EventScope).
+- `adminEventContext.ts` still golf-specific — admin only, out of scope.
+
+### Checklist impact
+
+- Stage 7 checklist items marked complete (journal pending).
+- Stage 8 dry-run: create F1 lineup + contest end-to-end should work.

@@ -1,6 +1,6 @@
-import { golfPredictionValue } from "@cut/sport-pga-golf";
 import { prisma } from "../../lib/prisma.js";
 import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/winningScorePrediction.js";
+import { predictionValueForSport } from "../../utils/sportPrediction.js";
 import { isDuplicateLineup } from "../../utils/lineupValidation.js";
 import {
   formatLineupResponse,
@@ -41,7 +41,7 @@ export async function updateLineupById(input: UpdateLineupInput) {
 
   const prediction =
     input.prediction !== undefined ? (input.prediction as object) : existing.prediction;
-  const predictionValue = golfPredictionValue(prediction);
+  const predictionValue = predictionValueForSport(existing.event.sportId, prediction);
 
   const isDuplicate = await isDuplicateLineup(
     input.userId,
