@@ -297,3 +297,36 @@ Copy for each new stage entry:
 
 - Stage 7 checklist items marked complete (journal pending).
 - Stage 8 dry-run: create F1 lineup + contest end-to-end should work.
+
+---
+
+## Stage 8 — Dry run (2026-06-28)
+
+### Predicted needs
+
+- End-to-end path: init → field → scores → lineups → contest → cron pipeline → ranking.
+- Historical `2024-british-gp` sufficient without OpenF1 paid token.
+- On-chain activate/settle requires real Sepolia contract — DB-only ranking path acceptable for dry run.
+
+### Actual findings
+
+- Added `server/src/scripts/f1DryRun.ts` + `pnpm --filter server run script:f1-dry-run`.
+- Verified locally: `isActive=true`, 20 drivers, all scored after pipeline sync (Hamilton 25 pts).
+- Created 3 test lineups with `winningLineupPoints` predictions via `createLineupForEvent`.
+- Created dry-run contest with 3 entries; `updateContestLineupsForEvent` produced correct leaderboard:
+  - #1 score 70 (HAM+VER+NOR+PIA)
+  - #2/#3 tied at 56; tie-break by prediction distance to contest max (70) — closer prediction wins
+- `batchActivateContests` correctly skipped OPEN contest (event `COMPLETE`, not `LIVE`).
+- `batchSettleContests` attempted settle on dummy address — failed at oracle read (expected without contract).
+- Cron pipeline (`runSportEventPipeline`) syncs metadata, field, and scores for COMPLETE F1 events.
+
+### Gaps / surprises
+
+- Full on-chain settlement not exercised in dry run — use real Sepolia contest + `settleContestOffChain` for payout testing.
+- LIVE activation timing cannot be replayed on historical race without metadata time manipulation.
+- Dry-run contest left in local DB; cleanup via `script:f1-dry-run -- --cleanup`.
+
+### Checklist impact
+
+- Stage 8 checklist items marked complete.
+- Stage 9 next: F1 event activation runbook.

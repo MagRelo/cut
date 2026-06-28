@@ -181,4 +181,4 @@ Golf-specific assumptions exist in platform paths. F1 can ship with workarounds,
 
 ## Next action
 
-**Stage 3:** DB + seed — add `Sport` row for `f1` with roster/scoring rules from [docs/f1-competition-brief.md](docs/f1-competition-brief.md).
+**Stage 9:** Ops runbook — create `docs/f1-event-activation-runbook.md` mirroring golf runbook.

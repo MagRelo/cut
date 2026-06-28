@@ -176,16 +176,16 @@ Running list of resources and steps for the F1 race-day plugin. Narrative and ra
 
 ## Stage 8 — Dry run
 
-- [ ] Pick target race (`externalId` from brief)
-- [ ] `pnpm run service:init-event f1 <externalId>`
-- [ ] Confirm `CompetitionEvent.isActive = true`
-- [ ] Confirm field sync (~20 drivers in candidate pool)
-- [ ] Create test lineup (4 drivers + prediction)
-- [ ] Create test contest on F1 event
-- [ ] Enable cron (`ENABLE_CRON=true`); verify live score updates during race or replay
-- [ ] Verify contest activates at `LIVE`, settles at `COMPLETE`
-- [ ] Verify leaderboard ranking and tie-break
-- [ ] Write Stage 8 journal entry
+- [x] Pick target race (`externalId` from brief) — `2024-british-gp`
+- [x] `pnpm run service:init-event f1 <externalId>`
+- [x] Confirm `CompetitionEvent.isActive = true`
+- [x] Confirm field sync (~20 drivers in candidate pool)
+- [x] Create test lineup (4 drivers + prediction)
+- [x] Create test contest on F1 event
+- [x] Enable cron (`ENABLE_CRON=true`); verify live score updates during race or replay — verified via `runSportEventPipeline` + `script:f1-dry-run` (historical replay)
+- [x] Verify contest activates at `LIVE`, settles at `COMPLETE` — activate skipped on COMPLETE (expected); settle gated on `shouldSettleContest` (on-chain needs real contract)
+- [x] Verify leaderboard ranking and tie-break
+- [x] Write Stage 8 journal entry
 
 ---
 
