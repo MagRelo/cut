@@ -233,3 +233,36 @@ Copy for each new stage entry:
 - Stage 5 checklist items marked complete.
 - Stage 6 client UI plugin is next.
 - Stage 7 platform cleanup still required for `winningLineupPoints` prediction type.
+
+---
+
+## Stage 6 — Client plugin (2026-06-27)
+
+### Predicted needs
+
+- Mirror golf UI plugin structure: CandidateRow, ParticipantRow, ParticipantDetail, PredictionField, EventSummary.
+- `f1CandidateSortConfig` imported from `@cut/sport-f1` package (shared with server).
+- Prediction slider range 1–120 (`winningLineupPoints`).
+- Team colour stripe, grid/championship in picker, position + points in live rows.
+- Register in `client/src/sports/registry.ts`; add `@cut/sport-f1` client dependency.
+
+### Actual findings
+
+- Created `client/src/sports/f1/` with 11 files + `client/src/lib/f1Prediction.ts`.
+- `f1UIPlugin` registered alongside golf; client build passes.
+- Minimal `eventMetadata.ts` update for F1 status/start date (needed for leaderboard live layout — partial Stage 7).
+- `SportPredictionField` already delegates to plugin `PredictionField` — F1 slider works in F1 contest context without further changes.
+- Circuit hero images via `eventMedia.ts` map + Unsplash fallback.
+
+### Gaps / surprises
+
+- `LineupContestCard` / `lineupApi` still golf-hardcoded for prediction serialization (Stage 7).
+- `useLineupSlotEditor` still hardcodes 4 slots (Stage 7).
+- Leaderboard `playerId` URL param is golf-named (`pgaTourId`) — works via generic `playerId` but naming is golf-centric.
+- No Storybook stories for F1 components (optional).
+
+### Checklist impact
+
+- Stage 6 checklist items marked complete.
+- Stage 7 remains: lineup API, slot editor, contest tie-break display, remaining golf leaks.
+- Stage 8 dry-run can proceed after Stage 7 or with known prediction gaps.

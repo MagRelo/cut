@@ -144,17 +144,17 @@ Running list of resources and steps for the F1 race-day plugin. Narrative and ra
 
 ## Stage 6 — Client plugin (`client/src/sports/f1/`)
 
-- [ ] `index.tsx` — `f1UIPlugin` registration object
-- [ ] `CandidateRow.tsx` — team colors, grid position, constructor
-- [ ] `ParticipantRow.tsx` — live position, points during race
-- [ ] `ParticipantDetail.tsx` — race stats (not golf scorecard)
-- [ ] `PredictionField.tsx` — F1 tie-break input
-- [ ] `EventSummary.tsx` — circuit / race hero
-- [ ] `eventMedia.ts` or `resolveEventHeroImage` — circuit imagery
-- [ ] `candidateSortConfig` aligned with server `sortKeys`
-- [ ] Register in `client/src/sports/registry.ts`
-- [ ] Verify sport hub (`/sports/f1`) and leaderboard render
-- [ ] Write Stage 6 journal entry
+- [x] `index.tsx` — `f1UIPlugin` registration object
+- [x] `CandidateRow.tsx` — team colors, grid position, constructor
+- [x] `ParticipantRow.tsx` — live position, points during race
+- [x] `ParticipantDetail.tsx` — race stats (not golf scorecard)
+- [x] `PredictionField.tsx` — F1 tie-break input
+- [x] `EventSummary.tsx` — circuit / race hero
+- [x] `eventMedia.ts` or `resolveEventHeroImage` — circuit imagery
+- [x] `candidateSortConfig` aligned with server `sortKeys`
+- [x] Register in `client/src/sports/registry.ts`
+- [x] Verify sport hub (`/sports/f1`) and leaderboard render
+- [x] Write Stage 6 journal entry
 
 ---
 

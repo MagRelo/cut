@@ -29,6 +29,9 @@ importers:
       '@cut/secondary-pricing':
         specifier: workspace:*
         version: link:../packages/secondary-pricing
+      '@cut/sport-f1':
+        specifier: workspace:*
+        version: link:../packages/sport-f1
       '@cut/sport-pga-golf':
         specifier: workspace:*
         version: link:../packages/sport-pga-golf

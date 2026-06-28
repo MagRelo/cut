@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@cut/sport-sdk": "workspace:*",
+    "@cut/sport-f1": "workspace:*",
     "@cut/sport-pga-golf": "workspace:*",
     "@cut/secondary-pricing": "workspace:*",
     "@headlessui/react": "^2.2.4",
