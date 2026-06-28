@@ -47,15 +47,15 @@ Running list of resources and steps for the F1 race-day plugin. Narrative and ra
 
 | Candidate | Notes |
 |-----------|-------|
-| Ergast API | Historical results; limited/no live |
-| OpenF1 | Community live timing; terms TBD |
-| Official F1 API | Licensing/cost TBD |
-| Third-party sports data | Evaluate in Stage 2 spike |
+| **OpenF1** | **Primary (chosen)** — see [docs/f1-data-sources.md](docs/f1-data-sources.md) |
+| Jolpica (Ergast) | Schedule / slug resolution secondary |
+| Official F1 API | Not evaluated |
 
 ### Environment / secrets (Stage 2+)
 
-- [ ] `F1_*` API key(s) — name TBD after data source chosen
-- [ ] Document required env vars in server `.env.example`
+- [ ] `OPENF1_API_TOKEN` — optional for historical; required for live session window
+- [ ] `JOLPICA_BASE_URL` — optional override (default `https://api.jolpi.ca/ergast/f1`)
+- [ ] Document in server `.env.example` at Stage 5
 
 ---
 
@@ -70,34 +70,34 @@ Running list of resources and steps for the F1 race-day plugin. Narrative and ra
 
 ## Stage 1 — Competition brief
 
-- [ ] Copy competition brief template from `docs/new-competition-fit-guide.md`
-- [ ] Save filled brief (location TBD — e.g. `docs/f1-competition-brief.md`)
-- [ ] Score 12-row fit worksheet (rows 1–12)
-- [ ] Confirm event unit: race day only
-- [ ] Confirm `externalId` pattern
-- [ ] Confirm `sportId` (`f1` or `formula-1`)
-- [ ] Confirm roster size and rules (default: 4 drivers, flat pool, no duplicates)
-- [ ] Confirm scoring table (finish points + fastest-lap bonus)
-- [ ] Confirm DNS/DNF/DSQ policy
-- [ ] Confirm tie-break prediction shape
-- [ ] Confirm `SCHEDULED → LIVE → COMPLETE` triggers
-- [ ] Confirm picker sort keys (grid position, championship points, constructor, etc.)
-- [ ] Confirm target race for dry-run
-- [ ] Write Stage 1 journal entry
+- [x] Copy competition brief template from `docs/new-competition-fit-guide.md`
+- [x] Save filled brief — `docs/f1-competition-brief.md`
+- [x] Score 12-row fit worksheet (rows 1–12)
+- [x] Confirm event unit: race day only
+- [x] Confirm `externalId` pattern — `{year}-{circuit-slug}-gp`
+- [x] Confirm `sportId` — `f1`
+- [x] Confirm roster size and rules — 4 drivers, flat pool, no duplicates
+- [x] Confirm scoring table — standard F1 finish points + fastest-lap bonus
+- [x] Confirm DNS/DNF/DSQ policy — zero points
+- [x] Confirm tie-break prediction — `winningLineupPoints`, range 1–120
+- [x] Confirm `SCHEDULED → LIVE → COMPLETE` triggers — race start / official classification
+- [x] Confirm picker sort keys — championship → grid → constructor → name
+- [x] Confirm target race for dry-run — `2024-british-gp` (historical replay)
+- [x] Write Stage 1 journal entry
 
 ---
 
 ## Stage 2 — Data spike
 
-- [ ] Evaluate data source candidates (schedule, entry list, live results, final classification)
-- [ ] Document licensing, rate limits, and terms of use
-- [ ] Choose primary data API
-- [ ] Spike script: fetch one race schedule
-- [ ] Spike script: fetch entry list (~20 drivers)
-- [ ] Spike script: fetch live or final race results
-- [ ] Map API fields → `Participant`, `EventParticipant.scoreData`, `EventParticipant.total`
-- [ ] Document env vars and auth
-- [ ] Write Stage 2 journal entry
+- [x] Evaluate data source candidates (schedule, entry list, live results, final classification)
+- [x] Document licensing, rate limits, and terms — `docs/f1-data-sources.md`
+- [x] Choose primary data API — OpenF1 (+ Jolpica for schedule resolution)
+- [x] Spike script: fetch one race schedule — `server/src/scripts/f1DataSpike.ts`
+- [x] Spike script: fetch entry list (~20 drivers)
+- [x] Spike script: fetch live or final race results
+- [x] Map API fields → `Participant`, `EventParticipant.scoreData`, `EventParticipant.total`
+- [x] Document env vars and auth
+- [x] Write Stage 2 journal entry
 
 ---
 

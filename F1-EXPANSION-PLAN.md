@@ -26,15 +26,15 @@ PGA Golf remains the reference implementation. F1 registers alongside it in serv
 | Dimension | v1 decision |
 |-----------|-------------|
 | **Event unit** | Single race (Sunday main event) |
-| **externalId** | TBD in Stage 1/2 — e.g. `2026-monaco-gp` or F1 meeting ID |
-| **sportId** | `f1` (unless Stage 1 brief chooses `formula-1`) |
+| **externalId** | `{year}-{circuit-slug}-gp` — e.g. `2026-monaco-gp` ([brief](docs/f1-competition-brief.md)) |
+| **sportId** | `f1` |
 | **Field size** | ~20 drivers per race |
 | **Roster** | 4 drivers (mirror golf unless brief changes) |
 | **Scoring** | Sum of driver `EventParticipant.total` — finish points + fastest-lap bonus baked into each driver's total |
 | **Direction** | Higher wins |
 | **Lifecycle** | `SCHEDULED` before race → `LIVE` from race start → `COMPLETE` after official classification |
 | **Live sync** | 5-minute cron; position updates during race; points finalized at race end |
-| **Tie-break** | Sport-specific prediction (TBD in Stage 1 brief) |
+| **Tie-break** | Winning lineup total points (`{ type: "winningLineupPoints", value }`, range 1–120) |
 
 ---
 
@@ -122,17 +122,15 @@ Stage checkboxes live in [F1-EXPANSION-CHECKLIST.md](F1-EXPANSION-CHECKLIST.md).
 
 ---
 
-## Open decisions (Stage 1 brief)
+## Open decisions
 
-| Topic | Options / notes |
-|-------|-----------------|
-| **Data API** | Ergast (historical), OpenF1, official F1 API, third-party — licensing and live coverage TBD in Stage 2 |
-| **sportId** | `f1` vs `formula-1` |
-| **externalId pattern** | Human-readable slug vs F1 meeting/session ID |
-| **Tie-break prediction** | Winning driver points total, predicted race winner, podium count, etc. |
-| **Target race** | Which Grand Prix for dry-run (historical replay vs upcoming) |
-| **DNS/DNF/DSQ policy** | Zero points; min-picks rule if field shrinks |
-| **Roster size** | Default 4; confirm in brief |
+Resolved in [docs/f1-competition-brief.md](docs/f1-competition-brief.md) and [docs/f1-data-sources.md](docs/f1-data-sources.md).
+
+| Topic | Status |
+|-------|--------|
+| **Data API** | OpenF1 primary; Jolpica for schedule/slug resolution |
+| **Dry-run race** | `2024-british-gp` — meeting_key 1240, session_key 9558 |
+| **Live races** | `OPENF1_API_TOKEN` required during live session window — evaluate before first live GP |
 
 ---
 
@@ -183,4 +181,4 @@ Golf-specific assumptions exist in platform paths. F1 can ship with workarounds,
 
 ## Next action
 
-**Stage 1:** Fill the competition brief using the template in [docs/new-competition-fit-guide.md](docs/new-competition-fit-guide.md), pre-filled with race-only assumptions from this plan.
+**Stage 3:** DB + seed — add `Sport` row for `f1` with roster/scoring rules from [docs/f1-competition-brief.md](docs/f1-competition-brief.md).
