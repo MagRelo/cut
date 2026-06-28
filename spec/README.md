@@ -2,8 +2,8 @@
 
 Architecture and behavior documentation for the **v4 platform** (`v4` branch). This reflects the code as implemented today — not legacy tournament-centric production.
 
-**Design intent:** [docs/platform-architecture.md](../docs/platform-architecture.md)  
-**Ops:** [docs/event-activation-runbook.md](../docs/event-activation-runbook.md) (golf) · [docs/f1-event-activation-runbook.md](../docs/f1-event-activation-runbook.md) (F1) · [docs/platform-cutover-plan.md](../docs/platform-cutover-plan.md)
+**Design intent:** [docs/platform/architecture.md](../docs/platform/architecture.md)  
+**Ops:** [docs/sports/golf/event-activation-runbook.md](../docs/sports/golf/event-activation-runbook.md) (golf) · [docs/sports/f1/event-activation-runbook.md](../docs/sports/f1/event-activation-runbook.md) (F1) · [docs/README.md](../docs/README.md)
 
 ---
 
@@ -20,12 +20,6 @@ Architecture and behavior documentation for the **v4 platform** (`v4` branch). T
 | Client routing | Tournament-centric home | `/sports/:sportId`, `/leagues/*` |
 
 Legacy routes `/api/tournaments` and `/api/lineup` return **501** on v4.
-
----
-
-## Production cutover
-
-Platform code on `v4` is complete. Remaining ops work is staging validation and production cutover per [docs/platform-cutover-plan.md](../docs/platform-cutover-plan.md). Migration script: `server/src/scripts/migrate-from-legacy.ts`.
 
 ---
 
@@ -72,13 +66,13 @@ Use this order for a full architecture walkthrough:
 
 | Topic | Doc |
 |-------|-----|
-| Side bet odds | [docs/side-bet-odds-methodology.md](../docs/side-bet-odds-methodology.md) |
-| Side bet ops | [docs/SIDE_BET_PRODUCTION_PLAN.md](../docs/SIDE_BET_PRODUCTION_PLAN.md) |
-| Tie-breakers | [docs/lineup-tie-breaker.md](../docs/lineup-tie-breaker.md) |
-| Referrals | [docs/referral-network.md](../docs/referral-network.md) |
-| Email program | [docs/email-program.md](../docs/email-program.md) |
-| Competition fit | [docs/new-competition-fit-guide.md](../docs/new-competition-fit-guide.md) |
-| Competition ideas | [docs/competition-shape-ideas.md](../docs/competition-shape-ideas.md) |
+| Side bet odds | [docs/sports/golf/side-bet-odds-methodology.md](../docs/sports/golf/side-bet-odds-methodology.md) |
+| Side bet ops | [docs/sports/golf/side-bet-production-plan.md](../docs/sports/golf/side-bet-production-plan.md) |
+| Tie-breakers | [docs/platform/lineup-tie-breaker.md](../docs/platform/lineup-tie-breaker.md) |
+| Referrals | [docs/platform/referral-network.md](../docs/platform/referral-network.md) |
+| Email program | [docs/operations/email-program.md](../docs/operations/email-program.md) |
+| Competition fit | [docs/competitions/fit-guide.md](../docs/competitions/fit-guide.md) |
+| Competition ideas | [docs/competitions/shape-ideas.md](../docs/competitions/shape-ideas.md) |
 
 ### Legacy / planning artifacts
 
@@ -87,7 +81,6 @@ Use this order for a full architecture walkthrough:
 | [analysis.md](analysis.md) | Pre-rewrite discovery notes — historical |
 | [cleanup-backlog.md](cleanup-backlog.md) | Pre-rewrite cleanup list — largely superseded |
 | [onboarding-content-plan.md](onboarding-content-plan.md) | Content planning — still useful |
-| [docs/tournament-activation-runbook.md](../docs/tournament-activation-runbook.md) | **Deprecated** — use event runbook |
 
 ---
 
@@ -120,4 +113,4 @@ contracts/             Solidity (ContestController, Factory, tokens)
 ## Maintenance
 
 - Update `spec/` when behavior changes on `v4`.
-- [docs/platform-architecture.md](../docs/platform-architecture.md) is the design intent; `spec/` is the as-built reference.
+- [docs/platform/architecture.md](../docs/platform/architecture.md) is the design intent; `spec/` is the as-built reference.

@@ -1,5 +1,5 @@
 /**
- * Manual email blast CLI (see docs/email-program.md).
+ * Manual email blast CLI (see docs/operations/email-program.md).
  *
  *   pnpm --filter server run script:send-blast welcome [--dry-run]
  *   pnpm --filter server run script:send-blast new-tournament [--dry-run] [--force]

@@ -1,10 +1,8 @@
 # Event activation runbook
 
-Operator checklist for switching Play The Cut to a new competition week on the **platform schema** (`CompetitionEvent`, sport plugins). PGA Golf is the first supported sport; **Formula 1** has a dedicated runbook: [f1-event-activation-runbook.md](./f1-event-activation-runbook.md). F1 uses OpenF1 Race `session_key` as `externalId` (not PGA Tour-style IDs).
+Operator checklist for switching Play The Cut to a new competition week on the **platform schema** (`CompetitionEvent`, sport plugins). PGA Golf is the first supported sport; **Formula 1** has a dedicated runbook: [F1 event activation](../f1/event-activation-runbook.md). F1 uses OpenF1 Race `session_key` as `externalId` (not PGA Tour-style IDs).
 
-**Legacy doc:** [tournament-activation-runbook.md](./tournament-activation-runbook.md) (pre-rewrite `Tournament` model — reference only).
-
-**Related specs:** [email-program.md](./email-program.md) · tournament summary skill (`.cursor/skills/tournament-summary/SKILL.md`)
+**Related specs:** [email-program.md](../../operations/email-program.md) · tournament summary skill (`.cursor/skills/tournament-summary/SKILL.md`)
 
 ### pnpm command style
 
@@ -154,7 +152,7 @@ Pipeline order:
 
 **Admin only (not cron):** `batchLockContests` (`ACTIVE` → `LOCKED`), side-bet lock / settle / close.
 
-Full spec: [`spec/server/cron.md`](../spec/server/cron.md). Status: `GET /api/cron/status`.
+Full spec: [`spec/server/cron.md`](../../../spec/server/cron.md). Status: `GET /api/cron/status`.
 
 **Later in the week (manual emails):**
 

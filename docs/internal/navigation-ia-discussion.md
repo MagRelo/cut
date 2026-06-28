@@ -4,9 +4,9 @@
 
 Working discussion — not a finalized spec. Captures UX direction for multi-sport navigation, league-first vs sport-first entry, and mobile considerations.
 
-**Related (internal):** [platform-architecture.md](../platform-architecture.md) · [spec/client/architecture.md](../../spec/client/architecture.md)
+**Related (internal):** [architecture.md](../platform/architecture.md) · [spec/client/architecture.md](../../spec/client/architecture.md)
 
-Competition fit and domain brainstorming for external audiences live in [new-competition-fit-guide.md](../new-competition-fit-guide.md) and [competition-shape-ideas.md](../competition-shape-ideas.md) — intentionally separate from this IA work.
+Competition fit and domain brainstorming for external audiences live in [fit-guide.md](../competitions/fit-guide.md) and [shape-ideas.md](../competitions/shape-ideas.md) — intentionally separate from this IA work.
 
 ---
 

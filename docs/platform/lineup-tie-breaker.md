@@ -2,7 +2,7 @@
 
 Product and engineering spec for **lineup total prediction**: how users set it, how duplicates work, and how contests rank lineups and pay winners when fantasy scores tie.
 
-Related references: [server API — lineups](../spec/server/api.md), [data models — Lineup](../spec/server/data-models.md), user-facing copy on the FAQ (“How are ties handled?”).
+Related references: [server API — lineups](../../spec/server/api.md), [data models — Lineup](../../spec/server/data-models.md), user-facing copy on the FAQ (“How are ties handled?”).
 
 ---
 

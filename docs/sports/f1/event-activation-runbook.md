@@ -2,7 +2,7 @@
 
 Operator checklist for activating a new Formula 1 Grand Prix on the v4 platform (`CompetitionEvent`, `sportId: f1`). Race-day only — qualifying and sprint sessions are not scored in v1.
 
-**Related:** [f1-competition-brief.md](./f1-competition-brief.md) · [f1-data-sources.md](./f1-data-sources.md) · [event-activation-runbook.md](./event-activation-runbook.md) (PGA Golf) · [F1-EXPANSION-PLAN.md](../F1-EXPANSION-PLAN.md)
+**Related:** [competition-brief.md](./competition-brief.md) · [data-sources.md](./data-sources.md) · [Golf event activation](../golf/event-activation-runbook.md) (PGA)
 
 ### pnpm command style
 
@@ -47,7 +47,7 @@ Run server commands from repo root with `pnpm --filter server run …` or from `
 | `ENABLE_CRON` | Prod race day | `true` on cron worker for 5-minute pipeline |
 | `DATABASE_URL` | Yes | Verify before every init |
 
-Full data API notes: [f1-data-sources.md](./f1-data-sources.md).
+Full data API notes: [data-sources.md](./data-sources.md).
 
 ---
 
@@ -61,13 +61,6 @@ echo $DATABASE_URL
 
 # Local expected pattern
 # postgresql://playthecut:playthecut@localhost:5432/playthecut
-```
-
-To remove accidental F1 data from a DB (dry-run first):
-
-```bash
-pnpm --filter server run script:remove-f1-data
-pnpm --filter server run script:remove-f1-data -- --execute
 ```
 
 ---
@@ -252,7 +245,7 @@ Pipeline order (same as golf):
 - UI may label provisional vs final scores
 - Post-race penalties may delay `COMPLETE` until OpenF1 publishes final classification
 
-Full spec: [`spec/server/cron.md`](../spec/server/cron.md). Status: `GET /api/cron/status`.
+Full spec: [`spec/server/cron.md`](../../../spec/server/cron.md). Status: `GET /api/cron/status`.
 
 **Manual score refresh** (if cron is off):
 

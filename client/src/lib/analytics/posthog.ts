@@ -1,6 +1,6 @@
 import type { PostHog } from "posthog-js";
 
-/** Events for PRODUCT_GROWTH_FUNNEL — capture only when PostHog client exists (prod `PostHogProvider`). */
+/** Events for product growth funnel — capture only when PostHog client exists (prod `PostHogProvider`). */
 export type AnalyticsEvents = {
   auth_session_synced: {
     user_id: string;

@@ -2,7 +2,7 @@
 
 **Status:** Stage 2 spike complete. Primary source chosen for v1 implementation.
 
-**Related:** [f1-competition-brief.md](f1-competition-brief.md) · [F1-EXPANSION-PLAN.md](../F1-EXPANSION-PLAN.md) · [f1-event-activation-runbook.md](f1-event-activation-runbook.md)
+**Related:** [competition-brief.md](competition-brief.md) · [event-activation-runbook.md](event-activation-runbook.md)
 
 ---
 

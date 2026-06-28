@@ -199,5 +199,5 @@ Mid-week contest energy is split: **New Tournament** = everyone (event + CTA); *
 ## Related docs
 
 - [Email implementation](./email-implementation.md) — engineering status, module layout, preview commands
-- [Product growth funnel](./PRODUCT_GROWTH_FUNNEL.md) — stages 6–8 (retention, reminders, post-contest)
-- [Onboarding content plan](../spec/onboarding-content-plan.md) — welcome tone and product terms
+- [Product growth funnel](../internal/product-growth-funnel.md) — stages 6–8 (retention, reminders, post-contest)
+- [Onboarding content plan](../../spec/onboarding-content-plan.md) — welcome tone and product terms

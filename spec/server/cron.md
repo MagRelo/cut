@@ -79,7 +79,7 @@ Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event statu
 | Side-bet lock/settle/close | `POST /api/admin/bets/side/*` |
 | Email blast | `pnpm --filter server run script:send-blast new-tournament` |
 
-See [docs/event-activation-runbook.md](../../docs/event-activation-runbook.md).
+See [docs/sports/golf/event-activation-runbook.md](../../docs/sports/golf/event-activation-runbook.md).
 
 ---
 

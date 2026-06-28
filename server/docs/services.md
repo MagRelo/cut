@@ -10,8 +10,8 @@ Platform services under `server/src/services/`. Cron orchestration: [`src/cron/R
 
 Bootstraps a `CompetitionEvent` via the sport plugin.
 
-- **PGA golf:** `pnpm run service:init-event pga-golf R2026033` — see [event-activation-runbook.md](../../docs/event-activation-runbook.md)
-- **F1:** `pnpm run service:init-event f1 2026-monaco-gp` — see [f1-event-activation-runbook.md](../../docs/f1-event-activation-runbook.md)
+- **PGA golf:** `pnpm run service:init-event pga-golf R2026033` — see [event-activation-runbook.md](../../docs/sports/golf/event-activation-runbook.md)
+- **F1:** `pnpm run service:init-event f1 9558` — see [event-activation-runbook.md](../../docs/sports/f1/event-activation-runbook.md)
 
 Common behavior:
 

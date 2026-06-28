@@ -2,7 +2,7 @@
 
 How the v4 client splits **platform shell** (sport-agnostic) from **sport UI plugins** (presentation). This is the as-built reference for `ParticipantRow` / `CandidateRow` and remaining platform leaks.
 
-**Related:** [Plugin system (server + client contracts)](../platform/plugins.md) · [Component structure](component-structure.md) · [Platform architecture](../../docs/platform-architecture.md)
+**Related:** [Plugin system (server + client contracts)](../platform/plugins.md) · [Component structure](component-structure.md) · [Platform architecture](../../docs/platform/architecture.md)
 
 ---
 

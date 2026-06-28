@@ -2,7 +2,7 @@
 
 Contest **referral network fees** (typically 5% of gross TVL at settlement, `referralNetworkBps = 500`) flow through a shared `ReferralGraph` and `RewardDistributor` at settlement via `distributeChainRewards`.
 
-Contract design: [`contracts/lib/contestCatalyst/ReferralNetworkIntegration.md`](../contracts/lib/contestCatalyst/ReferralNetworkIntegration.md). Cron job 7: [`spec/server/cron.md`](../spec/server/cron.md).
+Contract design: [`contracts/lib/contestCatalyst/ReferralNetworkIntegration.md`](../../contracts/lib/contestCatalyst/ReferralNetworkIntegration.md). Cron job 7: [`spec/server/cron.md`](../../spec/server/cron.md).
 
 ---
 

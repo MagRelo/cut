@@ -1,6 +1,6 @@
 # Product growth funnel — Play The Cut
 
-How a new user is expected to move from **first touch** to **repeat, high-value play**. This is a **product and measurement** reference: stage definitions, what “good” looks like, and where teams usually watch for drop-off. It pairs with the numeric engagement tiers in [`ECONOMICS_SKETCH.md`](./ECONOMICS_SKETCH.md).
+How a new user is expected to move from **first touch** to **repeat, high-value play**. This is a **product and measurement** reference: stage definitions, what “good” looks like, and where teams usually watch for drop-off. It pairs with the numeric engagement tiers in [economics-sketch.md](./economics-sketch.md).
 
 ---
 
@@ -34,7 +34,7 @@ Stages are listed in the **typical** order. Real users may **fund before** they 
 | **8** | **Habit & retention** | Returns without a full re-onboarding each cycle. | Email / push / in-app hooks for **lock times** and **round milestones**; post-contest results. | **Return next tournament**; rolling 4-week entry count; lower churn vs. one-and-done cohorts. |
 | **9** | **Referral & advocacy** | Invites friends or shares results. | Referral program, share cards, league invites—**after** steps 5–6 work well. | Invite sent; referred user hits stage 5; or organic social proof. |
 
-Stages **5–8** are where [`ECONOMICS_SKETCH.md`](./ECONOMICS_SKETCH.md) personas (breadth of lineups, entries per week, buy-in) attach to **concrete product goals**.
+Stages **5–8** are where [economics-sketch.md](./economics-sketch.md) personas (breadth of lineups, entries per week, buy-in) attach to **concrete product goals**.
 
 ---
 
@@ -74,7 +74,7 @@ Exact event names should match your analytics schema; the **stage table** is the
 
 ## Summary
 
-The funnel is **signup → context → lineup → funds → first entry → repeat play → depth (lineups, buy-in, Winner Pool) → habit → referral**. Treat **first contest entry** as activation for anything revenue-related; everything before that is **getting the user ready** without overstating success. Use [`ECONOMICS_SKETCH.md`](./ECONOMICS_SKETCH.md) to translate healthy **repeat** behavior into fee and persona expectations.
+The funnel is **signup → context → lineup → funds → first entry → repeat play → depth (lineups, buy-in, Winner Pool) → habit → referral**. Treat **first contest entry** as activation for anything revenue-related; everything before that is **getting the user ready** without overstating success. Use [economics-sketch.md](./economics-sketch.md) to translate healthy **repeat** behavior into fee and persona expectations.
 
 ---
 

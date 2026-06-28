@@ -1,7 +1,7 @@
 # F1 Race Day — competition brief
 
 **Status:** Stage 1 approved for implementation spike.  
-**Tracking:** [F1-EXPANSION-PLAN.md](../F1-EXPANSION-PLAN.md) · [F1-EXPANSION-CHECKLIST.md](../F1-EXPANSION-CHECKLIST.md) · [F1-EXPANSION-JOURNAL.md](../F1-EXPANSION-JOURNAL.md)
+**Related:** [data-sources.md](./data-sources.md) · [event-activation-runbook.md](./event-activation-runbook.md) · [add-sport checklist](../../../spec/platform/add-sport-checklist.md)
 
 ---
 
@@ -148,7 +148,7 @@ Users already run informal F1 pools. Four-driver rosters keep picks quick; const
 
 ## Fit worksheet
 
-Scored against [new-competition-fit-guide.md](new-competition-fit-guide.md) evaluation worksheet.
+Scored against [fit-guide.md](../../competitions/fit-guide.md) evaluation worksheet.
 
 | # | Question | Answer | Notes |
 |---|----------|--------|-------|

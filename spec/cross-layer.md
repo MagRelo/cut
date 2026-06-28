@@ -98,7 +98,7 @@ sequenceDiagram
 | Complete | `COMPLETE` | Lineups locked; settlement runs |
 
 Init: `pnpm run service:init-event pga-golf R2026033`  
-Ops runbook: [docs/event-activation-runbook.md](../docs/event-activation-runbook.md)
+Ops runbook: [docs/sports/golf/event-activation-runbook.md](../docs/sports/golf/event-activation-runbook.md)
 
 ---
 

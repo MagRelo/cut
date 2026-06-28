@@ -2,7 +2,7 @@
 
 **Audience:** External — partners and collaborators exploring what kinds of competitions fit the platform.
 
-Brainstorm doc for **any** pick-and-rank competition that fits Play The Cut’s engine — not only traditional sports. Use with [new-competition-fit-guide.md](new-competition-fit-guide.md) to score fit before technical planning.
+Brainstorm doc for **any** pick-and-rank competition that fits Play The Cut’s engine — not only traditional sports. Use with [fit-guide.md](fit-guide.md) to score fit before technical planning.
 
 **Status:** In progress — ideas to explore, not a roadmap.
 
@@ -27,7 +27,7 @@ Leagues work when friend groups already run informal pools (“our office does t
 
 **Best opportunities** combine recurring cadence, public data, live-moving leaderboards, and existing social pool culture.
 
-**Platform-native competitions** — formats invented and run on Play The Cut (no external feed) — are a separate bucket: community lists, promo tournaments, voting challenges. See [new-competition-fit-guide.md — Platform-native competitions](new-competition-fit-guide.md#platform-native-competitions).
+**Platform-native competitions** — formats invented and run on Play The Cut (no external feed) — are a separate bucket: community lists, promo tournaments, voting challenges. See [fit-guide.md — Platform-native competitions](fit-guide.md#platform-native-competitions).
 
 ---
 
@@ -58,7 +58,7 @@ Ask before any idea gets serious:
 
 Mostly yes → worth a one-pager. No on 1–3 → wrong tool or needs reframing.
 
-Full worksheet: [new-competition-fit-guide.md](new-competition-fit-guide.md).
+Full worksheet: [fit-guide.md](fit-guide.md).
 
 ---
 
@@ -188,7 +188,7 @@ Code and schema use `Sport`, `sportId`, `SportModule`. Product copy can say **co
 
 ## Next step for any idea
 
-Copy the competition brief template in [new-competition-fit-guide.md](new-competition-fit-guide.md) and fill one page. If two sentences can explain the lineup score to a friend, schedule a league dry-run with three people before building a plugin.
+Copy the competition brief template in [fit-guide.md](fit-guide.md) and fill one page. If two sentences can explain the lineup score to a friend, schedule a league dry-run with three people before building a plugin.
 
 ---
 
@@ -196,5 +196,5 @@ Copy the competition brief template in [new-competition-fit-guide.md](new-compet
 
 | Doc | Purpose |
 |-----|---------|
-| [new-competition-fit-guide.md](new-competition-fit-guide.md) | Fit worksheet, scoring questions, go/adapt/pass, platform-native |
-| [platform-architecture.md](platform-architecture.md) | Plugin model, data schema |
+| [fit-guide.md](fit-guide.md) | Fit worksheet, scoring questions, go/adapt/pass, platform-native |
+| [architecture.md](../platform/architecture.md) | Plugin model, data schema |

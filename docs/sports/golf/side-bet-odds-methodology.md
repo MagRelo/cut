@@ -155,7 +155,7 @@ function publishDecimal(probs: number[], k: number, margin: number): number {
 
 ## Numeric comparison (plan example lineup)
 
-Same four players as `SIDE_BET_PRODUCTION_PLAN.md`. **Independence** column uses \(p_i = 1/d_i\) from Bovada decimals. **House +8%** applies \(D = 1 / (P \cdot 1.08)\).
+Same four players as `side-bet-production-plan.md`. **Independence** column uses \(p_i = 1/d_i\) from Bovada decimals. **House +8%** applies \(D = 1 / (P \cdot 1.08)\).
 
 ### Top 5
 
