@@ -39,8 +39,10 @@ const Label: React.FC<LabelProps> = ({ children, className = "" }) => (
 );
 
 const STAT_VALUE_CLASS =
-  "flex min-h-[1.5rem] items-center justify-center font-display text-lg leading-none";
-const STAT_CELL_OUTER = "flex h-full min-h-0 w-full min-w-0 flex-col px-1 py-1.5";
+  "w-full min-h-[1.5rem] text-center font-display text-lg leading-none tabular-nums";
+const STAT_CELL_OUTER =
+  "flex h-full min-h-0 w-full min-w-0 flex-col items-stretch px-1 py-1.5";
+const STAT_CELL_BUTTON = `${STAT_CELL_OUTER} appearance-none border-0 text-center`;
 const STAT_LABEL_STRIP_BASE = "mb-0 w-full pt-0.5 pb-0.5 text-center";
 
 function DetailHeader({
@@ -282,7 +284,7 @@ export const GolfParticipantDetail: React.FC<ParticipantDetailProps> = ({
                 key={label}
                 type="button"
                 onClick={() => setSelectedScorecardRound(roundNum)}
-                className={`group ${STAT_CELL_OUTER} text-center transition-colors focus:outline-none ${
+                className={`group ${STAT_CELL_BUTTON} transition-colors focus:outline-none ${
                   selected ? "bg-slate-100" : "bg-white hover:bg-slate-50"
                 }`}
               >
