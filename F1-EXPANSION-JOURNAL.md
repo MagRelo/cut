@@ -142,3 +142,94 @@ Copy for each new stage entry:
 - Added `docs/f1-data-sources.md` and `script:f1-data-spike` to resources.
 - Stage 5 sync implementation should use OpenF1 with Jolpica fallback for schedule only.
 - Stage 5: add rate-limit backoff to all OpenF1 client calls.
+
+---
+
+## Stage 3 — DB + seed (2026-06-27)
+
+### Predicted needs
+
+- No schema migration — `Sport` table already supports JSON `rosterRules` / `scoringRules`.
+- Seed values documented in competition brief: 4 required picks (stricter than golf's `minPicks: 0`), same sum/higher-wins scoring.
+- `isEnabled: true` surfaces F1 in sport picker before plugins exist (Stage 4–6).
+
+### Actual findings
+
+- Added `F1_ROSTER_RULES` and `F1_SCORING_RULES` constants to `server/prisma/seed.ts` matching brief exactly.
+- Upserted `Sport` row: `id: f1`, `name: Formula 1`, `slug: f1`, `isEnabled: true`.
+- `pnpm --filter server run db:seed` succeeds; both `pga-golf` and `f1` rows present in local DB.
+- F1 differs from golf on `minPicks: 4` (all four drivers required) vs golf's `minPicks: 0` (partial lineups allowed).
+
+### Gaps / surprises
+
+- F1 appears in `GET /sports` and multi-sport picker immediately — routes will fail until Stage 4–6 register server/client plugins. Acceptable on `f1` dev branch; disable via `isEnabled: false` if needed on shared envs.
+- No Prisma schema change required — Stage 3 is seed-only as predicted.
+
+### Checklist impact
+
+- Stage 3 checklist items marked complete.
+- Stage 4 can read roster/scoring rules from DB or mirror constants in `packages/sport-f1/`.
+
+---
+
+## Stage 4 — Server package (2026-06-27)
+
+### Predicted needs
+
+- Mirror `packages/sport-pga-golf/` structure: pure logic in package, IO injected via `F1Handlers`.
+- Status derived from `metadata.f1.raceStart` + `classificationComplete` flag (sync sets flag when `session_result` lands).
+- Prediction type `winningLineupPoints` (not golf's `winningScore`).
+- Live-scores: provisional from position table during LIVE; final from OpenF1 `session_result.points`.
+- Sort keys per brief: championship → grid → constructor → name (picker); race position → points (active).
+
+### Actual findings
+
+- Created `@cut/sport-f1` workspace package with 11 source files + 4 test files.
+- `createF1Module(handlers)` implements full `SportModule` contract; no prop-bet module (out of scope).
+- `f1ShouldSyncLiveScores` returns true for both LIVE and COMPLETE (final classification pass).
+- `transformSessionResult` splits finish vs bonus points from API total (Sainz P5 = 10 + 1 verified in tests).
+- 22 unit tests pass; package builds via `pnpm --filter @cut/sport-f1 run build`.
+
+### Gaps / surprises
+
+- Event metadata nested under `metadata.f1` (not flat) — server sync must write this shape at Stage 5.
+- `classificationComplete` boolean required on metadata for COMPLETE transition; time alone is insufficient after race end.
+- No prop-bet exports — correctly omitted vs golf package.
+
+### Checklist impact
+
+- Stage 4 checklist items marked complete.
+- Stage 5 should add `@cut/sport-f1` to `server/package.json` and wire handlers + OpenF1 client.
+- Stage 6 client plugin can import `f1CandidateSortConfig` from this package.
+
+---
+
+## Stage 5 — Server IO (2026-06-27)
+
+### Predicted needs
+
+- Mirror `server/src/sports/pga-golf/` IO layer: handlers inject Prisma + OpenF1/Jolpica calls into `createF1Module`.
+- Shared OpenF1 client with spike's retry/backoff and circuit slug map.
+- `initEvent` resolves externalId → creates event with `metadata.f1` block → syncs metadata + field → activates.
+- Cron pipeline works automatically once module is registered (no cron changes needed).
+
+### Actual findings
+
+- Created `server/src/sports/f1/` with 12 files: `openf1Client.ts`, `circuitSlugs.ts`, `metadataMerge.ts`, sync modules, handlers, CLI runners.
+- Registered `f1Module` in `server/src/sports/registry.ts`; added `@cut/sport-f1` server dependency.
+- `pnpm --filter server run service:init-event f1 2024-british-gp` succeeds: 20 drivers, `isActive: true`, `classificationComplete: true` for historical race.
+- `service:sync-f1-scores` syncs all 20 participants from `session_result`.
+- Field sync enriches grid + championship positions from OpenF1 `starting_grid` / `championship_drivers` when available.
+- Documented `OPENF1_API_TOKEN` and `JOLPICA_BASE_URL` in `server/.env.example`; updated Dockerfile + deploy script for `@cut/sport-f1` build.
+
+### Gaps / surprises
+
+- OpenF1 burst calls during field sync (drivers + grid + championship in parallel) may 429 — client retries handle it; consider serializing if prod issues arise.
+- Init does not call `syncLiveScores` — scores populate on first cron pass or manual `service:sync-f1-scores` (same as golf pattern where init syncs field only).
+- F1 sport visible in picker but client plugin still missing (Stage 6).
+
+### Checklist impact
+
+- Stage 5 checklist items marked complete.
+- Stage 6 client UI plugin is next.
+- Stage 7 platform cleanup still required for `winningLineupPoints` prediction type.

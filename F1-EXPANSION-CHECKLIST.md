@@ -103,42 +103,42 @@ Running list of resources and steps for the F1 race-day plugin. Narrative and ra
 
 ## Stage 3 — DB + seed
 
-- [ ] Define `F1_ROSTER_RULES` JSON (slot count, pool constraints)
-- [ ] Define `F1_SCORING_RULES` JSON (`aggregation: sum`, `direction: higher_wins`)
-- [ ] Add `Sport` row to `server/prisma/seed.ts` (`id: f1`, `slug`, `isEnabled`)
-- [ ] Run seed / verify `Sport` row in local DB
-- [ ] Write Stage 3 journal entry
+- [x] Define `F1_ROSTER_RULES` JSON (slot count, pool constraints)
+- [x] Define `F1_SCORING_RULES` JSON (`aggregation: sum`, `direction: higher_wins`)
+- [x] Add `Sport` row to `server/prisma/seed.ts` (`id: f1`, `slug`, `isEnabled`)
+- [x] Run seed / verify `Sport` row in local DB
+- [x] Write Stage 3 journal entry
 
 ---
 
 ## Stage 4 — Server package (`packages/sport-f1/`)
 
-- [ ] Create package scaffold (`package.json`, `tsconfig`, workspace reference)
-- [ ] `create-module.ts` — factory `createF1Module(handlers)` → `SportModule`
-- [ ] `status.ts` — `SCHEDULED | LIVE | COMPLETE` from race metadata
-- [ ] `metadata.ts` — typed metadata + prediction parsing
-- [ ] `candidates.ts` — `buildF1Candidates()` + sort keys
-- [ ] `candidateSort.ts` — `f1CandidateSortConfig`
-- [ ] `validation.ts` — roster validation against `RosterRules`
-- [ ] `ranking.ts` — `rankEntries` with F1 prediction tie-break
-- [ ] `live-scores.ts` — transform API results → `scoreData` + `total`
-- [ ] `index.ts` — public exports
-- [ ] Unit tests for status, ranking, validation, live-scores
-- [ ] Write Stage 4 journal entry
+- [x] Create package scaffold (`package.json`, `tsconfig`, workspace reference)
+- [x] `create-module.ts` — factory `createF1Module(handlers)` → `SportModule`
+- [x] `status.ts` — `SCHEDULED | LIVE | COMPLETE` from race metadata
+- [x] `metadata.ts` — typed metadata + prediction parsing
+- [x] `candidates.ts` — `buildF1Candidates()` + sort keys
+- [x] `candidateSort.ts` — `f1CandidateSortConfig`
+- [x] `validation.ts` — roster validation against `RosterRules`
+- [x] `ranking.ts` — `rankEntries` with F1 prediction tie-break
+- [x] `live-scores.ts` — transform API results → `scoreData` + `total`
+- [x] `index.ts` — public exports
+- [x] Unit tests for status, ranking, validation, live-scores
+- [x] Write Stage 4 journal entry
 
 ---
 
 ## Stage 5 — Server IO (`server/src/sports/f1/`)
 
-- [ ] `handlers.ts` — Prisma + API injection for module factory
-- [ ] `initEvent.ts` — create `CompetitionEvent`, sync field, set active, deactivate prior F1 event
-- [ ] `syncMetadata.ts` — circuit, race time, status
-- [ ] `syncField.ts` — drivers → `Participant` + `EventParticipant`
-- [ ] `syncLiveScores.ts` — live positions / final points during race
-- [ ] `runSyncMetadata.ts`, `runSyncField.ts`, `runSyncScores.ts` — CLI runners (if needed)
-- [ ] Register module in `server/src/sports/registry.ts`
-- [ ] Verify `pnpm run service:init-event f1 <externalId>` end-to-end
-- [ ] Write Stage 5 journal entry
+- [x] `handlers.ts` — Prisma + API injection for module factory
+- [x] `initEvent.ts` — create `CompetitionEvent`, sync field, set active, deactivate prior F1 event
+- [x] `syncMetadata.ts` — circuit, race time, status
+- [x] `syncField.ts` — drivers → `Participant` + `EventParticipant`
+- [x] `syncLiveScores.ts` — live positions / final points during race
+- [x] `runSyncMetadata.ts`, `runSyncField.ts`, `runSyncScores.ts` — CLI runners (if needed)
+- [x] Register module in `server/src/sports/registry.ts`
+- [x] Verify `pnpm run service:init-event f1 <externalId>` end-to-end
+- [x] Write Stage 5 journal entry
 
 ---
 

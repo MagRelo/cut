@@ -22,6 +22,9 @@
     "service:sync-event-metadata": "tsx src/sports/pga-golf/runSyncMetadata.ts",
     "service:sync-event-field": "tsx src/sports/pga-golf/runSyncField.ts",
     "service:sync-event-scores": "tsx src/sports/pga-golf/runSyncScores.ts",
+    "service:sync-f1-metadata": "tsx src/sports/f1/runSyncMetadata.ts",
+    "service:sync-f1-field": "tsx src/sports/f1/runSyncField.ts",
+    "service:sync-f1-scores": "tsx src/sports/f1/runSyncScores.ts",
     "script:backfill-player-identity": "tsx src/scripts/backfillPlayerIdentity.ts",
     "service:update-contest-lineups": "tsx src/services/updateContestLineups.ts",
     "service:batch-activate-contests": "tsx src/services/batch/batchActivateContests.ts",
@@ -40,6 +43,7 @@
     "script:f1-data-spike": "tsx src/scripts/f1DataSpike.ts"
   },
   "dependencies": {
+    "@cut/sport-f1": "workspace:*",
     "@cut/sport-pga-golf": "workspace:*",
     "@cut/sport-sdk": "workspace:*",
     "@cut/secondary-pricing": "workspace:*",

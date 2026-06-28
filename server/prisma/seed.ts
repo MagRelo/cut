@@ -21,10 +21,22 @@ const PGA_GOLF_SCORING_RULES = {
   direction: "higher_wins",
 };
 
+const F1_ROSTER_RULES = {
+  slotCount: 4,
+  minPicks: 4,
+  maxPicks: 4,
+  allowDuplicates: false,
+};
+
+const F1_SCORING_RULES = {
+  aggregation: "sum",
+  direction: "higher_wins",
+};
+
 async function main() {
   console.log("Seeding platform data...");
 
-  const sport = await prisma.sport.upsert({
+  const pgaGolf = await prisma.sport.upsert({
     where: { id: "pga-golf" },
     create: {
       id: "pga-golf",
@@ -43,7 +55,28 @@ async function main() {
     },
   });
 
-  console.log(`Seeded sport: ${sport.id} (${sport.slug})`);
+  console.log(`Seeded sport: ${pgaGolf.id} (${pgaGolf.slug})`);
+
+  const f1 = await prisma.sport.upsert({
+    where: { id: "f1" },
+    create: {
+      id: "f1",
+      name: "Formula 1",
+      slug: "f1",
+      isEnabled: true,
+      rosterRules: F1_ROSTER_RULES,
+      scoringRules: F1_SCORING_RULES,
+    },
+    update: {
+      name: "Formula 1",
+      slug: "f1",
+      isEnabled: true,
+      rosterRules: F1_ROSTER_RULES,
+      scoringRules: F1_SCORING_RULES,
+    },
+  });
+
+  console.log(`Seeded sport: ${f1.id} (${f1.slug})`);
   console.log("Platform seed completed.");
 }
 
