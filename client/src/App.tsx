@@ -5,7 +5,7 @@ import { WagmiProvider } from "@privy-io/wagmi";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { SmartWalletsProvider } from "@privy-io/react-auth/smart-wallets";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+// import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
 import { config } from "./wagmi";
 
@@ -85,136 +85,136 @@ const AppShell: React.FC = () => {
         {/* <MaintenanceOverlay /> */}
         <OnboardingRedirectGate>
           <Routes>
-                  <Route path="/" element={<Navigate to="/contests" replace />} />
-                  <Route path="/sports/:sportId" element={<SportHubPage />} />
-                  <Route path="/sports/:sportId/leaderboard" element={<LeaderboardPage />} />
-                  <Route path="/sports/:sportId/contests/:id" element={<SportContestRedirect />} />
-                  <Route path="/home" element={<Home />} />
-                  <Route path="/terms" element={<TermsOfService />} />
-                  <Route path="/privacy" element={<PrivacyPolicy />} />
-                  <Route path="/responsible-gaming" element={<ResponsibleGaming />} />
-                  <Route path="/disclosures" element={<Disclosures />} />
-                  <Route path="/faq" element={<FAQPage />} />
-                  <Route path="/guides/start-a-league" element={<LeagueStarterGuidePage />} />
-                  <Route
-                    path="/onboarding"
-                    element={
-                      <ProtectedRoute>
-                        <OnboardingPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route path="/connect" element={<ConnectPage />} />
-                  <Route path="/contracts" element={<ContractsPage />} />
-                  <Route
-                    path="/account"
-                    element={
-                      <ProtectedRoute>
-                        <UserPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/account/history"
-                    element={
-                      <ProtectedRoute>
-                        <UserHistoryPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/account/funds"
-                    element={
-                      <ProtectedRoute>
-                        <TransferFundsPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  {/* Contests */}
-                  <Route path="/contests" element={<Contests />} />
-                  <Route
-                    path="/contests/create"
-                    element={
-                      <ProtectedRoute>
-                        <CreateContestPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route path="/contest/:address" element={<ContestLobby />} />
+            <Route path="/" element={<Navigate to="/contests" replace />} />
+            <Route path="/sports/:sportId" element={<SportHubPage />} />
+            <Route path="/sports/:sportId/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/sports/:sportId/contests/:id" element={<SportContestRedirect />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/responsible-gaming" element={<ResponsibleGaming />} />
+            <Route path="/disclosures" element={<Disclosures />} />
+            <Route path="/faq" element={<FAQPage />} />
+            <Route path="/guides/start-a-league" element={<LeagueStarterGuidePage />} />
+            <Route
+              path="/onboarding"
+              element={
+                <ProtectedRoute>
+                  <OnboardingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/connect" element={<ConnectPage />} />
+            <Route path="/contracts" element={<ContractsPage />} />
+            <Route
+              path="/account"
+              element={
+                <ProtectedRoute>
+                  <UserPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/account/history"
+              element={
+                <ProtectedRoute>
+                  <UserHistoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/account/funds"
+              element={
+                <ProtectedRoute>
+                  <TransferFundsPage />
+                </ProtectedRoute>
+              }
+            />
+            {/* Contests */}
+            <Route path="/contests" element={<Contests />} />
+            <Route
+              path="/contests/create"
+              element={
+                <ProtectedRoute>
+                  <CreateContestPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/contest/:address" element={<ContestLobby />} />
 
-                  {/* Leagues (canonical) */}
-                  <Route
-                    path="/leagues"
-                    element={
-                      <ProtectedRoute>
-                        <UserGroupListPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/leagues/create"
-                    element={
-                      <ProtectedRoute>
-                        <UserGroupCreatePage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/leagues/join/:code"
-                    element={
-                      <ProtectedRoute>
-                        <UserGroupJoinPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/leagues/:id"
-                    element={
-                      <ProtectedRoute>
-                        <UserGroupDetailPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  {/* Legacy user-group URLs */}
-                  <Route path="/user-groups" element={<Navigate to="/leagues" replace />} />
-                  <Route path="/user-groups/create" element={<Navigate to="/leagues/create" replace />} />
-                  <Route path="/user-groups/join/:code" element={<UserGroupToLeagueRedirect />} />
-                  <Route path="/user-groups/:id" element={<UserGroupToLeagueRedirect />} />
+            {/* Leagues (canonical) */}
+            <Route
+              path="/leagues"
+              element={
+                <ProtectedRoute>
+                  <UserGroupListPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leagues/create"
+              element={
+                <ProtectedRoute>
+                  <UserGroupCreatePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leagues/join/:code"
+              element={
+                <ProtectedRoute>
+                  <UserGroupJoinPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leagues/:id"
+              element={
+                <ProtectedRoute>
+                  <UserGroupDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            {/* Legacy user-group URLs */}
+            <Route path="/user-groups" element={<Navigate to="/leagues" replace />} />
+            <Route path="/user-groups/create" element={<Navigate to="/leagues/create" replace />} />
+            <Route path="/user-groups/join/:code" element={<UserGroupToLeagueRedirect />} />
+            <Route path="/user-groups/:id" element={<UserGroupToLeagueRedirect />} />
 
-                  {/* Admin (staff only; linked in nav when user is ADMIN / SUPER_ADMIN) */}
-                  <Route
-                    path="/admin"
-                    element={
-                      <ProtectedRoute>
-                        <AdminRoute>
-                          <AdminPage />
-                        </AdminRoute>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/users"
-                    element={
-                      <ProtectedRoute>
-                        <AdminRoute>
-                          <AdminUsersPage />
-                        </AdminRoute>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/users/:userId"
-                    element={
-                      <ProtectedRoute>
-                        <AdminRoute>
-                          <AdminUserDetailPage />
-                        </AdminRoute>
-                      </ProtectedRoute>
-                    }
-                  />
+            {/* Admin (staff only; linked in nav when user is ADMIN / SUPER_ADMIN) */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminRoute>
+                    <AdminPage />
+                  </AdminRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute>
+                  <AdminRoute>
+                    <AdminUsersPage />
+                  </AdminRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users/:userId"
+              element={
+                <ProtectedRoute>
+                  <AdminRoute>
+                    <AdminUserDetailPage />
+                  </AdminRoute>
+                </ProtectedRoute>
+              }
+            />
 
-                  {/* Debug */}
-                  <Route path="/debug" element={<DebugPage />} />
+            {/* Debug */}
+            <Route path="/debug" element={<DebugPage />} />
           </Routes>
         </OnboardingRedirectGate>
       </AppLayout>
@@ -238,7 +238,7 @@ export const App: React.FC = () => {
             </GlobalErrorProvider>
           </WagmiProvider>
           {/* React Query DevTools - only loads in development */}
-          <ReactQueryDevtools initialIsOpen={false} />
+          {/* <ReactQueryDevtools initialIsOpen={false} /> */}
         </QueryClientProvider>
       </SmartWalletsProvider>
     </PrivyProvider>
