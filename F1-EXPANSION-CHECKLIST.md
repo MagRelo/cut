@@ -20,6 +20,7 @@ Running list of resources and steps for the F1 race-day plugin. Narrative and ra
 | Event init service | `server/src/services/initEvent.ts` |
 | Cron pipeline | `server/src/services/cron/runSportEventPipeline.ts` |
 | Golf activation runbook | `docs/event-activation-runbook.md` |
+| F1 activation runbook | `docs/f1-event-activation-runbook.md` |
 
 ### Plugin contracts
 
@@ -191,13 +192,13 @@ Running list of resources and steps for the F1 race-day plugin. Narrative and ra
 
 ## Stage 9 — Ops runbook
 
-- [ ] Create `docs/f1-event-activation-runbook.md` (mirror golf runbook structure)
-- [ ] Document `externalId` lookup source
-- [ ] Document init command and prerequisites
-- [ ] Document env vars for data API
-- [ ] Optional: event preview JSON pipeline (golf uses `server/src/tournamentSummaries/`)
-- [ ] Optional: email blast hooks for new F1 race
-- [ ] Write Stage 9 journal entry
+- [x] Create `docs/f1-event-activation-runbook.md` (mirror golf runbook structure)
+- [x] Document `externalId` lookup source
+- [x] Document init command and prerequisites
+- [x] Document env vars for data API
+- [x] Optional: event preview JSON pipeline (golf uses `server/src/tournamentSummaries/`) — noted as future work in runbook
+- [x] Optional: email blast hooks for new F1 race — documented with golf-template caveat
+- [x] Write Stage 9 journal entry
 
 ---
 

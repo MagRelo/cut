@@ -3,7 +3,7 @@
 Architecture and behavior documentation for the **v4 platform** (`v4` branch). This reflects the code as implemented today — not legacy tournament-centric production.
 
 **Design intent:** [docs/platform-architecture.md](../docs/platform-architecture.md)  
-**Ops:** [docs/event-activation-runbook.md](../docs/event-activation-runbook.md) · [docs/platform-cutover-plan.md](../docs/platform-cutover-plan.md)
+**Ops:** [docs/event-activation-runbook.md](../docs/event-activation-runbook.md) (golf) · [docs/f1-event-activation-runbook.md](../docs/f1-event-activation-runbook.md) (F1) · [docs/platform-cutover-plan.md](../docs/platform-cutover-plan.md)
 
 ---
 

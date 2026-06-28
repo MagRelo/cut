@@ -175,10 +175,11 @@ Golf-specific assumptions exist in platform paths. F1 can ship with workarounds,
 | [spec/platform/README.md](spec/platform/README.md) | Product overview and add-sport checklist |
 | [spec/platform/plugins.md](spec/platform/plugins.md) | `SportModule` / `SportUIPlugin` contracts |
 | [spec/server/cron.md](spec/server/cron.md) | Cron pipeline behavior |
-| [docs/event-activation-runbook.md](docs/event-activation-runbook.md) | Golf operator runbook (template for F1 runbook) |
+| [docs/event-activation-runbook.md](docs/event-activation-runbook.md) | Golf operator runbook |
+| [docs/f1-event-activation-runbook.md](docs/f1-event-activation-runbook.md) | F1 operator runbook |
 
 ---
 
 ## Next action
 
-**Stage 9:** Ops runbook — create `docs/f1-event-activation-runbook.md` mirroring golf runbook.
+**F1 v1 expansion complete.** Optional follow-ups: F1 email templates, event preview JSON pipeline, live OpenF1 token for race-day prod, grid position backfill.

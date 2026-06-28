@@ -330,3 +330,30 @@ Copy for each new stage entry:
 
 - Stage 8 checklist items marked complete.
 - Stage 9 next: F1 event activation runbook.
+
+---
+
+## Stage 9 — Ops runbook (2026-06-28)
+
+### Predicted needs
+
+- Mirror golf `docs/event-activation-runbook.md` structure for F1 operators.
+- Document externalId resolution, init/sync commands, env vars, cron behavior.
+- Note optional gaps: preview JSON pipeline, F1-specific email blasts.
+
+### Actual findings
+
+- Created `docs/f1-event-activation-runbook.md` with quick reference, prerequisites, activation steps, race-day cron, troubleshooting, and run log.
+- Cross-linked from `docs/event-activation-runbook.md`, `docs/f1-data-sources.md`, and `F1-EXPANSION-CHECKLIST.md` resources table.
+- Documented `circuitSlugs.ts` maintenance, data spike/dry-run scripts, and `remove-f1-data` safety script.
+- Email blast section flags golf-oriented templates; requires explicit `EVENT_ID` for F1.
+
+### Gaps / surprises
+
+- No F1 tournament-summary skill yet — preview content comes from API metadata only.
+- Email `mapEventForEmail` still golf-field-centric — functional but sparse subtitles for F1.
+
+### Checklist impact
+
+- Stage 9 checklist items marked complete.
+- F1 expansion stages 0–9 complete per plan.
