@@ -8,12 +8,18 @@ Platform services under `server/src/services/`. Cron orchestration: [`src/cron/R
 
 ### `service:init-event {sportId} {externalId}`
 
-Bootstraps a `CompetitionEvent` via the sport plugin (PGA golf: `pga-golf R2026033`).
+Bootstraps a `CompetitionEvent` via the sport plugin.
+
+- **PGA golf:** `pnpm run service:init-event pga-golf R2026033` — see [event-activation-runbook.md](../../docs/sports/golf/event-activation-runbook.md)
+- **F1:** `pnpm run service:init-event f1 9558` — see [event-activation-runbook.md](../../docs/sports/f1/event-activation-runbook.md)
+
+Common behavior:
 
 - Upsert event row and metadata from external APIs
-- Load `server/src/tournamentSummaries/{externalId}.json` into event metadata when present
-- Sync participant field, profiles, rankings
+- Sync participant field and profiles
 - Set `isActive=true` on this event (clears other active events for the sport)
+
+Golf-only: loads `server/src/tournamentSummaries/{externalId}.json` when present; DataGolf rankings.
 
 ### Admin / CLI contest ops
 

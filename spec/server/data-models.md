@@ -60,7 +60,8 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 ### Lineup
 - `userId` + `eventId` — **many lineups per user per event**
 - `contestId` optional FK — contest lobby always sets it; scopes drafts and duplicate checks per contest
-- `prediction` JSON (golf: `{ type: "winningScore", value: number }`)
+- `prediction` JSON (`{ type: "winningLineupTotal", value: number }`)
+- `predictionRules` JSON on `Sport` (`min`, `max`, `defaultRandomMin`, `defaultRandomMax`)
 - `name` optional display label
 
 ### LineupPick

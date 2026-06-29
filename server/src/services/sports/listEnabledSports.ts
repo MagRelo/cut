@@ -1,4 +1,4 @@
-import type { RosterRules, ScoringRules } from "@cut/sport-sdk";
+import type { PredictionRules, RosterRules, ScoringRules } from "@cut/sport-sdk";
 import { prisma } from "../../lib/prisma.js";
 
 export type SportResponse = {
@@ -8,6 +8,7 @@ export type SportResponse = {
   isEnabled: boolean;
   rosterRules: RosterRules;
   scoringRules: ScoringRules;
+  predictionRules: PredictionRules;
 };
 
 export async function listEnabledSports(): Promise<SportResponse[]> {
@@ -23,5 +24,6 @@ export async function listEnabledSports(): Promise<SportResponse[]> {
     isEnabled: sport.isEnabled,
     rosterRules: sport.rosterRules as unknown as RosterRules,
     scoringRules: sport.scoringRules as unknown as ScoringRules,
+    predictionRules: sport.predictionRules as unknown as PredictionRules,
   }));
 }

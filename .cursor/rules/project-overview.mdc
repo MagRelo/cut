@@ -8,9 +8,9 @@ alwaysApply: true
 
 Play The Cut is a multi-sport competition platform. Users pick a sport, build a lineup from that sport's candidate pool, and enter contests — public or within a league. The same account, wallet, and referral network work across every sport.
 
-**Architecture:** [docs/platform-architecture.md](../../docs/platform-architecture.md)
+**Architecture:** [docs/platform/architecture.md](../../docs/platform/architecture.md)
 
-The `v4` branch is the platform codebase. PGA Golf is the first sport plugin. Production cutover steps: [docs/platform-cutover-plan.md](../../docs/platform-cutover-plan.md).
+The `v4` branch is the platform codebase. PGA Golf and Formula 1 are registered sport plugins.
 
 ## High-Level Summary of Features
 

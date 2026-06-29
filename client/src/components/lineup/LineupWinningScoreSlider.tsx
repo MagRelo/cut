@@ -1,10 +1,9 @@
 import React from "react";
 
-export const WINNING_SCORE_SLIDER_MIN = 1;
-export const WINNING_SCORE_SLIDER_MAX = 250;
-
 interface LineupWinningScoreSliderProps {
   value: number;
+  min?: number;
+  max?: number;
   onChange?: (value: number) => void;
   disabled?: boolean;
   error?: string | null;
@@ -13,6 +12,8 @@ interface LineupWinningScoreSliderProps {
 
 export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> = ({
   value,
+  min = 1,
+  max = 250,
   onChange,
   disabled = false,
   error = null,
@@ -48,8 +49,8 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
           <div className="flex items-center gap-3">
             <input
               type="range"
-              min={WINNING_SCORE_SLIDER_MIN}
-              max={WINNING_SCORE_SLIDER_MAX}
+              min={min}
+              max={max}
               value={value}
               disabled={disabled}
               onChange={(event) => onChange?.(Number(event.target.value))}
@@ -58,8 +59,8 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
             />
           </div>
           <div className="mt-1 flex justify-between px-0.5 font-display text-[10px] font-medium text-gray-400">
-            <span>{WINNING_SCORE_SLIDER_MIN}</span>
-            <span>{WINNING_SCORE_SLIDER_MAX}</span>
+            <span>{min}</span>
+            <span>{max}</span>
           </div>
         </>
       )}

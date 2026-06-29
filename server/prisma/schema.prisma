@@ -106,12 +106,13 @@ model UserGroupMember {
 // ---------------------------------------------------------------------------
 
 model Sport {
-  id           String  @id
-  name         String
-  slug         String  @unique
-  isEnabled    Boolean @default(true)
-  rosterRules  Json
-  scoringRules Json
+  id              String  @id
+  name            String
+  slug            String  @unique
+  isEnabled       Boolean @default(true)
+  rosterRules     Json
+  scoringRules    Json
+  predictionRules Json
 
   events       CompetitionEvent[]
   participants Participant[]

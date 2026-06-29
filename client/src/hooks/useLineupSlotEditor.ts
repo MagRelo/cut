@@ -1,21 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Candidate } from "@cut/sport-sdk";
 import type { PlatformLineupListItem } from "../types/lineup";
-import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../utils/winningScorePrediction";
+import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../utils/lineupPrediction";
 import {
   platformLineupEventParticipantIds,
   platformLineupPrediction,
 } from "../lib/lineupUtils";
 import { lineupsInSameContestScope } from "../lib/lineupContestScope";
 
-const SLOT_COUNT = 4;
-
-function padToSlots(candidates: Candidate[]): Array<Candidate | null> {
+function padToSlots(
+  candidates: Candidate[],
+  slotCount: number,
+): Array<Candidate | null> {
   const slots: Array<Candidate | null> = [...candidates];
-  while (slots.length < SLOT_COUNT) {
+  while (slots.length < slotCount) {
     slots.push(null);
   }
-  return slots.slice(0, SLOT_COUNT);
+  return slots.slice(0, slotCount);
 }
 
 function eventParticipantIdsFromSlots(slots: Array<Candidate | null>): string[] {
@@ -25,16 +26,17 @@ function eventParticipantIdsFromSlots(slots: Array<Candidate | null>): string[] 
 }
 
 interface UpdateLineupOptions {
-  winningScorePrediction?: number;
+  predictionValue?: number;
 }
 
 interface UseLineupSlotEditorOptions {
   lineupId: string;
   contestId?: string | null;
+  slotCount: number;
   initialCandidates: Candidate[];
   fieldCandidates: Candidate[];
   lineups: PlatformLineupListItem[];
-  winningScorePrediction: number;
+  predictionValue: number;
   updateLineup: (
     lineupId: string,
     picks: string[],
@@ -45,14 +47,15 @@ interface UseLineupSlotEditorOptions {
 export function useLineupSlotEditor({
   lineupId,
   contestId,
+  slotCount,
   initialCandidates,
   fieldCandidates,
   lineups,
-  winningScorePrediction,
+  predictionValue,
   updateLineup,
 }: UseLineupSlotEditorOptions) {
   const [slots, setSlots] = useState<Array<Candidate | null>>(() =>
-    padToSlots(initialCandidates),
+    padToSlots(initialCandidates, slotCount),
   );
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -62,8 +65,8 @@ export function useLineupSlotEditor({
 
   useEffect(() => {
     if (isSaving) return;
-    setSlots(padToSlots(initialCandidates));
-  }, [lineupId, initialCandidateKey, isSaving, initialCandidates]);
+    setSlots(padToSlots(initialCandidates, slotCount));
+  }, [lineupId, initialCandidateKey, isSaving, initialCandidates, slotCount]);
 
   const checkForDuplicateLineup = useCallback(
     (eventParticipantIds: string[], prediction: number): boolean => {
@@ -82,7 +85,7 @@ export function useLineupSlotEditor({
     async (newSlots: Array<Candidate | null>) => {
       const eventParticipantIds = eventParticipantIdsFromSlots(newSlots);
 
-      if (checkForDuplicateLineup(eventParticipantIds, winningScorePrediction)) {
+      if (checkForDuplicateLineup(eventParticipantIds, predictionValue)) {
         setSaveError(DUPLICATE_LINEUP_PREDICTION_MESSAGE);
         return false;
       }
@@ -90,7 +93,7 @@ export function useLineupSlotEditor({
       setIsSaving(true);
       setSaveError(null);
       try {
-        await updateLineup(lineupId, eventParticipantIds, { winningScorePrediction });
+        await updateLineup(lineupId, eventParticipantIds, { predictionValue });
         return true;
       } catch (error) {
         const message =
@@ -101,7 +104,7 @@ export function useLineupSlotEditor({
         setIsSaving(false);
       }
     },
-    [checkForDuplicateLineup, lineupId, updateLineup, winningScorePrediction],
+    [checkForDuplicateLineup, lineupId, updateLineup, predictionValue],
   );
 
   const openSlot = useCallback(
@@ -137,6 +140,7 @@ export function useLineupSlotEditor({
 
       const paddedSlots = padToSlots(
         newSlots.filter((candidate): candidate is Candidate => candidate !== null),
+        slotCount,
       );
 
       setSlots(paddedSlots);
@@ -144,10 +148,10 @@ export function useLineupSlotEditor({
       if (ok) {
         setSelectedSlotIndex(null);
       } else {
-        setSlots(padToSlots(initialCandidates));
+        setSlots(padToSlots(initialCandidates, slotCount));
       }
     },
-    [fieldCandidates, initialCandidates, isSaving, saveSlots, selectedSlotIndex, slots],
+    [fieldCandidates, initialCandidates, isSaving, saveSlots, selectedSlotIndex, slotCount, slots],
   );
 
   const selectedEventParticipantIds = slots

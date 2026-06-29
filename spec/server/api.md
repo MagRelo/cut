@@ -78,7 +78,7 @@ No auth. `{ status, service, timestamp }`
   "picks": ["<eventParticipantId>", "..."],
   "name": "optional",
   "contestId": "optional on create; required on clone",
-  "prediction": { "type": "winningScore", "value": 142 }
+  "prediction": { "type": "winningLineupTotal", "value": 142 }
 }
 ```
 

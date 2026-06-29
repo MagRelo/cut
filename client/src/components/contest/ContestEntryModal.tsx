@@ -10,7 +10,7 @@ import {
 } from "../../lib/candidateUtils";
 import { useCandidateSort } from "../../hooks/useCandidateSort";
 import { lineupDisplayScore } from "../../lib/lineupScore";
-import { golfPredictionValue } from "../../lib/golfPrediction";
+import { predictionNumericValue } from "../../lib/sportPrediction";
 import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
 import { SportParticipantRow } from "../platform/SportParticipantRow";
 import { EntryHeader } from "./EntryHeader";
@@ -63,9 +63,9 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
       : undefined;
   const userColorHex = typeof maybeUserColor === "string" ? maybeUserColor : undefined;
 
-  const winningScorePrediction =
+  const predictionValue =
     lineup.lineup && "prediction" in lineup.lineup
-      ? golfPredictionValue(lineup.lineup.prediction)
+      ? predictionNumericValue(lineup.lineup.prediction)
       : null;
 
   const openDetailModal = (candidate: Candidate) => {
@@ -106,7 +106,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                         userColorHex={userColorHex}
                         userName={userName}
                         lineupName={contestLineupDisplayName(lineup)}
-                        winningScorePrediction={winningScorePrediction}
+                        predictionValue={predictionValue}
                         totalPoints={totalPoints}
                       />
                     </div>

@@ -29,6 +29,12 @@ function buildActiveEventResponse(options: ActiveEventFixtureOptions): ActiveEve
       isEnabled: true,
       rosterRules: { slotCount: 4, minPicks: 1, maxPicks: 4, allowDuplicates: false },
       scoringRules: { aggregation: "sum", direction: "higher_wins" },
+      predictionRules: {
+        min: 1,
+        max: 250,
+        defaultRandomMin: 95,
+        defaultRandomMax: 145,
+      },
     },
     event: {
       id: eventId,

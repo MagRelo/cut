@@ -93,14 +93,3 @@ export function parseGolfEventMetadata(metadata: unknown): GolfEventMetadata | n
     purse: typeof record.purse === "number" ? record.purse : null,
   };
 }
-
-export function golfPredictionValue(prediction: unknown): number | null {
-  if (!prediction || typeof prediction !== "object" || Array.isArray(prediction)) {
-    return null;
-  }
-  const record = prediction as Record<string, unknown>;
-  if (record.type === "winningScore" && typeof record.value === "number") {
-    return record.value;
-  }
-  return null;
-}

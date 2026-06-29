@@ -3,6 +3,9 @@ export type EventStatus = "SCHEDULED" | "LIVE" | "COMPLETE";
 export type ScoringAggregation = "sum";
 export type ScoringDirection = "higher_wins" | "lower_wins";
 
+import type { PredictionRules } from "./lineupPrediction.js";
+export type { PredictionRules };
+
 export interface RosterRules {
   slotCount: number;
   minPicks: number;
@@ -22,6 +25,7 @@ export interface SportSummary {
   isEnabled: boolean;
   rosterRules: RosterRules;
   scoringRules: ScoringRules;
+  predictionRules: PredictionRules;
 }
 
 export interface Candidate {

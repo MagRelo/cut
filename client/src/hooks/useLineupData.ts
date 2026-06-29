@@ -53,14 +53,14 @@ export function useLineupData({ eventId, enabled }: UseLineupDataOptions) {
       picks: string[],
       contestId: string,
       name?: string,
-      winningScorePrediction?: number,
+      predictionValue?: number,
     ) => {
       return await createMutation.mutateAsync({
         eventId: createEventId,
         contestId,
         picks,
         name,
-        winningScorePrediction,
+        predictionValue,
       });
     },
     [createMutation],
@@ -82,13 +82,13 @@ export function useLineupData({ eventId, enabled }: UseLineupDataOptions) {
     async (
       lineupId: string,
       picks: string[],
-      options?: { name?: string; winningScorePrediction?: number },
+      options?: { name?: string; predictionValue?: number },
     ) => {
       return await updateMutation.mutateAsync({
         lineupId,
         picks,
         name: options?.name,
-        winningScorePrediction: options?.winningScorePrediction,
+        predictionValue: options?.predictionValue,
       });
     },
     [updateMutation],

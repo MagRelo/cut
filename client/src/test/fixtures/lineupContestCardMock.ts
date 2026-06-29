@@ -77,7 +77,7 @@ function buildPlatformLineup(eventParticipantIds: string[] = []): PlatformLineup
     eventId: STORYBOOK_LINEUP_EVENT_ID,
     contestId: STORYBOOK_CONTEST_ID,
     name: "Lineup #1",
-    prediction: { winningScorePrediction: 150 },
+    prediction: { type: "winningLineupTotal", value: 150 },
     picks,
     score,
     createdAt: now,

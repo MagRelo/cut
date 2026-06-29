@@ -1,5 +1,5 @@
 import { Context, Hono } from "hono";
-import { golfPredictionValue } from "@cut/sport-pga-golf";
+import { predictionNumericValue } from "../utils/sportPrediction.js";
 import { prisma } from "../lib/prisma.js";
 import {
   contestQuerySchema,
@@ -558,7 +558,7 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
       return c.json({ error: "Lineup must have at least 1 player" }, 400);
     }
 
-    const prediction = golfPredictionValue(resolvedLineup?.prediction ?? lineup.prediction);
+    const prediction = predictionNumericValue(resolvedLineup?.prediction ?? lineup.prediction);
     const isDuplicate = await isDuplicateInContest(
       user.userId,
       contestId,

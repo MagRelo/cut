@@ -142,15 +142,17 @@ Details: [client/architecture.md](../client/architecture.md)
 
 ---
 
-## Adding a new sport (checklist)
+## Adding a new sport
 
-1. `Sport` row in DB (`isEnabled: true`, `rosterRules`, `scoringRules`)
-2. Server package implementing `SportModule` + handlers
-3. Register in `server/src/sports/registry.ts`
-4. Optional: `PropBetModule` + `propBetRegistry.ts`
-5. Client `SportUIPlugin` in `client/src/sports/<sport>/`
-6. Register in `client/src/sports/registry.ts`
-7. Event ingestion CLI / cron hooks
+Follow **[add-sport-checklist.md](add-sport-checklist.md)** — phased checklist from fit evaluation through dry run and ops runbook. Reference implementations: golf (`pga-golf`) and F1 (`f1`).
+
+At a glance:
+
+1. Competition brief + data spike
+2. `Sport` seed row (`rosterRules`, `scoringRules`, `predictionRules`)
+3. `packages/sport-<id>/` → `server/src/sports/<id>/` → `client/src/sports/<id>/`
+4. Register server and client registries
+5. Dry run + activation runbook
 
 Does **not** require changes to contests, leagues, wallets, referrals, or smart contracts.
 
@@ -158,6 +160,7 @@ Does **not** require changes to contests, leagues, wallets, referrals, or smart 
 
 ## Next docs
 
+- [Add a sport checklist](add-sport-checklist.md)
 - [Plugin interfaces and registries](plugins.md)
 - [Server layer](../server/architecture.md)
 - [Client layer](../client/architecture.md)

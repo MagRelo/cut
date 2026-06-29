@@ -1,4 +1,4 @@
-/** Matches idempotency keys in docs/email-program.md */
+/** Matches idempotency keys in docs/operations/email-program.md */
 export enum EmailKind {
   WELCOME = "WELCOME",
   NEW_TOURNAMENT = "NEW_TOURNAMENT",

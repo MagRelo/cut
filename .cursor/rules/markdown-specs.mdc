@@ -12,7 +12,7 @@ All `.md` files in this repo should read as **complete, authoritative specs**—
 
 - State the target design directly: tables, cadences, APIs, flows, decisions.
 - Use sections like **Open decisions** or **TBD** for unresolved items.
-- Link to the owning spec when a feature has a dedicated doc (e.g. `docs/email-program.md` for email).
+- Link to the owning spec when a feature has a dedicated doc (e.g. `docs/operations/email-program.md` for email).
 
 ## Do not add
 

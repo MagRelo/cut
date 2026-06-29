@@ -81,4 +81,4 @@ A `pipelineRunning` flag skips a tick if the previous run is still in progress.
 | Lock contests | `service:batch-lock-contests` or `POST /api/admin/contests/lock-eligible` |
 | Referral sync | `service:batch-sync-referral-graph` |
 
-Operator runbook: [`docs/event-activation-runbook.md`](../../../docs/event-activation-runbook.md).
+Operator runbooks: [`docs/sports/golf/event-activation-runbook.md`](../../../docs/sports/golf/event-activation-runbook.md) (golf) · [`docs/sports/f1/event-activation-runbook.md`](../../../docs/sports/f1/event-activation-runbook.md) (F1).

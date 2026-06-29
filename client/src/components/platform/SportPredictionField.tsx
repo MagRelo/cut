@@ -1,7 +1,13 @@
 import React from "react";
+import { useOptionalEventScope } from "../../contexts/EventScopeContext";
 import { useSportUIPlugin } from "../../hooks/useSportUI";
+import { useSportPredictionRules } from "../../hooks/useSportPredictionRules";
 import { LineupWinningScoreSlider } from "../lineup/LineupWinningScoreSlider";
-import { golfPredictionValue, toGolfPrediction } from "../../lib/golfPrediction";
+import {
+  defaultPredictionMidpoint,
+  predictionNumericValue,
+  toLineupPredictionValue,
+} from "../../lib/sportPrediction";
 
 interface SportPredictionFieldProps {
   value: unknown;
@@ -11,7 +17,7 @@ interface SportPredictionFieldProps {
   readOnly?: boolean;
 }
 
-/** Sport-aware prediction input; falls back to golf slider when no plugin field is registered. */
+/** Sport-aware prediction input; falls back to generic slider when no plugin field is registered. */
 
 export const SportPredictionField: React.FC<SportPredictionFieldProps> = ({
   value,
@@ -21,6 +27,9 @@ export const SportPredictionField: React.FC<SportPredictionFieldProps> = ({
   readOnly,
 }) => {
   const plugin = useSportUIPlugin();
+  const scope = useOptionalEventScope();
+  const sportId = scope?.sportId ?? "pga-golf";
+  const rules = useSportPredictionRules(sportId);
   const PredictionField = plugin?.PredictionField;
 
   if (PredictionField) {
@@ -35,14 +44,16 @@ export const SportPredictionField: React.FC<SportPredictionFieldProps> = ({
     );
   }
 
-  const numeric = golfPredictionValue(value) ?? 100;
+  const numeric = predictionNumericValue(value) ?? defaultPredictionMidpoint(rules);
   return (
     <LineupWinningScoreSlider
       value={numeric}
+      min={rules.min}
+      max={rules.max}
       disabled={disabled}
       error={error}
       readOnly={readOnly}
-      onChange={readOnly ? undefined : (next) => onChange?.(toGolfPrediction(next))}
+      onChange={readOnly ? undefined : (next) => onChange?.(toLineupPredictionValue(next))}
     />
   );
 };

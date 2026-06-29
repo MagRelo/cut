@@ -1,14 +1,13 @@
 import apiClient from "../utils/apiClient";
 import type { PlatformLineup } from "../types/event";
-import { toGolfPrediction } from "./golfPrediction";
+import { toLineupPredictionValue } from "./sportPrediction";
 
 export async function createLineupForEvent(params: {
   eventId: string;
   contestId?: string;
-  sportId?: string;
   picks: string[];
   name?: string;
-  winningScorePrediction?: number;
+  predictionValue?: number;
 }): Promise<PlatformLineup> {
   const response = await apiClient.post<{ lineup: PlatformLineup }>(
     `/lineups/${params.eventId}`,
@@ -16,7 +15,7 @@ export async function createLineupForEvent(params: {
       picks: params.picks,
       name: params.name,
       contestId: params.contestId,
-      prediction: toGolfPrediction(params.winningScorePrediction),
+      prediction: toLineupPredictionValue(params.predictionValue),
     },
   );
 
@@ -26,17 +25,16 @@ export async function createLineupForEvent(params: {
 export async function updateLineupById(params: {
   lineupId: string;
   eventId: string;
-  sportId?: string;
   picks: string[];
   name?: string;
-  winningScorePrediction?: number;
+  predictionValue?: number;
 }): Promise<PlatformLineup> {
   const response = await apiClient.put<{ lineup: PlatformLineup }>(
     `/lineups/${params.lineupId}`,
     {
       picks: params.picks,
       name: params.name,
-      prediction: toGolfPrediction(params.winningScorePrediction),
+      prediction: toLineupPredictionValue(params.predictionValue),
     },
   );
 
@@ -50,19 +48,19 @@ export async function cloneLineupById(params: {
 }): Promise<PlatformLineup> {
   const response = await apiClient.post<{ lineup: PlatformLineup }>(
     `/lineups/clone/${params.lineupId}`,
-    { name: params.name, contestId: params.contestId },
+    {
+      contestId: params.contestId,
+      name: params.name,
+    },
   );
 
   return response.lineup;
 }
 
-/** @deprecated Use createLineupForEvent or updateLineupById */
-export async function saveLineupForEvent(params: {
+export type LineupApiParams = {
   eventId: string;
-  sportId?: string;
+  contestId?: string;
   picks: string[];
   name?: string;
-  winningScorePrediction?: number;
-}): Promise<PlatformLineup> {
-  return createLineupForEvent(params);
-}
+  predictionValue?: number;
+};

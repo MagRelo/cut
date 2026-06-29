@@ -105,7 +105,7 @@ describe("cloneLineup", () => {
       userId: "user-1",
       eventId: "event-1",
       name: "My lineup",
-      prediction: { type: "winningScore", value: 142 },
+      prediction: { type: "winningLineupTotal", value: 142 },
       picks: [
         { eventParticipantId: "ep-1" },
         { eventParticipantId: "ep-2" },
@@ -118,7 +118,7 @@ describe("cloneLineup", () => {
       eventId: "event-1",
       contestId: "contest-2",
       name: "My lineup (copy)",
-      prediction: { type: "winningScore", value: 142 },
+      prediction: { type: "winningLineupTotal", value: 142 },
       picks: [],
       score: 0,
       createdAt: new Date("2026-01-01"),
@@ -137,7 +137,7 @@ describe("cloneLineup", () => {
         eventId: "event-1",
         contestId: "contest-2",
         name: "My lineup (copy)",
-        prediction: { type: "winningScore", value: 142 },
+        prediction: { type: "winningLineupTotal", value: 142 },
       },
     });
     expect(writeLineupPicks).toHaveBeenCalledWith("lineup-2", ["ep-1", "ep-2"]);

@@ -579,7 +579,7 @@ function lineupPrediction(
   if (winningScorePrediction == null) {
     return Prisma.DbNull;
   }
-  return { type: "winningScore", value: winningScorePrediction };
+  return { type: "winningLineupTotal", value: winningScorePrediction };
 }
 
 function mapSideBetTicketPlayerIds(
