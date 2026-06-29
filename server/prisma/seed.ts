@@ -47,6 +47,25 @@ const F1_PREDICTION_RULES = {
   defaultRandomMax: 75,
 };
 
+const COMMODITIES_ROSTER_RULES = {
+  slotCount: 5,
+  minPicks: 0,
+  maxPicks: 5,
+  allowDuplicates: false,
+};
+
+const COMMODITIES_SCORING_RULES = {
+  aggregation: "sum",
+  direction: "higher_wins",
+};
+
+const COMMODITIES_PREDICTION_RULES = {
+  min: -1000,
+  max: 2500,
+  defaultRandomMin: 400,
+  defaultRandomMax: 900,
+};
+
 async function main() {
   console.log("Seeding platform data...");
 
@@ -95,6 +114,29 @@ async function main() {
   });
 
   console.log(`Seeded sport: ${f1.id} (${f1.slug})`);
+
+  const commodities = await prisma.sport.upsert({
+    where: { id: "commodities" },
+    create: {
+      id: "commodities",
+      name: "Commodity Picks",
+      slug: "commodities",
+      isEnabled: false,
+      rosterRules: COMMODITIES_ROSTER_RULES,
+      scoringRules: COMMODITIES_SCORING_RULES,
+      predictionRules: COMMODITIES_PREDICTION_RULES,
+    },
+    update: {
+      name: "Commodity Picks",
+      slug: "commodities",
+      isEnabled: false,
+      rosterRules: COMMODITIES_ROSTER_RULES,
+      scoringRules: COMMODITIES_SCORING_RULES,
+      predictionRules: COMMODITIES_PREDICTION_RULES,
+    },
+  });
+
+  console.log(`Seeded sport: ${commodities.id} (${commodities.slug})`);
   console.log("Platform seed completed.");
 }
 
