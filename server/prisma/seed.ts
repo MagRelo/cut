@@ -26,6 +26,7 @@ const PGA_GOLF_PREDICTION_RULES = {
   max: 250,
   defaultRandomMin: 95,
   defaultRandomMax: 145,
+  label: "Tie-Breaker",
 };
 
 const F1_ROSTER_RULES = {
@@ -45,6 +46,7 @@ const F1_PREDICTION_RULES = {
   max: 120,
   defaultRandomMin: 45,
   defaultRandomMax: 75,
+  label: "Tie-Breaker (winning lineup pts)",
 };
 
 const COMMODITIES_ROSTER_RULES = {
@@ -64,6 +66,9 @@ const COMMODITIES_PREDICTION_RULES = {
   max: 2500,
   defaultRandomMin: 400,
   defaultRandomMax: 900,
+  label: "Tie-Breaker (winning lineup pts)",
+  displayScale: 10,
+  step: 0.1,
 };
 
 async function main() {

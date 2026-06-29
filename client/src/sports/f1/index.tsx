@@ -6,13 +6,10 @@ import { F1EventDetails } from "./EventDetails";
 import { F1EventSummary, resolveF1EventHeroImage } from "./EventSummary";
 import { F1ParticipantDetail } from "./ParticipantDetail";
 import { F1ParticipantRow } from "./ParticipantRow";
-import { F1PredictionField } from "./PredictionField";
-
 export const f1UIPlugin: SportUIPlugin = {
   CandidateRow: (props) => <F1CandidateRow {...props} />,
   ParticipantRow: (props) => <F1ParticipantRow {...props} />,
   ParticipantDetail: (props) => <F1ParticipantDetail {...props} />,
-  PredictionField: F1PredictionField,
   EventSummary: F1EventSummary,
   resolveEventHeroImage: resolveF1EventHeroImage,
   candidateSortConfig: f1CandidateSortConfig,
@@ -25,5 +22,4 @@ export {
   F1EventSummary,
   F1ParticipantDetail,
   F1ParticipantRow,
-  F1PredictionField,
 };

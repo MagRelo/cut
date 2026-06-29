@@ -10,6 +10,8 @@ import { mergeCommoditiesEventMetadata } from "./metadataMerge.js";
 import { syncCommoditiesEventMetadata } from "./syncMetadata.js";
 import { syncCommoditiesParticipantField } from "./syncField.js";
 
+const DEFAULT_COMMODITY_BEAUTY_IMAGE = "/tradingfloor.png";
+
 export async function initCommoditiesEvent(externalId: string) {
   const sessionDate = parseCommoditiesSessionExternalId(externalId);
   const bounds = resolveSessionBounds(sessionDate);
@@ -20,6 +22,7 @@ export async function initCommoditiesEvent(externalId: string) {
 
   const initialMetadata = mergeCommoditiesEventMetadata(event?.metadata, {
     name: formatSessionDisplayName(sessionDate),
+    beautyImage: DEFAULT_COMMODITY_BEAUTY_IMAGE,
     commodities: {
       sessionDate,
       sessionOpen: bounds.sessionOpen,

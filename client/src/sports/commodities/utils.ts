@@ -1,10 +1,10 @@
 import type { CommoditySector } from "@cut/sport-commodities";
 
 export const SECTOR_COLORS: Record<CommoditySector | "default", string> = {
-  energy: "#f59e0b",
+  energy: "#D21426",
   precious: "#eab308",
-  metals: "#b87333",
-  ag: "#22c55e",
+  metals: "#003893",
+  ag: "#046434",
   softs: "#92400e",
   default: "#94a3b8",
 };

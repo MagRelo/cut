@@ -5,6 +5,7 @@ export function mergeCommoditiesEventMetadata(
   existing: unknown,
   patch: {
     name?: string;
+    beautyImage?: string;
     commodities: Partial<CommoditiesEventMetadata>;
   },
 ): Record<string, unknown> {
@@ -18,6 +19,7 @@ export function mergeCommoditiesEventMetadata(
   return {
     ...base,
     ...(patch.name ? { name: patch.name } : {}),
+    ...(patch.beautyImage ? { beautyImage: patch.beautyImage } : {}),
     commodities: {
       ...existingCommodities,
       ...patch.commodities,
