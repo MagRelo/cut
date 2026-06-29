@@ -50,8 +50,9 @@ export function GolfEventDetails({ event, className = "" }: GolfEventDetailsProp
       ) : null}
 
       <div className="mt-1 flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 font-medium text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
+        {roundDisplay}
+        {detailSeparator}
         <span>
-          {roundDisplay}:{" "}
           {isSuspended ? (
             <span className="inline-flex items-center gap-1 text-yellow-300">
               <ExclamationTriangleIcon
