@@ -27,7 +27,7 @@ Leagues work when friend groups already run informal pools (“our office does t
 
 **Best opportunities** combine recurring cadence, public data, live-moving leaderboards, and existing social pool culture.
 
-**Platform-native competitions** — formats invented and run on Play The Cut (no external feed) — are a separate bucket: community lists, promo tournaments, voting challenges. See [fit-guide.md — Platform-native competitions](fit-guide.md#platform-native-competitions).
+**Platform-native competitions** — formats invented and run on Play The Cut (no external feed) — are a separate bucket: community lists, promo tournaments, and **predict-the-consensus** challenges where lineup picks *are* the data source. See [fit-guide.md — Platform-native competitions](fit-guide.md#platform-native-competitions).
 
 ---
 
@@ -131,6 +131,98 @@ Grouped by domain. **Fit** is directional (Strong / Stretch / Hard) against the 
 | **Weather week** | Mon–Sun city | Cities | Temp / rain vs forecast | Stretch | Pick cities; score vs actual — fun office game |
 | **Wordle week** | 7 puzzles | Friends as “participants” | Score from friend stats if shared | Hard | Privacy; not public field |
 
+### Platform-native
+
+| Idea | Event unit | Pool | Scoring sketch | Fit | Notes |
+|------|------------|------|----------------|-----|-------|
+| **Predict the consensus** | Multi-day entry window | 20–50 staff-seeded items | Points by pick frequency in the contest at lock | Strong | No external feed or voting infra; contest entries are the data source |
+| **Community vote slate** | Multi-day vote window | 20–50 seeded items | Points by final rank from votes | Stretch | Requires vote storage, moderation, Sybil controls |
+| **League nomination pool** | League-scoped week | Member nominations → curated | Consensus or admin-final rank | Stretch | Ops-heavy; good v2 extension of consensus format |
+
+---
+
+## Platform-native: predict the consensus
+
+A platform-native format where users pick items they believe **other entrants will pick** from a curated pool. Scoring derives from aggregate lineup data at lock — not an external API and not a separate voting channel.
+
+**One-liner:** *Pick the four albums you think everyone else will pick.*
+
+### How it maps to the engine
+
+| Concept | Consensus native |
+|---------|------------------|
+| Pool | Staff-seeded list (albums, restaurants, memes, nominees) |
+| Lineup | N picks from the pool before lock |
+| Per-pick score | Points from **pick frequency** in the contest at lock |
+| Lineup score | Sum of pick totals (default aggregation) |
+| Tie-break | Predict pick rate (%) of the #1 most popular item |
+| Data source | Locked `ContestLineup` + `LineupPick` rows — no vote table |
+
+Same pick → aggregate → rank flow as golf. The sport plugin’s `syncLiveScores` computes pick rates from contest entries instead of calling an external API.
+
+### Scoring (rank-based, v1 default)
+
+At lock, per contest:
+
+1. Count how many lineups include each pool item
+2. Rank items by pick count (ties broken deterministically, e.g. seed order)
+3. Most picked → 10 pts, 2nd → 9 pts, … unranked → 0
+4. Lineup score = sum of its picks’ points
+
+Alternative: raw pick rate (`round(lineupsWithPick / totalLineups × 100)`) — more granular but noisy in small contests. Rank-based points match the F1/golf points feel and are easier to explain.
+
+### Lifecycle
+
+Consensus events are front-loaded: the interesting phase is **before lock**, not a multi-day live window.
+
+| Phase | Platform status | Behavior |
+|-------|-----------------|----------|
+| Entry open | `SCHEDULED` | Users build lineups and join contests; field is fixed |
+| Lock | Contest activates | Pick rates computed once; lineup scores written |
+| Reveal | `LIVE` (optional, short) | Leaderboard visible; no edits |
+| Final | `COMPLETE` | Settle contests |
+
+Many events can go lock → settle in one cron pass with no extended `LIVE` period.
+
+### Pick-rate visibility (product knob)
+
+| Mode | UX | Tradeoff |
+|------|-----|----------|
+| **Hidden until lock** | Pure prediction; blank leaderboard until reveal | Best for competitive integrity |
+| **Live during entry** | Show `% of entries` per item in the picker | Herding drama; last-minute pile-ons before lock |
+
+Event metadata can declare `showPickRates: "never" | "afterMinEntries" | "always"`. The platform already passes `ownershipPercentage` into `ParticipantRow` — pick rate is the same display pattern.
+
+### Why this over voting
+
+| Concern | Voting format | Consensus format |
+|---------|---------------|------------------|
+| Data infra | Vote table, tally sync | Query existing lineup picks |
+| Sybil | Separate voter identity | Same contest-entry controls as any paid contest |
+| Moderation | Nomination review, bad votes | Field is staff-seeded |
+| Ops at lock | Admin publish final ranks | Scores derive automatically from locked lineups |
+
+Admin work: seed the field, write the prompt, set lock time.
+
+### Implementation notes
+
+- **Per-contest scoring:** pick rates differ between a league contest (12 entries) and a public contest (200 entries). `aggregateLineupScore` may need `contestId` passed through; v1 can constrain to one contest per native event.
+- **Minimum entries:** require a floor (e.g. 5) before computing consensus so pick rates are meaningful.
+- **Suggested `sportId`:** `ptc-consensus` — one sport, many events with different prompts.
+- **Plugin checklist:** same as [add-sport-checklist.md](../../spec/platform/add-sport-checklist.md); Phase 1 spike proves pick-rate → rank → lineup score without any external API.
+
+### Example v1: Crowd Reads
+
+| Field | Decision |
+|-------|----------|
+| **Prompt** | Pick 4 albums you think most players will pick |
+| **Pool** | 30 albums, staff-seeded Monday |
+| **Lock** | Thursday 8pm ET |
+| **Scoring** | Rank-based points from contest pick frequency |
+| **Tie-break** | Predict #1 item’s pick rate (1–100) |
+| **Cadence** | Weekly or biweekly; fills golf off-weeks |
+| **League fit** | Social intuition, not domain expertise — casual members can play |
+
 ---
 
 ## Patterns that repeat
@@ -142,6 +234,7 @@ Grouped by domain. **Fit** is directional (Strong / Stretch / Hard) against the 
 | **Ceremony / reveal** | Scores jump in discrete chunks | Awards, Eurovision, draft lotteries |
 | **Slate of peers** | Natural candidate pool | Stocks in index, nominees, drivers |
 | **Office pool culture** | League-first acquisition | March Madness slice, Oscars, stocks |
+| **Meta-prediction / crowd read** | Scores from entrant behavior, not external results | Predict the consensus; no API or vote infra |
 
 | Anti-pattern | Why it fails |
 |--------------|--------------|
@@ -165,6 +258,10 @@ Short list if expanding beyond golf **without** chasing novelty for its own sake
 6. **Eurovision / reality episode week** — social viewing + recurring episodes if sliced right  
 
 Each passes the fit filter with less reframing than spelling bee or weather games.
+
+**Platform-native top pick:**
+
+7. **Predict the consensus** — staff-seeded culture lists, scores from contest pick frequency at lock, no external data or voting infra, strong league fit for off-week engagement
 
 ---
 
