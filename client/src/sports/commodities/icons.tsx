@@ -3,28 +3,15 @@ import type { CommoditySector } from "@cut/sport-commodities";
 
 type IconProps = { className?: string };
 
-function BarrelIcon({ className }: IconProps) {
+function DripIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <rect x="7" y="4" width="10" height="16" rx="2" />
-      <rect x="8" y="7" width="8" height="2" opacity="0.5" />
-      <rect x="8" y="11" width="8" height="2" opacity="0.5" />
-    </svg>
-  );
-}
-
-function FlameIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <path d="M12 3c1 3 4 4 4 8a4 4 0 1 1-8 0c0-2 1.5-3.5 2.5-5.5C10.5 6.5 11 5 12 3z" />
-    </svg>
-  );
-}
-
-function IngotIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <path d="M4 14 12 8l8 6v4H4v-4z" />
+      <path d="M12 4.5c1.75 3.25 5.5 7.25 5.5 11.25a5.5 5.5 0 1 1-11 0C6.5 11.75 10.25 7.75 12 4.5z" />
+      <path
+        d="M12 11.5c1.1 1.75 2.75 3.5 2.75 5.25a2.75 2.75 0 1 1-5.5 0c0-1.75 1.65-3.5 2.75-5.25z"
+        fill="white"
+        opacity="0.22"
+      />
     </svg>
   );
 }
@@ -32,10 +19,8 @@ function IngotIcon({ className }: IconProps) {
 function CoinIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <circle cx="12" cy="12" r="8" />
-      <text x="12" y="16" textAnchor="middle" fontSize="8" fill="white">
-        Ag
-      </text>
+      <circle cx="12" cy="12" r="7.5" />
+      <circle cx="12" cy="12" r="5.25" fill="none" stroke="white" strokeWidth="1.1" opacity="0.32" />
     </svg>
   );
 }
@@ -48,72 +33,58 @@ function BoltIcon({ className }: IconProps) {
   );
 }
 
-function WheatIcon({ className }: IconProps) {
+function ClubIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <ellipse cx="9" cy="8" rx="2" ry="4" />
-      <ellipse cx="12" cy="7" rx="2" ry="4" />
-      <ellipse cx="15" cy="8" rx="2" ry="4" />
-      <path d="M12 10v10" stroke="currentColor" strokeWidth="2" />
+      {/* Playing-card club — three lobes + stem */}
+      <circle cx="12" cy="7.25" r="3.65" />
+      <circle cx="8.35" cy="11.75" r="3.65" />
+      <circle cx="15.65" cy="11.75" r="3.65" />
+      <rect x="10.6" y="11.5" width="2.8" height="6.5" rx="0.5" />
+      <circle cx="12" cy="18.5" r="1.4" />
     </svg>
   );
 }
 
-function LeafIcon({ className }: IconProps) {
+function SoftTriangleIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <path d="M12 3C7 3 4 8 4 12c0 5 4 9 8 9 5 0 8-4 8-9 0-4-3-9-8-9zm0 3c2 2 3 5 3 8H9c0-3 1-6 3-8z" />
+      <path d="M11.33 6.48Q12 5.25 12.67 6.48L18.33 17.01Q19 18.25 17.6 18.25H6.4Q5 18.25 6.33 17.01L11.33 6.48z" />
+      <path
+        d="M11.55 9.15Q12 8.55 12.45 9.15L15.85 15.55Q16.2 16.2 15.55 16.2H8.45Q7.8 16.2 8.15 15.55L11.55 9.15z"
+        fill="white"
+        opacity="0.22"
+      />
     </svg>
   );
 }
 
-function BeanIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <ellipse cx="10" cy="12" rx="4" ry="6" />
-      <ellipse cx="15" cy="12" rx="4" ry="6" opacity="0.8" />
-    </svg>
-  );
-}
-
-function LogIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <rect x="5" y="9" width="14" height="6" rx="3" />
-      <circle cx="8" cy="12" r="2" fill="white" opacity="0.4" />
-    </svg>
-  );
-}
-
-function HogIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <ellipse cx="12" cy="13" rx="7" ry="5" />
-      <circle cx="8" cy="11" r="1" fill="white" />
-      <circle cx="16" cy="11" r="1" fill="white" />
-      <ellipse cx="12" cy="15" rx="2" ry="1.5" fill="white" opacity="0.5" />
-    </svg>
-  );
-}
-
-function CottonIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <circle cx="9" cy="10" r="3" />
-      <circle cx="15" cy="10" r="3" />
-      <circle cx="12" cy="14" r="3" />
-    </svg>
-  );
-}
-
-function CupIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <path d="M6 8h9v6a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V8zm9 2h3a2 2 0 0 1 0 4h-3" />
-      <path d="M8 20h6" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
-}
+const ICONS: Record<string, React.FC<IconProps>> = {
+  "crude-oil": DripIcon,
+  brent: DripIcon,
+  "natural-gas": DripIcon,
+  "heating-oil": DripIcon,
+  gasoline: DripIcon,
+  gold: CoinIcon,
+  silver: CoinIcon,
+  copper: BoltIcon,
+  platinum: CoinIcon,
+  aluminum: BoltIcon,
+  nickel: BoltIcon,
+  lead: BoltIcon,
+  zinc: BoltIcon,
+  wheat: ClubIcon,
+  corn: ClubIcon,
+  soybeans: ClubIcon,
+  lumber: ClubIcon,
+  "lean-hogs": ClubIcon,
+  rice: ClubIcon,
+  oats: ClubIcon,
+  cotton: SoftTriangleIcon,
+  coffee: SoftTriangleIcon,
+  sugar: SoftTriangleIcon,
+  cocoa: SoftTriangleIcon,
+};
 
 function CubeIcon({ className }: IconProps) {
   return (
@@ -122,33 +93,6 @@ function CubeIcon({ className }: IconProps) {
     </svg>
   );
 }
-
-const ICONS: Record<string, React.FC<IconProps>> = {
-  "crude-oil": BarrelIcon,
-  brent: BarrelIcon,
-  "natural-gas": FlameIcon,
-  "heating-oil": FlameIcon,
-  gasoline: FlameIcon,
-  gold: IngotIcon,
-  silver: CoinIcon,
-  copper: BoltIcon,
-  platinum: IngotIcon,
-  aluminum: BoltIcon,
-  nickel: BoltIcon,
-  lead: BoltIcon,
-  zinc: BoltIcon,
-  wheat: WheatIcon,
-  corn: LeafIcon,
-  soybeans: BeanIcon,
-  lumber: LogIcon,
-  "lean-hogs": HogIcon,
-  rice: LeafIcon,
-  oats: LeafIcon,
-  cotton: CottonIcon,
-  coffee: CupIcon,
-  sugar: CubeIcon,
-  cocoa: CubeIcon,
-};
 
 export function CommodityIcon({
   iconKey,

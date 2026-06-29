@@ -17,6 +17,17 @@ export const DebugPage: React.FC = () => {
       <h1 className="text-2xl font-bold mb-6">Debug Information</h1>
 
       <PageSection>
+        <h2 className="text-lg font-semibold mb-3 text-gray-800">Dev pages</h2>
+        <ul className="list-inside list-disc text-sm text-blue-600">
+          <li>
+            <a href="/dev/commodity-icons" className="hover:underline">
+              Commodity icon preview
+            </a>
+          </li>
+        </ul>
+      </PageSection>
+
+      <PageSection>
         <h2 className="text-lg font-semibold mb-3 text-blue-600">Wagmi Account Status</h2>
         <div className="space-y-2 text-sm">
           <div>
