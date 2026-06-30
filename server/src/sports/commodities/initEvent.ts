@@ -9,9 +9,9 @@ import {
 } from "./sessionConfig.js";
 import { mergeCommoditiesEventMetadata } from "./metadataMerge.js";
 import { syncCommoditiesEventMetadata } from "./syncMetadata.js";
-import { syncCommoditiesParticipantField } from "./syncField.js";
+import { resolveCommodityFieldSnapshot, syncCommoditiesParticipantField } from "./syncField.js";
 
-const DEFAULT_COMMODITY_BEAUTY_IMAGE = "/tradingfloor.png";
+const DEFAULT_COMMODITY_BEAUTY_IMAGE = "/CommodityBG2.png";
 
 export async function initCommoditiesEvent(
   externalId: string,
@@ -19,6 +19,11 @@ export async function initCommoditiesEvent(
 ) {
   const sessionDate = parseCommoditiesSessionExternalId(externalId);
   const bounds = resolveSessionBoundsFromInit(sessionDate, options);
+  const fieldSnapshot = await resolveCommodityFieldSnapshot();
+
+  if (fieldSnapshot.length === 0) {
+    throw new Error("[commodities] No HL markets resolved for allowlist — cannot init event");
+  }
 
   let event = await prisma.competitionEvent.findFirst({
     where: { sportId: COMMODITIES_SPORT_ID, externalId: sessionDate },
@@ -31,9 +36,16 @@ export async function initCommoditiesEvent(
       sessionDate,
       sessionOpen: bounds.sessionOpen,
       sessionClose: bounds.sessionClose,
+      sessionStarted: false,
       sessionComplete: false,
+      fieldSnapshot,
     },
   });
+
+  const commoditiesBlock = initialMetadata.commodities;
+  if (commoditiesBlock && typeof commoditiesBlock === "object" && !Array.isArray(commoditiesBlock)) {
+    delete (commoditiesBlock as Record<string, unknown>).priceHistorySyncedAt;
+  }
 
   if (!event) {
     event = await prisma.competitionEvent.create({
@@ -65,6 +77,7 @@ export async function initCommoditiesEvent(
   });
 
   console.log(`[commodities] Initialized event ${event.id} (${sessionDate})`);
+  console.log(`[commodities] Field size: ${fieldSnapshot.length} contracts`);
   console.log(`[commodities] Session open:  ${bounds.sessionOpen}`);
   console.log(`[commodities] Session close: ${bounds.sessionClose}`);
 }

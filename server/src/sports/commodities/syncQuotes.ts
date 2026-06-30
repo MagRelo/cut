@@ -1,12 +1,9 @@
 import { Prisma } from "@prisma/client";
-import type { CommodityParticipantMetadata, CommodityQuoteSnapshot } from "@cut/sport-commodities";
-import { COMMODITIES_SPORT_ID, parseCommoditiesEventMetadata } from "@cut/sport-commodities";
+import type { CommodityParticipantMetadata } from "@cut/sport-commodities";
+import { COMMODITIES_SPORT_ID, getEventFieldSnapshot } from "@cut/sport-commodities";
 import { prisma } from "../../lib/prisma.js";
-import {
-  COMMODITY_CATALOG,
-  commodityExternalId,
-} from "./commodityCatalog.js";
-import { fixtureQuote, type FixtureQuote } from "./fixtureMarketData.js";
+import { commodityExternalId } from "@cut/sport-commodities";
+import { fetchQuotesForField, marketQuoteToSnapshot } from "./marketDataProvider.js";
 
 function parseParticipantMetadata(metadata: unknown): CommodityParticipantMetadata {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
@@ -15,25 +12,7 @@ function parseParticipantMetadata(metadata: unknown): CommodityParticipantMetada
   return metadata as CommodityParticipantMetadata;
 }
 
-export function fixtureQuoteToSnapshot(quote: FixtureQuote): CommodityQuoteSnapshot {
-  return {
-    lastPrice: quote.regularMarketPrice,
-    open: quote.regularMarketOpen,
-    previousClose: quote.regularMarketPreviousClose,
-    dayHigh: quote.regularMarketDayHigh,
-    dayLow: quote.regularMarketDayLow,
-    bid: null,
-    ask: null,
-    volume: quote.regularMarketVolume,
-    changePercent: quote.regularMarketChangePercent,
-    fiftyTwoWeekHigh: quote.fiftyTwoWeekHigh,
-    fiftyTwoWeekLow: quote.fiftyTwoWeekLow,
-    marketState: quote.marketState,
-    syncedAt: new Date().toISOString(),
-  };
-}
-
-/** Refresh fixture quote snapshots on participant metadata (init + cron). */
+/** Refresh quote snapshots on participant metadata (init + cron). */
 export async function syncCommoditiesQuotes(eventId: string): Promise<void> {
   const event = await prisma.competitionEvent.findFirst({
     where: { id: eventId, sportId: COMMODITIES_SPORT_ID },
@@ -44,8 +23,12 @@ export async function syncCommoditiesQuotes(eventId: string): Promise<void> {
     throw new Error(`Commodities event not found: ${eventId}`);
   }
 
-  const commodities = parseCommoditiesEventMetadata(event.metadata);
-  const sessionDate = commodities?.sessionDate ?? new Date().toISOString().slice(0, 10);
+  const field = getEventFieldSnapshot(event.metadata);
+  if (field.length === 0) {
+    return;
+  }
+
+  const quotes = await fetchQuotesForField(field);
 
   const participants = await prisma.participant.findMany({
     where: { sportId: COMMODITIES_SPORT_ID },
@@ -56,9 +39,13 @@ export async function syncCommoditiesQuotes(eventId: string): Promise<void> {
   );
 
   let updated = 0;
-  for (const entry of COMMODITY_CATALOG) {
-    const quote = fixtureQuote(entry.symbol, sessionDate);
-    const externalId = commodityExternalId(entry.symbol);
+  for (const entry of field) {
+    const quote = quotes.get(entry.ticker);
+    if (!quote) {
+      continue;
+    }
+
+    const externalId = commodityExternalId(entry.ticker);
     const row = participantByExternalId.get(externalId);
     if (!row) {
       continue;
@@ -70,7 +57,7 @@ export async function syncCommoditiesQuotes(eventId: string): Promise<void> {
       data: {
         metadata: {
           ...existingMeta,
-          quote: fixtureQuoteToSnapshot(quote),
+          quote: marketQuoteToSnapshot(quote),
         } as unknown as Prisma.InputJsonValue,
       },
     });
@@ -78,6 +65,6 @@ export async function syncCommoditiesQuotes(eventId: string): Promise<void> {
   }
 
   console.log(
-    `[commodities] Synced fixture quotes for ${updated}/${COMMODITY_CATALOG.length} symbols (event ${eventId})`,
+    `[commodities] Synced quotes for ${updated}/${field.length} symbols (event ${eventId})`,
   );
 }

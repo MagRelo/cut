@@ -1,12 +1,27 @@
 export {
   COMMODITIES_SPORT_ID,
   parseCommoditiesEventMetadata,
+  getEventFieldSnapshot,
   type CommoditiesEventMetadata,
+  type CommodityFieldEntry,
   type CommodityParticipantMetadata,
   type CommodityQuoteSnapshot,
   type CommodityScoreData,
   type CommoditySector,
 } from "./metadata.js";
+
+export {
+  COMMODITY_METADATA_ALLOWLIST,
+  COMMODITY_SECTORS,
+  COMMODITY_SYNONYM_TO_CANONICAL,
+  DEX_PRIORITY,
+  EXCLUDED_HL_TICKERS,
+  catalogEntryToFieldEntry,
+  commodityExternalId,
+  findAllowlistEntry,
+  type CommodityCatalogEntry,
+  type CommodityMetadataAllowlistEntry,
+} from "./catalog.js";
 
 export {
   commoditiesEventStatus,

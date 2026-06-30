@@ -50,9 +50,9 @@ const F1_PREDICTION_RULES = {
 };
 
 const COMMODITIES_ROSTER_RULES = {
-  slotCount: 5,
+  slotCount: 4,
   minPicks: 0,
-  maxPicks: 5,
+  maxPicks: 4,
   allowDuplicates: false,
 };
 

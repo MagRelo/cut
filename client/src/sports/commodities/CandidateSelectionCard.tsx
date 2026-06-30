@@ -1,7 +1,7 @@
 import React from "react";
 import type { Candidate } from "@cut/sport-sdk";
 import { CommodityAvatar } from "./CommodityAvatar";
-import { formatPctReturn, formatPrice, formatVolume, parseCommodityCandidateMetadata } from "./commodityUtils";
+import { formatPctReturn, formatPrice, parseCommodityCandidateMetadata } from "./commodityUtils";
 import { PriceSparkline } from "./PriceSparkline";
 import { sectorLabel } from "./utils";
 
@@ -30,8 +30,15 @@ export const CommodityCandidateSelectionCard: React.FC<{ candidate: Candidate }>
         </div>
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
           <div className="flex items-start justify-between gap-2">
-            <div className="truncate font-display text-base font-bold text-gray-900">
-              {candidate.displayName}
+            <div className="min-w-0">
+              <div className="truncate font-display text-base font-bold text-gray-900">
+                {candidate.displayName}
+              </div>
+              {participant.symbol ? (
+                <div className="truncate text-[10px] font-medium uppercase tracking-wide text-gray-400">
+                  {participant.symbol}
+                </div>
+              ) : null}
             </div>
             {quote?.lastPrice != null ? (
               <div className="shrink-0 text-right leading-tight">
@@ -46,21 +53,23 @@ export const CommodityCandidateSelectionCard: React.FC<{ candidate: Candidate }>
               </div>
             ) : null}
           </div>
+          <PriceSparkline
+            values={participant.priceHistory ?? []}
+            changePercent={quote?.changePercent}
+          />
           {quote ? (
             <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] tabular-nums text-gray-500">
-              {quote.open != null ? <span>O {formatPrice(quote.open)}</span> : null}
+              {quote.lastPrice != null ? <span>Mark {formatPrice(quote.lastPrice)}</span> : null}
               {quote.previousClose != null ? (
-                <span>Prev {formatPrice(quote.previousClose)}</span>
+                <span>24h {formatPrice(quote.previousClose)}</span>
               ) : null}
-              {quote.dayHigh != null && quote.dayLow != null ? (
+              {quote.bid != null && quote.ask != null ? (
                 <span>
-                  H/L {formatPrice(quote.dayLow)}–{formatPrice(quote.dayHigh)}
+                  Bid/Ask {formatPrice(quote.bid)}–{formatPrice(quote.ask)}
                 </span>
               ) : null}
-              {quote.volume != null ? <span>Vol {formatVolume(quote.volume)}</span> : null}
             </div>
           ) : null}
-          <PriceSparkline values={participant.priceHistory ?? []} />
         </div>
       </div>
     </div>

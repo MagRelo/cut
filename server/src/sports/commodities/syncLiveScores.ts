@@ -4,14 +4,14 @@ import {
   commoditiesEventStatusFromMetadata,
   COMMODITIES_SPORT_ID,
   commoditiesShouldSyncLiveScores,
+  getEventFieldSnapshot,
   transformCommodityPrice,
+  type CommodityScoreData,
 } from "@cut/sport-commodities";
-import {
-  COMMODITY_CATALOG,
-  findCatalogEntryByExternalId,
-} from "./commodityCatalog.js";
-import { getFixtureSessionSnapshots } from "./fixtureMarketData.js";
+import { commodityExternalId } from "@cut/sport-commodities";
+import { getSessionPricesForField } from "./marketDataProvider.js";
 import { mergeCommoditiesEventMetadata, requireCommoditiesMetadata } from "./metadataMerge.js";
+import { findFieldEntryByTicker } from "./hyperliquidCatalog.js";
 
 export async function syncCommoditiesLiveScores(eventId: string) {
   const event = await prisma.competitionEvent.findFirst({
@@ -28,37 +28,48 @@ export async function syncCommoditiesLiveScores(eventId: string) {
   }
 
   const commoditiesMeta = requireCommoditiesMetadata(event.metadata);
+  const field = getEventFieldSnapshot(event.metadata);
+  if (field.length === 0) {
+    throw new Error(`Event ${eventId} is missing commodities.fieldSnapshot`);
+  }
+
   const eventStatus = commoditiesEventStatusFromMetadata(event.metadata);
   const isComplete = eventStatus === "COMPLETE";
-
-  const symbols = COMMODITY_CATALOG.map((entry) => entry.symbol);
-  const snapshots = getFixtureSessionSnapshots(symbols, commoditiesMeta.sessionDate);
 
   const eventParticipants = await prisma.eventParticipant.findMany({
     where: { eventId: event.id },
     include: { participant: true },
   });
 
+  const existingScoresByTicker = new Map<string, CommodityScoreData | null | undefined>();
+  for (const row of eventParticipants) {
+    const ticker = commodityExternalId(row.participant.externalId ?? "");
+    const scoreData = row.scoreData as CommodityScoreData | null;
+    existingScoresByTicker.set(ticker, scoreData);
+  }
+
+  const prices = await getSessionPricesForField({
+    field,
+    sessionOpen: commoditiesMeta.sessionOpen,
+    sessionClose: commoditiesMeta.sessionClose,
+    isComplete,
+    existingScoresByTicker,
+  });
+
   let updatedCount = 0;
 
   for (const eventParticipant of eventParticipants) {
-    const catalogEntry = findCatalogEntryByExternalId(eventParticipant.participant.externalId ?? "");
-    if (!catalogEntry) {
+    const ticker = commodityExternalId(eventParticipant.participant.externalId ?? "");
+    const fieldEntry = findFieldEntryByTicker(field, ticker);
+    if (!fieldEntry) {
       continue;
     }
 
-    const snapshot = snapshots.get(catalogEntry.symbol);
-    const bar = snapshot?.bar;
-    const quote = snapshot?.quote;
-
-    const openPrice = bar?.open ?? quote?.regularMarketOpen ?? quote?.regularMarketPreviousClose ?? null;
-    const currentPrice = quote?.regularMarketPrice ?? bar?.close ?? null;
-    const closePrice = isComplete ? (bar?.close ?? quote?.regularMarketPrice ?? null) : null;
-
+    const snapshot = prices.get(ticker);
     const payload = transformCommodityPrice({
-      openPrice,
-      currentPrice,
-      closePrice,
+      openPrice: snapshot?.openPrice ?? null,
+      currentPrice: snapshot?.currentPrice ?? null,
+      closePrice: snapshot?.closePrice ?? null,
       provisional: !isComplete,
     });
 

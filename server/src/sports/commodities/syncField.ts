@@ -1,11 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import type { CommodityParticipantMetadata } from "@cut/sport-commodities";
-import { COMMODITIES_SPORT_ID } from "@cut/sport-commodities";
+import { COMMODITIES_SPORT_ID, commodityExternalId, getEventFieldSnapshot } from "@cut/sport-commodities";
 import {
-  COMMODITY_CATALOG,
-  commodityExternalId,
-} from "./commodityCatalog.js";
+  buildCommodityCatalog,
+  buildFieldSnapshot,
+} from "./hyperliquidCatalog.js";
 import { syncCommoditiesPriceHistory } from "./syncPriceHistory.js";
 import { syncCommoditiesQuotes } from "./syncQuotes.js";
 
@@ -25,8 +25,15 @@ export async function syncCommoditiesParticipantField(eventId: string) {
     throw new Error(`Commodities event not found: ${eventId}`);
   }
 
-  for (const entry of COMMODITY_CATALOG) {
-    const externalId = commodityExternalId(entry.symbol);
+  const field = getEventFieldSnapshot(event.metadata);
+  if (field.length === 0) {
+    throw new Error(
+      `Event ${eventId} is missing commodities.fieldSnapshot — run init-event first`,
+    );
+  }
+
+  for (const entry of field) {
+    const externalId = commodityExternalId(entry.ticker);
     const existing = await prisma.participant.findUnique({
       where: {
         sportId_externalId: {
@@ -40,7 +47,9 @@ export async function syncCommoditiesParticipantField(eventId: string) {
       ...parseParticipantMetadata(existing?.metadata),
       sector: entry.sector,
       iconKey: entry.iconKey,
-      symbol: entry.symbol,
+      symbol: entry.ticker,
+      hlCoin: entry.hlCoin,
+      hlDex: entry.hlDex,
     };
 
     const participant = await prisma.participant.upsert({
@@ -79,7 +88,13 @@ export async function syncCommoditiesParticipantField(eventId: string) {
     });
   }
 
-  console.log(`[commodities] Synced field for ${eventId}: ${COMMODITY_CATALOG.length} contracts`);
+  console.log(`[commodities] Synced field for ${eventId}: ${field.length} contracts`);
   await syncCommoditiesQuotes(eventId);
   await syncCommoditiesPriceHistory(eventId);
+}
+
+/** Resolve catalog and return field snapshot for event metadata. */
+export async function resolveCommodityFieldSnapshot() {
+  const catalog = await buildCommodityCatalog();
+  return buildFieldSnapshot(catalog);
 }

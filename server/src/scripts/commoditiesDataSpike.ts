@@ -1,80 +1,76 @@
 /**
- * Validate fixture scoring for all catalog symbols on a session date.
- * Usage: pnpm --filter server run script:commodities-data-spike 2025-06-27
+ * Validate fixture or live HL scoring for catalog symbols on a session window.
+ * Usage:
+ *   pnpm --filter server run script:commodities-data-spike 2025-06-27
+ *   pnpm --filter server run script:commodities-data-spike 2025-06-27 --live
  */
 
 import "dotenv/config";
-import { transformCommodityPrice, pctReturnToTotal } from "@cut/sport-commodities";
-import { COMMODITY_CATALOG } from "../sports/commodities/commodityCatalog.js";
+import {
+  COMMODITY_METADATA_ALLOWLIST,
+  transformCommodityPrice,
+  pctReturnToTotal,
+  catalogEntryToFieldEntry,
+} from "@cut/sport-commodities";
+import { buildCommodityCatalog, buildFieldSnapshot } from "../sports/commodities/hyperliquidCatalog.js";
 import { parseCommoditiesSessionExternalId } from "../sports/commodities/externalId.js";
-import { getFixtureDailyBars } from "../sports/commodities/fixtureMarketData.js";
+import { getSessionPricesForField } from "../sports/commodities/marketDataProvider.js";
 import {
   formatSessionDisplayName,
   resolveSessionBounds,
 } from "../sports/commodities/sessionConfig.js";
 
+function fixtureFieldSnapshot() {
+  return COMMODITY_METADATA_ALLOWLIST.map((entry) =>
+    catalogEntryToFieldEntry({
+      ...entry,
+      hlCoin: `xyz:${entry.ticker}`,
+      hlDex: "xyz",
+    }),
+  );
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2).filter((arg) => arg !== "--");
+  const live = args.includes("--live");
+  process.env.COMMODITIES_USE_FIXTURE_PRICES = live ? "false" : "true";
+
   const externalId = args.find((arg) => !arg.startsWith("--")) ?? "2025-06-27";
   const sessionDate = parseCommoditiesSessionExternalId(externalId);
   const bounds = resolveSessionBounds(sessionDate);
-  const symbols = COMMODITY_CATALOG.map((entry) => entry.symbol);
 
-  console.log(`\n=== Commodities fixture spike: ${sessionDate} ===\n`);
+  const field = live
+    ? buildFieldSnapshot(await buildCommodityCatalog())
+    : fixtureFieldSnapshot();
+
+  console.log(`\n=== Commodities data spike: ${sessionDate} (${live ? "live HL" : "fixture"}) ===\n`);
   console.log(`Event name: ${formatSessionDisplayName(sessionDate)}`);
   console.log(`Session open:  ${bounds.sessionOpen}`);
   console.log(`Session close: ${bounds.sessionClose}`);
-  console.log(`Catalog size: ${symbols.length}\n`);
+  console.log(`Field size: ${field.length}\n`);
 
-  const dailyBars = getFixtureDailyBars(symbols, sessionDate);
-  const missing: string[] = [];
-  const rows: Array<{
-    name: string;
-    symbol: string;
-    open: number;
-    close: number;
-    pct: number;
-    total: number;
-  }> = [];
+  const prices = await getSessionPricesForField({
+    field,
+    sessionOpen: bounds.sessionOpen,
+    sessionClose: bounds.sessionClose,
+    isComplete: true,
+    existingScoresByTicker: new Map(),
+  });
 
-  for (const entry of COMMODITY_CATALOG) {
-    const bar = dailyBars.get(entry.symbol);
-    if (!bar) {
-      missing.push(`${entry.displayName} (${entry.symbol})`);
-      continue;
-    }
-
+  for (const entry of field) {
+    const snapshot = prices.get(entry.ticker);
     const payload = transformCommodityPrice({
-      openPrice: bar.open,
-      currentPrice: bar.close,
-      closePrice: bar.close,
+      openPrice: snapshot?.openPrice ?? null,
+      currentPrice: snapshot?.closePrice ?? snapshot?.currentPrice ?? null,
+      closePrice: snapshot?.closePrice ?? null,
       provisional: false,
     });
 
-    rows.push({
-      name: entry.displayName,
-      symbol: entry.symbol,
-      open: bar.open,
-      close: bar.close,
-      pct: payload.scoreData.pctReturn ?? 0,
-      total: payload.total,
-    });
-  }
-
-  console.log("Daily returns (fixture):");
-  for (const row of rows.sort((a, b) => b.total - a.total)) {
-    const display = (row.total / 10).toFixed(1);
+    const display = (payload.total / 10).toFixed(1);
+    const pct = payload.scoreData.pctReturn ?? 0;
     console.log(
-      `  ${row.name.padEnd(14)} ${row.symbol.padEnd(8)} ${row.pct >= 0 ? "+" : ""}${row.pct.toFixed(2)}% → ${display} (total=${row.total})`,
+      `  ${entry.displayName.padEnd(14)} ${entry.ticker.padEnd(10)} ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}% → ${display}`,
     );
-  }
-
-  if (missing.length > 0) {
-    console.log(`\nMissing daily bars (${missing.length}):`);
-    for (const label of missing) {
-      console.log(`  - ${label}`);
-    }
-    process.exit(1);
   }
 
   const samplePct = 2.35;

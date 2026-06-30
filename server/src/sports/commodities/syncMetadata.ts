@@ -17,9 +17,12 @@ export async function syncCommoditiesEventMetadata(eventId: string) {
   const sessionDate = parseCommoditiesSessionExternalId(event.externalId);
   const defaultBounds = resolveSessionBounds(sessionDate);
   const existingCommodities = parseCommoditiesEventMetadata(event.metadata);
+  const sessionOpen = existingCommodities?.sessionOpen ?? defaultBounds.sessionOpen;
   const sessionClose = existingCommodities?.sessionClose ?? defaultBounds.sessionClose;
 
   const now = new Date();
+  const sessionStarted =
+    existingCommodities?.sessionStarted === true || now >= new Date(sessionOpen);
   const sessionComplete =
     existingCommodities?.sessionComplete === true || now >= new Date(sessionClose);
 
@@ -27,9 +30,11 @@ export async function syncCommoditiesEventMetadata(eventId: string) {
     sessionDate: string;
     sessionOpen?: string;
     sessionClose?: string;
+    sessionStarted: boolean;
     sessionComplete: boolean;
   } = {
     sessionDate,
+    sessionStarted,
     sessionComplete,
   };
 

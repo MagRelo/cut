@@ -70,20 +70,11 @@ const ICONS: Record<string, React.FC<IconProps>> = {
   copper: BoltIcon,
   platinum: CoinIcon,
   aluminum: BoltIcon,
-  nickel: BoltIcon,
-  lead: BoltIcon,
-  zinc: BoltIcon,
+  uranium: BoltIcon,
+  ttf: DripIcon,
   wheat: ClubIcon,
   corn: ClubIcon,
   soybeans: ClubIcon,
-  lumber: ClubIcon,
-  "lean-hogs": ClubIcon,
-  rice: ClubIcon,
-  oats: ClubIcon,
-  cotton: SoftTriangleIcon,
-  coffee: SoftTriangleIcon,
-  sugar: SoftTriangleIcon,
-  cocoa: SoftTriangleIcon,
 };
 
 function CubeIcon({ className }: IconProps) {

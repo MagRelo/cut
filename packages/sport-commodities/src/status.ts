@@ -4,56 +4,35 @@ import {
   type CommoditiesEventMetadata,
 } from "./metadata.js";
 
-export function commoditiesEventStatusFromMetadata(
-  metadata: unknown,
-  now: Date = new Date(),
-): EventStatus {
+export function commoditiesEventStatusFromMetadata(metadata: unknown): EventStatus {
   const commodities = parseCommoditiesEventMetadata(metadata);
   if (!commodities) {
     return "SCHEDULED";
   }
-  return commoditiesEventStatus(commodities, now);
+  return commoditiesEventStatus(commodities);
 }
 
-export function commoditiesEventStatus(
-  commodities: CommoditiesEventMetadata,
-  now: Date = new Date(),
-): EventStatus {
+export function commoditiesEventStatus(commodities: CommoditiesEventMetadata): EventStatus {
   if (commodities.sessionComplete) {
     return "COMPLETE";
   }
 
-  const sessionClose = new Date(commodities.sessionClose);
-  if (!Number.isNaN(sessionClose.getTime()) && now >= sessionClose) {
-    return "COMPLETE";
-  }
-
-  const sessionOpen = new Date(commodities.sessionOpen);
-  if (!Number.isNaN(sessionOpen.getTime()) && now >= sessionOpen) {
+  if (commodities.sessionStarted) {
     return "LIVE";
   }
 
   return "SCHEDULED";
 }
 
-export function commoditiesShouldActivateContest(
-  metadata: unknown,
-  now: Date = new Date(),
-): boolean {
-  return commoditiesEventStatusFromMetadata(metadata, now) === "LIVE";
+export function commoditiesShouldActivateContest(metadata: unknown): boolean {
+  return commoditiesEventStatusFromMetadata(metadata) === "LIVE";
 }
 
-export function commoditiesShouldSettleContest(
-  metadata: unknown,
-  now: Date = new Date(),
-): boolean {
-  return commoditiesEventStatusFromMetadata(metadata, now) === "COMPLETE";
+export function commoditiesShouldSettleContest(metadata: unknown): boolean {
+  return commoditiesEventStatusFromMetadata(metadata) === "COMPLETE";
 }
 
-export function commoditiesShouldSyncLiveScores(
-  metadata: unknown,
-  now: Date = new Date(),
-): boolean {
-  const status = commoditiesEventStatusFromMetadata(metadata, now);
+export function commoditiesShouldSyncLiveScores(metadata: unknown): boolean {
+  const status = commoditiesEventStatusFromMetadata(metadata);
   return status === "LIVE" || status === "COMPLETE";
 }

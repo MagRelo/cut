@@ -1,31 +1,14 @@
-/** Deterministic offline market data until a licensed price API is integrated. */
+/** Deterministic offline market data when COMMODITIES_USE_FIXTURE_PRICES=true. */
+
+import type { MarketQuote } from "./marketTypes.js";
+import type { CandleInterval } from "./sessionPricing.js";
+import { INTERVAL_MS_FOR_FIXTURE } from "./sessionPricing.js";
 
 export const COMMODITY_PRICE_HISTORY_POINTS = 30;
 
-export type FixtureQuote = {
-  symbol: string;
-  regularMarketOpen: number;
-  regularMarketPrice: number;
-  regularMarketPreviousClose: number;
-  regularMarketDayHigh: number;
-  regularMarketDayLow: number;
-  regularMarketVolume: number;
-  regularMarketChangePercent: number;
-  fiftyTwoWeekHigh: number;
-  fiftyTwoWeekLow: number;
-  marketState: string;
-};
-
-export type FixtureDailyBar = {
-  open: number;
-  close: number;
-  high: number;
-  low: number;
-};
-
-export type FixtureSessionSnapshot = {
-  quote: FixtureQuote;
-  bar: FixtureDailyBar;
+export type FixtureCandle = {
+  t: number;
+  c: string;
 };
 
 function hashSeed(key: string): number {
@@ -36,45 +19,38 @@ function hashSeed(key: string): number {
   return seed;
 }
 
-/** Deterministic fixture OHLC for a symbol and session date. */
-export function fixtureDailyBar(symbol: string, sessionDate: string): FixtureDailyBar {
-  const seed = hashSeed(`${symbol}:${sessionDate}`);
-  const base = 50 + (Math.abs(seed) % 500);
-  const drift = ((Math.abs(seed) % 400) - 200) / 10000;
-  const open = base;
-  const close = base * (1 + drift);
+function basePrice(ticker: string): number {
+  const seed = hashSeed(ticker);
+  return 50 + (Math.abs(seed) % 500);
+}
+
+function priceAtOffset(ticker: string, offsetMs: number): number {
+  const seed = hashSeed(`${ticker}:${Math.floor(offsetMs / 60_000)}`);
+  const base = basePrice(ticker);
+  const drift = ((Math.abs(seed) % 200) - 100) / 10000;
+  return Math.max(1, base * (1 + drift));
+}
+
+export function fixtureMarkPrice(ticker: string): number {
+  return priceAtOffset(ticker, Date.now());
+}
+
+export function fixtureQuoteForTicker(ticker: string): MarketQuote {
+  const markPrice = fixtureMarkPrice(ticker);
+  const prevDayPrice = priceAtOffset(ticker, Date.now() - 24 * 60 * 60 * 1000);
+
   return {
-    open,
-    close,
-    high: Math.max(open, close) * 1.005,
-    low: Math.min(open, close) * 0.995,
+    markPrice,
+    prevDayPrice,
+    changePercent: prevDayPrice > 0 ? ((markPrice - prevDayPrice) / prevDayPrice) * 100 : 0,
+    dayVolume: 42_000 + ticker.length * 1_000,
+    syncedAt: new Date().toISOString(),
   };
 }
 
-export function fixtureQuote(symbol: string, sessionDate: string): FixtureQuote {
-  const bar = fixtureDailyBar(symbol, sessionDate);
-  const previousClose = fixtureDailyBar(symbol, `${sessionDate}-prev`).open * 0.995;
-  const changePercent = bar.open > 0 ? ((bar.close - bar.open) / bar.open) * 100 : 0;
-
-  return {
-    symbol,
-    regularMarketOpen: bar.open,
-    regularMarketPrice: bar.close,
-    regularMarketPreviousClose: previousClose,
-    regularMarketDayHigh: bar.high,
-    regularMarketDayLow: bar.low,
-    regularMarketVolume: 42_000 + symbol.length * 1_000,
-    regularMarketChangePercent: changePercent,
-    fiftyTwoWeekHigh: bar.close * 1.15,
-    fiftyTwoWeekLow: bar.close * 0.85,
-    marketState: "REGULAR",
-  };
-}
-
-/** Deterministic fixture close series for picker sparklines. */
-export function fixturePriceHistory(symbol: string, pointCount = COMMODITY_PRICE_HISTORY_POINTS): number[] {
-  const seed = hashSeed(symbol);
-  const base = 50 + (Math.abs(seed) % 500);
+export function fixturePriceHistory(ticker: string, pointCount = COMMODITY_PRICE_HISTORY_POINTS): number[] {
+  const seed = hashSeed(ticker);
+  const base = basePrice(ticker);
   const closes: number[] = [];
   let price = base;
 
@@ -87,43 +63,21 @@ export function fixturePriceHistory(symbol: string, pointCount = COMMODITY_PRICE
   return closes;
 }
 
-export function getFixtureSessionSnapshots(
-  symbols: string[],
-  sessionDate: string,
-): Map<string, FixtureSessionSnapshot> {
-  const results = new Map<string, FixtureSessionSnapshot>();
+export function fixtureCandlesForWindow(
+  ticker: string,
+  sessionOpenMs: number,
+  sessionCloseMs: number,
+  interval: CandleInterval,
+): FixtureCandle[] {
+  const stepMs = INTERVAL_MS_FOR_FIXTURE[interval];
+  const candles: FixtureCandle[] = [];
 
-  for (const symbol of symbols) {
-    const bar = fixtureDailyBar(symbol, sessionDate);
-    const quote = fixtureQuote(symbol, sessionDate);
-    results.set(symbol, { quote, bar });
+  for (let t = sessionOpenMs - stepMs * 2; t <= sessionCloseMs + stepMs * 2; t += stepMs) {
+    candles.push({
+      t,
+      c: String(priceAtOffset(ticker, t)),
+    });
   }
 
-  return results;
-}
-
-export function getFixtureQuotes(symbols: string[], sessionDate: string): FixtureQuote[] {
-  return symbols.map((symbol) => fixtureQuote(symbol, sessionDate));
-}
-
-export function getFixtureDailyBars(
-  symbols: string[],
-  sessionDate: string,
-): Map<string, FixtureDailyBar> {
-  const results = new Map<string, FixtureDailyBar>();
-  for (const symbol of symbols) {
-    results.set(symbol, fixtureDailyBar(symbol, sessionDate));
-  }
-  return results;
-}
-
-export function getFixturePriceHistories(
-  symbols: string[],
-  pointCount = COMMODITY_PRICE_HISTORY_POINTS,
-): Map<string, number[]> {
-  const results = new Map<string, number[]>();
-  for (const symbol of symbols) {
-    results.set(symbol, fixturePriceHistory(symbol, pointCount));
-  }
-  return results;
+  return candles;
 }

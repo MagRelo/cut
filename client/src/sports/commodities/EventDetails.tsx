@@ -2,10 +2,7 @@ import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import { commoditiesEventStatusFromMetadata } from "@cut/sport-commodities";
 import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
-import {
-  formatCommoditiesEventStatusLabel,
-  formatCommoditySessionWindow,
-} from "./commodityUtils";
+import { formatCommoditiesEventStatusLabel, formatCommoditySessionWindow } from "./commodityUtils";
 
 interface CommodityEventDetailsProps {
   event: CompetitionEventShell;
@@ -53,10 +50,6 @@ export function CommodityEventDetails({ event, className = "" }: CommodityEventD
       <div className="mt-0.5 flex w-full flex-wrap items-center gap-x-2 gap-y-0.5">
         <span className="font-medium text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
           {sessionWindow ?? `Session ${sessionDate}`}
-        </span>
-        {detailSeparator}
-        <span className="text-white/80 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
-          5 picks · session % move
         </span>
       </div>
 

@@ -1,6 +1,6 @@
 # Commodities event activation runbook
 
-Operator checklist for activating a commodity session on the v4 platform (`CompetitionEvent`, `sportId: commodities`). Users pick five contracts from a static 24-name catalog; lineup scores sum session % moves (Phase A: anchor-date daily bar).
+Operator checklist for activating a commodity session on the v4 platform (`CompetitionEvent`, `sportId: commodities`). Users pick five Hyperliquid HIP-3 perps from a frozen field; lineup scores sum session % moves between `sessionOpen` and `sessionClose`.
 
 **Related:** [competition-brief.md](./competition-brief.md) · [data-sources.md](./data-sources.md) · [COMMODITIES_JOURNAL.md](../../../COMMODITIES_JOURNAL.md) · [Golf event activation](../golf/event-activation-runbook.md)
 
@@ -20,7 +20,8 @@ Pass script arguments **directly** — do **not** insert `--` before them. Use `
 | **Custom window** | `… commodities 2026-06-29 --open 10:00 --close 14:00` |
 | **Local cleanup** | `pnpm --filter server run script:commodities-cleanup-local` |
 | **Active flag** | `CompetitionEvent.isActive = true` (set by init; clears other active commodities events) |
-| **Field sync** | 24 contracts (`EventParticipant` rows) |
+| **Field sync** | ~14 contracts (`EventParticipant` rows; frozen `fieldSnapshot` at init) |
+| **Catalog sync** | `pnpm --filter server run script:commodities-catalog-sync` |
 | **Score sync** | Cron or manual pipeline — not part of init |
 | **Data spike** | `pnpm --filter server run script:commodities-data-spike 2025-06-27` |
 | **Dry run** | `pnpm --filter server run script:commodities-dry-run 2025-06-27` |
@@ -31,7 +32,7 @@ Pass script arguments **directly** — do **not** insert `--` before them. Use `
 
 ## Prerequisites
 
-- [ ] **Trading day** confirmed — skip weekends and US market holidays
+- [ ] **HL markets available** — run `script:commodities-catalog-sync`; allowlist entries should resolve
 - [ ] **Sport row** exists — `pnpm --filter server run db:seed` creates `commodities` with `isEnabled: true`
 - [ ] **Local DB** migrated
 - [ ] **Target environment** — confirm `DATABASE_URL` before init
@@ -110,12 +111,12 @@ Verify:
 ### 4. Race day (cron)
 
 With `ENABLE_CRON=true`, the 5-minute pipeline will:
-1. Refresh session metadata (open/close, `sessionComplete`)
+1. Refresh session metadata (`sessionStarted`, `sessionComplete` when open/close times pass)
 2. Sync field (catalog is static; idempotent)
 3. Sync live scores (open → current during LIVE; open → close at COMPLETE)
 4. Recalculate contest lineups
 
-During **SCHEDULED**, users build lineups. At **session open**, contests activate. After **session close**, contests settle.
+During **SCHEDULED**, users build lineups. When cron marks **`sessionStarted`**, the event goes **LIVE**, lineups lock, and contests activate in the same pipeline pass. After cron marks **`sessionComplete`**, contests settle.
 
 ### 5. Next trading day
 
@@ -129,7 +130,8 @@ Run init with the new `YYYY-MM-DD`. Init deactivates the previous commodities ev
 |---------|--------------|--------|
 | Picker shows no prices/sparklines | Field sync not run | `pnpm --filter server run script:commodities-local-eval` or re-init event |
 | Contract `total = 0` | Missing open/close in score data | Re-run pipeline; DNP = 0 points per brief |
-| Event stuck SCHEDULED | Wall clock before `sessionOpen` | Expected; verify init bounds or `COMMODITIES_SESSION_*` env |
+| Event stuck SCHEDULED after `sessionOpen` | Cron has not run since open | Wait for cron (5 min) or run pipeline manually; verify `sessionStarted` in metadata |
+| Event shows LIVE but contest still OPEN | Cron has not activated yet | Same — status and activation flip together on the next pipeline pass |
 | Event never COMPLETE | `sessionClose` not passed | Wait for close; verify stored metadata bounds |
 | Custom bounds reset | Re-init without flags on existing event | Re-init with explicit `--open`/`--close`; cron preserves bounds once set |
 | Field count ≠ 24 | Catalog/init error | Re-run init; check `commodityCatalog.ts` |

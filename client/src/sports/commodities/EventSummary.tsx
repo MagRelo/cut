@@ -2,20 +2,10 @@ import React from "react";
 import type { EventSummaryProps } from "@cut/sport-sdk/ui";
 import { CommodityEventDetails } from "./EventDetails";
 
-function parseBeautyImage(metadata: unknown): string | null {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return null;
-  }
-  const beautyImage = (metadata as Record<string, unknown>).beautyImage;
-  if (typeof beautyImage !== "string") {
-    return null;
-  }
-  const trimmed = beautyImage.trim();
-  return trimmed || null;
-}
+export const COMMODITY_EVENT_HERO_IMAGE = "/CommodityBG2.png";
 
-export function resolveCommodityEventHeroImage(event: EventSummaryProps["event"]): string | null {
-  return parseBeautyImage(event.metadata);
+export function resolveCommodityEventHeroImage(_event: EventSummaryProps["event"]): string {
+  return COMMODITY_EVENT_HERO_IMAGE;
 }
 
 export const CommodityEventSummary: React.FC<EventSummaryProps> = ({ event, surface = "hero" }) => {

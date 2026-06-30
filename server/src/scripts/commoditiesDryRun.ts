@@ -7,10 +7,11 @@
  */
 
 import "dotenv/config";
-import { COMMODITIES_SPORT_ID } from "@cut/sport-commodities";
+process.env.COMMODITIES_USE_FIXTURE_PRICES = "true";
+
+import { COMMODITIES_SPORT_ID, commodityExternalId, getEventFieldSnapshot } from "@cut/sport-commodities";
 import { prisma } from "../lib/prisma.js";
 import { requireSportModule } from "../sports/registry.js";
-import { commodityExternalId } from "../sports/commodities/commodityCatalog.js";
 import { createLineupForEvent } from "../services/lineups/createLineupForEvent.js";
 import { updateContestLineupsForEvent } from "../services/updateContestLineups.js";
 import { runSportEventPipeline } from "../services/cron/runSportEventPipeline.js";
@@ -125,8 +126,9 @@ async function main(): Promise<void> {
   if (!event.isActive) {
     throw new Error("Event is not active");
   }
-  if (fieldCount !== 24) {
-    throw new Error(`Expected 24 contracts, found ${fieldCount}`);
+  const expectedFieldCount = getEventFieldSnapshot(event.metadata).length || fieldCount;
+  if (fieldCount !== expectedFieldCount) {
+    throw new Error(`Expected ${expectedFieldCount} contracts, found ${fieldCount}`);
   }
 
   console.log("[pipeline] Running sport event pipeline...");
@@ -151,15 +153,15 @@ async function main(): Promise<void> {
   await cleanupDryRunData(event.id);
 
   const catalog: PickSpec[] = [
-    { label: "Corn", externalId: commodityExternalId("ZC=F") },
-    { label: "Cocoa", externalId: commodityExternalId("CC=F") },
-    { label: "Soybeans", externalId: commodityExternalId("ZS=F") },
-    { label: "Zinc", externalId: commodityExternalId("ZNC=F") },
-    { label: "Cotton", externalId: commodityExternalId("CT=F") },
-    { label: "Gold", externalId: commodityExternalId("GC=F") },
-    { label: "Crude", externalId: commodityExternalId("CL=F") },
-    { label: "Wheat", externalId: commodityExternalId("ZW=F") },
-    { label: "Lean Hogs", externalId: commodityExternalId("HE=F") },
+    { label: "Corn", externalId: commodityExternalId("CORN") },
+    { label: "Gold", externalId: commodityExternalId("GOLD") },
+    { label: "Soybeans", externalId: commodityExternalId("SOY") },
+    { label: "Copper", externalId: commodityExternalId("COPPER") },
+    { label: "Wheat", externalId: commodityExternalId("WHEAT") },
+    { label: "Silver", externalId: commodityExternalId("SILVER") },
+    { label: "Crude", externalId: commodityExternalId("CL") },
+    { label: "Natural Gas", externalId: commodityExternalId("NATGAS") },
+    { label: "Platinum", externalId: commodityExternalId("PLATINUM") },
   ];
   const pickIds = await resolvePickIds(event.id, catalog);
   const pick = (...extIds: string[]) => extIds.map((id) => pickIds.get(id)!);
@@ -178,11 +180,10 @@ async function main(): Promise<void> {
       userIndex: 0,
       name: "Dry Run — top ag lineup",
       picks: pick(
-        commodityExternalId("ZC=F"),
-        commodityExternalId("CC=F"),
-        commodityExternalId("ZS=F"),
-        commodityExternalId("ZNC=F"),
-        commodityExternalId("CT=F"),
+        commodityExternalId("CORN"),
+        commodityExternalId("GOLD"),
+        commodityExternalId("SOY"),
+        commodityExternalId("COPPER"),
       ),
       predictionStored: 550,
       entryId: "920001",
@@ -191,11 +192,10 @@ async function main(): Promise<void> {
       userIndex: 1,
       name: "Dry Run — mixed (farther prediction)",
       picks: pick(
-        commodityExternalId("GC=F"),
-        commodityExternalId("ZC=F"),
-        commodityExternalId("CC=F"),
-        commodityExternalId("ZS=F"),
-        commodityExternalId("CL=F"),
+        commodityExternalId("GOLD"),
+        commodityExternalId("CORN"),
+        commodityExternalId("SOY"),
+        commodityExternalId("COPPER"),
       ),
       predictionStored: 200,
       entryId: "920002",
@@ -204,11 +204,10 @@ async function main(): Promise<void> {
       userIndex: 2,
       name: "Dry Run — mixed (closer prediction)",
       picks: pick(
-        commodityExternalId("GC=F"),
-        commodityExternalId("ZW=F"),
-        commodityExternalId("ZC=F"),
-        commodityExternalId("CC=F"),
-        commodityExternalId("HE=F"),
+        commodityExternalId("GOLD"),
+        commodityExternalId("WHEAT"),
+        commodityExternalId("CORN"),
+        commodityExternalId("SILVER"),
       ),
       predictionStored: 280,
       entryId: "920003",

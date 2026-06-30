@@ -1,66 +1,57 @@
 # Commodities data sources
 
-**Status:** Price API not selected. Development and dry-runs use deterministic fixture data.
+## Live source (production)
 
-**Related:** [competition-brief.md](competition-brief.md) · [event-activation-runbook.md](event-activation-runbook.md)
+| Layer | Provider |
+|-------|----------|
+| **Prices** | [Hyperliquid](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint) HIP-3 perps |
+| **Deployer** | Multi-dex dedup with **trade.xyz (`xyz`) preferred** |
+| **Auth** | None (public `info` API) |
 
----
+### Endpoints
 
-## Decision
+- `perpDexs` — catalog resolution at init
+- `metaAndAssetCtxs` — live `markPx`, 24h `prevDayPx`, volume
+- `candleSnapshot` — session-boundary open/close prices, sparklines
 
-| Role | Source |
-|------|--------|
-| **Development (current)** | Deterministic fixture OHLC/quotes in `server/src/sports/commodities/fixtureMarketData.ts` |
-| **Production (TBD)** | Licensed futures market data API — vendor selection in progress |
+### Catalog
 
-Fixture data is seeded on event init and field sync (`syncQuotes`, `syncPriceHistory`, `syncLiveScores`). No external HTTP calls.
+Static allowlist in `packages/sport-commodities/src/catalog.ts` (~14 tickers: `GOLD`, `CL`, `BRENTOIL`, etc.). `Participant.externalId` = canonical ticker. `metadata.commodities.fieldSnapshot` freezes `hlCoin` per event at init.
 
----
+### Scoring
 
-## Fixture → platform mapping
-
-| Fixture field | Platform field |
-|---------------|----------------|
-| `FixtureDailyBar.open` / `close` | `scoreData.openPrice`, `currentPrice`, `closePrice` |
-| `FixtureQuote` snapshot | `Participant.metadata.quote` |
-| `fixturePriceHistory()` closes | `Participant.metadata.priceHistory` |
-| Computed % return | `scoreData.pctReturn`, `EventParticipant.total` (fixed-point ×10) |
+`% return` = mark/candle at `sessionOpen` → current mark (LIVE) → mark/candle at `sessionClose`. Open price locks after first LIVE sync. `sessionStarted` / `sessionComplete` are set by cron (not client wall clock). Missing price → 0 pts (DNP).
 
 ---
 
-## Catalog symbols
+## Development / CI
 
-24 CME-style futures tickers (e.g. `CL=F`, `GC=F`) in `commodityCatalog.ts`. `Participant.externalId` is the ticker without the `=F` suffix (e.g. `CL`).
-
-When a vendor API is integrated, add a client module that maps catalog `symbol` values to the vendor's symbology and replace calls in `syncQuotes.ts`, `syncPriceHistory.ts`, and `syncLiveScores.ts`.
-
----
-
-## externalId resolution
-
-**Pattern:** ISO calendar date `YYYY-MM-DD` — e.g. `2026-06-29` (anchor date).
-
-Session open/close are set at init (explicit `--open`/`--close` or env defaults) and stored in `metadata.commodities`. Cron metadata sync preserves stored bounds and only fills defaults when missing.
-
-**Phase A scoring:** Fixture (and future vendor daily) OHLC uses the anchor date, not the custom window timestamps. Intraday scoring at `sessionOpen`/`sessionClose` requires API Ninjas integration — see [COMMODITIES_APININJA_PLAN.md](../../../COMMODITIES_APININJA_PLAN.md).
+| Mode | When |
+|------|------|
+| **Fixture** | `COMMODITIES_USE_FIXTURE_PRICES=true` — deterministic prices in `fixtureMarketData.ts` |
 
 ---
 
-## Env vars
+## Environment
 
-| Variable | Default | Notes |
-|----------|---------|-------|
-| `COMMODITIES_SESSION_TZ` | `America/New_York` | Default timezone when init omits session flags |
-| `COMMODITIES_SESSION_OPEN` | `09:30` | Default open time (overridable per event at init) |
-| `COMMODITIES_SESSION_CLOSE` | `16:00` | Default close time (overridable per event at init) |
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `HYPERLIQUID_INFO_URL` | `https://api.hyperliquid.xyz/info` | API base |
+| `COMMODITIES_USE_FIXTURE_PRICES` | unset (live) | Force fixture mode |
+| `COMMODITIES_HL_CATALOG_TTL_MS` | `3600000` | Catalog cache TTL |
+| `COMMODITIES_HL_MARK_CACHE_MS` | `45000` | Mark quote cache |
+| `COMMODITIES_SESSION_TZ` | `America/New_York` | Default TZ when init omits session flags |
+| `COMMODITIES_SESSION_OPEN` | `09:30` | Default open when init omits `--open` |
+| `COMMODITIES_SESSION_CLOSE` | `16:00` | Default close when init omits `--close` |
 
 ---
 
-## Validation scripts
+## Scripts
 
 | Script | Purpose |
 |--------|---------|
-| `script:commodities-data-spike` | Print fixture returns for all 24 symbols on a session date |
-| `script:commodities-dry-run` | End-to-end contest ranking on fixture prices |
-| `script:commodities-local-eval` | Enable sport, init event, refresh fixture data, open eval contest |
-| `script:commodities-cleanup-local` | Remove all commodities events/contests from local DB (keeps catalog) |
+| `script:commodities-catalog-sync` | Print allowlist vs HL availability |
+| `script:commodities-data-spike` | Session-boundary returns (`--live` for HL) |
+| `script:commodities-dry-run` | End-to-end contest ranking (fixture) |
+| `script:commodities-local-eval` | Enable sport, init event, open eval contest |
+| `script:commodities-cleanup-local` | Remove commodities events/contests from local DB |

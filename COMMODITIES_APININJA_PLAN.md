@@ -1,6 +1,6 @@
 # Commodity Picks — API Ninjas integration plan
 
-**Status:** Evaluation in progress — implementation deferred.
+**Status:** Superseded by [COMMODITIES_HYPERLIQUID_PLAN.md](COMMODITIES_HYPERLIQUID_PLAN.md) (2026-06-30).
 
 **Related:** [competition brief](docs/sports/commodities/competition-brief.md) · [data sources](docs/sports/commodities/data-sources.md) · [COMMODITIES_JOURNAL.md](COMMODITIES_JOURNAL.md) · [API Ninjas Commodity Price API](https://api-ninjas.com/api/commodityprice)
 

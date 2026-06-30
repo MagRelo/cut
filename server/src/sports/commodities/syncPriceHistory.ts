@@ -1,16 +1,11 @@
 import { Prisma } from "@prisma/client";
 import type { CommodityParticipantMetadata } from "@cut/sport-commodities";
-import { COMMODITIES_SPORT_ID, parseCommoditiesEventMetadata } from "@cut/sport-commodities";
+import { COMMODITIES_SPORT_ID, getEventFieldSnapshot, parseCommoditiesEventMetadata } from "@cut/sport-commodities";
 import { prisma } from "../../lib/prisma.js";
-import {
-  COMMODITY_CATALOG,
-  commodityExternalId,
-} from "./commodityCatalog.js";
+import { commodityExternalId } from "@cut/sport-commodities";
 import { mergeCommoditiesEventMetadata } from "./metadataMerge.js";
-import {
-  COMMODITY_PRICE_HISTORY_POINTS,
-  fixturePriceHistory,
-} from "./fixtureMarketData.js";
+import { COMMODITY_PRICE_HISTORY_POINTS } from "./fixtureMarketData.js";
+import { fetchPriceHistoryForField } from "./marketDataProvider.js";
 
 function parseParticipantMetadata(metadata: unknown): CommodityParticipantMetadata {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
@@ -19,7 +14,7 @@ function parseParticipantMetadata(metadata: unknown): CommodityParticipantMetada
   return metadata as CommodityParticipantMetadata;
 }
 
-/** Write deterministic sparkline closes once per event. */
+/** Write sparkline closes once per event. */
 export async function syncCommoditiesPriceHistory(eventId: string): Promise<void> {
   const event = await prisma.competitionEvent.findFirst({
     where: { id: eventId, sportId: COMMODITIES_SPORT_ID },
@@ -34,6 +29,13 @@ export async function syncCommoditiesPriceHistory(eventId: string): Promise<void
     return;
   }
 
+  const field = getEventFieldSnapshot(event.metadata);
+  if (field.length === 0) {
+    return;
+  }
+
+  const histories = await fetchPriceHistoryForField(field, COMMODITY_PRICE_HISTORY_POINTS);
+
   const participants = await prisma.participant.findMany({
     where: { sportId: COMMODITIES_SPORT_ID },
     select: { id: true, externalId: true, metadata: true },
@@ -42,19 +44,16 @@ export async function syncCommoditiesPriceHistory(eventId: string): Promise<void
     participants.map((row) => [row.externalId, row]),
   );
 
-  for (const entry of COMMODITY_CATALOG) {
-    const externalId = commodityExternalId(entry.symbol);
+  for (const entry of field) {
+    const externalId = commodityExternalId(entry.ticker);
     const row = participantByExternalId.get(externalId);
     if (!row) {
       continue;
     }
 
     const existingMeta = parseParticipantMetadata(row.metadata);
-    if (existingMeta.priceHistory?.length) {
-      continue;
-    }
+    const closes = histories.get(entry.ticker) ?? [];
 
-    const closes = fixturePriceHistory(entry.symbol, COMMODITY_PRICE_HISTORY_POINTS);
     await prisma.participant.update({
       where: { id: row.id },
       data: {
@@ -75,5 +74,5 @@ export async function syncCommoditiesPriceHistory(eventId: string): Promise<void
     },
   });
 
-  console.log(`[commodities] Fixture price history synced for event ${eventId}`);
+  console.log(`[commodities] Price history synced for event ${eventId}`);
 }

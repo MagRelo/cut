@@ -22,7 +22,7 @@ export const CommodityIconPreviewPage: React.FC = () => {
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">Commodity icon preview</h1>
         <p className="mt-2 max-w-2xl text-sm text-gray-600">
-          All 24 catalog icons with sector ring colors. Edit{" "}
+          All {COMMODITY_CATALOG.length} catalog icons with sector ring colors. Edit{" "}
           <code className="rounded bg-gray-100 px-1 py-0.5 text-xs">client/src/sports/commodities/icons.tsx</code>{" "}
           and refresh to iterate.
         </p>

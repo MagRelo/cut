@@ -25,14 +25,14 @@ Pick five commodities for today's session; your lineup scores the sum of their %
 | **sportId** | `commodities` |
 | **Slug** | `commodities` |
 | **Session window** | Configurable `sessionOpen` → `sessionClose` (ISO timestamps in `metadata.commodities`) |
-| **Typical duration** | One US trading day (~6.5 hours); any duration supported at init |
+| **Typical duration** | Any duration at init (e.g. `--open +30m --close +2h`) |
 | **Active events** | One active commodities event at a time (`CompetitionEvent.isActive`) |
-| **SCHEDULED → LIVE** | `now >= sessionOpen` |
-| **LIVE → COMPLETE** | `now >= sessionClose` |
+| **SCHEDULED → LIVE** | Cron sets `metadata.commodities.sessionStarted` when `now >= sessionOpen` (same pipeline pass activates contests) |
+| **LIVE → COMPLETE** | Cron sets `metadata.commodities.sessionComplete` when `now >= sessionClose` (same pass settles contests) |
 | **Init defaults** | Env `COMMODITIES_SESSION_TZ/OPEN/CLOSE` (9:30–16:00 America/New_York) |
 | **Init overrides** | `service:init-event commodities YYYY-MM-DD --open HH:mm --close HH:mm` (or ISO datetimes) |
 
-**Phase A scoring:** `%` return uses the anchor date's daily OHLC from fixture data (or vendor daily bar when integrated). Custom session bounds control contest lifecycle only until API Ninjas intraday scoring ships.
+**Scoring:** `%` return uses Hyperliquid mark/candle at `sessionOpen` and `sessionClose` (see [data-sources.md](./data-sources.md)).
 
 **Out of scope:** Equities, prop bets, automated daily init cron.
 
@@ -42,11 +42,11 @@ Pick five commodities for today's session; your lineup scores the sum of their %
 
 | Field | Decision |
 |-------|----------|
-| **Field size** | 24 curated CME-style futures (static catalog) |
-| **Roster rules** | 5 slots, flat pool, no duplicates |
+| **Field size** | ~14 Hyperliquid HIP-3 perps (static allowlist; frozen per event in `fieldSnapshot`) |
+| **Roster rules** | 4 slots, flat pool, no duplicates |
 | **Field lock timing** | Lineup lock at session open (`LIVE` transition) |
 | **DNP policy** | Missing open or close price → **0 points** for that pick |
-| **Min picks** | 5 required to submit (`slotCount` / `maxPicks` = 5; `minPicks` = 0 for draft saves, same as golf/F1) |
+| **Min picks** | 4 required to submit (`slotCount` / `maxPicks` = 4; `minPicks` = 0 for draft saves, same as golf/F1) |
 
 ---
 
@@ -67,7 +67,7 @@ Each commodity's `EventParticipant.total` = **% return from session open to curr
 
 ### Lineup aggregation
 
-Sum of five commodity totals (platform default aggregation).
+Sum of four commodity totals (platform default aggregation).
 
 ### Direction
 
@@ -137,7 +137,7 @@ Higher wins.
 
 ```json
 {
-  "rosterRules": { "slotCount": 5, "minPicks": 0, "maxPicks": 5, "allowDuplicates": false },
+  "rosterRules": { "slotCount": 4, "minPicks": 0, "maxPicks": 4, "allowDuplicates": false },
   "scoringRules": { "aggregation": "sum", "direction": "higher_wins" },
   "predictionRules": { "min": -1000, "max": 2500, "defaultRandomMin": 400, "defaultRandomMax": 900 }
 }

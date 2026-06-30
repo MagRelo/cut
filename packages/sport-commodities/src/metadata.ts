@@ -2,12 +2,25 @@ export const COMMODITIES_SPORT_ID = "commodities" as const;
 
 export type CommoditySector = "energy" | "precious" | "metals" | "ag" | "softs";
 
+export interface CommodityFieldEntry {
+  ticker: string;
+  hlCoin: string;
+  hlDex: string;
+  displayName: string;
+  sector: CommoditySector;
+  iconKey: string;
+}
+
 export interface CommoditiesEventMetadata {
   sessionDate: string;
   sessionOpen: string;
   sessionClose: string;
+  /** Set by cron when session open time passes — gates LIVE status and contest activation. */
+  sessionStarted?: boolean;
   sessionComplete?: boolean;
-  /** ISO timestamp when 6-week picker sparklines were last synced for this event. */
+  /** Frozen catalog + HL coin mapping at init — authoritative for this event. */
+  fieldSnapshot?: CommodityFieldEntry[];
+  /** ISO timestamp when picker sparklines were last synced for this event. */
   priceHistorySyncedAt?: string;
 }
 
@@ -31,6 +44,8 @@ export interface CommodityParticipantMetadata {
   sector?: CommoditySector;
   iconKey?: string;
   symbol?: string;
+  hlCoin?: string;
+  hlDex?: string;
   /** Last ~30 daily closes for picker sparklines. */
   priceHistory?: number[];
   /** Latest quote snapshot for picker display. */
@@ -65,14 +80,57 @@ export function parseCommoditiesEventMetadata(metadata: unknown): CommoditiesEve
     return null;
   }
 
+  const fieldSnapshot = parseFieldSnapshot(commodities.fieldSnapshot);
+
   return {
     sessionDate: commodities.sessionDate,
     sessionOpen: commodities.sessionOpen,
     sessionClose: commodities.sessionClose,
+    sessionStarted: commodities.sessionStarted === true,
     sessionComplete: commodities.sessionComplete === true,
+    fieldSnapshot,
     priceHistorySyncedAt:
       typeof commodities.priceHistorySyncedAt === "string"
         ? commodities.priceHistorySyncedAt
         : undefined,
   };
+}
+
+function parseFieldSnapshot(value: unknown): CommodityFieldEntry[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const entries: CommodityFieldEntry[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      continue;
+    }
+    const row = item as Record<string, unknown>;
+    if (
+      typeof row.ticker !== "string" ||
+      typeof row.hlCoin !== "string" ||
+      typeof row.hlDex !== "string" ||
+      typeof row.displayName !== "string" ||
+      typeof row.sector !== "string" ||
+      typeof row.iconKey !== "string"
+    ) {
+      continue;
+    }
+    entries.push({
+      ticker: row.ticker,
+      hlCoin: row.hlCoin,
+      hlDex: row.hlDex,
+      displayName: row.displayName,
+      sector: row.sector as CommoditySector,
+      iconKey: row.iconKey,
+    });
+  }
+
+  return entries.length > 0 ? entries : undefined;
+}
+
+export function getEventFieldSnapshot(metadata: unknown): CommodityFieldEntry[] {
+  const commodities = parseCommoditiesEventMetadata(metadata);
+  return commodities?.fieldSnapshot ?? [];
 }

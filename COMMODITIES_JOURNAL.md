@@ -4,7 +4,7 @@ Living record of progress, assumptions, and platform-fit learnings. Updated each
 
 **Related:** [competition brief](docs/sports/commodities/competition-brief.md) · [data sources](docs/sports/commodities/data-sources.md) · [add-sport checklist](spec/platform/add-sport-checklist.md)
 
-**Current status (2026-06-30):** Configurable session bounds (Phase A) shipped. Yahoo integration removed. All market data uses `fixtureMarketData.ts` until API Ninjas integration. API Ninjas evaluation in progress — see [COMMODITIES_APININJA_PLAN.md](COMMODITIES_APININJA_PLAN.md).
+**Current status (2026-06-30):** Hyperliquid HIP-3 integration shipped — see [COMMODITIES_HYPERLIQUID_PLAN.md](COMMODITIES_HYPERLIQUID_PLAN.md). Live marks + session-boundary candles; 14-ticker allowlist; field frozen at init.
 
 ---
 

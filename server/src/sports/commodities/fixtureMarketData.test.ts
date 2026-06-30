@@ -1,20 +1,24 @@
 import { describe, expect, it } from "vitest";
 import {
-  fixtureDailyBar,
+  fixtureCandlesForWindow,
+  fixtureMarkPrice,
   fixturePriceHistory,
-  fixtureQuote,
-  getFixtureSessionSnapshots,
+  fixtureQuoteForTicker,
 } from "./fixtureMarketData.js";
 
 describe("fixtureMarketData", () => {
-  it("is deterministic for a symbol and session date", () => {
-    expect(fixtureDailyBar("HE=F", "2025-06-27")).toEqual(fixtureDailyBar("HE=F", "2025-06-27"));
+  it("is deterministic for a ticker", () => {
+    expect(fixtureMarkPrice("GOLD")).toBe(fixtureMarkPrice("GOLD"));
   });
 
-  it("builds quote and bar snapshots for all requested symbols", () => {
-    const snapshots = getFixtureSessionSnapshots(["HE=F", "GC=F"], "2026-06-30");
-    expect(snapshots.size).toBe(2);
-    expect(fixtureQuote("HE=F", "2026-06-30").regularMarketPrice).toBeGreaterThan(0);
-    expect(fixturePriceHistory("HE=F")).toHaveLength(30);
+  it("builds quote and session candles for HL tickers", () => {
+    const quote = fixtureQuoteForTicker("GOLD");
+    expect(quote.markPrice).toBeGreaterThan(0);
+    expect(fixturePriceHistory("GOLD")).toHaveLength(30);
+
+    const open = Date.parse("2026-06-30T14:00:00.000Z");
+    const close = Date.parse("2026-06-30T16:00:00.000Z");
+    const candles = fixtureCandlesForWindow("GOLD", open, close, "1m");
+    expect(candles.length).toBeGreaterThan(0);
   });
 });
