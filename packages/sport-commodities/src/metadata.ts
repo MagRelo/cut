@@ -12,7 +12,11 @@ export interface CommodityFieldEntry {
 }
 
 export interface CommoditiesEventMetadata {
+  /** Monday anchor date (YYYY-MM-DD) for the trading week. */
   sessionDate: string;
+  /** ISO week externalId, e.g. 2026-W27. */
+  sessionWeek?: string;
+  weekNumber?: number;
   sessionOpen: string;
   sessionClose: string;
   /** Set by cron when session open time passes — gates LIVE status and contest activation. */
@@ -84,6 +88,8 @@ export function parseCommoditiesEventMetadata(metadata: unknown): CommoditiesEve
 
   return {
     sessionDate: commodities.sessionDate,
+    sessionWeek: typeof commodities.sessionWeek === "string" ? commodities.sessionWeek : undefined,
+    weekNumber: typeof commodities.weekNumber === "number" ? commodities.weekNumber : undefined,
     sessionOpen: commodities.sessionOpen,
     sessionClose: commodities.sessionClose,
     sessionStarted: commodities.sessionStarted === true,

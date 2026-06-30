@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { COMMODITIES_SPORT_ID } from "@cut/sport-commodities";
-import { parseCommoditiesSessionExternalId } from "./externalId.js";
+import { parseCommoditiesSessionExternalId, resolveWeekAnchorDates } from "./externalId.js";
 import {
   formatSessionDisplayName,
   resolveSessionBoundsFromInit,
@@ -11,14 +11,15 @@ import { mergeCommoditiesEventMetadata } from "./metadataMerge.js";
 import { syncCommoditiesEventMetadata } from "./syncMetadata.js";
 import { resolveCommodityFieldSnapshot, syncCommoditiesParticipantField } from "./syncField.js";
 
-const DEFAULT_COMMODITY_BEAUTY_IMAGE = "/CommodityBG2.png";
+const DEFAULT_COMMODITY_BEAUTY_IMAGE = "/CommodityBG3.png";
 
 export async function initCommoditiesEvent(
   externalId: string,
   options?: CommoditiesInitOptions,
 ) {
-  const sessionDate = parseCommoditiesSessionExternalId(externalId);
-  const bounds = resolveSessionBoundsFromInit(sessionDate, options);
+  const sessionWeek = parseCommoditiesSessionExternalId(externalId);
+  const { monday, weekNumber } = resolveWeekAnchorDates(sessionWeek);
+  const bounds = resolveSessionBoundsFromInit(sessionWeek, options);
   const fieldSnapshot = await resolveCommodityFieldSnapshot();
 
   if (fieldSnapshot.length === 0) {
@@ -26,14 +27,16 @@ export async function initCommoditiesEvent(
   }
 
   let event = await prisma.competitionEvent.findFirst({
-    where: { sportId: COMMODITIES_SPORT_ID, externalId: sessionDate },
+    where: { sportId: COMMODITIES_SPORT_ID, externalId: sessionWeek },
   });
 
   const initialMetadata = mergeCommoditiesEventMetadata(event?.metadata, {
-    name: formatSessionDisplayName(sessionDate),
+    name: formatSessionDisplayName(sessionWeek),
     beautyImage: DEFAULT_COMMODITY_BEAUTY_IMAGE,
     commodities: {
-      sessionDate,
+      sessionDate: monday,
+      sessionWeek,
+      weekNumber,
       sessionOpen: bounds.sessionOpen,
       sessionClose: bounds.sessionClose,
       sessionStarted: false,
@@ -51,7 +54,7 @@ export async function initCommoditiesEvent(
     event = await prisma.competitionEvent.create({
       data: {
         sportId: COMMODITIES_SPORT_ID,
-        externalId: sessionDate,
+        externalId: sessionWeek,
         isActive: false,
         metadata: initialMetadata as Prisma.InputJsonValue,
       },
@@ -76,7 +79,7 @@ export async function initCommoditiesEvent(
     data: { isActive: true },
   });
 
-  console.log(`[commodities] Initialized event ${event.id} (${sessionDate})`);
+  console.log(`[commodities] Initialized event ${event.id} (${sessionWeek})`);
   console.log(`[commodities] Field size: ${fieldSnapshot.length} contracts`);
   console.log(`[commodities] Session open:  ${bounds.sessionOpen}`);
   console.log(`[commodities] Session close: ${bounds.sessionClose}`);

@@ -34,7 +34,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.error("Usage: pnpm run service:init-event <sportId> <externalId>");
     console.error("Example: pnpm run service:init-event pga-golf R2026033");
     console.error(
-      "Commodities: pnpm run service:init-event commodities 2026-06-30 --open 10:00 --close 14:00",
+      "Commodities: pnpm run service:init-event commodities 2026-W27 --open 10:00 --close 14:00",
     );
     process.exit(1);
   }

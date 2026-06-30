@@ -1,8 +1,8 @@
 /**
- * End-to-end dry run for commodities on a historical session date.
+ * End-to-end dry run for commodities on a weekly session.
  *
  * Usage:
- *   pnpm --filter server run script:commodities-dry-run 2025-06-27
+ *   pnpm --filter server run script:commodities-dry-run 2026-W27
  *   pnpm --filter server run script:commodities-dry-run -- --cleanup
  */
 
@@ -18,9 +18,12 @@ import { runSportEventPipeline } from "../services/cron/runSportEventPipeline.js
 import { batchActivateContests } from "../services/batch/batchActivateContests.js";
 import { batchSettleContests } from "../services/batch/batchSettleContests.js";
 
-const DRY_RUN_CONTEST_NAME = "Commodities Dry Run — 2025-06-27";
 const DRY_RUN_CONTEST_ADDRESS = "0x000000000000000000000000000000000000c011";
 const BASE_SEPOLIA_CHAIN_ID = 84532;
+
+function dryRunContestName(externalId: string): string {
+  return `Commodities Dry Run — ${externalId}`;
+}
 
 type PickSpec = { label: string; externalId: string };
 
@@ -37,7 +40,7 @@ function parseArgs(): { externalId: string; cleanup: boolean } {
   const cleanup = args.includes("--cleanup");
   const positional = args.filter((a) => !a.startsWith("--"));
   return {
-    externalId: positional[0] ?? "2025-06-27",
+    externalId: positional[0] ?? "2026-W27",
     cleanup,
   };
 }
@@ -81,9 +84,9 @@ async function resolvePickIds(
   return byExternalId;
 }
 
-async function cleanupDryRunData(eventId: string): Promise<void> {
+async function cleanupDryRunData(eventId: string, contestName: string): Promise<void> {
   const contest = await prisma.contest.findFirst({
-    where: { eventId, name: DRY_RUN_CONTEST_NAME },
+    where: { eventId, name: contestName },
     select: { id: true },
   });
 
@@ -110,12 +113,13 @@ async function cleanupDryRunData(eventId: string): Promise<void> {
 
 async function main(): Promise<void> {
   const { externalId, cleanup } = parseArgs();
+  const contestName = dryRunContestName(externalId);
 
   const event = await resolveEvent(externalId);
   const sportModule = requireSportModule(COMMODITIES_SPORT_ID);
 
   if (cleanup) {
-    await cleanupDryRunData(event.id);
+    await cleanupDryRunData(event.id, contestName);
     return;
   }
 
@@ -150,7 +154,7 @@ async function main(): Promise<void> {
     console.warn(`[warn] Expected COMPLETE for historical session, got ${eventStatus}`);
   }
 
-  await cleanupDryRunData(event.id);
+  await cleanupDryRunData(event.id, contestName);
 
   const catalog: PickSpec[] = [
     { label: "Corn", externalId: commodityExternalId("CORN") },
@@ -237,7 +241,7 @@ async function main(): Promise<void> {
   const endTime = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const contest = await prisma.contest.create({
     data: {
-      name: DRY_RUN_CONTEST_NAME,
+      name: contestName,
       description: "Commodities local dry run — no on-chain contract",
       eventId: event.id,
       endTime,

@@ -1,8 +1,8 @@
 /**
  * Validate fixture or live HL scoring for catalog symbols on a session window.
  * Usage:
- *   pnpm --filter server run script:commodities-data-spike 2025-06-27
- *   pnpm --filter server run script:commodities-data-spike 2025-06-27 --live
+ *   pnpm --filter server run script:commodities-data-spike 2026-W27
+ *   pnpm --filter server run script:commodities-data-spike 2026-W27 --live
  */
 
 import "dotenv/config";
@@ -17,7 +17,7 @@ import { parseCommoditiesSessionExternalId } from "../sports/commodities/externa
 import { getSessionPricesForField } from "../sports/commodities/marketDataProvider.js";
 import {
   formatSessionDisplayName,
-  resolveSessionBounds,
+  resolveWeeklySessionBounds,
 } from "../sports/commodities/sessionConfig.js";
 
 function fixtureFieldSnapshot() {
@@ -35,16 +35,16 @@ async function main(): Promise<void> {
   const live = args.includes("--live");
   process.env.COMMODITIES_USE_FIXTURE_PRICES = live ? "false" : "true";
 
-  const externalId = args.find((arg) => !arg.startsWith("--")) ?? "2025-06-27";
-  const sessionDate = parseCommoditiesSessionExternalId(externalId);
-  const bounds = resolveSessionBounds(sessionDate);
+  const externalId = args.find((arg) => !arg.startsWith("--")) ?? "2026-W27";
+  const sessionWeek = parseCommoditiesSessionExternalId(externalId);
+  const bounds = resolveWeeklySessionBounds(sessionWeek);
 
   const field = live
     ? buildFieldSnapshot(await buildCommodityCatalog())
     : fixtureFieldSnapshot();
 
-  console.log(`\n=== Commodities data spike: ${sessionDate} (${live ? "live HL" : "fixture"}) ===\n`);
-  console.log(`Event name: ${formatSessionDisplayName(sessionDate)}`);
+  console.log(`\n=== Commodities data spike: ${sessionWeek} (${live ? "live HL" : "fixture"}) ===\n`);
+  console.log(`Event name: ${formatSessionDisplayName(sessionWeek)}`);
   console.log(`Session open:  ${bounds.sessionOpen}`);
   console.log(`Session close: ${bounds.sessionClose}`);
   console.log(`Field size: ${field.length}\n`);

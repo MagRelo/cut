@@ -2,7 +2,7 @@ import React from "react";
 import type { EventSummaryProps } from "@cut/sport-sdk/ui";
 import { CommodityEventDetails } from "./EventDetails";
 
-export const COMMODITY_EVENT_HERO_IMAGE = "/CommodityBG2.png";
+export const COMMODITY_EVENT_HERO_IMAGE = "/CommodityBG3.png";
 
 export function resolveCommodityEventHeroImage(_event: EventSummaryProps["event"]): string {
   return COMMODITY_EVENT_HERO_IMAGE;

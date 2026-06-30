@@ -1,10 +1,13 @@
 import { addDays, format } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
-import { parseCommoditiesSessionExternalId } from "./externalId.js";
+import {
+  parseCommoditiesSessionExternalId,
+  resolveWeekAnchorDates,
+} from "./externalId.js";
 
 const DEFAULT_TZ = "America/New_York";
 const DEFAULT_OPEN = "09:30";
-const DEFAULT_CLOSE = "16:00";
+const DEFAULT_CLOSE = "16:30";
 
 const ISO_DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2}T/;
 const TIME_ONLY_PATTERN = /^\d{1,2}:\d{2}(:\d{2})?$/;
@@ -133,44 +136,46 @@ function resolveExplicitBounds(input: SessionBoundsInput): SessionBounds {
   return validateSessionBounds(sessionOpen, sessionClose);
 }
 
-/** ISO session bounds for a trading day externalId (YYYY-MM-DD) or explicit overrides. */
+/** ISO session bounds for a week externalId (YYYY-Www) or explicit overrides. */
+export function resolveWeeklySessionBounds(weekKey: string): SessionBounds {
+  const normalized = parseCommoditiesSessionExternalId(weekKey);
+  const { monday, friday } = resolveWeekAnchorDates(normalized);
+  const tz = getCommoditiesSessionTimezone();
+  const openTime = getCommoditiesSessionOpenTime();
+  const closeTime = getCommoditiesSessionCloseTime();
+
+  const sessionOpen = fromZonedTime(`${monday}T${padTimeSegment(openTime)}`, tz).toISOString();
+  const sessionClose = fromZonedTime(`${friday}T${padTimeSegment(closeTime)}`, tz).toISOString();
+
+  return validateSessionBounds(sessionOpen, sessionClose);
+}
+
 export function resolveSessionBounds(input: string | SessionBoundsInput): SessionBounds {
   if (typeof input === "object" && input.sessionOpen && input.sessionClose) {
     return resolveExplicitBounds(input);
   }
 
-  const sessionDate = typeof input === "string" ? input : input.sessionDate;
-  const tz = getCommoditiesSessionTimezone();
-  const openTime = getCommoditiesSessionOpenTime();
-  const closeTime = getCommoditiesSessionCloseTime();
-
-  const sessionOpen = fromZonedTime(`${sessionDate}T${padTimeSegment(openTime)}`, tz).toISOString();
-  let sessionClose = fromZonedTime(`${sessionDate}T${padTimeSegment(closeTime)}`, tz).toISOString();
-
-  if (new Date(sessionClose).getTime() <= new Date(sessionOpen).getTime()) {
-    const nextDate = format(addDays(new Date(`${sessionDate}T12:00:00Z`), 1), "yyyy-MM-dd");
-    sessionClose = fromZonedTime(`${nextDate}T${padTimeSegment(closeTime)}`, tz).toISOString();
-  }
-
-  return validateSessionBounds(sessionOpen, sessionClose);
+  const weekKey = typeof input === "string" ? input : input.sessionDate;
+  return resolveWeeklySessionBounds(weekKey);
 }
 
 export function resolveSessionBoundsFromInit(
-  sessionDate: string,
+  weekKey: string,
   options?: CommoditiesInitOptions,
 ): SessionBounds {
   if (options?.sessionOpen || options?.sessionClose) {
     if (!options.sessionOpen || !options.sessionClose) {
       throw new Error("Both --open and --close are required when overriding session bounds");
     }
+    const { monday } = resolveWeekAnchorDates(parseCommoditiesSessionExternalId(weekKey));
     return resolveSessionBounds({
-      sessionDate,
+      sessionDate: monday,
       sessionOpen: options.sessionOpen,
       sessionClose: options.sessionClose,
     });
   }
 
-  return resolveSessionBounds(sessionDate);
+  return resolveWeeklySessionBounds(weekKey);
 }
 
 function readFlagValue(args: string[], ...flags: string[]): string | undefined {
@@ -221,19 +226,9 @@ export function parseCommoditiesInitCliArgs(argv: string[]): CommoditiesInitCliA
   return { sportId, externalId };
 }
 
-export function formatSessionDisplayName(sessionDate: string): string {
-  const parsed = new Date(`${sessionDate}T12:00:00Z`);
-  if (Number.isNaN(parsed.getTime())) {
-    return `Commodity Picks — ${sessionDate}`;
-  }
-  const label = parsed.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-  return `Commodity Picks — ${label}`;
+export function formatSessionDisplayName(weekKey: string): string {
+  const { weekNumber } = resolveWeekAnchorDates(parseCommoditiesSessionExternalId(weekKey));
+  return `Commodity Futures – Week ${weekNumber}`;
 }
 
 export function formatSessionWindow(

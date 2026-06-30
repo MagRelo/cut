@@ -1,8 +1,8 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { COMMODITIES_SPORT_ID, parseCommoditiesEventMetadata } from "@cut/sport-commodities";
-import { parseCommoditiesSessionExternalId } from "./externalId.js";
-import { formatSessionDisplayName, resolveSessionBounds } from "./sessionConfig.js";
+import { parseCommoditiesSessionExternalId, resolveWeekAnchorDates } from "./externalId.js";
+import { formatSessionDisplayName, resolveWeeklySessionBounds } from "./sessionConfig.js";
 import { mergeCommoditiesEventMetadata } from "./metadataMerge.js";
 
 export async function syncCommoditiesEventMetadata(eventId: string) {
@@ -14,8 +14,9 @@ export async function syncCommoditiesEventMetadata(eventId: string) {
     throw new Error(`Commodities event not found: ${eventId}`);
   }
 
-  const sessionDate = parseCommoditiesSessionExternalId(event.externalId);
-  const defaultBounds = resolveSessionBounds(sessionDate);
+  const sessionWeek = parseCommoditiesSessionExternalId(event.externalId);
+  const { monday, weekNumber } = resolveWeekAnchorDates(sessionWeek);
+  const defaultBounds = resolveWeeklySessionBounds(sessionWeek);
   const existingCommodities = parseCommoditiesEventMetadata(event.metadata);
   const sessionOpen = existingCommodities?.sessionOpen ?? defaultBounds.sessionOpen;
   const sessionClose = existingCommodities?.sessionClose ?? defaultBounds.sessionClose;
@@ -28,12 +29,16 @@ export async function syncCommoditiesEventMetadata(eventId: string) {
 
   const commoditiesPatch: {
     sessionDate: string;
+    sessionWeek: string;
+    weekNumber: number;
     sessionOpen?: string;
     sessionClose?: string;
     sessionStarted: boolean;
     sessionComplete: boolean;
   } = {
-    sessionDate,
+    sessionDate: monday,
+    sessionWeek,
+    weekNumber,
     sessionStarted,
     sessionComplete,
   };
@@ -46,7 +51,7 @@ export async function syncCommoditiesEventMetadata(eventId: string) {
   }
 
   const metadata = mergeCommoditiesEventMetadata(event.metadata, {
-    name: formatSessionDisplayName(sessionDate),
+    name: formatSessionDisplayName(sessionWeek),
     commodities: commoditiesPatch,
   });
 

@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  formatSessionDisplayName,
   parseCommoditiesInitCliArgs,
   parseSessionTimeArg,
   resolveSessionBounds,
   resolveSessionBoundsFromInit,
+  resolveWeeklySessionBounds,
 } from "./sessionConfig.js";
 
 describe("parseSessionTimeArg", () => {
@@ -36,26 +38,26 @@ describe("parseSessionTimeArg", () => {
   });
 });
 
-describe("resolveSessionBounds", () => {
+describe("resolveWeeklySessionBounds", () => {
   afterEach(() => {
     delete process.env.COMMODITIES_SESSION_TZ;
     delete process.env.COMMODITIES_SESSION_OPEN;
     delete process.env.COMMODITIES_SESSION_CLOSE;
   });
 
-  it("uses env defaults for a session date", () => {
+  it("resolves Mon 9:30 ET through Fri 16:30 ET for ISO week 27 2026", () => {
     process.env.COMMODITIES_SESSION_TZ = "America/New_York";
     process.env.COMMODITIES_SESSION_OPEN = "09:30";
-    process.env.COMMODITIES_SESSION_CLOSE = "16:00";
+    process.env.COMMODITIES_SESSION_CLOSE = "16:30";
 
-    const bounds = resolveSessionBounds("2026-06-30");
-    expect(bounds.sessionOpen).toBe("2026-06-30T13:30:00.000Z");
-    expect(bounds.sessionClose).toBe("2026-06-30T20:00:00.000Z");
+    const bounds = resolveWeeklySessionBounds("2026-W27");
+    expect(bounds.sessionOpen).toBe("2026-06-29T13:30:00.000Z");
+    expect(bounds.sessionClose).toBe("2026-07-03T20:30:00.000Z");
   });
 
-  it("accepts explicit ISO bounds", () => {
+  it("accepts explicit ISO bounds via resolveSessionBounds object", () => {
     const bounds = resolveSessionBounds({
-      sessionDate: "2026-06-30",
+      sessionDate: "2026-06-29",
       sessionOpen: "2026-06-30T14:00:00.000Z",
       sessionClose: "2026-06-30T18:00:00.000Z",
     });
@@ -63,7 +65,7 @@ describe("resolveSessionBounds", () => {
     expect(bounds.sessionClose).toBe("2026-06-30T18:00:00.000Z");
   });
 
-  it("supports cross-midnight time-only close", () => {
+  it("supports cross-midnight time-only close on same anchor day", () => {
     process.env.COMMODITIES_SESSION_TZ = "America/New_York";
     const bounds = resolveSessionBounds({
       sessionDate: "2026-06-30",
@@ -85,10 +87,16 @@ describe("resolveSessionBounds", () => {
   });
 });
 
+describe("formatSessionDisplayName", () => {
+  it("formats weekly event title", () => {
+    expect(formatSessionDisplayName("2026-W27")).toBe("Commodity Futures – Week 27");
+  });
+});
+
 describe("resolveSessionBoundsFromInit", () => {
   it("requires both overrides when one is provided", () => {
     expect(() =>
-      resolveSessionBoundsFromInit("2026-06-30", { sessionOpen: "10:00" }),
+      resolveSessionBoundsFromInit("2026-W27", { sessionOpen: "10:00" }),
     ).toThrow(/Both --open and --close are required/i);
   });
 });
@@ -97,7 +105,7 @@ describe("parseCommoditiesInitCliArgs", () => {
   it("parses commodities init flags", () => {
     const parsed = parseCommoditiesInitCliArgs([
       "commodities",
-      "2026-06-30",
+      "2026-W27",
       "--open",
       "10:00",
       "--close",
@@ -105,7 +113,7 @@ describe("parseCommoditiesInitCliArgs", () => {
     ]);
     expect(parsed).toEqual({
       sportId: "commodities",
-      externalId: "2026-06-30",
+      externalId: "2026-W27",
       initOptions: { sessionOpen: "10:00", sessionClose: "14:00" },
     });
   });
@@ -113,7 +121,7 @@ describe("parseCommoditiesInitCliArgs", () => {
   it("accepts session-open aliases", () => {
     const parsed = parseCommoditiesInitCliArgs([
       "commodities",
-      "2026-06-30",
+      "2026-W27",
       "--session-open=2026-06-30T14:00:00.000Z",
       "--session-close=2026-06-30T18:00:00.000Z",
     ]);

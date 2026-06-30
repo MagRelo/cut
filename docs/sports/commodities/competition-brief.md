@@ -13,7 +13,7 @@ External
 
 ## One-liner
 
-Pick five commodities for today's session; your lineup scores the sum of their % moves; highest total wins the contest.
+Pick four commodities for the trading week; your lineup scores the sum of their % moves; highest total wins the contest.
 
 ---
 
@@ -21,20 +21,21 @@ Pick five commodities for today's session; your lineup scores the sum of their %
 
 | Field | Decision |
 |-------|----------|
-| **External ID pattern** | ISO date `YYYY-MM-DD` — e.g. `2026-06-29` (anchor date) |
+| **External ID pattern** | ISO week `YYYY-Www` — e.g. `2026-W27` |
 | **sportId** | `commodities` |
 | **Slug** | `commodities` |
-| **Session window** | Configurable `sessionOpen` → `sessionClose` (ISO timestamps in `metadata.commodities`) |
-| **Typical duration** | Any duration at init (e.g. `--open +30m --close +2h`) |
+| **Display name** | `Commodity Futures – Week 27` |
+| **Session window** | Monday 09:30 ET → Friday 16:30 ET (ISO timestamps in `metadata.commodities`) |
+| **Typical duration** | One trading week; `--open`/`--close` overrides for local eval |
 | **Active events** | One active commodities event at a time (`CompetitionEvent.isActive`) |
 | **SCHEDULED → LIVE** | Cron sets `metadata.commodities.sessionStarted` when `now >= sessionOpen` (same pipeline pass activates contests) |
 | **LIVE → COMPLETE** | Cron sets `metadata.commodities.sessionComplete` when `now >= sessionClose` (same pass settles contests) |
-| **Init defaults** | Env `COMMODITIES_SESSION_TZ/OPEN/CLOSE` (9:30–16:00 America/New_York) |
-| **Init overrides** | `service:init-event commodities YYYY-MM-DD --open HH:mm --close HH:mm` (or ISO datetimes) |
+| **Init defaults** | Env `COMMODITIES_SESSION_TZ/OPEN/CLOSE` (Mon 9:30 – Fri 16:30 America/New_York) |
+| **Init overrides** | `service:init-event commodities 2026-W27 --open +2m --close +62m` (or ISO datetimes) |
 
 **Scoring:** `%` return uses Hyperliquid mark/candle at `sessionOpen` and `sessionClose` (see [data-sources.md](./data-sources.md)).
 
-**Out of scope:** Equities, prop bets, automated daily init cron.
+**Out of scope:** Equities, prop bets, automated weekly init cron.
 
 ---
 
@@ -121,7 +122,7 @@ Higher wins.
 |-------|----------|
 | **Price source** | Deterministic fixture data (`fixtureMarketData.ts`) until vendor API is integrated |
 | **Refresh** | On init + field sync; 5-minute cron when `ENABLE_CRON=true` |
-| **Dry-run target** | `2025-06-27` |
+| **Dry-run target** | `2026-W27` |
 
 ---
 
