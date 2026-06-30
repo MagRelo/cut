@@ -1,9 +1,6 @@
 import React from "react";
 import type { EventSummaryProps } from "@cut/sport-sdk/ui";
-import {
-  DEFAULT_TOURNAMENT_BEAUTY_IMAGE,
-  resolveTournamentBeautyImage,
-} from "./eventMedia";
+import { DEFAULT_TOURNAMENT_BEAUTY_IMAGE, resolveTournamentBeautyImage } from "./eventMedia";
 import { parseGolfEventMetadata } from "./utils";
 import { GolfEventDetails } from "./EventDetails";
 
@@ -31,7 +28,7 @@ export const GolfEventSummary: React.FC<EventSummaryProps> = ({ event, surface =
         aria-hidden
       />
       <div className="absolute inset-0 bg-black/50" aria-hidden />
-      <div className="relative z-10 px-4 py-3">
+      <div className="relative z-10 p-4">
         <GolfEventDetails event={event} />
       </div>
     </div>
