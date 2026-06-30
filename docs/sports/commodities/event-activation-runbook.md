@@ -1,6 +1,6 @@
 # Commodities event activation runbook
 
-Operator checklist for activating a commodity session on the v4 platform (`CompetitionEvent`, `sportId: commodities`). Users pick five Hyperliquid HIP-3 perps from a frozen field; lineup scores sum session % moves between `sessionOpen` and `sessionClose`.
+Operator checklist for activating a commodity session on the v4 platform (`CompetitionEvent`, `sportId: commodities`). Users pick three Hyperliquid HIP-3 perps from a frozen field; lineup scores sum session % moves between `sessionOpen` and `sessionClose`.
 
 **Related:** [competition-brief.md](./competition-brief.md) · [data-sources.md](./data-sources.md) · [COMMODITIES_JOURNAL.md](../../../COMMODITIES_JOURNAL.md) · [Golf event activation](../golf/event-activation-runbook.md)
 

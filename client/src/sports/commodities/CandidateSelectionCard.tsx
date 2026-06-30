@@ -29,25 +29,20 @@ export const CommodityCandidateSelectionCard: React.FC<{ candidate: Candidate }>
           </div>
         </div>
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="truncate font-display text-base font-bold text-gray-900">
-                {candidate.displayName}
-              </div>
-              {participant.symbol ? (
-                <div className="truncate text-[10px] font-medium uppercase tracking-wide text-gray-400">
-                  {participant.symbol}
-                </div>
-              ) : null}
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="min-w-0 truncate font-display text-base font-bold text-gray-900">
+              {candidate.displayName}
             </div>
-            {quote?.lastPrice != null ? (
-              <div className="shrink-0 text-right leading-tight">
-                <div className="text-sm font-semibold tabular-nums text-gray-900">
-                  {formatPrice(quote.lastPrice)}
-                </div>
+            {quote?.lastPrice != null || quote?.changePercent != null ? (
+              <div className="ml-auto flex shrink-0 items-center gap-3 tabular-nums">
                 {quote.changePercent != null ? (
-                  <div className={`text-xs font-medium tabular-nums ${changeClass}`}>
+                  <div className={`text-xs font-medium ${changeClass}`}>
                     {formatPctReturn(quote.changePercent)}
+                  </div>
+                ) : null}
+                {quote.lastPrice != null ? (
+                  <div className="text-sm font-semibold text-gray-900">
+                    {formatPrice(quote.lastPrice)}
                   </div>
                 ) : null}
               </div>

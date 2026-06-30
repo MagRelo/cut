@@ -6,6 +6,8 @@ import {
   buildCommodityCatalog,
   buildFieldSnapshot,
 } from "./hyperliquidCatalog.js";
+import { useFixtureMarketData } from "./marketDataProvider.js";
+import { filterHealthyCatalog } from "./marketHealth.js";
 import { syncCommoditiesPriceHistory } from "./syncPriceHistory.js";
 import { syncCommoditiesQuotes } from "./syncQuotes.js";
 
@@ -96,5 +98,16 @@ export async function syncCommoditiesParticipantField(eventId: string) {
 /** Resolve catalog and return field snapshot for event metadata. */
 export async function resolveCommodityFieldSnapshot() {
   const catalog = await buildCommodityCatalog();
-  return buildFieldSnapshot(catalog);
+  if (useFixtureMarketData()) {
+    return buildFieldSnapshot(catalog);
+  }
+
+  const healthy = await filterHealthyCatalog(catalog);
+  if (healthy.length === 0) {
+    throw new Error(
+      "[commodities] No healthy HL markets passed liquidity/candle checks — cannot init event",
+    );
+  }
+
+  return buildFieldSnapshot(healthy);
 }

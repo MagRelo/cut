@@ -72,9 +72,9 @@ describe("hyperliquidCatalog dedup", () => {
     expect([...resolved.keys()]).not.toContain("GOLDJM");
   });
 
-  it("resolves vntl-only SOY", () => {
+  it("does not resolve markets removed from allowlist", () => {
     const resolved = collectFromDexes(MOCK_DEXES);
-    expect(resolved.get("SOY")?.hlCoin).toBe("vntl:SOY");
+    expect(resolved.get("SOY")).toBeUndefined();
   });
 
   it("builds field snapshot shape", () => {

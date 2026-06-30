@@ -157,15 +157,14 @@ async function main(): Promise<void> {
   await cleanupDryRunData(event.id, contestName);
 
   const catalog: PickSpec[] = [
-    { label: "Corn", externalId: commodityExternalId("CORN") },
     { label: "Gold", externalId: commodityExternalId("GOLD") },
-    { label: "Soybeans", externalId: commodityExternalId("SOY") },
-    { label: "Copper", externalId: commodityExternalId("COPPER") },
-    { label: "Wheat", externalId: commodityExternalId("WHEAT") },
     { label: "Silver", externalId: commodityExternalId("SILVER") },
+    { label: "Copper", externalId: commodityExternalId("COPPER") },
     { label: "Crude", externalId: commodityExternalId("CL") },
+    { label: "Brent", externalId: commodityExternalId("BRENTOIL") },
     { label: "Natural Gas", externalId: commodityExternalId("NATGAS") },
     { label: "Platinum", externalId: commodityExternalId("PLATINUM") },
+    { label: "Palladium", externalId: commodityExternalId("PALLADIUM") },
   ];
   const pickIds = await resolvePickIds(event.id, catalog);
   const pick = (...extIds: string[]) => extIds.map((id) => pickIds.get(id)!);
@@ -182,12 +181,11 @@ async function main(): Promise<void> {
   const lineupSpecs: LineupSpec[] = [
     {
       userIndex: 0,
-      name: "Dry Run — top ag lineup",
+      name: "Dry Run — energy heavy",
       picks: pick(
-        commodityExternalId("CORN"),
+        commodityExternalId("CL"),
+        commodityExternalId("BRENTOIL"),
         commodityExternalId("GOLD"),
-        commodityExternalId("SOY"),
-        commodityExternalId("COPPER"),
       ),
       predictionStored: 550,
       entryId: "920001",
@@ -197,8 +195,7 @@ async function main(): Promise<void> {
       name: "Dry Run — mixed (farther prediction)",
       picks: pick(
         commodityExternalId("GOLD"),
-        commodityExternalId("CORN"),
-        commodityExternalId("SOY"),
+        commodityExternalId("SILVER"),
         commodityExternalId("COPPER"),
       ),
       predictionStored: 200,
@@ -209,8 +206,7 @@ async function main(): Promise<void> {
       name: "Dry Run — mixed (closer prediction)",
       picks: pick(
         commodityExternalId("GOLD"),
-        commodityExternalId("WHEAT"),
-        commodityExternalId("CORN"),
+        commodityExternalId("CL"),
         commodityExternalId("SILVER"),
       ),
       predictionStored: 280,

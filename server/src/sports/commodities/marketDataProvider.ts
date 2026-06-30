@@ -20,6 +20,7 @@ import {
   candleFetchWindow,
   resolvePriceAtTimestamp,
   selectCandleInterval,
+  sessionCandleIntervals,
 } from "./sessionPricing.js";
 
 
@@ -195,6 +196,40 @@ export type SessionPricingInput = {
   existingScoreData?: CommodityScoreData | null;
 };
 
+async function resolveSessionBoundaryPrices(
+  hlCoin: string,
+  sessionOpenMs: number,
+  sessionCloseMs: number,
+  needOpen: boolean,
+  needClose: boolean,
+): Promise<{ openPrice: number | null; closePrice: number | null }> {
+  let openPrice: number | null = null;
+  let closePrice: number | null = null;
+
+  for (const interval of sessionCandleIntervals(sessionOpenMs, sessionCloseMs)) {
+    const { startMs, endMs } = candleFetchWindow(sessionOpenMs, sessionCloseMs, interval);
+    try {
+      const candles = await fetchCandles(hlCoin, interval, startMs, endMs);
+      if (needOpen && openPrice == null) {
+        openPrice = resolvePriceAtTimestamp(candles, sessionOpenMs);
+      }
+      if (needClose && closePrice == null) {
+        closePrice = resolvePriceAtTimestamp(candles, sessionCloseMs);
+      }
+    } catch (error) {
+      console.warn(`[commodities] Candle fetch ${interval} failed for ${hlCoin}:`, error);
+    }
+
+    const openResolved = !needOpen || openPrice != null;
+    const closeResolved = !needClose || closePrice != null;
+    if (openResolved && closeResolved) {
+      break;
+    }
+  }
+
+  return { openPrice, closePrice };
+}
+
 export async function getSessionPriceSnapshot(
   entry: CommodityFieldEntry,
   input: Omit<SessionPricingInput, "field">,
@@ -227,32 +262,33 @@ export async function getSessionPriceSnapshot(
   const asset = map.get(entry.hlCoin);
   const currentPrice = asset ? hlMarkPrice(asset.context) : null;
 
-  const interval = selectCandleInterval(sessionOpenMs, sessionCloseMs);
-  const { startMs, endMs } = candleFetchWindow(sessionOpenMs, sessionCloseMs, interval);
-
   let openPrice = lockedOpen;
   let closePrice: number | null = null;
 
-  if (openPrice == null || input.isComplete) {
-    try {
-      const candles = await fetchCandles(entry.hlCoin, interval, startMs, endMs);
-      if (openPrice == null) {
-        openPrice = resolvePriceAtTimestamp(candles, sessionOpenMs);
-      }
-      if (input.isComplete) {
-        closePrice = resolvePriceAtTimestamp(candles, sessionCloseMs);
-      }
-    } catch (error) {
-      console.warn(`[commodities] Candle fetch failed for ${entry.hlCoin}:`, error);
+  const needOpen = openPrice == null;
+  const needClose = input.isComplete;
+
+  if (needOpen || needClose) {
+    const boundaries = await resolveSessionBoundaryPrices(
+      entry.hlCoin,
+      sessionOpenMs,
+      sessionCloseMs,
+      needOpen,
+      needClose,
+    );
+    if (needOpen) {
+      openPrice = boundaries.openPrice;
+    }
+    if (needClose) {
+      closePrice = boundaries.closePrice;
     }
   }
 
-  if (openPrice == null) {
-    openPrice = currentPrice;
+  if (needOpen && openPrice == null) {
+    console.warn(`[commodities] No session open price for ${entry.hlCoin} — DNP`);
   }
-
-  if (input.isComplete && closePrice == null) {
-    closePrice = currentPrice;
+  if (needClose && closePrice == null) {
+    console.warn(`[commodities] No session close price for ${entry.hlCoin} — DNP`);
   }
 
   return { openPrice, currentPrice, closePrice };

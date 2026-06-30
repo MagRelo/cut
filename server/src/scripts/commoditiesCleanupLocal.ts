@@ -67,6 +67,7 @@ async function main(): Promise<void> {
   let contestsRemoved = 0;
   let lineupsRemoved = 0;
   let eventParticipantsRemoved = 0;
+  let participantsRemoved = 0;
 
   for (const event of events) {
     const contests = await prisma.contest.findMany({
@@ -102,12 +103,23 @@ async function main(): Promise<void> {
     await prisma.competitionEvent.delete({ where: { id: event.id } });
   }
 
+  if (!dryRun && events.length > 0) {
+    const deleted = await prisma.participant.deleteMany({
+      where: { sportId: COMMODITIES_SPORT_ID },
+    });
+    participantsRemoved = deleted.count;
+    console.log(`[cleanup] removed ${participantsRemoved} Participant catalog row(s)`);
+  } else if (dryRun) {
+    console.log(`[dry-run] would remove ${catalogCount} Participant catalog row(s)`);
+    participantsRemoved = catalogCount;
+  }
+
   console.log(
     `\n[${dryRun ? "dry-run" : "cleanup"}] summary: ${events.length} event(s), ` +
       `${contestsRemoved} contest(s), ${lineupsRemoved} lineup(s), ` +
-      `${eventParticipantsRemoved} EventParticipant row(s)`,
+      `${eventParticipantsRemoved} EventParticipant row(s), ` +
+      `${participantsRemoved} Participant catalog row(s)`,
   );
-  console.log(`[${dryRun ? "dry-run" : "cleanup"}] kept ${catalogCount} Participant catalog row(s)`);
 }
 
 main()

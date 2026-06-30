@@ -12,6 +12,8 @@ export const INTERVAL_MS_FOR_FIXTURE = INTERVAL_MS;
 
 const MAX_CANDLES = 5000;
 
+const ALL_CANDLE_INTERVALS: CandleInterval[] = ["1m", "5m", "15m", "1h", "4h"];
+
 /** Pick finest interval that fits the session window within HL's 5000-candle cap. */
 export function selectCandleInterval(sessionOpenMs: number, sessionCloseMs: number): CandleInterval {
   const durationMs = Math.max(sessionCloseMs - sessionOpenMs, INTERVAL_MS["1m"]);
@@ -26,6 +28,16 @@ export function selectCandleInterval(sessionOpenMs: number, sessionCloseMs: numb
   }
 
   return "4h";
+}
+
+/** Intervals to try for session boundaries: preferred first, then coarser fallbacks. */
+export function sessionCandleIntervals(
+  sessionOpenMs: number,
+  sessionCloseMs: number,
+): CandleInterval[] {
+  const preferred = selectCandleInterval(sessionOpenMs, sessionCloseMs);
+  const startIdx = ALL_CANDLE_INTERVALS.indexOf(preferred);
+  return ALL_CANDLE_INTERVALS.slice(startIdx >= 0 ? startIdx : 0);
 }
 
 export function parseCandleClose(candle: { c: string }): number | null {

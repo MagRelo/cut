@@ -13,7 +13,7 @@ External
 
 ## One-liner
 
-Pick four commodities for the trading week; your lineup scores the sum of their % moves; highest total wins the contest.
+Pick three commodities for the trading week; your lineup scores the sum of their % moves; highest total wins the contest.
 
 ---
 
@@ -44,10 +44,10 @@ Pick four commodities for the trading week; your lineup scores the sum of their 
 | Field | Decision |
 |-------|----------|
 | **Field size** | ~14 Hyperliquid HIP-3 perps (static allowlist; frozen per event in `fieldSnapshot`) |
-| **Roster rules** | 4 slots, flat pool, no duplicates |
+| **Roster rules** | 3 slots, flat pool, no duplicates |
 | **Field lock timing** | Lineup lock at session open (`LIVE` transition) |
 | **DNP policy** | Missing open or close price → **0 points** for that pick |
-| **Min picks** | 4 required to submit (`slotCount` / `maxPicks` = 4; `minPicks` = 0 for draft saves, same as golf/F1) |
+| **Min picks** | 3 required to submit (`slotCount` / `maxPicks` = 3; `minPicks` = 0 for draft saves, same as golf/F1) |
 
 ---
 
@@ -68,7 +68,7 @@ Each commodity's `EventParticipant.total` = **% return from session open to curr
 
 ### Lineup aggregation
 
-Sum of four commodity totals (platform default aggregation).
+Sum of three commodity totals (platform default aggregation).
 
 ### Direction
 
@@ -138,7 +138,7 @@ Higher wins.
 
 ```json
 {
-  "rosterRules": { "slotCount": 4, "minPicks": 0, "maxPicks": 4, "allowDuplicates": false },
+  "rosterRules": { "slotCount": 3, "minPicks": 0, "maxPicks": 3, "allowDuplicates": false },
   "scoringRules": { "aggregation": "sum", "direction": "higher_wins" },
   "predictionRules": { "min": -1000, "max": 2500, "defaultRandomMin": 400, "defaultRandomMax": 900 }
 }
