@@ -1,25 +1,65 @@
 import React from "react";
 import type { ParticipantDetailProps } from "@cut/sport-sdk/ui";
+import type { CommodityRoundScoreData } from "@cut/sport-commodities";
 import { CommodityParticipantRow } from "./ParticipantRow";
 import {
-  candidateDisplayScore,
+  formatDailyPctReturn,
   formatPctReturn,
   formatPrice,
+  formatRoundPoints,
   parseCommodityCandidateMetadata,
 } from "./commodityUtils";
-import { sectorLabel } from "./utils";
 
 function StatCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex h-full min-h-0 w-full min-w-0 flex-col px-1 py-1.5 text-center">
-      <div className="mb-0 w-full pb-0.5 pt-0.5 text-center">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-          {label}
-        </span>
-      </div>
-      <div className="flex min-h-[1.5rem] items-center justify-center text-lg font-bold leading-none text-gray-900">
+    <div className="flex w-full min-w-0 flex-col items-center px-1 py-3 text-center">
+      <span className="text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
+        {label}
+      </span>
+      <span className="mt-2 text-lg font-bold tabular-nums leading-none text-gray-900">
         {value}
-      </div>
+      </span>
+    </div>
+  );
+}
+
+function RoundCell({
+  label,
+  round,
+  roundNumber,
+  currentRound,
+}: {
+  label: string;
+  round?: CommodityRoundScoreData | null;
+  roundNumber: number;
+  currentRound?: number | null;
+}) {
+  const unplayed = currentRound != null && roundNumber > currentRound;
+  const total = typeof round?.total === "number" ? round.total : null;
+  const pctReturn =
+    typeof round?.pctReturn === "number" && Number.isFinite(round.pctReturn)
+      ? round.pctReturn
+      : null;
+  const pctTone =
+    pctReturn == null ? "text-gray-400" : pctReturn >= 0 ? "text-emerald-700" : "text-red-600";
+
+  return (
+    <div className="flex min-w-0 flex-col items-center px-1 py-3 text-center">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{label}</div>
+      {unplayed ? (
+        <div className="text-sm font-bold leading-none text-gray-400">—</div>
+      ) : (
+        <div className="mt-1 flex flex-col items-center gap-1 leading-none">
+          <span className="text-sm font-bold text-gray-900">
+            {total == null ? "—" : formatRoundPoints(total)}
+          </span>
+          {pctReturn != null ? (
+            <span className={`text-xs font-semibold ${pctTone}`}>
+              {formatDailyPctReturn(pctReturn)}
+            </span>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }
@@ -30,8 +70,7 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
 }) => {
   const meta = parseCommodityCandidateMetadata(candidate);
   const scoreData = meta.scoreData ?? {};
-  const participant = meta.participant ?? {};
-  const displayScore = candidateDisplayScore(candidate);
+  const hasRoundScores = Boolean(scoreData.r1 || scoreData.r2 || scoreData.r3);
 
   return (
     <div className="overflow-hidden rounded-sm border border-gray-300 bg-white">
@@ -40,28 +79,54 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
       </div>
 
       <div
-        className="grid w-full grid-cols-3 items-stretch divide-x divide-gray-200 border-t border-gray-200 bg-white"
+        className="grid w-full grid-cols-3 divide-x divide-gray-200 border-t border-gray-200 bg-white"
         role="presentation"
       >
         <StatCell label="Open" value={formatPrice(scoreData.openPrice)} />
-        <StatCell label="Last" value={formatPrice(scoreData.currentPrice ?? scoreData.closePrice)} />
+        <StatCell
+          label="Last"
+          value={formatPrice(scoreData.currentPrice ?? scoreData.closePrice)}
+        />
         <StatCell label="Move" value={formatPctReturn(scoreData.pctReturn)} />
       </div>
 
-      <div className="border-t border-gray-200 bg-slate-50 px-4 py-3 text-sm text-gray-700">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span>
-            Sector: <strong>{sectorLabel(participant.sector)}</strong>
-          </span>
-          <span>
-            Score: <strong>{displayScore.toFixed(1)}</strong>
-            {scoreData.provisional ? " (provisional)" : ""}
-          </span>
+      {hasRoundScores ? (
+        <div
+          className="grid grid-cols-5 divide-x divide-gray-200 border-t border-gray-200 bg-slate-50"
+          role="presentation"
+        >
+          <RoundCell
+            label="Mon"
+            round={scoreData.r1}
+            roundNumber={1}
+            currentRound={scoreData.currentRound}
+          />
+          <RoundCell
+            label="Tue"
+            round={scoreData.r2}
+            roundNumber={2}
+            currentRound={scoreData.currentRound}
+          />
+          <RoundCell
+            label="Wed"
+            round={scoreData.r3}
+            roundNumber={3}
+            currentRound={scoreData.currentRound}
+          />
+          <RoundCell
+            label="Thu"
+            round={scoreData.r4}
+            roundNumber={4}
+            currentRound={scoreData.currentRound}
+          />
+          <RoundCell
+            label="Fri"
+            round={scoreData.r5}
+            roundNumber={5}
+            currentRound={scoreData.currentRound}
+          />
         </div>
-        <p className="mt-2 text-xs text-gray-500">
-          Fantasy scoring only — not investment advice.
-        </p>
-      </div>
+      ) : null}
     </div>
   );
 };

@@ -6,6 +6,7 @@ export {
   type CommodityFieldEntry,
   type CommodityParticipantMetadata,
   type CommodityQuoteSnapshot,
+  type CommodityRoundScoreData,
   type CommodityScoreData,
   type CommoditySector,
 } from "./metadata.js";
@@ -46,11 +47,19 @@ export {
 } from "./commoditiesSortKeys.js";
 
 export {
+  COMMODITIES_LOSS_RATIO,
+  COMMODITIES_ROUND_COUNT,
+  pctReturnToLineupPoints,
   pctReturnToTotal,
-  totalToDisplayScore,
+  transformCommodityDailyPrice,
+  transformCommodityDailyScores,
   transformCommodityPrice,
+  asymmetricPctToTotal,
+  type CommodityDailyPriceInput,
+  type CommodityDailyScoreInput,
   type CommodityParticipantScoreUpdate,
   type CommodityPriceInput,
+  type CommodityRoundScore,
 } from "./live-scores.js";
 
 export { createCommoditiesModule, type CommoditiesHandlers } from "./create-module.js";

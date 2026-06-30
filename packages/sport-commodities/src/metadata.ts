@@ -56,12 +56,27 @@ export interface CommodityParticipantMetadata {
   quote?: CommodityQuoteSnapshot;
 }
 
+export interface CommodityRoundScoreData {
+  total?: number | null;
+  pctReturn?: number | null;
+  provisional?: boolean;
+}
+
 export interface CommodityScoreData {
   openPrice?: number | null;
   currentPrice?: number | null;
   closePrice?: number | null;
+  /** Raw cumulative % move Mon open → current/close (display only). */
   pctReturn?: number | null;
   provisional?: boolean;
+  /** Asymmetric loss weight for down days (default 0.4). */
+  lossRatio?: number | null;
+  currentRound?: number | null;
+  r1?: CommodityRoundScoreData | null;
+  r2?: CommodityRoundScoreData | null;
+  r3?: CommodityRoundScoreData | null;
+  r4?: CommodityRoundScoreData | null;
+  r5?: CommodityRoundScoreData | null;
 }
 
 export function parseCommoditiesEventMetadata(metadata: unknown): CommoditiesEventMetadata | null {

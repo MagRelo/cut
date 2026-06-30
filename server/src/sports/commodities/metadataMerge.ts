@@ -6,6 +6,9 @@ export function mergeCommoditiesEventMetadata(
   patch: {
     name?: string;
     beautyImage?: string;
+    roundDisplay?: string;
+    currentRound?: number;
+    roundStatusDisplay?: string;
     commodities: Partial<CommoditiesEventMetadata>;
   },
 ): Record<string, unknown> {
@@ -20,6 +23,9 @@ export function mergeCommoditiesEventMetadata(
     ...base,
     ...(patch.name ? { name: patch.name } : {}),
     ...(patch.beautyImage ? { beautyImage: patch.beautyImage } : {}),
+    ...(patch.roundDisplay ? { roundDisplay: patch.roundDisplay } : {}),
+    ...(patch.currentRound != null ? { currentRound: patch.currentRound } : {}),
+    ...(patch.roundStatusDisplay ? { roundStatusDisplay: patch.roundStatusDisplay } : {}),
     commodities: {
       ...existingCommodities,
       ...patch.commodities,

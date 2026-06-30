@@ -5,13 +5,14 @@ import {
   COMMODITIES_SPORT_ID,
   commoditiesShouldSyncLiveScores,
   getEventFieldSnapshot,
-  transformCommodityPrice,
+  transformCommodityDailyPrice,
   type CommodityScoreData,
 } from "@cut/sport-commodities";
 import { commodityExternalId } from "@cut/sport-commodities";
 import { getSessionPricesForField } from "./marketDataProvider.js";
 import { mergeCommoditiesEventMetadata, requireCommoditiesMetadata } from "./metadataMerge.js";
 import { findFieldEntryByTicker } from "./hyperliquidCatalog.js";
+import { commoditiesCurrentRound } from "./sessionRounds.js";
 
 export async function syncCommoditiesLiveScores(eventId: string) {
   const event = await prisma.competitionEvent.findFirst({
@@ -35,6 +36,10 @@ export async function syncCommoditiesLiveScores(eventId: string) {
 
   const eventStatus = commoditiesEventStatusFromMetadata(event.metadata);
   const isComplete = eventStatus === "COMPLETE";
+  const currentRound = commoditiesCurrentRound(
+    commoditiesMeta.sessionOpen,
+    commoditiesMeta.sessionClose,
+  );
 
   const eventParticipants = await prisma.eventParticipant.findMany({
     where: { eventId: event.id },
@@ -66,10 +71,13 @@ export async function syncCommoditiesLiveScores(eventId: string) {
     }
 
     const snapshot = prices.get(ticker);
-    const payload = transformCommodityPrice({
+    const payload = transformCommodityDailyPrice({
       openPrice: snapshot?.openPrice ?? null,
+      dayClosePrices: snapshot?.dayClosePrices ?? [],
       currentPrice: snapshot?.currentPrice ?? null,
       closePrice: snapshot?.closePrice ?? null,
+      isComplete,
+      currentRound,
       provisional: !isComplete,
     });
 

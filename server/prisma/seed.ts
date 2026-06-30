@@ -62,13 +62,11 @@ const COMMODITIES_SCORING_RULES = {
 };
 
 const COMMODITIES_PREDICTION_RULES = {
-  min: -1000,
-  max: 2500,
-  defaultRandomMin: 400,
-  defaultRandomMax: 900,
+  min: -100,
+  max: 250,
+  defaultRandomMin: 40,
+  defaultRandomMax: 90,
   label: "Tie-Breaker (winning lineup pts)",
-  displayScale: 10,
-  step: 0.1,
 };
 
 async function main() {

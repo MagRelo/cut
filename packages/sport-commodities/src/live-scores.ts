@@ -1,12 +1,25 @@
-import type { CommodityScoreData } from "./metadata.js";
+import type { CommodityRoundScoreData, CommodityScoreData } from "./metadata.js";
+import { pctReturnToLineupPoints } from "./daily-scores.js";
+import {
+  COMMODITIES_LOSS_RATIO,
+  transformCommodityDailyScores,
+  type CommodityDailyScoreInput,
+  type CommodityRoundScore,
+} from "./daily-scores.js";
 
+export {
+  COMMODITIES_LOSS_RATIO,
+  COMMODITIES_ROUND_COUNT,
+  asymmetricPctToTotal,
+  pctReturnToLineupPoints,
+  transformCommodityDailyScores,
+  type CommodityDailyScoreInput,
+  type CommodityRoundScore,
+} from "./daily-scores.js";
+
+/** @deprecated Use pctReturnToLineupPoints */
 export function pctReturnToTotal(pctReturn: number): number {
-  const displayScore = pctReturn * 10;
-  return Math.round(displayScore * 10);
-}
-
-export function totalToDisplayScore(total: number): number {
-  return total / 10;
+  return pctReturnToLineupPoints(pctReturn, 1);
 }
 
 export interface CommodityPriceInput {
@@ -16,11 +29,50 @@ export interface CommodityPriceInput {
   provisional: boolean;
 }
 
+export interface CommodityDailyPriceInput extends CommodityDailyScoreInput {
+  provisional: boolean;
+}
+
 export interface CommodityParticipantScoreUpdate {
   total: number;
   scoreData: CommodityScoreData;
 }
 
+function roundToScoreData(round: CommodityRoundScore): CommodityRoundScoreData {
+  return {
+    total: round.total,
+    pctReturn: round.pctReturn ?? null,
+    provisional: round.provisional ?? false,
+  };
+}
+
+/** Five daily rounds with asymmetric scoring (losses × lossRatio). */
+export function transformCommodityDailyPrice(
+  input: CommodityDailyPriceInput,
+): CommodityParticipantScoreUpdate {
+  const { total, rounds, cumulativePctReturn } = transformCommodityDailyScores(input);
+  const lossRatio = input.lossRatio ?? COMMODITIES_LOSS_RATIO;
+
+  return {
+    total,
+    scoreData: {
+      openPrice: input.openPrice ?? null,
+      currentPrice: input.currentPrice ?? null,
+      closePrice: input.closePrice ?? null,
+      pctReturn: cumulativePctReturn,
+      provisional: input.provisional,
+      lossRatio,
+      currentRound: input.currentRound,
+      r1: roundToScoreData(rounds[0]!),
+      r2: roundToScoreData(rounds[1]!),
+      r3: roundToScoreData(rounds[2]!),
+      r4: roundToScoreData(rounds[3]!),
+      r5: roundToScoreData(rounds[4]!),
+    },
+  };
+}
+
+/** Linear cumulative % scoring — used by legacy scripts only. */
 export function transformCommodityPrice(
   input: CommodityPriceInput,
 ): CommodityParticipantScoreUpdate {
@@ -43,7 +95,7 @@ export function transformCommodityPrice(
   }
 
   const pctReturn = ((effectivePrice - openPrice) / openPrice) * 100;
-  const total = pctReturnToTotal(pctReturn);
+  const total = pctReturnToLineupPoints(pctReturn, 1);
 
   return {
     total,

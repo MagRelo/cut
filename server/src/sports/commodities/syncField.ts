@@ -8,6 +8,10 @@ import {
 } from "./hyperliquidCatalog.js";
 import { useFixtureMarketData } from "./marketDataProvider.js";
 import { filterHealthyCatalog } from "./marketHealth.js";
+import {
+  catalogEntryToFieldEntry,
+  COMMODITY_METADATA_ALLOWLIST,
+} from "@cut/sport-commodities";
 import { syncCommoditiesPriceHistory } from "./syncPriceHistory.js";
 import { syncCommoditiesQuotes } from "./syncQuotes.js";
 
@@ -97,11 +101,17 @@ export async function syncCommoditiesParticipantField(eventId: string) {
 
 /** Resolve catalog and return field snapshot for event metadata. */
 export async function resolveCommodityFieldSnapshot() {
-  const catalog = await buildCommodityCatalog();
   if (useFixtureMarketData()) {
-    return buildFieldSnapshot(catalog);
+    return COMMODITY_METADATA_ALLOWLIST.map((entry) =>
+      catalogEntryToFieldEntry({
+        ...entry,
+        hlCoin: `xyz:${entry.ticker}`,
+        hlDex: "xyz",
+      }),
+    );
   }
 
+  const catalog = await buildCommodityCatalog();
   const healthy = await filterHealthyCatalog(catalog);
   if (healthy.length === 0) {
     throw new Error(

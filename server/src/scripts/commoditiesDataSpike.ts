@@ -8,9 +8,9 @@
 import "dotenv/config";
 import {
   COMMODITY_METADATA_ALLOWLIST,
-  transformCommodityPrice,
-  pctReturnToTotal,
+  transformCommodityDailyPrice,
   catalogEntryToFieldEntry,
+  asymmetricPctToTotal,
 } from "@cut/sport-commodities";
 import { buildCommodityCatalog, buildFieldSnapshot } from "../sports/commodities/hyperliquidCatalog.js";
 import { parseCommoditiesSessionExternalId } from "../sports/commodities/externalId.js";
@@ -19,6 +19,7 @@ import {
   formatSessionDisplayName,
   resolveWeeklySessionBounds,
 } from "../sports/commodities/sessionConfig.js";
+import { commoditiesCurrentRound } from "../sports/commodities/sessionRounds.js";
 
 function fixtureFieldSnapshot() {
   return COMMODITY_METADATA_ALLOWLIST.map((entry) =>
@@ -49,6 +50,8 @@ async function main(): Promise<void> {
   console.log(`Session close: ${bounds.sessionClose}`);
   console.log(`Field size: ${field.length}\n`);
 
+  const currentRound = commoditiesCurrentRound(bounds.sessionOpen, bounds.sessionClose);
+
   const prices = await getSessionPricesForField({
     field,
     sessionOpen: bounds.sessionOpen,
@@ -59,23 +62,31 @@ async function main(): Promise<void> {
 
   for (const entry of field) {
     const snapshot = prices.get(entry.ticker);
-    const payload = transformCommodityPrice({
+    const payload = transformCommodityDailyPrice({
       openPrice: snapshot?.openPrice ?? null,
+      dayClosePrices: snapshot?.dayClosePrices ?? [],
       currentPrice: snapshot?.closePrice ?? snapshot?.currentPrice ?? null,
       closePrice: snapshot?.closePrice ?? null,
+      isComplete: true,
+      currentRound,
       provisional: false,
     });
 
-    const display = (payload.total / 10).toFixed(1);
-    const pct = payload.scoreData.pctReturn ?? 0;
+    const display = String(payload.total);
+    const rounds = [payload.scoreData.r1, payload.scoreData.r2, payload.scoreData.r3, payload.scoreData.r4, payload.scoreData.r5]
+      .map((round) => String(round?.total ?? 0))
+      .join("/");
     console.log(
-      `  ${entry.displayName.padEnd(14)} ${entry.ticker.padEnd(10)} ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}% → ${display}`,
+      `  ${entry.displayName.padEnd(14)} ${entry.ticker.padEnd(10)} total=${display} rounds=${rounds}`,
     );
   }
 
   const samplePct = 2.35;
   console.log(
-    `\nScoring sanity: +${samplePct}% → total=${pctReturnToTotal(samplePct)} (display ${(pctReturnToTotal(samplePct) / 10).toFixed(1)})`,
+    `\nScoring sanity: +${samplePct}% day → ${asymmetricPctToTotal(samplePct)} pts`,
+  );
+  console.log(
+    `Scoring sanity: -${samplePct}% day → ${asymmetricPctToTotal(-samplePct)} pts`,
   );
   console.log("\nSpike OK.\n");
 }

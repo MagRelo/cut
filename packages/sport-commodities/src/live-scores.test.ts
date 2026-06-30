@@ -1,19 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { pctReturnToTotal, totalToDisplayScore, transformCommodityPrice } from "./live-scores.js";
+import { pctReturnToTotal, transformCommodityPrice } from "./live-scores.js";
 
 describe("pctReturnToTotal", () => {
-  it("converts +2.35% to 235", () => {
-    expect(pctReturnToTotal(2.35)).toBe(235);
+  it("converts +2.35% to 24 lineup points", () => {
+    expect(pctReturnToTotal(2.35)).toBe(24);
   });
 
-  it("converts -1.2% to -120", () => {
-    expect(pctReturnToTotal(-1.2)).toBe(-120);
-  });
-});
-
-describe("totalToDisplayScore", () => {
-  it("displays 235 as 23.5", () => {
-    expect(totalToDisplayScore(235)).toBe(23.5);
+  it("converts -1.2% to -12 lineup points", () => {
+    expect(pctReturnToTotal(-1.2)).toBe(-12);
   });
 });
 
@@ -25,7 +19,7 @@ describe("transformCommodityPrice", () => {
       closePrice: 102.35,
       provisional: false,
     });
-    expect(result.total).toBe(235);
+    expect(result.total).toBe(Math.round(result.scoreData.pctReturn! * 10));
     expect(result.scoreData.pctReturn).toBeCloseTo(2.35, 5);
   });
 

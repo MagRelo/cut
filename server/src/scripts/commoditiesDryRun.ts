@@ -187,7 +187,7 @@ async function main(): Promise<void> {
         commodityExternalId("BRENTOIL"),
         commodityExternalId("GOLD"),
       ),
-      predictionStored: 550,
+      predictionStored: 55,
       entryId: "920001",
     },
     {
@@ -198,7 +198,7 @@ async function main(): Promise<void> {
         commodityExternalId("SILVER"),
         commodityExternalId("COPPER"),
       ),
-      predictionStored: 200,
+      predictionStored: 20,
       entryId: "920002",
     },
     {
@@ -209,7 +209,7 @@ async function main(): Promise<void> {
         commodityExternalId("CL"),
         commodityExternalId("SILVER"),
       ),
-      predictionStored: 280,
+      predictionStored: 28,
       entryId: "920003",
     },
   ];

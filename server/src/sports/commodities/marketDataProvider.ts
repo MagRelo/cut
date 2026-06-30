@@ -22,6 +22,7 @@ import {
   selectCandleInterval,
   sessionCandleIntervals,
 } from "./sessionPricing.js";
+import { buildSessionDayCloseTimestamps } from "./sessionRounds.js";
 
 
 export type { MarketQuote, SessionPriceSnapshot } from "./marketTypes.js";
@@ -230,6 +231,16 @@ async function resolveSessionBoundaryPrices(
   return { openPrice, closePrice };
 }
 
+function resolveDayClosePrices(
+  candles: Array<{ t: number; c: string }>,
+  sessionOpen: string,
+  sessionClose: string,
+): Array<number | null> {
+  return buildSessionDayCloseTimestamps(sessionOpen, sessionClose).map((ms) =>
+    resolvePriceAtTimestamp(candles, ms),
+  );
+}
+
 export async function getSessionPriceSnapshot(
   entry: CommodityFieldEntry,
   input: Omit<SessionPricingInput, "field">,
@@ -254,8 +265,9 @@ export async function getSessionPriceSnapshot(
     const closePrice = input.isComplete
       ? (resolvePriceAtTimestamp(candles, sessionCloseMs) ?? currentPrice)
       : null;
+    const dayClosePrices = resolveDayClosePrices(candles, input.sessionOpen, input.sessionClose);
 
-    return { openPrice, currentPrice, closePrice };
+    return { openPrice, currentPrice, closePrice, dayClosePrices };
   }
 
   const map = contextMap ?? (await loadAssetContextMap([entry]));
@@ -291,7 +303,28 @@ export async function getSessionPriceSnapshot(
     console.warn(`[commodities] No session close price for ${entry.hlCoin} — DNP`);
   }
 
-  return { openPrice, currentPrice, closePrice };
+  const { startMs, endMs } = candleFetchWindow(
+    sessionOpenMs,
+    sessionCloseMs,
+    selectCandleInterval(sessionOpenMs, sessionCloseMs),
+  );
+  let dayClosePrices: Array<number | null> = [];
+  try {
+    const candles = await fetchCandles(
+      entry.hlCoin,
+      selectCandleInterval(sessionOpenMs, sessionCloseMs),
+      startMs,
+      endMs,
+    );
+    dayClosePrices = resolveDayClosePrices(candles, input.sessionOpen, input.sessionClose);
+  } catch (error) {
+    console.warn(`[commodities] Day close prices failed for ${entry.hlCoin}:`, error);
+    dayClosePrices = buildSessionDayCloseTimestamps(input.sessionOpen, input.sessionClose).map(
+      () => null,
+    );
+  }
+
+  return { openPrice, currentPrice, closePrice, dayClosePrices };
 }
 
 export async function getSessionPricesForField(

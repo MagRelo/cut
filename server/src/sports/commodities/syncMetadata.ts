@@ -4,6 +4,11 @@ import { COMMODITIES_SPORT_ID, parseCommoditiesEventMetadata } from "@cut/sport-
 import { parseCommoditiesSessionExternalId, resolveWeekAnchorDates } from "./externalId.js";
 import { formatSessionDisplayName, resolveWeeklySessionBounds } from "./sessionConfig.js";
 import { mergeCommoditiesEventMetadata } from "./metadataMerge.js";
+import {
+  commoditiesCurrentRound,
+  commoditiesRoundDisplay,
+  commoditiesRoundStatusDisplay,
+} from "./sessionRounds.js";
 
 export async function syncCommoditiesEventMetadata(eventId: string) {
   const event = await prisma.competitionEvent.findFirst({
@@ -26,6 +31,7 @@ export async function syncCommoditiesEventMetadata(eventId: string) {
     existingCommodities?.sessionStarted === true || now >= new Date(sessionOpen);
   const sessionComplete =
     existingCommodities?.sessionComplete === true || now >= new Date(sessionClose);
+  const currentRound = commoditiesCurrentRound(sessionOpen, sessionClose, now);
 
   const commoditiesPatch: {
     sessionDate: string;
@@ -52,6 +58,9 @@ export async function syncCommoditiesEventMetadata(eventId: string) {
 
   const metadata = mergeCommoditiesEventMetadata(event.metadata, {
     name: formatSessionDisplayName(sessionWeek),
+    roundDisplay: commoditiesRoundDisplay(currentRound),
+    currentRound,
+    roundStatusDisplay: commoditiesRoundStatusDisplay(currentRound, sessionComplete),
     commodities: commoditiesPatch,
   });
 

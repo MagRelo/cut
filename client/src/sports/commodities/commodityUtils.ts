@@ -1,6 +1,5 @@
 import type { Candidate } from "@cut/sport-sdk";
 import type { CommodityParticipantMetadata, CommodityScoreData } from "@cut/sport-commodities";
-import { totalToDisplayScore } from "@cut/sport-commodities";
 
 export type CommodityCandidateMetadata = {
   participant?: CommodityParticipantMetadata;
@@ -18,11 +17,11 @@ export function parseCommodityCandidateMetadata(candidate: Candidate): Commodity
 export function candidateDisplayScore(candidate: Candidate): number {
   const meta = parseCommodityCandidateMetadata(candidate);
   if (typeof meta.total === "number") {
-    return totalToDisplayScore(meta.total);
+    return meta.total;
   }
   const points = candidate.sortKeys.points;
   if (typeof points === "number") {
-    return totalToDisplayScore(-points);
+    return -points;
   }
   return 0;
 }
@@ -35,8 +34,22 @@ export function formatPctReturn(value: number | null | undefined): string {
 
 export function formatDisplayScore(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
+  const rounded = Math.round(value);
+  const sign = rounded > 0 ? "+" : "";
+  return `${sign}${rounded}`;
+}
+
+export function formatRoundPoints(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return "—";
+  const rounded = Math.round(value);
+  const sign = rounded > 0 ? "+" : "";
+  return `${sign}${rounded}`;
+}
+
+export function formatDailyPctReturn(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return "—";
   const sign = value > 0 ? "+" : "";
-  return `${sign}${value.toFixed(1)}`;
+  return `${sign}${value.toFixed(1)}%`;
 }
 
 export function formatPrice(value: number | null | undefined): string {
@@ -76,9 +89,9 @@ export function formatCommoditySessionWindow(
   const tzShort =
     timezone === "America/New_York"
       ? "ET"
-      : new Intl.DateTimeFormat("en-US", { timeZone: timezone, timeZoneName: "short" })
+      : (new Intl.DateTimeFormat("en-US", { timeZone: timezone, timeZoneName: "short" })
           .formatToParts(open)
-          .find((part) => part.type === "timeZoneName")?.value ?? timezone;
+          .find((part) => part.type === "timeZoneName")?.value ?? timezone);
 
   const sameDay =
     open.toLocaleDateString("en-US", { timeZone: timezone }) ===

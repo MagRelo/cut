@@ -81,10 +81,16 @@ export async function updateContestLineupsForEvent(
 
   const event = await prisma.competitionEvent.findUnique({
     where: { id: eventId },
-    select: { metadata: true },
+    select: { metadata: true, sportId: true },
   });
   const golfMeta = parseGolfEventMetadata(event?.metadata);
-  const currentRound = golfMeta?.currentRound ?? 1;
+  const metadataRecord =
+    event?.metadata && typeof event.metadata === "object" && !Array.isArray(event.metadata)
+      ? (event.metadata as Record<string, unknown>)
+      : null;
+  const currentRound =
+    golfMeta?.currentRound ??
+    (typeof metadataRecord?.currentRound === "number" ? metadataRecord.currentRound : 1);
   const timestamp = new Date();
 
   const timelineSnapshots = contestLineups.map((contestLineup) => ({

@@ -12,7 +12,7 @@ export function tiebreakerDistance(
   if (prediction == null) {
     return Number.POSITIVE_INFINITY;
   }
-  return Math.abs(prediction - contestWinningScore);
+  return Math.abs(parseLineupPrediction(prediction)! - contestWinningScore);
 }
 
 export function rankCommoditiesEntries(entries: LineupEntryInput[]): RankedEntry[] {

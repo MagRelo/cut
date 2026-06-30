@@ -60,9 +60,6 @@ export const CommodityParticipantRow: React.FC<{
           <span className={displayScore >= 0 ? "text-emerald-600" : "text-red-600"}>
             {formatPctReturn(scoreData.pctReturn)}
           </span>
-          {scoreData.provisional ? (
-            <span className="font-medium text-amber-600">Provisional</span>
-          ) : null}
         </div>
       </div>
       {ownershipPercentage !== undefined ? (
@@ -76,11 +73,7 @@ export const CommodityParticipantRow: React.FC<{
         </div>
       ) : null}
       <div className="shrink-0 text-center">
-        <div
-          className={`text-lg font-bold leading-none ${
-            displayScore >= 0 ? "text-emerald-700" : "text-red-600"
-          }`}
-        >
+        <div className="text-lg font-bold leading-none text-gray-900">
           {formatDisplayScore(displayScore)}
         </div>
         <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">

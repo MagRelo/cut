@@ -13,4 +13,6 @@ export type SessionPriceSnapshot = {
   openPrice: number | null;
   currentPrice: number | null;
   closePrice: number | null;
+  /** Mon–Fri session close prices. */
+  dayClosePrices: Array<number | null>;
 };

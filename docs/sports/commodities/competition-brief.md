@@ -53,18 +53,22 @@ Pick three commodities for the trading week; your lineup scores the sum of their
 
 ## Scoring
 
+### Five daily rounds
+
+Each trading day (Mon–Fri) is one **round**. Per pick, score the session’s close-to-close % move with **asymmetric weighting**:
+
+| Day move | Fantasy points |
+|----------|----------------|
+| +2.00% | +20.0 |
+| -2.00% | -8.0 (40% of linear) |
+
+**Transform:** `displayScore = dayPct × 10` when `dayPct ≥ 0`; else `dayPct × 10 × 0.4`. Stored as fixed-point tenths (same as golf). Raw daily `%` in `scoreData.r1`…`r5.pctReturn`; cumulative raw week move in `scoreData.pctReturn` (display only).
+
+**Round boundaries:** Mon open → Mon close (D1), Mon close → Tue close (D2), … Thu close → Fri close (D5). During LIVE, the active round is provisional (prior close → current mark).
+
 ### Per-participant total
 
-Each commodity's `EventParticipant.total` = **% return from session open to current/close**, stored as fixed-point tenths (golf-scale integers).
-
-| Raw move | Display score | Stored `total` |
-|----------|---------------|----------------|
-| +2.35% | 23.5 | 235 |
-| -1.20% | -12.0 | -120 |
-
-**Transform:** `displayScore = pctReturn × 10`; `total = Math.round(displayScore × 10)`. Raw `%` in `scoreData.pctReturn`.
-
-**During LIVE:** `total` is provisional (open → current price). At `COMPLETE`, open → close/settlement is final.
+`EventParticipant.total` = sum of five round totals (`r1`…`r5`).
 
 ### Lineup aggregation
 

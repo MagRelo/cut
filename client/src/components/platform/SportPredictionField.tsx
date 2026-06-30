@@ -32,7 +32,7 @@ export const SportPredictionField: React.FC<SportPredictionFieldProps> = ({
   const sportId = scope?.sportId ?? "pga-golf";
   const rules = useSportPredictionRules(sportId);
 
-  const scale = rules.displayScale ?? (sportId === "commodities" ? 10 : 1);
+  const scale = rules.displayScale ?? 1;
   const step = rules.step ?? (scale > 1 ? 1 / scale : 1);
   const label =
     rules.label ??
