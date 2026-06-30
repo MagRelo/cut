@@ -1,6 +1,6 @@
 # Commodity Picks — API Ninjas integration plan
 
-**Status:** Not started — implementation deferred.
+**Status:** Evaluation in progress — implementation deferred.
 
 **Related:** [competition brief](docs/sports/commodities/competition-brief.md) · [data sources](docs/sports/commodities/data-sources.md) · [COMMODITIES_JOURNAL.md](COMMODITIES_JOURNAL.md) · [API Ninjas Commodity Price API](https://api-ninjas.com/api/commodityprice)
 
@@ -10,15 +10,34 @@
 
 Integrate API Ninjas Commodity Price API (paid tier) as the live market data source. Expand the catalog to all 30 API-supported commodities (drop nickel/lead/zinc), keep fixture fallback for offline dev, and wire snapshot + historical endpoints into the existing sync pipeline.
 
+**Depends on:** Configurable session bounds (Phase A) — `metadata.commodities.sessionOpen` / `sessionClose` are authoritative for contest lifecycle. Phase B adds **intraday scoring** at those exact timestamps.
+
 **Pool size:** 24 → **30** contracts. Roster stays **5 picks** (unchanged seed rules).
+
+---
+
+## Session bounds and data requirements
+
+Each event stores ISO `sessionOpen` and `sessionClose` in `metadata.commodities` (set at init via `--open`/`--close` or env defaults). Contest activation/settlement already uses these timestamps.
+
+| Concern | Phase A (shipped) | Phase B (this integration) |
+|---------|-------------------|----------------------------|
+| Lifecycle | `sessionOpen` → LIVE; `sessionClose` → COMPLETE | Unchanged |
+| Scoring window | Anchor-date daily OHLC (fixture) | Intraday OHLC at session bounds |
+| `openPrice` | Daily bar open for `sessionDate` | Price at/before `sessionOpen` |
+| `currentPrice` (LIVE) | Daily bar close / quote | Snapshot `price` |
+| `closePrice` (COMPLETE) | Daily bar close | Price at/before `sessionClose` |
+
+API Ninjas `/v1/commoditypricehistorical` supports intraday OHLCV with `period` values `1m`, `5m`, `15m`, `30m`, `1h`, `4h`, `1d` and `start`/`end` Unix timestamps (Premium tier).
 
 ---
 
 ## Assumptions (paid tier)
 
-- **Premium+** access: live prices, `/v1/commoditysnapshot`, `/v1/commoditypricehistorical`
+- **Premium+** access: live prices, `/v1/commoditysnapshot`, `/v1/commoditypricehistorical` (including intraday periods)
 - Auth via `APININJA_API_KEY` → header `X-Api-Key` (see `server/.env.example`)
 - **Full API catalog:** use all 30 commodities API Ninjas supports
+- Intraday historical covers arbitrary session windows (sub-day, full day, cross-midnight)
 
 ---
 
@@ -26,10 +45,15 @@ Integrate API Ninjas Commodity Price API (paid tier) as the live market data sou
 
 - [ ] Expand catalog to all 30 API Ninjas commodities with `apiNinjaName` mapping (server + client + icons + brief); remove `NI` / `LED` / `ZNC`
 - [ ] Create `apiNinjasClient.ts` with snapshot + historical fetch, USX normalization, caching, 429 backoff
+- [ ] Add `selectHistoricalPeriod(sessionOpen, sessionClose)` — pick finest `period` that fits window (`1m`…`4h`, fallback `1d`)
+- [ ] Add `resolveBarAtTimestamp(bars, targetUnix)` — nearest bar open/close for session boundary
 - [ ] Create `marketDataProvider.ts` routing API vs fixture; shared `MarketQuote` / `SessionSnapshot` types
 - [ ] Update `syncQuotes`, `syncPriceHistory`, `syncLiveScores` + dry-run field count (30) to use `marketDataProvider`
+- [ ] Wire `syncLiveScores` to event metadata bounds (not anchor-date daily bar only)
+- [ ] Extend `fixtureMarketData.ts` with timestamp-keyed synthetic bars for dev/CI when API key absent
 - [ ] Update data-spike (`--live`), local-eval, `.env.example`; add API Ninjas docs
-- [ ] Unit tests for client normalization + provider routing; update `data-sources.md` and runbook
+- [ ] Unit tests for client normalization, period selection, boundary price resolution, provider routing
+- [ ] Update `data-sources.md`, `competition-brief.md` (pool size 30, intraday scoring), event runbook, journal
 
 ---
 
@@ -80,6 +104,11 @@ Integrate API Ninjas Commodity Price API (paid tier) as the live market data sou
 
 ```mermaid
 flowchart LR
+  subgraph eventMeta [Event metadata]
+    sessionOpen["sessionOpen ISO"]
+    sessionClose["sessionClose ISO"]
+  end
+
   subgraph cron [Cron / init / field sync]
     syncField --> syncQuotes
     syncField --> syncPriceHistory
@@ -92,6 +121,7 @@ flowchart LR
     resolveMode -->|no| fixture[fixtureMarketData]
   end
 
+  eventMeta --> syncLiveScores
   syncQuotes --> provider
   syncPriceHistory --> provider
   syncLiveScores --> provider
@@ -106,10 +136,11 @@ flowchart LR
 |------|------|
 | `apiNinjasClient.ts` | Typed HTTP client (pattern: `server/src/sports/f1/openf1Client.ts`) |
 | `marketDataProvider.ts` | Single entry point for sync modules; API vs fixture |
+| `sessionScoring.ts` | Period selection + boundary price resolution from historical bars |
 
 ### Keep as fallback
 
-`server/src/sports/commodities/fixtureMarketData.ts` — offline/CI when key is missing or `COMMODITIES_USE_FIXTURE_PRICES=true`.
+`server/src/sports/commodities/fixtureMarketData.ts` — offline/CI when key is missing or `COMMODITIES_USE_FIXTURE_PRICES=true`. Extend with timestamp-keyed bars for intraday session windows.
 
 ---
 
@@ -136,7 +167,18 @@ export type CommodityCatalogEntry = {
 | Method | Endpoint | Used for |
 |--------|----------|----------|
 | `fetchCommoditySnapshot()` | `GET /v1/commoditysnapshot` | All 30 picker quotes in one call |
-| `fetchCommodityHistorical(name, { period: "1d", start, end })` | `GET /v1/commoditypricehistorical` | Session OHLC + 30-day sparklines (30 calls once per event) |
+| `fetchCommodityHistorical(name, { period, start, end })` | `GET /v1/commoditypricehistorical` | Session boundary prices + 30-day sparklines |
+
+**Historical `period` selection** (`sessionScoring.ts`):
+
+| Session duration | Preferred `period` |
+|------------------|-------------------|
+| ≤ 1 hour | `1m` or `5m` |
+| ≤ 4 hours | `15m` or `30m` |
+| ≤ 1 day | `1h` or `4h` |
+| Multi-day | `4h` or `1d` |
+
+Pass `start` / `end` as Unix seconds from `metadata.commodities.sessionOpen` / `sessionClose`.
 
 **Normalization** (`normalizeApiNinjaPrice`):
 
@@ -144,26 +186,30 @@ export type CommodityCatalogEntry = {
 - Optional `unit` on `CommodityParticipantMetadata` for future display
 - Map to internal `MarketQuote` type
 
-**Resilience:** snapshot cache 4 min; historical cache 1 hr per symbol; 429 backoff; missing symbol → DNP (0 points).
+**Resilience:** snapshot cache 4 min; historical cache 1 hr per symbol+window; 429 backoff; missing symbol → DNP (0 points).
 
 ---
 
 ## Scoring model
 
-Unchanged rule: **% return session open → current/close** (`packages/sport-commodities/src/live-scores.ts`).
+Rule: **% return session open → current/close** (`packages/sport-commodities/src/live-scores.ts`).
 
 | Phase | openPrice | currentPrice | closePrice |
 |-------|-----------|--------------|------------|
-| **LIVE** | Historical daily `open` for `sessionDate`, persisted on first sync | Snapshot `price` | `null` |
-| **COMPLETE** | Stored `openPrice` | Snapshot `price` | Historical daily `close` |
+| **LIVE** | Historical bar at `sessionOpen` (persist on first sync) | Snapshot `price` | `null` |
+| **COMPLETE** | Stored `openPrice` | Snapshot `price` | Historical bar at `sessionClose` |
+
+Boundary resolution: fetch intraday OHLCV for `[sessionOpen, sessionClose]`; use bar `open` at first bar ≥ open time; use bar `close` at last bar ≤ close time. If no exact bar, use nearest prior bar (document DNP policy if gap > one period).
+
+**Sparklines:** separate daily `period=1d` fetch (30 points) for picker display — unchanged from original plan.
 
 ---
 
 ## Sync module changes
 
 - `server/src/sports/commodities/syncQuotes.ts` — `marketDataProvider.getQuotes()` from snapshot
-- `server/src/sports/commodities/syncPriceHistory.ts` — 30 historical fetches once/event (cached)
-- `server/src/sports/commodities/syncLiveScores.ts` — `getSessionSnapshots()`
+- `server/src/sports/commodities/syncPriceHistory.ts` — 30 daily historical fetches once/event (cached) for sparklines
+- `server/src/sports/commodities/syncLiveScores.ts` — `getSessionSnapshots(sessionOpen, sessionClose)` with intraday boundary prices
 - `server/src/sports/commodities/syncField.ts` — upsert 30 `EventParticipant` rows; store `apiNinjaName` on metadata
 
 Log messages: `N/30` not `N/24`.
@@ -177,6 +223,8 @@ APININJA_API_KEY=
 COMMODITIES_USE_FIXTURE_PRICES=false
 ```
 
+Session defaults (`COMMODITIES_SESSION_*`) remain env-only fallbacks when init omits `--open`/`--close`. Stored metadata bounds drive scoring window.
+
 **Scripts:**
 
 - `server/src/scripts/commoditiesDataSpike.ts` — `--live` validates 30/30
@@ -187,8 +235,9 @@ COMMODITIES_USE_FIXTURE_PRICES=false
 ## Tests and docs
 
 - `apiNinjasClient.test.ts` — USX normalization, snapshot indexing by `value`, historical date match
+- `sessionScoring.test.ts` — period selection, boundary bar resolution, cross-midnight windows
 - `marketDataProvider.test.ts` — API vs fixture routing
-- Update `docs/sports/commodities/data-sources.md`, `docs/sports/commodities/competition-brief.md` (pool size 30), event runbook, journal status
+- Update `docs/sports/commodities/data-sources.md`, `docs/sports/commodities/competition-brief.md` (pool size 30, intraday scoring), event runbook, journal status
 
 ---
 
@@ -196,8 +245,10 @@ COMMODITIES_USE_FIXTURE_PRICES=false
 
 1. Set `APININJA_API_KEY` in `server/.env`
 2. `pnpm --filter server run script:commodities-data-spike -- --live 2025-06-27` — confirm 30/30
-3. `pnpm --filter server run script:commodities-local-eval` — re-init field + quotes
-4. Browse picker — 30 candidates with live prices
+3. Init with custom window: `pnpm --filter server run service:init-event commodities 2025-06-27 --open 10:00 --close 14:00`
+4. Confirm intraday scores match boundary prices (not daily bar)
+5. `pnpm --filter server run script:commodities-local-eval` — re-init field + quotes
+6. Browse picker — 30 candidates with live prices
 
 **DB cleanup:** Orphaned participants (`NI`, `LED`, `ZNC`) remain inert; new rows upserted on field sync. Optional one-off delete of orphaned `Participant` rows.
 

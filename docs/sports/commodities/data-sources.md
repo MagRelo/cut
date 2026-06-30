@@ -38,19 +38,21 @@ When a vendor API is integrated, add a client module that maps catalog `symbol` 
 
 ## externalId resolution
 
-**Pattern:** ISO calendar date `YYYY-MM-DD` — e.g. `2026-06-29`.
+**Pattern:** ISO calendar date `YYYY-MM-DD` — e.g. `2026-06-29` (anchor date).
 
-Session open/close are derived from env (default 9:30–16:00 America/New_York) and stored in `metadata.commodities`.
+Session open/close are set at init (explicit `--open`/`--close` or env defaults) and stored in `metadata.commodities`. Cron metadata sync preserves stored bounds and only fills defaults when missing.
+
+**Phase A scoring:** Fixture (and future vendor daily) OHLC uses the anchor date, not the custom window timestamps. Intraday scoring at `sessionOpen`/`sessionClose` requires API Ninjas integration — see [COMMODITIES_APININJA_PLAN.md](../../../COMMODITIES_APININJA_PLAN.md).
 
 ---
 
 ## Env vars
 
-| Variable | Default |
-|----------|---------|
-| `COMMODITIES_SESSION_TZ` | `America/New_York` |
-| `COMMODITIES_SESSION_OPEN` | `09:30` |
-| `COMMODITIES_SESSION_CLOSE` | `16:00` |
+| Variable | Default | Notes |
+|----------|---------|-------|
+| `COMMODITIES_SESSION_TZ` | `America/New_York` | Default timezone when init omits session flags |
+| `COMMODITIES_SESSION_OPEN` | `09:30` | Default open time (overridable per event at init) |
+| `COMMODITIES_SESSION_CLOSE` | `16:00` | Default close time (overridable per event at init) |
 
 ---
 
@@ -61,3 +63,4 @@ Session open/close are derived from env (default 9:30–16:00 America/New_York) 
 | `script:commodities-data-spike` | Print fixture returns for all 24 symbols on a session date |
 | `script:commodities-dry-run` | End-to-end contest ranking on fixture prices |
 | `script:commodities-local-eval` | Enable sport, init event, refresh fixture data, open eval contest |
+| `script:commodities-cleanup-local` | Remove all commodities events/contests from local DB (keeps catalog) |

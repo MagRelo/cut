@@ -2,7 +2,10 @@ import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import { commoditiesEventStatusFromMetadata } from "@cut/sport-commodities";
 import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
-import { formatCommoditiesEventStatusLabel } from "./commodityUtils";
+import {
+  formatCommoditiesEventStatusLabel,
+  formatCommoditySessionWindow,
+} from "./commodityUtils";
 
 interface CommodityEventDetailsProps {
   event: CompetitionEventShell;
@@ -24,6 +27,11 @@ export function CommodityEventDetails({ event, className = "" }: CommodityEventD
   );
   const sessionDate =
     typeof commodities.sessionDate === "string" ? commodities.sessionDate : event.externalId;
+  const sessionOpen =
+    typeof commodities.sessionOpen === "string" ? commodities.sessionOpen : undefined;
+  const sessionClose =
+    typeof commodities.sessionClose === "string" ? commodities.sessionClose : undefined;
+  const sessionWindow = formatCommoditySessionWindow(sessionOpen, sessionClose);
 
   const detailSeparator = (
     <span className="text-[9px] leading-none text-white/60" aria-hidden>
@@ -44,11 +52,11 @@ export function CommodityEventDetails({ event, className = "" }: CommodityEventD
 
       <div className="mt-0.5 flex w-full flex-wrap items-center gap-x-2 gap-y-0.5">
         <span className="font-medium text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
-          Session {sessionDate}
+          {sessionWindow ?? `Session ${sessionDate}`}
         </span>
         {detailSeparator}
         <span className="text-white/80 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
-          5 picks · daily % move
+          5 picks · session % move
         </span>
       </div>
 

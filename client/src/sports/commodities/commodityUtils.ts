@@ -55,3 +55,61 @@ export function formatCommoditiesEventStatusLabel(status: string | undefined): s
   if (!status) return "Scheduled";
   return status.charAt(0) + status.slice(1).toLowerCase();
 }
+
+const DEFAULT_SESSION_TZ = "America/New_York";
+
+export function formatCommoditySessionWindow(
+  sessionOpen: string | undefined,
+  sessionClose: string | undefined,
+  timezone: string = DEFAULT_SESSION_TZ,
+): string | null {
+  if (!sessionOpen?.trim() || !sessionClose?.trim()) {
+    return null;
+  }
+
+  const open = new Date(sessionOpen);
+  const close = new Date(sessionClose);
+  if (Number.isNaN(open.getTime()) || Number.isNaN(close.getTime())) {
+    return null;
+  }
+
+  const tzShort =
+    timezone === "America/New_York"
+      ? "ET"
+      : new Intl.DateTimeFormat("en-US", { timeZone: timezone, timeZoneName: "short" })
+          .formatToParts(open)
+          .find((part) => part.type === "timeZoneName")?.value ?? timezone;
+
+  const sameDay =
+    open.toLocaleDateString("en-US", { timeZone: timezone }) ===
+    close.toLocaleDateString("en-US", { timeZone: timezone });
+
+  const dateLabel = open.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    timeZone: timezone,
+  });
+
+  const timeOptions: Intl.DateTimeFormatOptions = {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: timezone,
+  };
+
+  const openTime = open.toLocaleTimeString("en-US", timeOptions);
+  const closeTime = close.toLocaleTimeString("en-US", timeOptions);
+
+  if (sameDay) {
+    return `${dateLabel} · ${openTime} – ${closeTime} ${tzShort}`;
+  }
+
+  const closeDateLabel = close.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    timeZone: timezone,
+  });
+
+  return `${dateLabel} ${openTime} – ${closeDateLabel} ${closeTime} ${tzShort}`;
+}

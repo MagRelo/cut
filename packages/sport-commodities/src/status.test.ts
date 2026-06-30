@@ -30,4 +30,30 @@ describe("commoditiesEventStatus", () => {
       ),
     ).toBe("COMPLETE");
   });
+
+  it("is LIVE for a sub-day custom window", () => {
+    expect(
+      commoditiesEventStatus(
+        {
+          sessionDate: "2026-06-29",
+          sessionOpen: "2026-06-29T15:00:00.000Z",
+          sessionClose: "2026-06-29T16:00:00.000Z",
+        },
+        new Date("2026-06-29T15:30:00.000Z"),
+      ),
+    ).toBe("LIVE");
+  });
+
+  it("is LIVE for a cross-midnight window before close", () => {
+    expect(
+      commoditiesEventStatus(
+        {
+          sessionDate: "2026-06-29",
+          sessionOpen: "2026-06-30T02:00:00.000Z",
+          sessionClose: "2026-06-30T06:00:00.000Z",
+        },
+        new Date("2026-06-30T04:00:00.000Z"),
+      ),
+    ).toBe("LIVE");
+  });
 });

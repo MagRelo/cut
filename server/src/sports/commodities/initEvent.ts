@@ -4,7 +4,8 @@ import { COMMODITIES_SPORT_ID } from "@cut/sport-commodities";
 import { parseCommoditiesSessionExternalId } from "./externalId.js";
 import {
   formatSessionDisplayName,
-  resolveSessionBounds,
+  resolveSessionBoundsFromInit,
+  type CommoditiesInitOptions,
 } from "./sessionConfig.js";
 import { mergeCommoditiesEventMetadata } from "./metadataMerge.js";
 import { syncCommoditiesEventMetadata } from "./syncMetadata.js";
@@ -12,9 +13,12 @@ import { syncCommoditiesParticipantField } from "./syncField.js";
 
 const DEFAULT_COMMODITY_BEAUTY_IMAGE = "/tradingfloor.png";
 
-export async function initCommoditiesEvent(externalId: string) {
+export async function initCommoditiesEvent(
+  externalId: string,
+  options?: CommoditiesInitOptions,
+) {
   const sessionDate = parseCommoditiesSessionExternalId(externalId);
-  const bounds = resolveSessionBounds(sessionDate);
+  const bounds = resolveSessionBoundsFromInit(sessionDate, options);
 
   let event = await prisma.competitionEvent.findFirst({
     where: { sportId: COMMODITIES_SPORT_ID, externalId: sessionDate },
@@ -61,4 +65,6 @@ export async function initCommoditiesEvent(externalId: string) {
   });
 
   console.log(`[commodities] Initialized event ${event.id} (${sessionDate})`);
+  console.log(`[commodities] Session open:  ${bounds.sessionOpen}`);
+  console.log(`[commodities] Session close: ${bounds.sessionClose}`);
 }

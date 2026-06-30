@@ -9,11 +9,16 @@
 import "dotenv/config";
 import { COMMODITIES_SPORT_ID } from "@cut/sport-commodities";
 import { prisma } from "../lib/prisma.js";
+import { initCommoditiesEvent } from "../sports/commodities/initEvent.js";
 import { requireSportModule } from "../sports/registry.js";
 
 const EVAL_CONTEST_NAME = "Commodity Picks — Local Eval";
 const EVAL_CONTEST_ADDRESS = "0x000000000000000000000000000000000000c012";
 const BASE_SEPOLIA_CHAIN_ID = 84532;
+
+/** Short upcoming window so the picker stays editable locally. */
+const LOCAL_EVAL_SESSION_OPEN = "+2m";
+const LOCAL_EVAL_SESSION_CLOSE = "+62m";
 
 async function main(): Promise<void> {
   const externalId = process.argv[2] ?? "2026-06-30";
@@ -29,17 +34,23 @@ async function main(): Promise<void> {
   });
 
   if (!event) {
-    const module = requireSportModule(COMMODITIES_SPORT_ID);
-    await module.initEvent(externalId);
+    await initCommoditiesEvent(externalId, {
+      sessionOpen: LOCAL_EVAL_SESSION_OPEN,
+      sessionClose: LOCAL_EVAL_SESSION_CLOSE,
+    });
     event = await prisma.competitionEvent.findFirst({
       where: { sportId: COMMODITIES_SPORT_ID, externalId },
     });
     if (!event) throw new Error(`Event not found after init: ${externalId}`);
     console.log(`[event] initialized: ${event.id} (${event.externalId})`);
   } else {
+    await initCommoditiesEvent(externalId, {
+      sessionOpen: LOCAL_EVAL_SESSION_OPEN,
+      sessionClose: LOCAL_EVAL_SESSION_CLOSE,
+    });
     const module = requireSportModule(COMMODITIES_SPORT_ID);
     await module.syncParticipantField(event.id);
-    console.log(`[event] exists: ${event.id} (${event.externalId}) — refreshed fixture market data`);
+    console.log(`[event] exists: ${event.id} (${event.externalId}) — refreshed session + fixture data`);
   }
 
   const existing = await prisma.contest.findFirst({

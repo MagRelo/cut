@@ -21,15 +21,20 @@ Pick five commodities for today's session; your lineup scores the sum of their %
 
 | Field | Decision |
 |-------|----------|
-| **External ID pattern** | ISO date `YYYY-MM-DD` — e.g. `2026-06-29` |
+| **External ID pattern** | ISO date `YYYY-MM-DD` — e.g. `2026-06-29` (anchor date) |
 | **sportId** | `commodities` |
 | **Slug** | `commodities` |
-| **Typical duration** | One US trading day (~6.5 hours) |
+| **Session window** | Configurable `sessionOpen` → `sessionClose` (ISO timestamps in `metadata.commodities`) |
+| **Typical duration** | One US trading day (~6.5 hours); any duration supported at init |
 | **Active events** | One active commodities event at a time (`CompetitionEvent.isActive`) |
-| **SCHEDULED → LIVE** | `now >= sessionOpen` (default 9:30 AM America/New_York) |
-| **LIVE → COMPLETE** | `now >= sessionClose` (default 4:00 PM America/New_York) |
+| **SCHEDULED → LIVE** | `now >= sessionOpen` |
+| **LIVE → COMPLETE** | `now >= sessionClose` |
+| **Init defaults** | Env `COMMODITIES_SESSION_TZ/OPEN/CLOSE` (9:30–16:00 America/New_York) |
+| **Init overrides** | `service:init-event commodities YYYY-MM-DD --open HH:mm --close HH:mm` (or ISO datetimes) |
 
-**v1 scope:** Daily futures session only. Weekly windows and equities are out of scope.
+**Phase A scoring:** `%` return uses the anchor date's daily OHLC from fixture data (or vendor daily bar when integrated). Custom session bounds control contest lifecycle only until API Ninjas intraday scoring ships.
+
+**Out of scope:** Equities, prop bets, automated daily init cron.
 
 ---
 

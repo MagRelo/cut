@@ -1,11 +1,8 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
-import { COMMODITIES_SPORT_ID } from "@cut/sport-commodities";
+import { COMMODITIES_SPORT_ID, parseCommoditiesEventMetadata } from "@cut/sport-commodities";
 import { parseCommoditiesSessionExternalId } from "./externalId.js";
-import {
-  formatSessionDisplayName,
-  resolveSessionBounds,
-} from "./sessionConfig.js";
+import { formatSessionDisplayName, resolveSessionBounds } from "./sessionConfig.js";
 import { mergeCommoditiesEventMetadata } from "./metadataMerge.js";
 
 export async function syncCommoditiesEventMetadata(eventId: string) {
@@ -18,18 +15,34 @@ export async function syncCommoditiesEventMetadata(eventId: string) {
   }
 
   const sessionDate = parseCommoditiesSessionExternalId(event.externalId);
-  const bounds = resolveSessionBounds(sessionDate);
+  const defaultBounds = resolveSessionBounds(sessionDate);
+  const existingCommodities = parseCommoditiesEventMetadata(event.metadata);
+  const sessionClose = existingCommodities?.sessionClose ?? defaultBounds.sessionClose;
+
   const now = new Date();
-  const sessionComplete = now >= new Date(bounds.sessionClose);
+  const sessionComplete =
+    existingCommodities?.sessionComplete === true || now >= new Date(sessionClose);
+
+  const commoditiesPatch: {
+    sessionDate: string;
+    sessionOpen?: string;
+    sessionClose?: string;
+    sessionComplete: boolean;
+  } = {
+    sessionDate,
+    sessionComplete,
+  };
+
+  if (!existingCommodities?.sessionOpen) {
+    commoditiesPatch.sessionOpen = defaultBounds.sessionOpen;
+  }
+  if (!existingCommodities?.sessionClose) {
+    commoditiesPatch.sessionClose = defaultBounds.sessionClose;
+  }
 
   const metadata = mergeCommoditiesEventMetadata(event.metadata, {
     name: formatSessionDisplayName(sessionDate),
-    commodities: {
-      sessionDate,
-      sessionOpen: bounds.sessionOpen,
-      sessionClose: bounds.sessionClose,
-      sessionComplete,
-    },
+    commodities: commoditiesPatch,
   });
 
   await prisma.competitionEvent.update({

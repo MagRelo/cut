@@ -4,7 +4,7 @@ Living record of progress, assumptions, and platform-fit learnings. Updated each
 
 **Related:** [competition brief](docs/sports/commodities/competition-brief.md) · [data sources](docs/sports/commodities/data-sources.md) · [add-sport checklist](spec/platform/add-sport-checklist.md)
 
-**Current status (2026-06-30):** Yahoo integration removed. All market data uses `fixtureMarketData.ts` until a licensed API is selected.
+**Current status (2026-06-30):** Configurable session bounds (Phase A) shipped. Yahoo integration removed. All market data uses `fixtureMarketData.ts` until API Ninjas integration. API Ninjas evaluation in progress — see [COMMODITIES_APININJA_PLAN.md](COMMODITIES_APININJA_PLAN.md).
 
 ---
 
@@ -14,7 +14,9 @@ Living record of progress, assumptions, and platform-fit learnings. Updated each
 |----------|-------|
 | `sportId` / slug | `commodities` |
 | Display name | Commodity Picks |
-| Event unit | One US trading day (session open → close) |
+| Event unit | Configurable session window (`sessionOpen` → `sessionClose`); anchor `externalId` remains `YYYY-MM-DD` |
+| Session defaults | Env `COMMODITIES_SESSION_TZ/OPEN/CLOSE` (9:30–16:00 ET); overridable per event at init |
+| Scoring window (Phase A) | Daily bar for anchor date; custom bounds control lifecycle only |
 | `externalId` | ISO date `YYYY-MM-DD` |
 | Roster | 5 picks, flat pool, no duplicates |
 | Scoring | Sum of % return per commodity; higher wins |
@@ -40,28 +42,31 @@ Living record of progress, assumptions, and platform-fit learnings. Updated each
 | 6 | Static catalog + daily init is acceptable ops for v1 | confirmed | `init-event` + runbook documented |
 | 7 | Prediction tie-break works with fixed-point ×10 totals | confirmed | Dry-run: 3 lineups ranked; winner score 663 (display 66.3) |
 | 8 | Fixture data sufficient for CI/dry-run and local UI | confirmed | All sync paths use `fixtureMarketData.ts` |
+| 9 | Custom session bounds stick through cron and drive activation/settlement | confirmed | `syncMetadata.ts` preserves metadata bounds; init CLI `--open`/`--close` |
+| 10 | Daily-bar scoring is acceptable for non-standard windows until API Ninjas intraday | pending | Phase A lifecycle-only; Phase B in APININJA plan |
 
 ---
 
-## Implementation inventory (as of 2026-06-29)
+## Implementation inventory (as of 2026-06-30)
 
 ### Docs
 - `docs/sports/commodities/competition-brief.md`
 - `docs/sports/commodities/data-sources.md`
 - `COMMODITIES_JOURNAL.md` (this file)
+- `COMMODITIES_APININJA_PLAN.md` — API Ninjas integration + intraday scoring (Phase B)
 - `docs/sports/commodities/event-activation-runbook.md` — done
 
 ### Package `@cut/sport-commodities`
 - `metadata.ts`, `status.ts`, `live-scores.ts`, `candidates.ts`, `commoditiesSortKeys.ts`, `candidateSort.ts`, `validation.ts`, `ranking.ts`, `create-module.ts`
-- Tests: `live-scores.test.ts`, `status.test.ts` (9 passing)
+- Tests: `live-scores.test.ts`, `status.test.ts` (11 passing)
 
 ### Server IO `server/src/sports/commodities/`
 - `commodityCatalog.ts` — 24-row static catalog
 - `externalId.ts` — `YYYY-MM-DD` validation
-- `sessionConfig.ts` — ET session open/close via `date-fns-tz`
+- `sessionConfig.ts` — per-event session bounds; env defaults; init CLI parsing
 - `fixtureMarketData.ts` — deterministic OHLC, quotes, sparklines
 - `handlers.ts`, `initEvent.ts`, `syncMetadata.ts`, `syncField.ts`, `syncLiveScores.ts`, `metadataMerge.ts`
-- Scripts: `commoditiesDataSpike.ts`, `commoditiesDryRun.ts`
+- Scripts: `commoditiesDataSpike.ts`, `commoditiesDryRun.ts`, `commoditiesCleanupLocal.ts`
 
 ### Client `client/src/sports/commodities/`
 - Plugin: `index.tsx` registered in `client/src/sports/registry.ts`
@@ -206,3 +211,15 @@ pnpm --filter client build                    # OK
 - 24 `Participant` catalog rows for `sportId: commodities` (reused on next init; delete manually if zero footprint desired)
 
 **Not reverted:** `db:seed` upserts for `pga-golf` / `f1` rules (idempotent updates only). Applied pending migrations (`predictionRules`, F1 externalId) — schema only, no data rollback needed.
+
+---
+
+### Phase 10 — 2026-06-30 (configurable session bounds)
+
+**Done:** Per-event `sessionOpen`/`sessionClose` at init (`--open`/`--close` CLI flags); `syncMetadata` preserves stored bounds; `script:commodities-cleanup-local`; local eval uses relative window (`+2m`/`+62m`); UI session window display; docs + APININJA plan updated for Phase B intraday scoring.
+
+**Went well:** Status/activation/settlement already keyed off metadata ISO timestamps — no platform schema changes.
+
+**Open:** Phase B intraday scoring when API Ninjas integration proceeds (`COMMODITIES_APININJA_PLAN.md`).
+
+**Platform judgement:** Metadata-only; scoring still uses anchor-date daily bar until API Ninjas lands.

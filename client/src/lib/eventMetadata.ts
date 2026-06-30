@@ -20,6 +20,7 @@ type EventMetadataShape = {
   };
   commodities?: {
     sessionOpen?: string;
+    sessionClose?: string;
   };
 };
 
@@ -70,6 +71,15 @@ export function eventStartDateFromMetadata(metadata: unknown): string | null {
   if (f1Start) return f1Start;
   const startDate = meta.startDate?.trim();
   return startDate || null;
+}
+
+export function eventEndDateFromMetadata(metadata: unknown): string | null {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+  const meta = metadata as EventMetadataShape;
+  const commoditiesClose = meta.commodities?.sessionClose?.trim();
+  return commoditiesClose || null;
 }
 
 export function roundDisplayFromMetadata(metadata: unknown): string | null {
