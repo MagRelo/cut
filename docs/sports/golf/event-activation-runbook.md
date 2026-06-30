@@ -83,10 +83,14 @@ pnpm run service:init-event pga-golf R__________
 
 **Sync helpers (after withdrawals / tee-time changes):**
 
+Both scripts default to the active golf event. Pass the internal `eventId` (UUID) only when syncing a non-active row.
+
 ```bash
-pnpm run service:sync-event-metadata pga-golf R__________
-pnpm run service:sync-participant-field pga-golf R__________
+pnpm run service:sync-event-metadata
+pnpm run service:sync-event-field
 ```
+
+Optional: `pnpm run service:sync-event-metadata <eventId>` or `pnpm run service:sync-event-field <eventId>`.
 
 ---
 
