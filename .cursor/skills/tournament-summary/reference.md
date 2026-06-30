@@ -40,7 +40,7 @@ Replace `{...}` placeholders. Keep valid JSON.
     "items": [
       {
         "label": "",
-        "body": "{2–4 sentence preview: event name, venue, main storyline, course fit.}"
+        "body": "{2–4 short sentences: place & course, history/tradition, 2–3 star names, one welcoming hook. Casual fan voice — see Writing style.}"
       }
     ]
   },
@@ -49,7 +49,7 @@ Replace `{...}` placeholders. Keep valid JSON.
     "items": [
       {
         "label": "{Player} (+{low} to +{high}):",
-        "body": "{One sentence: why they fit this course/week.}"
+        "body": "{One plain sentence: why fans should watch this player this week.}"
       }
     ]
   },
@@ -124,12 +124,34 @@ Check **5–10 sources** per event for storylines, odds, and course context.
 - When books differ, show a range: `(+1800 to +2200)`.
 - Tie each pick to **course fit** or **recent form**, not just rank.
 
-### Writing style
+### Writing style (casual fan)
 
-- Third person, present tense for upcoming events.
-- Avoid bullet characters inside `body` strings.
-- One idea per odds blurb; no stat dumps.
-- Mention 1–2 concrete narrative hooks (three-peat chase, homecoming, major tune-up).
+**Audience:** casual golf fans — they know a few stars, care about *where* the
+tournament is and *why* it feels special, and want an easy read in the app and
+email.
+
+**Summary (most important):**
+
+| Do | Don't |
+|----|--------|
+| Lead with location, course, region | Open with odds favorites or field size |
+| Evoke history, tradition, nostalgia | Pack yardage, par, purse into Summary |
+| Name 2–3 big or beloved players | List half the field |
+| Use short, punchy sentences | Write one long compound sentence |
+| Sound welcoming and excited | Sound like a betting sheet or press release |
+
+**Sentence length:** aim for under ~20 words per sentence in Summary when
+possible.
+
+**Odds section:** one sentence per player; fan-readable reason to watch. Course
+fit is fine in one plain phrase — avoid stacked stats and jargon.
+
+**Other sections:** factual and scannable (History, Course, Broadcast). Tone
+can stay neutral; warmth lives in Summary.
+
+**Tense:** third person, present tense for upcoming events.
+
+**Format:** no bullet characters inside `body` strings; no markdown.
 
 ## Post-tournament recap (optional)
 

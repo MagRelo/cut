@@ -1,6 +1,6 @@
-/** Same families as client/src/index.css (Google Fonts). */
+/** Same families as client/src/index.css (Google Fonts), plus Newsreader for email quote blocks. */
 export const GOOGLE_FONTS_URL =
-  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap";
+  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&family=Outfit:wght@400;500;600;700&display=swap";
 
 export const FONT_BODY =
   "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
@@ -8,15 +8,18 @@ export const FONT_BODY =
 export const FONT_DISPLAY =
   "'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
+export const FONT_QUOTE =
+  "'Newsreader', Georgia, 'Times New Roman', Times, serif";
+
 export const SECTION_TITLE_STYLE = `font-family:${FONT_DISPLAY};font-size:14px;font-weight:700;line-height:1.3;color:#18181b;text-transform:uppercase;letter-spacing:0.04em;margin:0 0 8px;`;
 
 export const SUMMARY_ITEM_STYLE = `font-family:${FONT_BODY};font-size:14px;line-height:1.45;color:#3f3f46;margin:0 0 10px;padding-left:16px;`;
 
-export const QUOTE_BG = "#eff6ff";
-export const QUOTE_BORDER = "#93c5fd";
-export const QUOTE_TEXT_COLOR = "#1e40af";
+export const QUOTE_BG = "#f3f8f5";
+export const QUOTE_BORDER = "#7cb68a";
+export const QUOTE_TEXT_COLOR = "#2f5233";
 
-export const QUOTE_TEXT_STYLE = `font-family:${FONT_BODY};font-size:14px;font-weight:400;font-style:italic;line-height:1.55;color:${QUOTE_TEXT_COLOR};margin:0;`;
+export const QUOTE_TEXT_STYLE = `font-family:${FONT_QUOTE};font-size:15px;font-weight:400;font-style:italic;line-height:1.55;color:${QUOTE_TEXT_COLOR};margin:0;`;
 
 export const QUOTE_CELL_STYLE = `border-left:3px solid ${QUOTE_BORDER};background-color:${QUOTE_BG};padding:14px 16px;`;
 
