@@ -12,6 +12,8 @@ import {
   roundHasBeenPlayed,
 } from "./scorecard/roundUtils";
 import { GolfParticipantScorecard } from "./scorecard/ParticipantScorecard";
+import { ParticipantAvatar } from "./ParticipantAvatar";
+import { ParticipantStatsPanel } from "./ParticipantStatsPanel";
 import { candidateStableford, parseGolfCandidateMetadata, parseGolfEventMetadata } from "./utils";
 
 function isPlaceholderLeaderboardValue(value: string | undefined): boolean {
@@ -124,11 +126,7 @@ function DetailHeader({
     return (
       <div className="flex items-center justify-between gap-3 font-display">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          {imageUrl ? (
-            <div className="shrink-0">
-              <img className="h-10 w-10 rounded-full object-cover" src={imageUrl} alt={displayName} />
-            </div>
-          ) : null}
+          <ParticipantAvatar imageUrl={imageUrl} alt={displayName} />
           <div className="min-w-0">
             <div className="truncate text-md font-semibold leading-tight text-gray-900">
               {displayName}
@@ -156,11 +154,7 @@ function DetailHeader({
         </span>
       </div>
 
-      {imageUrl ? (
-        <div className="shrink-0">
-          <img className="h-10 w-10 rounded-full object-cover" src={imageUrl} alt={displayName} />
-        </div>
-      ) : null}
+      <ParticipantAvatar imageUrl={imageUrl} alt={displayName} />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
@@ -226,6 +220,7 @@ export const GolfParticipantDetail: React.FC<ParticipantDetailProps> = ({
       : candidate.displayName;
 
   const totalPoints = candidateStableford(candidate);
+  const showSeasonStats = status === "SCHEDULED";
 
   return (
     <div className="overflow-hidden border border-gray-300 rounded-sm bg-white">
@@ -244,10 +239,16 @@ export const GolfParticipantDetail: React.FC<ParticipantDetailProps> = ({
           />
         </div>
 
-        <div
-          className="grid w-full grid-cols-[repeat(4,minmax(0,1fr))_repeat(2,minmax(0,1fr))] items-stretch border-t border-gray-200 divide-x divide-gray-200 bg-white"
-          role="presentation"
-        >
+        {showSeasonStats ? (
+          <div className="border-t border-gray-200 px-4 py-4">
+            <ParticipantStatsPanel candidate={candidate} />
+          </div>
+        ) : (
+          <>
+            <div
+              className="grid w-full grid-cols-[repeat(4,minmax(0,1fr))_repeat(2,minmax(0,1fr))] items-stretch border-t border-gray-200 divide-x divide-gray-200 bg-white"
+              role="presentation"
+            >
           {(
             [
               [1, tournamentData?.r1],
@@ -329,14 +330,16 @@ export const GolfParticipantDetail: React.FC<ParticipantDetailProps> = ({
               {tournamentData?.bonus && tournamentData.bonus > 0 ? `+${tournamentData.bonus}` : ""}
             </div>
           </div>
-        </div>
-      </div>
+            </div>
 
-      <div className="max-h-[min(50vh,22rem)] overflow-y-auto bg-white">
-        <GolfParticipantScorecard
-          tournamentData={tournamentData}
-          selectedRound={selectedScorecardRound}
-        />
+            <div className="max-h-[min(50vh,22rem)] overflow-y-auto bg-white">
+              <GolfParticipantScorecard
+                tournamentData={tournamentData}
+                selectedRound={selectedScorecardRound}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

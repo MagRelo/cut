@@ -51,6 +51,7 @@ function buildDetailCandidate(
     position?: string;
     total?: string;
     scoreData?: Record<string, unknown>;
+    participant?: Record<string, unknown>;
   } = {},
 ): Candidate {
   const firstName = overrides.firstName ?? "Scottie";
@@ -75,6 +76,7 @@ function buildDetailCandidate(
         lastName,
         country: "USA",
         imageUrl: null,
+        ...overrides.participant,
       },
       total: stableford,
       scoreData: {
@@ -108,11 +110,29 @@ function buildDetailCandidate(
 /** Live tournament — full scorecard on R1, partial R2 in progress. */
 export const FIXTURE_CANDIDATE_DETAIL_LIVE = buildDetailCandidate();
 
-/** Pre-tournament — name/country only; R1 tee time, no hole data. */
+/** Pre-tournament — season stats; no round scorecard data. */
 export const FIXTURE_CANDIDATE_DETAIL_SCHEDULED = buildDetailCandidate({
   stableford: 0,
   position: "–",
   total: "–",
+  participant: {
+    owgr: "1",
+    fedex: "2",
+    dataGolf: { dg_rank: 1 },
+    performance: [
+      {
+        season: "2026",
+        stats: [
+          { title: "Wins", value: "4" },
+          { title: "Top 10", value: "12" },
+          { title: "Top 25", value: "18" },
+          { title: "Cuts Made", value: "14" },
+          { title: "Events", value: "16" },
+        ],
+      },
+    ],
+    standings: { rank: "2", owgr: "1" },
+  },
   scoreData: {
     leaderboardPosition: "–",
     leaderboardTotal: "–",

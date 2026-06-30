@@ -8,6 +8,7 @@ import {
   getRoundHoleProgress,
   getTeeTimeLabelForRound,
 } from "./scorecard/roundUtils";
+import { ParticipantAvatar } from "./ParticipantAvatar";
 import { candidateStableford, parseGolfCandidateMetadata, parseGolfEventMetadata } from "./utils";
 
 function isPlaceholderLeaderboardValue(value: string | undefined): boolean {
@@ -82,15 +83,7 @@ export const GolfParticipantRow: React.FC<ParticipantRowProps> = ({
   const inactiveContent = (
     <div className="flex min-w-0 items-center justify-between gap-3">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        {participant.imageUrl ? (
-          <div className="shrink-0">
-            <img
-              className="h-10 w-10 rounded-full object-cover"
-              src={participant.imageUrl}
-              alt={displayName}
-            />
-          </div>
-        ) : null}
+        <ParticipantAvatar imageUrl={participant.imageUrl} alt={displayName} />
         <div className="min-w-0">
           <div className="truncate text-md font-semibold leading-tight text-gray-900">
             {displayName}
@@ -116,15 +109,7 @@ export const GolfParticipantRow: React.FC<ParticipantRowProps> = ({
         </span>
       </div>
 
-      {participant.imageUrl ? (
-        <div className="shrink-0">
-          <img
-            className="h-10 w-10 rounded-full object-cover"
-            src={participant.imageUrl}
-            alt={displayName}
-          />
-        </div>
-      ) : null}
+      <ParticipantAvatar imageUrl={participant.imageUrl} alt={displayName} />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
