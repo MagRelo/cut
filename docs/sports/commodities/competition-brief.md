@@ -114,8 +114,8 @@ Higher wins.
 
 | Field | Decision |
 |-------|----------|
-| **Price source** | Yahoo Finance (v1 spike) |
-| **Refresh** | 5-minute cron |
+| **Price source** | Deterministic fixture data (`fixtureMarketData.ts`) until vendor API is integrated |
+| **Refresh** | On init + field sync; 5-minute cron when `ENABLE_CRON=true` |
 | **Dry-run target** | `2025-06-27` |
 
 ---

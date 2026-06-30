@@ -7,12 +7,34 @@ export interface CommoditiesEventMetadata {
   sessionOpen: string;
   sessionClose: string;
   sessionComplete?: boolean;
+  /** ISO timestamp when 6-week picker sparklines were last synced for this event. */
+  priceHistorySyncedAt?: string;
+}
+
+export interface CommodityQuoteSnapshot {
+  lastPrice?: number | null;
+  open?: number | null;
+  previousClose?: number | null;
+  dayHigh?: number | null;
+  dayLow?: number | null;
+  bid?: number | null;
+  ask?: number | null;
+  volume?: number | null;
+  changePercent?: number | null;
+  fiftyTwoWeekHigh?: number | null;
+  fiftyTwoWeekLow?: number | null;
+  marketState?: string | null;
+  syncedAt?: string;
 }
 
 export interface CommodityParticipantMetadata {
   sector?: CommoditySector;
   iconKey?: string;
-  yahooSymbol?: string;
+  symbol?: string;
+  /** Last ~30 daily closes for picker sparklines. */
+  priceHistory?: number[];
+  /** Latest quote snapshot for picker display. */
+  quote?: CommodityQuoteSnapshot;
 }
 
 export interface CommodityScoreData {
@@ -48,5 +70,9 @@ export function parseCommoditiesEventMetadata(metadata: unknown): CommoditiesEve
     sessionOpen: commodities.sessionOpen,
     sessionClose: commodities.sessionClose,
     sessionComplete: commodities.sessionComplete === true,
+    priceHistorySyncedAt:
+      typeof commodities.priceHistorySyncedAt === "string"
+        ? commodities.priceHistorySyncedAt
+        : undefined,
   };
 }

@@ -3,6 +3,7 @@ export {
   parseCommoditiesEventMetadata,
   type CommoditiesEventMetadata,
   type CommodityParticipantMetadata,
+  type CommodityQuoteSnapshot,
   type CommodityScoreData,
   type CommoditySector,
 } from "./metadata.js";

@@ -2,8 +2,8 @@
  * Seed local DB for commodities plugin evaluation: enable sport, init event, OPEN contest.
  *
  * Usage:
- *   COMMODITIES_USE_FIXTURE_PRICES=true pnpm --filter server run script:commodities-local-eval
- *   COMMODITIES_USE_FIXTURE_PRICES=true pnpm --filter server run script:commodities-local-eval 2026-06-30
+ *   pnpm --filter server run script:commodities-local-eval
+ *   pnpm --filter server run script:commodities-local-eval 2026-06-30
  */
 
 import "dotenv/config";
@@ -37,7 +37,9 @@ async function main(): Promise<void> {
     if (!event) throw new Error(`Event not found after init: ${externalId}`);
     console.log(`[event] initialized: ${event.id} (${event.externalId})`);
   } else {
-    console.log(`[event] exists: ${event.id} (${event.externalId}, ${event.status})`);
+    const module = requireSportModule(COMMODITIES_SPORT_ID);
+    await module.syncParticipantField(event.id);
+    console.log(`[event] exists: ${event.id} (${event.externalId}) — refreshed fixture market data`);
   }
 
   const existing = await prisma.contest.findFirst({
@@ -46,6 +48,7 @@ async function main(): Promise<void> {
 
   if (existing) {
     console.log(`[contest] already exists: ${existing.id} (${existing.status})`);
+    console.log(`\nBrowse: /sports/commodities/events/${event.id}\n`);
     return;
   }
 
@@ -62,7 +65,7 @@ async function main(): Promise<void> {
     },
   });
   console.log(`[contest] created: ${contest.id} (${contest.status})`);
-  console.log(`\nBrowse: /sports/commodities/events/${event.id}`);
+  console.log(`\nBrowse: /sports/commodities/events/${event.id}\n`);
 }
 
 main()

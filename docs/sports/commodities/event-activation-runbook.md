@@ -21,7 +21,8 @@ Pass script arguments **directly** — do **not** insert `--` before them. Use `
 | **Field sync** | 24 contracts (`EventParticipant` rows) |
 | **Score sync** | Cron or manual pipeline — not part of init |
 | **Data spike** | `pnpm --filter server run script:commodities-data-spike 2025-06-27` |
-| **Dry run** | `pnpm --filter server run script:commodities-dry-run -- --fixture 2025-06-27` |
+| **Dry run** | `pnpm --filter server run script:commodities-dry-run 2025-06-27` |
+| **Local eval** | `pnpm --filter server run script:commodities-local-eval` |
 | **Sport hub** | `/sports/commodities` |
 
 ---
@@ -31,7 +32,6 @@ Pass script arguments **directly** — do **not** insert `--` before them. Use `
 - [ ] **Trading day** confirmed — skip weekends and US market holidays
 - [ ] **Sport row** exists — `pnpm --filter server run db:seed` creates `commodities` with `isEnabled: true`
 - [ ] **Local DB** migrated
-- [ ] **Yahoo access** — no API key; respect rate limits (see [data-sources.md](./data-sources.md))
 - [ ] **Target environment** — confirm `DATABASE_URL` before init
 
 ### Environment variables
@@ -41,8 +41,6 @@ Pass script arguments **directly** — do **not** insert `--` before them. Use `
 | `COMMODITIES_SESSION_TZ` | `America/New_York` | Session timezone |
 | `COMMODITIES_SESSION_OPEN` | `09:30` | SCHEDULED → LIVE |
 | `COMMODITIES_SESSION_CLOSE` | `16:00` | LIVE → COMPLETE |
-| `YAHOO_FINANCE_BASE_URL` | `https://query1.finance.yahoo.com` | Override for tests |
-| `COMMODITIES_USE_FIXTURE_PRICES` | unset | `true` for offline dry-run only |
 | `ENABLE_CRON` | — | `true` on cron worker for 5-minute pipeline |
 | `DATABASE_URL` | — | Verify before every init |
 
@@ -76,11 +74,7 @@ Do not init on Saturday/Sunday or known NYSE holidays.
 pnpm --filter server run script:commodities-data-spike 2026-06-29
 ```
 
-If Yahoo rate-limits, retry after a few minutes or use fixture mode for local verification only:
-
-```bash
-pnpm --filter server run script:commodities-data-spike -- --fixture 2026-06-29
-```
+Validates fixture scoring for all 24 catalog symbols on the session date.
 
 ### 3. Init event
 
@@ -120,9 +114,8 @@ Run init with the new `YYYY-MM-DD`. Init deactivates the previous commodities ev
 
 | Symptom | Likely cause | Action |
 |---------|--------------|--------|
-| Spike HTTP 429 | Yahoo rate limit | Wait 2–5 min; per-symbol sync is slow by design |
-| Spike HTTP 401 on batch quote | Yahoo blocks multi-symbol quote | Chart API per symbol still works; see journal |
-| Contract `total = 0` | Missing open/close price | Check symbol in Yahoo; DNP = 0 points |
+| Picker shows no prices/sparklines | Field sync not run | `pnpm --filter server run script:commodities-local-eval` or re-init event |
+| Contract `total = 0` | Missing open/close in score data | Re-run pipeline; DNP = 0 points per brief |
 | Event stuck SCHEDULED | Wall clock before `sessionOpen` | Expected; or check `COMMODITIES_SESSION_*` env |
 | Event never COMPLETE | `sessionClose` not passed | Wait for close or verify timezone env |
 | Field count ≠ 24 | Catalog/init error | Re-run init; check `commodityCatalog.ts` |

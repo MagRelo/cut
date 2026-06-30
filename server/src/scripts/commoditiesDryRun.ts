@@ -3,7 +3,6 @@
  *
  * Usage:
  *   pnpm --filter server run script:commodities-dry-run 2025-06-27
- *   pnpm --filter server run script:commodities-dry-run -- --fixture 2025-06-27
  *   pnpm --filter server run script:commodities-dry-run -- --cleanup
  */
 
@@ -32,15 +31,13 @@ type LineupSpec = {
   entryId: string;
 };
 
-function parseArgs(): { externalId: string; cleanup: boolean; fixture: boolean } {
+function parseArgs(): { externalId: string; cleanup: boolean } {
   const args = process.argv.slice(2).filter((a) => a !== "--");
   const cleanup = args.includes("--cleanup");
-  const fixture = args.includes("--fixture");
   const positional = args.filter((a) => !a.startsWith("--"));
   return {
     externalId: positional[0] ?? "2025-06-27",
     cleanup,
-    fixture,
   };
 }
 
@@ -111,12 +108,7 @@ async function cleanupDryRunData(eventId: string): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const { externalId, cleanup, fixture } = parseArgs();
-
-  if (fixture) {
-    process.env.COMMODITIES_USE_FIXTURE_PRICES = "true";
-    console.log("[fixture] COMMODITIES_USE_FIXTURE_PRICES=true\n");
-  }
+  const { externalId, cleanup } = parseArgs();
 
   const event = await resolveEvent(externalId);
   const sportModule = requireSportModule(COMMODITIES_SPORT_ID);
@@ -293,7 +285,7 @@ async function main(): Promise<void> {
 
   const winner = contestLineups[0];
   if (!winner || (winner.score ?? 0) <= 0) {
-    throw new Error("Expected positive winning score from fixture returns");
+    throw new Error("Expected positive winning score from deterministic fixture returns");
   }
 
   console.log(`[check] winner score=${winner.score} entry=${winner.entryId}`);

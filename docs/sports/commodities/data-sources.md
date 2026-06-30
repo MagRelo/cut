@@ -1,6 +1,6 @@
 # Commodities data sources
 
-**Status:** Stage 2 spike complete. Primary source chosen for v1 implementation.
+**Status:** Price API not selected. Development and dry-runs use deterministic fixture data.
 
 **Related:** [competition-brief.md](competition-brief.md) · [event-activation-runbook.md](event-activation-runbook.md)
 
@@ -8,33 +8,31 @@
 
 ## Decision
 
-| Role | Source | Base URL |
-|------|--------|----------|
-| **Primary (v1)** | Yahoo Finance (unofficial JSON API) | `https://query1.finance.yahoo.com` |
-| **Auth (v1)** | None | — |
+| Role | Source |
+|------|--------|
+| **Development (current)** | Deterministic fixture OHLC/quotes in `server/src/sports/commodities/fixtureMarketData.ts` |
+| **Production (TBD)** | Licensed futures market data API — vendor selection in progress |
 
-**Rationale:** Yahoo exposes CME-style futures symbols (`CL=F`, `GC=F`, etc.) via quote and chart endpoints without an API key. Five-minute cron batches 24 symbols with light throttling (120ms between chart calls). Historical dry-runs use the daily chart bar for the session date.
-
----
-
-## Endpoints
-
-| Endpoint | Use |
-|----------|-----|
-| `GET /v7/finance/quote?symbols=…` | Batch live/open/current prices during session |
-| `GET /v8/finance/chart/{symbol}?interval=1d&period1=…&period2=…` | Historical daily OHLC for spike and COMPLETE sync |
+Fixture data is seeded on event init and field sync (`syncQuotes`, `syncPriceHistory`, `syncLiveScores`). No external HTTP calls.
 
 ---
 
-## Field mapping
+## Fixture → platform mapping
 
-| Yahoo field | Platform field |
-|-------------|----------------|
-| Symbol (e.g. `CL=F`) | `Participant.metadata.yahooSymbol` |
-| Symbol sans `=F` | `Participant.externalId` |
-| `regularMarketOpen` / daily `open` | `scoreData.openPrice` |
-| `regularMarketPrice` / daily `close` | `scoreData.currentPrice` / `closePrice` |
+| Fixture field | Platform field |
+|---------------|----------------|
+| `FixtureDailyBar.open` / `close` | `scoreData.openPrice`, `currentPrice`, `closePrice` |
+| `FixtureQuote` snapshot | `Participant.metadata.quote` |
+| `fixturePriceHistory()` closes | `Participant.metadata.priceHistory` |
 | Computed % return | `scoreData.pctReturn`, `EventParticipant.total` (fixed-point ×10) |
+
+---
+
+## Catalog symbols
+
+24 CME-style futures tickers (e.g. `CL=F`, `GC=F`) in `commodityCatalog.ts`. `Participant.externalId` is the ticker without the `=F` suffix (e.g. `CL`).
+
+When a vendor API is integrated, add a client module that maps catalog `symbol` values to the vendor's symbology and replace calls in `syncQuotes.ts`, `syncPriceHistory.ts`, and `syncLiveScores.ts`.
 
 ---
 
@@ -46,18 +44,6 @@ Session open/close are derived from env (default 9:30–16:00 America/New_York) 
 
 ---
 
-## Rate limits
-
-No published limit. Implement 429 retry with linear backoff (500ms × attempt). Spike uses 120ms delay between per-symbol chart fetches.
-
----
-
-## Symbol coverage notes
-
-All 24 catalog symbols must return a daily bar for the dry-run date. Thin symbols (Lead `LED=F`, Zinc `ZNC=F`, Nickel `NI=F`) are validated in `script:commodities-data-spike`. Substitute per catalog comments if Yahoo drops a contract.
-
----
-
 ## Env vars
 
 | Variable | Default |
@@ -65,4 +51,13 @@ All 24 catalog symbols must return a daily bar for the dry-run date. Thin symbol
 | `COMMODITIES_SESSION_TZ` | `America/New_York` |
 | `COMMODITIES_SESSION_OPEN` | `09:30` |
 | `COMMODITIES_SESSION_CLOSE` | `16:00` |
-| `YAHOO_FINANCE_BASE_URL` | `https://query1.finance.yahoo.com` |
+
+---
+
+## Validation scripts
+
+| Script | Purpose |
+|--------|---------|
+| `script:commodities-data-spike` | Print fixture returns for all 24 symbols on a session date |
+| `script:commodities-dry-run` | End-to-end contest ranking on fixture prices |
+| `script:commodities-local-eval` | Enable sport, init event, refresh fixture data, open eval contest |

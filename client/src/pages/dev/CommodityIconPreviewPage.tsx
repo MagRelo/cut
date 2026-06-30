@@ -115,7 +115,7 @@ export const CommodityIconPreviewPage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {entries.map((entry) => (
-                    <tr key={entry.yahooSymbol} className="hover:bg-gray-50/80">
+                    <tr key={entry.symbol} className="hover:bg-gray-50/80">
                       <td className="px-4 py-3 font-medium text-gray-900">{entry.displayName}</td>
                       <td className="px-4 py-3 font-mono text-xs text-gray-500">{entry.iconKey}</td>
                       <td className="px-4 py-3">
@@ -157,7 +157,7 @@ export const CommodityIconPreviewPage: React.FC = () => {
         <h2 className="mb-4 text-lg font-semibold text-gray-900">On dark background</h2>
         <div className="grid grid-cols-4 gap-3 rounded-xl bg-gray-900 p-6 sm:grid-cols-6 md:grid-cols-8">
           {COMMODITY_CATALOG.map((entry) => (
-            <div key={entry.yahooSymbol} className="flex flex-col items-center gap-1.5">
+            <div key={entry.symbol} className="flex flex-col items-center gap-1.5">
               <CommodityAvatar
                 displayName={entry.displayName}
                 iconKey={entry.iconKey}

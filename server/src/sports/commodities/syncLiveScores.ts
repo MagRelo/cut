@@ -10,10 +10,7 @@ import {
   COMMODITY_CATALOG,
   findCatalogEntryByExternalId,
 } from "./commodityCatalog.js";
-import {
-  fetchYahooDailyBars,
-  fetchYahooQuotes,
-} from "./yahooFinanceClient.js";
+import { getFixtureSessionSnapshots } from "./fixtureMarketData.js";
 import { mergeCommoditiesEventMetadata, requireCommoditiesMetadata } from "./metadataMerge.js";
 
 export async function syncCommoditiesLiveScores(eventId: string) {
@@ -34,12 +31,8 @@ export async function syncCommoditiesLiveScores(eventId: string) {
   const eventStatus = commoditiesEventStatusFromMetadata(event.metadata);
   const isComplete = eventStatus === "COMPLETE";
 
-  const symbols = COMMODITY_CATALOG.map((entry) => entry.yahooSymbol);
-  const [dailyBars, quotes] = await Promise.all([
-    fetchYahooDailyBars(symbols, commoditiesMeta.sessionDate),
-    fetchYahooQuotes(symbols),
-  ]);
-  const quoteBySymbol = new Map(quotes.map((quote) => [quote.symbol, quote]));
+  const symbols = COMMODITY_CATALOG.map((entry) => entry.symbol);
+  const snapshots = getFixtureSessionSnapshots(symbols, commoditiesMeta.sessionDate);
 
   const eventParticipants = await prisma.eventParticipant.findMany({
     where: { eventId: event.id },
@@ -54,15 +47,11 @@ export async function syncCommoditiesLiveScores(eventId: string) {
       continue;
     }
 
-    const bar = dailyBars.get(catalogEntry.yahooSymbol);
-    const quote = quoteBySymbol.get(catalogEntry.yahooSymbol);
+    const snapshot = snapshots.get(catalogEntry.symbol);
+    const bar = snapshot?.bar;
+    const quote = snapshot?.quote;
 
-    const openPrice =
-      bar?.open ??
-      quote?.regularMarketOpen ??
-      quote?.regularMarketPreviousClose ??
-      null;
-
+    const openPrice = bar?.open ?? quote?.regularMarketOpen ?? quote?.regularMarketPreviousClose ?? null;
     const currentPrice = quote?.regularMarketPrice ?? bar?.close ?? null;
     const closePrice = isComplete ? (bar?.close ?? quote?.regularMarketPrice ?? null) : null;
 

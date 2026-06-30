@@ -44,6 +44,13 @@ export function formatPrice(value: number | null | undefined): string {
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+export function formatVolume(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return "—";
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return value.toLocaleString();
+}
+
 export function formatCommoditiesEventStatusLabel(status: string | undefined): string {
   if (!status) return "Scheduled";
   return status.charAt(0) + status.slice(1).toLowerCase();

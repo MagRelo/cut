@@ -4,6 +4,8 @@ Living record of progress, assumptions, and platform-fit learnings. Updated each
 
 **Related:** [competition brief](docs/sports/commodities/competition-brief.md) · [data sources](docs/sports/commodities/data-sources.md) · [add-sport checklist](spec/platform/add-sport-checklist.md)
 
+**Current status (2026-06-30):** Yahoo integration removed. All market data uses `fixtureMarketData.ts` until a licensed API is selected.
+
 ---
 
 ## Locked product decisions (carry forward)
@@ -19,7 +21,7 @@ Living record of progress, assumptions, and platform-fit learnings. Updated each
 | Score scale | Golf-scale fixed-point: `+2.35%` → display **23.5**, stored `total=235` |
 | Pool | 24 static catalog contracts (see brief) |
 | Cadence | Daily — operator runs `init-event` each trading day |
-| Data source (v1) | Yahoo Finance chart/quote API |
+| Data source (v1) | Deterministic fixture data (`fixtureMarketData.ts`) |
 | Prediction rules | `min: -1000, max: 2500` (display -100.0…250.0), stored ×10 |
 
 **Catalog swaps from original brainstorm:** Soybean Oil → Lumber (`LBS=F`); Soybean Meal → Lean Hogs (`HE=F`); both in **ag** sector.
@@ -31,13 +33,13 @@ Living record of progress, assumptions, and platform-fit learnings. Updated each
 | # | Assumption | Status | Evidence |
 |---|------------|--------|----------|
 | 1 | Daily event + golf-scale fixed-point scores feel right in UI | partial | Dry-run scores 663/268/60; UI built — browser QA still useful |
-| 2 | Yahoo futures symbols cover all 24 catalog rows | partial | Fixture OK all 24; live Yahoo needs slow per-symbol sync (2s delay + cache) |
+| 2 | 24 catalog symbols score deterministically in fixture mode | confirmed | `fixtureMarketData.ts` + spike/dry-run |
 | 3 | 5-min cron is enough drama for daily % moves | pending | Not exercised live; cron path verified via `runSportEventPipeline` |
 | 4 | SportModule hooks need no platform schema changes | confirmed | No migration for commodities; applied pending `predictionRules` migration on DO DB |
 | 5 | `eventMetadata.ts` branching scales to a third sport | confirmed | Commodities branch before F1/golf |
 | 6 | Static catalog + daily init is acceptable ops for v1 | confirmed | `init-event` + runbook documented |
 | 7 | Prediction tie-break works with fixed-point ×10 totals | confirmed | Dry-run: 3 lineups ranked; winner score 663 (display 66.3) |
-| 8 | Fixture mode sufficient for CI/dry-run when Yahoo rate-limited | confirmed | `--fixture` + `COMMODITIES_USE_FIXTURE_PRICES=true` |
+| 8 | Fixture data sufficient for CI/dry-run and local UI | confirmed | All sync paths use `fixtureMarketData.ts` |
 
 ---
 
@@ -57,7 +59,7 @@ Living record of progress, assumptions, and platform-fit learnings. Updated each
 - `commodityCatalog.ts` — 24-row static catalog
 - `externalId.ts` — `YYYY-MM-DD` validation
 - `sessionConfig.ts` — ET session open/close via `date-fns-tz`
-- `yahooFinanceClient.ts` — chart + per-symbol quotes, cache, fixture fallback
+- `fixtureMarketData.ts` — deterministic OHLC, quotes, sparklines
 - `handlers.ts`, `initEvent.ts`, `syncMetadata.ts`, `syncField.ts`, `syncLiveScores.ts`, `metadataMerge.ts`
 - Scripts: `commoditiesDataSpike.ts`, `commoditiesDryRun.ts`
 

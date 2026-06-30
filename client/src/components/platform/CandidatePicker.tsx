@@ -84,14 +84,14 @@ export const CandidatePicker: React.FC<CandidatePickerProps> = ({
             <DialogPanel className="flex max-h-[75vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl">
               <div className="border-b border-gray-200 px-4 py-3">
                 <DialogTitle className="font-display text-lg font-semibold text-gray-900">
-                  {isSaving ? "Saving lineup..." : "Select player"}
+                  {isSaving ? "Saving lineup..." : "Make selection"}
                 </DialogTitle>
                 {SHOW_PLAYER_SEARCH ? (
                   <input
                     type="search"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Search players..."
+                    placeholder="Search..."
                     disabled={isSaving}
                     className="mt-3 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                   />
