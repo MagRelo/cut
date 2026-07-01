@@ -21,6 +21,7 @@ const PAD = 2;
 const COLOR_ABOVE = "#16a34a";
 const COLOR_BELOW = "#dc2626";
 const GUIDE_LINE_STROKE = "#94a3b8";
+const PERIOD_DIVIDER_STROKE = "#cbd5e1";
 const GUIDE_LINE_DASH = "4 4";
 
 type ChartPoint = { x: number; y: number; value: number };
@@ -187,7 +188,7 @@ export const SessionPriceSparkline: React.FC<SessionPriceSparklineProps> = ({
               y1={PAD}
               x2={x}
               y2={HEIGHT - PAD}
-              stroke={GUIDE_LINE_STROKE}
+              stroke={PERIOD_DIVIDER_STROKE}
               strokeWidth="1"
               strokeDasharray={GUIDE_LINE_DASH}
               vectorEffect="non-scaling-stroke"

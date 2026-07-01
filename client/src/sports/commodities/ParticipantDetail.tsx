@@ -83,17 +83,6 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
         <CommodityParticipantRow candidate={candidate} status={status} />
       </div>
 
-      <div className="border-t border-gray-200 pb-3 pt-4">
-        <SessionPriceSparkline
-          history={sparklineHistory}
-          eventMetadata={eventMetadata}
-          openPrice={scoreData.openPrice}
-          dayClosePrices={scoreData.dayClosePrices}
-          currentPrice={scoreData.currentPrice ?? scoreData.closePrice}
-          currentPeriod={scoreData.currentPeriod}
-        />
-      </div>
-
       {hasRoundScores ? (
         <div
           className="grid grid-cols-5 divide-x divide-gray-200 border-t border-gray-200 bg-slate-50"
@@ -116,8 +105,19 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
         </div>
       ) : null}
 
+      <div className="border-t border-gray-200 pb-3 pt-4">
+        <SessionPriceSparkline
+          history={sparklineHistory}
+          eventMetadata={eventMetadata}
+          openPrice={scoreData.openPrice}
+          dayClosePrices={scoreData.dayClosePrices}
+          currentPrice={scoreData.currentPrice ?? scoreData.closePrice}
+          currentPeriod={scoreData.currentPeriod}
+        />
+      </div>
+
       <div
-        className="grid w-full grid-cols-3 divide-x divide-gray-200 border-t border-gray-200 bg-white"
+        className="grid w-full grid-cols-3 divide-x divide-gray-200 border-t border-gray-200 bg-slate-50"
         role="presentation"
       >
         <StatCell label="Open" value={formatPrice(scoreData.openPrice)} />
