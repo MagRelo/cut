@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import type { CompetitionEventShell } from "@cut/sport-sdk";
+import { DEFAULT_EVENT_HERO_OVERLAY_CLASSNAME } from "@cut/sport-sdk/ui";
 import { type Contest } from "../../types/contest";
 import { formatTournamentDateRange } from "../../lib/contestCreation";
 import { useAuth } from "../../contexts/AuthContext";
@@ -110,6 +111,8 @@ function GroupedContestSection({ group }: { group: ContestGroup }) {
 
   if (hasHeroPanel) {
     const heroImageClassName = plugin?.eventHeroImageClassName;
+    const heroOverlayClassName =
+      plugin?.eventHeroOverlayClassName ?? DEFAULT_EVENT_HERO_OVERLAY_CLASSNAME;
     return (
       <section className="overflow-hidden rounded-md border border-slate-700 shadow-md">
         <div className="relative overflow-hidden">
@@ -124,10 +127,7 @@ function GroupedContestSection({ group }: { group: ContestGroup }) {
               style={{ backgroundImage: `url(${heroImage})` }}
             />
           </div>
-          <div
-            className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/75 to-slate-950/95"
-            aria-hidden
-          />
+          <div className={["absolute inset-0", heroOverlayClassName].join(" ")} aria-hidden />
           <div className="relative z-10">
             <SportEventHeader
               sportId={group.sportId!}

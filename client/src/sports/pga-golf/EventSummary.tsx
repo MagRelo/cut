@@ -1,5 +1,6 @@
 import React from "react";
 import type { EventSummaryProps } from "@cut/sport-sdk/ui";
+import { EventHeroPanel } from "../../components/platform/EventHeroPanel";
 import { DEFAULT_TOURNAMENT_BEAUTY_IMAGE, resolveTournamentBeautyImage } from "./eventMedia";
 import { parseGolfEventMetadata } from "./utils";
 import { GolfEventDetails } from "./EventDetails";
@@ -21,16 +22,8 @@ export const GolfEventSummary: React.FC<EventSummaryProps> = ({ event, surface =
   const headerImageUrl = resolveGolfEventHeroImage(event);
 
   return (
-    <div className="relative overflow-hidden shadow-sm">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${headerImageUrl})` }}
-        aria-hidden
-      />
-      <div className="absolute inset-0 bg-black/50" aria-hidden />
-      <div className="relative z-10 p-4">
-        <GolfEventDetails event={event} />
-      </div>
-    </div>
+    <EventHeroPanel sportId={event.sportId} imageUrl={headerImageUrl} contentClassName="p-4">
+      <GolfEventDetails event={event} />
+    </EventHeroPanel>
   );
 };

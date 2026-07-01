@@ -1,3 +1,4 @@
+export { DEFAULT_EVENT_HERO_OVERLAY_CLASSNAME } from "./sport-ui-plugin.js";
 export type {
   CandidateRowProps,
   EventSummaryProps,

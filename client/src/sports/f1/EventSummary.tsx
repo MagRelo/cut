@@ -1,5 +1,6 @@
 import React from "react";
 import type { EventSummaryProps } from "@cut/sport-sdk/ui";
+import { EventHeroPanel } from "../../components/platform/EventHeroPanel";
 import { parseF1EventMetadata } from "@cut/sport-f1";
 import { resolveF1CircuitHeroImage } from "./eventMedia";
 import { F1EventDetails } from "./EventDetails";
@@ -21,16 +22,8 @@ export const F1EventSummary: React.FC<EventSummaryProps> = ({ event, surface = "
   const headerImageUrl = resolveF1EventHeroImage(event);
 
   return (
-    <div className="relative overflow-hidden shadow-sm">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${headerImageUrl})` }}
-        aria-hidden
-      />
-      <div className="absolute inset-0 bg-black/50" aria-hidden />
-      <div className="relative z-10 px-4 py-3">
-        <F1EventDetails event={event} />
-      </div>
-    </div>
+    <EventHeroPanel sportId={event.sportId} imageUrl={headerImageUrl}>
+      <F1EventDetails event={event} />
+    </EventHeroPanel>
   );
 };

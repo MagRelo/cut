@@ -1,5 +1,6 @@
 import React from "react";
 import type { EventSummaryProps } from "@cut/sport-sdk/ui";
+import { EventHeroPanel } from "../../components/platform/EventHeroPanel";
 import { CommodityEventDetails } from "./EventDetails";
 
 export const COMMODITY_EVENT_HERO_IMAGE = "/CommodityBG3.png";
@@ -20,16 +21,8 @@ export const CommodityEventSummary: React.FC<EventSummaryProps> = ({ event, surf
   }
 
   return (
-    <div className="relative overflow-hidden shadow-sm">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${headerImageUrl})` }}
-        aria-hidden
-      />
-      <div className="absolute inset-0 bg-black/50" aria-hidden />
-      <div className="relative z-10 px-4 py-3">
-        <CommodityEventDetails event={event} />
-      </div>
-    </div>
+    <EventHeroPanel sportId={event.sportId} imageUrl={headerImageUrl}>
+      <CommodityEventDetails event={event} />
+    </EventHeroPanel>
   );
 };

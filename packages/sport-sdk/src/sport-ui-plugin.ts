@@ -36,6 +36,9 @@ export interface ParticipantDetailProps {
   eventMetadata?: unknown;
 }
 
+/** Default hero tint over event header / contest group backgrounds. */
+export const DEFAULT_EVENT_HERO_OVERLAY_CLASSNAME = "bg-black/30";
+
 export type EventSummarySurface = "hero" | "content";
 
 export interface EventSummaryProps {
@@ -53,5 +56,7 @@ export interface SportUIPlugin {
   resolveEventHeroImage?: (event: CompetitionEventShell) => string | null;
   /** Optional Tailwind classes for hero background positioning (e.g. object-position). */
   eventHeroImageClassName?: string;
+  /** Optional Tailwind classes for hero tint; defaults to {@link DEFAULT_EVENT_HERO_OVERLAY_CLASSNAME}. */
+  eventHeroOverlayClassName?: string;
   candidateSortConfig: CandidateSortConfig;
 }
