@@ -6,12 +6,12 @@ Forward-looking steps for shipping a new sport plugin on the v4 platform. Use th
 
 **Reference implementations:**
 
-| Layer | Golf | F1 |
-|-------|------|-----|
-| Package | `packages/sport-pga-golf/` | `packages/sport-f1/` |
-| Server IO | `server/src/sports/pga-golf/` | `server/src/sports/f1/` |
-| Client UI | `client/src/sports/pga-golf/` | `client/src/sports/f1/` |
-| Activation runbook | `docs/sports/golf/event-activation-runbook.md` | `docs/sports/f1/event-activation-runbook.md` |
+| Layer | Golf | F1 | Commodities |
+|-------|------|-----|-------------|
+| Package | `packages/sport-pga-golf/` | `packages/sport-f1/` | `packages/sport-commodities/` |
+| Server IO | `server/src/sports/pga-golf/` | `server/src/sports/f1/` | `server/src/sports/commodities/` |
+| Client UI | `client/src/sports/pga-golf/` | `client/src/sports/f1/` | `client/src/sports/commodities/` |
+| Activation runbook | `docs/sports/golf/event-activation-runbook.md` | `docs/sports/f1/event-activation-runbook.md` | `docs/sports/commodities/event-activation-runbook.md` |
 
 Contests, leagues, wallets, referrals, and on-chain contracts require **no changes** for a new sport.
 

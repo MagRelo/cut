@@ -56,6 +56,8 @@ import { UserGroupDetailPage } from "./pages/UserGroupDetailPage";
 import { UserGroupCreatePage } from "./pages/UserGroupCreatePage";
 import { UserGroupJoinPage } from "./pages/UserGroupJoinPage";
 import { DebugPage } from "./pages/DebugPage";
+import { CommodityIconPreviewPage } from "./pages/dev/CommodityIconPreviewPage";
+import { CommodityAvatarVariantPreviewPage } from "./pages/dev/CommodityAvatarVariantPreviewPage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 import { useAppLoadingGate } from "./hooks/useAppLoadingGate";
 // import { MaintenanceOverlay } from './components/common/MaintenanceOverlay';
@@ -213,8 +215,10 @@ const AppShell: React.FC = () => {
               }
             />
 
-            {/* Debug */}
+            {/* Debug / dev */}
             <Route path="/debug" element={<DebugPage />} />
+            <Route path="/dev/commodity-icons" element={<CommodityIconPreviewPage />} />
+            <Route path="/dev/commodity-avatar-variants" element={<CommodityAvatarVariantPreviewPage />} />
           </Routes>
         </OnboardingRedirectGate>
       </AppLayout>

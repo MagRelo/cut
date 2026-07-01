@@ -16,7 +16,7 @@ export function useContestLobbyState(contest: Contest | undefined): {
 } {
   const hasWallet = Boolean(useEffectiveWalletAddress());
   const contestEvent = useContestEvent(contest);
-  const { roundDisplay, eventShell } = contestEvent;
+  const { periodDisplay, eventShell } = contestEvent;
 
   const { data: contestStateOnChain, isLoading: isChainStateLoading } = useReadContract({
     address: contest?.address as `0x${string}`,
@@ -35,7 +35,7 @@ export function useContestLobbyState(contest: Contest | undefined): {
       contestStateOnChain:
         contestStateOnChain !== undefined ? Number(contestStateOnChain) : undefined,
       hasWallet,
-      roundDisplay: roundDisplay ?? undefined,
+      periodDisplay: periodDisplay ?? undefined,
     };
 
     return deriveContestLobbyViewModel(contest, input);
@@ -44,7 +44,7 @@ export function useContestLobbyState(contest: Contest | undefined): {
     contestStateOnChain,
     hasWallet,
     eventShell,
-    roundDisplay,
+    periodDisplay,
   ]);
 
   return { viewModel, isChainStateLoading };

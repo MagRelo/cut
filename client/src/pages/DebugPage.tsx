@@ -17,6 +17,22 @@ export const DebugPage: React.FC = () => {
       <h1 className="text-2xl font-bold mb-6">Debug Information</h1>
 
       <PageSection>
+        <h2 className="text-lg font-semibold mb-3 text-gray-800">Dev pages</h2>
+        <ul className="list-inside list-disc text-sm text-blue-600">
+          <li>
+            <a href="/dev/commodity-icons" className="hover:underline">
+              Commodity icon preview
+            </a>
+          </li>
+          <li>
+            <a href="/dev/commodity-avatar-variants" className="hover:underline">
+              Commodity avatar variants
+            </a>
+          </li>
+        </ul>
+      </PageSection>
+
+      <PageSection>
         <h2 className="text-lg font-semibold mb-3 text-blue-600">Wagmi Account Status</h2>
         <div className="space-y-2 text-sm">
           <div>
@@ -109,7 +125,7 @@ export const DebugPage: React.FC = () => {
               <strong>Status:</strong> {sportActive.status ?? "—"}
             </div>
             <div>
-              <strong>Round:</strong> {sportActive.roundDisplay ?? "—"}
+              <strong>Period:</strong> {sportActive.periodDisplay ?? "—"}
             </div>
             <div>
               <strong>Candidates count:</strong> {sportActive.candidates.length}

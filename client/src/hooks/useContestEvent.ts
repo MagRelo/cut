@@ -8,8 +8,8 @@ import {
   eventStatusDisplayFromMetadata,
   eventStatusFromMetadata,
   isEventEditableFromMetadata,
-  roundDisplayFromMetadata,
-  roundStatusDisplayFromMetadata,
+  periodDisplayFromMetadata,
+  periodStatusDisplayFromMetadata,
 } from "../lib/eventMetadata";
 import { useEventCandidatesQuery } from "./useSportData";
 
@@ -21,8 +21,8 @@ export interface ContestEventState {
   status: EventStatus;
   isEventEditable: boolean;
   eventName: string | null;
-  roundDisplay: string | null;
-  roundStatusDisplay: string | null;
+  periodDisplay: string | null;
+  periodStatusDisplay: string | null;
   eventStartDate: string | null;
   eventStatusDisplay: string;
   candidates: ReturnType<typeof useEventCandidatesQuery>["data"];
@@ -79,8 +79,8 @@ export function useContestEvent(contest: Contest | undefined): ContestEventState
     status,
     isEventEditable: isEventEditableFromMetadata(metadata),
     eventName: eventDisplayNameFromMetadata(metadata, ""),
-    roundDisplay: roundDisplayFromMetadata(metadata),
-    roundStatusDisplay: roundStatusDisplayFromMetadata(metadata),
+    periodDisplay: periodDisplayFromMetadata(metadata),
+    periodStatusDisplay: periodStatusDisplayFromMetadata(metadata),
     eventStartDate: eventStartDateFromMetadata(metadata),
     eventStatusDisplay: eventStatusDisplayFromMetadata(metadata),
     candidates: candidatesQuery.data ?? [],

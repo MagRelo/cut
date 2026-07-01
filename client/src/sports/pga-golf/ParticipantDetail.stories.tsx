@@ -45,8 +45,8 @@ export const LiveInProgress: Story = {
       eventMetadata: {
         name: "Storybook Open",
         status: "IN_PROGRESS",
-        roundDisplay: "R2",
-        currentRound: 2,
+        periodDisplay: "R2",
+        currentPeriod: 2,
       },
       candidates: [FIXTURE_CANDIDATE_DETAIL_LIVE],
     }),
@@ -65,8 +65,8 @@ export const Scheduled: Story = {
       eventMetadata: {
         name: "Storybook Open",
         status: "NOT_STARTED",
-        roundDisplay: "R1",
-        currentRound: 1,
+        periodDisplay: "R1",
+        currentPeriod: 1,
       },
       candidates: [FIXTURE_CANDIDATE_DETAIL_SCHEDULED],
     }),
@@ -85,8 +85,8 @@ export const Complete: Story = {
       eventMetadata: {
         name: "Storybook Open",
         status: "OFFICIAL",
-        roundDisplay: "R4",
-        currentRound: 4,
+        periodDisplay: "R4",
+        currentPeriod: 4,
       },
       candidates: [FIXTURE_CANDIDATE_DETAIL_COMPLETE],
     }),

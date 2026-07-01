@@ -1,3 +1,5 @@
+export { F1_PERIOD_RULES } from "./periods.js";
+
 export {
   F1_SPORT_ID,
   parseF1EventMetadata,

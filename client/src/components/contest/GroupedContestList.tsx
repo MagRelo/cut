@@ -109,14 +109,21 @@ function GroupedContestSection({ group }: { group: ContestGroup }) {
   const hasHeroPanel = Boolean(group.sportId && group.eventShell && heroImage);
 
   if (hasHeroPanel) {
+    const heroImageClassName = plugin?.eventHeroImageClassName;
     return (
       <section className="overflow-hidden rounded-md border border-slate-700 shadow-md">
-        <div className="relative">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${heroImage})` }}
-            aria-hidden
-          />
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 overflow-hidden" aria-hidden>
+            <div
+              className={[
+                "absolute inset-0 bg-cover bg-center",
+                heroImageClassName,
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              style={{ backgroundImage: `url(${heroImage})` }}
+            />
+          </div>
           <div
             className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/75 to-slate-950/95"
             aria-hidden

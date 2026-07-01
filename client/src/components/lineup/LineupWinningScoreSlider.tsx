@@ -1,66 +1,78 @@
 import React from "react";
 
 interface LineupWinningScoreSliderProps {
+  id?: string;
+  label?: string;
   value: number;
   min?: number;
   max?: number;
+  step?: number;
+  formatValue?: (value: number) => string;
+  formatBound?: (value: number) => string;
   onChange?: (value: number) => void;
   disabled?: boolean;
   error?: string | null;
   readOnly?: boolean;
 }
 
+const defaultFormat = (value: number) => String(value);
+
 export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> = ({
+  id = "winning-score-prediction",
+  label = "Tie-Breaker",
   value,
   min = 1,
   max = 250,
+  step = 1,
+  formatValue = defaultFormat,
+  formatBound = defaultFormat,
   onChange,
   disabled = false,
   error = null,
   readOnly = false,
 }) => {
+  const displayValue = formatValue(value);
+
   return (
     <div className="border-t border-gray-100 p-3">
       {readOnly ? (
-        <div className="flex items-baseline justify-between gap-3 font-display">
-          <span
-            id="winning-score-prediction"
-            className="text-sm font-semibold text-gray-700"
-          >
-            Tie-Breaker
-          </span>
-          <span className="text-base font-bold tabular-nums leading-none text-gray-900">
-            {value}
-          </span>
-        </div>
-      ) : (
         <>
-          <div className="mb-2 flex items-baseline justify-between gap-3 font-display">
-            <span
-              id="winning-score-prediction"
-              className="text-sm font-semibold text-gray-700"
-            >
-              Tie-Breaker
-            </span>
-            <span className="text-base font-bold tabular-nums leading-none text-gray-900">
-              {value}
+          <span className="block font-display text-base font-semibold text-gray-900">{label}</span>
+          <div className="mt-3 flex items-center gap-3">
+            <div className="flex-1" aria-hidden />
+            <span className="w-16 shrink-0 text-right font-display text-lg font-bold tabular-nums leading-none text-gray-900">
+              {displayValue}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+        </>
+      ) : (
+        <>
+          <label htmlFor={id} className="block font-display text-base font-semibold text-gray-900">
+            {label}
+          </label>
+          <div className="mt-3 flex items-center gap-3">
             <input
+              id={id}
               type="range"
               min={min}
               max={max}
+              step={step}
               value={value}
               disabled={disabled}
               onChange={(event) => onChange?.(Number(event.target.value))}
               className="h-2 w-full flex-1 accent-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
-              aria-labelledby="winning-score-prediction"
+              aria-valuemin={min}
+              aria-valuemax={max}
+              aria-valuenow={value}
+              aria-valuetext={displayValue}
             />
+            <span className="w-16 shrink-0 text-right font-display text-lg font-bold tabular-nums leading-none text-gray-900">
+              {displayValue}
+            </span>
           </div>
           <div className="mt-1 flex justify-between px-0.5 font-display text-[10px] font-medium text-gray-400">
-            <span>{min}</span>
-            <span>{max}</span>
+            <span>{formatBound(min)}</span>
+            <span>{formatBound(max)}</span>
           </div>
         </>
       )}

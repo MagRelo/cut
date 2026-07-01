@@ -200,15 +200,15 @@ export const GolfParticipantDetail: React.FC<ParticipantDetailProps> = ({
   eventMetadata,
 }) => {
   const golfMeta = parseGolfEventMetadata(eventMetadata);
-  const currentRound = resolveTournamentRoundNumber(
-    golfMeta.roundDisplay ?? "R1",
-    golfMeta.currentRound ?? null,
+  const currentPeriod = resolveTournamentRoundNumber(
+    golfMeta.periodDisplay ?? "R1",
+    golfMeta.currentPeriod ?? null,
   );
-  const [selectedScorecardRound, setSelectedScorecardRound] = useState(currentRound);
+  const [selectedScorecardRound, setSelectedScorecardRound] = useState(currentPeriod);
 
   useEffect(() => {
-    setSelectedScorecardRound(currentRound);
-  }, [candidate.participantId, currentRound]);
+    setSelectedScorecardRound(currentPeriod);
+  }, [candidate.participantId, currentPeriod]);
 
   const meta = parseGolfCandidateMetadata(candidate);
   const participant = meta.participant ?? {};
@@ -258,7 +258,7 @@ export const GolfParticipantDetail: React.FC<ParticipantDetailProps> = ({
             ] as const
           ).map(([roundNum, data]) => {
             const played = roundHasBeenPlayed(data);
-            const selectable = isScorecardRoundSelectable(roundNum, data, currentRound);
+            const selectable = isScorecardRoundSelectable(roundNum, data, currentPeriod);
             const selected = selectedScorecardRound === roundNum;
             const label = `R${roundNum}`;
             const value = played && data?.total !== undefined ? data.total : null;

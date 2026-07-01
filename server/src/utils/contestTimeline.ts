@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { getPeriodRulesForSport } from "../sports/periodRules.js";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
@@ -51,6 +52,8 @@ function winnerNormalizedEntryIdSetFromResults(results: unknown): Set<string> {
 export type ContestTimelineData = {
   /** Contest ended: show Final tab and winner-line styling when payout winners exist */
   contestFinished: boolean;
+  /** Sport-specific period labels for chart dividers. */
+  periods: ReturnType<typeof getPeriodRulesForSport>;
   teams: Array<{
     contestLineupId: string;
     userId: string;
@@ -62,7 +65,7 @@ export type ContestTimelineData = {
     dataPoints: Array<{
       timestamp: string;
       score: number;
-      roundNumber: number;
+      periodNumber: number;
       sharePrice: number | null;
     }>;
   }>;
@@ -107,7 +110,11 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
   const [contest, snapshots, lineupRows] = await Promise.all([
     prisma.contest.findUnique({
       where: { id: contestId },
-      select: { status: true, results: true },
+      select: {
+        status: true,
+        results: true,
+        event: { select: { sportId: true } },
+      },
     }),
     prisma.contestLineupTimeline.findMany({
       where: { contestId },
@@ -115,7 +122,7 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
         contestLineupId: true,
         timestamp: true,
         score: true,
-        roundNumber: true,
+        periodNumber: true,
         sharePrice: true,
       },
       orderBy: { timestamp: "asc" },
@@ -181,7 +188,7 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
     lineup.dataPoints.push({
       timestamp: snapshot.timestamp.toISOString(),
       score: snapshot.score,
-      roundNumber: snapshot.roundNumber,
+      periodNumber: snapshot.periodNumber,
       sharePrice: snapshot.sharePrice,
     });
   }
@@ -203,5 +210,7 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
       return bLatestScore - aLatestScore;
     });
 
-  return { contestFinished, teams };
+  const periods = getPeriodRulesForSport(contest?.event?.sportId ?? "");
+
+  return { contestFinished, periods, teams };
 }

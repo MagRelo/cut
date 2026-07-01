@@ -44,8 +44,8 @@ function buildActiveEventResponse(options: ActiveEventFixtureOptions): ActiveEve
       metadata: options.eventMetadata ?? {
         name: "Storybook Open",
         status: "IN_PROGRESS",
-        roundDisplay: "R2",
-        currentRound: 2,
+        periodDisplay: "R2",
+        currentPeriod: 2,
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

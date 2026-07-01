@@ -12,9 +12,9 @@ export function GolfEventDetails({ event, className = "" }: GolfEventDetailsProp
   const meta = parseGolfEventMetadata(event.metadata);
   const name = meta.name ?? event.externalId;
   const locationLine = [meta.city?.trim(), meta.state?.trim()].filter(Boolean).join(", ");
-  const roundDisplay = meta.roundDisplay || "R1";
-  const roundStatusDisplay = meta.roundStatusDisplay?.trim() || formatGolfEventStatus(meta.status);
-  const isSuspended = meta.roundStatusDisplay === "Suspended";
+  const periodDisplay = meta.periodDisplay || "R1";
+  const periodStatusDisplay = meta.periodStatusDisplay?.trim() || formatGolfEventStatus(meta.status);
+  const isSuspended = meta.periodStatusDisplay === "Suspended";
 
   const detailSeparator = (
     <span className="text-[9px] leading-none text-white/60" aria-hidden>
@@ -50,7 +50,7 @@ export function GolfEventDetails({ event, className = "" }: GolfEventDetailsProp
       ) : null}
 
       <div className="mt-1 flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 font-medium text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
-        {roundDisplay}
+        {periodDisplay}
         {detailSeparator}
         <span>
           {isSuspended ? (
@@ -59,10 +59,10 @@ export function GolfEventDetails({ event, className = "" }: GolfEventDetailsProp
                 className="h-3.5 w-3.5 shrink-0 text-yellow-300"
                 aria-hidden
               />
-              <span>{roundStatusDisplay}</span>
+              <span>{periodStatusDisplay}</span>
             </span>
           ) : (
-            <span>{roundStatusDisplay}</span>
+            <span>{periodStatusDisplay}</span>
           )}
         </span>
         {detailSeparator}

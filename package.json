@@ -37,7 +37,7 @@
     "claim-oracle-fee": "node scripts/sepolia/claimOracleFee.js",
     "sepolia:claim-oracle-fee": "node scripts/sepolia/claimOracleFee.js",
     "base:deposit-usdc": "node scripts/base/depositUSDC.js",
-    "deploy": "pnpm --filter @cut/sport-sdk run build && pnpm --filter @cut/sport-pga-golf run build && pnpm --filter @cut/sport-f1 run build && pnpm --filter @cut/secondary-pricing run build && pnpm run client:build && pnpm run server:build && pnpm run docker:build",
+    "deploy": "pnpm --filter @cut/sport-sdk run build && pnpm --filter @cut/sport-commodities run build && pnpm --filter @cut/sport-pga-golf run build && pnpm --filter @cut/sport-f1 run build && pnpm --filter @cut/secondary-pricing run build && pnpm run client:build && pnpm run server:build && pnpm run docker:build",
     "release": "pnpm run deploy",
     "deploy:contracts": "node scripts/deploy.js",
     "deploy:contracts:sepolia": "node scripts/deploy.js sepolia",

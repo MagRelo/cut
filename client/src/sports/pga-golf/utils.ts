@@ -28,9 +28,9 @@ type GolfEventMetadata = {
   city?: string;
   state?: string;
   status?: string;
-  roundDisplay?: string | null;
-  roundStatusDisplay?: string | null;
-  currentRound?: number | null;
+  periodDisplay?: string | null;
+  periodStatusDisplay?: string | null;
+  currentPeriod?: number | null;
   beautyImage?: string | null;
 };
 

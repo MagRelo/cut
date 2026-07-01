@@ -17,7 +17,25 @@ export type {
   ScoringRules,
   SportSummary,
   ValidationResult,
+  PeriodRules,
 } from "./types.js";
+
+export {
+  formatPeriodLabel,
+  isTimelinePeriod,
+  periodRulesHasDividers,
+} from "./periods.js";
+
+export {
+  mergeEventPeriodFields,
+  mergeScoreDataPeriodFields,
+  readCurrentPeriod,
+  readPeriodDisplay,
+  readPeriodStatusDisplay,
+  readScoreDataCurrentPeriod,
+  stripLegacyPeriodFields,
+  type EventPeriodPatch,
+} from "./eventPeriod.js";
 
 export {
   defaultLineupPredictionForLineupId,

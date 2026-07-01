@@ -5,6 +5,12 @@ export interface PredictionRules {
   max: number;
   defaultRandomMin: number;
   defaultRandomMax: number;
+  /** Slider label. */
+  label?: string;
+  /** Stored value ÷ displayScale = UI value (default 1). */
+  displayScale?: number;
+  /** Slider step in UI units (default 1, or 1/displayScale when scaled). */
+  step?: number;
 }
 
 export interface LineupPrediction {

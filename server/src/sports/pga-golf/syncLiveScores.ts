@@ -90,7 +90,7 @@ export async function syncGolfLiveScores(eventId: string) {
     throw new Error(`Golf event ${eventId} has no PGA Tour external id`);
   }
 
-  const currentRound = golfMeta?.currentRound ?? 1;
+  const currentPeriod = golfMeta?.currentPeriod ?? 1;
   const rawLeaderboard = await fetchLeaderboardRaw();
   const byPgaId = new Map(
     rawLeaderboard.players
@@ -131,7 +131,7 @@ export async function syncGolfLiveScores(eventId: string) {
           leaderboardRow,
           scorecardRaw,
           rawLeaderboard.players,
-          currentRound,
+          currentPeriod,
         );
         if (!payload) {
           return null;

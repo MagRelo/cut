@@ -9,7 +9,7 @@ import { ContestState } from "./useContestPredictionData";
 export interface DeriveContestLobbyViewModelInput {
   contestStateOnChain?: number;
   hasWallet?: boolean;
-  roundDisplay?: string | null;
+  periodDisplay?: string | null;
 }
 
 export function deriveContestLobbyPhase(contest: Contest): ContestLobbyPhase {
@@ -109,7 +109,7 @@ export function deriveContestLobbyViewModel(
     primary: {
       mode: primaryActionsLocked ? "liveTimeline" : "enterContest",
       entryListOpensModal: primaryActionsLocked,
-      roundDisplay: input.roundDisplay ?? null,
+      periodDisplay: input.periodDisplay ?? null,
     },
     predictions: {
       mode: predictionsMode,

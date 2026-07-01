@@ -3,7 +3,7 @@
 export interface TimelineDataPoint {
   timestamp: string;
   score: number;
-  roundNumber: number;
+  periodNumber: number;
   /** Cost per $1 of potential winnings ($10 buy sim); null when not stored */
   sharePrice?: number | null;
 }
@@ -35,10 +35,9 @@ export interface ContestLineupTimelineRecord {
   contestLineupId: string;
   contestId: string;
   timestamp: Date;
-  roundNumber: number;
+  periodNumber: number;
   score: number;
   position: number;
   sharePrice?: number | null;
   createdAt: Date;
 }
-

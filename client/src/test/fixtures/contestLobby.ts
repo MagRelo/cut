@@ -1,3 +1,4 @@
+import { PGA_GOLF_PERIOD_RULES } from "@cut/sport-pga-golf";
 import { deriveContestLobbyViewModel } from "../../hooks/deriveContestLobbyViewModel";
 import { ContestState } from "../../hooks/useContestPredictionData";
 import {
@@ -140,6 +141,7 @@ export function buildContestLineup(overrides: Partial<ContestLineup> = {}): Cont
 export function buildTimelineData(overrides: Partial<TimelineData> = {}): TimelineData {
   return {
     contestFinished: false,
+    periods: PGA_GOLF_PERIOD_RULES,
     teams: [
       {
         contestLineupId: "lineup-1",
@@ -148,8 +150,8 @@ export function buildTimelineData(overrides: Partial<TimelineData> = {}): Timeli
         color: "#3B82F6",
         entryId: "1",
         dataPoints: [
-          { timestamp: new Date().toISOString(), score: 4, roundNumber: 1 },
-          { timestamp: new Date(Date.now() + 3600000).toISOString(), score: 8, roundNumber: 1 },
+          { timestamp: new Date().toISOString(), score: 4, periodNumber: 1 },
+          { timestamp: new Date(Date.now() + 3600000).toISOString(), score: 8, periodNumber: 1 },
         ],
       },
     ],

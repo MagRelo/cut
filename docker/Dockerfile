@@ -16,6 +16,7 @@ COPY packages/secondary-pricing/package.json ./packages/secondary-pricing/
 COPY packages/sport-sdk/package.json ./packages/sport-sdk/
 COPY packages/sport-pga-golf/package.json ./packages/sport-pga-golf/
 COPY packages/sport-f1/package.json ./packages/sport-f1/
+COPY packages/sport-commodities/package.json ./packages/sport-commodities/
 
 # Install server and its workspace deps. --ignore-scripts skips package prepare
 # (no sources in image yet); dist is copied in the next step from the host build.
@@ -25,6 +26,7 @@ COPY packages/secondary-pricing/dist ./packages/secondary-pricing/dist
 COPY packages/sport-sdk/dist ./packages/sport-sdk/dist
 COPY packages/sport-pga-golf/dist ./packages/sport-pga-golf/dist
 COPY packages/sport-f1/dist ./packages/sport-f1/dist
+COPY packages/sport-commodities/dist ./packages/sport-commodities/dist
 
 COPY server/prisma ./server/prisma/
 RUN cd server && pnpm exec prisma generate

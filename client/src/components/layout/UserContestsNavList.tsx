@@ -20,6 +20,7 @@ import { contestLobbyPath } from "../../utils/contestRoutes";
 const SPORT_EMOJI: Record<string, string> = {
   "pga-golf": "⛳",
   f1: "🏁",
+  commodities: "📈",
 };
 
 function contestSportId(contest: Contest): string | undefined {

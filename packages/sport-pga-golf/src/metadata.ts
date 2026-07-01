@@ -1,3 +1,9 @@
+import {
+  readCurrentPeriod,
+  readPeriodDisplay,
+  readPeriodStatusDisplay,
+} from "@cut/sport-sdk";
+
 export const PGA_GOLF_SPORT_ID = "pga-golf" as const;
 
 export interface GolfEventMetadata {
@@ -10,9 +16,9 @@ export interface GolfEventMetadata {
   state?: string;
   timezone?: string;
   status: string;
-  roundStatusDisplay?: string | null;
-  roundDisplay?: string | null;
-  currentRound?: number | null;
+  periodStatusDisplay?: string | null;
+  periodDisplay?: string | null;
+  currentPeriod?: number | null;
   weather?: unknown;
   beautyImage?: string | null;
   cutLine?: string | null;
@@ -80,10 +86,9 @@ export function parseGolfEventMetadata(metadata: unknown): GolfEventMetadata | n
     state: typeof record.state === "string" ? record.state : undefined,
     timezone: typeof record.timezone === "string" ? record.timezone : undefined,
     status: record.status,
-    roundStatusDisplay:
-      typeof record.roundStatusDisplay === "string" ? record.roundStatusDisplay : null,
-    roundDisplay: typeof record.roundDisplay === "string" ? record.roundDisplay : null,
-    currentRound: typeof record.currentRound === "number" ? record.currentRound : null,
+    periodStatusDisplay: readPeriodStatusDisplay(record),
+    periodDisplay: readPeriodDisplay(record),
+    currentPeriod: readCurrentPeriod(record),
     weather: record.weather,
     beautyImage: typeof record.beautyImage === "string" ? record.beautyImage : null,
     cutLine: typeof record.cutLine === "string" ? record.cutLine : null,

@@ -294,7 +294,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                               onClick={() => slotEditor.openSlot(index)}
                               disabled={slotActionsDisabled}
                               className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                              aria-label={`Edit player in slot ${index + 1}`}
+                              aria-label={`Edit pick in slot ${index + 1}`}
                             >
                               <svg
                                 className="h-4 w-4 shrink-0"
@@ -325,7 +325,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                                 <UserIcon className="h-6 w-6 text-slate-300" aria-hidden />
                               </div>
                               <span className="truncate text-md font-semibold leading-tight text-slate-400">
-                                No player selected
+                                No selection
                               </span>
                             </button>
                             <button
@@ -333,7 +333,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                               onClick={() => slotEditor.openSlot(index)}
                               disabled={slotActionsDisabled}
                               className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                              aria-label={`Add player to slot ${index + 1}`}
+                              aria-label={`Add pick to slot ${index + 1}`}
                             >
                               <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
                               Add

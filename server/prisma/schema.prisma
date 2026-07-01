@@ -271,7 +271,7 @@ model ContestLineupTimeline {
   contestLineupId String
   contestId       String
   timestamp       DateTime
-  roundNumber     Int
+  periodNumber    Int
   score           Int
   position        Int
   sharePrice      Float?
