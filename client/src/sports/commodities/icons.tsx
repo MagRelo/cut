@@ -69,6 +69,7 @@ const ICONS: Record<string, React.FC<IconProps>> = {
   silver: CoinIcon,
   copper: BoltIcon,
   platinum: CoinIcon,
+  palladium: CoinIcon,
   aluminum: BoltIcon,
   uranium: BoltIcon,
   ttf: DripIcon,
