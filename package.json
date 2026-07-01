@@ -19,6 +19,7 @@
     "db:stop": "docker compose -f docker/docker-compose.yml down",
     "db:logs": "docker compose -f docker/docker-compose.yml logs -f",
     "db:reset": "docker compose -f docker/docker-compose.yml down -v && docker compose -f docker/docker-compose.yml up -d && sleep 5 && pnpm run prisma:migrate && pnpm --filter server run prisma:seed",
+    "db:pull-prod": "bash scripts/db-pull-prod.sh",
     "prisma:generate": "pnpm --filter server run prisma:generate",
     "prisma:migrate": "pnpm --filter server run prisma:migrate",
     "prisma:studio": "pnpm --filter server run prisma:studio",

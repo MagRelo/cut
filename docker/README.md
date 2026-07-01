@@ -33,9 +33,28 @@ pnpm run docker:build
 ### Docker Compose (Local Development)
 
 ```bash
-cd docker
-docker-compose up -d
+pnpm run db:start
 ```
+
+Local Postgres runs **17** (`postgres:17-alpine`) to match hosted prod and Homebrew `pg_dump`/`pg_restore` clients.
+
+**Upgrading from Postgres 16:** the existing Docker volume is incompatible across major versions. Recreate it once:
+
+```bash
+pnpm run db:stop
+docker compose -f docker/docker-compose.yml down -v
+pnpm run db:start
+```
+
+### Pull production data to local
+
+Requires `pg_dump` on your PATH and a running local Docker Postgres (`pnpm run db:start`). Set `PROD_DATABASE_URL` in `server/.env` (see `server/.env.example`), then:
+
+```bash
+pnpm run db:pull-prod
+```
+
+This dumps hosted prod, recreates the local `playthecut` database in Docker, restores the snapshot, and runs `prisma migrate deploy`. Use `--dry-run` to preview steps or `--yes` to skip the confirmation prompt.
 
 ## Docker Image
 

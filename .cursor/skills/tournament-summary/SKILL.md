@@ -9,8 +9,12 @@ description: >-
 
 # Tournament Summary Generator
 
-Produce Perplexity-style preview content for a PGA Tour event and save it to
+Produce a **casual-fan tournament preview** for a PGA Tour event and save it to
 `server/src/tournamentSummaries/{pgaTourId}.json`.
+
+Content appears in the app summary modal and the **New Tournament email** lead
+block — write like a welcoming sports-column intro, not a betting wire or stat
+sheet.
 
 ## Quick prompt (user copy-paste)
 
@@ -76,7 +80,7 @@ standard preview.
 
 | Section | What to find |
 |--------|----------------|
-| Summary | Main storylines: defending champ, favorites, course fit, field notes |
+| Summary | **Place, course, history, nostalgia** — why this week feels special; 2–3 star names max; one light “what to watch” hook |
 | Best Players and Odds | 8–10 contenders with American odds ranges (e.g. `+850 to +1000`) |
 | Tournament History | Venue, year founded, defending champion, tradition |
 | Course and Format | Course name, dates, purse, format, yardage/par profile |
@@ -94,12 +98,14 @@ Follow the canonical structure in [reference.md](reference.md).
 
 Rules:
 
-- **Summary** section: exactly one item with `"label": ""` and a single prose
-  paragraph (2–4 sentences). No bullets in Summary.
+- **Summary** section: exactly one item with `"label": ""` and **2–4 short
+  sentences** (see voice guide below). No bullets in Summary.
 - **Best Players and Odds**: 8–10 players; label format
-  `"Player Name (+low to +high):"`; body is one sentence on why they fit.
-- Tone: conversational, informed fan — like Perplexity or a sharp preview
-  article. No markdown inside JSON strings.
+  `"Player Name (+low to +high):"`; body is **one plain sentence** — why fans
+  should care, not a stat dump.
+- **Voice:** welcoming, nostalgic, excited — for **casual fans** who know a few
+  big names and love the *feel* of a tournament week. Think sports-page column
+  (Sporting News / Chicago Tribune), not odds terminal or PGA press release.
 - Use straight apostrophes in JSON (`'` inside strings is fine; avoid smart
   quotes that break JSON).
 
@@ -136,12 +142,57 @@ event metadata. After updating a summary for the active event, re-run init:
 pnpm run service:init-event pga-golf R2026023
 ```
 
+## Summary voice (casual fan)
+
+The Summary is the email lead and first thing users read. Optimize for **place,
+course, history, and nostalgia** — then
+make casual fans feel welcome.
+
+### Lead with
+
+1. **Where** — city, region, course name (e.g. “Quad Cities,” “Silvis,
+   Illinois,” “TPC Deere Run”).
+2. **Why this week matters** — tradition, anniversary, tune-up before a major,
+   fan-friendly Midwest stop, etc.
+3. **2–3 recognizable names** — defending champ, past winner with local history,
+   one current favorite or fan favorite. Not a full field list.
+4. **One inviting hook** — low scores, summer vibe, comeback story, first win
+   nostalgia. Save the rest for other sections.
+
+### Writing rules
+
+- **Short sentences.** One idea per sentence. Avoid chains of clauses joined by
+  “while,” “with,” and comma splices.
+- **Less information density.** No yardage, par, purse, or field size in
+  Summary — those live in Course and Format.
+- **Warm and welcoming**, not stiff or transactional. You’re inviting someone
+  into the week, not filing a report.
+- **Nostalgic when it fits** — first Tour win here, decades on the calendar,
+  local love, iconic holes, sponsor/community ties.
+- **Exciting but honest** — enthusiasm without hype or invented drama.
+- Third person, present tense for upcoming events.
+- No markdown inside JSON strings.
+
+### Avoid in Summary
+
+- Compound sentences packing 4+ facts.
+- Betting jargon (“co-favorite,” “profiles well,” “market rank”).
+- Amateur/pro debut details unless it’s *the* story of the week.
+- Course renovation minutiae (save for Course Profile or omit).
+- Listing more than three player names.
+
+### Odds blurbs
+
+Keep **one sentence**, fan-readable: recent win, past champ here, popular
+draw, hot streak — not “approach game” / “tee-to-green profile” jargon unless
+unavoidable.
+
 ## Style reference
 
 Gold-standard examples in the repo:
 
-- `server/src/tournamentSummaries/R2026021.json` — Summary lead + odds format
-- `server/src/tournamentSummaries/R2026023.json` — Signature event preview
+- `server/src/tournamentSummaries/R2026021.json` — warm Summary lead + odds format
+- `server/src/tournamentSummaries/R2026030.json` — casual-fan Midwest / nostalgia tone
 
 Older files may use `Key Storylines` instead of `Summary`; **prefer the
 R2026021 layout** for new summaries.
