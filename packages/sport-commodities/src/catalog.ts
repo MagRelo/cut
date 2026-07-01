@@ -1,4 +1,4 @@
-import type { CommoditySector } from "./metadata.js";
+import type { CommodityFieldEntry, CommoditySector } from "./metadata.js";
 
 export type CommodityCatalogEntry = {
   displayName: string;
@@ -6,15 +6,6 @@ export type CommodityCatalogEntry = {
   ticker: string;
   hlCoin: string;
   hlDex: string;
-  sector: CommoditySector;
-  iconKey: string;
-};
-
-export type CommodityFieldEntry = {
-  ticker: string;
-  hlCoin: string;
-  hlDex: string;
-  displayName: string;
   sector: CommoditySector;
   iconKey: string;
 };

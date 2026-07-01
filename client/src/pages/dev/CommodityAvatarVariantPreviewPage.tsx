@@ -100,7 +100,7 @@ function PreviewAvatar({
         style={{ backgroundColor: accent }}
         title={displayName}
       >
-        <CommodityIcon iconKey={iconKey} sector={sector} className={`${dims.icon} text-white drop-shadow`} />
+        <CommodityIcon iconKey={iconKey} className={`${dims.icon} text-white drop-shadow`} />
       </div>
     );
   }
@@ -113,7 +113,7 @@ function PreviewAvatar({
         title={displayName}
       >
         <span style={{ color: iconAccent }}>
-          <CommodityIcon iconKey={iconKey} sector={sector} className={dims.icon} />
+          <CommodityIcon iconKey={iconKey} className={dims.icon} />
         </span>
       </div>
     );
@@ -127,7 +127,7 @@ function PreviewAvatar({
         title={displayName}
       >
         <span style={{ color: iconAccent }}>
-          <CommodityIcon iconKey={iconKey} sector={sector} className={dims.icon} />
+          <CommodityIcon iconKey={iconKey} className={dims.icon} />
         </span>
       </div>
     );
@@ -140,7 +140,7 @@ function PreviewAvatar({
         style={{ backgroundColor: muted }}
         title={displayName}
       >
-        <CommodityIcon iconKey={iconKey} sector={sector} className={`${dims.icon} text-white drop-shadow`} />
+        <CommodityIcon iconKey={iconKey} className={`${dims.icon} text-white drop-shadow`} />
       </div>
     );
   }
@@ -153,7 +153,7 @@ function PreviewAvatar({
         title={displayName}
       >
         <span style={{ color: iconAccent }}>
-          <CommodityIcon iconKey={iconKey} sector={sector} className={dims.icon} />
+          <CommodityIcon iconKey={iconKey} className={dims.icon} />
         </span>
       </div>
     );
@@ -163,7 +163,7 @@ function PreviewAvatar({
     return (
       <div className={`relative shrink-0 ${dims.outer}`} title={displayName}>
         <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-slate-100">
-          <CommodityIcon iconKey={iconKey} sector={sector} className={`${dims.icon} text-slate-500`} />
+          <CommodityIcon iconKey={iconKey} className={`${dims.icon} text-slate-500`} />
         </div>
         <span
           className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-white"

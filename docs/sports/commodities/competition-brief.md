@@ -55,7 +55,7 @@ Pick three commodities for the trading week; your lineup scores the sum of their
 
 ### Five daily rounds
 
-Each trading day (Mon–Fri) is one **round**. Per pick, score the session’s close-to-close % move with **asymmetric weighting**:
+Each trading day (Mon–Fri) is one **round**. Per pick, score the session's close-to-close % move with **asymmetric weighting**:
 
 | Day move | Fantasy points |
 |----------|----------------|
@@ -121,7 +121,7 @@ Static allowlist in `packages/sport-commodities/src/catalog.ts`. Hyperliquid res
 
 ## Out of scope (v1)
 
-- Weekly mode, prop bets, automated daily init cron
+- Prop bets, automated weekly init cron
 - Crypto, equities, sector roster constraints
 - Sub-minute quotes
 

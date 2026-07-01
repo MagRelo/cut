@@ -27,20 +27,20 @@ function StatCell({ label, value }: { label: string; value: string }) {
 
 function PeriodCell({
   label,
-  round,
+  periodScore,
   periodNumber,
   currentPeriod,
 }: {
   label: string;
-  round?: CommodityRoundScoreData | null;
+  periodScore?: CommodityRoundScoreData | null;
   periodNumber: number;
   currentPeriod?: number | null;
 }) {
   const unplayed = currentPeriod != null && periodNumber > currentPeriod;
-  const total = typeof round?.total === "number" ? round.total : null;
+  const total = typeof periodScore?.total === "number" ? periodScore.total : null;
   const pctReturn =
-    typeof round?.pctReturn === "number" && Number.isFinite(round.pctReturn)
-      ? round.pctReturn
+    typeof periodScore?.pctReturn === "number" && Number.isFinite(periodScore.pctReturn)
+      ? periodScore.pctReturn
       : null;
   const pctTone =
     pctReturn == null ? "text-gray-400" : pctReturn >= 0 ? "text-emerald-700" : "text-red-600";
@@ -76,7 +76,7 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
   const meta = parseCommodityCandidateMetadata(candidate);
   const participant = meta.participant ?? {};
   const scoreData = meta.scoreData ?? {};
-  const hasRoundScores = Array.from(
+  const hasPeriodScores = Array.from(
     { length: COMMODITIES_PERIOD_RULES.count },
     (_, index) => scoreData[`r${index + 1}` as keyof typeof scoreData],
   ).some(Boolean);
@@ -93,20 +93,20 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
         />
       </div>
 
-      {hasRoundScores ? (
+      {hasPeriodScores ? (
         <div
           className="grid grid-cols-5 divide-x divide-gray-200 border-t border-gray-200 bg-slate-50"
           role="presentation"
         >
           {Array.from({ length: COMMODITIES_PERIOD_RULES.count }, (_, index) => {
             const periodNumber = index + 1;
-            const roundKey = `r${periodNumber}` as keyof typeof scoreData;
+            const periodKey = `r${periodNumber}` as keyof typeof scoreData;
             const label = COMMODITIES_PERIOD_RULES.labels?.[index] ?? `D${periodNumber}`;
             return (
               <PeriodCell
                 key={periodNumber}
                 label={label}
-                round={scoreData[roundKey] as CommodityRoundScoreData | null | undefined}
+                periodScore={scoreData[periodKey] as CommodityRoundScoreData | null | undefined}
                 periodNumber={periodNumber}
                 currentPeriod={scoreData.currentPeriod}
               />

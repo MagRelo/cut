@@ -7,7 +7,7 @@ import { mergeCommoditiesEventMetadata } from "./metadataMerge.js";
 import {
   commoditiesPeriodDisplay,
   commoditiesPeriodStatusDisplay,
-} from "./sessionRounds.js";
+} from "./sessionDisplay.js";
 
 export async function syncCommoditiesEventMetadata(eventId: string) {
   const event = await prisma.competitionEvent.findFirst({

@@ -1,4 +1,3 @@
-import { parseGolfEventMetadata } from "@cut/sport-pga-golf";
 import { readCurrentPeriod } from "@cut/sport-sdk";
 import { prisma } from "../lib/prisma.js";
 import { requireSportModule } from "../sports/registry.js";
@@ -84,9 +83,7 @@ export async function updateContestLineupsForEvent(
     where: { id: eventId },
     select: { metadata: true, sportId: true },
   });
-  const golfMeta = parseGolfEventMetadata(event?.metadata);
-  const currentPeriod =
-    golfMeta?.currentPeriod ?? readCurrentPeriod(event?.metadata) ?? 1;
+  const currentPeriod = readCurrentPeriod(event?.metadata) ?? 1;
   const timestamp = new Date();
 
   const timelineSnapshots = contestLineups.map((contestLineup) => ({

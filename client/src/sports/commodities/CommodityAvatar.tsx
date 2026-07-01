@@ -33,7 +33,7 @@ export const CommodityAvatar: React.FC<CommodityAvatarProps> = ({
       title={displayName}
     >
       <span style={{ color: iconAccent }}>
-        <CommodityIcon iconKey={iconKey} sector={sector} className={dims.icon} />
+        <CommodityIcon iconKey={iconKey} className={dims.icon} />
       </span>
     </div>
   );

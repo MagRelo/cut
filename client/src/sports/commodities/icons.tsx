@@ -1,5 +1,4 @@
 import React from "react";
-import type { CommoditySector } from "@cut/sport-commodities";
 
 type IconProps = { className?: string };
 
@@ -57,7 +56,6 @@ export function CommodityIcon({
   className = "h-5 w-5",
 }: {
   iconKey?: string | null;
-  sector?: CommoditySector | string | null;
   className?: string;
 }) {
   const Icon = (iconKey && ICONS[iconKey]) || CubeIcon;

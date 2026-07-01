@@ -29,7 +29,7 @@ import {
 import {
   commoditiesPeriodDisplay,
   commoditiesPeriodStatusDisplay,
-} from "../sports/commodities/sessionRounds.js";
+} from "../sports/commodities/sessionDisplay.js";
 
 const EVAL_CONTEST_ADDRESS = "0x000000000000000000000000000000000000c013";
 /** Wed close complete → Thu not started (R1–R3 final, R4+ zero). */

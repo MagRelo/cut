@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   commoditiesPeriodDisplay,
   commoditiesPeriodStatusDisplay,
-} from "./sessionRounds.js";
+} from "./sessionDisplay.js";
 
 describe("commoditiesPeriodDisplay", () => {
   it("formats trading day label", () => {
