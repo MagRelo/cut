@@ -2,6 +2,7 @@ import React from "react";
 import type { CandidateRowProps } from "@cut/sport-sdk/ui";
 import type { EventStatus } from "@cut/sport-sdk";
 import { useOptionalEventScope } from "../../contexts/EventScopeContext";
+import { CandidateSelectedOverlay } from "../../components/platform/CandidateSelectedOverlay";
 import { CandidateSelectionCard } from "./CandidateSelectionCard";
 import { GolfParticipantRow } from "./ParticipantRow";
 
@@ -69,24 +70,7 @@ export const GolfCandidateRow: React.FC<CandidateRowProps> = (props) => {
         disabled ? "cursor-not-allowed opacity-60" : ""
       }`}
     >
-      {isSelected ? (
-        <div className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 rounded-sm bg-green-600 px-2 py-1">
-          <svg
-            className="h-4 w-4 shrink-0 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-        </div>
-      ) : null}
+      {isSelected ? <CandidateSelectedOverlay /> : null}
       <CandidateSelectionCard candidate={candidate} />
     </button>
   );
