@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { commoditiesEventStatus } from "./status.js";
+import { commoditiesEventStatus, commoditiesShouldSyncLiveScores } from "./status.js";
 
 const baseMeta = {
   sessionDate: "2026-06-29",
@@ -38,5 +38,27 @@ describe("commoditiesEventStatus", () => {
         sessionClose: "2026-06-29T20:00:00.000Z",
       }),
     ).toBe("SCHEDULED");
+  });
+});
+
+describe("commoditiesShouldSyncLiveScores", () => {
+  it("syncs during LIVE", () => {
+    expect(
+      commoditiesShouldSyncLiveScores({
+        commodities: { ...baseMeta, sessionStarted: true },
+      }),
+    ).toBe(true);
+  });
+
+  it("does not sync when SCHEDULED", () => {
+    expect(commoditiesShouldSyncLiveScores({ commodities: baseMeta })).toBe(false);
+  });
+
+  it("does not sync when COMPLETE", () => {
+    expect(
+      commoditiesShouldSyncLiveScores({
+        commodities: { ...baseMeta, sessionStarted: true, sessionComplete: true },
+      }),
+    ).toBe(false);
   });
 });

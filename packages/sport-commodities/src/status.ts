@@ -33,6 +33,5 @@ export function commoditiesShouldSettleContest(metadata: unknown): boolean {
 }
 
 export function commoditiesShouldSyncLiveScores(metadata: unknown): boolean {
-  const status = commoditiesEventStatusFromMetadata(metadata);
-  return status === "LIVE" || status === "COMPLETE";
+  return commoditiesEventStatusFromMetadata(metadata) === "LIVE";
 }

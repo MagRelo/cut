@@ -49,6 +49,8 @@
     "script:commodities-live-eval": "tsx src/scripts/commoditiesLiveEval.ts",
     "script:commodities-eval-replay": "tsx src/scripts/commoditiesEvalReplay.ts",
     "script:commodities-cleanup-local": "tsx src/scripts/commoditiesCleanupLocal.ts",
+    "script:create-on-chain-contest": "tsx src/scripts/createOnChainContest.ts",
+    "script:pin-commodities-scheduled": "tsx src/scripts/pinCommoditiesScheduled.ts",
     "script:commodities-catalog-sync": "tsx src/scripts/commoditiesCatalogSync.ts",
     "script:commodities-inspect-candidates": "tsx src/scripts/commoditiesInspectCandidates.ts",
     "script:commodities-refresh-candidates": "tsx src/scripts/commoditiesRefreshCandidates.ts",

@@ -10,7 +10,7 @@ import {
 } from "@cut/sport-commodities";
 import { commodityExternalId } from "@cut/sport-commodities";
 import { getSessionPricesForField } from "./marketDataProvider.js";
-import { mergeCommoditiesEventMetadata, requireCommoditiesMetadata } from "./metadataMerge.js";
+import { requireCommoditiesMetadata } from "./metadataMerge.js";
 import { findFieldEntryByTicker } from "./hyperliquidCatalog.js";
 import { commoditiesCurrentPeriod } from "./sessionRounds.js";
 
@@ -89,17 +89,6 @@ export async function syncCommoditiesLiveScores(eventId: string) {
       },
     });
     updatedCount += 1;
-  }
-
-  if (isComplete && !commoditiesMeta.sessionComplete) {
-    await prisma.competitionEvent.update({
-      where: { id: event.id },
-      data: {
-        metadata: mergeCommoditiesEventMetadata(event.metadata, {
-          commodities: { sessionComplete: true },
-        }) as Prisma.InputJsonValue,
-      },
-    });
   }
 
   console.log(`[commodities] Synced live scores for ${updatedCount} contracts on ${eventId}`);
