@@ -50,8 +50,8 @@ function PeriodCell({
       {unplayed ? (
         <div className="text-sm font-bold leading-none text-gray-400">—</div>
       ) : (
-        <div className="mt-1 flex flex-col items-center gap-1 leading-none">
-          <span className="text-sm font-bold text-gray-900">
+        <div className="mt-1 flex flex-col items-center gap-0.5 leading-none">
+          <span className="text-md font-bold text-gray-900">
             {total == null ? "—" : formatRoundPoints(total)}
           </span>
           {pctReturn != null ? (

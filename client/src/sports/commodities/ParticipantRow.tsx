@@ -51,7 +51,7 @@ export const CommodityParticipantRow: React.FC<{
     <div className="flex min-w-0 items-center justify-between gap-3">
       {avatar}
       <div className="min-w-0 flex-1">
-        <div className="truncate text-md font-semibold leading-tight text-gray-900">
+        <div className="truncate text-lg font-semibold leading-tight text-gray-900">
           {candidate.displayName}
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-600">
@@ -73,7 +73,7 @@ export const CommodityParticipantRow: React.FC<{
         </div>
       ) : null}
       <div className="shrink-0 text-center">
-        <div className="text-lg font-bold leading-none text-gray-900">
+        <div className="text-xl font-bold leading-none text-gray-900">
           {formatDisplayScore(displayScore)}
         </div>
         <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
