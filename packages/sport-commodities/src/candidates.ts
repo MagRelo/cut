@@ -1,5 +1,8 @@
 import type { Candidate } from "@cut/sport-sdk";
-import type { CommodityParticipantMetadata, CommodityScoreData } from "./metadata.js";
+import {
+  parseCommodityParticipantMetadata,
+  type CommodityScoreData,
+} from "./metadata.js";
 import { buildCommoditiesSortKeys } from "./commoditiesSortKeys.js";
 
 export type EventParticipantRow = {
@@ -14,13 +17,6 @@ export type EventParticipantRow = {
   };
 };
 
-function parseParticipantMetadata(metadata: unknown): CommodityParticipantMetadata {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return {};
-  }
-  return metadata as CommodityParticipantMetadata;
-}
-
 function parseScoreData(scoreData: unknown): CommodityScoreData {
   if (!scoreData || typeof scoreData !== "object" || Array.isArray(scoreData)) {
     return {};
@@ -30,7 +26,7 @@ function parseScoreData(scoreData: unknown): CommodityScoreData {
 
 export function buildCommoditiesCandidates(rows: EventParticipantRow[]): Candidate[] {
   return rows.map((row) => {
-    const participantMeta = parseParticipantMetadata(row.participant.metadata);
+    const participantMeta = parseCommodityParticipantMetadata(row.participant.metadata);
     const scoreData = parseScoreData(row.scoreData);
     const displayName = row.participant.displayName ?? "Unknown";
 

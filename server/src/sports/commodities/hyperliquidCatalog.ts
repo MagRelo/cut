@@ -8,7 +8,7 @@ import {
   type CommodityCatalogEntry,
   type CommodityFieldEntry,
 } from "@cut/sport-commodities";
-import { fetchPerpDexs } from "./hyperliquidClient.js";
+import { fetchPerpDexs, parseHlCoin } from "./hyperliquidClient.js";
 
 type ResolvedMarket = {
   hlCoin: string;
@@ -32,17 +32,6 @@ function canonicalTicker(rawTicker: string): string | null {
     return null;
   }
   return canonical;
-}
-
-function parseHlCoin(hlCoin: string): { hlDex: string; ticker: string } | null {
-  const idx = hlCoin.indexOf(":");
-  if (idx <= 0 || idx >= hlCoin.length - 1) {
-    return null;
-  }
-  return {
-    hlDex: hlCoin.slice(0, idx),
-    ticker: hlCoin.slice(idx + 1).toUpperCase(),
-  };
 }
 
 function collectMarketsFromPerpDexs(

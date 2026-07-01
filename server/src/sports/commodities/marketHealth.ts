@@ -1,8 +1,8 @@
 import type { CommodityCatalogEntry } from "@cut/sport-commodities";
 import {
-  fetchAssetContexts,
   fetchCandles,
   hlDayVolume,
+  loadHlAssetContextMap,
   type HlAssetWithContext,
 } from "./hyperliquidClient.js";
 
@@ -104,28 +104,12 @@ export async function assessMarketHealth(
   };
 }
 
-async function loadContextMap(
-  catalog: CommodityCatalogEntry[],
-): Promise<Map<string, HlAssetWithContext>> {
-  const dexes = [...new Set(catalog.map((entry) => entry.hlDex))];
-  const map = new Map<string, HlAssetWithContext>();
-
-  for (const dex of dexes) {
-    const assets = await fetchAssetContexts(dex);
-    for (const asset of assets) {
-      map.set(asset.hlCoin, asset);
-    }
-  }
-
-  return map;
-}
-
 /** Drop catalog entries that fail liquidity or recent-candle checks. */
 export async function filterHealthyCatalog(
   catalog: CommodityCatalogEntry[],
   contextMap?: Map<string, HlAssetWithContext>,
 ): Promise<CommodityCatalogEntry[]> {
-  const map = contextMap ?? (await loadContextMap(catalog));
+  const map = contextMap ?? (await loadHlAssetContextMap(catalog));
   const healthy: CommodityCatalogEntry[] = [];
 
   for (const entry of catalog) {

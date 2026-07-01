@@ -3,12 +3,12 @@ import type { CommodityScoreData } from "@cut/sport-commodities";
 import { buildSessionDayCloseTimestamps } from "@cut/sport-commodities";
 import type { MarketQuote, SessionPriceSnapshot } from "./marketTypes.js";
 import {
-  fetchAssetContexts,
   fetchCandles,
   hlDayVolume,
   hlImpactPrices,
   hlMarkPrice,
   hlPrevDayPrice,
+  loadHlAssetContextMap,
   type HlAssetWithContext,
 } from "./hyperliquidClient.js";
 import {
@@ -97,22 +97,6 @@ function assetContextToQuote(asset: HlAssetWithContext): MarketQuote | null {
   return quote;
 }
 
-async function loadAssetContextMap(
-  field: CommodityFieldEntry[],
-): Promise<Map<string, HlAssetWithContext>> {
-  const dexes = [...new Set(field.map((entry) => entry.hlDex))];
-  const map = new Map<string, HlAssetWithContext>();
-
-  for (const dex of dexes) {
-    const assets = await fetchAssetContexts(dex);
-    for (const asset of assets) {
-      map.set(asset.hlCoin, asset);
-    }
-  }
-
-  return map;
-}
-
 export async function fetchQuotesForField(
   field: CommodityFieldEntry[],
 ): Promise<Map<string, MarketQuote>> {
@@ -126,7 +110,7 @@ export async function fetchQuotesForField(
     return results;
   }
 
-  const contextMap = await loadAssetContextMap(field);
+  const contextMap = await loadHlAssetContextMap(field);
   for (const entry of field) {
     const asset = contextMap.get(entry.hlCoin);
     if (!asset) {
@@ -287,7 +271,7 @@ export async function getSessionPriceSnapshot(
     return { openPrice, currentPrice, closePrice, dayClosePrices };
   }
 
-  const map = contextMap ?? (await loadAssetContextMap([entry]));
+  const map = contextMap ?? (await loadHlAssetContextMap([entry]));
   const asset = map.get(entry.hlCoin);
   const currentPrice = asset ? hlMarkPrice(asset.context) : null;
 
@@ -354,7 +338,7 @@ export async function getSessionPricesForField(
   const results = new Map<string, SessionPriceSnapshot>();
   const contextMap = useFixtureMarketData()
     ? undefined
-    : await loadAssetContextMap(input.field);
+    : await loadHlAssetContextMap(input.field);
 
   for (const entry of input.field) {
     const snapshot = await getSessionPriceSnapshot(entry, {

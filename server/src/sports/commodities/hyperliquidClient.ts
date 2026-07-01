@@ -69,7 +69,7 @@ async function postInfo<T>(body: Record<string, unknown>): Promise<T> {
   return (await response.json()) as T;
 }
 
-function parseHlCoin(hlCoin: string): { hlDex: string; ticker: string } | null {
+export function parseHlCoin(hlCoin: string): { hlDex: string; ticker: string } | null {
   const idx = hlCoin.indexOf(":");
   if (idx <= 0 || idx >= hlCoin.length - 1) {
     return null;
@@ -142,6 +142,22 @@ export async function fetchAssetContexts(dex: string): Promise<HlAssetWithContex
   });
 
   return assets;
+}
+
+export async function loadHlAssetContextMap(
+  entries: Array<{ hlDex: string; hlCoin: string }>,
+): Promise<Map<string, HlAssetWithContext>> {
+  const dexes = [...new Set(entries.map((entry) => entry.hlDex))];
+  const map = new Map<string, HlAssetWithContext>();
+
+  for (const dex of dexes) {
+    const assets = await fetchAssetContexts(dex);
+    for (const asset of assets) {
+      map.set(asset.hlCoin, asset);
+    }
+  }
+
+  return map;
 }
 
 export async function fetchCandles(

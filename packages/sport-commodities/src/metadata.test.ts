@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseCommoditiesEventMetadata } from "@cut/sport-commodities";
+import {
+  parseCommoditiesEventMetadata,
+  parseCommodityParticipantMetadata,
+} from "@cut/sport-commodities";
 
 describe("commodities fieldSnapshot metadata", () => {
   it("parses frozen field snapshot on event metadata", () => {
@@ -23,5 +26,26 @@ describe("commodities fieldSnapshot metadata", () => {
 
     expect(parsed?.fieldSnapshot).toHaveLength(1);
     expect(parsed?.fieldSnapshot?.[0]?.hlCoin).toBe("xyz:GOLD");
+  });
+});
+
+describe("parseCommodityParticipantMetadata", () => {
+  it("returns empty object for invalid input", () => {
+    expect(parseCommodityParticipantMetadata(null)).toEqual({});
+    expect(parseCommodityParticipantMetadata([])).toEqual({});
+  });
+
+  it("parses participant metadata object", () => {
+    expect(
+      parseCommodityParticipantMetadata({
+        sector: "precious",
+        iconKey: "gold",
+        quote: { lastPrice: 2400 },
+      }),
+    ).toEqual({
+      sector: "precious",
+      iconKey: "gold",
+      quote: { lastPrice: 2400 },
+    });
   });
 });

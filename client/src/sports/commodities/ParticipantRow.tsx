@@ -1,20 +1,28 @@
 import React from "react";
-import type { CandidateRowProps } from "@cut/sport-sdk/ui";
+import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import type { ParticipantRowProps } from "@cut/sport-sdk/ui";
 import { CommodityAvatar } from "./CommodityAvatar";
 import {
   candidateDisplayScore,
-  formatDisplayScore,
+  formatSignedPoints,
   formatPctReturn,
   parseCommodityCandidateMetadata,
 } from "./commodityUtils";
 import { sectorColor, sectorLabel } from "./utils";
 
-export const CommodityParticipantRow: React.FC<{
-  candidate: CandidateRowProps["candidate"];
-  status: CandidateRowProps["status"];
-  onClick?: () => void;
-  ownershipPercentage?: number;
-}> = ({ candidate, status, onClick, ownershipPercentage }) => {
+type CommodityParticipantRowProps = ParticipantRowProps & {
+  rowTrailing?: "scorecard" | "share";
+  onShare?: () => void;
+};
+
+export const CommodityParticipantRow: React.FC<CommodityParticipantRowProps> = ({
+  candidate,
+  status,
+  onClick,
+  ownershipPercentage,
+  rowTrailing,
+  onShare,
+}) => {
   const meta = parseCommodityCandidateMetadata(candidate);
   const participant = meta.participant ?? {};
   const scoreData = meta.scoreData ?? {};
@@ -26,6 +34,22 @@ export const CommodityParticipantRow: React.FC<{
       : null;
   const pctTone =
     pctReturn == null ? "text-gray-400" : pctReturn >= 0 ? "text-emerald-600" : "text-red-600";
+
+  const shareControl =
+    rowTrailing === "share" && onShare ? (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onShare();
+        }}
+        className="shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-800"
+        aria-label="Share commodity leaderboard link"
+        title="Share"
+      >
+        <ArrowTopRightOnSquareIcon className="h-5 w-5" aria-hidden />
+      </button>
+    ) : null;
 
   const avatar = (
     <CommodityAvatar
@@ -76,12 +100,15 @@ export const CommodityParticipantRow: React.FC<{
           </div>
         </div>
       ) : null}
-      <div className="shrink-0 text-center">
-        <div className="text-xl font-bold leading-none text-gray-900">
-          {formatDisplayScore(displayScore)}
-        </div>
-        <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
-          PTS
+      <div className="flex shrink-0 items-center gap-2">
+        {shareControl}
+        <div className="text-center">
+          <div className="text-xl font-bold leading-none text-gray-900">
+            {formatSignedPoints(displayScore)}
+          </div>
+          <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
+            PTS
+          </div>
         </div>
       </div>
     </div>

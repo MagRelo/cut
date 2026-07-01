@@ -7,7 +7,7 @@ import {
   formatDailyPctReturn,
   formatPctReturn,
   formatPrice,
-  formatRoundPoints,
+  formatSignedPoints,
   parseCommodityCandidateMetadata,
 } from "./commodityUtils";
 import { SessionPriceSparkline } from "./SessionPriceSparkline";
@@ -53,7 +53,7 @@ function PeriodCell({
       ) : (
         <div className="mt-1 flex flex-col items-center gap-0.5 leading-none">
           <span className="text-xl font-bold text-gray-900">
-            {total == null ? "" : formatRoundPoints(total)}
+            {total == null ? "" : formatSignedPoints(total)}
           </span>
           {pctReturn != null ? (
             <span className={`text-xs font-semibold ${pctTone}`}>
@@ -70,6 +70,8 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
   candidate,
   status,
   eventMetadata,
+  rowTrailing = "share",
+  onShare,
 }) => {
   const meta = parseCommodityCandidateMetadata(candidate);
   const participant = meta.participant ?? {};
@@ -83,7 +85,12 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
   return (
     <div className="overflow-hidden rounded-sm border border-gray-300 bg-white">
       <div className="p-3 py-4">
-        <CommodityParticipantRow candidate={candidate} status={status} />
+        <CommodityParticipantRow
+          candidate={candidate}
+          status={status}
+          rowTrailing={rowTrailing}
+          onShare={rowTrailing === "share" ? onShare : undefined}
+        />
       </div>
 
       {hasRoundScores ? (

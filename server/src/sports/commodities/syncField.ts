@@ -1,7 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
-import type { CommodityParticipantMetadata } from "@cut/sport-commodities";
-import { COMMODITIES_SPORT_ID, commodityExternalId, getEventFieldSnapshot } from "@cut/sport-commodities";
+import {
+  COMMODITIES_SPORT_ID,
+  commodityExternalId,
+  getEventFieldSnapshot,
+  parseCommodityParticipantMetadata,
+  type CommodityParticipantMetadata,
+} from "@cut/sport-commodities";
 import {
   buildCommodityCatalog,
   buildFieldSnapshot,
@@ -14,13 +19,6 @@ import {
 } from "@cut/sport-commodities";
 import { syncCommoditiesPriceHistory } from "./syncPriceHistory.js";
 import { syncCommoditiesQuotes } from "./syncQuotes.js";
-
-function parseParticipantMetadata(metadata: unknown): CommodityParticipantMetadata {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return {};
-  }
-  return metadata as CommodityParticipantMetadata;
-}
 
 export async function syncCommoditiesParticipantField(eventId: string) {
   const event = await prisma.competitionEvent.findFirst({
@@ -50,7 +48,7 @@ export async function syncCommoditiesParticipantField(eventId: string) {
       select: { metadata: true },
     });
     const participantMetadata: CommodityParticipantMetadata = {
-      ...parseParticipantMetadata(existing?.metadata),
+      ...parseCommodityParticipantMetadata(existing?.metadata),
       sector: entry.sector,
       iconKey: entry.iconKey,
       symbol: entry.ticker,

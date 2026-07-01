@@ -1,16 +1,12 @@
 import { Prisma } from "@prisma/client";
-import type { CommodityParticipantMetadata } from "@cut/sport-commodities";
-import { COMMODITIES_SPORT_ID, getEventFieldSnapshot } from "@cut/sport-commodities";
+import {
+  COMMODITIES_SPORT_ID,
+  getEventFieldSnapshot,
+  parseCommodityParticipantMetadata,
+} from "@cut/sport-commodities";
 import { prisma } from "../../lib/prisma.js";
 import { commodityExternalId } from "@cut/sport-commodities";
 import { fetchQuotesForField, marketQuoteToSnapshot } from "./marketDataProvider.js";
-
-function parseParticipantMetadata(metadata: unknown): CommodityParticipantMetadata {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return {};
-  }
-  return metadata as CommodityParticipantMetadata;
-}
 
 /** Refresh quote snapshots on participant metadata (init + cron). */
 export async function syncCommoditiesQuotes(eventId: string): Promise<void> {
@@ -51,7 +47,7 @@ export async function syncCommoditiesQuotes(eventId: string): Promise<void> {
       continue;
     }
 
-    const existingMeta = parseParticipantMetadata(row.metadata);
+    const existingMeta = parseCommodityParticipantMetadata(row.metadata);
     await prisma.participant.update({
       where: { id: row.id },
       data: {

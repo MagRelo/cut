@@ -1,6 +1,9 @@
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
-import { commoditiesEventStatusFromMetadata } from "@cut/sport-commodities";
+import {
+  commoditiesEventStatusFromMetadata,
+  parseCommoditiesEventMetadata,
+} from "@cut/sport-commodities";
 import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
 import { formatCommoditiesEventStatusLabel, formatCommoditySessionWindow } from "./commodityUtils";
 
@@ -14,21 +17,16 @@ export function CommodityEventDetails({ event, className = "" }: CommodityEventD
     event.metadata && typeof event.metadata === "object" && !Array.isArray(event.metadata)
       ? (event.metadata as Record<string, unknown>)
       : {};
-  const commodities =
-    meta.commodities && typeof meta.commodities === "object"
-      ? (meta.commodities as Record<string, unknown>)
-      : {};
+  const commodities = parseCommoditiesEventMetadata(event.metadata);
   const name = typeof meta.name === "string" ? meta.name : event.externalId;
   const status = formatCommoditiesEventStatusLabel(
     commoditiesEventStatusFromMetadata(event.metadata),
   );
-  const sessionDate =
-    typeof commodities.sessionDate === "string" ? commodities.sessionDate : event.externalId;
-  const sessionOpen =
-    typeof commodities.sessionOpen === "string" ? commodities.sessionOpen : undefined;
-  const sessionClose =
-    typeof commodities.sessionClose === "string" ? commodities.sessionClose : undefined;
-  const sessionWindow = formatCommoditySessionWindow(sessionOpen, sessionClose);
+  const sessionDate = commodities?.sessionDate ?? event.externalId;
+  const sessionWindow = formatCommoditySessionWindow(
+    commodities?.sessionOpen,
+    commodities?.sessionClose,
+  );
 
   const detailSeparator = (
     <span className="text-[9px] leading-none text-white/60" aria-hidden>

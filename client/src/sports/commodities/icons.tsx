@@ -46,19 +46,6 @@ function ClubIcon({ className }: IconProps) {
   );
 }
 
-function SoftTriangleIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      <path d="M11.33 6.48Q12 5.25 12.67 6.48L18.33 17.01Q19 18.25 17.6 18.25H6.4Q5 18.25 6.33 17.01L11.33 6.48z" />
-      <path
-        d="M11.55 9.15Q12 8.55 12.45 9.15L15.85 15.55Q16.2 16.2 15.55 16.2H8.45Q7.8 16.2 8.15 15.55L11.55 9.15z"
-        fill="white"
-        opacity="0.22"
-      />
-    </svg>
-  );
-}
-
 const ICONS: Record<string, React.FC<IconProps>> = {
   "crude-oil": DripIcon,
   brent: DripIcon,

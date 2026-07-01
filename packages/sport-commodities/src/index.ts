@@ -12,6 +12,7 @@ export {
   type CommodityRoundScoreData,
   type CommodityScoreData,
   type CommoditySector,
+  parseCommodityParticipantMetadata,
 } from "./metadata.js";
 
 export {

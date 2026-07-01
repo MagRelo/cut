@@ -52,14 +52,7 @@ export function formatPctReturn(value: number | null | undefined): string {
   return `${sign}${value.toFixed(2)}%`;
 }
 
-export function formatDisplayScore(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return "—";
-  const rounded = Math.round(value);
-  const sign = rounded > 0 ? "+" : "";
-  return `${sign}${rounded}`;
-}
-
-export function formatRoundPoints(value: number | null | undefined): string {
+export function formatSignedPoints(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
   const rounded = Math.round(value);
   const sign = rounded > 0 ? "+" : "";
@@ -75,13 +68,6 @@ export function formatDailyPctReturn(value: number | null | undefined): string {
 export function formatPrice(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
-export function formatVolume(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return "—";
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-  return value.toLocaleString();
 }
 
 export function formatCommoditiesEventStatusLabel(status: string | undefined): string {

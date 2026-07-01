@@ -10,11 +10,9 @@ function pickerLiveStatus(status: EventStatus): EventStatus {
 }
 
 export const CommodityCandidateRow: React.FC<CandidateRowProps> = (props) => {
-  const { onSelect, isSelected = false, disabled = false, candidate, status, eventMetadata } =
-    props;
+  const { onSelect, isSelected = false, disabled = false, candidate, status } = props;
   const scope = useOptionalEventScope();
   const resolvedStatus = status ?? scope?.status ?? "SCHEDULED";
-  void (eventMetadata ?? scope?.metadata);
 
   if (resolvedStatus === "LIVE" || resolvedStatus === "COMPLETE") {
     return (

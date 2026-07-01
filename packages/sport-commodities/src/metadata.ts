@@ -153,3 +153,10 @@ export function getEventFieldSnapshot(metadata: unknown): CommodityFieldEntry[] 
   const commodities = parseCommoditiesEventMetadata(metadata);
   return commodities?.fieldSnapshot ?? [];
 }
+
+export function parseCommodityParticipantMetadata(metadata: unknown): CommodityParticipantMetadata {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return {};
+  }
+  return metadata as CommodityParticipantMetadata;
+}

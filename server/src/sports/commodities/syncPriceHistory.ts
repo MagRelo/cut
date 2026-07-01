@@ -1,10 +1,10 @@
 import { Prisma } from "@prisma/client";
-import type { CommodityParticipantMetadata } from "@cut/sport-commodities";
 import {
   COMMODITIES_SPORT_ID,
   commoditiesEventStatusFromMetadata,
   getEventFieldSnapshot,
   parseCommoditiesEventMetadata,
+  parseCommodityParticipantMetadata,
 } from "@cut/sport-commodities";
 import { prisma } from "../../lib/prisma.js";
 import { commodityExternalId } from "@cut/sport-commodities";
@@ -13,13 +13,6 @@ import {
   fetchSessionSparklineHistoryForField,
 } from "./marketDataProvider.js";
 import { appendLiveMark } from "./priceHistoryUtils.js";
-
-function parseParticipantMetadata(metadata: unknown): CommodityParticipantMetadata {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return {};
-  }
-  return metadata as CommodityParticipantMetadata;
-}
 
 /** Refresh intraday session sparklines on participant metadata (init + cron). */
 export async function syncCommoditiesPriceHistory(eventId: string): Promise<void> {
@@ -67,7 +60,7 @@ export async function syncCommoditiesPriceHistory(eventId: string): Promise<void
       continue;
     }
 
-    const existingMeta = parseParticipantMetadata(row.metadata);
+    const existingMeta = parseCommodityParticipantMetadata(row.metadata);
     const closes = histories.get(entry.ticker) ?? [];
     const mark = quotes.get(entry.ticker)?.markPrice;
     const priceHistory = appendLiveMark(closes, mark);

@@ -135,7 +135,7 @@ Run init with the new ISO week key (`YYYY-Www`). Init deactivates the previous c
 | Event shows LIVE but contest still OPEN | Cron has not activated yet | Same — status and activation flip together on the next pipeline pass |
 | Event never COMPLETE | `sessionClose` not passed | Wait for close; verify stored metadata bounds |
 | Custom bounds reset | Re-init without flags on existing event | Re-init with explicit `--open`/`--close`; cron preserves bounds once set |
-| Field count ≠ 24 | Catalog/init error | Re-run init; check `commodityCatalog.ts` |
+| Field count ≠ 8 | Catalog/init error | Re-run init; check `hyperliquidCatalog.ts` and `COMMODITY_METADATA_ALLOWLIST` in `@cut/sport-commodities` |
 
 ---
 

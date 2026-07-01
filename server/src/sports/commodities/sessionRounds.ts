@@ -15,9 +15,3 @@ export function commoditiesPeriodStatusDisplay(
   const index = Math.min(COMMODITIES_ROUND_COUNT, Math.max(1, currentPeriod)) - 1;
   return `${dayNames[index]} session`;
 }
-
-/** @deprecated Use commoditiesPeriodDisplay */
-export const commoditiesRoundDisplay = commoditiesPeriodDisplay;
-
-/** @deprecated Use commoditiesPeriodStatusDisplay */
-export const commoditiesRoundStatusDisplay = commoditiesPeriodStatusDisplay;
