@@ -18,7 +18,7 @@ import {
 } from "@cut/sport-commodities";
 import { prisma } from "../lib/prisma.js";
 import { updateContestLineupsForEvent } from "../services/updateContestLineups.js";
-import { formatCommoditiesWeekExternalId } from "../sports/commodities/externalId.js";
+import { formatCommoditiesWeekExternalId, resolveWeekAnchorDates } from "../sports/commodities/externalId.js";
 import { initCommoditiesEvent } from "../sports/commodities/initEvent.js";
 import { getSessionPricesForField } from "../sports/commodities/marketDataProvider.js";
 import { mergeCommoditiesEventMetadata } from "../sports/commodities/metadataMerge.js";
@@ -101,6 +101,7 @@ async function remapContestLineupsToEvent(contestId: string, eventId: string): P
 async function main(): Promise<void> {
   const weekKey = parseWeekArg();
   const bounds = resolveWeeklySessionBounds(weekKey);
+  const { monday: sessionDate } = resolveWeekAnchorDates(weekKey);
 
   const contest = await prisma.contest.findFirst({
     where: { address: EVAL_CONTEST_ADDRESS, chainId: 84532 },
@@ -133,6 +134,7 @@ async function main(): Promise<void> {
   const field = getEventFieldSnapshot(event.metadata);
   const prices = await getSessionPricesForField({
     field,
+    sessionDate,
     sessionOpen: bounds.sessionOpen,
     sessionClose: bounds.sessionClose,
     isComplete: false,

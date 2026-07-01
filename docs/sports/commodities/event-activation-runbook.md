@@ -157,6 +157,7 @@ Run init with the new ISO week key (`YYYY-Www`). Init deactivates the previous c
 | Event shows LIVE but contest still OPEN | Cron has not activated yet | Same — status and activation flip together on next pipeline pass |
 | Event never COMPLETE | `sessionClose` not passed | Wait for close; verify stored metadata bounds |
 | Custom bounds reset | Re-init without flags on existing event | Re-init with explicit `--open`/`--close`; cron preserves bounds once set |
+| Wrong weekday labels / sparkline columns after mid-week `--open` | Scores synced before ISO-week grid fix | `service:sync-commodities-scores` or wait for cron; verify `metadata.commodities.sessionDate` is the week's Monday |
 | Field count ≠ expected | Catalog/init error | Re-run init; check `COMMODITY_METADATA_ALLOWLIST` and HL liquidity filter |
 
 ---

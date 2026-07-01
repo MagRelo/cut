@@ -1,6 +1,9 @@
 import type { CommodityFieldEntry, CommodityQuoteSnapshot } from "@cut/sport-commodities";
 import type { CommodityScoreData } from "@cut/sport-commodities";
-import { buildSessionDayCloseTimestamps } from "@cut/sport-commodities";
+import {
+  buildSessionDayCloseTimestamps,
+  type CommoditiesSessionBounds,
+} from "@cut/sport-commodities";
 import type { MarketQuote, SessionPriceSnapshot } from "./marketTypes.js";
 import {
   fetchCandles,
@@ -23,6 +26,19 @@ import {
   sessionCandleIntervals,
 } from "./sessionPricing.js";
 import { getCommoditiesSessionCalendar } from "./sessionConfig.js";
+
+function sessionBounds(
+  sessionDate: string,
+  sessionOpen: string,
+  sessionClose: string,
+): CommoditiesSessionBounds {
+  return {
+    sessionDate,
+    sessionOpen,
+    sessionClose,
+    calendar: getCommoditiesSessionCalendar(),
+  };
+}
 
 
 export type { MarketQuote, SessionPriceSnapshot } from "./marketTypes.js";
@@ -127,10 +143,12 @@ export async function fetchQuotesForField(
 
 export async function fetchSessionSparklineHistory(
   entry: CommodityFieldEntry,
+  sessionDate: string,
   sessionOpen: string,
   sessionClose: string,
   isComplete: boolean,
 ): Promise<Array<{ t: number; c: number }>> {
+  void sessionDate;
   const sessionOpenMs = new Date(sessionOpen).getTime();
   const sessionCloseMs = new Date(sessionClose).getTime();
   if (Number.isNaN(sessionOpenMs) || Number.isNaN(sessionCloseMs)) {
@@ -138,10 +156,7 @@ export async function fetchSessionSparklineHistory(
   }
 
   const endMs = isComplete ? sessionCloseMs : Math.min(Date.now(), sessionCloseMs);
-  const calendar = getCommoditiesSessionCalendar();
-  const dayCloses = buildSessionDayCloseTimestamps(sessionOpen, sessionClose, calendar);
-  const firstColumnStartMs = (dayCloses[0] ?? sessionOpenMs) - 24 * 60 * 60 * 1000;
-  const fetchStartMs = Math.min(sessionOpenMs, firstColumnStartMs);
+  const fetchStartMs = sessionOpenMs;
   if (endMs <= fetchStartMs) {
     return [];
   }
@@ -150,7 +165,7 @@ export async function fetchSessionSparklineHistory(
 
   const toPoints = (candles: Array<{ t: number; c: string }>) =>
     candles
-      .filter((candle) => candle.t >= fetchStartMs && candle.t <= endMs)
+      .filter((candle) => candle.t >= sessionOpenMs && candle.t <= endMs)
       .sort((a, b) => a.t - b.t)
       .map((candle) => ({
         t: candle.t,
@@ -174,13 +189,20 @@ export async function fetchSessionSparklineHistory(
 
 export async function fetchSessionSparklineHistoryForField(
   field: CommodityFieldEntry[],
+  sessionDate: string,
   sessionOpen: string,
   sessionClose: string,
   isComplete: boolean,
 ): Promise<Map<string, Array<{ t: number; c: number }>>> {
   const results = new Map<string, Array<{ t: number; c: number }>>();
   for (const entry of field) {
-    const points = await fetchSessionSparklineHistory(entry, sessionOpen, sessionClose, isComplete);
+    const points = await fetchSessionSparklineHistory(
+      entry,
+      sessionDate,
+      sessionOpen,
+      sessionClose,
+      isComplete,
+    );
     results.set(entry.ticker, points);
   }
   return results;
@@ -188,6 +210,7 @@ export async function fetchSessionSparklineHistoryForField(
 
 export type SessionPricingInput = {
   field: CommodityFieldEntry[];
+  sessionDate: string;
   sessionOpen: string;
   sessionClose: string;
   isComplete: boolean;
@@ -230,12 +253,12 @@ async function resolveSessionBoundaryPrices(
 
 function resolveDayClosePrices(
   candles: Array<{ t: number; c: string }>,
+  sessionDate: string,
   sessionOpen: string,
   sessionClose: string,
 ): Array<number | null> {
-  const calendar = getCommoditiesSessionCalendar();
-  return buildSessionDayCloseTimestamps(sessionOpen, sessionClose, calendar).map((ms) =>
-    resolvePriceAtTimestamp(candles, ms),
+  return buildSessionDayCloseTimestamps(sessionBounds(sessionDate, sessionOpen, sessionClose)).map(
+    (ms) => resolvePriceAtTimestamp(candles, ms),
   );
 }
 
@@ -266,7 +289,12 @@ export async function getSessionPriceSnapshot(
       (input.isComplete
         ? (resolvePriceAtTimestamp(candles, sessionCloseMs) ?? currentPrice)
         : null);
-    const dayClosePrices = resolveDayClosePrices(candles, input.sessionOpen, input.sessionClose);
+    const dayClosePrices = resolveDayClosePrices(
+      candles,
+      input.sessionDate,
+      input.sessionOpen,
+      input.sessionClose,
+    );
 
     return { openPrice, currentPrice, closePrice, dayClosePrices };
   }
@@ -317,13 +345,16 @@ export async function getSessionPriceSnapshot(
       startMs,
       endMs,
     );
-    dayClosePrices = resolveDayClosePrices(candles, input.sessionOpen, input.sessionClose);
+    dayClosePrices = resolveDayClosePrices(
+      candles,
+      input.sessionDate,
+      input.sessionOpen,
+      input.sessionClose,
+    );
   } catch (error) {
     console.warn(`[commodities] Day close prices failed for ${entry.hlCoin}:`, error);
     dayClosePrices = buildSessionDayCloseTimestamps(
-      input.sessionOpen,
-      input.sessionClose,
-      getCommoditiesSessionCalendar(),
+      sessionBounds(input.sessionDate, input.sessionOpen, input.sessionClose),
     ).map(() => null);
   }
 
@@ -342,6 +373,7 @@ export async function getSessionPricesForField(
 
   for (const entry of input.field) {
     const snapshot = await getSessionPriceSnapshot(entry, {
+      sessionDate: input.sessionDate,
       sessionOpen: input.sessionOpen,
       sessionClose: input.sessionClose,
       isComplete: input.isComplete,

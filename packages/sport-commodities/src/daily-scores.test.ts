@@ -14,10 +14,13 @@ import {
 } from "./session-timing.js";
 import { transformCommodityDailyPrice } from "./live-scores.js";
 
+const SESSION_DATE = "2026-06-29";
 const SESSION_OPEN = "2026-06-29T13:30:00.000Z";
 const SESSION_CLOSE = "2026-07-03T20:30:00.000Z";
 const TUE_OVERNIGHT = "2026-07-01T02:00:00.000Z";
 const TUE_SESSION = "2026-06-30T15:00:00.000Z";
+const WED_SESSION_OPEN = "2026-07-01T18:00:00.000Z";
+const WED_AFTERNOON = "2026-07-01T19:30:00.000Z";
 
 describe("pctReturnToLineupPoints", () => {
   it("scores full magnitude on gains", () => {
@@ -106,6 +109,31 @@ describe("session timing", () => {
     const implicit = buildSessionDayCloseTimestamps(SESSION_OPEN, SESSION_CLOSE);
     expect(closes).toEqual(implicit);
   });
+
+  it("anchors day closes on ISO Monday when session starts mid-week", () => {
+    const isoCloses = buildSessionDayCloseTimestamps({
+      sessionDate: SESSION_DATE,
+      sessionOpen: WED_SESSION_OPEN,
+      sessionClose: SESSION_CLOSE,
+    });
+    const fullWeekCloses = buildSessionDayCloseTimestamps({
+      sessionDate: SESSION_DATE,
+      sessionOpen: SESSION_OPEN,
+      sessionClose: SESSION_CLOSE,
+    });
+
+    expect(isoCloses).toEqual(fullWeekCloses);
+    expect(
+      commoditiesScoringPeriod(
+        {
+          sessionDate: SESSION_DATE,
+          sessionOpen: WED_SESSION_OPEN,
+          sessionClose: SESSION_CLOSE,
+        },
+        new Date(WED_AFTERNOON),
+      ),
+    ).toBe(3);
+  });
 });
 
 describe("transformCommodityDailyScores", () => {
@@ -164,6 +192,63 @@ describe("transformCommodityDailyScores", () => {
     expect(result.rounds[2]?.total).toBe(0);
     expect(result.rounds[3]?.total).toBe(0);
     expect(result.rounds[4]?.total).toBe(0);
+  });
+
+  it("zeros Mon/Tue and scores Wed when session starts Wednesday afternoon", () => {
+    const result = transformCommodityDailyScores({
+      openPrice: 100,
+      dayClosePrices: [101, 102, null, null, null],
+      currentPrice: 100.5,
+      isComplete: false,
+      sessionDate: SESSION_DATE,
+      sessionOpen: WED_SESSION_OPEN,
+      sessionClose: SESSION_CLOSE,
+      now: new Date(WED_AFTERNOON),
+    });
+
+    expect(result.rounds[0]?.total).toBe(0);
+    expect(result.rounds[0]?.pctReturn).toBeNull();
+    expect(result.rounds[1]?.total).toBe(0);
+    expect(result.rounds[1]?.pctReturn).toBeNull();
+    expect(result.rounds[2]?.provisional).toBe(true);
+    expect(result.rounds[2]?.total).not.toBe(0);
+  });
+
+  it("returns all zeros before session open", () => {
+    const result = transformCommodityDailyScores({
+      openPrice: 100,
+      dayClosePrices: [101, 102, null, null, null],
+      currentPrice: 100.5,
+      isComplete: false,
+      sessionDate: SESSION_DATE,
+      sessionOpen: WED_SESSION_OPEN,
+      sessionClose: SESSION_CLOSE,
+      now: new Date(TUE_SESSION),
+    });
+
+    expect(result.total).toBe(0);
+    expect(result.rounds.every((round) => round.total === 0 && round.pctReturn === null)).toBe(true);
+  });
+
+  it("zeros Thu/Fri when session closes early on Wednesday", () => {
+    const wedClose = "2026-07-01T22:00:00.000Z";
+    const result = transformCommodityDailyScores({
+      openPrice: 100,
+      dayClosePrices: [null, null, 101, null, null],
+      currentPrice: 101,
+      closePrice: 101,
+      isComplete: true,
+      sessionDate: SESSION_DATE,
+      sessionOpen: WED_SESSION_OPEN,
+      sessionClose: wedClose,
+      now: new Date(wedClose),
+    });
+
+    expect(result.rounds[0]?.pctReturn).toBeNull();
+    expect(result.rounds[1]?.pctReturn).toBeNull();
+    expect(result.rounds[2]?.total).not.toBe(0);
+    expect(result.rounds[3]?.pctReturn).toBeNull();
+    expect(result.rounds[4]?.pctReturn).toBeNull();
   });
 });
 

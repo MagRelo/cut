@@ -240,6 +240,17 @@ export function formatSessionDisplayName(weekKey: string): string {
   return `Commodity Futures – Week ${weekNumber}`;
 }
 
+/** ISO week Monday anchor; falls back to externalId when metadata omits sessionDate. */
+export function resolveCommoditiesSessionDate(
+  sessionDate: string | undefined,
+  externalId: string,
+): string {
+  if (sessionDate?.trim()) {
+    return sessionDate.trim();
+  }
+  return resolveWeekAnchorDates(parseCommoditiesSessionExternalId(externalId)).monday;
+}
+
 export function formatSessionWindow(
   sessionOpen: string,
   sessionClose: string,

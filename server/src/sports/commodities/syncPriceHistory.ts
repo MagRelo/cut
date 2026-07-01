@@ -13,6 +13,7 @@ import {
   fetchSessionSparklineHistoryForField,
 } from "./marketDataProvider.js";
 import { appendLiveMark } from "./priceHistoryUtils.js";
+import { resolveCommoditiesSessionDate } from "./sessionConfig.js";
 
 /** Refresh intraday session sparklines on participant metadata (init + cron). */
 export async function syncCommoditiesPriceHistory(eventId: string): Promise<void> {
@@ -35,9 +36,11 @@ export async function syncCommoditiesPriceHistory(eventId: string): Promise<void
   }
 
   const isComplete = commoditiesEventStatusFromMetadata(event.metadata) === "COMPLETE";
+  const sessionDate = resolveCommoditiesSessionDate(commodities.sessionDate, event.externalId);
   const [histories, quotes] = await Promise.all([
     fetchSessionSparklineHistoryForField(
       field,
+      sessionDate,
       commodities.sessionOpen,
       commodities.sessionClose,
       isComplete,
@@ -61,7 +64,8 @@ export async function syncCommoditiesPriceHistory(eventId: string): Promise<void
     }
 
     const existingMeta = parseCommodityParticipantMetadata(row.metadata);
-    const closes = histories.get(entry.ticker) ?? [];
+    const sessionOpenMs = new Date(commodities.sessionOpen).getTime();
+    const closes = (histories.get(entry.ticker) ?? []).filter((point) => point.t >= sessionOpenMs);
     const mark = quotes.get(entry.ticker)?.markPrice;
     const priceHistory = appendLiveMark(closes, mark);
 

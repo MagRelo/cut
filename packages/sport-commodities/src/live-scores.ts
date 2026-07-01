@@ -5,7 +5,7 @@ import {
   type CommodityDailyScoreInput,
   type CommodityRoundScore,
 } from "./daily-scores.js";
-import { commoditiesScoringPeriod } from "./session-timing.js";
+import { commoditiesScoringPeriod, resolveCommoditiesSessionBounds } from "./session-timing.js";
 
 export {
   COMMODITIES_LOSS_RATIO,
@@ -20,13 +20,18 @@ export {
   buildSessionDayCloseTimestamps,
   buildSessionDayOpenTimestamps,
   commoditiesActivePeriod,
+  commoditiesCalendarPeriod,
   commoditiesScoringPeriod,
   commoditiesSettledDayCount,
   DEFAULT_COMMODITIES_SESSION_CALENDAR,
+  firstScorablePeriod,
   isCommoditiesPeriodInSession,
+  isCommoditiesPeriodScorable,
+  resolveCommoditiesSessionBounds,
   resolveSessionCalendar,
   resolveSparklineSessionEnd,
   tradingSessionParts,
+  type CommoditiesSessionBounds,
   type CommoditiesSessionCalendar,
   type SparklineSessionEnd,
 } from "./session-timing.js";
@@ -51,10 +56,13 @@ function roundToScoreData(round: CommodityRoundScore): CommodityRoundScoreData {
 function resolveCurrentPeriod(input: CommodityDailyPriceInput, now: Date): number {
   if (input.sessionOpen && input.sessionClose) {
     return commoditiesScoringPeriod(
-      input.sessionOpen,
-      input.sessionClose,
+      resolveCommoditiesSessionBounds({
+        sessionDate: input.sessionDate,
+        sessionOpen: input.sessionOpen,
+        sessionClose: input.sessionClose,
+        calendar: input.calendar,
+      }),
       now,
-      input.calendar,
     );
   }
   if (input.currentPeriod != null) {

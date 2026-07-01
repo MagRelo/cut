@@ -1,6 +1,10 @@
 import {
   buildSessionDayCloseTimestamps,
   commoditiesScoringPeriod,
+  firstScorablePeriod,
+  isCommoditiesPeriodScorable,
+  resolveCommoditiesSessionBounds,
+  type CommoditiesSessionBounds,
   type CommoditiesSessionCalendar,
 } from "./session-timing.js";
 
@@ -22,6 +26,8 @@ export interface CommodityDailyScoreInput {
   isComplete: boolean;
   /** Required when sessionOpen/sessionClose are omitted. */
   currentPeriod?: number;
+  /** Monday anchor YYYY-MM-DD for the ISO week. */
+  sessionDate?: string;
   sessionOpen?: string;
   sessionClose?: string;
   calendar?: CommoditiesSessionCalendar;
@@ -80,11 +86,24 @@ function roundEndPrice(
 function roundStartPrice(
   input: CommodityDailyScoreInput,
   roundNumber: number,
+  firstScorable: number | null,
 ): number | null {
-  if (roundNumber === 1) {
+  if (firstScorable != null && roundNumber === firstScorable) {
     return input.openPrice ?? null;
   }
   return input.dayClosePrices[roundNumber - 2] ?? null;
+}
+
+function resolveSessionBounds(input: CommodityDailyScoreInput): CommoditiesSessionBounds | null {
+  if (!input.sessionOpen || !input.sessionClose) {
+    return null;
+  }
+  return resolveCommoditiesSessionBounds({
+    sessionDate: input.sessionDate,
+    sessionOpen: input.sessionOpen,
+    sessionClose: input.sessionClose,
+    calendar: input.calendar,
+  });
 }
 
 /** Keep settled day closes stable; only the active day may refresh from market data. */
@@ -96,10 +115,17 @@ export function mergeLockedDayClosePrices(
   isComplete: boolean,
   now: Date = new Date(),
   calendar?: CommoditiesSessionCalendar,
+  sessionDate?: string,
 ): Array<number | null> {
+  const bounds = resolveCommoditiesSessionBounds({
+    sessionDate,
+    sessionOpen,
+    sessionClose,
+    calendar,
+  });
   const locked = existing ?? [];
   const result: Array<number | null> = [];
-  const dayCloses = buildSessionDayCloseTimestamps(sessionOpen, sessionClose, calendar);
+  const dayCloses = buildSessionDayCloseTimestamps(bounds);
   const nowMs = now.getTime();
 
   for (let index = 0; index < COMMODITIES_ROUND_COUNT; index += 1) {
@@ -126,18 +152,21 @@ export function mergeLockedDayClosePrices(
 }
 
 function resolveScoringPeriod(input: CommodityDailyScoreInput, now: Date): number {
-  if (input.sessionOpen && input.sessionClose) {
-    return commoditiesScoringPeriod(
-      input.sessionOpen,
-      input.sessionClose,
-      now,
-      input.calendar,
-    );
+  const bounds = resolveSessionBounds(input);
+  if (bounds) {
+    return commoditiesScoringPeriod(bounds, now);
   }
   if (input.currentPeriod != null) {
     return Math.min(COMMODITIES_ROUND_COUNT, Math.max(1, Math.round(input.currentPeriod)));
   }
   return 1;
+}
+
+function isBeforeSessionOpen(input: CommodityDailyScoreInput, now: Date): boolean {
+  if (!input.sessionOpen) {
+    return false;
+  }
+  return now.getTime() < new Date(input.sessionOpen).getTime();
 }
 
 export function transformCommodityDailyScores(
@@ -149,18 +178,34 @@ export function transformCommodityDailyScores(
 } {
   const lossRatio = input.lossRatio ?? COMMODITIES_LOSS_RATIO;
   const now = input.now ?? new Date();
+  const bounds = resolveSessionBounds(input);
   const scoringPeriod = resolveScoringPeriod(input, now);
+  const firstScorable = bounds ? firstScorablePeriod(bounds) : null;
+
+  if (isBeforeSessionOpen(input, now)) {
+    const emptyRounds = Array.from({ length: COMMODITIES_ROUND_COUNT }, () => ({
+      total: 0,
+      pctReturn: null as number | null,
+      provisional: false,
+    }));
+    return { total: 0, rounds: emptyRounds, cumulativePctReturn: null };
+  }
 
   const rounds: CommodityRoundScore[] = [];
 
   for (let periodNumber = 1; periodNumber <= COMMODITIES_ROUND_COUNT; periodNumber += 1) {
+    if (bounds && !isCommoditiesPeriodScorable(periodNumber, bounds)) {
+      rounds.push({ total: 0, pctReturn: null, provisional: false });
+      continue;
+    }
+
     if (periodNumber > scoringPeriod) {
       rounds.push({ total: 0, pctReturn: 0, provisional: false });
       continue;
     }
 
     const isCurrentProvisional = periodNumber === scoringPeriod && !input.isComplete;
-    const fromPrice = roundStartPrice(input, periodNumber);
+    const fromPrice = roundStartPrice(input, periodNumber, firstScorable);
     const toPrice = roundEndPrice(input, periodNumber, isCurrentProvisional);
 
     rounds.push(scoreRoundLeg(fromPrice, toPrice, lossRatio, isCurrentProvisional));

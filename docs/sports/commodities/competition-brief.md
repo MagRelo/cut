@@ -55,7 +55,11 @@ Pick three commodities for the trading week; your lineup scores the sum of their
 
 ### Five daily rounds
 
-Each trading day (Mon–Fri) is one **round**. Per pick, score the session's close-to-close % move with **asymmetric weighting**:
+Each trading day (Mon–Fri) is one **round**, always indexed to the ISO week in `externalId` (`sessionDate` = Monday anchor). UI labels (`Mon`…`Fri`), contest timeline dividers, and sparkline columns use this fixed calendar grid.
+
+`sessionOpen` / `sessionClose` gate **eligibility**, not column labels: legs on days before open or after close score 0; the first in-play leg uses the mark at `sessionOpen` as its start price.
+
+Per pick, score each eligible leg's close-to-close % move with **asymmetric weighting**:
 
 | Day move | Fantasy points |
 |----------|----------------|

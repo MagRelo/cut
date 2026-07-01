@@ -31,10 +31,13 @@ export async function syncCommoditiesEventMetadata(eventId: string) {
   const sessionComplete =
     existingCommodities?.sessionComplete === true || now >= new Date(sessionClose);
   const currentPeriod = commoditiesScoringPeriod(
-    sessionOpen,
-    sessionClose,
+    {
+      sessionDate: monday,
+      sessionOpen,
+      sessionClose,
+      calendar: getCommoditiesSessionCalendar(),
+    },
     now,
-    getCommoditiesSessionCalendar(),
   );
 
   const commoditiesPatch: {

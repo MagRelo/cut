@@ -13,7 +13,7 @@ import {
   pctReturnToLineupPoints,
 } from "@cut/sport-commodities";
 import { buildCommodityCatalog, buildFieldSnapshot } from "../sports/commodities/hyperliquidCatalog.js";
-import { parseCommoditiesSessionExternalId } from "../sports/commodities/externalId.js";
+import { parseCommoditiesSessionExternalId, resolveWeekAnchorDates } from "../sports/commodities/externalId.js";
 import { getSessionPricesForField } from "../sports/commodities/marketDataProvider.js";
 import {
   formatSessionDisplayName,
@@ -38,6 +38,7 @@ async function main(): Promise<void> {
 
   const externalId = args.find((arg) => !arg.startsWith("--")) ?? "2026-W27";
   const sessionWeek = parseCommoditiesSessionExternalId(externalId);
+  const { monday: sessionDate } = resolveWeekAnchorDates(sessionWeek);
   const bounds = resolveWeeklySessionBounds(sessionWeek);
   const calendar = getCommoditiesSessionCalendar();
 
@@ -53,6 +54,7 @@ async function main(): Promise<void> {
 
   const prices = await getSessionPricesForField({
     field,
+    sessionDate,
     sessionOpen: bounds.sessionOpen,
     sessionClose: bounds.sessionClose,
     isComplete: true,
@@ -67,6 +69,7 @@ async function main(): Promise<void> {
       currentPrice: snapshot?.closePrice ?? snapshot?.currentPrice ?? null,
       closePrice: snapshot?.closePrice ?? null,
       isComplete: true,
+      sessionDate,
       sessionOpen: bounds.sessionOpen,
       sessionClose: bounds.sessionClose,
       calendar,

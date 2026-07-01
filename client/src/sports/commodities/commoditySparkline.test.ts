@@ -17,6 +17,14 @@ const EVENT_METADATA = {
   },
 };
 
+const WED_START_METADATA = {
+  commodities: {
+    sessionDate: "2026-06-29",
+    sessionOpen: "2026-07-01T18:00:00.000Z",
+    sessionClose: "2026-07-03T20:30:00.000Z",
+  },
+};
+
 const SESSION_OPEN_MS = new Date("2026-06-29T13:30:00.000Z").getTime();
 const MON_CLOSE_MS = new Date("2026-06-29T20:30:00.000Z").getTime();
 const TUE_CLOSE_MS = new Date("2026-06-30T20:30:00.000Z").getTime();
@@ -160,5 +168,63 @@ describe("periodDividerXs", () => {
     expect(dividers).toHaveLength(4);
     expect(dividers[0]).toBeCloseTo(columnDividerX(0, PLOT_WIDTH, PAD), 5);
     expect(dividers[3]).toBeCloseTo(columnDividerX(3, PLOT_WIDTH, PAD), 5);
+  });
+});
+
+describe("Wed-afternoon session start", () => {
+  const WED_OPEN_MS = new Date("2026-07-01T18:00:00.000Z").getTime();
+  const WED_MID_MS = new Date("2026-07-01T19:30:00.000Z").getTime();
+
+  it("maps Wed candles to the Wed column, not Monday", () => {
+    const chart = buildSessionSparklineChart(
+      candleHistory([
+        { t: WED_OPEN_MS, c: 100 },
+        { t: WED_MID_MS, c: 101 },
+      ]),
+      WED_START_METADATA,
+      { openPrice: 100 },
+    )!;
+
+    const wedColumnStart = PAD + PLOT_WIDTH * 0.4;
+    const wedColumnEnd = columnDividerX(2, PLOT_WIDTH, PAD);
+    const openX = timestampToX(WED_OPEN_MS, chart, PLOT_WIDTH, PAD)!;
+    const midX = timestampToX(WED_MID_MS, chart, PLOT_WIDTH, PAD)!;
+
+    expect(openX).toBeGreaterThan(wedColumnStart);
+    expect(openX).toBeLessThan(wedColumnEnd);
+    expect(midX).toBeGreaterThan(openX);
+  });
+
+  it("does not map pre-session timestamps to Mon/Tue columns", () => {
+    const chart = buildSessionSparklineChart(
+      candleHistory([
+        { t: WED_OPEN_MS, c: 100 },
+        { t: WED_MID_MS, c: 101 },
+      ]),
+      WED_START_METADATA,
+      { openPrice: 100 },
+    )!;
+
+    expect(timestampToX(SESSION_OPEN_MS, chart, PLOT_WIDTH, PAD)).toBeNull();
+  });
+
+  it("does not anchor Mon/Tue close prices when session starts Wednesday", () => {
+    const chart = buildSessionSparklineChart(
+      candleHistory([
+        { t: WED_OPEN_MS, c: 100 },
+        { t: WED_MID_MS, c: 101 },
+      ]),
+      WED_START_METADATA,
+      {
+        openPrice: 100,
+        dayClosePrices: [6.18, 6.25, null, null, null],
+      },
+    )!;
+    const points = buildAnchoredSparklinePoints(chart, PLOT_WIDTH, PAD, WED_MID_MS);
+    const monDivider = columnDividerX(0, PLOT_WIDTH, PAD);
+    const tueDivider = columnDividerX(1, PLOT_WIDTH, PAD);
+
+    expect(points.find((point) => Math.abs(point.x - monDivider) < 0.01)).toBeUndefined();
+    expect(points.find((point) => Math.abs(point.x - tueDivider) < 0.01)).toBeUndefined();
   });
 });

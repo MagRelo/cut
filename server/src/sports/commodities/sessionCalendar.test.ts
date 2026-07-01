@@ -4,6 +4,7 @@ import {
   commoditiesScoringPeriod,
 } from "@cut/sport-commodities";
 import { getCommoditiesSessionCalendar, resolveWeeklySessionBounds } from "./sessionConfig.js";
+import { resolveWeekAnchorDates } from "./externalId.js";
 
 describe("commodities session calendar parity", () => {
   afterEach(() => {
@@ -18,21 +19,22 @@ describe("commodities session calendar parity", () => {
     process.env.COMMODITIES_SESSION_CLOSE = "15:00";
 
     const bounds = resolveWeeklySessionBounds("2026-W27");
+    const { monday: sessionDate } = resolveWeekAnchorDates("2026-W27");
     const calendar = getCommoditiesSessionCalendar();
-    const dayCloses = buildSessionDayCloseTimestamps(
-      bounds.sessionOpen,
-      bounds.sessionClose,
+    const sessionBounds = {
+      sessionDate,
+      sessionOpen: bounds.sessionOpen,
+      sessionClose: bounds.sessionClose,
       calendar,
-    );
+    };
+    const dayCloses = buildSessionDayCloseTimestamps(sessionBounds);
 
     const mondayMidday = new Date(bounds.sessionOpen);
     mondayMidday.setUTCHours(mondayMidday.getUTCHours() + 2);
-    expect(commoditiesScoringPeriod(bounds.sessionOpen, bounds.sessionClose, mondayMidday, calendar)).toBe(1);
+    expect(commoditiesScoringPeriod(sessionBounds, mondayMidday)).toBe(1);
 
     const afterMondayClose = new Date(dayCloses[0]! + 60_000);
-    expect(
-      commoditiesScoringPeriod(bounds.sessionOpen, bounds.sessionClose, afterMondayClose, calendar),
-    ).toBe(2);
+    expect(commoditiesScoringPeriod(sessionBounds, afterMondayClose)).toBe(2);
 
     const defaultCloses = buildSessionDayCloseTimestamps(bounds.sessionOpen, bounds.sessionClose);
     expect(dayCloses[0]).toBeLessThan(defaultCloses[0]!);

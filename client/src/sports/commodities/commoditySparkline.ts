@@ -2,7 +2,10 @@ import type { CommodityPriceHistoryPoint } from "@cut/sport-commodities";
 import {
   buildSessionDayCloseTimestamps,
   COMMODITIES_ROUND_COUNT,
+  isCommoditiesPeriodScorable,
   parseCommoditiesEventMetadata,
+  resolveCommoditiesSessionBounds,
+  type CommoditiesSessionBounds,
 } from "@cut/sport-commodities";
 
 /** Each Mon–Fri column spans a 24h window ending at that day's 4:30 PM ET close. */
@@ -10,6 +13,7 @@ export const SPARKLINE_COLUMN_MS = 24 * 60 * 60 * 1000;
 
 export type SessionSparklineChart = {
   candles: CommodityPriceHistoryPoint[];
+  sessionBounds: CommoditiesSessionBounds;
   sessionOpenMs: number;
   sessionCloseMs: number;
   periodCloseMs: number[];
@@ -78,8 +82,11 @@ export function timestampToX(
 
   for (let dayIndex = 0; dayIndex < COMMODITIES_ROUND_COUNT; dayIndex += 1) {
     const { startMs, endMs } = columnTimeWindow(dayIndex, chart);
+    if (timestampMs < chart.sessionOpenMs || timestampMs > endMs) {
+      continue;
+    }
     const visibleStartMs = dayIndex === 0 ? Math.max(startMs, chart.sessionOpenMs) : startMs;
-    if (timestampMs < visibleStartMs || timestampMs > endMs) {
+    if (timestampMs < visibleStartMs) {
       continue;
     }
 
@@ -105,22 +112,31 @@ export function buildSessionSparklineChart(
     return null;
   }
 
+  const bounds = resolveCommoditiesSessionBounds({
+    sessionDate: commodities.sessionDate,
+    sessionOpen: commodities.sessionOpen,
+    sessionClose: commodities.sessionClose,
+  });
+
   const sessionOpenMs = new Date(commodities.sessionOpen).getTime();
   const sessionCloseMs = new Date(commodities.sessionClose).getTime();
   if (Number.isNaN(sessionOpenMs) || Number.isNaN(sessionCloseMs) || sessionCloseMs <= sessionOpenMs) {
     return null;
   }
 
-  const candles = normalizePriceHistory(history, sessionOpenMs);
+  const candles = normalizePriceHistory(history, sessionOpenMs).filter(
+    (candle) => candle.t >= sessionOpenMs,
+  );
   if (candles.length < 2) {
     return null;
   }
 
   return {
     candles,
+    sessionBounds: bounds,
     sessionOpenMs,
     sessionCloseMs,
-    periodCloseMs: buildSessionDayCloseTimestamps(commodities.sessionOpen, commodities.sessionClose),
+    periodCloseMs: buildSessionDayCloseTimestamps(bounds),
     openPrice: options?.openPrice,
     dayClosePrices: options?.dayClosePrices,
     currentPrice: options?.currentPrice,
@@ -205,6 +221,11 @@ export function buildAnchoredSparklinePoints(
   }
 
   for (let dayIndex = 0; dayIndex < COMMODITIES_ROUND_COUNT; dayIndex += 1) {
+    const periodNumber = dayIndex + 1;
+    if (!isCommoditiesPeriodScorable(periodNumber, chart.sessionBounds)) {
+      continue;
+    }
+
     const dividerMs = chart.periodCloseMs[dayIndex]!;
     if (dividerMs > endMs) {
       break;
