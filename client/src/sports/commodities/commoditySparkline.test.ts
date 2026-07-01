@@ -43,7 +43,7 @@ describe("buildSessionSparklineChart", () => {
   });
 
   it("returns null without session metadata", () => {
-    expect(buildSessionSparklineChart([1, 2, 3], {}, null)).toBeNull();
+    expect(buildSessionSparklineChart([1, 2, 3], {})).toBeNull();
   });
 });
 

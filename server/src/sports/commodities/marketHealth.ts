@@ -86,20 +86,22 @@ export async function assessMarketHealth(
   }
 
   const hasRecentCandles = await hasRecentCandleHistory(hlCoin);
+  const dayVolume = liquidity.dayVolume ?? 0;
+  const openInterest = liquidity.openInterest ?? 0;
   if (!hasRecentCandles) {
     return {
       healthy: false,
       reason: "no_recent_candles",
-      dayVolume: liquidity.dayVolume,
-      openInterest: liquidity.openInterest,
+      dayVolume,
+      openInterest,
       hasRecentCandles: false,
     };
   }
 
   return {
     healthy: true,
-    dayVolume: liquidity.dayVolume,
-    openInterest: liquidity.openInterest,
+    dayVolume,
+    openInterest,
     hasRecentCandles: true,
   };
 }

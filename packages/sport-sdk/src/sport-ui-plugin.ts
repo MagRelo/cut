@@ -51,5 +51,7 @@ export interface SportUIPlugin {
   PredictionField?: ComponentType<PredictionFieldProps>;
   EventSummary?: ComponentType<EventSummaryProps>;
   resolveEventHeroImage?: (event: CompetitionEventShell) => string | null;
+  /** Optional Tailwind classes for hero background positioning (e.g. object-position). */
+  eventHeroImageClassName?: string;
   candidateSortConfig: CandidateSortConfig;
 }
