@@ -9,10 +9,7 @@
 import "dotenv/config";
 import { addDays } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
-import {
-  pctReturnToTotal,
-  transformCommodityPrice,
-} from "@cut/sport-commodities";
+import { pctReturnToLineupPoints } from "@cut/sport-commodities";
 import { buildCommodityCatalog, buildFieldSnapshot } from "../sports/commodities/hyperliquidCatalog.js";
 import {
   formatCommoditiesWeekExternalId,
@@ -107,11 +104,8 @@ function scoreAtCheckpoint(
   if (openPrice == null || openPrice <= 0) return 0;
   const price = resolvePriceAtTimestamp(candles, checkpointMs);
   if (price == null || price <= 0) return 0;
-  return transformCommodityPrice({
-    openPrice,
-    currentPrice: price,
-    provisional: checkpointMs < Date.now(),
-  }).total;
+  const pctReturn = ((price - openPrice) / openPrice) * 100;
+  return pctReturnToLineupPoints(pctReturn, 1);
 }
 
 function recentWeekKeys(count: number): string[] {

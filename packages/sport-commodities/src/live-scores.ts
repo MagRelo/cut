@@ -1,5 +1,4 @@
 import type { CommodityRoundScoreData, CommodityScoreData } from "./metadata.js";
-import { pctReturnToLineupPoints } from "./daily-scores.js";
 import {
   COMMODITIES_LOSS_RATIO,
   transformCommodityDailyScores,
@@ -11,7 +10,6 @@ import { commoditiesScoringPeriod } from "./session-timing.js";
 export {
   COMMODITIES_LOSS_RATIO,
   COMMODITIES_ROUND_COUNT,
-  asymmetricPctToTotal,
   mergeLockedDayClosePrices,
   pctReturnToLineupPoints,
   transformCommodityDailyScores,
@@ -24,23 +22,14 @@ export {
   commoditiesActivePeriod,
   commoditiesScoringPeriod,
   commoditiesSettledDayCount,
+  DEFAULT_COMMODITIES_SESSION_CALENDAR,
   isCommoditiesPeriodInSession,
+  resolveSessionCalendar,
   resolveSparklineSessionEnd,
   tradingSessionParts,
+  type CommoditiesSessionCalendar,
   type SparklineSessionEnd,
 } from "./session-timing.js";
-
-/** @deprecated Use pctReturnToLineupPoints */
-export function pctReturnToTotal(pctReturn: number): number {
-  return pctReturnToLineupPoints(pctReturn, 1);
-}
-
-export interface CommodityPriceInput {
-  openPrice: number | null | undefined;
-  currentPrice: number | null | undefined;
-  closePrice?: number | null;
-  provisional: boolean;
-}
 
 export interface CommodityDailyPriceInput extends CommodityDailyScoreInput {
   provisional: boolean;
@@ -59,15 +48,27 @@ function roundToScoreData(round: CommodityRoundScore): CommodityRoundScoreData {
   };
 }
 
+function resolveCurrentPeriod(input: CommodityDailyPriceInput, now: Date): number {
+  if (input.sessionOpen && input.sessionClose) {
+    return commoditiesScoringPeriod(
+      input.sessionOpen,
+      input.sessionClose,
+      now,
+      input.calendar,
+    );
+  }
+  if (input.currentPeriod != null) {
+    return input.currentPeriod;
+  }
+  return 1;
+}
+
 /** Five daily rounds with asymmetric scoring (losses × lossRatio). */
 export function transformCommodityDailyPrice(
   input: CommodityDailyPriceInput,
 ): CommodityParticipantScoreUpdate {
   const now = input.now ?? new Date();
-  const currentPeriod =
-    input.sessionOpen && input.sessionClose
-      ? commoditiesScoringPeriod(input.sessionOpen, input.sessionClose, now)
-      : input.currentPeriod;
+  const currentPeriod = resolveCurrentPeriod(input, now);
   const { total, rounds, cumulativePctReturn } = transformCommodityDailyScores({
     ...input,
     currentPeriod,
@@ -91,43 +92,6 @@ export function transformCommodityDailyPrice(
       r3: roundToScoreData(rounds[2]!),
       r4: roundToScoreData(rounds[3]!),
       r5: roundToScoreData(rounds[4]!),
-    },
-  };
-}
-
-/** Linear cumulative % scoring — used by legacy scripts only. */
-export function transformCommodityPrice(
-  input: CommodityPriceInput,
-): CommodityParticipantScoreUpdate {
-  const openPrice = input.openPrice ?? null;
-  const currentPrice = input.currentPrice ?? null;
-  const closePrice = input.closePrice ?? null;
-  const effectivePrice = closePrice ?? currentPrice;
-
-  if (openPrice == null || openPrice <= 0 || effectivePrice == null || effectivePrice <= 0) {
-    return {
-      total: 0,
-      scoreData: {
-        openPrice,
-        currentPrice,
-        closePrice,
-        pctReturn: 0,
-        provisional: input.provisional,
-      },
-    };
-  }
-
-  const pctReturn = ((effectivePrice - openPrice) / openPrice) * 100;
-  const total = pctReturnToLineupPoints(pctReturn, 1);
-
-  return {
-    total,
-    scoreData: {
-      openPrice,
-      currentPrice,
-      closePrice,
-      pctReturn,
-      provisional: input.provisional,
     },
   };
 }

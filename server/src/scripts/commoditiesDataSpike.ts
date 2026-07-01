@@ -10,16 +10,16 @@ import {
   COMMODITY_METADATA_ALLOWLIST,
   transformCommodityDailyPrice,
   catalogEntryToFieldEntry,
-  asymmetricPctToTotal,
+  pctReturnToLineupPoints,
 } from "@cut/sport-commodities";
 import { buildCommodityCatalog, buildFieldSnapshot } from "../sports/commodities/hyperliquidCatalog.js";
 import { parseCommoditiesSessionExternalId } from "../sports/commodities/externalId.js";
 import { getSessionPricesForField } from "../sports/commodities/marketDataProvider.js";
 import {
   formatSessionDisplayName,
+  getCommoditiesSessionCalendar,
   resolveWeeklySessionBounds,
 } from "../sports/commodities/sessionConfig.js";
-import { commoditiesCurrentPeriod } from "../sports/commodities/sessionRounds.js";
 
 function fixtureFieldSnapshot() {
   return COMMODITY_METADATA_ALLOWLIST.map((entry) =>
@@ -39,6 +39,7 @@ async function main(): Promise<void> {
   const externalId = args.find((arg) => !arg.startsWith("--")) ?? "2026-W27";
   const sessionWeek = parseCommoditiesSessionExternalId(externalId);
   const bounds = resolveWeeklySessionBounds(sessionWeek);
+  const calendar = getCommoditiesSessionCalendar();
 
   const field = live
     ? buildFieldSnapshot(await buildCommodityCatalog())
@@ -49,8 +50,6 @@ async function main(): Promise<void> {
   console.log(`Session open:  ${bounds.sessionOpen}`);
   console.log(`Session close: ${bounds.sessionClose}`);
   console.log(`Field size: ${field.length}\n`);
-
-  const currentPeriod = commoditiesCurrentPeriod(bounds.sessionOpen, bounds.sessionClose);
 
   const prices = await getSessionPricesForField({
     field,
@@ -68,7 +67,9 @@ async function main(): Promise<void> {
       currentPrice: snapshot?.closePrice ?? snapshot?.currentPrice ?? null,
       closePrice: snapshot?.closePrice ?? null,
       isComplete: true,
-      currentPeriod,
+      sessionOpen: bounds.sessionOpen,
+      sessionClose: bounds.sessionClose,
+      calendar,
       provisional: false,
     });
 
@@ -83,10 +84,10 @@ async function main(): Promise<void> {
 
   const samplePct = 2.35;
   console.log(
-    `\nScoring sanity: +${samplePct}% day → ${asymmetricPctToTotal(samplePct)} pts`,
+    `\nScoring sanity: +${samplePct}% day → ${pctReturnToLineupPoints(samplePct)} pts`,
   );
   console.log(
-    `Scoring sanity: -${samplePct}% day → ${asymmetricPctToTotal(-samplePct)} pts`,
+    `Scoring sanity: -${samplePct}% day → ${pctReturnToLineupPoints(-samplePct)} pts`,
   );
   console.log("\nSpike OK.\n");
 }

@@ -6,7 +6,7 @@
 import "dotenv/config";
 import { addDays } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
-import { transformCommodityPrice } from "@cut/sport-commodities";
+import { pctReturnToLineupPoints } from "@cut/sport-commodities";
 import { buildCommodityCatalog, buildFieldSnapshot } from "../sports/commodities/hyperliquidCatalog.js";
 import { formatCommoditiesWeekExternalId } from "../sports/commodities/externalId.js";
 import { fetchCandles } from "../sports/commodities/hyperliquidClient.js";
@@ -122,11 +122,7 @@ const MODELS: Model[] = [
     scorePick: (ctx) => {
       const pct = pctBetween(ctx.candles, ctx.dayMs[0]!, ctx.dayMs[ctx.dayMs.length - 1]!);
       if (pct == null) return 0;
-      return transformCommodityPrice({
-        openPrice: ctx.openPrice,
-        currentPrice: resolvePriceAtTimestamp(ctx.candles, ctx.dayMs[ctx.dayMs.length - 1]!),
-        provisional: false,
-      }).total;
+      return pctReturnToLineupPoints(pct, 1);
     },
   },
   {

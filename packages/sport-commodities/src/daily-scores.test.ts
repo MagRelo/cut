@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
-  asymmetricPctToTotal,
   COMMODITIES_LOSS_RATIO,
   mergeLockedDayClosePrices,
+  pctReturnToLineupPoints,
   transformCommodityDailyScores,
 } from "./daily-scores.js";
 import {
+  buildSessionDayCloseTimestamps,
   commoditiesActivePeriod,
   commoditiesScoringPeriod,
+  DEFAULT_COMMODITIES_SESSION_CALENDAR,
   resolveSparklineSessionEnd,
 } from "./session-timing.js";
 import { transformCommodityDailyPrice } from "./live-scores.js";
@@ -17,13 +19,18 @@ const SESSION_CLOSE = "2026-07-03T20:30:00.000Z";
 const TUE_OVERNIGHT = "2026-07-01T02:00:00.000Z";
 const TUE_SESSION = "2026-06-30T15:00:00.000Z";
 
-describe("pctReturnToLineupPoints (asymmetricPctToTotal)", () => {
+describe("pctReturnToLineupPoints", () => {
   it("scores full magnitude on gains", () => {
-    expect(asymmetricPctToTotal(2)).toBe(20);
+    expect(pctReturnToLineupPoints(2)).toBe(20);
   });
 
   it("dampens losses at lossRatio", () => {
-    expect(asymmetricPctToTotal(-2, 0.4)).toBe(-8);
+    expect(pctReturnToLineupPoints(-2, 0.4)).toBe(-8);
+  });
+
+  it("scores linear cumulative % with lossRatio 1", () => {
+    expect(pctReturnToLineupPoints(2.35, 1)).toBe(24);
+    expect(pctReturnToLineupPoints(-1.2, 1)).toBe(-12);
   });
 });
 
@@ -78,6 +85,26 @@ describe("session timing", () => {
     const overnight = new Date(TUE_OVERNIGHT);
     const end = resolveSparklineSessionEnd(SESSION_OPEN, SESSION_CLOSE, overnight.getTime());
     expect(end).toEqual({ dayIndex: 1, sessionFraction: 1, includeLiveTail: false });
+  });
+
+  it("uses custom calendar close time for day boundaries", () => {
+    const defaultCloses = buildSessionDayCloseTimestamps(SESSION_OPEN, SESSION_CLOSE);
+    const earlyCloses = buildSessionDayCloseTimestamps(SESSION_OPEN, SESSION_CLOSE, {
+      closeTime: "15:00:00",
+    });
+
+    expect(earlyCloses[0]).toBeLessThan(defaultCloses[0]!);
+    expect(earlyCloses).not.toEqual(defaultCloses);
+  });
+
+  it("defaults calendar to NYSE session times", () => {
+    const closes = buildSessionDayCloseTimestamps(
+      SESSION_OPEN,
+      SESSION_CLOSE,
+      DEFAULT_COMMODITIES_SESSION_CALENDAR,
+    );
+    const implicit = buildSessionDayCloseTimestamps(SESSION_OPEN, SESSION_CLOSE);
+    expect(closes).toEqual(implicit);
   });
 });
 

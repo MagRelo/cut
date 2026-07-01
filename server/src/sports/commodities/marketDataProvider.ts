@@ -1,5 +1,6 @@
 import type { CommodityFieldEntry, CommodityQuoteSnapshot } from "@cut/sport-commodities";
 import type { CommodityScoreData } from "@cut/sport-commodities";
+import { buildSessionDayCloseTimestamps } from "@cut/sport-commodities";
 import type { MarketQuote, SessionPriceSnapshot } from "./marketTypes.js";
 import {
   fetchAssetContexts,
@@ -21,7 +22,7 @@ import {
   selectCandleInterval,
   sessionCandleIntervals,
 } from "./sessionPricing.js";
-import { buildSessionDayCloseTimestamps } from "./sessionRounds.js";
+import { getCommoditiesSessionCalendar } from "./sessionConfig.js";
 
 
 export type { MarketQuote, SessionPriceSnapshot } from "./marketTypes.js";
@@ -153,7 +154,8 @@ export async function fetchSessionSparklineHistory(
   }
 
   const endMs = isComplete ? sessionCloseMs : Math.min(Date.now(), sessionCloseMs);
-  const dayCloses = buildSessionDayCloseTimestamps(sessionOpen, sessionClose);
+  const calendar = getCommoditiesSessionCalendar();
+  const dayCloses = buildSessionDayCloseTimestamps(sessionOpen, sessionClose, calendar);
   const firstColumnStartMs = (dayCloses[0] ?? sessionOpenMs) - 24 * 60 * 60 * 1000;
   const fetchStartMs = Math.min(sessionOpenMs, firstColumnStartMs);
   if (endMs <= fetchStartMs) {
@@ -247,7 +249,8 @@ function resolveDayClosePrices(
   sessionOpen: string,
   sessionClose: string,
 ): Array<number | null> {
-  return buildSessionDayCloseTimestamps(sessionOpen, sessionClose).map((ms) =>
+  const calendar = getCommoditiesSessionCalendar();
+  return buildSessionDayCloseTimestamps(sessionOpen, sessionClose, calendar).map((ms) =>
     resolvePriceAtTimestamp(candles, ms),
   );
 }
@@ -333,9 +336,11 @@ export async function getSessionPriceSnapshot(
     dayClosePrices = resolveDayClosePrices(candles, input.sessionOpen, input.sessionClose);
   } catch (error) {
     console.warn(`[commodities] Day close prices failed for ${entry.hlCoin}:`, error);
-    dayClosePrices = buildSessionDayCloseTimestamps(input.sessionOpen, input.sessionClose).map(
-      () => null,
-    );
+    dayClosePrices = buildSessionDayCloseTimestamps(
+      input.sessionOpen,
+      input.sessionClose,
+      getCommoditiesSessionCalendar(),
+    ).map(() => null);
   }
 
   return { openPrice, currentPrice, closePrice, dayClosePrices };

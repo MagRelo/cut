@@ -1,11 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
-import { COMMODITIES_SPORT_ID, parseCommoditiesEventMetadata } from "@cut/sport-commodities";
+import { COMMODITIES_SPORT_ID, commoditiesScoringPeriod, parseCommoditiesEventMetadata } from "@cut/sport-commodities";
 import { parseCommoditiesSessionExternalId, resolveWeekAnchorDates } from "./externalId.js";
-import { formatSessionDisplayName, resolveWeeklySessionBounds } from "./sessionConfig.js";
+import { formatSessionDisplayName, getCommoditiesSessionCalendar, resolveWeeklySessionBounds } from "./sessionConfig.js";
 import { mergeCommoditiesEventMetadata } from "./metadataMerge.js";
 import {
-  commoditiesCurrentPeriod,
   commoditiesPeriodDisplay,
   commoditiesPeriodStatusDisplay,
 } from "./sessionRounds.js";
@@ -31,7 +30,12 @@ export async function syncCommoditiesEventMetadata(eventId: string) {
     existingCommodities?.sessionStarted === true || now >= new Date(sessionOpen);
   const sessionComplete =
     existingCommodities?.sessionComplete === true || now >= new Date(sessionClose);
-  const currentPeriod = commoditiesCurrentPeriod(sessionOpen, sessionClose, now);
+  const currentPeriod = commoditiesScoringPeriod(
+    sessionOpen,
+    sessionClose,
+    now,
+    getCommoditiesSessionCalendar(),
+  );
 
   const commoditiesPatch: {
     sessionDate: string;

@@ -1,13 +1,9 @@
-import { addDays } from "date-fns";
-import { fromZonedTime } from "date-fns-tz";
 import type { CommodityPriceHistoryPoint } from "@cut/sport-commodities";
 import {
+  buildSessionDayCloseTimestamps,
   COMMODITIES_ROUND_COUNT,
   parseCommoditiesEventMetadata,
 } from "@cut/sport-commodities";
-
-const SESSION_TZ = "America/New_York";
-const SESSION_CLOSE_TIME = "16:30:00";
 
 /** Each Mon–Fri column spans a 24h window ending at that day's 4:30 PM ET close. */
 export const SPARKLINE_COLUMN_MS = 24 * 60 * 60 * 1000;
@@ -53,28 +49,6 @@ export function normalizePriceHistory(
   return (history as number[])
     .filter((value) => typeof value === "number" && Number.isFinite(value))
     .map((c, index) => ({ t: sessionOpenMs + index * intervalMs, c }));
-}
-
-function buildSessionDayCloseTimestamps(sessionOpen: string, sessionClose: string): number[] {
-  const openMs = new Date(sessionOpen).getTime();
-  const closeMs = new Date(sessionClose).getTime();
-  const monday = new Date(openMs).toLocaleDateString("en-CA", { timeZone: SESSION_TZ });
-
-  const dayCloses: number[] = [];
-  for (let dayOffset = 0; dayOffset < COMMODITIES_ROUND_COUNT; dayOffset += 1) {
-    const dateStr = addDays(new Date(`${monday}T12:00:00Z`), dayOffset).toISOString().slice(0, 10);
-    const dayCloseMs = fromZonedTime(`${dateStr}T${SESSION_CLOSE_TIME}`, SESSION_TZ).getTime();
-    if (dayCloseMs <= openMs) {
-      continue;
-    }
-    dayCloses.push(Math.min(dayCloseMs, closeMs));
-  }
-
-  while (dayCloses.length < COMMODITIES_ROUND_COUNT) {
-    dayCloses.push(closeMs);
-  }
-
-  return dayCloses.slice(0, COMMODITIES_ROUND_COUNT);
 }
 
 /** 24h window ending at the day's imposed close (divider at column right edge). */

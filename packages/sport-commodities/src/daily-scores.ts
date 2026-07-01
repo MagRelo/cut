@@ -1,6 +1,7 @@
 import {
   buildSessionDayCloseTimestamps,
   commoditiesScoringPeriod,
+  type CommoditiesSessionCalendar,
 } from "./session-timing.js";
 
 export const COMMODITIES_ROUND_COUNT = 5;
@@ -19,9 +20,11 @@ export interface CommodityDailyScoreInput {
   currentPrice: number | null | undefined;
   closePrice?: number | null;
   isComplete: boolean;
-  currentPeriod: number;
+  /** Required when sessionOpen/sessionClose are omitted. */
+  currentPeriod?: number;
   sessionOpen?: string;
   sessionClose?: string;
+  calendar?: CommoditiesSessionCalendar;
   now?: Date;
   lossRatio?: number;
 }
@@ -92,10 +95,11 @@ export function mergeLockedDayClosePrices(
   sessionClose: string,
   isComplete: boolean,
   now: Date = new Date(),
+  calendar?: CommoditiesSessionCalendar,
 ): Array<number | null> {
   const locked = existing ?? [];
   const result: Array<number | null> = [];
-  const dayCloses = buildSessionDayCloseTimestamps(sessionOpen, sessionClose);
+  const dayCloses = buildSessionDayCloseTimestamps(sessionOpen, sessionClose, calendar);
   const nowMs = now.getTime();
 
   for (let index = 0; index < COMMODITIES_ROUND_COUNT; index += 1) {
@@ -121,6 +125,21 @@ export function mergeLockedDayClosePrices(
   return result;
 }
 
+function resolveScoringPeriod(input: CommodityDailyScoreInput, now: Date): number {
+  if (input.sessionOpen && input.sessionClose) {
+    return commoditiesScoringPeriod(
+      input.sessionOpen,
+      input.sessionClose,
+      now,
+      input.calendar,
+    );
+  }
+  if (input.currentPeriod != null) {
+    return Math.min(COMMODITIES_ROUND_COUNT, Math.max(1, Math.round(input.currentPeriod)));
+  }
+  return 1;
+}
+
 export function transformCommodityDailyScores(
   input: CommodityDailyScoreInput,
 ): {
@@ -130,10 +149,7 @@ export function transformCommodityDailyScores(
 } {
   const lossRatio = input.lossRatio ?? COMMODITIES_LOSS_RATIO;
   const now = input.now ?? new Date();
-  const scoringPeriod =
-    input.sessionOpen && input.sessionClose
-      ? commoditiesScoringPeriod(input.sessionOpen, input.sessionClose, now)
-      : Math.min(COMMODITIES_ROUND_COUNT, Math.max(1, Math.round(input.currentPeriod)));
+  const scoringPeriod = resolveScoringPeriod(input, now);
 
   const rounds: CommodityRoundScore[] = [];
 
@@ -163,9 +179,4 @@ export function transformCommodityDailyScores(
   }
 
   return { total, rounds, cumulativePctReturn };
-}
-
-/** @deprecated Use pctReturnToLineupPoints */
-export function asymmetricPctToTotal(pctReturn: number, lossRatio = COMMODITIES_LOSS_RATIO): number {
-  return pctReturnToLineupPoints(pctReturn, lossRatio);
 }

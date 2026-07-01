@@ -1,5 +1,6 @@
 import { addDays, format } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
+import type { CommoditiesSessionCalendar } from "@cut/sport-commodities";
 import {
   parseCommoditiesSessionExternalId,
   resolveWeekAnchorDates,
@@ -45,6 +46,14 @@ export function getCommoditiesSessionOpenTime(): string {
 
 export function getCommoditiesSessionCloseTime(): string {
   return process.env.COMMODITIES_SESSION_CLOSE?.trim() || DEFAULT_CLOSE;
+}
+
+export function getCommoditiesSessionCalendar(): CommoditiesSessionCalendar {
+  return {
+    timezone: getCommoditiesSessionTimezone(),
+    openTime: getCommoditiesSessionOpenTime(),
+    closeTime: getCommoditiesSessionCloseTime(),
+  };
 }
 
 function padTimeSegment(value: string): string {
