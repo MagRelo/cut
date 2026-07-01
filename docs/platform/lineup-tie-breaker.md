@@ -36,7 +36,7 @@ The prediction serves two roles:
 
 | Field | Model | Type | Notes |
 | --- | --- | --- | --- |
-| `prediction` | `Lineup` | `Json?` | `{ type: "winningLineupTotal", value: number }`. Range from `Sport.predictionRules` (golf: 1–250; F1: 1–120). Stored on the lineup, not per contest entry. |
+| `prediction` | `Lineup` | `Json?` | `{ type: "winningLineupTotal", value: number }`. Range from `Sport.predictionRules` (golf: 1–250; F1: 1–120; commodities: -100–250). Stored on the lineup, not per contest entry. |
 | `predictionRules` | `Sport` | `Json` | `{ min, max, defaultRandomMin, defaultRandomMax }` — per-sport slider range and server random defaults. |
 | `eventParticipantId` | `LineupPick` | `String` | Pick identity for roster slots. |
 | `score` | `ContestLineup` | `Int` | Live and final fantasy total. |
@@ -83,6 +83,7 @@ The client runs the same roster + prediction check before save (slot editor and 
 
 - Label: sport-specific (e.g. “Predicted winning lineup score” for golf)
 - Range from `Sport.predictionRules` via `useSportPredictionRules`
+- Commodities allows negative values (-100–250) because asymmetric loss scoring can produce negative lineup totals; golf and F1 use non-negative ranges only.
 
 **Save behavior**
 

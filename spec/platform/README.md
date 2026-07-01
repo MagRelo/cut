@@ -144,7 +144,7 @@ Details: [client/architecture.md](../client/architecture.md)
 
 ## Adding a new sport
 
-Follow **[add-sport-checklist.md](add-sport-checklist.md)** — phased checklist from fit evaluation through dry run and ops runbook. Reference implementations: golf (`pga-golf`) and F1 (`f1`).
+Follow **[add-sport-checklist.md](add-sport-checklist.md)** — phased checklist from fit evaluation through dry run and ops runbook. Reference implementations: golf (`pga-golf`), F1 (`f1`), and commodities (`commodities`).
 
 At a glance:
 

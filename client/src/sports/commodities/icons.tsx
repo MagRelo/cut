@@ -33,36 +33,15 @@ function BoltIcon({ className }: IconProps) {
   );
 }
 
-function ClubIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
-      {/* Playing-card club — three lobes + stem */}
-      <circle cx="12" cy="7.25" r="3.65" />
-      <circle cx="8.35" cy="11.75" r="3.65" />
-      <circle cx="15.65" cy="11.75" r="3.65" />
-      <rect x="10.6" y="11.5" width="2.8" height="6.5" rx="0.5" />
-      <circle cx="12" cy="18.5" r="1.4" />
-    </svg>
-  );
-}
-
 const ICONS: Record<string, React.FC<IconProps>> = {
   "crude-oil": DripIcon,
   brent: DripIcon,
   "natural-gas": DripIcon,
-  "heating-oil": DripIcon,
-  gasoline: DripIcon,
   gold: CoinIcon,
   silver: CoinIcon,
   copper: BoltIcon,
   platinum: CoinIcon,
   palladium: CoinIcon,
-  aluminum: BoltIcon,
-  uranium: BoltIcon,
-  ttf: DripIcon,
-  wheat: ClubIcon,
-  corn: ClubIcon,
-  soybeans: ClubIcon,
 };
 
 function CubeIcon({ className }: IconProps) {

@@ -1,3 +1,4 @@
+--- Historical — superseded by [competition-brief.md](../competition-brief.md) and [event-activation-runbook.md](../event-activation-runbook.md). ---
 # Commodities sport — implementation journal
 
 Living record of progress, assumptions, and platform-fit learnings. Updated each work session.

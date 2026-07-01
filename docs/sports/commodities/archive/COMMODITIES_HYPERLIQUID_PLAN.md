@@ -1,3 +1,4 @@
+--- Historical — superseded by [competition-brief.md](../competition-brief.md) and [event-activation-runbook.md](../event-activation-runbook.md). ---
 # Commodity Picks — Hyperliquid integration
 
 **Status:** Implemented.

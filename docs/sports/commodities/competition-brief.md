@@ -1,7 +1,7 @@
 # Commodity Picks — competition brief
 
 **Status:** Approved for implementation.  
-**Related:** [data-sources.md](./data-sources.md) · [event-activation-runbook.md](./event-activation-runbook.md) · [COMMODITIES_JOURNAL.md](../../../COMMODITIES_JOURNAL.md) · [add-sport checklist](../../../spec/platform/add-sport-checklist.md)
+**Related:** [data-sources.md](./data-sources.md) · [event-activation-runbook.md](./event-activation-runbook.md) · [add-sport checklist](../../../spec/platform/add-sport-checklist.md)
 
 ---
 
@@ -13,7 +13,7 @@ External
 
 ## One-liner
 
-Pick three commodities for the trading week; your lineup scores the sum of their % moves; highest total wins the contest.
+Pick three commodities for the trading week; your lineup scores the sum of their five daily legs (asymmetric up/down weighting); highest total wins the contest.
 
 ---
 
@@ -33,7 +33,7 @@ Pick three commodities for the trading week; your lineup scores the sum of their
 | **Init defaults** | Env `COMMODITIES_SESSION_TZ/OPEN/CLOSE` (Mon 9:30 – Fri 16:30 America/New_York) |
 | **Init overrides** | `service:init-event commodities 2026-W27 --open +2m --close +62m` (or ISO datetimes) |
 
-**Scoring:** `%` return uses Hyperliquid mark/candle at `sessionOpen` and `sessionClose` (see [data-sources.md](./data-sources.md)).
+**Scoring:** Five daily legs from Hyperliquid marks/candles (see [data-sources.md](./data-sources.md)).
 
 **Out of scope:** Equities, prop bets, automated weekly init cron.
 
@@ -43,10 +43,10 @@ Pick three commodities for the trading week; your lineup scores the sum of their
 
 | Field | Decision |
 |-------|----------|
-| **Field size** | ~14 Hyperliquid HIP-3 perps (static allowlist; frozen per event in `fieldSnapshot`) |
+| **Field size** | 8-ticker Hyperliquid HIP-3 allowlist; init filters to liquid markets; frozen per event in `fieldSnapshot` |
 | **Roster rules** | 3 slots, flat pool, no duplicates |
 | **Field lock timing** | Lineup lock at session open (`LIVE` transition) |
-| **DNP policy** | Missing open or close price → **0 points** for that pick |
+| **DNP policy** | Missing open or close price → **0 points** for that leg |
 | **Min picks** | 3 required to submit (`slotCount` / `maxPicks` = 3; `minPicks` = 0 for draft saves, same as golf/F1) |
 
 ---
@@ -59,10 +59,10 @@ Each trading day (Mon–Fri) is one **round**. Per pick, score the session’s c
 
 | Day move | Fantasy points |
 |----------|----------------|
-| +2.00% | +20.0 |
-| -2.00% | -8.0 (40% of linear) |
+| +2.00% | +20 |
+| -2.00% | -8 (40% of linear) |
 
-**Transform:** `displayScore = dayPct × 10` when `dayPct ≥ 0`; else `dayPct × 10 × 0.4`. Stored as fixed-point tenths (same as golf). Raw daily `%` in `scoreData.r1`…`r5.pctReturn`; cumulative raw week move in `scoreData.pctReturn` (display only).
+**Transform:** `points = round(dayPct × 10)` when `dayPct ≥ 0`; else `round(dayPct × 10 × 0.4)`. Raw daily `%` in `scoreData.r1`…`r5.pctReturn`; cumulative raw week move in `scoreData.pctReturn` (display only).
 
 **Round boundaries:** Mon open → Mon close (D1), Mon close → Tue close (D2), … Thu close → Fri close (D5). During LIVE, the active round is provisional (prior close → current mark).
 
@@ -80,43 +80,32 @@ Higher wins.
 
 ### Tie-break prediction
 
-`{ type: "winningLineupTotal", value: number }` in fixed-point (same scale as lineup totals). UI slider shows `value / 10` with one decimal.
+`{ type: "winningLineupTotal", value: number }` — integer guess of the winning lineup total, same scale as lineup scores. Range from `Sport.predictionRules` (no `displayScale`; slider shows integers directly).
 
 | Field | Value |
 |-------|-------|
-| **Range (fixed-point)** | -1000 to 2500 (display -100.0 to 250.0) |
-| **defaultRandom** | 400–900 (display 40.0–90.0) |
+| **Range** | -100 to 250 |
+| **defaultRandom** | 40–90 |
+| **Label** | Tie-Breaker (winning lineup pts) |
+
+Negative minimum reflects asymmetric loss scoring (lineup totals can be negative).
 
 ---
 
 ## Curated pool
 
-| # | Name | Symbol | Sector |
-|---|------|--------|--------|
-| 1 | Crude Oil | CL=F | energy |
-| 2 | Brent Crude | BZ=F | energy |
-| 3 | Natural Gas | NG=F | energy |
-| 4 | Heating Oil | HO=F | energy |
-| 5 | Gasoline | RB=F | energy |
-| 6 | Gold | GC=F | precious |
-| 7 | Silver | SI=F | precious |
-| 8 | Copper | HG=F | metals |
-| 9 | Platinum | PL=F | precious |
-| 10 | Aluminum | ALI=F | metals |
-| 11 | Nickel | NI=F | metals |
-| 12 | Lead | LED=F | metals |
-| 13 | Zinc | ZNC=F | metals |
-| 14 | Wheat | ZW=F | ag |
-| 15 | Corn | ZC=F | ag |
-| 16 | Soybeans | ZS=F | ag |
-| 17 | Lumber | LBS=F | ag |
-| 18 | Lean Hogs | HE=F | ag |
-| 19 | Rice | ZR=F | ag |
-| 20 | Oats | ZO=F | ag |
-| 21 | Cotton | CT=F | softs |
-| 22 | Coffee | KC=F | softs |
-| 23 | Sugar | SB=F | softs |
-| 24 | Cocoa | CC=F | softs |
+Static allowlist in `packages/sport-commodities/src/catalog.ts`. Hyperliquid resolves `hlCoin` at init; health filter drops illiquid markets.
+
+| # | Name | Ticker | Sector | iconKey |
+|---|------|--------|--------|---------|
+| 1 | Crude Oil | CL | energy | crude-oil |
+| 2 | Brent Crude | BRENTOIL | energy | brent |
+| 3 | Natural Gas | NATGAS | energy | natural-gas |
+| 4 | Gold | GOLD | precious | gold |
+| 5 | Silver | SILVER | precious | silver |
+| 6 | Platinum | PLATINUM | precious | platinum |
+| 7 | Palladium | PALLADIUM | precious | palladium |
+| 8 | Copper | COPPER | metals | copper |
 
 ---
 
@@ -124,7 +113,7 @@ Higher wins.
 
 | Field | Decision |
 |-------|----------|
-| **Price source** | Deterministic fixture data (`fixtureMarketData.ts`) until vendor API is integrated |
+| **Price source** | [Hyperliquid](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/info-endpoint) HIP-3 perps (fixture mode for offline eval) |
 | **Refresh** | On init + field sync; 5-minute cron when `ENABLE_CRON=true` |
 | **Dry-run target** | `2026-W27` |
 
@@ -144,6 +133,15 @@ Higher wins.
 {
   "rosterRules": { "slotCount": 3, "minPicks": 0, "maxPicks": 3, "allowDuplicates": false },
   "scoringRules": { "aggregation": "sum", "direction": "higher_wins" },
-  "predictionRules": { "min": -1000, "max": 2500, "defaultRandomMin": 400, "defaultRandomMax": 900 }
+  "predictionRules": {
+    "min": -100,
+    "max": 250,
+    "defaultRandomMin": 40,
+    "defaultRandomMax": 90,
+    "label": "Tie-Breaker (winning lineup pts)"
+  },
+  "isEnabled": false
 }
 ```
+
+Sport is seeded disabled; enable via Prisma Studio or `script:commodities-local-eval` before users see commodities in `GET /api/sports`.

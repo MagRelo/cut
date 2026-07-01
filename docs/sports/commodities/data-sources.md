@@ -16,11 +16,17 @@
 
 ### Catalog
 
-Static allowlist in `packages/sport-commodities/src/catalog.ts` (~14 tickers: `GOLD`, `CL`, `BRENTOIL`, etc.). `Participant.externalId` = canonical ticker. `metadata.commodities.fieldSnapshot` freezes `hlCoin` per event at init.
+Static 8-ticker allowlist in `packages/sport-commodities/src/catalog.ts` (`CL`, `BRENTOIL`, `NATGAS`, `GOLD`, `SILVER`, `PLATINUM`, `PALLADIUM`, `COPPER`). `Participant.externalId` = canonical ticker. Init resolves Hyperliquid `hlCoin` per ticker and filters to liquid markets. `metadata.commodities.fieldSnapshot` freezes the resolved field at init.
 
 ### Scoring
 
-`% return` = mark/candle at `sessionOpen` → current mark (LIVE) → mark/candle at `sessionClose`. Open price locks after first LIVE sync. `sessionStarted` / `sessionComplete` are set by cron (not client wall clock). Missing price → 0 pts (DNP).
+Five daily legs (Mon–Fri), each scored close-to-close with asymmetric loss weighting (`lossRatio` 0.4). Production path:
+
+1. `marketDataProvider` fetches session candles/marks → `SessionPriceSnapshot`
+2. `mergeLockedDayClosePrices` keeps settled day closes stable on re-sync
+3. `transformCommodityDailyPrice` in `@cut/sport-commodities` writes `EventParticipant.total` and `scoreData` (`r1`…`r5`)
+
+Week open price locks after first LIVE sync. `sessionStarted` / `sessionComplete` are set by cron (not client wall clock). Missing price for a leg → 0 pts (DNP).
 
 ---
 
@@ -50,6 +56,9 @@ Static allowlist in `packages/sport-commodities/src/catalog.ts` (~14 tickers: `G
 
 | Script | Purpose |
 |--------|---------|
+| `service:sync-commodities-metadata` | Manual metadata sync (active event or pass `eventId`) |
+| `service:sync-commodities-field` | Manual field + quotes + sparkline sync |
+| `service:sync-commodities-scores` | Manual live score sync (LIVE events only) |
 | `script:commodities-catalog-sync` | Print allowlist vs HL availability |
 | `script:commodities-data-spike` | Session-boundary returns (`--live` for HL) |
 | `script:commodities-dry-run` | End-to-end contest ranking (fixture) |

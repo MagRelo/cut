@@ -1,3 +1,4 @@
+--- Historical — superseded by [competition-brief.md](../competition-brief.md) and [event-activation-runbook.md](../event-activation-runbook.md). ---
 # Commodity Picks — API Ninjas integration plan
 
 **Status:** Superseded by [COMMODITIES_HYPERLIQUID_PLAN.md](COMMODITIES_HYPERLIQUID_PLAN.md) (2026-06-30).

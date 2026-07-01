@@ -32,9 +32,11 @@ For each `CompetitionEvent` with `isActive=true`:
 1. `syncEventMetadata`
 2. `syncParticipantField`
 3. `handleWithdrawals` (if plugin implements)
-4. If live (golf: `golfShouldSyncLiveScores` on metadata):
+4. If live (`shouldSyncLiveScores` on metadata — golf: `golfShouldSyncLiveScores`; commodities: `commoditiesShouldSyncLiveScores`):
    - `syncLiveScores`
    - `updateContestLineupsForEvent`
+
+**Commodities:** metadata and field sync every pass; live scores only when `sessionStarted && !sessionComplete`. No golf-style leaderboard/scorecard fetch — prices come from Hyperliquid candles/marks. Manual sync: `service:sync-commodities-metadata`, `-field`, `-scores`.
 
 ### 2. Side-bet quote refresh
 
@@ -75,6 +77,8 @@ Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event statu
 | Task | Command / API |
 |------|----------------|
 | Init golf event | `pnpm run service:init-event pga-golf R2026033` |
+| Init commodities event | `pnpm run service:init-event commodities 2026-W27` |
+| Sync commodities (manual) | `service:sync-commodities-metadata` · `-field` · `-scores` |
 | Lock contests | `POST /api/admin/contests/lock-eligible` |
 | Side-bet lock/settle/close | `POST /api/admin/bets/side/*` |
 | Email blast | `pnpm --filter server run script:send-blast new-tournament` |
