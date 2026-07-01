@@ -19,7 +19,7 @@ import {
   formatSessionDisplayName,
   resolveWeeklySessionBounds,
 } from "../sports/commodities/sessionConfig.js";
-import { commoditiesCurrentRound } from "../sports/commodities/sessionRounds.js";
+import { commoditiesCurrentPeriod } from "../sports/commodities/sessionRounds.js";
 
 function fixtureFieldSnapshot() {
   return COMMODITY_METADATA_ALLOWLIST.map((entry) =>
@@ -50,7 +50,7 @@ async function main(): Promise<void> {
   console.log(`Session close: ${bounds.sessionClose}`);
   console.log(`Field size: ${field.length}\n`);
 
-  const currentRound = commoditiesCurrentRound(bounds.sessionOpen, bounds.sessionClose);
+  const currentPeriod = commoditiesCurrentPeriod(bounds.sessionOpen, bounds.sessionClose);
 
   const prices = await getSessionPricesForField({
     field,
@@ -68,7 +68,7 @@ async function main(): Promise<void> {
       currentPrice: snapshot?.closePrice ?? snapshot?.currentPrice ?? null,
       closePrice: snapshot?.closePrice ?? null,
       isComplete: true,
-      currentRound,
+      currentPeriod,
       provisional: false,
     });
 

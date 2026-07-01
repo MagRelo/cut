@@ -1,13 +1,14 @@
 import type { CompetitionEvent } from "@prisma/client";
+import { readCurrentPeriod, readPeriodDisplay, readPeriodStatusDisplay } from "@cut/sport-sdk";
 import { isGolfEventCompleteRaw, isGolfEventLiveRaw } from "@cut/sport-pga-golf";
 import { prisma } from "../../lib/prisma.js";
 
 type GolfEventMetadata = {
   name?: string;
   status?: string;
-  currentRound?: number | null;
-  roundDisplay?: string | null;
-  roundStatusDisplay?: string | null;
+  currentPeriod?: number | null;
+  periodDisplay?: string | null;
+  periodStatusDisplay?: string | null;
   cutLine?: string | null;
   startDate?: string;
   endDate?: string;
@@ -17,7 +18,17 @@ export function parseEventMetadata(metadata: unknown): GolfEventMetadata {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     return {};
   }
-  return metadata as GolfEventMetadata;
+  const record = metadata as Record<string, unknown>;
+  return {
+    ...(typeof record.name === "string" ? { name: record.name } : {}),
+    ...(typeof record.status === "string" ? { status: record.status } : {}),
+    currentPeriod: readCurrentPeriod(metadata),
+    periodDisplay: readPeriodDisplay(metadata),
+    periodStatusDisplay: readPeriodStatusDisplay(metadata),
+    ...(typeof record.cutLine === "string" ? { cutLine: record.cutLine } : {}),
+    ...(typeof record.startDate === "string" ? { startDate: record.startDate } : {}),
+    ...(typeof record.endDate === "string" ? { endDate: record.endDate } : {}),
+  };
 }
 
 export function eventStatusForDashboard(metadata: unknown): string {
@@ -59,9 +70,9 @@ export function eventToDashboardEvent(event: CompetitionEvent) {
     id: event.id,
     name: meta.name ?? event.externalId,
     status: eventStatusForDashboard(event.metadata),
-    currentRound: meta.currentRound ?? null,
-    roundDisplay: meta.roundDisplay ?? null,
-    roundStatusDisplay: meta.roundStatusDisplay ?? null,
+    currentPeriod: meta.currentPeriod ?? null,
+    periodDisplay: meta.periodDisplay ?? null,
+    periodStatusDisplay: meta.periodStatusDisplay ?? null,
     cutLine: meta.cutLine ?? null,
     startDate: start,
     endDate: end,

@@ -187,7 +187,7 @@ export function transformGolfParticipantScores(
   leaderboardRow: GolfLeaderboardRowInput,
   scorecardRaw: GolfScorecardInput | null,
   allLeaderboardPlayers: GolfLeaderboardRowInput[],
-  currentRound: number,
+  currentPeriod: number,
 ): GolfParticipantScoreUpdate | null {
   const position = leaderboardRow.scoringData?.position ?? "";
   const cutHasBeenMade = allLeaderboardPlayers.some((p) => p.scoringData?.position === "CUT");
@@ -227,7 +227,7 @@ export function transformGolfParticipantScores(
   update.r3 = R3;
   update.r4 = R4;
   const roundMap: Record<number, GolfRoundScoreUpdate> = { 1: R1, 2: R2, 3: R3, 4: R4 };
-  const roundNum = Math.min(4, Math.max(1, Math.round(currentRound)));
+  const roundNum = Math.min(4, Math.max(1, Math.round(currentPeriod)));
   update.rCurrent = roundMap[roundNum] ?? null;
 
   const stablefordTotal = R1.total + R2.total + R3.total + R4.total;

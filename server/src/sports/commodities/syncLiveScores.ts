@@ -12,7 +12,7 @@ import { commodityExternalId } from "@cut/sport-commodities";
 import { getSessionPricesForField } from "./marketDataProvider.js";
 import { mergeCommoditiesEventMetadata, requireCommoditiesMetadata } from "./metadataMerge.js";
 import { findFieldEntryByTicker } from "./hyperliquidCatalog.js";
-import { commoditiesCurrentRound } from "./sessionRounds.js";
+import { commoditiesCurrentPeriod } from "./sessionRounds.js";
 
 export async function syncCommoditiesLiveScores(eventId: string) {
   const event = await prisma.competitionEvent.findFirst({
@@ -36,7 +36,7 @@ export async function syncCommoditiesLiveScores(eventId: string) {
 
   const eventStatus = commoditiesEventStatusFromMetadata(event.metadata);
   const isComplete = eventStatus === "COMPLETE";
-  const currentRound = commoditiesCurrentRound(
+  const currentPeriod = commoditiesCurrentPeriod(
     commoditiesMeta.sessionOpen,
     commoditiesMeta.sessionClose,
   );
@@ -77,7 +77,7 @@ export async function syncCommoditiesLiveScores(eventId: string) {
       currentPrice: snapshot?.currentPrice ?? null,
       closePrice: snapshot?.closePrice ?? null,
       isComplete,
-      currentRound,
+      currentPeriod,
       provisional: !isComplete,
     });
 

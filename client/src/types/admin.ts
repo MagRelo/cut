@@ -67,9 +67,9 @@ export interface AdminDashboardResponse {
     id: string;
     name: string;
     status: string;
-    currentRound: number | null;
-    roundDisplay: string | null;
-    roundStatusDisplay: string | null;
+    currentPeriod: number | null;
+    periodDisplay: string | null;
+    periodStatusDisplay: string | null;
     cutLine: string | null;
     startDate: string;
     endDate: string;

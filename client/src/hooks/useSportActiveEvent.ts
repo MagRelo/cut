@@ -6,8 +6,8 @@ import {
   eventStartDateFromMetadata,
   eventStatusDisplayFromMetadata,
   isEventEditableFromActiveStatus,
-  roundDisplayFromMetadata,
-  roundStatusDisplayFromMetadata,
+  periodDisplayFromMetadata,
+  periodStatusDisplayFromMetadata,
 } from "../lib/eventMetadata";
 import { useActiveEventQuery, useEventCandidatesQuery } from "./useSportData";
 
@@ -21,8 +21,8 @@ export interface SportActiveEventState {
   sportId: string;
   eventName: string | null;
   metadata: unknown;
-  roundDisplay: string | null;
-  roundStatusDisplay: string | null;
+  periodDisplay: string | null;
+  periodStatusDisplay: string | null;
   eventStartDate: string | null;
   isEventEditable: boolean;
   eventStatusDisplay: string;
@@ -72,8 +72,8 @@ export function useSportActiveEvent(sportId: string): SportActiveEventState {
     sportId,
     metadata,
     eventName: eventDisplayNameFromMetadata(metadata, ""),
-    roundDisplay: roundDisplayFromMetadata(metadata),
-    roundStatusDisplay: roundStatusDisplayFromMetadata(metadata),
+    periodDisplay: periodDisplayFromMetadata(metadata),
+    periodStatusDisplay: periodStatusDisplayFromMetadata(metadata),
     eventStartDate: eventStartDateFromMetadata(metadata),
     isEventEditable,
     eventStatusDisplay,

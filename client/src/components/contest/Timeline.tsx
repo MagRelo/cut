@@ -11,13 +11,19 @@ import {
   type Plugin,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
+import {
+  formatPeriodLabel,
+  isTimelinePeriod,
+  periodRulesHasDividers,
+  type PeriodRules,
+} from "@cut/sport-sdk";
 import type { TimelineData, TimelineMetric } from "../../types/contest";
 import { cn } from "../../lib/tabStyles";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const OTHER_TEAM_LINE_OPACITY = 0.6;
-/** Shared color for y-axis ticks and round divider labels. */
+/** Shared color for y-axis ticks and period divider labels. */
 const TIMELINE_AXIS_LABEL_COLOR = "#4B5563";
 /** Lower `order` draws on top in Chart.js (see mixed chart drawing-order docs). */
 const USER_LINE_ORDER = 0;
@@ -85,43 +91,50 @@ function orderTeamsForChart(
   return [...sortWinnersLast(mine), ...sortWinnersLast(others)];
 }
 
-interface RoundSegment {
-  roundNumber: number;
+interface PeriodSegment {
+  periodNumber: number;
   startIndex: number;
   count: number;
 }
 
-interface RoundLabel {
+interface PeriodDividerLabel {
   index: number;
-  roundNumber: number;
+  text: string;
 }
 
-function buildRoundByTimestamp(topTeams: TimelineTeam[]): Map<string, number> {
+function dataPointPeriod(dataPoint: { periodNumber?: number }): number | undefined {
+  return dataPoint.periodNumber;
+}
+
+function buildPeriodByTimestamp(
+  topTeams: TimelineTeam[],
+  periodRules: PeriodRules | null | undefined,
+): Map<string, number> {
   const map = new Map<string, number>();
   for (const team of topTeams) {
     for (const dp of team.dataPoints) {
-      const roundNumber = dp.roundNumber;
-      if (typeof roundNumber === "number" && roundNumber >= 1 && roundNumber <= 4) {
-        map.set(dp.timestamp, roundNumber);
+      const periodNumber = dataPointPeriod(dp);
+      if (isTimelinePeriod(periodRules, periodNumber)) {
+        map.set(dp.timestamp, periodNumber);
       }
     }
   }
   return map;
 }
 
-function buildRoundSegments(
+function buildPeriodSegments(
   chartTimestamps: string[],
-  roundByTimestamp: Map<string, number>,
-): RoundSegment[] {
-  const segments: RoundSegment[] = [];
+  periodByTimestamp: Map<string, number>,
+): PeriodSegment[] {
+  const segments: PeriodSegment[] = [];
   for (let i = 0; i < chartTimestamps.length; i++) {
-    const roundNumber = roundByTimestamp.get(chartTimestamps[i]);
-    if (roundNumber === undefined) continue;
+    const periodNumber = periodByTimestamp.get(chartTimestamps[i]);
+    if (periodNumber === undefined) continue;
     const last = segments[segments.length - 1];
-    if (last?.roundNumber === roundNumber) {
+    if (last?.periodNumber === periodNumber) {
       last.count += 1;
     } else {
-      segments.push({ roundNumber, startIndex: i, count: 1 });
+      segments.push({ periodNumber, startIndex: i, count: 1 });
     }
   }
   return segments;
@@ -132,7 +145,9 @@ const TIMELINE_CHART_PLUGIN_ID = "timelineChartDecorations";
 const timelineChartPlugin: Plugin<"line"> = {
   id: TIMELINE_CHART_PLUGIN_ID,
   afterDraw(chart) {
-    const plugins = chart.options.plugins as Record<string, { labels?: RoundLabel[] }> | undefined;
+    const plugins = chart.options.plugins as
+      | Record<string, { labels?: PeriodDividerLabel[] }>
+      | undefined;
     const labels = plugins?.[TIMELINE_CHART_PLUGIN_ID]?.labels ?? [];
     if (!labels.length) return;
 
@@ -141,7 +156,7 @@ const timelineChartPlugin: Plugin<"line"> = {
     if (!chartArea || !xScale) return;
 
     ctx.save();
-    for (const { index, roundNumber } of labels) {
+    for (const { index, text } of labels) {
       const x = xScale.getPixelForValue(index);
       if (index > 0) {
         ctx.beginPath();
@@ -158,7 +173,7 @@ const timelineChartPlugin: Plugin<"line"> = {
       ctx.font = "9px 'Outfit', sans-serif";
       ctx.textAlign = "left";
       ctx.textBaseline = "bottom";
-      ctx.fillText(`R${roundNumber}`, x + 6, chartArea.bottom - 4);
+      ctx.fillText(text, x + 6, chartArea.bottom - 4);
     }
     ctx.restore();
   },
@@ -166,10 +181,12 @@ const timelineChartPlugin: Plugin<"line"> = {
 
 function forwardFilledScores(
   sortedTimestamps: string[],
-  points: Array<{ timestamp: string; roundNumber?: number; score: number }>,
+  points: Array<{ timestamp: string; periodNumber?: number; score: number }>,
 ): (number | null)[] {
   const sorted = [...points].sort(
-    (a, b) => a.timestamp.localeCompare(b.timestamp) || (a.roundNumber ?? 0) - (b.roundNumber ?? 0),
+    (a, b) =>
+      a.timestamp.localeCompare(b.timestamp) ||
+      (dataPointPeriod(a) ?? 0) - (dataPointPeriod(b) ?? 0),
   );
   let idx = 0;
   let last: number | null = null;
@@ -198,6 +215,10 @@ export const Timeline: React.FC<TimelineProps> = ({
   currentUserId,
   fitContainer = false,
 }) => {
+  const periodRules = timelineData.periods ?? null;
+  const showPeriodDividers = periodRulesHasDividers(periodRules);
+  const timelineTitle = periodRules?.timelineTitle ?? "Event Timeline";
+
   const topTeams = useMemo(() => {
     if (!timelineData.teams.length) return [];
     return [...timelineData.teams].sort((a, b) => {
@@ -211,23 +232,27 @@ export const Timeline: React.FC<TimelineProps> = ({
     const ts = new Set<string>();
     for (const team of topTeams) {
       for (const dp of team.dataPoints) {
-        const r = dp.roundNumber;
-        if (typeof r === "number" && r >= 1 && r <= 4) ts.add(dp.timestamp);
+        const periodNumber = dataPointPeriod(dp);
+        if (isTimelinePeriod(periodRules, periodNumber)) {
+          ts.add(dp.timestamp);
+        }
       }
     }
     return [...ts].sort((a, b) => a.localeCompare(b));
-  }, [topTeams]);
+  }, [topTeams, periodRules]);
 
-  const roundByTimestamp = useMemo(() => buildRoundByTimestamp(topTeams), [topTeams]);
-
-  const roundLabels = useMemo(
-    () =>
-      buildRoundSegments(chartTimestamps, roundByTimestamp).map((segment) => ({
-        index: segment.startIndex,
-        roundNumber: segment.roundNumber,
-      })),
-    [chartTimestamps, roundByTimestamp],
+  const periodByTimestamp = useMemo(
+    () => buildPeriodByTimestamp(topTeams, periodRules),
+    [topTeams, periodRules],
   );
+
+  const periodDividerLabels = useMemo(() => {
+    if (!showPeriodDividers) return [];
+    return buildPeriodSegments(chartTimestamps, periodByTimestamp).map((segment) => ({
+      index: segment.startIndex,
+      text: formatPeriodLabel(periodRules, segment.periodNumber),
+    }));
+  }, [chartTimestamps, periodByTimestamp, periodRules, showPeriodDividers]);
 
   const highlightPayoutWinners = useMemo(
     () => topTeams.some((t) => t.isPrimaryPayoutWinner === true),
@@ -270,13 +295,13 @@ export const Timeline: React.FC<TimelineProps> = ({
     () => ({
       labels,
       datasets: teamsForChart.map((team) => {
-        const roundPoints = team.dataPoints.filter(
-          (dp) => typeof dp.roundNumber === "number" && dp.roundNumber >= 1 && dp.roundNumber <= 4,
+        const periodPoints = team.dataPoints.filter((dp) =>
+          isTimelinePeriod(periodRules, dataPointPeriod(dp)),
         );
         const { borderColor, borderWidth, order } = lineStyleForTeam(team);
         return {
           label: team.name,
-          data: forwardFilledScores(chartTimestamps, roundPoints),
+          data: forwardFilledScores(chartTimestamps, periodPoints),
           borderColor,
           backgroundColor: borderColor,
           borderWidth,
@@ -287,7 +312,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         };
       }),
     }),
-    [labels, teamsForChart, chartTimestamps, lineStyleForTeam],
+    [labels, teamsForChart, chartTimestamps, lineStyleForTeam, periodRules],
   );
 
   const options = useMemo(
@@ -303,7 +328,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           display: false,
         },
         [TIMELINE_CHART_PLUGIN_ID]: {
-          labels: roundLabels,
+          labels: periodDividerLabels,
         },
       },
       scales: {
@@ -346,7 +371,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         },
       },
     }),
-    [roundLabels],
+    [periodDividerLabels],
   );
 
   if (!timelineData.teams.length) {
@@ -372,7 +397,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       )}
     >
       <div className="shrink-0 px-3 pb-2 pt-2.5">
-        <h3 className="text-sm font-semibold leading-tight text-gray-900">Tournament Timeline</h3>
+        <h3 className="text-sm font-semibold leading-tight text-gray-900">{timelineTitle}</h3>
         <p className="mt-0.5 text-[11px] leading-snug text-gray-500">
           Each line tracks a lineup&apos;s total points.
         </p>

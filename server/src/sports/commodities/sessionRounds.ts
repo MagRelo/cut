@@ -46,7 +46,7 @@ export function buildSessionDayCloseTimestamps(
 }
 
 /** Trading day 1–5 based on which session close boundary has passed. */
-export function commoditiesCurrentRound(
+export function commoditiesCurrentPeriod(
   sessionOpen: string,
   sessionClose: string,
   now: Date = new Date(),
@@ -72,18 +72,27 @@ export function commoditiesCurrentRound(
   return COMMODITIES_ROUND_COUNT;
 }
 
-export function commoditiesRoundDisplay(currentRound: number): string {
-  return `D${Math.min(COMMODITIES_ROUND_COUNT, Math.max(1, currentRound))}`;
+export function commoditiesPeriodDisplay(currentPeriod: number): string {
+  return `D${Math.min(COMMODITIES_ROUND_COUNT, Math.max(1, currentPeriod))}`;
 }
 
-export function commoditiesRoundStatusDisplay(
-  currentRound: number,
+export function commoditiesPeriodStatusDisplay(
+  currentPeriod: number,
   isComplete: boolean,
 ): string {
   if (isComplete) {
     return "Week complete";
   }
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-  const index = Math.min(COMMODITIES_ROUND_COUNT, Math.max(1, currentRound)) - 1;
+  const index = Math.min(COMMODITIES_ROUND_COUNT, Math.max(1, currentPeriod)) - 1;
   return `${dayNames[index]} session`;
 }
+
+/** @deprecated Use commoditiesCurrentPeriod */
+export const commoditiesCurrentRound = commoditiesCurrentPeriod;
+
+/** @deprecated Use commoditiesPeriodDisplay */
+export const commoditiesRoundDisplay = commoditiesPeriodDisplay;
+
+/** @deprecated Use commoditiesPeriodStatusDisplay */
+export const commoditiesRoundStatusDisplay = commoditiesPeriodStatusDisplay;

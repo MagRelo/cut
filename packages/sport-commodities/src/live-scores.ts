@@ -62,7 +62,7 @@ export function transformCommodityDailyPrice(
       pctReturn: cumulativePctReturn,
       provisional: input.provisional,
       lossRatio,
-      currentRound: input.currentRound,
+      currentPeriod: input.currentPeriod,
       r1: roundToScoreData(rounds[0]!),
       r2: roundToScoreData(rounds[1]!),
       r3: roundToScoreData(rounds[2]!),

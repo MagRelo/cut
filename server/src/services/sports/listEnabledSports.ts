@@ -1,5 +1,6 @@
-import type { PredictionRules, RosterRules, ScoringRules } from "@cut/sport-sdk";
+import type { PeriodRules, PredictionRules, RosterRules, ScoringRules } from "@cut/sport-sdk";
 import { prisma } from "../../lib/prisma.js";
+import { getPeriodRulesForSport } from "../../sports/periodRules.js";
 
 export type SportResponse = {
   id: string;
@@ -9,6 +10,7 @@ export type SportResponse = {
   rosterRules: RosterRules;
   scoringRules: ScoringRules;
   predictionRules: PredictionRules;
+  periodRules: PeriodRules | null;
 };
 
 export async function listEnabledSports(): Promise<SportResponse[]> {
@@ -25,5 +27,6 @@ export async function listEnabledSports(): Promise<SportResponse[]> {
     rosterRules: sport.rosterRules as unknown as RosterRules,
     scoringRules: sport.scoringRules as unknown as ScoringRules,
     predictionRules: sport.predictionRules as unknown as PredictionRules,
+    periodRules: getPeriodRulesForSport(sport.id),
   }));
 }

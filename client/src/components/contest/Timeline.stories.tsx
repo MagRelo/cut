@@ -85,8 +85,8 @@ export const MultiTeam: Story = {
           color: "#10B981",
           entryId: "2",
           dataPoints: [
-            { timestamp: new Date().toISOString(), score: 6, roundNumber: 1 },
-            { timestamp: new Date(Date.now() + 3600000).toISOString(), score: 14, roundNumber: 1 },
+            { timestamp: new Date().toISOString(), score: 6, periodNumber: 1 },
+            { timestamp: new Date(Date.now() + 3600000).toISOString(), score: 14, periodNumber: 1 },
           ],
         },
       ],

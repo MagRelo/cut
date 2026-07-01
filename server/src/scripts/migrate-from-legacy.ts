@@ -516,9 +516,9 @@ function tournamentToEventMetadata(t: LegacyTournament): Prisma.InputJsonValue {
     venue: t.venue ?? null,
     purse: t.purse,
     status: t.status,
-    roundStatusDisplay: t.roundStatusDisplay,
-    roundDisplay: t.roundDisplay,
-    currentRound: t.currentRound,
+    periodStatusDisplay: t.roundStatusDisplay,
+    periodDisplay: t.roundDisplay,
+    currentPeriod: t.currentRound,
     weather: t.weather ?? null,
     beautyImage: t.beautyImage,
     cutLine: t.cutLine,
@@ -988,7 +988,10 @@ async function applyMigration(target: PrismaClient, snapshot: LegacySnapshot) {
 
     if (snapshot.contestLineupTimelines.length > 0) {
       await tx.contestLineupTimeline.createMany({
-        data: snapshot.contestLineupTimelines,
+        data: snapshot.contestLineupTimelines.map(({ roundNumber, ...row }) => ({
+          ...row,
+          periodNumber: roundNumber,
+        })),
         skipDuplicates: true,
       });
     }

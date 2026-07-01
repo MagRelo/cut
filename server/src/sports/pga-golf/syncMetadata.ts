@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
 import { getTournament, formatWeather } from "../../lib/pgaTournament.js";
+import { mergeEventPeriodFields } from "@cut/sport-sdk";
 import { parseTournamentDates } from "./parseTournamentDates.js";
 import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 import type { GolfEventMetadata } from "@cut/sport-pga-golf";
@@ -48,9 +49,6 @@ export async function syncGolfEventMetadata(
     name: tournamentData.tournamentName,
     pgaTourId: event.externalId,
     status: tournamentData.tournamentStatus,
-    roundStatusDisplay: tournamentData.roundStatusDisplay,
-    roundDisplay: tournamentData.roundDisplay,
-    currentRound: tournamentData.currentRound,
     weather: formatWeather(tournamentData.weather),
     city: tournamentData.city,
     state: tournamentData.state,
@@ -71,7 +69,11 @@ export async function syncGolfEventMetadata(
     patch.beautyImage = tournamentData.beautyImage?.trim() || null;
   }
 
-  const metadata = mergeEventMetadata(event.metadata, patch);
+  const metadata = mergeEventPeriodFields(mergeEventMetadata(event.metadata, patch), {
+    currentPeriod: tournamentData.currentRound,
+    periodDisplay: tournamentData.roundDisplay,
+    periodStatusDisplay: tournamentData.roundStatusDisplay,
+  });
 
   await prisma.competitionEvent.update({
     where: { id: event.id },

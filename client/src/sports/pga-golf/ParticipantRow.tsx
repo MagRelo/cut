@@ -29,7 +29,7 @@ export const GolfParticipantRow: React.FC<ParticipantRowProps> = ({
   eventMetadata,
 }) => {
   const golfEventMeta = parseGolfEventMetadata(eventMetadata);
-  const scoringPeriod = (golfEventMeta.roundDisplay ?? "r1").toLowerCase();
+  const scoringPeriod = (golfEventMeta.periodDisplay ?? "r1").toLowerCase();
   const showLiveLayout = status === "LIVE" || status === "COMPLETE";
 
   const meta = parseGolfCandidateMetadata(candidate);

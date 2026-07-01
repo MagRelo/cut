@@ -1,5 +1,6 @@
 import React from "react";
 import type { ParticipantDetailProps } from "@cut/sport-sdk/ui";
+import { COMMODITIES_PERIOD_RULES } from "@cut/sport-commodities";
 import type { CommodityRoundScoreData } from "@cut/sport-commodities";
 import { CommodityParticipantRow } from "./ParticipantRow";
 import {
@@ -23,18 +24,18 @@ function StatCell({ label, value }: { label: string; value: string }) {
   );
 }
 
-function RoundCell({
+function PeriodCell({
   label,
   round,
-  roundNumber,
-  currentRound,
+  periodNumber,
+  currentPeriod,
 }: {
   label: string;
   round?: CommodityRoundScoreData | null;
-  roundNumber: number;
-  currentRound?: number | null;
+  periodNumber: number;
+  currentPeriod?: number | null;
 }) {
-  const unplayed = currentRound != null && roundNumber > currentRound;
+  const unplayed = currentPeriod != null && periodNumber > currentPeriod;
   const total = typeof round?.total === "number" ? round.total : null;
   const pctReturn =
     typeof round?.pctReturn === "number" && Number.isFinite(round.pctReturn)
@@ -95,36 +96,20 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
           className="grid grid-cols-5 divide-x divide-gray-200 border-t border-gray-200 bg-slate-50"
           role="presentation"
         >
-          <RoundCell
-            label="Mon"
-            round={scoreData.r1}
-            roundNumber={1}
-            currentRound={scoreData.currentRound}
-          />
-          <RoundCell
-            label="Tue"
-            round={scoreData.r2}
-            roundNumber={2}
-            currentRound={scoreData.currentRound}
-          />
-          <RoundCell
-            label="Wed"
-            round={scoreData.r3}
-            roundNumber={3}
-            currentRound={scoreData.currentRound}
-          />
-          <RoundCell
-            label="Thu"
-            round={scoreData.r4}
-            roundNumber={4}
-            currentRound={scoreData.currentRound}
-          />
-          <RoundCell
-            label="Fri"
-            round={scoreData.r5}
-            roundNumber={5}
-            currentRound={scoreData.currentRound}
-          />
+          {Array.from({ length: COMMODITIES_PERIOD_RULES.count }, (_, index) => {
+            const periodNumber = index + 1;
+            const roundKey = `r${periodNumber}` as keyof typeof scoreData;
+            const label = COMMODITIES_PERIOD_RULES.labels?.[index] ?? `D${periodNumber}`;
+            return (
+              <PeriodCell
+                key={periodNumber}
+                label={label}
+                round={scoreData[roundKey] as CommodityRoundScoreData | null | undefined}
+                periodNumber={periodNumber}
+                currentPeriod={scoreData.currentPeriod}
+              />
+            );
+          })}
         </div>
       ) : null}
     </div>

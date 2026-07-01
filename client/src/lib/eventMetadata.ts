@@ -1,4 +1,8 @@
 import type { EventStatus } from "../types/event";
+import {
+  readPeriodDisplay,
+  readPeriodStatusDisplay,
+} from "@cut/sport-sdk";
 import { f1EventStatusFromMetadata, parseF1EventMetadata } from "@cut/sport-f1";
 import {
   commoditiesEventStatusFromMetadata,
@@ -13,8 +17,6 @@ type EventMetadataShape = {
   name?: string;
   status?: string;
   startDate?: string;
-  roundDisplay?: string | null;
-  roundStatusDisplay?: string | null;
   f1?: {
     raceStart?: string;
   };
@@ -82,22 +84,12 @@ export function eventEndDateFromMetadata(metadata: unknown): string | null {
   return commoditiesClose || null;
 }
 
-export function roundDisplayFromMetadata(metadata: unknown): string | null {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return null;
-  }
-  const roundDisplay = (metadata as EventMetadataShape).roundDisplay;
-  return typeof roundDisplay === "string" && roundDisplay.trim() ? roundDisplay.trim() : null;
+export function periodDisplayFromMetadata(metadata: unknown): string | null {
+  return readPeriodDisplay(metadata);
 }
 
-export function roundStatusDisplayFromMetadata(metadata: unknown): string | null {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return null;
-  }
-  const roundStatusDisplay = (metadata as EventMetadataShape).roundStatusDisplay;
-  return typeof roundStatusDisplay === "string" && roundStatusDisplay.trim()
-    ? roundStatusDisplay.trim()
-    : null;
+export function periodStatusDisplayFromMetadata(metadata: unknown): string | null {
+  return readPeriodStatusDisplay(metadata);
 }
 
 export function isEventEditableFromActiveStatus(

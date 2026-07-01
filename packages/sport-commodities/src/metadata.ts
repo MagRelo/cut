@@ -71,7 +71,7 @@ export interface CommodityScoreData {
   provisional?: boolean;
   /** Asymmetric loss weight for down days (default 0.4). */
   lossRatio?: number | null;
-  currentRound?: number | null;
+  currentPeriod?: number | null;
   r1?: CommodityRoundScoreData | null;
   r2?: CommodityRoundScoreData | null;
   r3?: CommodityRoundScoreData | null;

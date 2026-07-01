@@ -13,6 +13,7 @@ import {
   COMMODITIES_SPORT_ID,
   commodityExternalId,
 } from "@cut/sport-commodities";
+import { readPeriodDisplay } from "@cut/sport-sdk";
 import { prisma } from "../lib/prisma.js";
 import { createLineupForEvent } from "../services/lineups/createLineupForEvent.js";
 import { updateContestLineupsForEvent } from "../services/updateContestLineups.js";
@@ -245,12 +246,10 @@ async function main(): Promise<void> {
     },
   });
 
-  const metadata = event.metadata as Record<string, unknown>;
-  const roundDisplay =
-    typeof metadata.roundDisplay === "string" ? metadata.roundDisplay : "?";
+  const periodDisplay = readPeriodDisplay(event.metadata) ?? "?";
 
   console.log("\n=== Commodities Live Eval ready ===\n");
-  console.log(`Event:     ${event.id} (${externalId}) — ${eventStatus}, ${roundDisplay}`);
+  console.log(`Event:     ${event.id} (${externalId}) — ${eventStatus}, ${periodDisplay}`);
   console.log(`Contest:   ${contest.id} (${contest.status})`);
   console.log(`Session:   ${bounds.sessionOpen}`);
   console.log(`        →  ${bounds.sessionClose}`);

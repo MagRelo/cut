@@ -24,7 +24,7 @@ describe("transformCommodityDailyScores", () => {
       currentPrice: 103,
       closePrice: 103,
       isComplete: true,
-      currentRound: 5,
+      currentPeriod: 5,
       lossRatio: COMMODITIES_LOSS_RATIO,
     });
 
@@ -40,7 +40,7 @@ describe("transformCommodityDailyScores", () => {
       dayClosePrices: [101, null, null, null, null],
       currentPrice: 100.5,
       isComplete: false,
-      currentRound: 2,
+      currentPeriod: 2,
     });
 
     expect(result.rounds[0]?.provisional).toBe(false);
@@ -59,7 +59,7 @@ describe("transformCommodityDailyPrice", () => {
       currentPrice: 102,
       closePrice: 102,
       isComplete: true,
-      currentRound: 5,
+      currentPeriod: 5,
       provisional: false,
     });
 

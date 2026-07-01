@@ -19,7 +19,7 @@ export interface ContestLobbyViewModel {
   primary: {
     mode: PrimaryTabMode;
     entryListOpensModal: boolean;
-    roundDisplay?: string | null;
+    periodDisplay?: string | null;
   };
   predictions: {
     mode: PredictionsPanelMode;

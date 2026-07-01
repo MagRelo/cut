@@ -20,7 +20,11 @@ export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
   return (
     <div className="space-y-4">
       {mode === "liveTimeline" ? (
-        <ContestTimelinesSection timelineData={contest.timeline} currentUserId={currentUserId} />
+        <ContestTimelinesSection
+          timelineData={contest.timeline}
+          sportId={contest.event?.sportId}
+          currentUserId={currentUserId}
+        />
       ) : null}
 
       <ContestEntryList

@@ -1,3 +1,4 @@
+import type { PeriodRules } from "@cut/sport-sdk";
 import { type UserGroup } from "./userGroup";
 import { type ContestLineup } from "./lineup";
 
@@ -215,7 +216,7 @@ export type TimelineMetric = "score" | "sharePrice";
 export interface TimelineDataPoint {
   timestamp: string;
   score: number;
-  roundNumber?: number;
+  periodNumber?: number;
   /** Cost per $1 of potential winnings (server; matches BUY column when set) */
   sharePrice?: number | null;
 }
@@ -237,5 +238,7 @@ export interface TimelineTeam {
 export interface TimelineData {
   /** From timeline API: contest SETTLED/CLOSED */
   contestFinished?: boolean;
+  /** Sport-specific period labels and chart dividers. */
+  periods?: PeriodRules | null;
   teams: TimelineTeam[];
 }

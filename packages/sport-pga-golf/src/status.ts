@@ -51,12 +51,12 @@ export function golfShouldSyncLiveScores(metadata: unknown): boolean {
   }
 
   const isPlayoffRound =
-    golf.roundDisplay === "Playoff" || (golf.currentRound ?? 0) >= 401;
+    golf.periodDisplay === "Playoff" || (golf.currentPeriod ?? 0) >= 401;
 
   return (
     isGolfEventLiveRaw(golf.status) &&
-    (golf.roundStatusDisplay === "In Progress" ||
-      golf.roundStatusDisplay === "Complete" ||
+    (golf.periodStatusDisplay === "In Progress" ||
+      golf.periodStatusDisplay === "Complete" ||
       isPlayoffRound)
   );
 }

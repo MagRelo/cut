@@ -4,7 +4,8 @@ export type ScoringAggregation = "sum";
 export type ScoringDirection = "higher_wins" | "lower_wins";
 
 import type { PredictionRules } from "./lineupPrediction.js";
-export type { PredictionRules };
+import type { PeriodRules } from "./periods.js";
+export type { PredictionRules, PeriodRules };
 
 export interface RosterRules {
   slotCount: number;
@@ -26,6 +27,7 @@ export interface SportSummary {
   rosterRules: RosterRules;
   scoringRules: ScoringRules;
   predictionRules: PredictionRules;
+  periodRules?: PeriodRules | null;
 }
 
 export interface Candidate {

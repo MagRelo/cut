@@ -27,8 +27,8 @@ import {
   resolveWeeklySessionBounds,
 } from "../sports/commodities/sessionConfig.js";
 import {
-  commoditiesRoundDisplay,
-  commoditiesRoundStatusDisplay,
+  commoditiesPeriodDisplay,
+  commoditiesPeriodStatusDisplay,
 } from "../sports/commodities/sessionRounds.js";
 
 const EVAL_CONTEST_ADDRESS = "0x000000000000000000000000000000000000c013";
@@ -156,7 +156,7 @@ async function main(): Promise<void> {
       currentPrice: wedClose,
       closePrice: null,
       isComplete: false,
-      currentRound: REPLAY_AS_ROUND,
+      currentPeriod: REPLAY_AS_ROUND,
       provisional: true,
     });
 
@@ -174,9 +174,9 @@ async function main(): Promise<void> {
     data: {
       metadata: mergeCommoditiesEventMetadata(event.metadata, {
         name: `${formatSessionDisplayName(weekKey)} (replay through Wed)`,
-        roundDisplay: commoditiesRoundDisplay(REPLAY_THROUGH_ROUND),
-        currentRound: REPLAY_THROUGH_ROUND,
-        roundStatusDisplay: commoditiesRoundStatusDisplay(REPLAY_THROUGH_ROUND, false),
+        periodDisplay: commoditiesPeriodDisplay(REPLAY_THROUGH_ROUND),
+        currentPeriod: REPLAY_THROUGH_ROUND,
+        periodStatusDisplay: commoditiesPeriodStatusDisplay(REPLAY_THROUGH_ROUND, false),
         commodities: {
           sessionOpen: bounds.sessionOpen,
           sessionClose: bounds.sessionClose,

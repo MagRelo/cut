@@ -14,7 +14,7 @@ export interface CommodityDailyScoreInput {
   currentPrice: number | null | undefined;
   closePrice?: number | null;
   isComplete: boolean;
-  currentRound: number;
+  currentPeriod: number;
   lossRatio?: number;
 }
 
@@ -84,22 +84,22 @@ export function transformCommodityDailyScores(
   cumulativePctReturn: number | null;
 } {
   const lossRatio = input.lossRatio ?? COMMODITIES_LOSS_RATIO;
-  const currentRound = Math.min(
+  const currentPeriod = Math.min(
     COMMODITIES_ROUND_COUNT,
-    Math.max(1, Math.round(input.currentRound)),
+    Math.max(1, Math.round(input.currentPeriod)),
   );
 
   const rounds: CommodityRoundScore[] = [];
 
-  for (let roundNumber = 1; roundNumber <= COMMODITIES_ROUND_COUNT; roundNumber += 1) {
-    if (roundNumber > currentRound) {
+  for (let periodNumber = 1; periodNumber <= COMMODITIES_ROUND_COUNT; periodNumber += 1) {
+    if (periodNumber > currentPeriod) {
       rounds.push({ total: 0, pctReturn: 0, provisional: false });
       continue;
     }
 
-    const isCurrentProvisional = roundNumber === currentRound && !input.isComplete;
-    const fromPrice = roundStartPrice(input, roundNumber);
-    const toPrice = roundEndPrice(input, roundNumber, isCurrentProvisional);
+    const isCurrentProvisional = periodNumber === currentPeriod && !input.isComplete;
+    const fromPrice = roundStartPrice(input, periodNumber);
+    const toPrice = roundEndPrice(input, periodNumber, isCurrentProvisional);
 
     rounds.push(scoreRoundLeg(fromPrice, toPrice, lossRatio, isCurrentProvisional));
   }

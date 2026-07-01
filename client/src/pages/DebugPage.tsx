@@ -120,7 +120,7 @@ export const DebugPage: React.FC = () => {
               <strong>Status:</strong> {sportActive.status ?? "—"}
             </div>
             <div>
-              <strong>Round:</strong> {sportActive.roundDisplay ?? "—"}
+              <strong>Period:</strong> {sportActive.periodDisplay ?? "—"}
             </div>
             <div>
               <strong>Candidates count:</strong> {sportActive.candidates.length}

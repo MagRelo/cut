@@ -22,8 +22,8 @@ const meta = {
       eventMetadata: {
         name: "Storybook Open",
         status: "IN_PROGRESS",
-        roundDisplay: "R2",
-        currentRound: 2,
+        periodDisplay: "R2",
+        currentPeriod: 2,
       },
       candidates: [FIXTURE_CANDIDATE_DETAIL_LIVE],
     }),

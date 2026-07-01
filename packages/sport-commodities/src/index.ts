@@ -1,3 +1,5 @@
+export { COMMODITIES_PERIOD_RULES } from "./periods.js";
+
 export {
   COMMODITIES_SPORT_ID,
   parseCommoditiesEventMetadata,

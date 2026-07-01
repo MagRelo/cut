@@ -1,3 +1,5 @@
+export { PGA_GOLF_PERIOD_RULES } from "./periods.js";
+
 export {
   PGA_GOLF_SPORT_ID,
   parseGolfEventMetadata,

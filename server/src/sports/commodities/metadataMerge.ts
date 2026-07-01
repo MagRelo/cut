@@ -1,16 +1,14 @@
 import type { CommoditiesEventMetadata } from "@cut/sport-commodities";
 import { parseCommoditiesEventMetadata } from "@cut/sport-commodities";
+import { mergeEventPeriodFields, type EventPeriodPatch } from "@cut/sport-sdk";
 
 export function mergeCommoditiesEventMetadata(
   existing: unknown,
   patch: {
     name?: string;
     beautyImage?: string;
-    roundDisplay?: string;
-    currentRound?: number;
-    roundStatusDisplay?: string;
     commodities: Partial<CommoditiesEventMetadata>;
-  },
+  } & EventPeriodPatch,
 ): Record<string, unknown> {
   const base =
     existing && typeof existing === "object" && !Array.isArray(existing)
@@ -19,13 +17,12 @@ export function mergeCommoditiesEventMetadata(
 
   const existingCommodities = parseCommoditiesEventMetadata(existing) ?? ({} as Partial<CommoditiesEventMetadata>);
 
+  const withPeriods = mergeEventPeriodFields(base, patch);
+
   return {
-    ...base,
+    ...withPeriods,
     ...(patch.name ? { name: patch.name } : {}),
     ...(patch.beautyImage ? { beautyImage: patch.beautyImage } : {}),
-    ...(patch.roundDisplay ? { roundDisplay: patch.roundDisplay } : {}),
-    ...(patch.currentRound != null ? { currentRound: patch.currentRound } : {}),
-    ...(patch.roundStatusDisplay ? { roundStatusDisplay: patch.roundStatusDisplay } : {}),
     commodities: {
       ...existingCommodities,
       ...patch.commodities,
