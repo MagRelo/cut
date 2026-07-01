@@ -3,7 +3,7 @@ import {
   buildAnchoredSparklinePoints,
   buildSessionSparklineChart,
   columnDividerX,
-  columnTimeWindow,
+  columnPlotWindow,
   periodDividerXs,
   SPARKLINE_COLUMN_MS,
   timestampToX,
@@ -30,9 +30,14 @@ const MON_CLOSE_MS = new Date("2026-06-29T20:30:00.000Z").getTime();
 const TUE_CLOSE_MS = new Date("2026-06-30T20:30:00.000Z").getTime();
 const PLOT_WIDTH = 100;
 const PAD = 2;
+const COLUMN_WIDTH = PLOT_WIDTH / 5;
 
 function candleHistory(points: Array<{ t: number; c: number }>) {
   return points;
+}
+
+function columnStartX(dayIndex: number): number {
+  return PAD + dayIndex * COLUMN_WIDTH;
 }
 
 describe("buildSessionSparklineChart", () => {
@@ -65,16 +70,15 @@ describe("timestampToX", () => {
       EVENT_METADATA,
       { openPrice: 100 },
     )!;
-    const { startMs, endMs } = columnTimeWindow(0, chart);
-    expect(endMs - startMs).toBe(SPARKLINE_COLUMN_MS);
+    const { plotStartMs, plotEndMs } = columnPlotWindow(0, chart)!;
+    expect(plotEndMs - plotStartMs).toBe(SPARKLINE_COLUMN_MS);
 
     const openX = timestampToX(SESSION_OPEN_MS, chart, PLOT_WIDTH, PAD)!;
-    const columnStartX = PAD;
-    const openFraction = (openX - columnStartX) / (PLOT_WIDTH / 5);
+    const openFraction = (openX - columnStartX(0)) / COLUMN_WIDTH;
     expect(openFraction).toBeGreaterThan(0.65);
   });
 
-  it("places each imposed close on its divider", () => {
+  it("places each imposed close on its grid divider", () => {
     const chart = buildSessionSparklineChart(
       candleHistory([
         { t: SESSION_OPEN_MS, c: 100 },
@@ -102,7 +106,7 @@ describe("buildAnchoredSparklinePoints", () => {
     const overnight = new Date("2026-07-01T02:00:00.000Z").getTime();
     const points = buildAnchoredSparklinePoints(chart, PLOT_WIDTH, PAD, overnight);
     const tueDivider = columnDividerX(1, PLOT_WIDTH, PAD);
-    const wedColumnStart = PAD + PLOT_WIDTH * 0.4;
+    const wedColumnStart = columnStartX(2);
     const dividerPoint = points.find((point) => Math.abs(point.x - tueDivider) < 0.01);
     const lastPoint = points[points.length - 1];
 
@@ -127,7 +131,7 @@ describe("buildAnchoredSparklinePoints", () => {
     )!;
     const overnight = new Date("2026-06-30T15:00:00.000Z").getTime();
     const points = buildAnchoredSparklinePoints(chart, PLOT_WIDTH, PAD, overnight);
-    const tueColumnStart = PAD + PLOT_WIDTH * 0.2;
+    const tueColumnStart = columnStartX(1);
     const tueColumnEnd = columnDividerX(1, PLOT_WIDTH, PAD);
     const overnightPoint = points.find((point) => point.value === 6.2);
 
@@ -163,7 +167,7 @@ describe("buildAnchoredSparklinePoints", () => {
 });
 
 describe("periodDividerXs", () => {
-  it("aligns Mon–Thu dividers; Fri close is the chart edge", () => {
+  it("aligns Mon–Thu scoring closes; Fri close is the chart edge", () => {
     const dividers = periodDividerXs(PLOT_WIDTH, PAD);
     expect(dividers).toHaveLength(4);
     expect(dividers[0]).toBeCloseTo(columnDividerX(0, PLOT_WIDTH, PAD), 5);
@@ -174,8 +178,10 @@ describe("periodDividerXs", () => {
 describe("Wed-afternoon session start", () => {
   const WED_OPEN_MS = new Date("2026-07-01T18:00:00.000Z").getTime();
   const WED_MID_MS = new Date("2026-07-01T19:30:00.000Z").getTime();
+  const WED_CLOSE_MS = new Date("2026-07-01T20:30:00.000Z").getTime();
+  const THU_AFTER_CLOSE_MS = WED_CLOSE_MS + 60 * 60 * 1000;
 
-  it("maps Wed candles to the Wed column, not Monday", () => {
+  it("places Wed session open proportionally in the Wed column, not at the grid edge", () => {
     const chart = buildSessionSparklineChart(
       candleHistory([
         { t: WED_OPEN_MS, c: 100 },
@@ -185,14 +191,35 @@ describe("Wed-afternoon session start", () => {
       { openPrice: 100 },
     )!;
 
-    const wedColumnStart = PAD + PLOT_WIDTH * 0.4;
-    const wedColumnEnd = columnDividerX(2, PLOT_WIDTH, PAD);
+    const { plotStartMs, plotEndMs } = columnPlotWindow(2, chart)!;
+    const wedColumnStart = columnStartX(2);
     const openX = timestampToX(WED_OPEN_MS, chart, PLOT_WIDTH, PAD)!;
     const midX = timestampToX(WED_MID_MS, chart, PLOT_WIDTH, PAD)!;
+    const openFraction = (WED_OPEN_MS - plotStartMs) / (plotEndMs - plotStartMs);
+    const expectedOpenX = wedColumnStart + openFraction * COLUMN_WIDTH;
 
-    expect(openX).toBeGreaterThan(wedColumnStart);
-    expect(openX).toBeLessThan(wedColumnEnd);
+    expect(openFraction).toBeGreaterThan(0.5);
+    expect(openX).toBeCloseTo(expectedOpenX, 0);
     expect(midX).toBeGreaterThan(openX);
+  });
+
+  it("maps post-Wed-close candles into the Thursday column", () => {
+    const chart = buildSessionSparklineChart(
+      candleHistory([
+        { t: WED_OPEN_MS, c: 100 },
+        { t: WED_CLOSE_MS, c: 101 },
+        { t: THU_AFTER_CLOSE_MS, c: 101.5 },
+      ]),
+      WED_START_METADATA,
+      { openPrice: 100 },
+    )!;
+
+    const thuColumnStart = columnDividerX(2, PLOT_WIDTH, PAD);
+    const thuColumnEnd = columnDividerX(3, PLOT_WIDTH, PAD);
+    const afterCloseX = timestampToX(THU_AFTER_CLOSE_MS, chart, PLOT_WIDTH, PAD)!;
+
+    expect(afterCloseX).toBeGreaterThan(thuColumnStart);
+    expect(afterCloseX).toBeLessThan(thuColumnEnd);
   });
 
   it("does not map pre-session timestamps to Mon/Tue columns", () => {
@@ -224,7 +251,7 @@ describe("Wed-afternoon session start", () => {
     const monDivider = columnDividerX(0, PLOT_WIDTH, PAD);
     const tueDivider = columnDividerX(1, PLOT_WIDTH, PAD);
 
-    expect(points.find((point) => Math.abs(point.x - monDivider) < 0.01)).toBeUndefined();
-    expect(points.find((point) => Math.abs(point.x - tueDivider) < 0.01)).toBeUndefined();
+    expect(points.find((point) => Math.abs(point.x - monDivider) < 0.01 && point.value === 6.18)).toBeUndefined();
+    expect(points.find((point) => Math.abs(point.x - tueDivider) < 0.01 && point.value === 6.25)).toBeUndefined();
   });
 });

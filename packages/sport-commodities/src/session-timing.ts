@@ -64,6 +64,33 @@ export function resolveCommoditiesSessionBounds(input: {
   };
 }
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** Mon–Fri local-midnight timestamps (ms), length 5 — anchored on ISO week `sessionDate`. */
+export function buildCalendarDayStartTimestamps(bounds: CommoditiesSessionBounds): number[] {
+  const { timezone } = resolveSessionCalendar(bounds.calendar);
+
+  return Array.from({ length: COMMODITIES_ROUND_COUNT }, (_, dayOffset) => {
+    const dateStr = addDays(new Date(`${bounds.sessionDate}T12:00:00Z`), dayOffset)
+      .toISOString()
+      .slice(0, 10);
+    return fromZonedTime(`${dateStr}T00:00:00`, timezone).getTime();
+  });
+}
+
+/** Local calendar day window for Mon–Fri column `dayIndex` (0 = Mon). */
+export function calendarDayWindowMs(
+  dayIndex: number,
+  bounds: CommoditiesSessionBounds,
+): { dayStartMs: number; dayEndMs: number } {
+  const starts = buildCalendarDayStartTimestamps(bounds);
+  const dayStartMs = starts[dayIndex]!;
+  const dayEndMs =
+    dayIndex + 1 < COMMODITIES_ROUND_COUNT ? starts[dayIndex + 1]! : dayStartMs + MS_PER_DAY;
+
+  return { dayStartMs, dayEndMs };
+}
+
 /** Mon–Fri session close timestamps (ms), length 5 — anchored on ISO week `sessionDate`. */
 export function buildSessionDayCloseTimestamps(bounds: CommoditiesSessionBounds): number[];
 export function buildSessionDayCloseTimestamps(

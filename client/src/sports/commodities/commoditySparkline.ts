@@ -2,13 +2,14 @@ import type { CommodityPriceHistoryPoint } from "@cut/sport-commodities";
 import {
   buildSessionDayCloseTimestamps,
   COMMODITIES_ROUND_COUNT,
+  firstScorablePeriod,
   isCommoditiesPeriodScorable,
   parseCommoditiesEventMetadata,
   resolveCommoditiesSessionBounds,
   type CommoditiesSessionBounds,
 } from "@cut/sport-commodities";
 
-/** Each Mon–Fri column spans a 24h window ending at that day's 4:30 PM ET close. */
+/** Default Mon column window when the session starts Monday 9:30. */
 export const SPARKLINE_COLUMN_MS = 24 * 60 * 60 * 1000;
 
 export type SessionSparklineChart = {
@@ -25,8 +26,74 @@ export type SessionSparklineChart = {
 
 type SparklineChartTiming = Pick<
   SessionSparklineChart,
-  "sessionOpenMs" | "sessionCloseMs" | "periodCloseMs"
+  "sessionBounds" | "sessionOpenMs" | "sessionCloseMs" | "periodCloseMs"
 >;
+
+/** Right edge of scoring-day column `dayIndex`; each day's 4:30 PM close sits here. */
+export function columnDividerX(dayIndex: number, plotWidth: number, pad: number): number {
+  const columnWidth = plotWidth / COMMODITIES_ROUND_COUNT;
+  return pad + (dayIndex + 1) * columnWidth;
+}
+
+/** Time span mapped across each Mon–Fri scoring column (prior close → this close). */
+export function columnPlotWindow(
+  dayIndex: number,
+  chart: SparklineChartTiming,
+): { plotStartMs: number; plotEndMs: number } | null {
+  const periodNumber = dayIndex + 1;
+  if (!isCommoditiesPeriodScorable(periodNumber, chart.sessionBounds)) {
+    return null;
+  }
+
+  const plotEndMs = chart.periodCloseMs[dayIndex]!;
+  const firstScorable = firstScorablePeriod(chart.sessionBounds);
+
+  if (dayIndex === 0 && firstScorable === 1) {
+    return { plotStartMs: plotEndMs - SPARKLINE_COLUMN_MS, plotEndMs };
+  }
+
+  return { plotStartMs: chart.periodCloseMs[dayIndex - 1]!, plotEndMs };
+}
+
+/**
+ * Map timestamp → x within scoring-day columns.
+ * Each column spans prior close → this close; the close lands on the calendar grid divider.
+ */
+export function timestampToX(
+  timestampMs: number,
+  chart: SparklineChartTiming,
+  plotWidth: number,
+  pad: number,
+): number | null {
+  if (timestampMs < chart.sessionOpenMs || timestampMs > chart.sessionCloseMs) {
+    return null;
+  }
+
+  const columnWidth = plotWidth / COMMODITIES_ROUND_COUNT;
+
+  for (let dayIndex = 0; dayIndex < COMMODITIES_ROUND_COUNT; dayIndex += 1) {
+    const window = columnPlotWindow(dayIndex, chart);
+    if (!window) {
+      continue;
+    }
+
+    const { plotStartMs, plotEndMs } = window;
+    if (timestampMs > plotEndMs) {
+      continue;
+    }
+
+    const visibleStartMs = Math.max(plotStartMs, chart.sessionOpenMs);
+    if (timestampMs < visibleStartMs) {
+      continue;
+    }
+
+    const span = plotEndMs - plotStartMs || 1;
+    const fraction = (timestampMs - plotStartMs) / span;
+    return pad + dayIndex * columnWidth + fraction * columnWidth;
+  }
+
+  return null;
+}
 
 export function normalizePriceHistory(
   history: unknown,
@@ -53,48 +120,6 @@ export function normalizePriceHistory(
   return (history as number[])
     .filter((value) => typeof value === "number" && Number.isFinite(value))
     .map((c, index) => ({ t: sessionOpenMs + index * intervalMs, c }));
-}
-
-/** 24h window ending at the day's imposed close (divider at column right edge). */
-export function columnTimeWindow(
-  dayIndex: number,
-  chart: SparklineChartTiming,
-): { startMs: number; endMs: number } {
-  const endMs = chart.periodCloseMs[dayIndex]!;
-  if (dayIndex === 0) {
-    return { startMs: endMs - SPARKLINE_COLUMN_MS, endMs };
-  }
-  return { startMs: chart.periodCloseMs[dayIndex - 1]!, endMs };
-}
-
-export function columnDividerX(dayIndex: number, plotWidth: number, pad: number): number {
-  const columnWidth = plotWidth / COMMODITIES_ROUND_COUNT;
-  return pad + (dayIndex + 1) * columnWidth;
-}
-
-export function timestampToX(
-  timestampMs: number,
-  chart: SparklineChartTiming,
-  plotWidth: number,
-  pad: number,
-): number | null {
-  const columnWidth = plotWidth / COMMODITIES_ROUND_COUNT;
-
-  for (let dayIndex = 0; dayIndex < COMMODITIES_ROUND_COUNT; dayIndex += 1) {
-    const { startMs, endMs } = columnTimeWindow(dayIndex, chart);
-    if (timestampMs < chart.sessionOpenMs || timestampMs > endMs) {
-      continue;
-    }
-    const visibleStartMs = dayIndex === 0 ? Math.max(startMs, chart.sessionOpenMs) : startMs;
-    if (timestampMs < visibleStartMs) {
-      continue;
-    }
-
-    const fraction = (timestampMs - startMs) / (endMs - startMs);
-    return pad + dayIndex * columnWidth + fraction * columnWidth;
-  }
-
-  return null;
 }
 
 export function buildSessionSparklineChart(
@@ -144,7 +169,7 @@ export function buildSessionSparklineChart(
   };
 }
 
-/** Mon–Thu close dividers; Fri end is the chart edge. */
+/** Mon–Thu scoring-day close dividers; Fri close is the chart edge. */
 export function periodDividerXs(plotWidth: number, pad: number): number[] {
   return Array.from({ length: COMMODITIES_ROUND_COUNT - 1 }, (_, index) =>
     columnDividerX(index, plotWidth, pad),
@@ -182,12 +207,7 @@ function resolveSparklineEndMs(chart: SessionSparklineChart, nowMs: number): num
   return Math.min(nowMs, chart.sessionCloseMs);
 }
 
-/**
- * Plot every HL candle on a close-to-close timeline:
- * - Mon column: 24h slot ending Mon 4:30; line only from Mon 9:30 (~70% empty on the left)
- * - Tue–Fri columns: full 24h from prior close → this close (includes overnight)
- * Dividers mark imposed daily scoring closes. The live tail always follows now (HL keeps trading overnight).
- */
+/** Plot candles close-to-close; imposed daily closes anchor on the calendar grid dividers. */
 export function buildAnchoredSparklinePoints(
   chart: SessionSparklineChart,
   plotWidth: number,
@@ -226,14 +246,15 @@ export function buildAnchoredSparklinePoints(
       continue;
     }
 
-    const dividerMs = chart.periodCloseMs[dayIndex]!;
-    if (dividerMs > endMs) {
+    const closeMs = chart.periodCloseMs[dayIndex]!;
+    if (closeMs > endMs) {
       break;
     }
     const closePrice = dayClosePrices?.[dayIndex];
     if (closePrice == null || !Number.isFinite(closePrice)) {
       continue;
     }
+
     setAnchorPoint(points, columnDividerX(dayIndex, plotWidth, pad), closePrice);
   }
 
