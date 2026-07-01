@@ -74,7 +74,10 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
   const meta = parseCommodityCandidateMetadata(candidate);
   const participant = meta.participant ?? {};
   const scoreData = meta.scoreData ?? {};
-  const hasRoundScores = Boolean(scoreData.r1 || scoreData.r2 || scoreData.r3);
+  const hasRoundScores = Array.from(
+    { length: COMMODITIES_PERIOD_RULES.count },
+    (_, index) => scoreData[`r${index + 1}` as keyof typeof scoreData],
+  ).some(Boolean);
   const sparklineHistory = participant.priceHistory ?? [];
 
   return (
