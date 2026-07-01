@@ -1,11 +1,31 @@
 import type { Candidate } from "@cut/sport-sdk";
 import type { CommodityParticipantMetadata, CommodityScoreData } from "@cut/sport-commodities";
 
+const DEFAULT_SESSION_TZ = "America/New_York";
+
 export type CommodityCandidateMetadata = {
   participant?: CommodityParticipantMetadata;
   total?: number;
   scoreData?: CommodityScoreData;
 };
+
+export function priceHistoryCloseValues(history: unknown): number[] {
+  if (!Array.isArray(history)) {
+    return [];
+  }
+  if (history.length === 0) {
+    return [];
+  }
+  const first = history[0];
+  if (first && typeof first === "object" && "c" in first) {
+    return (history as Array<{ c: number }>)
+      .map((point) => point.c)
+      .filter((value) => typeof value === "number" && Number.isFinite(value));
+  }
+  return history.filter(
+    (value): value is number => typeof value === "number" && Number.isFinite(value),
+  );
+}
 
 export function parseCommodityCandidateMetadata(candidate: Candidate): CommodityCandidateMetadata {
   if (!candidate.metadata || typeof candidate.metadata !== "object") {
@@ -68,8 +88,6 @@ export function formatCommoditiesEventStatusLabel(status: string | undefined): s
   if (!status) return "Scheduled";
   return status.charAt(0) + status.slice(1).toLowerCase();
 }
-
-const DEFAULT_SESSION_TZ = "America/New_York";
 
 export function formatCommoditySessionWindow(
   sessionOpen: string | undefined,

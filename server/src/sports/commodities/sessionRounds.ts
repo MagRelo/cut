@@ -1,6 +1,6 @@
 import { addDays } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
-import { COMMODITIES_ROUND_COUNT } from "@cut/sport-commodities";
+import { COMMODITIES_ROUND_COUNT, commoditiesScoringPeriod } from "@cut/sport-commodities";
 import {
   getCommoditiesSessionCloseTime,
   getCommoditiesSessionTimezone,
@@ -51,25 +51,7 @@ export function commoditiesCurrentPeriod(
   sessionClose: string,
   now: Date = new Date(),
 ): number {
-  const openMs = new Date(sessionOpen).getTime();
-  const closeMs = new Date(sessionClose).getTime();
-  const nowMs = now.getTime();
-
-  if (nowMs < openMs) {
-    return 1;
-  }
-  if (nowMs >= closeMs) {
-    return COMMODITIES_ROUND_COUNT;
-  }
-
-  const dayCloses = buildSessionDayCloseTimestamps(sessionOpen, sessionClose);
-  for (let index = 0; index < dayCloses.length; index += 1) {
-    if (nowMs < dayCloses[index]!) {
-      return index + 1;
-    }
-  }
-
-  return COMMODITIES_ROUND_COUNT;
+  return commoditiesScoringPeriod(sessionOpen, sessionClose, now);
 }
 
 export function commoditiesPeriodDisplay(currentPeriod: number): string {

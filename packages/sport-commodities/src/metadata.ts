@@ -24,8 +24,6 @@ export interface CommoditiesEventMetadata {
   sessionComplete?: boolean;
   /** Frozen catalog + HL coin mapping at init — authoritative for this event. */
   fieldSnapshot?: CommodityFieldEntry[];
-  /** ISO timestamp when picker sparklines were last synced for this event. */
-  priceHistorySyncedAt?: string;
 }
 
 export interface CommodityQuoteSnapshot {
@@ -44,14 +42,16 @@ export interface CommodityQuoteSnapshot {
   syncedAt?: string;
 }
 
+export type CommodityPriceHistoryPoint = { t: number; c: number };
+
 export interface CommodityParticipantMetadata {
   sector?: CommoditySector;
   iconKey?: string;
   symbol?: string;
   hlCoin?: string;
   hlDex?: string;
-  /** Last ~30 daily closes for picker sparklines. */
-  priceHistory?: number[];
+  /** Intraday candle closes with open timestamps (ms) from session open through now or session end. */
+  priceHistory?: CommodityPriceHistoryPoint[] | number[];
   /** Latest quote snapshot for picker display. */
   quote?: CommodityQuoteSnapshot;
 }
@@ -72,6 +72,8 @@ export interface CommodityScoreData {
   /** Asymmetric loss weight for down days (default 0.4). */
   lossRatio?: number | null;
   currentPeriod?: number | null;
+  /** Locked Mon–Fri session close prices used for settled daily legs. */
+  dayClosePrices?: Array<number | null>;
   r1?: CommodityRoundScoreData | null;
   r2?: CommodityRoundScoreData | null;
   r3?: CommodityRoundScoreData | null;
@@ -110,10 +112,6 @@ export function parseCommoditiesEventMetadata(metadata: unknown): CommoditiesEve
     sessionStarted: commodities.sessionStarted === true,
     sessionComplete: commodities.sessionComplete === true,
     fieldSnapshot,
-    priceHistorySyncedAt:
-      typeof commodities.priceHistorySyncedAt === "string"
-        ? commodities.priceHistorySyncedAt
-        : undefined,
   };
 }
 

@@ -1,3 +1,8 @@
+import {
+  buildSessionDayCloseTimestamps,
+  commoditiesScoringPeriod,
+} from "./session-timing.js";
+
 export const COMMODITIES_ROUND_COUNT = 5;
 export const COMMODITIES_LOSS_RATIO = 0.4;
 
@@ -15,6 +20,9 @@ export interface CommodityDailyScoreInput {
   closePrice?: number | null;
   isComplete: boolean;
   currentPeriod: number;
+  sessionOpen?: string;
+  sessionClose?: string;
+  now?: Date;
   lossRatio?: number;
 }
 
@@ -76,6 +84,43 @@ function roundStartPrice(
   return input.dayClosePrices[roundNumber - 2] ?? null;
 }
 
+/** Keep settled day closes stable; only the active day may refresh from market data. */
+export function mergeLockedDayClosePrices(
+  fresh: Array<number | null | undefined>,
+  existing: Array<number | null | undefined> | null | undefined,
+  sessionOpen: string,
+  sessionClose: string,
+  isComplete: boolean,
+  now: Date = new Date(),
+): Array<number | null> {
+  const locked = existing ?? [];
+  const result: Array<number | null> = [];
+  const dayCloses = buildSessionDayCloseTimestamps(sessionOpen, sessionClose);
+  const nowMs = now.getTime();
+
+  for (let index = 0; index < COMMODITIES_ROUND_COUNT; index += 1) {
+    const existingValue = locked[index];
+    const freshValue = fresh[index] ?? null;
+    const hasExisting =
+      existingValue != null && Number.isFinite(existingValue) && existingValue > 0;
+    const daySettled = isComplete || nowMs >= dayCloses[index]!;
+
+    if (daySettled && hasExisting) {
+      result.push(existingValue);
+      continue;
+    }
+
+    if (daySettled && freshValue != null && Number.isFinite(freshValue) && freshValue > 0) {
+      result.push(freshValue);
+      continue;
+    }
+
+    result.push(freshValue);
+  }
+
+  return result;
+}
+
 export function transformCommodityDailyScores(
   input: CommodityDailyScoreInput,
 ): {
@@ -84,20 +129,21 @@ export function transformCommodityDailyScores(
   cumulativePctReturn: number | null;
 } {
   const lossRatio = input.lossRatio ?? COMMODITIES_LOSS_RATIO;
-  const currentPeriod = Math.min(
-    COMMODITIES_ROUND_COUNT,
-    Math.max(1, Math.round(input.currentPeriod)),
-  );
+  const now = input.now ?? new Date();
+  const scoringPeriod =
+    input.sessionOpen && input.sessionClose
+      ? commoditiesScoringPeriod(input.sessionOpen, input.sessionClose, now)
+      : Math.min(COMMODITIES_ROUND_COUNT, Math.max(1, Math.round(input.currentPeriod)));
 
   const rounds: CommodityRoundScore[] = [];
 
   for (let periodNumber = 1; periodNumber <= COMMODITIES_ROUND_COUNT; periodNumber += 1) {
-    if (periodNumber > currentPeriod) {
+    if (periodNumber > scoringPeriod) {
       rounds.push({ total: 0, pctReturn: 0, provisional: false });
       continue;
     }
 
-    const isCurrentProvisional = periodNumber === currentPeriod && !input.isComplete;
+    const isCurrentProvisional = periodNumber === scoringPeriod && !input.isComplete;
     const fromPrice = roundStartPrice(input, periodNumber);
     const toPrice = roundEndPrice(input, periodNumber, isCurrentProvisional);
 

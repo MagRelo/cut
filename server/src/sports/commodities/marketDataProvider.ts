@@ -13,7 +13,6 @@ import {
 import {
   fixtureCandlesForWindow,
   fixtureMarkPrice,
-  fixturePriceHistory,
   fixtureQuoteForTicker,
 } from "./fixtureMarketData.js";
 import {
@@ -141,51 +140,63 @@ export async function fetchQuotesForField(
   return results;
 }
 
-export async function fetchPriceHistoryForField(
-  field: CommodityFieldEntry[],
-  pointCount = 30,
-): Promise<Map<string, number[]>> {
-  const results = new Map<string, number[]>();
+export async function fetchSessionSparklineHistory(
+  entry: CommodityFieldEntry,
+  sessionOpen: string,
+  sessionClose: string,
+  isComplete: boolean,
+): Promise<Array<{ t: number; c: number }>> {
+  const sessionOpenMs = new Date(sessionOpen).getTime();
+  const sessionCloseMs = new Date(sessionClose).getTime();
+  if (Number.isNaN(sessionOpenMs) || Number.isNaN(sessionCloseMs)) {
+    return [];
+  }
+
+  const endMs = isComplete ? sessionCloseMs : Math.min(Date.now(), sessionCloseMs);
+  const dayCloses = buildSessionDayCloseTimestamps(sessionOpen, sessionClose);
+  const firstColumnStartMs = (dayCloses[0] ?? sessionOpenMs) - 24 * 60 * 60 * 1000;
+  const fetchStartMs = Math.min(sessionOpenMs, firstColumnStartMs);
+  if (endMs <= fetchStartMs) {
+    return [];
+  }
+
+  const interval = selectCandleInterval(sessionOpenMs, sessionCloseMs);
+
+  const toPoints = (candles: Array<{ t: number; c: string }>) =>
+    candles
+      .filter((candle) => candle.t >= fetchStartMs && candle.t <= endMs)
+      .sort((a, b) => a.t - b.t)
+      .map((candle) => ({
+        t: candle.t,
+        c: Number.parseFloat(candle.c),
+      }))
+      .filter((point) => Number.isFinite(point.c));
 
   if (useFixtureMarketData()) {
-    for (const entry of field) {
-      results.set(entry.ticker, fixturePriceHistory(entry.ticker, pointCount));
-    }
-    return results;
+    return toPoints(fixtureCandlesForWindow(entry.ticker, fetchStartMs, endMs, interval));
   }
 
-  const endMs = Date.now();
-  const lookbacks: Array<{ interval: "4h" | "1h" | "1d"; startMs: number }> = [
-    { interval: "4h", startMs: endMs - pointCount * 4 * 60 * 60 * 1000 },
-    { interval: "1h", startMs: endMs - pointCount * 60 * 60 * 1000 },
-    { interval: "1d", startMs: endMs - pointCount * 24 * 60 * 60 * 1000 },
-  ];
+  const { startMs } = candleFetchWindow(fetchStartMs, sessionCloseMs, interval);
+  try {
+    const candles = await fetchCandles(entry.hlCoin, interval, startMs, endMs);
+    return toPoints(candles);
+  } catch (error) {
+    console.warn(`[commodities] Session sparkline ${interval} failed for ${entry.hlCoin}:`, error);
+    return [];
+  }
+}
 
+export async function fetchSessionSparklineHistoryForField(
+  field: CommodityFieldEntry[],
+  sessionOpen: string,
+  sessionClose: string,
+  isComplete: boolean,
+): Promise<Map<string, Array<{ t: number; c: number }>>> {
+  const results = new Map<string, Array<{ t: number; c: number }>>();
   for (const entry of field) {
-    let closes: number[] = [];
-
-    for (const { interval, startMs } of lookbacks) {
-      try {
-        const candles = await fetchCandles(entry.hlCoin, interval, startMs, endMs);
-        closes = candles
-          .map((candle) => Number.parseFloat(candle.c))
-          .filter((value) => Number.isFinite(value))
-          .slice(-pointCount);
-        if (closes.length >= 2) {
-          break;
-        }
-      } catch (error) {
-        console.warn(`[commodities] Price history ${interval} failed for ${entry.hlCoin}:`, error);
-      }
-    }
-
-    if (closes.length < 2) {
-      console.warn(`[commodities] No HL candle history for ${entry.hlCoin} — sparkline omitted`);
-    }
-
-    results.set(entry.ticker, closes);
+    const points = await fetchSessionSparklineHistory(entry, sessionOpen, sessionClose, isComplete);
+    results.set(entry.ticker, points);
   }
-
   return results;
 }
 
@@ -249,6 +260,7 @@ export async function getSessionPriceSnapshot(
   const sessionOpenMs = new Date(input.sessionOpen).getTime();
   const sessionCloseMs = new Date(input.sessionClose).getTime();
   const lockedOpen = input.existingScoreData?.openPrice ?? null;
+  const lockedClose = input.isComplete ? (input.existingScoreData?.closePrice ?? null) : null;
 
   if (useFixtureMarketData()) {
     const candles = fixtureCandlesForWindow(
@@ -262,9 +274,11 @@ export async function getSessionPriceSnapshot(
       resolvePriceAtTimestamp(candles, sessionOpenMs) ??
       fixtureMarkPrice(entry.ticker);
     const currentPrice = fixtureMarkPrice(entry.ticker);
-    const closePrice = input.isComplete
-      ? (resolvePriceAtTimestamp(candles, sessionCloseMs) ?? currentPrice)
-      : null;
+    const closePrice =
+      lockedClose ??
+      (input.isComplete
+        ? (resolvePriceAtTimestamp(candles, sessionCloseMs) ?? currentPrice)
+        : null);
     const dayClosePrices = resolveDayClosePrices(candles, input.sessionOpen, input.sessionClose);
 
     return { openPrice, currentPrice, closePrice, dayClosePrices };
@@ -275,10 +289,10 @@ export async function getSessionPriceSnapshot(
   const currentPrice = asset ? hlMarkPrice(asset.context) : null;
 
   let openPrice = lockedOpen;
-  let closePrice: number | null = null;
+  let closePrice: number | null = lockedClose;
 
   const needOpen = openPrice == null;
-  const needClose = input.isComplete;
+  const needClose = input.isComplete && closePrice == null;
 
   if (needOpen || needClose) {
     const boundaries = await resolveSessionBoundaryPrices(

@@ -6,16 +6,29 @@ import {
   type CommodityDailyScoreInput,
   type CommodityRoundScore,
 } from "./daily-scores.js";
+import { commoditiesScoringPeriod } from "./session-timing.js";
 
 export {
   COMMODITIES_LOSS_RATIO,
   COMMODITIES_ROUND_COUNT,
   asymmetricPctToTotal,
+  mergeLockedDayClosePrices,
   pctReturnToLineupPoints,
   transformCommodityDailyScores,
   type CommodityDailyScoreInput,
   type CommodityRoundScore,
 } from "./daily-scores.js";
+export {
+  buildSessionDayCloseTimestamps,
+  buildSessionDayOpenTimestamps,
+  commoditiesActivePeriod,
+  commoditiesScoringPeriod,
+  commoditiesSettledDayCount,
+  isCommoditiesPeriodInSession,
+  resolveSparklineSessionEnd,
+  tradingSessionParts,
+  type SparklineSessionEnd,
+} from "./session-timing.js";
 
 /** @deprecated Use pctReturnToLineupPoints */
 export function pctReturnToTotal(pctReturn: number): number {
@@ -50,7 +63,16 @@ function roundToScoreData(round: CommodityRoundScore): CommodityRoundScoreData {
 export function transformCommodityDailyPrice(
   input: CommodityDailyPriceInput,
 ): CommodityParticipantScoreUpdate {
-  const { total, rounds, cumulativePctReturn } = transformCommodityDailyScores(input);
+  const now = input.now ?? new Date();
+  const currentPeriod =
+    input.sessionOpen && input.sessionClose
+      ? commoditiesScoringPeriod(input.sessionOpen, input.sessionClose, now)
+      : input.currentPeriod;
+  const { total, rounds, cumulativePctReturn } = transformCommodityDailyScores({
+    ...input,
+    currentPeriod,
+    now,
+  });
   const lossRatio = input.lossRatio ?? COMMODITIES_LOSS_RATIO;
 
   return {
@@ -62,7 +84,8 @@ export function transformCommodityDailyPrice(
       pctReturn: cumulativePctReturn,
       provisional: input.provisional,
       lossRatio,
-      currentPeriod: input.currentPeriod,
+      currentPeriod,
+      dayClosePrices: input.dayClosePrices.map((price) => price ?? null),
       r1: roundToScoreData(rounds[0]!),
       r2: roundToScoreData(rounds[1]!),
       r3: roundToScoreData(rounds[2]!),

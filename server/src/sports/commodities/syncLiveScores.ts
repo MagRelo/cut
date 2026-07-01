@@ -5,6 +5,7 @@ import {
   COMMODITIES_SPORT_ID,
   commoditiesShouldSyncLiveScores,
   getEventFieldSnapshot,
+  mergeLockedDayClosePrices,
   transformCommodityDailyPrice,
   type CommodityScoreData,
 } from "@cut/sport-commodities";
@@ -36,9 +37,11 @@ export async function syncCommoditiesLiveScores(eventId: string) {
 
   const eventStatus = commoditiesEventStatusFromMetadata(event.metadata);
   const isComplete = eventStatus === "COMPLETE";
+  const now = new Date();
   const currentPeriod = commoditiesCurrentPeriod(
     commoditiesMeta.sessionOpen,
     commoditiesMeta.sessionClose,
+    now,
   );
 
   const eventParticipants = await prisma.eventParticipant.findMany({
@@ -71,13 +74,25 @@ export async function syncCommoditiesLiveScores(eventId: string) {
     }
 
     const snapshot = prices.get(ticker);
+    const existingScoreData = (eventParticipant.scoreData ?? null) as CommodityScoreData | null;
+    const dayClosePrices = mergeLockedDayClosePrices(
+      snapshot?.dayClosePrices ?? [],
+      existingScoreData?.dayClosePrices,
+      commoditiesMeta.sessionOpen,
+      commoditiesMeta.sessionClose,
+      isComplete,
+      now,
+    );
     const payload = transformCommodityDailyPrice({
-      openPrice: snapshot?.openPrice ?? null,
-      dayClosePrices: snapshot?.dayClosePrices ?? [],
+      openPrice: snapshot?.openPrice ?? existingScoreData?.openPrice ?? null,
+      dayClosePrices,
       currentPrice: snapshot?.currentPrice ?? null,
-      closePrice: snapshot?.closePrice ?? null,
+      closePrice: snapshot?.closePrice ?? existingScoreData?.closePrice ?? null,
       isComplete,
       currentPeriod,
+      sessionOpen: commoditiesMeta.sessionOpen,
+      sessionClose: commoditiesMeta.sessionClose,
+      now,
       provisional: !isComplete,
     });
 

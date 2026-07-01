@@ -10,6 +10,7 @@ import {
   formatRoundPoints,
   parseCommodityCandidateMetadata,
 } from "./commodityUtils";
+import { SessionPriceSparkline } from "./SessionPriceSparkline";
 
 function StatCell({ label, value }: { label: string; value: string }) {
   return (
@@ -17,7 +18,7 @@ function StatCell({ label, value }: { label: string; value: string }) {
       <span className="text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
         {label}
       </span>
-      <span className="mt-2 text-lg font-bold tabular-nums leading-none text-gray-900">
+      <span className="mt-2 text-sm font-bold tabular-nums leading-none text-gray-900">
         {value}
       </span>
     </div>
@@ -45,14 +46,14 @@ function PeriodCell({
     pctReturn == null ? "text-gray-400" : pctReturn >= 0 ? "text-emerald-700" : "text-red-600";
 
   return (
-    <div className="flex min-w-0 flex-col items-center px-1 py-3 text-center">
+    <div className="flex min-w-0 flex-col items-center px-1 py-2 text-center">
       <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{label}</div>
       {unplayed ? (
-        <div className="text-sm font-bold leading-none text-gray-400">—</div>
+        <div className="text-sm font-bold leading-none text-gray-400"></div>
       ) : (
         <div className="mt-1 flex flex-col items-center gap-0.5 leading-none">
-          <span className="text-md font-bold text-gray-900">
-            {total == null ? "—" : formatRoundPoints(total)}
+          <span className="text-xl font-bold text-gray-900">
+            {total == null ? "" : formatRoundPoints(total)}
           </span>
           {pctReturn != null ? (
             <span className={`text-xs font-semibold ${pctTone}`}>
@@ -68,10 +69,13 @@ function PeriodCell({
 export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
   candidate,
   status,
+  eventMetadata,
 }) => {
   const meta = parseCommodityCandidateMetadata(candidate);
+  const participant = meta.participant ?? {};
   const scoreData = meta.scoreData ?? {};
   const hasRoundScores = Boolean(scoreData.r1 || scoreData.r2 || scoreData.r3);
+  const sparklineHistory = participant.priceHistory ?? [];
 
   return (
     <div className="overflow-hidden rounded-sm border border-gray-300 bg-white">
@@ -79,16 +83,15 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
         <CommodityParticipantRow candidate={candidate} status={status} />
       </div>
 
-      <div
-        className="grid w-full grid-cols-3 divide-x divide-gray-200 border-t border-gray-200 bg-white"
-        role="presentation"
-      >
-        <StatCell label="Open" value={formatPrice(scoreData.openPrice)} />
-        <StatCell
-          label="Last"
-          value={formatPrice(scoreData.currentPrice ?? scoreData.closePrice)}
+      <div className="border-t border-gray-200 pb-3 pt-4">
+        <SessionPriceSparkline
+          history={sparklineHistory}
+          eventMetadata={eventMetadata}
+          openPrice={scoreData.openPrice}
+          dayClosePrices={scoreData.dayClosePrices}
+          currentPrice={scoreData.currentPrice ?? scoreData.closePrice}
+          currentPeriod={scoreData.currentPeriod}
         />
-        <StatCell label="Move" value={formatPctReturn(scoreData.pctReturn)} />
       </div>
 
       {hasRoundScores ? (
@@ -112,6 +115,18 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
           })}
         </div>
       ) : null}
+
+      <div
+        className="grid w-full grid-cols-3 divide-x divide-gray-200 border-t border-gray-200 bg-white"
+        role="presentation"
+      >
+        <StatCell label="Open" value={formatPrice(scoreData.openPrice)} />
+        <StatCell
+          label="Last"
+          value={formatPrice(scoreData.currentPrice ?? scoreData.closePrice)}
+        />
+        <StatCell label="Move" value={formatPctReturn(scoreData.pctReturn)} />
+      </div>
     </div>
   );
 };

@@ -20,6 +20,12 @@ export const CommodityParticipantRow: React.FC<{
   const scoreData = meta.scoreData ?? {};
   const showLive = status === "LIVE" || status === "COMPLETE";
   const displayScore = candidateDisplayScore(candidate);
+  const pctReturn =
+    typeof scoreData.pctReturn === "number" && Number.isFinite(scoreData.pctReturn)
+      ? scoreData.pctReturn
+      : null;
+  const pctTone =
+    pctReturn == null ? "text-gray-400" : pctReturn >= 0 ? "text-emerald-600" : "text-red-600";
 
   const avatar = (
     <CommodityAvatar
@@ -57,9 +63,7 @@ export const CommodityParticipantRow: React.FC<{
         <div className="flex items-center gap-2 text-xs text-gray-600">
           <span>{sectorLabel(participant.sector)}</span>
           <span className="text-gray-400">·</span>
-          <span className={displayScore >= 0 ? "text-emerald-600" : "text-red-600"}>
-            {formatPctReturn(scoreData.pctReturn)}
-          </span>
+          <span className={pctTone}>{formatPctReturn(scoreData.pctReturn)}</span>
         </div>
       </div>
       {ownershipPercentage !== undefined ? (

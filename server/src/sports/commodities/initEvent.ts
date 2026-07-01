@@ -45,11 +45,6 @@ export async function initCommoditiesEvent(
     },
   });
 
-  const commoditiesBlock = initialMetadata.commodities;
-  if (commoditiesBlock && typeof commoditiesBlock === "object" && !Array.isArray(commoditiesBlock)) {
-    delete (commoditiesBlock as Record<string, unknown>).priceHistorySyncedAt;
-  }
-
   if (!event) {
     event = await prisma.competitionEvent.create({
       data: {

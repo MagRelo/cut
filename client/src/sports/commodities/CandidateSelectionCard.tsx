@@ -1,7 +1,7 @@
 import React from "react";
 import type { Candidate } from "@cut/sport-sdk";
 import { CommodityAvatar } from "./CommodityAvatar";
-import { formatPctReturn, formatPrice, parseCommodityCandidateMetadata } from "./commodityUtils";
+import { formatPctReturn, formatPrice, parseCommodityCandidateMetadata, priceHistoryCloseValues } from "./commodityUtils";
 import { PriceSparkline } from "./PriceSparkline";
 import { sectorLabel } from "./utils";
 
@@ -49,7 +49,7 @@ export const CommodityCandidateSelectionCard: React.FC<{ candidate: Candidate }>
             ) : null}
           </div>
           <PriceSparkline
-            values={participant.priceHistory ?? []}
+            values={priceHistoryCloseValues(participant.priceHistory)}
             changePercent={quote?.changePercent}
           />
           {quote ? (
