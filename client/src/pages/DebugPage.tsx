@@ -24,6 +24,11 @@ export const DebugPage: React.FC = () => {
               Commodity icon preview
             </a>
           </li>
+          <li>
+            <a href="/dev/commodity-avatar-variants" className="hover:underline">
+              Commodity avatar variants
+            </a>
+          </li>
         </ul>
       </PageSection>
 

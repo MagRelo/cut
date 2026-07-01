@@ -1,6 +1,6 @@
 import React from "react";
 import { CommodityIcon } from "./icons";
-import { sectorColor } from "./utils";
+import { sectorColor, sectorIconColor, sectorTintBg } from "./utils";
 
 interface CommodityAvatarProps {
   displayName: string;
@@ -19,22 +19,22 @@ export const CommodityAvatar: React.FC<CommodityAvatarProps> = ({
   displayName,
   iconKey,
   sector,
-  size = "md",
+  size = "sm",
 }) => {
   const dims = SIZE[size];
   const ring = sectorColor(sector);
+  const iconAccent = sectorIconColor(sector);
+  const tint = sectorTintBg(sector);
 
   return (
     <div
-      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full ${dims.outer}`}
-      style={{ backgroundColor: ring }}
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 ${dims.outer}`}
+      style={{ backgroundColor: tint, borderColor: ring }}
       title={displayName}
     >
-      <CommodityIcon
-        iconKey={iconKey}
-        sector={sector}
-        className={`${dims.icon} text-white drop-shadow`}
-      />
+      <span style={{ color: iconAccent }}>
+        <CommodityIcon iconKey={iconKey} sector={sector} className={dims.icon} />
+      </span>
     </div>
   );
 };

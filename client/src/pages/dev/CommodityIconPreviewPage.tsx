@@ -18,6 +18,10 @@ export const CommodityIconPreviewPage: React.FC = () => {
             Debug
           </Link>
           {" · "}
+          <Link to="/dev/commodity-avatar-variants" className="text-blue-600 hover:underline">
+            Avatar variants
+          </Link>
+          {" · "}
           Dev tools
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">Commodity icon preview</h1>
