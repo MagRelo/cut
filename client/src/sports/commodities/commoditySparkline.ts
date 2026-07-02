@@ -18,13 +18,21 @@ export type SessionSparklineChart = {
   sessionOpenMs: number;
   sessionCloseMs: number;
   periodCloseMs: number[];
+  /** Precomputed — `isCommoditiesPeriodScorable` rebuilds timezone timestamps each call. */
+  periodScorable: boolean[];
+  firstScorable: number | null;
   openPrice?: number | null;
   currentPrice?: number | null;
 };
 
 type SparklineChartTiming = Pick<
   SessionSparklineChart,
-  "sessionBounds" | "sessionOpenMs" | "sessionCloseMs" | "periodCloseMs"
+  | "sessionBounds"
+  | "sessionOpenMs"
+  | "sessionCloseMs"
+  | "periodCloseMs"
+  | "periodScorable"
+  | "firstScorable"
 >;
 
 /** Right edge of scoring-day column `dayIndex`; each day's 4:30 PM close sits here. */
@@ -38,15 +46,13 @@ export function columnPlotWindow(
   dayIndex: number,
   chart: SparklineChartTiming,
 ): { plotStartMs: number; plotEndMs: number } | null {
-  const periodNumber = dayIndex + 1;
-  if (!isCommoditiesPeriodScorable(periodNumber, chart.sessionBounds)) {
+  if (!chart.periodScorable[dayIndex]) {
     return null;
   }
 
   const plotEndMs = chart.periodCloseMs[dayIndex]!;
-  const firstScorable = firstScorablePeriod(chart.sessionBounds);
 
-  if (dayIndex === 0 && firstScorable === 1) {
+  if (dayIndex === 0 && chart.firstScorable === 1) {
     return { plotStartMs: plotEndMs - SPARKLINE_COLUMN_MS, plotEndMs };
   }
 
@@ -152,12 +158,18 @@ export function buildSessionSparklineChart(
     return null;
   }
 
+  const periodScorable = Array.from({ length: COMMODITIES_ROUND_COUNT }, (_, index) =>
+    isCommoditiesPeriodScorable(index + 1, bounds),
+  );
+
   return {
     candles,
     sessionBounds: bounds,
     sessionOpenMs,
     sessionCloseMs,
     periodCloseMs: buildSessionDayCloseTimestamps(bounds),
+    periodScorable,
+    firstScorable: firstScorablePeriod(bounds),
     openPrice: options?.openPrice,
     currentPrice: options?.currentPrice,
   };

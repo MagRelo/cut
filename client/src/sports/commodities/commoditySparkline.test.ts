@@ -177,6 +177,30 @@ describe("buildSparklinePoints", () => {
     expect(points[0]?.value).toBe(candles[0]!.c);
     expect(points[points.length - 1]?.value).toBe(candles[candles.length - 1]!.c);
   });
+
+  it("maps a full session of candles without blocking the UI thread", () => {
+    const sessionOpenMs = new Date("2026-06-29T13:30:00.000Z").getTime();
+    const sessionCloseMs = new Date("2026-07-03T20:30:00.000Z").getTime();
+    const stepMs = 5 * 60_000;
+    const candles = Array.from(
+      { length: Math.floor((sessionCloseMs - sessionOpenMs) / stepMs) },
+      (_, index) => ({
+        t: sessionOpenMs + index * stepMs,
+        c: 100 + Math.sin(index / 20) * 5,
+      }),
+    );
+
+    const started = performance.now();
+    const chart = buildSessionSparklineChart(candles, EVENT_METADATA, {
+      openPrice: 100,
+      currentPrice: candles.at(-1)!.c,
+    })!;
+    const points = buildSparklinePoints(chart, 350, PAD, sessionCloseMs);
+    const elapsedMs = performance.now() - started;
+
+    expect(points.length).toBeGreaterThan(100);
+    expect(elapsedMs).toBeLessThan(100);
+  });
 });
 
 describe("periodDividerXs", () => {
