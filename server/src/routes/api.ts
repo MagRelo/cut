@@ -15,6 +15,7 @@ apiRouter.get("/health", (c) => {
   return c.json({
     status: "healthy",
     service: "API",
+    gitSha: process.env.GIT_SHA ?? "unknown",
     timestamp: new Date().toISOString(),
   });
 });

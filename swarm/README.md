@@ -67,10 +67,18 @@ If Swarm is already initialized, skip this block. To reset: `docker swarm leave 
    Swarm does **not** run `cron-app`. For another machine, copy [`env/cron.env.example`](env/cron.env.example) → `cron.env` there and run `node dist/src/cron-app.js` (or `pnpm --filter server run start:cron`) with that env — not required on this droplet.
 
 3. **App image and first deploy**  
-   Build and push the image from your dev machine (see root `pnpm deploy` / [`docker/build.sh`](../docker/build.sh)). On the droplet, still from **`/opt/cut`**:
+   Build and push the image from your dev machine (see root `pnpm deploy` / [`docker/build.sh`](../docker/build.sh)). Then launch from your dev machine:
 
    ```bash
-   export CUT_APP_IMAGE=your-registry/cut-v4:yourtag   # optional; default is magrelo/cut-v4:latest
+   pnpm run launch
+   ```
+
+   This pulls the tagged image from `docker/.last-tag`, deploys with `CUT_APP_IMAGE`, and appends a line to `/opt/cut/deploy.log` on the manager.
+
+   Manual deploy on the droplet (from **`/opt/cut`**):
+
+   ```bash
+   export CUT_APP_IMAGE=your-registry/cut-v4:yourtag
    docker stack deploy -c swarm/stack.yml cut
    ```
 
@@ -142,7 +150,9 @@ pnpm --filter server exec prisma migrate deploy
 
 | Action | Command / note |
 |--------|------------------|
-| Deploy / update stack | `export CUT_APP_IMAGE=…` (optional), then `docker stack deploy -c swarm/stack.yml cut` from **repo root** |
+| Deploy / update stack | `pnpm run launch` (after `pnpm run deploy`), or `export CUT_APP_IMAGE=…` then `docker stack deploy -c swarm/stack.yml cut` from **repo root** |
+| Deploy history | `ssh root@157.230.6.6 'cat /opt/cut/deploy.log'` |
+| Running version | `curl -s https://<domain>/health` → `gitSha` |
 | Scale web (default 2) | Edit `stack.yml` `deploy.replicas` under `web`, redeploy |
 | Logs | `docker service logs -f cut_web` (etc.) |
 | Remove stack | `docker stack rm cut` (does not delete named volumes `cut_certbot-www`, `cut_letsencrypt` unless you prune) |

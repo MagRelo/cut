@@ -1,6 +1,9 @@
 # Base Node image
 FROM node:22-alpine3.18
 
+ARG GIT_SHA=unknown
+ENV GIT_SHA=$GIT_SHA
+
 # Install compatible OpenSSL 1.1.x (required for Prisma)
 RUN apk add --no-cache openssl1.1-compat
 

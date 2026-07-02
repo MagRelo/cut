@@ -21,8 +21,11 @@ The build process follows this sequence:
 ### Full Deployment
 
 ```bash
-pnpm run deploy
+pnpm run deploy   # build + push tagged image
+pnpm run launch   # deploy to Swarm + append deploy.log
 ```
+
+Check what's running: `curl -s https://<domain>/health` → `gitSha`. Deploy history on the manager: `/opt/cut/deploy.log`.
 
 ### Docker Build Only
 

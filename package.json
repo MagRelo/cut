@@ -50,7 +50,8 @@
     "verify:contracts:sepolia": "node scripts/verify.js sepolia",
     "verify:contracts:base": "node scripts/verify.js base",
     "ssh": "ssh deployer@45.55.136.214",
-    "swarm:deploy": "ssh root@157.230.6.6 'cd /opt/cut && docker pull magrelo/cut-v4:latest && docker stack deploy --detach=true -c swarm/stack.yml cut'"
+    "launch": "bash scripts/launch.sh",
+    "launch:status": "bash -c 'if [ -f docker/.last-launch ]; then cat docker/.last-launch; else echo \"No launch recorded yet (run pnpm run launch)\"; fi'"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

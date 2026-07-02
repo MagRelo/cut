@@ -231,6 +231,7 @@ app.use(
 app.get("/health", (c) => {
   return c.json({
     status: "healthy",
+    gitSha: process.env.GIT_SHA ?? "unknown",
     timestamp: new Date().toISOString(),
   });
 });

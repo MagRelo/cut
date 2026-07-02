@@ -6,8 +6,11 @@ set -e
 echo "Starting Docker build process..."
 
 # Generate unique tag using git commit SHA and timestamp
-TAG=$(git rev-parse --short HEAD)-$(date +%Y%m%d%H%M)
-echo "Building with tag: $TAG"
+GIT_SHA=$(git rev-parse --short HEAD)
+TAG=$GIT_SHA-$(date +%Y%m%d%H%M)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+echo "$TAG" > "$SCRIPT_DIR/.last-tag"
+echo "Building with tag: $TAG (git $GIT_SHA)"
 
 # Set your Docker Hub username
 DOCKER_USERNAME="magrelo"
@@ -23,8 +26,9 @@ docker buildx build --platform linux/amd64,linux/arm64 \
   -t $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:$TAG \
   -t $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:latest \
   -f docker/Dockerfile \
+  --build-arg GIT_SHA=$GIT_SHA \
   --push .
 
 echo "Docker build complete!"
-echo "Next steps:"
-echo "1. SSH: ssh root@45.55.136.214"
+echo "Tagged:  $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:$TAG"
+echo "Launch:  pnpm run launch"

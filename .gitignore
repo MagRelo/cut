@@ -39,6 +39,8 @@ yarn-error.log*
 
 # Docker
 docker-compose.override.yml
+docker/.last-tag
+docker/.last-launch
 
 # Prisma
 prisma/*.db
@@ -71,6 +73,8 @@ yarn-error.log*
 
 # Docker
 docker-compose.override.yml
+docker/.last-tag
+docker/.last-launch
 
 # Prisma
 prisma/*.db 
