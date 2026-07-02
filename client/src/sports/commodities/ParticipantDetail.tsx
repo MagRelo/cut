@@ -120,9 +120,7 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
           history={sparklineHistory}
           eventMetadata={eventMetadata}
           openPrice={scoreData.openPrice}
-          dayClosePrices={scoreData.dayClosePrices}
           currentPrice={scoreData.currentPrice ?? scoreData.closePrice}
-          currentPeriod={scoreData.currentPeriod}
         />
       </div>
 

@@ -19,9 +19,7 @@ export type SessionSparklineChart = {
   sessionCloseMs: number;
   periodCloseMs: number[];
   openPrice?: number | null;
-  dayClosePrices?: Array<number | null>;
   currentPrice?: number | null;
-  currentPeriod?: number | null;
 };
 
 type SparklineChartTiming = Pick<
@@ -127,9 +125,7 @@ export function buildSessionSparklineChart(
   eventMetadata: unknown,
   options?: {
     openPrice?: number | null;
-    dayClosePrices?: Array<number | null>;
     currentPrice?: number | null;
-    currentPeriod?: number | null;
   },
 ): SessionSparklineChart | null {
   const commodities = parseCommoditiesEventMetadata(eventMetadata);
@@ -163,9 +159,7 @@ export function buildSessionSparklineChart(
     sessionCloseMs,
     periodCloseMs: buildSessionDayCloseTimestamps(bounds),
     openPrice: options?.openPrice,
-    dayClosePrices: options?.dayClosePrices,
     currentPrice: options?.currentPrice,
-    currentPeriod: options?.currentPeriod,
   };
 }
 
@@ -178,16 +172,7 @@ export function periodDividerXs(plotWidth: number, pad: number): number[] {
 
 export type SparklinePlotPoint = { x: number; value: number };
 
-function setAnchorPoint(points: SparklinePlotPoint[], x: number, value: number): void {
-  const last = points[points.length - 1];
-  if (last && Math.abs(last.x - x) < 0.01) {
-    last.value = value;
-    return;
-  }
-  points.push({ x, value });
-}
-
-function sortPlotPointsByX(points: SparklinePlotPoint[]): SparklinePlotPoint[] {
+function mergePlotPointsByX(points: SparklinePlotPoint[]): SparklinePlotPoint[] {
   const sorted = [...points].sort((a, b) => a.x - b.x);
   const merged: SparklinePlotPoint[] = [];
 
@@ -207,27 +192,20 @@ function resolveSparklineEndMs(chart: SessionSparklineChart, nowMs: number): num
   return Math.min(nowMs, chart.sessionCloseMs);
 }
 
-/** Plot candles close-to-close; imposed daily closes anchor on the calendar grid dividers. */
-export function buildAnchoredSparklinePoints(
+/** Plot session candles mapped onto the Mon–Fri grid; optional live price at `nowMs`. */
+export function buildSparklinePoints(
   chart: SessionSparklineChart,
   plotWidth: number,
   pad: number,
   nowMs: number = Date.now(),
 ): SparklinePlotPoint[] {
-  const { candles, openPrice, dayClosePrices, currentPrice } = chart;
+  const { candles, currentPrice } = chart;
   if (candles.length < 2) {
     return [];
   }
 
-  const referenceOpen =
-    openPrice != null && Number.isFinite(openPrice) ? openPrice : candles[0]!.c;
   const endMs = resolveSparklineEndMs(chart, nowMs);
   const points: SparklinePlotPoint[] = [];
-
-  const openX = timestampToX(chart.sessionOpenMs, chart, plotWidth, pad);
-  if (openX != null) {
-    setAnchorPoint(points, openX, referenceOpen);
-  }
 
   for (const candle of candles) {
     if (candle.t > endMs) {
@@ -237,37 +215,17 @@ export function buildAnchoredSparklinePoints(
     if (x == null) {
       continue;
     }
-    setAnchorPoint(points, x, candle.c);
-  }
-
-  for (let dayIndex = 0; dayIndex < COMMODITIES_ROUND_COUNT; dayIndex += 1) {
-    const periodNumber = dayIndex + 1;
-    if (!isCommoditiesPeriodScorable(periodNumber, chart.sessionBounds)) {
-      continue;
-    }
-
-    const closeMs = chart.periodCloseMs[dayIndex]!;
-    if (closeMs > endMs) {
-      break;
-    }
-    const closePrice = dayClosePrices?.[dayIndex];
-    if (closePrice == null || !Number.isFinite(closePrice)) {
-      continue;
-    }
-
-    setAnchorPoint(points, columnDividerX(dayIndex, plotWidth, pad), closePrice);
+    points.push({ x, value: candle.c });
   }
 
   const lastX = timestampToX(endMs, chart, plotWidth, pad);
-  if (lastX == null) {
-    return sortPlotPointsByX(points);
+  if (
+    lastX != null &&
+    currentPrice != null &&
+    Number.isFinite(currentPrice)
+  ) {
+    points.push({ x: lastX, value: currentPrice });
   }
 
-  const lastValue =
-    currentPrice != null && Number.isFinite(currentPrice)
-      ? currentPrice
-      : candles[candles.length - 1]!.c;
-  setAnchorPoint(points, lastX, lastValue);
-
-  return sortPlotPointsByX(points);
+  return mergePlotPointsByX(points);
 }

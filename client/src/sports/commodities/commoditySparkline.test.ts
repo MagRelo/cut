@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildAnchoredSparklinePoints,
   buildSessionSparklineChart,
+  buildSparklinePoints,
   columnDividerX,
   columnPlotWindow,
   periodDividerXs,
@@ -78,7 +78,7 @@ describe("timestampToX", () => {
     expect(openFraction).toBeGreaterThan(0.65);
   });
 
-  it("places each imposed close on its grid divider", () => {
+  it("places session close timestamps on grid dividers", () => {
     const chart = buildSessionSparklineChart(
       candleHistory([
         { t: SESSION_OPEN_MS, c: 100 },
@@ -92,25 +92,22 @@ describe("timestampToX", () => {
   });
 });
 
-describe("buildAnchoredSparklinePoints", () => {
-  it("keeps tuesday close on the divider but extends into wednesday overnight", () => {
+describe("buildSparklinePoints", () => {
+  it("plots every candle through the session end", () => {
     const candles = Array.from({ length: 120 }, (_, index) => ({
       t: SESSION_OPEN_MS + index * 5 * 60_000,
       c: 6.17 + index * 0.0002,
     }));
     const chart = buildSessionSparklineChart(candles, EVENT_METADATA, {
       openPrice: 6.1715,
-      dayClosePrices: [6.1765, 6.2525, null, null, null],
       currentPrice: 6.1524,
     })!;
     const overnight = new Date("2026-07-01T02:00:00.000Z").getTime();
-    const points = buildAnchoredSparklinePoints(chart, PLOT_WIDTH, PAD, overnight);
-    const tueDivider = columnDividerX(1, PLOT_WIDTH, PAD);
+    const points = buildSparklinePoints(chart, PLOT_WIDTH, PAD, overnight);
     const wedColumnStart = columnStartX(2);
-    const dividerPoint = points.find((point) => Math.abs(point.x - tueDivider) < 0.01);
     const lastPoint = points[points.length - 1];
 
-    expect(dividerPoint?.value).toBe(6.2525);
+    expect(points.length).toBeGreaterThan(2);
     expect(lastPoint?.x).toBeGreaterThan(wedColumnStart);
     expect(lastPoint?.value).toBe(6.1524);
   });
@@ -124,13 +121,10 @@ describe("buildAnchoredSparklinePoints", () => {
         { t: TUE_CLOSE_MS, c: 6.25 },
       ]),
       EVENT_METADATA,
-      {
-        openPrice: 6.17,
-        dayClosePrices: [6.18, 6.25, null, null, null],
-      },
+      { openPrice: 6.17 },
     )!;
     const overnight = new Date("2026-06-30T15:00:00.000Z").getTime();
-    const points = buildAnchoredSparklinePoints(chart, PLOT_WIDTH, PAD, overnight);
+    const points = buildSparklinePoints(chart, PLOT_WIDTH, PAD, overnight);
     const tueColumnStart = columnStartX(1);
     const tueColumnEnd = columnDividerX(1, PLOT_WIDTH, PAD);
     const overnightPoint = points.find((point) => point.value === 6.2);
@@ -139,7 +133,7 @@ describe("buildAnchoredSparklinePoints", () => {
     expect(overnightPoint?.x).toBeLessThan(tueColumnEnd);
   });
 
-  it("keeps points in ascending x order after divider anchors", () => {
+  it("keeps points in ascending x order", () => {
     const chart = buildSessionSparklineChart(
       candleHistory([
         { t: SESSION_OPEN_MS, c: 100 },
@@ -148,12 +142,9 @@ describe("buildAnchoredSparklinePoints", () => {
         { t: TUE_CLOSE_MS, c: 103 },
       ]),
       EVENT_METADATA,
-      {
-        openPrice: 100,
-        dayClosePrices: [101, 103, null, null, null],
-      },
+      { openPrice: 100 },
     )!;
-    const points = buildAnchoredSparklinePoints(
+    const points = buildSparklinePoints(
       chart,
       PLOT_WIDTH,
       PAD,
@@ -163,6 +154,28 @@ describe("buildAnchoredSparklinePoints", () => {
     for (let index = 1; index < points.length; index += 1) {
       expect(points[index]!.x).toBeGreaterThanOrEqual(points[index - 1]!.x);
     }
+  });
+
+  it("plots all candles without downsampling", () => {
+    const thuOpenMs = new Date("2026-07-02T13:30:00.000Z").getTime();
+    const candles = Array.from({ length: 50 }, (_, index) => ({
+      t: thuOpenMs + index * 5 * 60_000,
+      c: 1218 + Math.sin(index / 8) * 2,
+    }));
+    const chart = buildSessionSparklineChart(candles, EVENT_METADATA, {
+      openPrice: 1218.3,
+      currentPrice: candles[candles.length - 1]!.c,
+    })!;
+    const points = buildSparklinePoints(
+      chart,
+      PLOT_WIDTH,
+      PAD,
+      candles[candles.length - 1]!.t,
+    );
+
+    expect(points.length).toBe(candles.length);
+    expect(points[0]?.value).toBe(candles[0]!.c);
+    expect(points[points.length - 1]?.value).toBe(candles[candles.length - 1]!.c);
   });
 });
 
@@ -233,25 +246,5 @@ describe("Wed-afternoon session start", () => {
     )!;
 
     expect(timestampToX(SESSION_OPEN_MS, chart, PLOT_WIDTH, PAD)).toBeNull();
-  });
-
-  it("does not anchor Mon/Tue close prices when session starts Wednesday", () => {
-    const chart = buildSessionSparklineChart(
-      candleHistory([
-        { t: WED_OPEN_MS, c: 100 },
-        { t: WED_MID_MS, c: 101 },
-      ]),
-      WED_START_METADATA,
-      {
-        openPrice: 100,
-        dayClosePrices: [6.18, 6.25, null, null, null],
-      },
-    )!;
-    const points = buildAnchoredSparklinePoints(chart, PLOT_WIDTH, PAD, WED_MID_MS);
-    const monDivider = columnDividerX(0, PLOT_WIDTH, PAD);
-    const tueDivider = columnDividerX(1, PLOT_WIDTH, PAD);
-
-    expect(points.find((point) => Math.abs(point.x - monDivider) < 0.01 && point.value === 6.18)).toBeUndefined();
-    expect(points.find((point) => Math.abs(point.x - tueDivider) < 0.01 && point.value === 6.25)).toBeUndefined();
   });
 });

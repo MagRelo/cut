@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  buildAnchoredSparklinePoints,
   buildSessionSparklineChart,
+  buildSparklinePoints,
   periodDividerXs,
   type SessionSparklineChart,
 } from "./commoditySparkline";
@@ -10,9 +10,7 @@ type SessionPriceSparklineProps = {
   history: unknown;
   eventMetadata?: unknown;
   openPrice?: number | null;
-  dayClosePrices?: Array<number | null>;
   currentPrice?: number | null;
-  currentPeriod?: number | null;
   className?: string;
 };
 
@@ -91,21 +89,19 @@ function buildSessionChartGeometry(
   chart: SessionSparklineChart,
   width: number,
 ): { segments: ColoredSegment[]; openLineY: number | null; periodLines: number[] } {
-  const { openPrice, dayClosePrices, candles } = chart;
+  const { openPrice, candles, currentPrice } = chart;
   const referenceOpen =
     openPrice != null && Number.isFinite(openPrice) ? openPrice : candles[0]!.c;
-  const anchorValues = [
-    referenceOpen,
+  const valueRange = [
     ...candles.map((candle) => candle.c),
-    ...(dayClosePrices ?? []).filter((price): price is number => price != null && Number.isFinite(price)),
-    ...(chart.currentPrice != null && Number.isFinite(chart.currentPrice) ? [chart.currentPrice] : []),
+    ...(currentPrice != null && Number.isFinite(currentPrice) ? [currentPrice] : []),
   ];
-  const min = Math.min(...anchorValues);
-  const max = Math.max(...anchorValues);
+  const min = Math.min(...valueRange);
+  const max = Math.max(...valueRange);
   const plotWidth = Math.max(width - PAD * 2, 1);
 
-  const anchored = buildAnchoredSparklinePoints(chart, plotWidth, PAD);
-  const points: ChartPoint[] = anchored.map((point) => ({
+  const plotPoints = buildSparklinePoints(chart, plotWidth, PAD);
+  const points: ChartPoint[] = plotPoints.map((point) => ({
     x: point.x,
     y: valueToY(point.value, min, max),
     value: point.value,
@@ -124,9 +120,7 @@ export const SessionPriceSparkline: React.FC<SessionPriceSparklineProps> = ({
   history,
   eventMetadata,
   openPrice,
-  dayClosePrices,
   currentPrice,
-  currentPeriod,
   className = "",
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -153,11 +147,9 @@ export const SessionPriceSparkline: React.FC<SessionPriceSparklineProps> = ({
     () =>
       buildSessionSparklineChart(history, eventMetadata, {
         openPrice,
-        dayClosePrices,
         currentPrice,
-        currentPeriod,
       }),
-    [history, eventMetadata, openPrice, dayClosePrices, currentPrice, currentPeriod],
+    [history, eventMetadata, openPrice, currentPrice],
   );
 
   const geometry = useMemo(() => {
