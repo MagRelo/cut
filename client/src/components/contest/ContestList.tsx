@@ -52,14 +52,11 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
     ) : (
       <div className="grid gap-3">
         {contests.map((contest) => (
-          <Link
+          <ContestListItem
             key={contest.id}
+            contest={contest}
             to={contestLobbyPath(contest.address)}
-            aria-label={`View ${contest.name} contest`}
-            className="group block w-full min-w-0 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-          >
-            <ContestListItem contest={contest} />
-          </Link>
+          />
         ))}
       </div>
     );

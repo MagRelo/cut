@@ -15,6 +15,11 @@
 
 import dotenv from "dotenv";
 import CronScheduler from "./cron/scheduler.js";
+import {
+  formatErrorForHeartbeat,
+  registerBetterStackCronProcessMonitoring,
+  reportBetterStackHeartbeatFailure,
+} from "./services/observability/betterStackHeartbeat.js";
 
 // Load environment variables
 const envFile =
@@ -27,62 +32,68 @@ const envFile =
 dotenv.config({ path: envFile });
 dotenv.config({ path: ".env", override: true });
 
-// Validate required environment variables (only those needed for cron jobs)
-const requiredEnvVars = [
-  "DATABASE_URL",
-  "ORACLE_ADDRESS",
-  "ORACLE_PRIVATE_KEY",
-];
+registerBetterStackCronProcessMonitoring();
 
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    console.error(`Missing required environment variable: ${envVar}`);
+async function startCronApp(): Promise<void> {
+  const missingEnvVar = ["DATABASE_URL", "ORACLE_ADDRESS", "ORACLE_PRIVATE_KEY"].find(
+    (envVar) => !process.env[envVar],
+  );
+  if (missingEnvVar) {
+    const message = `Missing required environment variable: ${missingEnvVar}`;
+    console.error(message);
+    await reportBetterStackHeartbeatFailure({
+      exitCode: 1,
+      context: "Cron application startup failed",
+      output: message,
+    });
+    process.exit(1);
+  }
+
+  const ENABLE_CRON = process.env.ENABLE_CRON === "true";
+  if (!ENABLE_CRON) {
+    console.warn("ENABLE_CRON is not set to 'true'. Set ENABLE_CRON=true in your .env file.");
+    console.warn("Starting anyway, but cron jobs will not run.");
+  }
+
+  console.log("=".repeat(60));
+  console.log("🤖 CRON-ONLY APPLICATION");
+  console.log("=".repeat(60));
+  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+  const dbName = process.env.DATABASE_URL?.match(/\/([^/?]+)(?:\?|$)/)?.[1] ?? "unknown";
+  console.log(`Database: ${dbName}`);
+  console.log(`Oracle Address: ${process.env.ORACLE_ADDRESS}`);
+  console.log(`Cron Enabled: ${ENABLE_CRON}`);
+  console.log("=".repeat(60));
+
+  try {
+    console.log("Initializing cron scheduler...");
+    const cronScheduler = new CronScheduler(ENABLE_CRON);
+    cronScheduler.start();
+
+    console.log("✓ Cron scheduler started successfully");
+    console.log("Press Ctrl+C to stop");
+
+    const shutdown = async () => {
+      console.log("\n\nShutting down cron scheduler...");
+      cronScheduler.stop();
+      console.log("✓ Cron scheduler stopped");
+      process.exit(0);
+    };
+
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
+
+    process.stdin.resume();
+  } catch (error) {
+    console.error("Failed to start cron application:", error);
+    await reportBetterStackHeartbeatFailure({
+      exitCode: 1,
+      context: "Cron application startup failed",
+      output: formatErrorForHeartbeat(error),
+    });
     process.exit(1);
   }
 }
 
-// Check if cron is enabled
-const ENABLE_CRON = process.env.ENABLE_CRON === "true";
-if (!ENABLE_CRON) {
-  console.warn("ENABLE_CRON is not set to 'true'. Set ENABLE_CRON=true in your .env file.");
-  console.warn("Starting anyway, but cron jobs will not run.");
-}
-
-console.log("=".repeat(60));
-console.log("🤖 CRON-ONLY APPLICATION");
-console.log("=".repeat(60));
-console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
-const dbName = process.env.DATABASE_URL?.match(/\/([^/?]+)(?:\?|$)/)?.[1] ?? "unknown";
-console.log(`Database: ${dbName}`);
-console.log(`Oracle Address: ${process.env.ORACLE_ADDRESS}`);
-console.log(`Cron Enabled: ${ENABLE_CRON}`);
-console.log("=".repeat(60));
-
-try {
-  // Initialize and start cron scheduler
-  console.log("Initializing cron scheduler...");
-  const cronScheduler = new CronScheduler(ENABLE_CRON);
-  cronScheduler.start();
-  
-  console.log("✓ Cron scheduler started successfully");
-  console.log("Press Ctrl+C to stop");
-
-  // Handle graceful shutdown
-  const shutdown = async () => {
-    console.log("\n\nShutting down cron scheduler...");
-    cronScheduler.stop();
-    console.log("✓ Cron scheduler stopped");
-    process.exit(0);
-  };
-
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
-
-  // Keep the process alive
-  process.stdin.resume();
-
-} catch (error) {
-  console.error("Failed to start cron application:", error);
-  process.exit(1);
-}
+void startCronApp();
 

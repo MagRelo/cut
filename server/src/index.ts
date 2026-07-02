@@ -30,6 +30,11 @@ for (const envVar of requiredEnvVars) {
 async function startServer() {
   let cronScheduler: InstanceType<typeof import("./cron/scheduler.js").default> | null = null;
   if (process.env.ENABLE_CRON === "true") {
+    const { registerBetterStackCronProcessMonitoring } = await import(
+      "./services/observability/betterStackHeartbeat.js"
+    );
+    registerBetterStackCronProcessMonitoring();
+
     const { default: CronScheduler } = await import("./cron/scheduler.js");
     cronScheduler = new CronScheduler(true);
     cronScheduler.start();
