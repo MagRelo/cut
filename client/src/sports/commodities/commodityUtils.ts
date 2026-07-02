@@ -54,9 +54,7 @@ export function formatPctReturn(value: number | null | undefined): string {
 
 export function formatSignedPoints(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
-  const rounded = Math.round(value);
-  const sign = rounded > 0 ? "+" : "";
-  return `${sign}${rounded}`;
+  return `${Math.round(value)}`;
 }
 
 export function formatDailyPctReturn(value: number | null | undefined): string {
