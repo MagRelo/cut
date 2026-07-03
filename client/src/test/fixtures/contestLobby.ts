@@ -102,6 +102,50 @@ export const contestFixtures = {
       ],
     },
   }),
+  settledFree: buildContest({
+    status: "SETTLED",
+    settings: { ...baseSettings, primaryDeposit: 0 },
+    results: {
+      winningEntries: ["1", "2"],
+      payoutBps: [7000, 3000],
+      detailedResults: [
+        {
+          entryId: "1",
+          position: 1,
+          score: 24,
+          payoutBasisPoints: 7000,
+          payoutAmountWei: "0",
+          positionBonusAmountWei: "0",
+          lineupName: "Lineup #1",
+          username: "player1",
+          userColor: "#3B82F6",
+          playerLastNames: ["Scheffler", "McIlroy"],
+        },
+        {
+          entryId: "2",
+          position: 2,
+          score: 18,
+          payoutBasisPoints: 3000,
+          payoutAmountWei: "0",
+          positionBonusAmountWei: "0",
+          lineupName: "Lineup #2",
+          username: "player2",
+          userColor: "#10B981",
+          playerLastNames: ["Rahm", "Hovland"],
+        },
+        {
+          entryId: "3",
+          position: 3,
+          score: 12,
+          payoutBasisPoints: 0,
+          lineupName: "Lineup #3",
+          username: "player3",
+          userColor: "#F59E0B",
+          playerLastNames: ["Morikawa", "Burns"],
+        },
+      ],
+    },
+  }),
 };
 
 export function buildContestLineup(overrides: Partial<ContestLineup> = {}): ContestLineup {

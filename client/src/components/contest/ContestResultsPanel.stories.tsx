@@ -19,3 +19,9 @@ export const Settled: Story = {
     contest: contestFixtures.settled,
   },
 };
+
+export const SettledFree: Story = {
+  args: {
+    contest: contestFixtures.settledFree,
+  },
+};
