@@ -1,7 +1,10 @@
-import type { CompetitionEvent } from "@prisma/client";
+import type { CompetitionEvent, Sport } from "@prisma/client";
 import { readCurrentPeriod, readPeriodDisplay, readPeriodStatusDisplay } from "@cut/sport-sdk";
 import { isGolfEventCompleteRaw, isGolfEventLiveRaw } from "@cut/sport-pga-golf";
 import { prisma } from "../../lib/prisma.js";
+import { getActiveEvents } from "../events/getActiveEvents.js";
+
+export type AdminEventRow = CompetitionEvent & { sport: Sport };
 
 type GolfEventMetadata = {
   name?: string;
@@ -45,26 +48,30 @@ export function isEventCompleteForSettlement(metadata: unknown): boolean {
   return isGolfEventCompleteRaw(raw);
 }
 
-export async function resolveAdminEvent(eventIdOverride?: string) {
+export async function resolveAdminEvents(eventIdOverride?: string): Promise<AdminEventRow[]> {
   const id = eventIdOverride?.trim();
   if (id) {
-    return prisma.competitionEvent.findUnique({
+    const event = await prisma.competitionEvent.findUnique({
       where: { id },
       include: { sport: true },
     });
+    return event ? [event] : [];
   }
 
-  return prisma.competitionEvent.findFirst({
-    where: { isActive: true },
-    orderBy: { createdAt: "desc" },
-    include: { sport: true },
-  });
+  return getActiveEvents();
 }
 
-export function eventToDashboardEvent(event: CompetitionEvent) {
+/** @deprecated Prefer `resolveAdminEvents` for multi-sport dashboards. */
+export async function resolveAdminEvent(eventIdOverride?: string) {
+  const events = await resolveAdminEvents(eventIdOverride);
+  return events[0] ?? null;
+}
+
+export function eventToDashboardEvent(event: AdminEventRow | CompetitionEvent) {
   const meta = parseEventMetadata(event.metadata);
   const start = meta.startDate ? new Date(meta.startDate) : event.createdAt;
   const end = meta.endDate ? new Date(meta.endDate) : event.createdAt;
+  const sport = "sport" in event ? event.sport : null;
 
   return {
     id: event.id,
@@ -77,6 +84,7 @@ export function eventToDashboardEvent(event: CompetitionEvent) {
     startDate: start,
     endDate: end,
     sportId: event.sportId,
+    sportName: sport?.name ?? event.sportId,
   };
 }
 

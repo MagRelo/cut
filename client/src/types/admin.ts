@@ -41,6 +41,9 @@ export interface AdminUserDetailResponse {
 /** Response from `GET /api/admin/dashboard`. */
 export interface AdminDashboardContest {
   id: string;
+  eventId: string;
+  eventName: string;
+  sportName: string | null;
   name: string;
   status: string;
   chainId: number;
@@ -50,6 +53,20 @@ export interface AdminDashboardContest {
   estimatedPrimaryCash: number;
   userGroupName: string | null;
   endTime: string;
+}
+
+export interface AdminDashboardEvent {
+  id: string;
+  name: string;
+  status: string;
+  currentPeriod: number | null;
+  periodDisplay: string | null;
+  periodStatusDisplay: string | null;
+  cutLine: string | null;
+  startDate: string;
+  endDate: string;
+  sportId: string;
+  sportName: string;
 }
 
 export interface AdminDashboardParlayTypeRow {
@@ -63,6 +80,7 @@ export interface AdminDashboardParlayTypeRow {
 
 export interface AdminDashboardResponse {
   generatedAt: string;
+  /** Set when exactly one event is in scope; null when multiple active events are shown. */
   event: {
     id: string;
     name: string;
@@ -73,7 +91,9 @@ export interface AdminDashboardResponse {
     cutLine: string | null;
     startDate: string;
     endDate: string;
+    sportId: string;
   } | null;
+  events: AdminDashboardEvent[];
   weekCounts: {
     lineups: number;
     contestLineups: number;
@@ -135,6 +155,8 @@ export interface AdminSideBetEventReportTicket {
   userEmail: string | null;
   lineupId: string;
   lineupName: string;
+  eventId: string;
+  eventName: string;
   marketId: string;
   marketStatus: string;
   hitsRequired: number;
@@ -150,7 +172,8 @@ export interface AdminSideBetEventReportTicket {
 
 /** Response from `GET /api/admin/bets/side/event-report`. */
 export interface AdminSideBetEventReportResponse {
-  eventId: string;
+  eventId: string | null;
+  eventIds: string[];
   eventName: string | null;
   ticketCount: number;
   totals: {

@@ -19,10 +19,10 @@ import {
   type PreviewKind,
 } from "../lib/email/index.js";
 import {
-  resolveAdminEvent,
+  resolveAdminEvents,
   resolveEventIdParam,
 } from "../services/admin/adminEventContext.js";
-import { placementPlayersMapForTickets } from "../services/sideBets/lineupSideBetUtils.js";
+import { placementPlayersMapForTickets, type PlacementPlayerDto } from "../services/sideBets/lineupSideBetUtils.js";
 import { pickWalletForChain } from "../utils/pickWalletForChain.js";
 import { getRequestChainId } from "../utils/requestChainId.js";
 
@@ -33,7 +33,7 @@ adminRouter.get("/dashboard", requireAuth, requireAdmin, async (c) => {
   try {
     const eventId = resolveEventIdParam(c.req.query("eventId"));
     const data = await getAdminDashboard(eventId || undefined);
-    if (eventId && !data.event) {
+    if (eventId && data.events.length === 0) {
       return c.json({ error: "Event not found" }, 404);
     }
     return c.json(data);
@@ -246,8 +246,8 @@ adminRouter.get("/users/:id", requireAuth, requireAdmin, async (c) => {
 adminRouter.get("/bets/side/event-report", requireAuth, requireAdmin, async (c) => {
   try {
     const eventIdParam = resolveEventIdParam(c.req.query("eventId"));
-    const event = await resolveAdminEvent(eventIdParam || undefined);
-    if (!event) {
+    const events = await resolveAdminEvents(eventIdParam || undefined);
+    if (events.length === 0) {
       return c.json(
         {
           error: eventIdParam
@@ -258,12 +258,20 @@ adminRouter.get("/bets/side/event-report", requireAuth, requireAdmin, async (c) 
       );
     }
 
-    const eventId = event.id;
-    const meta = event.metadata as { name?: string } | null;
-    const eventName = meta?.name ?? event.externalId;
+    const eventIds = events.map((event) => event.id);
+    const eventNameById = new Map(
+      events.map((event) => {
+        const meta = event.metadata as { name?: string } | null;
+        return [event.id, meta?.name ?? event.externalId] as const;
+      }),
+    );
+    const [soleEvent] = events.length === 1 ? events : [];
+    const eventName = soleEvent
+      ? (eventNameById.get(soleEvent.id) ?? soleEvent.externalId)
+      : null;
 
     const tickets = await prisma.sideBetTicket.findMany({
-      where: { sideBetMarket: { eventId } },
+      where: { sideBetMarket: { eventId: { in: eventIds } } },
       orderBy: { createdAt: "desc" },
       take: 5000,
       include: {
@@ -271,6 +279,7 @@ adminRouter.get("/bets/side/event-report", requireAuth, requireAdmin, async (c) 
         sideBetMarket: {
           select: {
             id: true,
+            eventId: true,
             lineupId: true,
             status: true,
             lineup: { select: { name: true } },
@@ -290,16 +299,28 @@ adminRouter.get("/bets/side/event-report", requireAuth, requireAdmin, async (c) 
       }
     }
 
-    const placementByTicketId = await placementPlayersMapForTickets(
-      eventId,
-      tickets.map((ticket) => ({
-        id: ticket.id,
-        eventParticipantIds: ticket.eventParticipantIds,
-      })),
-    );
+    const placementByTicketId = new Map<string, PlacementPlayerDto[]>();
+    const ticketsByEvent = new Map<string, typeof tickets>();
+    for (const ticket of tickets) {
+      const eventId = ticket.sideBetMarket.eventId;
+      const group = ticketsByEvent.get(eventId);
+      if (group) group.push(ticket);
+      else ticketsByEvent.set(eventId, [ticket]);
+    }
+    for (const [eventId, group] of ticketsByEvent) {
+      const mapped = await placementPlayersMapForTickets(
+        eventId,
+        group.map((ticket) => ({
+          id: ticket.id,
+          eventParticipantIds: ticket.eventParticipantIds,
+        })),
+      );
+      for (const [id, players] of mapped) placementByTicketId.set(id, players);
+    }
 
     return c.json({
-      eventId,
+      eventId: soleEvent?.id ?? null,
+      eventIds,
       eventName,
       ticketCount: tickets.length,
       totals: {
@@ -314,6 +335,8 @@ adminRouter.get("/bets/side/event-report", requireAuth, requireAdmin, async (c) 
         userEmail: ticket.user.email,
         lineupId: ticket.sideBetMarket.lineupId,
         lineupName: ticket.sideBetMarket.lineup.name,
+        eventId: ticket.sideBetMarket.eventId,
+        eventName: eventNameById.get(ticket.sideBetMarket.eventId) ?? ticket.sideBetMarket.eventId,
         marketId: ticket.sideBetMarket.id,
         marketStatus: ticket.sideBetMarket.status,
         hitsRequired: ticket.hitsRequired,

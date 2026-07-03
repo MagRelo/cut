@@ -4,7 +4,7 @@ import { sideBetsEnabled } from "../sideBets/featureFlag.js";
 import {
   eventToDashboardEvent,
   isEventCompleteForSettlement,
-  resolveAdminEvent,
+  resolveAdminEvents,
 } from "./adminEventContext.js";
 
 function parsePrimaryDeposit(settings: unknown): number {
@@ -64,12 +64,13 @@ const emptyDashboard = {
 export type AdminDashboardResponse = Awaited<ReturnType<typeof getAdminDashboard>>;
 
 export async function getAdminDashboard(eventIdOverride?: string) {
-  const eventRow = await resolveAdminEvent(eventIdOverride);
+  const eventRows = await resolveAdminEvents(eventIdOverride);
 
-  if (!eventRow) {
+  if (eventRows.length === 0) {
     return {
       generatedAt: new Date().toISOString(),
       event: null,
+      events: [],
       weekCounts: {
         lineups: 0,
         contestLineups: 0,
@@ -78,16 +79,19 @@ export async function getAdminDashboard(eventIdOverride?: string) {
     };
   }
 
-  const eventSummary = eventToDashboardEvent(eventRow);
-  const eventId = eventRow.id;
+  const eventSummaries = eventRows.map(eventToDashboardEvent);
+  const eventIds = eventRows.map((event) => event.id);
+  const eventNameById = new Map(eventSummaries.map((event) => [event.id, event.name]));
+  const sportNameById = new Map(eventSummaries.map((event) => [event.id, event.sportName]));
 
   const [contests, sideBetMarkets, sideBetTickets, lineupCount, eventLineupCount] =
     await Promise.all([
       prisma.contest.findMany({
-        where: { eventId },
+        where: { eventId: { in: eventIds } },
         orderBy: [{ status: "asc" }, { name: "asc" }],
         select: {
           id: true,
+          eventId: true,
           name: true,
           status: true,
           chainId: true,
@@ -103,11 +107,11 @@ export async function getAdminDashboard(eventIdOverride?: string) {
         },
       }),
       prisma.sideBetMarket.findMany({
-        where: { eventId },
+        where: { eventId: { in: eventIds } },
         select: { status: true },
       }),
       prisma.sideBetTicket.findMany({
-        where: { sideBetMarket: { eventId } },
+        where: { sideBetMarket: { eventId: { in: eventIds } } },
         select: {
           status: true,
           stakeAmount: true,
@@ -117,10 +121,10 @@ export async function getAdminDashboard(eventIdOverride?: string) {
         },
       }),
       prisma.contestLineup.count({
-        where: { contest: { eventId } },
+        where: { contest: { eventId: { in: eventIds } } },
       }),
       prisma.lineup.count({
-        where: { eventId },
+        where: { eventId: { in: eventIds } },
       }),
     ]);
 
@@ -137,6 +141,9 @@ export async function getAdminDashboard(eventIdOverride?: string) {
     totalSecondaryParticipants += secondaryParticipantCount;
     return {
       id: contest.id,
+      eventId: contest.eventId,
+      eventName: eventNameById.get(contest.eventId) ?? contest.eventId,
+      sportName: sportNameById.get(contest.eventId) ?? null,
       name: contest.name,
       status: contest.status,
       chainId: contest.chainId,
@@ -198,7 +205,9 @@ export async function getAdminDashboard(eventIdOverride?: string) {
   const openSideBetMarkets = marketsByStatus.OPEN ?? 0;
   const lockedSideBetMarkets = marketsByStatus.LOCKED ?? 0;
   const openSideBetTickets = ticketsByStatus.OPEN ?? 0;
-  const eventIsComplete = isEventCompleteForSettlement(eventRow.metadata);
+  const eventIsComplete = eventRows.every((event) =>
+    isEventCompleteForSettlement(event.metadata),
+  );
   const enabled = sideBetsEnabled();
 
   const suggestedActions: string[] = [];
@@ -226,20 +235,37 @@ export async function getAdminDashboard(eventIdOverride?: string) {
     suggestedActions.push("No urgent batch actions detected for this week.");
   }
 
+  const [soleEventSummary] = eventSummaries.length === 1 ? eventSummaries : [];
+
   return {
     generatedAt: new Date().toISOString(),
-    event: {
-      id: eventSummary.id,
-      name: eventSummary.name,
-      status: eventSummary.status,
-      currentPeriod: eventSummary.currentPeriod,
-      periodDisplay: eventSummary.periodDisplay,
-      periodStatusDisplay: eventSummary.periodStatusDisplay,
-      cutLine: eventSummary.cutLine,
-      startDate: eventSummary.startDate.toISOString(),
-      endDate: eventSummary.endDate.toISOString(),
-      sportId: eventSummary.sportId,
-    },
+    event: soleEventSummary
+      ? {
+          id: soleEventSummary.id,
+          name: soleEventSummary.name,
+          status: soleEventSummary.status,
+          currentPeriod: soleEventSummary.currentPeriod,
+          periodDisplay: soleEventSummary.periodDisplay,
+          periodStatusDisplay: soleEventSummary.periodStatusDisplay,
+          cutLine: soleEventSummary.cutLine,
+          startDate: soleEventSummary.startDate.toISOString(),
+          endDate: soleEventSummary.endDate.toISOString(),
+          sportId: soleEventSummary.sportId,
+        }
+      : null,
+    events: eventSummaries.map((event) => ({
+      id: event.id,
+      name: event.name,
+      status: event.status,
+      currentPeriod: event.currentPeriod,
+      periodDisplay: event.periodDisplay,
+      periodStatusDisplay: event.periodStatusDisplay,
+      cutLine: event.cutLine,
+      startDate: event.startDate.toISOString(),
+      endDate: event.endDate.toISOString(),
+      sportId: event.sportId,
+      sportName: event.sportName,
+    })),
     weekCounts: {
       lineups: eventLineupCount,
       contestLineups: lineupCount,

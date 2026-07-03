@@ -51,6 +51,7 @@ function ContestsTable({ contests }: { contests: AdminDashboardContest[] }) {
         <thead className="bg-gray-100 text-gray-700">
           <tr>
             <th className="px-3 py-2 font-medium">Contest</th>
+            <th className="px-3 py-2 font-medium">Event</th>
             <th className="px-3 py-2 font-medium">Status</th>
             <th className="px-3 py-2 font-medium text-right">Entry</th>
             <th className="px-3 py-2 font-medium text-right">Lineups</th>
@@ -65,6 +66,10 @@ function ContestsTable({ contests }: { contests: AdminDashboardContest[] }) {
               <td className="px-3 py-2">
                 <div className="font-medium text-gray-900">{c.name}</div>
                 <div className="text-xs text-gray-400 font-mono truncate max-w-[200px]">{c.id}</div>
+              </td>
+              <td className="px-3 py-2 text-gray-600">
+                <div>{c.eventName}</div>
+                {c.sportName ? <div className="text-xs text-gray-400">{c.sportName}</div> : null}
               </td>
               <td className="px-3 py-2">
                 <ContestStatusBadge status={c.status} />
@@ -83,7 +88,7 @@ function ContestsTable({ contests }: { contests: AdminDashboardContest[] }) {
         </tbody>
         <tfoot className="bg-gray-50 text-gray-800 font-medium">
           <tr>
-            <td className="px-3 py-2" colSpan={3}>
+            <td className="px-3 py-2" colSpan={4}>
               Totals
             </td>
             <td className="px-3 py-2 text-right tabular-nums">
@@ -107,10 +112,10 @@ export const AdminPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [contestScope, setContestScope] = useState<ContestScopeFilter>("all");
   const dashboardQuery = useAdminDashboardQuery();
-  const eventId = dashboardQuery.data?.event?.id;
+  const hasActiveEvents = (dashboardQuery.data?.events.length ?? 0) > 0;
   const sideReportQuery = useAdminSideBetReportQuery(
-    eventId,
-    Boolean(eventId) && (dashboardQuery.data?.operations.sideBetsEnabled ?? false),
+    undefined,
+    hasActiveEvents && (dashboardQuery.data?.operations.sideBetsEnabled ?? false),
   );
 
   const refreshAll = useCallback(() => {
@@ -127,7 +132,8 @@ export const AdminPage: React.FC = () => {
         ? String(dashboardQuery.error)
         : null;
 
-  const hasEvent = Boolean(dashboard?.event);
+  const hasEvent = (dashboard?.events.length ?? 0) > 0;
+  const activeEvents = dashboard?.events ?? [];
   const contests = dashboard?.contests;
   const filteredContests = useMemo(() => {
     const items = contests?.items ?? [];
@@ -173,10 +179,18 @@ export const AdminPage: React.FC = () => {
         <ErrorMessage message={error} />
       ) : !hasEvent ? (
         <div className="bg-amber-50 border border-amber-200 rounded-sm p-4 text-sm text-amber-900">
-          No active event. Set an active competition event to populate this dashboard.
+          No active events. Activate a competition event to populate this dashboard.
         </div>
       ) : (
         <>
+          {activeEvents.length > 0 ? (
+            <div className="text-sm text-gray-600">
+              <span className="font-medium text-gray-800">Active events: </span>
+              {activeEvents
+                .map((event) => `${event.name} (${event.sportName})`)
+                .join(" · ")}
+            </div>
+          ) : null}
           <PageSection>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div>
@@ -220,7 +234,7 @@ export const AdminPage: React.FC = () => {
               <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-1">Side bets</h2>
                 <p className="text-xs text-gray-500">
-                  Side-bet markets and tickets for this event.
+                  Side-bet markets and tickets across active events.
                 </p>
               </div>
 
@@ -272,6 +286,7 @@ export const AdminPage: React.FC = () => {
                       <thead className="bg-gray-100 text-gray-700 sticky top-0">
                         <tr>
                           <th className="px-2 py-2 font-medium">User</th>
+                          <th className="px-2 py-2 font-medium">Event</th>
                           <th className="px-2 py-2 font-medium">Lineup</th>
                           <th className="px-2 py-2 font-medium">Parlay</th>
                           <th className="px-2 py-2 font-medium text-right">Stake</th>
@@ -286,6 +301,9 @@ export const AdminPage: React.FC = () => {
                           <tr key={ticket.id} className="hover:bg-gray-50">
                             <td className="px-2 py-1.5 max-w-[140px] truncate" title={ticket.userEmail ?? ""}>
                               {ticket.userName ?? ticket.userEmail ?? "—"}
+                            </td>
+                            <td className="px-2 py-1.5 max-w-[120px] truncate" title={ticket.eventName}>
+                              {ticket.eventName}
                             </td>
                             <td className="px-2 py-1.5 max-w-[120px] truncate" title={ticket.lineupName}>
                               {ticket.lineupName}
@@ -312,11 +330,7 @@ export const AdminPage: React.FC = () => {
                 <p className="text-sm text-gray-500">No parlay tickets this week.</p>
               )}
 
-              <AdminOperationsPanel
-                section="side"
-                eventId={eventId}
-                onActionComplete={refreshAll}
-              />
+              <AdminOperationsPanel section="side" onActionComplete={refreshAll} />
             </PageSection>
           ) : null}
         </>
