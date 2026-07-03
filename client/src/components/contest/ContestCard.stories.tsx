@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 import { lobbyDecorators } from "../../../.storybook/decorators";
-import { contestFixtures } from "../../test/fixtures/contestLobby";
+import { contestFixtures, contestWithLineups } from "../../test/fixtures/contestLobby";
 import { ContestCard } from "./ContestCard";
 
 const meta = {
@@ -27,7 +27,7 @@ export const Open: Story = {
 
 export const Active: Story = {
   args: {
-    contest: contestFixtures.active,
+    contest: contestWithLineups,
   },
 };
 
