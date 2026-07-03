@@ -78,10 +78,19 @@ export async function verifyOracle(contestAddress: string, chainId: number): Pro
 }
 
 /**
- * Read contest state from blockchain
+ * Read contest state from blockchain, optionally pinned to a block (avoids RPC lag after writes).
  */
-export async function readContestState(contestAddress: string, chainId: number): Promise<number> {
-  const contract = getContestContract(contestAddress, chainId);
-  const state = (await contract.read.state!()) as bigint;
+export async function readContestState(
+  contestAddress: string,
+  chainId: number,
+  blockNumber?: bigint,
+): Promise<number> {
+  const publicClient = getPublicClient(chainId);
+  const state = (await publicClient.readContract({
+    address: contestAddress as `0x${string}`,
+    abi: ContestController.abi,
+    functionName: "state",
+    ...(blockNumber !== undefined ? { blockNumber } : {}),
+  })) as bigint;
   return Number(state);
 }

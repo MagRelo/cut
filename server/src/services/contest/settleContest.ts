@@ -8,6 +8,8 @@
 import { defaultPayoutVector } from "@cut/sport-sdk";
 import { prisma } from "../../lib/prisma.js";
 import { requireSportModule } from "../../sports/registry.js";
+import type { TransactionReceipt } from "viem";
+import ContestController from "../../contracts/ContestController.json" with { type: "json" };
 import {
   getContestContract,
   getPublicClient,
@@ -32,6 +34,64 @@ import { contestLineupsInclude } from "../../utils/prismaIncludes.js";
 import { sortedPlayerLastNamesFromPicks } from "../../utils/lineupPickPresentation.js";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
+const SETTLED_STATE_CONFIRM_RETRIES = 3;
+const SETTLED_STATE_CONFIRM_DELAY_MS = 1500;
+
+async function confirmSettledAfterReceipt(
+  contestAddress: string,
+  chainId: number,
+  receipt: TransactionReceipt,
+): Promise<void> {
+  const atReceiptBlock = await readContestState(contestAddress, chainId, receipt.blockNumber);
+  if (atReceiptBlock === ContestState.SETTLED) {
+    return;
+  }
+
+  for (let attempt = 1; attempt <= SETTLED_STATE_CONFIRM_RETRIES; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, SETTLED_STATE_CONFIRM_DELAY_MS));
+    const latest = await readContestState(contestAddress, chainId);
+    if (latest === ContestState.SETTLED) {
+      return;
+    }
+  }
+
+  const latest = await readContestState(contestAddress, chainId);
+  throw new Error(
+    `Contract state is ${latest} after settle tx ${receipt.transactionHash}; expected SETTLED (${ContestState.SETTLED})`,
+  );
+}
+
+async function findSettleTransactionReceipt(
+  contestAddress: string,
+  chainId: number,
+): Promise<TransactionReceipt | null> {
+  const publicClient = getPublicClient(chainId);
+  const latest = await publicClient.getBlockNumber();
+  const chunkSize = 999n;
+  const maxLookback = 100_000n;
+  const earliest = latest > maxLookback ? latest - maxLookback : 0n;
+
+  for (let end = latest; end >= earliest; end -= chunkSize + 1n) {
+    const start = end > chunkSize ? end - chunkSize : earliest;
+    const logs = await publicClient.getContractEvents({
+      address: contestAddress as `0x${string}`,
+      abi: ContestController.abi,
+      eventName: "ContestSettled",
+      fromBlock: start,
+      toBlock: end,
+    });
+    if (logs.length > 0) {
+      const lastLog = logs.at(-1);
+      if (!lastLog) {
+        return null;
+      }
+      return publicClient.getTransactionReceipt({ hash: lastLog.transactionHash });
+    }
+  }
+
+  return null;
+}
+
 const isValidHexColor = (value: unknown): value is string => {
   if (typeof value !== "string") return false;
   const v = value.trim();
@@ -112,11 +172,17 @@ export async function settleContest(contestId: string): Promise<OperationResult>
     }
 
     const contractState = await readContestState(contest.address, contest.chainId);
-    if (contractState !== ContestState.ACTIVE && contractState !== ContestState.LOCKED) {
+    const awaitingOnChainSettlement =
+      contractState === ContestState.ACTIVE || contractState === ContestState.LOCKED;
+    const recoveringOffChainSettlement =
+      contractState === ContestState.SETTLED &&
+      (contest.status === "ACTIVE" || contest.status === "LOCKED");
+
+    if (!awaitingOnChainSettlement && !recoveringOffChainSettlement) {
       return {
         success: false,
         contestId,
-        error: `Contract state is ${contractState}, expected ${ContestState.ACTIVE} (ACTIVE) or ${ContestState.LOCKED} (LOCKED)`,
+        error: `Contract state is ${contractState}, expected ${ContestState.ACTIVE} (ACTIVE), ${ContestState.LOCKED} (LOCKED), or ${ContestState.SETTLED} (SETTLED) while DB is ACTIVE/LOCKED`,
       };
     }
 
@@ -221,24 +287,40 @@ export async function settleContest(contestId: string): Promise<OperationResult>
     const winningEntriesBigInt = winningEntries.map((id) => BigInt(id));
     const payoutBpsBigInt = payoutBps.map((bp) => BigInt(bp));
 
-    const hash = (await contract.write.settleContest!([
-      winningEntriesBigInt,
-      payoutBpsBigInt,
-      referralArgs.referralReward,
-      referralArgs.referralSignature,
-    ])) as `0x${string}`;
+    let hash: `0x${string}`;
+    let settleReceipt: TransactionReceipt;
 
-    console.log(`[settleContest] Transaction submitted: ${hash}`);
-    const settleReceipt = await publicClient.waitForTransactionReceipt({ hash });
-    if (settleReceipt.status !== "success") {
-      throw new Error(`settleContest transaction reverted: ${hash}`);
-    }
-    const onChainState = await readContestState(contest.address, contest.chainId);
-    if (onChainState !== ContestState.SETTLED) {
-      throw new Error(
-        `Contract state is ${onChainState} after settle tx ${hash}; expected SETTLED (${ContestState.SETTLED})`,
+    if (recoveringOffChainSettlement) {
+      const existingReceipt = await findSettleTransactionReceipt(contest.address, contest.chainId);
+      if (!existingReceipt) {
+        return {
+          success: false,
+          contestId,
+          error:
+            "Contract is SETTLED on-chain but ContestSettled event was not found; cannot complete off-chain settlement",
+        };
+      }
+      hash = existingReceipt.transactionHash;
+      settleReceipt = existingReceipt;
+      console.log(
+        `[settleContest] Recovering off-chain settlement from existing tx: ${hash}`,
       );
+    } else {
+      hash = (await contract.write.settleContest!([
+        winningEntriesBigInt,
+        payoutBpsBigInt,
+        referralArgs.referralReward,
+        referralArgs.referralSignature,
+      ])) as `0x${string}`;
+
+      console.log(`[settleContest] Transaction submitted: ${hash}`);
+      settleReceipt = await publicClient.waitForTransactionReceipt({ hash });
+      if (settleReceipt.status !== "success") {
+        throw new Error(`settleContest transaction reverted: ${hash}`);
+      }
+      await confirmSettledAfterReceipt(contest.address, contest.chainId, settleReceipt);
     }
+
     console.log(`[settleContest] Settlement confirmed on-chain: ${hash}`);
 
     for (const row of detailedResults) {
