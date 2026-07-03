@@ -34,17 +34,14 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
   const displayValue = formatValue(value);
 
   return (
-    <div className="border-t border-gray-100 p-3">
+    <div className="border-t border-gray-100 p-3 pb-1 pt-4">
       {readOnly ? (
-        <>
-          <span className="block font-display text-base font-semibold text-gray-900">{label}</span>
-          <div className="mt-3 flex items-center gap-3">
-            <div className="flex-1" aria-hidden />
-            <span className="w-16 shrink-0 text-right font-display text-lg font-bold tabular-nums leading-none text-gray-900">
-              {displayValue}
-            </span>
-          </div>
-        </>
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-display text-sm font-medium text-gray-600">{label}</span>
+          <span className="shrink-0 font-display text-sm font-medium tabular-nums text-gray-700">
+            {displayValue}
+          </span>
+        </div>
       ) : (
         <>
           <label htmlFor={id} className="block font-display text-base font-semibold text-gray-900">
