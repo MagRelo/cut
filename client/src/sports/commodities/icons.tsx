@@ -43,6 +43,22 @@ const ICONS: Record<string, React.FC<IconProps>> = {
   palladium: CoinIcon,
 };
 
+const AVATAR_URLS: Record<string, string> = {
+  "crude-oil": "/commodities/avatars/crude-oil.png",
+  brent: "/commodities/avatars/brent.png",
+  "natural-gas": "/commodities/avatars/natural-gas.png",
+  gold: "/commodities/avatars/gold.png",
+  silver: "/commodities/avatars/silver.png",
+  platinum: "/commodities/avatars/platinum.png",
+  palladium: "/commodities/avatars/palladium.png",
+  copper: "/commodities/avatars/copper.png",
+};
+
+export function commodityAvatarUrl(iconKey?: string | null): string | null {
+  if (!iconKey) return null;
+  return AVATAR_URLS[iconKey] ?? null;
+}
+
 function CubeIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>

@@ -1,7 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { CommodityAvatar } from "../../sports/commodities/CommodityAvatar";
 import { CommodityIcon } from "../../sports/commodities/icons";
-import { COMMODITY_SECTORS } from "../../sports/commodities/catalog";
+import { COMMODITY_CATALOG, COMMODITY_SECTORS } from "../../sports/commodities/catalog";
 import {
   SECTOR_COLORS,
   SECTOR_ICON_COLOR,
@@ -285,10 +286,63 @@ export const CommodityAvatarVariantPreviewPage: React.FC = () => {
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">Avatar variant comparison</h1>
         <p className="mt-2 max-w-2xl text-sm text-gray-600">
-          Side-by-side options for toning down sector color in lineup rows while keeping avatar, icon, and category
-          identity.
+          Historical SVG styling experiments. Production uses photo avatars from{" "}
+          <Link to="/dev/commodity-icons" className="text-blue-600 hover:underline">
+            the avatar preview page
+          </Link>
+          .
         </p>
       </div>
+
+      <section className="mb-10">
+        <h2 className="mb-1 text-lg font-semibold text-gray-900">Production (photo avatars)</h2>
+        <p className="mb-4 text-sm text-gray-600">
+          Current <code className="text-xs">CommodityAvatar</code> — photo fill with sector-colored ring.
+        </p>
+        <div className="mb-4 flex flex-wrap gap-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+          {COMMODITY_CATALOG.map((entry) => (
+            <div key={entry.ticker} className="flex flex-col items-center gap-1.5">
+              <CommodityAvatar
+                displayName={entry.displayName}
+                iconKey={entry.iconKey}
+                sector={entry.sector}
+                size="md"
+              />
+              <span className="max-w-[4.5rem] truncate text-center text-[10px] text-gray-600">
+                {entry.displayName.split(" ")[0]}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Lineup row (md)</h3>
+          <div className="divide-y divide-gray-100">
+            {LINEUP_SAMPLE.map((entry) => (
+              <div key={entry.displayName} className="flex min-w-0 items-center justify-between gap-3 py-2">
+                <CommodityAvatar
+                  displayName={entry.displayName}
+                  iconKey={entry.iconKey}
+                  sector={entry.sector}
+                  size="md"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-lg font-semibold leading-tight text-gray-900">
+                    {entry.displayName}
+                  </div>
+                  <div className="text-xs text-gray-600">{sectorLabel(entry.sector)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="mb-1 text-lg font-semibold text-gray-900">Legacy SVG variants</h2>
+        <p className="mb-4 text-sm text-gray-600">
+          Side-by-side options explored before photo avatars shipped.
+        </p>
+      </section>
 
       <section className="mb-10">
         <h2 className="mb-3 text-lg font-semibold text-gray-900">Color tokens</h2>

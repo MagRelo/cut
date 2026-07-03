@@ -1,5 +1,5 @@
 import React from "react";
-import { CommodityIcon } from "./icons";
+import { CommodityIcon, commodityAvatarUrl } from "./icons";
 import { sectorColor, sectorIconColor, sectorTintBg } from "./utils";
 
 interface CommodityAvatarProps {
@@ -25,16 +25,21 @@ export const CommodityAvatar: React.FC<CommodityAvatarProps> = ({
   const ring = sectorColor(sector);
   const iconAccent = sectorIconColor(sector);
   const tint = sectorTintBg(sector);
+  const avatarUrl = commodityAvatarUrl(iconKey);
 
   return (
     <div
-      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 ${dims.outer}`}
-      style={{ backgroundColor: tint, borderColor: ring }}
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full ${avatarUrl ? "" : "border-2"} ${dims.outer}`}
+      style={{ backgroundColor: avatarUrl ? undefined : tint, borderColor: avatarUrl ? undefined : ring }}
       title={displayName}
     >
-      <span style={{ color: iconAccent }}>
-        <CommodityIcon iconKey={iconKey} className={dims.icon} />
-      </span>
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <span style={{ color: iconAccent }}>
+          <CommodityIcon iconKey={iconKey} className={dims.icon} />
+        </span>
+      )}
     </div>
   );
 };

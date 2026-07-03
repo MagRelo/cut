@@ -21,7 +21,7 @@ export const DebugPage: React.FC = () => {
         <ul className="list-inside list-disc text-sm text-blue-600">
           <li>
             <a href="/dev/commodity-icons" className="hover:underline">
-              Commodity icon preview
+              Commodity avatar preview
             </a>
           </li>
           <li>
