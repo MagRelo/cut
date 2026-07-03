@@ -237,7 +237,7 @@ export function parseCommoditiesInitCliArgs(argv: string[]): CommoditiesInitCliA
 
 export function formatSessionDisplayName(weekKey: string): string {
   const { weekNumber } = resolveWeekAnchorDates(parseCommoditiesSessionExternalId(weekKey));
-  return `Commodity Futures – Week ${weekNumber}`;
+  return `Planet Earth – Week ${weekNumber}`;
 }
 
 /** ISO week Monday anchor; falls back to externalId when metadata omits sessionDate. */

@@ -89,7 +89,7 @@ describe("resolveWeeklySessionBounds", () => {
 
 describe("formatSessionDisplayName", () => {
   it("formats weekly event title", () => {
-    expect(formatSessionDisplayName("2026-W27")).toBe("Commodity Futures – Week 27");
+    expect(formatSessionDisplayName("2026-W27")).toBe("Planet Earth – Week 27");
   });
 });
 
