@@ -28,6 +28,10 @@ const config: StorybookConfig = {
         find: path.resolve(dirname, "../src/hooks/useLineupData.ts"),
         replacement: path.resolve(dirname, "./mocks/useLineupData.ts"),
       },
+      {
+        find: path.resolve(dirname, "../src/hooks/useSideBetQueries.ts"),
+        replacement: path.resolve(dirname, "./mocks/useSideBetQueries.ts"),
+      },
     ];
     return config;
   },
