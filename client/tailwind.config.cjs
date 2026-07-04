@@ -51,6 +51,15 @@ module.exports = {
           { lineHeight: '1.5', fontWeight: '600', letterSpacing: '0.02em' },
         ],
       },
+      keyframes: {
+        'skeleton-pulse': {
+          '0%, 100%': { backgroundColor: 'rgb(209 213 219)' },
+          '50%': { backgroundColor: 'rgb(243 244 246)' },
+        },
+      },
+      animation: {
+        'skeleton-pulse': 'skeleton-pulse 2.5s ease-in-out infinite',
+      },
     },
   },
   plugins: [require('@tailwindcss/forms')],

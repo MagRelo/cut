@@ -27,7 +27,7 @@ export const Loading: Story = {
 
 export const Error: Story = {
   args: {
-    state: { kind: "error", message: PARLAY_MARKET_UNAVAILABLE },
+    state: { kind: "error", message: PARLAY_MARKET_UNAVAILABLE, selections: [] },
   },
 };
 
@@ -36,6 +36,17 @@ export const Unavailable: Story = {
     state: {
       kind: "unavailable",
       message: PARLAY_MARKET_CLOSED,
+      selections: [],
+    },
+  },
+};
+
+export const UnavailableWithOdds: Story = {
+  args: {
+    state: {
+      kind: "unavailable",
+      message: PARLAY_MARKET_CLOSED,
+      selections: buildSideBetSelectionsFixture(),
     },
   },
 };

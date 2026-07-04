@@ -11,6 +11,9 @@ export const PARLAY_MARKET_UNAVAILABLE =
 /** Market lifecycle closed for new tickets (LOCKED and later statuses). */
 export const PARLAY_MARKET_CLOSED = "Parlay market has been closed for this event.";
 
+export const PARLAY_MARKET_INSTRUCTIONS =
+  "Pick how many of your 4 players you think will end up in the top 5, 10, or 20. Ties count too.";
+
 export const SIDE_BET_TICKETS_LOAD_ERROR =
   "Could not load your ticket list. Try again in a moment.";
 

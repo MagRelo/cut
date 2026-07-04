@@ -1,13 +1,16 @@
 import { useCallback, useSyncExternalStore } from "react";
-import type {
-  SideBetMarketResponse,
-  SideBetPlacementPlayerDto,
-  SideBetTicketsListResponse,
-} from "../../src/types/sideBet";
+import type { SideBetPlacementPlayerDto } from "../../src/types/sideBet";
 import {
-  buildBettableSideBetMarket,
-  buildSideBetTicketsFixture,
-} from "../../src/test/fixtures/sideBetMock";
+  getStorybookSideBetMarketSnapshot,
+  getStorybookSideBetTicketsSnapshot,
+  subscribeStorybookSideBet,
+} from "../../src/test/fixtures/sideBetStorybook";
+
+export type {
+  StorybookSideBetMarketMode,
+  StorybookSideBetTicketsMode,
+} from "../../src/test/fixtures/sideBetStorybook";
+export { resetStorybookSideBetMocks } from "../../src/test/fixtures/sideBetStorybook";
 
 export type PlaceSideBetTicketPayload = {
   lineupId: string;
@@ -30,104 +33,20 @@ export type PlaceSideBetTicketResult = {
   placementPlayers: SideBetPlacementPlayerDto[];
 };
 
-export type StorybookSideBetMarketMode =
-  | "bettable"
-  | "closed"
-  | "unavailable"
-  | "loading"
-  | "error";
-
-export type StorybookSideBetTicketsMode = "withTickets" | "empty" | "loading" | "error";
-
-type MarketSnapshot =
-  | { kind: "ready"; data: SideBetMarketResponse }
-  | { kind: "loading" }
-  | { kind: "error" };
-
-type TicketsSnapshot =
-  | { kind: "ready"; data: SideBetTicketsListResponse }
-  | { kind: "loading" }
-  | { kind: "error" };
-
-let marketSnapshot: MarketSnapshot = {
-  kind: "ready",
-  data: buildBettableSideBetMarket(),
-};
-let ticketsSnapshot: TicketsSnapshot = {
-  kind: "ready",
-  data: buildSideBetTicketsFixture(),
-};
-
-const subscribers = new Set<() => void>();
-
-function emitChange() {
-  subscribers.forEach((listener) => listener());
-}
-
-function subscribe(listener: () => void) {
-  subscribers.add(listener);
-  return () => subscribers.delete(listener);
-}
-
-function getMarketSnapshot() {
-  return marketSnapshot;
-}
-
-function getTicketsSnapshot() {
-  return ticketsSnapshot;
-}
-
-function marketForMode(mode: StorybookSideBetMarketMode): MarketSnapshot {
-  switch (mode) {
-    case "loading":
-      return { kind: "loading" };
-    case "error":
-      return { kind: "error" };
-    case "closed":
-      return {
-        kind: "ready",
-        data: buildBettableSideBetMarket({ bettable: false, marketStatus: "LOCKED" }),
-      };
-    case "unavailable":
-      return {
-        kind: "ready",
-        data: buildBettableSideBetMarket({ bettable: false, marketStatus: "PENDING" }),
-      };
-    case "bettable":
-    default:
-      return { kind: "ready", data: buildBettableSideBetMarket() };
-  }
-}
-
-function ticketsForMode(mode: StorybookSideBetTicketsMode): TicketsSnapshot {
-  switch (mode) {
-    case "loading":
-      return { kind: "loading" };
-    case "error":
-      return { kind: "error" };
-    case "empty":
-      return { kind: "ready", data: { tickets: [] } };
-    case "withTickets":
-    default:
-      return { kind: "ready", data: buildSideBetTicketsFixture() };
-  }
-}
-
-export function resetStorybookSideBetMocks(options?: {
-  market?: StorybookSideBetMarketMode;
-  tickets?: StorybookSideBetTicketsMode;
-}) {
-  marketSnapshot = marketForMode(options?.market ?? "bettable");
-  ticketsSnapshot = ticketsForMode(options?.tickets ?? "withTickets");
-  emitChange();
-}
-
 function useMarketSnapshot() {
-  return useSyncExternalStore(subscribe, getMarketSnapshot);
+  return useSyncExternalStore(
+    subscribeStorybookSideBet,
+    getStorybookSideBetMarketSnapshot,
+    getStorybookSideBetMarketSnapshot,
+  );
 }
 
 function useTicketsSnapshot() {
-  return useSyncExternalStore(subscribe, getTicketsSnapshot);
+  return useSyncExternalStore(
+    subscribeStorybookSideBet,
+    getStorybookSideBetTicketsSnapshot,
+    getStorybookSideBetTicketsSnapshot,
+  );
 }
 
 export function useSideBetMarketQuery(lineupId: string | null | undefined) {

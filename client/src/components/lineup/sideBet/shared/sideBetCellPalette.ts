@@ -11,33 +11,33 @@ export interface SideBetCellPaletteStyle {
 const PALETTE: Record<SideBetCellOddsTier, SideBetCellPaletteStyle> = {
   favorite: {
     tier: "favorite",
-    button: "border-gray-400/80 bg-gray-200 text-gray-600",
+    button: "border-gray-400/50 bg-gray-200 text-gray-700 shadow-sm",
     hover: "hover:border-gray-500 hover:bg-gray-300",
     focusRing: "focus:ring-gray-400",
   },
   lean: {
     tier: "lean",
-    button: "border-gray-400/80 bg-gray-100 text-gray-600",
-    hover: "hover:border-gray-400 hover:bg-gray-200",
+    button: "border-gray-300 bg-white text-gray-800 shadow-sm",
+    hover: "hover:border-gray-400 hover:bg-gray-50",
     focusRing: "focus:ring-gray-400",
   },
   fair: {
     tier: "fair",
-    button: "border-stone-300 bg-stone-50 text-stone-700",
-    hover: "hover:border-stone-400 hover:bg-stone-100",
-    focusRing: "focus:ring-stone-400",
+    button: "border-gray-300 bg-gray-100 text-gray-900 shadow-sm",
+    hover: "hover:border-gray-500 hover:bg-gray-200",
+    focusRing: "focus:ring-gray-500",
   },
   long: {
     tier: "long",
-    button: "border-blue-400 bg-blue-50 text-blue-900",
-    hover: "hover:border-blue-500 hover:bg-blue-100",
+    button: "border-blue-500 bg-blue-500 text-white shadow-sm",
+    hover: "hover:border-blue-600 hover:bg-blue-600",
     focusRing: "focus:ring-blue-400",
   },
   moonshot: {
     tier: "moonshot",
-    button: "border-green-500/80 bg-green-50/80 text-green-800",
-    hover: "hover:border-green-400 hover:bg-green-50",
-    focusRing: "focus:ring-green-400",
+    button: "border-emerald-600 bg-emerald-600 text-white shadow-sm",
+    hover: "hover:border-emerald-700 hover:bg-emerald-700",
+    focusRing: "focus:ring-emerald-500",
   },
 };
 

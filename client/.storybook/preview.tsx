@@ -1,9 +1,14 @@
 import type { Preview } from "@storybook/react-vite";
 import "../src/index.css";
 import { withAppProviders } from "./decorators";
+import { withSideBetStoryMocks } from "./decorators/withSideBetStoryMocks";
+import { installStorybookSideBetFetchMock } from "./mocks/storybookSideBetFetch";
+
+installStorybookSideBetFetchMock();
 
 const preview: Preview = {
   decorators: [
+    withSideBetStoryMocks(),
     withAppProviders,
     (Story) => (
       <div className="min-h-screen bg-gray-100 p-6 font-sans text-gray-900">

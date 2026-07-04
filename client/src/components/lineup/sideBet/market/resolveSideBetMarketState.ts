@@ -12,8 +12,8 @@ const CLOSED_MARKET_STATUSES = new Set([
 export type SideBetMarketVisualState =
   | { kind: "hidden" }
   | { kind: "loading" }
-  | { kind: "error"; message: string }
-  | { kind: "unavailable"; message: string }
+  | { kind: "error"; message: string; selections: SideBetMarketSelectionDto[] }
+  | { kind: "unavailable"; message: string; selections: SideBetMarketSelectionDto[] }
   | { kind: "ready"; selections: SideBetMarketSelectionDto[] };
 
 export type SideBetMarketQuerySnapshot = {
@@ -32,7 +32,11 @@ export function resolveSideBetMarketState(
     return { kind: "loading" };
   }
   if (query.isError) {
-    return { kind: "error", message: PARLAY_MARKET_UNAVAILABLE };
+    return {
+      kind: "error",
+      message: PARLAY_MARKET_UNAVAILABLE,
+      selections: query.data?.selections ?? [],
+    };
   }
   if (query.data != null && query.data.bettable !== true) {
     const status = query.data.marketStatus;
@@ -40,7 +44,11 @@ export function resolveSideBetMarketState(
       status != null && CLOSED_MARKET_STATUSES.has(status)
         ? PARLAY_MARKET_CLOSED
         : PARLAY_MARKET_UNAVAILABLE;
-    return { kind: "unavailable", message };
+    return {
+      kind: "unavailable",
+      message,
+      selections: query.data.selections ?? [],
+    };
   }
   return { kind: "ready", selections: query.data?.selections ?? [] };
 }

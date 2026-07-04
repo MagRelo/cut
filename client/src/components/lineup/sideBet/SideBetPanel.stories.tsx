@@ -1,6 +1,5 @@
-import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { lobbyDecorators } from "../../../../.storybook/decorators";
-import { resetStorybookSideBetMocks } from "../../../../.storybook/mocks/useSideBetQueries";
 import { STORYBOOK_SIDE_BET_LINEUP_ID } from "../../../test/fixtures/sideBetMock";
 import { SideBetPanel } from "./SideBetPanel";
 
@@ -12,20 +11,11 @@ const defaultPanelArgs = {
   lineupId: STORYBOOK_SIDE_BET_LINEUP_ID,
 };
 
-const withSideBetMocks =
-  (
-    options?: Parameters<typeof resetStorybookSideBetMocks>[0],
-  ): Decorator =>
-  (Story) => {
-    resetStorybookSideBetMocks(options);
-    return <Story />;
-  };
-
 const meta = {
   title: "Lineup/SideBet/Panel",
   component: SideBetPanel,
   tags: ["autodocs"],
-  decorators: [withSideBetMocks(), ...lobbyDecorators],
+  decorators: lobbyDecorators,
   parameters: { layout: "fullscreen" },
   args: defaultPanelArgs,
 } satisfies Meta<typeof SideBetPanel>;
@@ -42,29 +32,29 @@ export const NoLineup: Story = {
 };
 
 export const MarketLoading: Story = {
-  decorators: [withSideBetMocks({ market: "loading" })],
+  parameters: { sideBetMocks: { market: "loading" } },
 };
 
 export const MarketClosed: Story = {
-  decorators: [withSideBetMocks({ market: "closed" })],
+  parameters: { sideBetMocks: { market: "closed" } },
 };
 
 export const MarketUnavailable: Story = {
-  decorators: [withSideBetMocks({ market: "unavailable" })],
+  parameters: { sideBetMocks: { market: "unavailable" } },
 };
 
 export const MarketError: Story = {
-  decorators: [withSideBetMocks({ market: "error" })],
+  parameters: { sideBetMocks: { market: "error" } },
 };
 
 export const EmptyTickets: Story = {
-  decorators: [withSideBetMocks({ tickets: "empty" })],
+  parameters: { sideBetMocks: { tickets: "empty" } },
 };
 
 export const TicketsLoading: Story = {
-  decorators: [withSideBetMocks({ tickets: "loading" })],
+  parameters: { sideBetMocks: { tickets: "loading" } },
 };
 
 export const TicketsError: Story = {
-  decorators: [withSideBetMocks({ tickets: "error" })],
+  parameters: { sideBetMocks: { tickets: "error" } },
 };

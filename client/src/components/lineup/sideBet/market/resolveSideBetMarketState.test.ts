@@ -33,34 +33,48 @@ describe("resolveSideBetMarketState", () => {
       isFetching: false,
       isError: true,
     });
-    expect(result.kind).toBe("error");
+    expect(result).toEqual({
+      kind: "error",
+      message: PARLAY_MARKET_UNAVAILABLE,
+      selections: [],
+    });
   });
 
   it("returns user-facing unavailable copy when market is not bettable", () => {
+    const market = buildBettableSideBetMarket({
+      bettable: false,
+      unavailableReason: "MISSING_FINISH_DECIMAL",
+    });
     const result = resolveSideBetMarketState("lineup-1", {
-      data: buildBettableSideBetMarket({
-        bettable: false,
-        unavailableReason: "MISSING_FINISH_DECIMAL",
-      }),
+      data: market,
       isLoading: false,
       isFetching: false,
       isError: false,
     });
-    expect(result).toEqual({ kind: "unavailable", message: PARLAY_MARKET_UNAVAILABLE });
+    expect(result).toEqual({
+      kind: "unavailable",
+      message: PARLAY_MARKET_UNAVAILABLE,
+      selections: market.selections,
+    });
   });
 
   it("returns closed copy when market status is LOCKED", () => {
+    const market = buildBettableSideBetMarket({
+      bettable: false,
+      marketStatus: "LOCKED",
+      unavailableReason: null,
+    });
     const result = resolveSideBetMarketState("lineup-1", {
-      data: buildBettableSideBetMarket({
-        bettable: false,
-        marketStatus: "LOCKED",
-        unavailableReason: null,
-      }),
+      data: market,
       isLoading: false,
       isFetching: false,
       isError: false,
     });
-    expect(result).toEqual({ kind: "unavailable", message: PARLAY_MARKET_CLOSED });
+    expect(result).toEqual({
+      kind: "unavailable",
+      message: PARLAY_MARKET_CLOSED,
+      selections: market.selections,
+    });
   });
 
   it("returns ready with selections when bettable", () => {
