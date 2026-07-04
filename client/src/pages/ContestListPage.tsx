@@ -8,7 +8,7 @@ export const Contests: React.FC = () => {
 
   return (
     <div className="mb-4 space-y-4">
-      <PageHeader title="Live Contests" />
+      <PageHeader title="Live Events" />
       <GroupedContestList contests={contests} loading={isLoading} error={error} />
     </div>
   );

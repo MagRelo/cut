@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { type Contest } from "../../types/contest";
+import { formatContestStatus, contestStatusValueClass } from "../../lib/contestStatus";
 import { cn } from "../../lib/tabStyles";
 import { ContestCard } from "./ContestCard";
 
@@ -13,13 +14,26 @@ function formatBuyInValue(primaryDeposit: number | undefined): string {
   return "—";
 }
 
-function ContestListStat({ value, label }: { value: string | number; label: string }) {
+function ContestListStat({
+  value,
+  label,
+  valueClassName,
+}: {
+  value: string | number;
+  label: string;
+  valueClassName?: string;
+}) {
   return (
-    <div className="w-20 shrink-0 text-center">
-      <div className="font-display text-xl font-bold tabular-nums leading-none text-gray-900">
+    <div className="min-w-0 text-center">
+      <div
+        className={cn(
+          "font-display text-sm font-bold tabular-nums leading-none text-gray-900",
+          valueClassName,
+        )}
+      >
         {value}
       </div>
-      <div className="mt-1 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
+      <div className="mt-1 text-[9px] font-semibold uppercase leading-none tracking-wide text-gray-500">
         {label}
       </div>
     </div>
@@ -43,13 +57,18 @@ export const ContestListItem = ({ contest, to, className }: ContestListItemProps
         className,
       )}
     >
-      <div className="p-3 py-4">
+      <div className="p-3 pb-2 pt-4">
         <ContestCard contest={contest} />
       </div>
-      <div className="gap-4px-3 flex items-center justify-between px-3 pb-2.5">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 px-3 pb-2">
+        <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
           <ContestListStat value={buyInValue} label="Buy-in" />
           <ContestListStat value={entryCount} label="Entries" />
+          <ContestListStat
+            value={formatContestStatus(contest.status)}
+            label="Status"
+            valueClassName={contestStatusValueClass(contest.status)}
+          />
         </div>
         <Link to={to} aria-label={`View ${contest.name} contest`} className={viewButtonClassName}>
           View
