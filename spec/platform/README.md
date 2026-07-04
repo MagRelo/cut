@@ -158,6 +158,12 @@ Does **not** require changes to contests, leagues, wallets, referrals, or smart 
 
 ---
 
+## Planned platform work
+
+- [Sport package data ingress](sport-package-ingress.md) — move fetch + sync orchestration into `packages/sport-*` via a repository adapter
+
+---
+
 ## Next docs
 
 - [Add a sport checklist](add-sport-checklist.md)

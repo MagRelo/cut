@@ -178,3 +178,9 @@ Key exports from `packages/sport-sdk/src/types.ts`:
 | `PropBetTicketShell` / `PropBetResultsShell` | Grading inputs |
 
 Client re-exports types from `client/src/sports/types.ts`.
+
+---
+
+## Planned: package-owned ingress
+
+Today sync and external API clients live in `server/src/sports/<id>/` with handler injection into `create*Module`. The target is package-owned sync via a `SportEventRepository` adapter — see [sport-package-ingress.md](sport-package-ingress.md).

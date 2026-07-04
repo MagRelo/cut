@@ -81,6 +81,7 @@ Use this order for a full architecture walkthrough:
 | [analysis.md](analysis.md) | Pre-rewrite discovery notes — historical |
 | [cleanup-backlog.md](cleanup-backlog.md) | Pre-rewrite cleanup list — largely superseded |
 | [onboarding-content-plan.md](onboarding-content-plan.md) | Content planning — still useful |
+| [platform/sport-package-ingress.md](platform/sport-package-ingress.md) | Move data ingress into sport packages — active roadmap |
 
 ---
 
