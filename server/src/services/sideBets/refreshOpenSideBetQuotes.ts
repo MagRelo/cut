@@ -5,6 +5,10 @@ import { ingestPropBetQuoteForLineup } from "../propBets/ingestPropBetQuoteForLi
 import { dataGolfTourFromEnv } from "../odds/dataGolfFieldUpdates.js";
 import { sideBetsEnabled } from "./featureFlag.js";
 import { getActiveEvents } from "../events/getActiveEvents.js";
+import {
+  isPropBetIngestFailure,
+  isPropBetUnavailableDataReason,
+} from "./propBetIngestReasons.js";
 
 /**
  * Minute cron: refresh side-bet quotes for 4-player lineups on active events
@@ -87,11 +91,35 @@ export async function refreshOpenSideBetQuotes(): Promise<{
 
   let succeeded = 0;
   let failed = 0;
+  let unavailable = 0;
 
   for (const lineup of eligible) {
     const result = await ingestPropBetQuoteForLineup(lineup.id, tour, snapshot);
-    if (result.ok) succeeded++;
-    else failed++;
+    if (result.ok) {
+      succeeded++;
+      continue;
+    }
+
+    if (isPropBetUnavailableDataReason(result.reason)) {
+      unavailable++;
+      console.log(
+        `[refreshOpenSideBetQuotes] lineup ${lineup.id} unavailable: ${result.reason}`,
+      );
+      continue;
+    }
+
+    if (isPropBetIngestFailure(result.reason)) {
+      failed++;
+      console.error(
+        `[refreshOpenSideBetQuotes] lineup ${lineup.id} failed: ${result.reason}`,
+      );
+    }
+  }
+
+  if (unavailable > 0) {
+    console.log(
+      `[refreshOpenSideBetQuotes] ${unavailable} lineup(s) unavailable (data gap, not counted as failure)`,
+    );
   }
 
   return {
