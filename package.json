@@ -49,7 +49,7 @@
     "verify:contracts": "node scripts/verify.js",
     "verify:contracts:sepolia": "node scripts/verify.js sepolia",
     "verify:contracts:base": "node scripts/verify.js base",
-    "ssh": "ssh deployer@45.55.136.214",
+    "ssh": "ssh root@157.230.6.6",
     "launch": "bash scripts/launch.sh",
     "launch:status": "bash -c 'if [ -f docker/.last-launch ]; then cat docker/.last-launch; else echo \"No launch recorded yet (run pnpm run launch)\"; fi'"
   },

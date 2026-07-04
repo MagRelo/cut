@@ -2,11 +2,7 @@
 #   docker stack deploy -c swarm/stack.yml cut
 #
 # Prerequisites: swarm/env/web.env and nginx.env on the manager (cron is not deployed here).
-# Nginx starts with http-only.conf; after certs, run scripts/switch-to-https.sh (patches this file) and redeploy.
-
-configs:
-  nginx_site:
-    file: ./nginx/http-only.conf
+# Nginx uses https.conf (TLS). For first-time bootstrap before certs exist, mount http-only.conf instead.
 
 services:
   nginx:
@@ -16,13 +12,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    configs:
-      - source: nginx_site
-        target: /etc/nginx/conf.d/default.conf
     ports:
       - "80:80"
       - "443:443"
     volumes:
+      - ./nginx/https.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/html/502.html:/usr/share/nginx/html/errors/502.html:ro
       - certbot-www:/var/www/certbot:ro
       - letsencrypt:/etc/letsencrypt:ro
     env_file:
