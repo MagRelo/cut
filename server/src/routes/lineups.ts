@@ -111,6 +111,10 @@ lineupsRouter.post(
         return c.json(scoped.body, scoped.status);
       }
 
+      if (result.error === "not_editable") {
+        return c.json(result.body, result.status);
+      }
+
       if (result.error === "validation") {
         return c.json({ error: "Invalid lineup", messages: result.messages }, 400);
       }
@@ -152,6 +156,10 @@ lineupsRouter.put(
 
       if (result.error === "not_found") {
         return c.json({ error: "Lineup not found" }, 404);
+      }
+
+      if (result.error === "not_editable") {
+        return c.json(result.body, result.status);
       }
 
       if (result.error === "validation") {

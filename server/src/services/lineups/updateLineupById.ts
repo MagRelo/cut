@@ -8,6 +8,7 @@ import {
 } from "./formatLineup.js";
 import { markSideBetMarketStaleAfterRosterChange } from "../sideBets/markSideBetMarketStaleAfterRosterChange.js";
 import { validateLineupPicks, writeLineupPicks } from "./validateLineupPicks.js";
+import { getLineupEditBlock, lineupEditBlockToHttp } from "../../utils/lineupEditable.js";
 
 export type UpdateLineupInput = {
   userId: string;
@@ -25,6 +26,16 @@ export async function updateLineupById(input: UpdateLineupInput) {
 
   if (!existing) {
     return { error: "not_found" as const };
+  }
+
+  const editBlock = await getLineupEditBlock(input.lineupId, input.userId);
+  if (editBlock) {
+    const http = lineupEditBlockToHttp(editBlock);
+    return {
+      error: "not_editable" as const,
+      status: http.status,
+      body: http.body,
+    };
   }
 
   const validated = await validateLineupPicks(

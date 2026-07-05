@@ -12,6 +12,7 @@ import {
 import { markSideBetMarketStaleAfterRosterChange } from "../sideBets/markSideBetMarketStaleAfterRosterChange.js";
 import { validateLineupPicks, writeLineupPicks } from "./validateLineupPicks.js";
 import { validateLineupContestScope } from "./validateLineupContestScope.js";
+import { getContestEditBlock, getEventEditBlock, lineupEditBlockToHttp } from "../../utils/lineupEditable.js";
 
 export type CreateLineupInput = {
   userId: string;
@@ -39,7 +40,27 @@ export async function createLineupForEvent(input: CreateLineupInput) {
     return { error: "not_found" as const };
   }
 
+  const eventBlock = await getEventEditBlock(event.id, event.sportId);
+  if (eventBlock) {
+    const http = lineupEditBlockToHttp(eventBlock);
+    return {
+      error: "not_editable" as const,
+      status: http.status,
+      body: http.body,
+    };
+  }
+
   if (input.contestId) {
+    const contestBlock = await getContestEditBlock(input.contestId);
+    if (contestBlock) {
+      const http = lineupEditBlockToHttp(contestBlock);
+      return {
+        error: "not_editable" as const,
+        status: http.status,
+        body: http.body,
+      };
+    }
+
     const scope = await validateLineupContestScope(
       input.userId,
       input.eventId,

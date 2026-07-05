@@ -11,8 +11,10 @@ import {
   eventDisplayNameFromMetadata,
   eventStatusDisplayFromMetadata,
   eventStatusFromMetadata,
-  isEventEditableFromMetadata,
 } from "../../lib/eventMetadata";
+import {
+  canEditLineupForContest,
+} from "../../lib/lineupEditable";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { PageSection } from "../layout/PageSection";
 import { ErrorMessage } from "../common/ErrorMessage";
@@ -82,9 +84,9 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
   const [copyingLineupId, setCopyingLineupId] = useState<string | null>(null);
 
   const eventStatus = useMemo(() => eventStatusFromMetadata(eventMetadata), [eventMetadata]);
-  const isEventEditable = useMemo(
-    () => isEventEditableFromMetadata(eventMetadata),
-    [eventMetadata],
+  const isLineupEditable = useMemo(
+    () => canEditLineupForContest(contest.status, eventMetadata),
+    [contest.status, eventMetadata],
   );
   const displayEventName = useMemo(
     () => eventDisplayNameFromMetadata(eventMetadata),
@@ -104,7 +106,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
     [lineups, contest.id],
   );
   const hasLineups = listItems.length > 0;
-  const showCreatePanel = isEventEditable && !isAuthLoading && !isLineupsLoading;
+  const showCreatePanel = isLineupEditable && !isAuthLoading && !isLineupsLoading;
   const isCreateBusy = isCreating || copyingLineupId !== null;
 
   const handleCreateLineup = async () => {
@@ -249,12 +251,12 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
               <LineupContestCard
                 lineup={contestLineupForCard(row, user, contest.id)}
                 contestId={contest.id}
-                isEditable={isEventEditable}
+                isEditable={isLineupEditable}
                 sportId={sportId}
                 eventId={eventId}
                 eventStatus={eventStatus}
                 eventMetadata={eventMetadata}
-                isEventEditable={isEventEditable}
+                isEventEditable={isLineupEditable}
               />
               <ContestLineupJoinActions contest={contest} lineupId={row.id} entry={contestEntry} />
             </div>
@@ -265,7 +267,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
         createLineupPanel
       )}
 
-      {!isEventEditable && !hasLineups ? (
+      {!isLineupEditable && !hasLineups ? (
         <PageSection>
           <div className="mb-2 flex items-center gap-2">
             <span className="text-lg text-gray-600">🏌️</span>

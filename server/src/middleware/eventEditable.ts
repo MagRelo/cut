@@ -1,9 +1,12 @@
 import { Context, Next } from "hono";
 import { prisma } from "../lib/prisma.js";
-import { requireSportModule } from "../sports/registry.js";
+import {
+  getEventEditBlock,
+  lineupEditBlockToHttp,
+} from "../utils/lineupEditable.js";
 
 /**
- * Blocks lineup edits when the sport plugin reports LIVE or COMPLETE for the event.
+ * Blocks lineup create when the sport plugin reports LIVE or COMPLETE for the event.
  */
 export const requireEventEditable = async (
   c: Context,
@@ -24,23 +27,15 @@ export const requireEventEditable = async (
       return c.json({ error: "Event not found" }, 404);
     }
 
-    const sportModule = requireSportModule(event.sportId);
-    const status = await sportModule.getEventStatus(event.id);
-
-    if (status === "LIVE" || status === "COMPLETE") {
-      return c.json(
-        {
-          error: "Event editing is not allowed",
-          message: "Cannot edit lineups while the event is live or complete",
-          eventStatus: status,
-        },
-        403,
-      );
+    const block = await getEventEditBlock(event.id, event.sportId);
+    if (block) {
+      const response = lineupEditBlockToHttp(block);
+      return c.json(response.body, response.status);
     }
 
     await next();
   } catch (error) {
-    console.error("[MIDDLEWARE] Error checking event status:", error);
-    await next();
+    console.error("[MIDDLEWARE] Error checking event editability:", error);
+    return c.json({ error: "Failed to validate event editability" }, 500);
   }
 };
