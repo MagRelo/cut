@@ -182,6 +182,12 @@ export interface SportModule {
 
 Sport implementations live in dedicated packages (e.g. `packages/sport-pga-golf`, `packages/sport-nfl-fantasy`). The server registry resolves the correct module by `event.sportId`.
 
+### Scoring signals
+
+Today, lineup scores are the sum of external per-pick totals (`EventParticipant.total`) with no contest-scoped uniqueness adjustment.
+
+Each sport plugin produces per-pick scores in `aggregateLineupScore`. An optional **uniqueness** primitive on `ScoringRules` can adjust totals based on contest pick rates — see [consensus-axis.md](consensus-axis.md). Sports that score from pick behavior (e.g. predict-the-consensus) bake that signal into pick scores and leave uniqueness weight at `0`.
+
 ---
 
 ## Server pipeline

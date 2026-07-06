@@ -51,7 +51,7 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 ### EventParticipant
 - Competitor in one event
 - `scoreData` JSON (golf: `leaderboardPosition`, hole scores, …)
-- `total` — aggregated score for lineup sum
+- `total` — external pick score `e_i` (event-scoped; used as base for uniqueness)
 
 ---
 
@@ -87,13 +87,21 @@ Lineup ──< LineupPick >── EventParticipant
 | `settings` | Primary deposit, oracle, expiry, subsidy bps, … |
 | `results` | Settlement snapshot JSON |
 
+### ContestParticipant *(new — uniqueness)*
+- One row per `(contestId, eventParticipantId)`
+- `pickRate`, `baseScore`, `bonus`, `adjustedScore` — contest-scoped per-pick uniqueness
+- See [consensus-axis.md](../../docs/platform/consensus-axis.md)
+
 ### ContestLineup
 - Links `contestId` + `lineupId` + `userId`
 - `entryId` — on-chain entry (uint256)
-- `score`, `position` — updated during live play / settlement
+- `score` — final ranked total (`finalScore`)
+- `baseScore`, `uniquenessBonus` — lineup aggregates (sum of picks' `ContestParticipant` values)
+- `uniquenessIndex` — roster uniqueness `U`; tie-break key
+- `position` — updated during live play / settlement
 
 ### ContestLineupTimeline
-- Time series of score/position per entry for charts
+- Time series of `score` (final total) and `position` per entry for charts
 
 ### ContestSecondaryParticipant
 - Secondary market buyers indexed from chain events
