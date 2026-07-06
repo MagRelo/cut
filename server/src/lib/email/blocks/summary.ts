@@ -1,6 +1,7 @@
 import { escapeHtml } from "../escape.js";
 import {
   EMPTY_SUMMARY_STYLE,
+  QUOTE_ATTRIBUTION_STYLE,
   QUOTE_CELL_STYLE,
   QUOTE_TEXT_STYLE,
   SECTION_TITLE_STYLE,
@@ -40,9 +41,11 @@ export function renderLeadSummarySectionHtml(
     })
     .join("");
 
+  const attributionHtml = `<p style="${QUOTE_ATTRIBUTION_STYLE}margin:10px 0 0;text-align:right;">&mdash; CutBot</p>`;
+
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
   <tr>
-    <td style="${QUOTE_CELL_STYLE}">${paragraphsHtml}</td>
+    <td style="${QUOTE_CELL_STYLE}">${paragraphsHtml}${attributionHtml}</td>
   </tr>
 </table>`;
 }

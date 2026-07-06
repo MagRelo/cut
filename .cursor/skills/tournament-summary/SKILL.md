@@ -13,8 +13,10 @@ Produce a **casual-fan tournament preview** for a PGA Tour event and save it to
 `server/src/tournamentSummaries/{pgaTourId}.json`.
 
 Content appears in the app summary modal and the **New Tournament email** lead
-block — write like a welcoming sports-column intro, not a betting wire or stat
-sheet.
+quote block (italic pull-quote). Write like a **conversational sports column with
+a take** — enticing, context-rich, frank about what matters this week. Light
+betting angles are fine (this is a betting product); save odds boards and deep
+jargon for **Best Players and Odds**.
 
 ## Quick prompt (user copy-paste)
 
@@ -26,6 +28,9 @@ Replace the ID with any `pgaTourId`. Optional flags:
 
 - `write file` — save JSON (default)
 - `preview only` — show JSON in chat, do not write
+- `quote only` — rewrite the Summary `body` only; keep other sections unchanged
+- `quote variants` — output **three** labeled Summary bodies in chat (no file
+  write); use to calibrate tone before committing
 - `recap` — post-tournament results instead of pre-event preview
 
 ## Workflow
@@ -80,7 +85,7 @@ standard preview.
 
 | Section | What to find |
 |--------|----------------|
-| Summary | **Place, course, history, nostalgia** — why this week feels special; 2–3 star names max; one light “what to watch” hook |
+| Summary | **Story hook + insider take** — tension or surprise first, then place/names; 2–3 star names max; one frank “what to watch” angle (betting-friendly OK) |
 | Best Players and Odds | 8–10 contenders with American odds ranges (e.g. `+850 to +1000`) |
 | Tournament History | Venue, year founded, defending champion, tradition |
 | Course and Format | Course name, dates, purse, format, yardage/par profile |
@@ -98,14 +103,15 @@ Follow the canonical structure in [reference.md](reference.md).
 
 Rules:
 
-- **Summary** section: exactly one item with `"label": ""` and **2–4 short
-  sentences** (see voice guide below). No bullets in Summary.
+- **Summary** section: exactly one item with `"label": ""` and **3–4 short
+  sentences** (see quote voice guide below). No bullets in Summary.
 - **Best Players and Odds**: 8–10 players; label format
   `"Player Name (+low to +high):"`; body is **one plain sentence** — why fans
   should care, not a stat dump.
-- **Voice:** welcoming, nostalgic, excited — for **casual fans** who know a few
-  big names and love the *feel* of a tournament week. Think sports-page column
-  (Sporting News / Chicago Tribune), not odds terminal or PGA press release.
+- **Voice:** conversational columnist with a take — story-first hook, frank
+  about the week's stakes, warm but not a PGA press release. A light betting
+  read (“favorite”, “value”, “board”, “low scores play”) is welcome in Summary;
+  save prices and full odds context for **Best Players and Odds**.
 - Use straight apostrophes in JSON (`'` inside strings is fine; avoid smart
   quotes that break JSON).
 
@@ -142,57 +148,87 @@ event metadata. After updating a summary for the active event, re-run init:
 pnpm run service:init-event pga-golf R2026023
 ```
 
-## Summary voice (casual fan)
+## Summary quote voice
 
-The Summary is the email lead and first thing users read. Optimize for **place,
-course, history, and nostalgia** — then
-make casual fans feel welcome.
+The Summary `body` renders as an **italic email pull-quote** — it should read
+like someone with an opinion, not a tournament fact sheet.
 
-### Lead with
+### Lead with (story-first)
 
-1. **Where** — city, region, course name (e.g. “Quad Cities,” “Silvis,
-   Illinois,” “TPC Deere Run”).
-2. **Why this week matters** — tradition, anniversary, tune-up before a major,
-   fan-friendly Midwest stop, etc.
-3. **2–3 recognizable names** — defending champ, past winner with local history,
-   one current favorite or fan favorite. Not a full field list.
-4. **One inviting hook** — low scores, summer vibe, comeback story, first win
-   nostalgia. Save the rest for other sections.
+1. **A hook with tension** — low scores coming, favorite under pressure, course
+   suits bombers or grinders, last chance before a major, etc.
+2. **Why that hook matters** — one frank line on how the week will actually play.
+3. **Place and vibe** — city, course, tradition in plain language (not a travel
+   brochure).
+4. **2–3 names tied to the story** — defending champ, course horse, betting
+   favorite, sentimental pick. Each name earns its mention.
 
 ### Writing rules
 
+- **Conversational.** Write like you're talking a friend through the week — direct,
+  readable, a little personality. Contractions are fine.
 - **Short sentences.** One idea per sentence. Avoid chains of clauses joined by
   “while,” “with,” and comma splices.
-- **Less information density.** No yardage, par, purse, or field size in
-  Summary — those live in Course and Format.
-- **Warm and welcoming**, not stiff or transactional. You’re inviting someone
-  into the week, not filing a report.
-- **Nostalgic when it fits** — first Tour win here, decades on the calendar,
-  local love, iconic holes, sponsor/community ties.
-- **Exciting but honest** — enthusiasm without hype or invented drama.
-- Third person, present tense for upcoming events.
-- No markdown inside JSON strings.
+- **Frank insider takes** — “someone's going to go low,” “the board is wide open,”
+  “this is a nightmare for the cautious.” Opinionated but honest; don't invent drama.
+- **Light betting flavor** — favorites, value, the board, low scores, course fit
+  in plain English. **No American odds in Summary** (those belong in Best Players
+  and Odds). One betting angle per quote, not a market recap.
+- **Less stat density.** No yardage, par, purse, or field size in Summary — those
+  live in Course and Format.
+- Present tense for upcoming events. No markdown inside JSON strings.
 
 ### Avoid in Summary
 
-- Compound sentences packing 4+ facts.
-- Betting jargon (“co-favorite,” “profiles well,” “market rank”).
+- Opening with venue/history before the hook (save place for sentence 2–3).
+- One compound sentence packing 4+ facts.
+- Odds-terminal voice: “profiles well,” “market rank,” “co-favorite at +X.”
+- Stacked betting jargon or multiple prices in the quote.
 - Amateur/pro debut details unless it’s *the* story of the week.
-- Course renovation minutiae (save for Course Profile or omit).
 - Listing more than three player names.
+
+### Gold-standard quote (target tone)
+
+John Deere Classic — story hook, insider take, light betting read, conversational:
+
+> Someone's going to shoot 62 this week. TPC Deere Run has been that kind of
+> track when conditions cooperate — low scores, fast leaderboards, and a whole
+> lot of guys thinking they have a chance. Spieth has two wins here and the
+> emotional tie; Campbell proved last year you don't need to be a household name
+> to steal the week. Small-town Silvis, big personalities, last chance to find
+> form before The Open.
+
+### Calibrating tone (`quote variants`)
+
+When the user asks for **quote variants**, output three labeled options in chat
+only (no file write):
+
+- **A — Insider columnist** — frank, opinionated, betting-aware
+- **B — Conversational host** — warm, you-and-me, minimal betting
+- **C — Story-first hook** — tension/surprise open, then color (default target)
+
+After the user picks a direction, apply it to the full summary or run
+`quote only` to update just the Summary `body`.
+
+Preview in email chrome after choosing:
+
+```bash
+pnpm --filter server run script:email-preview new-tournament open
+```
 
 ### Odds blurbs
 
-Keep **one sentence**, fan-readable: recent win, past champ here, popular
-draw, hot streak — not “approach game” / “tee-to-green profile” jargon unless
-unavoidable.
+Keep **one sentence**, fan-readable: recent win, past champ here, popular draw,
+hot streak, course fit. Betting-aware phrasing is fine (“live favorite,” “value
+on the board”) — avoid stacked stats and approach-game jargon unless unavoidable.
 
 ## Style reference
 
 Gold-standard examples in the repo:
 
-- `server/src/tournamentSummaries/R2026021.json` — warm Summary lead + odds format
-- `server/src/tournamentSummaries/R2026030.json` — casual-fan Midwest / nostalgia tone
+- `server/src/tournamentSummaries/R2026021.json` — odds section format
+- Summary quote tone — see **Gold-standard quote** above (prefer over older
+  nostalgia-first leads in existing files)
 
 Older files may use `Key Storylines` instead of `Summary`; **prefer the
 R2026021 layout** for new summaries.

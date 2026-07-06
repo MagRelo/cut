@@ -50,6 +50,7 @@ describe("parseSummarySections", () => {
     expect(html).not.toContain("&#8226;&nbsp;Opening paragraph");
     expect(html).toContain("border-left:3px solid");
     expect(html).toContain("font-style:italic");
+    expect(html).toContain("&mdash; CutBot");
     expect(html).toContain("&#8226;&nbsp;");
     expect(html).toContain("Best Players and Odds");
   });

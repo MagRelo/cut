@@ -40,7 +40,7 @@ Replace `{...}` placeholders. Keep valid JSON.
     "items": [
       {
         "label": "",
-        "body": "{2–4 short sentences: place & course, history/tradition, 2–3 star names, one welcoming hook. Casual fan voice — see Writing style.}"
+        "body": "{3–4 short sentences: story hook with tension, frank take on how the week plays, place/vibe, 2–3 names tied to the story. Conversational quote voice — light betting OK, no odds prices. See SKILL.md quote voice guide.}"
       }
     ]
   },
@@ -124,34 +124,36 @@ Check **5–10 sources** per event for storylines, odds, and course context.
 - When books differ, show a range: `(+1800 to +2200)`.
 - Tie each pick to **course fit** or **recent form**, not just rank.
 
-### Writing style (casual fan)
+### Writing style
 
-**Audience:** casual golf fans — they know a few stars, care about *where* the
-tournament is and *why* it feels special, and want an easy read in the app and
-email.
+**Audience:** golf fans on a betting platform — they want a quick, enticing read
+with real context, not a press release or odds terminal.
 
-**Summary (most important):**
+**Summary quote (most important):**
 
 | Do | Don't |
 |----|--------|
-| Lead with location, course, region | Open with odds favorites or field size |
-| Evoke history, tradition, nostalgia | Pack yardage, par, purse into Summary |
-| Name 2–3 big or beloved players | List half the field |
-| Use short, punchy sentences | Write one long compound sentence |
-| Sound welcoming and excited | Sound like a betting sheet or press release |
+| Open with a story hook or tension | Open with venue/history or field size |
+| Give a frank insider take on the week | Stack facts in one compound sentence |
+| Name 2–3 players tied to *why* they matter | List half the field |
+| Use conversational, direct sentences | Sound like a PGA media guide |
+| Light betting flavor (favorite, value, low scores) | Put American odds or market rank in Summary |
+| Sound opinionated but honest | Invent drama or hype |
 
-**Sentence length:** aim for under ~20 words per sentence in Summary when
-possible.
+**Sentence length:** aim for under ~25 words per sentence in Summary when possible.
 
-**Odds section:** one sentence per player; fan-readable reason to watch. Course
-fit is fine in one plain phrase — avoid stacked stats and jargon.
+**Odds section:** one sentence per player; fan-readable reason to watch. Betting-aware
+phrasing and course fit are fine — avoid stacked stats and jargon.
 
-**Other sections:** factual and scannable (History, Course, Broadcast). Tone
-can stay neutral; warmth lives in Summary.
+**Other sections:** factual and scannable (History, Course, Broadcast). Personality
+lives in Summary.
 
-**Tense:** third person, present tense for upcoming events.
+**Tense:** present tense for upcoming events.
 
 **Format:** no bullet characters inside `body` strings; no markdown.
+
+**Tone calibration:** use `quote variants` in the skill prompt to generate three
+Summary options before writing the file.
 
 ## Post-tournament recap (optional)
 
@@ -176,5 +178,9 @@ Generate a tournament summary for R2026023
 ```
 
 ```
-Write tournament summary JSON for R2026556 and validate it
+@tournament-summary quote variants R2026030
+```
+
+```
+@tournament-summary quote only R2026030
 ```
