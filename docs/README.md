@@ -16,6 +16,7 @@ Product, operations, and sport-specific reference for Play The Cut. For as-built
 
 | Doc | Purpose |
 |-----|---------|
+| [cron-pi.md](operations/cron-pi.md) | Raspberry Pi cron host (Tailscale, deploy, PM2) |
 | [email-program.md](operations/email-program.md) | Email cadence and audiences |
 | [email-implementation.md](operations/email-implementation.md) | MailerSend engineering companion |
 
