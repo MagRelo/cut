@@ -2,7 +2,9 @@ import { Link } from "react-router-dom";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { type Contest } from "../../types/contest";
 import { formatContestStatus, contestStatusValueClass } from "../../lib/contestStatus";
+import { eventDisplayNameFromMetadata, eventStartDateFromMetadata } from "../../lib/eventMetadata";
 import { cn } from "../../lib/tabStyles";
+import { ContestBeginCountdown } from "./lobby/ContestBeginCountdown";
 import { ContestCard } from "./ContestCard";
 
 const viewButtonClassName =
@@ -49,6 +51,9 @@ interface ContestListItemProps {
 export const ContestListItem = ({ contest, to, className }: ContestListItemProps) => {
   const entryCount = contest.contestLineups?.length ?? 0;
   const buyInValue = formatBuyInValue(contest.settings?.primaryDeposit);
+  const metadata = contest.event?.metadata;
+  const eventName = eventDisplayNameFromMetadata(metadata, "");
+  const eventStartDate = eventStartDateFromMetadata(metadata);
 
   return (
     <div
@@ -60,7 +65,12 @@ export const ContestListItem = ({ contest, to, className }: ContestListItemProps
       <div className="p-3 pb-2 pt-4">
         <ContestCard contest={contest} />
       </div>
-      <div className="flex items-center gap-3 px-3 pb-2">
+      <ContestBeginCountdown
+        contestStatus={contest.status}
+        eventName={eventName || null}
+        eventStartDate={eventStartDate}
+      />
+      <div className="flex items-center gap-3 px-3 py-2">
         <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
           <ContestListStat value={buyInValue} label="Buy-in" />
           <ContestListStat value={entryCount} label="Entries" />

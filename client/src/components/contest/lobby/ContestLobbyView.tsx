@@ -11,6 +11,7 @@ import { EventLineupsPanel } from "../../platform/EventLineupsPanel";
 import { ContestCard } from "../ContestCard";
 import { ContestPayoutsModal } from "../ContestPayoutsModal";
 import { ContestResultsPanel } from "../ContestResultsPanel";
+import { ContestBeginCountdown } from "./ContestBeginCountdown";
 import { ContestPrimaryTab } from "./ContestPrimaryTab";
 import { ContestPredictionsPanel } from "./ContestPredictionsPanel";
 
@@ -53,7 +54,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   const fieldSportId = contest.event?.sportId;
 
   const [isPayoutsModalOpen, setIsPayoutsModalOpen] = useState(false);
-  const { eventShell, error: eventError } = useContestEvent(contest);
+  const { eventShell, error: eventError, eventName, eventStartDate } = useContestEvent(contest);
   const plugin = useSportUIPlugin();
   const EventSummary = plugin?.EventSummary;
 
@@ -66,7 +67,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
       ) : null}
       {eventShell && EventSummary ? <EventSummary event={eventShell} /> : null}
       <div className="border-b border-gray-200">
-        <div className="px-3 py-4">
+        <div className="px-3 pb-2 pt-4">
           <ContestCard
             contest={contest}
             linkUserGroup
@@ -74,6 +75,14 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
             onPotClick={
               viewModel.phase === "settled" ? undefined : () => setIsPayoutsModalOpen(true)
             }
+          />
+        </div>
+
+        <div className="mb-2">
+          <ContestBeginCountdown
+            contestStatus={contest.status}
+            eventName={eventName}
+            eventStartDate={eventStartDate}
           />
         </div>
 
@@ -157,7 +166,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
           contest={contest}
         />
       ) : null}
-
     </div>
   );
 };

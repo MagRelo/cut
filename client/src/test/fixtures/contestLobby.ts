@@ -39,7 +39,11 @@ function buildContest(overrides: Partial<Contest> & { status: ContestStatus }): 
       sportId: "golf",
       externalId: "R2026001",
       isActive: true,
-      metadata: { status: "OPEN", name: "Weekend Cut" },
+      metadata: {
+        status: "OPEN",
+        name: "Weekend Cut",
+        startDate: new Date(Date.now() + 86400 * 1000 * 2).toISOString(),
+      },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
