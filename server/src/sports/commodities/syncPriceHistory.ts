@@ -9,13 +9,14 @@ import {
 import { prisma } from "../../lib/prisma.js";
 import { commodityExternalId } from "@cut/sport-commodities";
 import {
+  fetchCandidatePriceHistoryForField,
   fetchQuotesForField,
   fetchSessionSparklineHistoryForField,
 } from "./marketDataProvider.js";
 import { appendLiveMark } from "./priceHistoryUtils.js";
 import { resolveCommoditiesSessionDate } from "./sessionConfig.js";
 
-/** Refresh intraday session sparklines on participant metadata (init + cron). */
+/** Refresh picker + live participant sparkline data on participant metadata (init + cron). */
 export async function syncCommoditiesPriceHistory(eventId: string): Promise<void> {
   const event = await prisma.competitionEvent.findFirst({
     where: { id: eventId, sportId: COMMODITIES_SPORT_ID },
@@ -37,7 +38,8 @@ export async function syncCommoditiesPriceHistory(eventId: string): Promise<void
 
   const isComplete = commoditiesEventStatusFromMetadata(event.metadata) === "COMPLETE";
   const sessionDate = resolveCommoditiesSessionDate(commodities.sessionDate, event.externalId);
-  const [histories, quotes] = await Promise.all([
+  const [candidateHistories, sessionHistories, quotes] = await Promise.all([
+    fetchCandidatePriceHistoryForField(field),
     fetchSessionSparklineHistoryForField(
       field,
       sessionDate,
@@ -64,10 +66,9 @@ export async function syncCommoditiesPriceHistory(eventId: string): Promise<void
     }
 
     const existingMeta = parseCommodityParticipantMetadata(row.metadata);
-    const sessionOpenMs = new Date(commodities.sessionOpen).getTime();
-    const closes = (histories.get(entry.ticker) ?? []).filter((point) => point.t >= sessionOpenMs);
     const mark = quotes.get(entry.ticker)?.markPrice;
-    const priceHistory = appendLiveMark(closes, mark);
+    const priceHistory = appendLiveMark(candidateHistories.get(entry.ticker) ?? [], mark);
+    const sessionPriceHistory = appendLiveMark(sessionHistories.get(entry.ticker) ?? [], mark);
 
     await prisma.participant.update({
       where: { id: row.id },
@@ -75,10 +76,11 @@ export async function syncCommoditiesPriceHistory(eventId: string): Promise<void
         metadata: {
           ...existingMeta,
           priceHistory,
+          sessionPriceHistory,
         } as unknown as Prisma.InputJsonValue,
       },
     });
   }
 
-  console.log(`[commodities] Session sparklines synced for event ${eventId}`);
+  console.log(`[commodities] Price history synced for event ${eventId}`);
 }

@@ -80,7 +80,7 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
     { length: COMMODITIES_PERIOD_RULES.count },
     (_, index) => scoreData[`r${index + 1}` as keyof typeof scoreData],
   ).some(Boolean);
-  const sparklineHistory = participant.priceHistory ?? [];
+  const sparklineHistory = participant.sessionPriceHistory ?? [];
 
   return (
     <div className="overflow-hidden rounded-sm border border-gray-300 bg-white">

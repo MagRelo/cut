@@ -5,9 +5,23 @@
 
 import "dotenv/config";
 import { prisma } from "../lib/prisma.js";
-import { COMMODITIES_SPORT_ID, getEventFieldSnapshot } from "@cut/sport-commodities";
-import type { CommodityParticipantMetadata } from "@cut/sport-commodities";
+import {
+  CANDIDATE_PRICE_HISTORY_WEEKS,
+  COMMODITIES_SPORT_ID,
+  getEventFieldSnapshot,
+  type CommodityParticipantMetadata,
+  type CommodityPriceHistoryPoint,
+} from "@cut/sport-commodities";
 import { fetchAssetContexts, fetchCandles } from "../sports/commodities/hyperliquidClient.js";
+
+function historySummary(history: CommodityPriceHistoryPoint[] | number[] | undefined): string {
+  const hist = history ?? [];
+  if (hist.length < 2) {
+    return `len=${hist.length} (blank sparkline)`;
+  }
+  const values = hist.map((point) => (typeof point === "number" ? point : point.c));
+  return `len=${hist.length} range ${Math.min(...values)}–${Math.max(...values)}`;
+}
 
 async function main(): Promise<void> {
   const event = await prisma.competitionEvent.findFirst({
@@ -19,7 +33,8 @@ async function main(): Promise<void> {
 
   const field = getEventFieldSnapshot(event.metadata);
   console.log(`Event ${event.externalId} (${event.id})`);
-  console.log(`COMMODITIES_USE_FIXTURE_PRICES=${process.env.COMMODITIES_USE_FIXTURE_PRICES ?? "(unset)"}\n`);
+  console.log(`COMMODITIES_USE_FIXTURE_PRICES=${process.env.COMMODITIES_USE_FIXTURE_PRICES ?? "(unset)"}`);
+  console.log(`Candidate sparkline lookback: ${CANDIDATE_PRICE_HISTORY_WEEKS} weeks\n`);
 
   for (const entry of field) {
     const row = await prisma.participant.findFirst({
@@ -27,10 +42,10 @@ async function main(): Promise<void> {
       select: { metadata: true },
     });
     const meta = (row?.metadata ?? {}) as CommodityParticipantMetadata;
-    const hist = meta.priceHistory ?? [];
     console.log(`--- ${entry.ticker} (${entry.hlCoin}) ---`);
     console.log("  quote:", meta.quote);
-    console.log(`  priceHistory: len=${hist.length}`, hist.length >= 2 ? `range ${Math.min(...hist)}–${Math.max(...hist)}` : "(blank sparkline)");
+    console.log(`  priceHistory (picker): ${historySummary(meta.priceHistory)}`);
+    console.log(`  sessionPriceHistory (live): ${historySummary(meta.sessionPriceHistory)}`);
   }
 
   for (const coin of ["xyz:CL", "xyz:TTF", "xyz:BRENTOIL"]) {
@@ -47,9 +62,9 @@ async function main(): Promise<void> {
       : "NOT FOUND");
 
     const end = Date.now();
-    const start = end - 30 * 4 * 3600 * 1000;
+    const start = end - 14 * 24 * 3600 * 1000;
     const candles = await fetchCandles(coin, "4h", start, end);
-    console.log(`  candles(4h): ${candles.length}`);
+    console.log(`  candles(4h, 2w): ${candles.length}`);
   }
 }
 

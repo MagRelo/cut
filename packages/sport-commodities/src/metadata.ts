@@ -44,14 +44,21 @@ export interface CommodityQuoteSnapshot {
 
 export type CommodityPriceHistoryPoint = { t: number; c: number };
 
+/** Rolling lookback for picker sparklines (independent of contest session). */
+export const CANDIDATE_PRICE_HISTORY_WEEKS = 2;
+export const CANDIDATE_PRICE_HISTORY_MS =
+  CANDIDATE_PRICE_HISTORY_WEEKS * 7 * 24 * 60 * 60 * 1000;
+
 export interface CommodityParticipantMetadata {
   sector?: CommoditySector;
   iconKey?: string;
   symbol?: string;
   hlCoin?: string;
   hlDex?: string;
-  /** Intraday candle closes with open timestamps (ms) from session open through now or session end. */
+  /** Rolling historical candle closes for picker sparkline (~2 weeks). */
   priceHistory?: CommodityPriceHistoryPoint[] | number[];
+  /** Intraday session candles from session open through now or session end (live participant sparkline). */
+  sessionPriceHistory?: CommodityPriceHistoryPoint[];
   /** Latest quote snapshot for picker display. */
   quote?: CommodityQuoteSnapshot;
 }

@@ -1,4 +1,9 @@
-import type { CommodityFieldEntry, CommodityQuoteSnapshot } from "@cut/sport-commodities";
+import {
+  CANDIDATE_PRICE_HISTORY_MS,
+  type CommodityFieldEntry,
+  type CommodityPriceHistoryPoint,
+  type CommodityQuoteSnapshot,
+} from "@cut/sport-commodities";
 import type { CommodityScoreData } from "@cut/sport-commodities";
 import {
   buildSessionDayCloseTimestamps,
@@ -141,13 +146,68 @@ export async function fetchQuotesForField(
   return results;
 }
 
+function candlesToPoints(
+  candles: Array<{ t: number; c: string }>,
+  startMs: number,
+  endMs: number,
+): CommodityPriceHistoryPoint[] {
+  return candles
+    .filter((candle) => candle.t >= startMs && candle.t <= endMs)
+    .sort((a, b) => a.t - b.t)
+    .map((candle) => ({
+      t: candle.t,
+      c: Number.parseFloat(candle.c),
+    }))
+    .filter((point) => Number.isFinite(point.c));
+}
+
+/** Rolling historical candles for picker sparklines — always fetched regardless of session status. */
+export async function fetchCandidatePriceHistory(
+  entry: CommodityFieldEntry,
+): Promise<CommodityPriceHistoryPoint[]> {
+  const endMs = Date.now();
+  const startMs = endMs - CANDIDATE_PRICE_HISTORY_MS;
+  const interval = selectCandleInterval(startMs, endMs);
+
+  if (useFixtureMarketData()) {
+    return candlesToPoints(
+      fixtureCandlesForWindow(entry.ticker, startMs, endMs, interval),
+      startMs,
+      endMs,
+    );
+  }
+
+  const { startMs: fetchStartMs } = candleFetchWindow(startMs, endMs, interval);
+  try {
+    const candles = await fetchCandles(entry.hlCoin, interval, fetchStartMs, endMs);
+    return candlesToPoints(candles, startMs, endMs);
+  } catch (error) {
+    console.warn(
+      `[commodities] Candidate price history ${interval} failed for ${entry.hlCoin}:`,
+      error,
+    );
+    return [];
+  }
+}
+
+export async function fetchCandidatePriceHistoryForField(
+  field: CommodityFieldEntry[],
+): Promise<Map<string, CommodityPriceHistoryPoint[]>> {
+  const results = new Map<string, CommodityPriceHistoryPoint[]>();
+  for (const entry of field) {
+    results.set(entry.ticker, await fetchCandidatePriceHistory(entry));
+  }
+  return results;
+}
+
+/** Intraday session candles for live participant sparkline — session open through now or close. */
 export async function fetchSessionSparklineHistory(
   entry: CommodityFieldEntry,
   sessionDate: string,
   sessionOpen: string,
   sessionClose: string,
   isComplete: boolean,
-): Promise<Array<{ t: number; c: number }>> {
+): Promise<CommodityPriceHistoryPoint[]> {
   void sessionDate;
   const sessionOpenMs = new Date(sessionOpen).getTime();
   const sessionCloseMs = new Date(sessionClose).getTime();
@@ -163,24 +223,18 @@ export async function fetchSessionSparklineHistory(
 
   const interval = selectCandleInterval(sessionOpenMs, sessionCloseMs);
 
-  const toPoints = (candles: Array<{ t: number; c: string }>) =>
-    candles
-      .filter((candle) => candle.t >= sessionOpenMs && candle.t <= endMs)
-      .sort((a, b) => a.t - b.t)
-      .map((candle) => ({
-        t: candle.t,
-        c: Number.parseFloat(candle.c),
-      }))
-      .filter((point) => Number.isFinite(point.c));
-
   if (useFixtureMarketData()) {
-    return toPoints(fixtureCandlesForWindow(entry.ticker, fetchStartMs, endMs, interval));
+    return candlesToPoints(
+      fixtureCandlesForWindow(entry.ticker, fetchStartMs, endMs, interval),
+      sessionOpenMs,
+      endMs,
+    );
   }
 
   const { startMs } = candleFetchWindow(fetchStartMs, sessionCloseMs, interval);
   try {
     const candles = await fetchCandles(entry.hlCoin, interval, startMs, endMs);
-    return toPoints(candles);
+    return candlesToPoints(candles, sessionOpenMs, endMs);
   } catch (error) {
     console.warn(`[commodities] Session sparkline ${interval} failed for ${entry.hlCoin}:`, error);
     return [];
@@ -193,8 +247,8 @@ export async function fetchSessionSparklineHistoryForField(
   sessionOpen: string,
   sessionClose: string,
   isComplete: boolean,
-): Promise<Map<string, Array<{ t: number; c: number }>>> {
-  const results = new Map<string, Array<{ t: number; c: number }>>();
+): Promise<Map<string, CommodityPriceHistoryPoint[]>> {
+  const results = new Map<string, CommodityPriceHistoryPoint[]>();
   for (const entry of field) {
     const points = await fetchSessionSparklineHistory(
       entry,
