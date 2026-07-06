@@ -20,30 +20,7 @@ import {
 import { getRequestChainId } from "../utils/requestChainId.js";
 import { pickWalletPublicKeyForChain } from "../utils/pickWalletForChain.js";
 import { formatContestResponse } from "../utils/formatContestResponse.js";
-
-function eventSummaryForContest(
-  event: {
-    id: string;
-    sportId: string;
-    externalId: string;
-    metadata: unknown;
-    sport: { id: string; name: string };
-  },
-) {
-  const meta =
-    typeof event.metadata === "object" && event.metadata !== null
-      ? (event.metadata as { name?: string; startDate?: string; endDate?: string })
-      : {};
-  return {
-    id: event.id,
-    sportId: event.sportId,
-    sportName: event.sport.name,
-    externalId: event.externalId,
-    name: meta.name ?? event.externalId,
-    startDate: meta.startDate ?? null,
-    endDate: meta.endDate ?? null,
-  };
-}
+import { eventSummaryForContest } from "../utils/contestEventSummary.js";
 
 const userGroupRouter = new Hono();
 

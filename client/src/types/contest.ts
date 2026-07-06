@@ -12,6 +12,37 @@ export interface ContestEvent {
   updatedAt: string;
 }
 
+export interface ContestEventSummary {
+  id: string;
+  sportId: string;
+  sportName: string;
+  externalId: string;
+  name: string;
+  startDate: string | null;
+  endDate: string | null;
+}
+
+export interface ContestDirectoryEvent extends ContestEventSummary {
+  isActive: boolean;
+  metadata: Record<string, unknown> | null;
+}
+
+export type LeagueContest = Contest & {
+  eventSummary?: ContestEventSummary;
+};
+
+export interface EventContestGroup {
+  event: ContestDirectoryEvent;
+  contests: Contest[];
+}
+
+export type ContestDirectoryScope = "live" | "past" | "all";
+
+export interface ContestDirectoryResponse {
+  live: EventContestGroup[];
+  past: EventContestGroup[];
+}
+
 export type ContestStatus = "OPEN" | "ACTIVE" | "LOCKED" | "SETTLED" | "CANCELLED" | "CLOSED";
 export type ContestType = "PUBLIC" | "PRIVATE" | "INVITE_ONLY";
 

@@ -3,6 +3,7 @@ import { predictionNumericValue } from "../utils/sportPrediction.js";
 import { prisma } from "../lib/prisma.js";
 import {
   contestQuerySchema,
+  contestDirectoryQuerySchema,
   createContestSchema,
   recordContestSecondaryParticipantSchema,
 } from "../schemas/contest.js";
@@ -21,7 +22,6 @@ import {
 } from "../utils/lineupValidation.js";
 import {
   canAccessLeagueContest,
-  getMemberUserGroupIds,
   isUserGroupAdmin,
 } from "../utils/userGroup.js";
 import { getContestTimelineData } from "../utils/contestTimeline.js";
@@ -33,6 +33,8 @@ import type { DetailedResult } from "../services/shared/types.js";
 import { getRewardDistributorAddress } from "../lib/referralConfig.js";
 import { parseReferralGroupIdFromEnv } from "../lib/referralConfig.js";
 import { primaryDepositWeiFromSettings } from "../lib/contractAddresses.js";
+import { contestListSelect, contestVisibilityWhere } from "../utils/contestListQuery.js";
+import { listContestDirectory } from "../services/contests/listContestDirectory.js";
 
 const contestRouter = new Hono();
 
@@ -117,6 +119,39 @@ async function loadFormattedContestById(contestId: string) {
   return { ...formatted, onchainPayments };
 }
 
+contestRouter.get("/directory", optionalAuth, async (c) => {
+  try {
+    const scopeParam = c.req.query("scope");
+    const chainIdParam = c.req.query("chainId");
+
+    const validation = contestDirectoryQuerySchema.safeParse({
+      scope: scopeParam || "all",
+      chainId: chainIdParam ? parseInt(chainIdParam) : undefined,
+    });
+
+    if (!validation.success) {
+      return c.json(
+        {
+          error: "Invalid query parameters",
+          details: validation.error.errors,
+        },
+        400,
+      );
+    }
+
+    const { scope, chainId } = validation.data;
+    const userId = getOptionalUserId(c);
+    const directory = await listContestDirectory(userId, scope, chainId);
+
+    c.header("Cache-Control", "private, no-cache, must-revalidate");
+
+    return c.json(directory);
+  } catch (error) {
+    console.error("Error fetching contest directory:", error);
+    return c.json({ error: "Failed to fetch contest directory" }, 500);
+  }
+});
+
 contestRouter.get("/", optionalAuth, async (c) => {
   try {
     const eventId = c.req.query("eventId");
@@ -147,86 +182,23 @@ contestRouter.get("/", optionalAuth, async (c) => {
 
     const userId = getOptionalUserId(c);
 
-    const whereClause: {
-      eventId: string;
-      chainId?: number | { in: number[] };
-      userGroupId?: string;
-      OR?: Array<{ userGroupId: null } | { userGroupId: { in: string[] } }>;
-    } = {
-      eventId: validEventId,
-    };
-
-    if (validChainId !== undefined) {
-      whereClause.chainId = validChainId;
-    } else {
-      whereClause.chainId = {
-        in: [8453, 84532],
-      };
-    }
-
     if (validUserGroupId !== undefined) {
       if (!userId || !(await canAccessLeagueContest(userId, validUserGroupId))) {
         return c.json({ error: "Contest not found" }, 404);
       }
-      whereClause.userGroupId = validUserGroupId;
-    } else {
-      const memberGroupIds = userId ? await getMemberUserGroupIds(userId) : [];
-      whereClause.OR = [
-        { userGroupId: null },
-        ...(memberGroupIds.length > 0 ? [{ userGroupId: { in: memberGroupIds } }] : []),
-      ];
     }
 
+    const visibility = await contestVisibilityWhere(userId, {
+      ...(validChainId !== undefined ? { chainId: validChainId } : {}),
+      ...(validUserGroupId !== undefined ? { userGroupId: validUserGroupId } : {}),
+    });
+
     const contests = await prisma.contest.findMany({
-      where: whereClause,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        eventId: true,
-        userGroupId: true,
-        endTime: true,
-        address: true,
-        chainId: true,
-        status: true,
-        settings: true,
-        results: true,
-        createdAt: true,
-        updatedAt: true,
-        userGroup: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        contestLineups: {
-          select: {
-            id: true,
-            contestId: true,
-            userId: true,
-            lineupId: true,
-            position: true,
-            score: true,
-            status: true,
-            entryId: true,
-            createdAt: true,
-            updatedAt: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                settings: true,
-              },
-            },
-            lineup: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
+      where: {
+        eventId: validEventId,
+        ...visibility,
       },
+      select: contestListSelect,
     });
 
     const formattedContests = contests.map((contest) =>

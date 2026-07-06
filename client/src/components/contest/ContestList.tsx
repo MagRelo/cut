@@ -8,10 +8,12 @@ interface ContestListProps {
   contests: Contest[];
   loading: boolean;
   error: string | null;
+  eventName?: string | null;
+  eventStartDate?: string | null;
 }
 
 export function ContestListConnectHint({
-  message = "to see private contests.",
+  message = "to see private contests",
   className = "mt-6 text-center",
 }: {
   message?: string;
@@ -20,14 +22,20 @@ export function ContestListConnectHint({
   return (
     <p className={`font-display text-sm text-gray-600 ${className}`}>
       <Link to="/connect" className="font-semibold text-blue-600 hover:text-blue-700">
-        Sign In
+        Sign in
       </Link>{" "}
       {message}
     </p>
   );
 }
 
-export const ContestList = ({ contests, loading, error }: ContestListProps) => {
+export const ContestList = ({
+  contests,
+  loading,
+  error,
+  eventName,
+  eventStartDate,
+}: ContestListProps) => {
   if (loading) {
     return (
       <div className="mt-4 min-h-[80px] text-center">
@@ -56,6 +64,8 @@ export const ContestList = ({ contests, loading, error }: ContestListProps) => {
             key={contest.id}
             contest={contest}
             to={contestLobbyPath(contest.address)}
+            eventName={eventName}
+            eventStartDate={eventStartDate}
           />
         ))}
       </div>

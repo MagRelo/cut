@@ -133,6 +133,17 @@ export const contestQuerySchema = z.object({
   userGroupId: z.string().cuid("Invalid user group ID").optional(),
 });
 
+export const contestDirectoryQuerySchema = z.object({
+  scope: z.enum(["live", "past", "all"]).default("all"),
+  chainId: z
+    .number()
+    .int()
+    .refine((val) => [8453, 84532].includes(val), {
+      message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
+    })
+    .optional(),
+});
+
 // Types derived from schemas
 export type CreateUserGroupBody = z.infer<typeof createUserGroupSchema>;
 export type UpdateUserGroupBody = z.infer<typeof updateUserGroupSchema>;
@@ -142,6 +153,7 @@ export type CreateContestBody = z.infer<typeof createContestSchema>;
 export type UpdateContestBody = z.infer<typeof updateContestSchema>;
 export type ContestIdParam = z.infer<typeof contestIdSchema>;
 export type ContestQueryParams = z.infer<typeof contestQuerySchema>;
+export type ContestDirectoryQueryParams = z.infer<typeof contestDirectoryQuerySchema>;
 export type RecordContestSecondaryParticipantBody = z.infer<
   typeof recordContestSecondaryParticipantSchema
 >;

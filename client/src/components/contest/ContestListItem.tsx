@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
-import { type Contest } from "../../types/contest";
+import { type Contest, type LeagueContest } from "../../types/contest";
 import { formatContestStatus, contestStatusValueClass } from "../../lib/contestStatus";
 import { eventDisplayNameFromMetadata, eventStartDateFromMetadata } from "../../lib/eventMetadata";
 import { cn } from "../../lib/tabStyles";
@@ -29,8 +29,8 @@ function ContestListStat({
     <div className="min-w-0 text-center">
       <div
         className={cn(
-          "font-display text-sm font-bold tabular-nums leading-none text-gray-900",
-          valueClassName,
+          "font-display text-sm font-bold tabular-nums leading-none",
+          valueClassName ?? "text-gray-900",
         )}
       >
         {value}
@@ -46,14 +46,27 @@ interface ContestListItemProps {
   contest: Contest;
   to: string;
   className?: string;
+  eventName?: string | null;
+  eventStartDate?: string | null;
 }
 
-export const ContestListItem = ({ contest, to, className }: ContestListItemProps) => {
+export const ContestListItem = ({
+  contest,
+  to,
+  className,
+  eventName: eventNameProp,
+  eventStartDate: eventStartDateProp,
+}: ContestListItemProps) => {
   const entryCount = contest.contestLineups?.length ?? 0;
   const buyInValue = formatBuyInValue(contest.settings?.primaryDeposit);
+  const league = contest as LeagueContest;
   const metadata = contest.event?.metadata;
-  const eventName = eventDisplayNameFromMetadata(metadata, "");
-  const eventStartDate = eventStartDateFromMetadata(metadata);
+  const eventName =
+    eventNameProp ??
+    league.eventSummary?.name ??
+    (eventDisplayNameFromMetadata(metadata, "") || null);
+  const eventStartDate =
+    eventStartDateProp ?? league.eventSummary?.startDate ?? eventStartDateFromMetadata(metadata);
 
   return (
     <div
@@ -62,15 +75,15 @@ export const ContestListItem = ({ contest, to, className }: ContestListItemProps
         className,
       )}
     >
-      <div className="p-3 pb-2 pt-4">
+      <div className="px-3 pb-2 pt-4">
         <ContestCard contest={contest} />
       </div>
       <ContestBeginCountdown
         contestStatus={contest.status}
-        eventName={eventName || null}
+        eventName={eventName}
         eventStartDate={eventStartDate}
       />
-      <div className="flex items-center gap-3 px-3 py-2">
+      <div className="flex items-center gap-3 border-t border-gray-100 px-3 py-3">
         <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
           <ContestListStat value={buyInValue} label="Buy-in" />
           <ContestListStat value={entryCount} label="Entries" />

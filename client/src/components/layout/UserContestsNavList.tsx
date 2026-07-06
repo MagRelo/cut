@@ -7,14 +7,14 @@ import { MinusCircleIcon } from "@heroicons/react/24/outline";
 import { useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { useLiveContestsAcrossSports } from "../../hooks/useLiveContestsAcrossSports";
+import { useContestDirectory } from "../../hooks/useContestDirectory";
+import { flattenContestGroups } from "../../lib/contestGroups";
 import {
   contestParticipationLabel,
   getContestParticipationStatus,
   type ContestParticipationStatus,
 } from "../../lib/contestParticipationStatus";
-import type { LeagueContest } from "../contest/GroupedContestList";
-import type { Contest } from "../../types/contest";
+import type { Contest, LeagueContest } from "../../types/contest";
 import { contestLobbyPath } from "../../utils/contestRoutes";
 
 const SPORT_EMOJI: Record<string, string> = {
@@ -177,12 +177,14 @@ export function UserContestsNavList({
 }: UserContestsNavListProps) {
   const { user } = useAuth();
   const location = useLocation();
-  const { contests, isLoading, error } = useLiveContestsAcrossSports();
+  const { data, isLoading, error } = useContestDirectory("live");
 
   const sortedContests = useMemo(() => {
-    const visible = contests.filter((contest) => contest.status !== "CANCELLED");
+    const visible = flattenContestGroups(data?.live ?? []).filter(
+      (contest) => contest.status !== "CANCELLED",
+    );
     return sortContestsForNav(visible);
-  }, [contests]);
+  }, [data?.live]);
 
   if (!user) {
     return null;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tab, TabGroup, TabList, TabPanel } from "@headlessui/react";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
@@ -9,6 +9,7 @@ import { UserGroupMemberManagement } from "../components/userGroup/UserGroupMemb
 import { UserGroupInvitePanel } from "../components/userGroup/UserGroupInvitePanel";
 import { LeagueCreateContestForm } from "../components/userGroup/LeagueCreateContestForm";
 import { GroupedContestList } from "../components/contest/GroupedContestList";
+import { groupContestsByEvent } from "../lib/contestGroups";
 import { useUserGroupQuery, useUserGroupContestsQuery } from "../hooks/useUserGroupQuery";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
@@ -40,6 +41,11 @@ export const UserGroupDetailPage = () => {
 
   const contestsErrorMessage = contestsError instanceof Error ? contestsError.message : null;
 
+  const contestGroups = useMemo(
+    () => groupContestsByEvent(leagueContests ?? []),
+    [leagueContests],
+  );
+
   const isAdmin = userGroup?.currentUserRole === "ADMIN";
 
   const handleDeleted = () => {
@@ -62,7 +68,7 @@ export const UserGroupDetailPage = () => {
     <div className="space-y-4">
       <div>
         <GroupedContestList
-          contests={leagueContests ?? []}
+          groups={contestGroups}
           loading={isContestsLoading}
           error={contestsErrorMessage}
         />

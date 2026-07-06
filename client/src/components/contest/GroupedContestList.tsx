@@ -1,113 +1,46 @@
-import { useMemo, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import type { CompetitionEventShell } from "@cut/sport-sdk";
 import { DEFAULT_EVENT_HERO_OVERLAY_CLASSNAME } from "@cut/sport-sdk/ui";
-import { type Contest } from "../../types/contest";
+import type { ContestDirectoryEvent, EventContestGroup } from "../../types/contest";
 import { formatTournamentDateRange } from "../../lib/contestCreation";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSportUIPlugin } from "../../hooks/useSportUI";
 import { SportEventHeader } from "../platform/SportEventHeader";
 import { ContestList, ContestListConnectHint } from "./ContestList";
 
-export interface ContestEventSummary {
-  id: string;
-  sportId: string;
-  sportName: string;
-  externalId: string;
-  name: string;
-  startDate: string | null;
-  endDate: string | null;
-}
-
-export type LeagueContest = Contest & {
-  eventSummary?: ContestEventSummary;
-};
-
 interface GroupedContestListProps {
-  contests: LeagueContest[];
+  groups: EventContestGroup[];
   loading: boolean;
   error: string | null;
 }
 
-function eventShellFromContest(contest: LeagueContest): CompetitionEventShell | null {
-  const event = contest.event;
-  if (event?.sportId) {
-    return {
-      id: event.id,
-      sportId: event.sportId,
-      externalId: event.externalId,
-      isActive: event.isActive ?? true,
-      metadata: event.metadata,
-    };
-  }
-
-  const summary = contest.eventSummary;
-  if (!summary) return null;
-
+function eventShellFromDirectoryEvent(event: ContestDirectoryEvent): CompetitionEventShell {
   return {
-    id: summary.id,
-    sportId: summary.sportId,
-    externalId: summary.externalId,
-    isActive: true,
-    metadata: {
-      name: summary.name,
-      startDate: summary.startDate,
-      endDate: summary.endDate,
+    id: event.id,
+    sportId: event.sportId,
+    externalId: event.externalId,
+    isActive: event.isActive,
+    metadata: event.metadata ?? {
+      name: event.name,
+      startDate: event.startDate,
+      endDate: event.endDate,
     },
   };
 }
 
-function groupContests(contests: LeagueContest[]) {
-  const groups = new Map<
-    string,
-    {
-      key: string;
-      sportId: string | null;
-      label: string;
-      sublabel: string | null;
-      eventShell: CompetitionEventShell | null;
-      contests: LeagueContest[];
-    }
-  >();
-
-  for (const contest of contests) {
-    const summary = contest.eventSummary;
-    const key = summary?.id ?? contest.eventId;
-    const label = summary
-      ? `${summary.sportName} · ${summary.name}`
-      : "Other events";
-    const sublabel =
-      summary?.startDate && summary?.endDate
-        ? formatTournamentDateRange(summary.startDate, summary.endDate)
-        : summary?.externalId ?? null;
-    const sportId = contest.event?.sportId ?? summary?.sportId ?? null;
-
-    const existing = groups.get(key);
-    if (existing) {
-      existing.contests.push(contest);
-    } else {
-      groups.set(key, {
-        key,
-        sportId,
-        label,
-        sublabel,
-        eventShell: eventShellFromContest(contest),
-        contests: [contest],
-      });
-    }
+function eventSublabel(event: ContestDirectoryEvent): string | null {
+  if (event.startDate && event.endDate) {
+    return formatTournamentDateRange(event.startDate, event.endDate);
   }
-
-  return [...groups.values()];
+  return event.externalId;
 }
 
-type ContestGroup = ReturnType<typeof groupContests>[number];
-
-function GroupedContestSection({ group }: { group: ContestGroup }) {
-  const plugin = useSportUIPlugin(group.sportId ?? undefined);
+function GroupedContestSection({ group }: { group: EventContestGroup }) {
+  const plugin = useSportUIPlugin(group.event.sportId);
+  const eventShell = eventShellFromDirectoryEvent(group.event);
   const heroImage =
-    group.eventShell && plugin?.resolveEventHeroImage
-      ? plugin.resolveEventHeroImage(group.eventShell)
-      : null;
-  const hasHeroPanel = Boolean(group.sportId && group.eventShell && heroImage);
+    plugin?.resolveEventHeroImage ? plugin.resolveEventHeroImage(eventShell) : null;
+  const hasHeroPanel = Boolean(group.event.sportId && heroImage);
 
   if (hasHeroPanel) {
     const heroImageClassName = plugin?.eventHeroImageClassName;
@@ -130,13 +63,19 @@ function GroupedContestSection({ group }: { group: ContestGroup }) {
           <div className={["absolute inset-0", heroOverlayClassName].join(" ")} aria-hidden />
           <div className="relative z-10">
             <SportEventHeader
-              sportId={group.sportId!}
-              event={group.eventShell!}
+              sportId={group.event.sportId}
+              event={eventShell}
               variant="standalone"
               summarySurface="content"
             />
             <div className="p-3 pt-1">
-              <ContestList contests={group.contests} loading={false} error={null} />
+              <ContestList
+                contests={group.contests}
+                loading={false}
+                error={null}
+                eventName={group.event.name}
+                eventStartDate={group.event.startDate}
+              />
             </div>
           </div>
         </div>
@@ -146,34 +85,37 @@ function GroupedContestSection({ group }: { group: ContestGroup }) {
 
   return (
     <section className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
-      {group.sportId && group.eventShell ? (
+      {group.event.sportId ? (
         <SportEventHeader
-          sportId={group.sportId}
-          event={group.eventShell}
+          sportId={group.event.sportId}
+          event={eventShell}
           variant="standalone"
         />
       ) : (
         <header className="border-b border-slate-100 px-4 py-3">
-          <h4 className="font-display text-base font-semibold text-gray-900">{group.label}</h4>
-          {group.sublabel ? (
-            <p className="font-display text-sm text-gray-500">{group.sublabel}</p>
+          <h4 className="font-display text-base font-semibold text-gray-900">
+            {group.event.sportName} · {group.event.name}
+          </h4>
+          {eventSublabel(group.event) ? (
+            <p className="font-display text-sm text-gray-500">{eventSublabel(group.event)}</p>
           ) : null}
         </header>
       )}
       <div className="border-t border-slate-800 bg-slate-900 p-3">
-        <ContestList contests={group.contests} loading={false} error={null} />
+        <ContestList
+          contests={group.contests}
+          loading={false}
+          error={null}
+          eventName={group.event.name}
+          eventStartDate={group.event.startDate}
+        />
       </div>
     </section>
   );
 }
 
-export const GroupedContestList = ({
-  contests,
-  loading,
-  error,
-}: GroupedContestListProps) => {
+export const GroupedContestList = ({ groups, loading, error }: GroupedContestListProps) => {
   const { user } = useAuth();
-  const groups = useMemo(() => groupContests(contests), [contests]);
   const showConnectHint = !user && !loading && !error;
 
   let listContent: ReactNode;
@@ -182,13 +124,13 @@ export const GroupedContestList = ({
     listContent = <ContestList contests={[]} loading error={null} />;
   } else if (error) {
     listContent = <ContestList contests={[]} loading={false} error={error} />;
-  } else if (contests.length === 0) {
+  } else if (groups.length === 0) {
     listContent = <ContestList contests={[]} loading={false} error={null} />;
   } else {
     listContent = (
       <div className="space-y-8">
         {groups.map((group) => (
-          <GroupedContestSection key={group.key} group={group} />
+          <GroupedContestSection key={group.event.id} group={group} />
         ))}
       </div>
     );

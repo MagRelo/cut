@@ -7,7 +7,7 @@ import {
   type UserGroupDetailResponse,
   type UserGroupMembersResponse,
 } from "../types/userGroup";
-import type { LeagueContest } from "../components/contest/GroupedContestList";
+import type { LeagueContest } from "../types/contest";
 
 /**
  * Fetches all user groups for the current user
