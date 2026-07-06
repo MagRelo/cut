@@ -51,7 +51,7 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 ### EventParticipant
 - Competitor in one event
 - `scoreData` JSON (golf: `leaderboardPosition`, hole scores, …)
-- `total` — external pick score `e_i` (event-scoped; used as base for uniqueness)
+- `total` — external pick score `e_i` (event-scoped; base for popularity adjustment)
 
 ---
 
@@ -86,18 +86,16 @@ Lineup ──< LineupPick >── EventParticipant
 | `status` | `OPEN` \| `ACTIVE` \| `LOCKED` \| `SETTLED` \| `CLOSED` |
 | `settings` | Primary deposit, oracle, expiry, subsidy bps, … |
 | `results` | Settlement snapshot JSON |
+| `pickPopularity` | `Json?` — per-player popularity after lock (`pickRate`, `bonus`, `adjustedScore` keyed by `eventParticipantId`) |
+| `pickPopularityLockedAt` | `DateTime?` — when pick rates were snapshotted |
 
-### ContestParticipant *(new — uniqueness)*
-- One row per `(contestId, eventParticipantId)`
-- `pickRate`, `baseScore`, `bonus`, `adjustedScore` — contest-scoped per-pick uniqueness
-- See [consensus-axis.md](../../docs/platform/consensus-axis.md)
+See [consensus-axis.md](../../docs/platform/consensus-axis.md) for shape and cron write path.
 
 ### ContestLineup
 - Links `contestId` + `lineupId` + `userId`
 - `entryId` — on-chain entry (uint256)
 - `score` — final ranked total (`finalScore`)
-- `baseScore`, `uniquenessBonus` — lineup aggregates (sum of picks' `ContestParticipant` values)
-- `uniquenessIndex` — roster uniqueness `U`; tie-break key
+- `baseScore`, `popularityBonus` — lineup aggregates (sum of picks' `pickPopularity` values)
 - `position` — updated during live play / settlement
 
 ### ContestLineupTimeline

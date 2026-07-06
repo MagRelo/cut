@@ -360,7 +360,7 @@ Row 7 of the main worksheet ("Can we get the data?") becomes **N/A — we are th
 | **Staff vs crowd** | Week | Curated nominees | Points vs published staff ranking |
 | **League nomination pool** | League-scoped week | Member nominations → curated | Consensus or admin-final rank |
 | **Promo showcase** | Weekend | Partner-provided list (venues, tracks) | Rank by community vote or editorial reveal |
-| **Ownership modulation (golf, etc.)** | Event week | Same external field as parent sport | External performance + optional ownership bonus on picks | Strong | Path 1 — see [consensus-axis.md](../platform/consensus-axis.md); distinct from predict-the-consensus |
+| **Popularity scoring (golf, etc.)** | Event week | Same external field as parent sport | External performance + optional popularity bonus on picks | Strong | Path 1 — see [consensus-axis.md](../platform/consensus-axis.md); distinct from predict-the-consensus |
 
 ### Adaptable with reframing
 

@@ -7,7 +7,7 @@ Product, operations, and sport-specific reference for Play The Cut. For as-built
 | Doc | Purpose |
 |-----|---------|
 | [architecture.md](platform/architecture.md) | Multi-sport platform design intent |
-| [consensus-axis.md](platform/consensus-axis.md) | Uniqueness scoring primitive (sport package) |
+| [consensus-axis.md](platform/consensus-axis.md) | Popularity scoring — contest pick rates modulate per-pick scores |
 | [lineup-tie-breaker.md](platform/lineup-tie-breaker.md) | Tie-break prediction spec |
 | [referral-network.md](platform/referral-network.md) | On-chain referral policy |
 | [brand.md](platform/brand.md) | Naming and wordmark conventions |

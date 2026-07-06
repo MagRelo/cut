@@ -184,9 +184,9 @@ Sport implementations live in dedicated packages (e.g. `packages/sport-pga-golf`
 
 ### Scoring signals
 
-Today, lineup scores are the sum of external per-pick totals (`EventParticipant.total`) with no contest-scoped uniqueness adjustment.
+Today, lineup scores are the sum of external per-pick totals (`EventParticipant.total`) with no contest-scoped popularity adjustment.
 
-Each sport plugin produces per-pick scores in `aggregateLineupScore`. An optional **uniqueness** primitive on `ScoringRules` can adjust totals based on contest pick rates — see [consensus-axis.md](consensus-axis.md). Sports that score from pick behavior (e.g. predict-the-consensus) bake that signal into pick scores and leave uniqueness weight at `0`.
+Each sport plugin produces per-pick scores in `aggregateLineupScore`. An optional **popularity adjustment** on `ScoringRules.popularity` can modulate pick totals based on contest pick rates **after lineups lock** — see [consensus-axis.md](consensus-axis.md). It does not affect the candidate picker. Sports that score from pick behavior (e.g. predict-the-consensus) bake that signal into pick scores and leave `popularity.weight` at `0`.
 
 ---
 

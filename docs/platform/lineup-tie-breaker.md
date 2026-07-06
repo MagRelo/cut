@@ -14,8 +14,8 @@ Each **lineup** carries a **winning lineup total prediction**: the user’s gues
 
 The prediction serves two roles:
 
-1. **Uniqueness** — Two lineups with the same four players can coexist if their predictions differ.
-2. **Tie-breaking** — When fantasy scores tie, the entry whose prediction is closest to the contest’s actual winning score ranks higher; if still tied, higher uniqueness index `U` wins.
+1. **Entry differentiation** — Two lineups with the same four players can coexist if their predictions differ.
+2. **Tie-breaking** — When fantasy scores tie, the entry whose prediction is closest to the contest’s actual winning score ranks higher; if still tied, earlier entry time (`createdAt`) wins.
 
 ---
 
@@ -41,8 +41,7 @@ The prediction serves two roles:
 | `eventParticipantId` | `LineupPick` | `String` | Pick identity for roster slots. |
 | `score` | `ContestLineup` | `Int` | Live and final fantasy total. |
 | `position` | `ContestLineup` | `Int` | Unique rank within the contest (1 = best). |
-| `createdAt` | `ContestLineup` | `DateTime` | When the lineup was entered into the contest. |
-| `uniquenessIndex` | `ContestLineup` | `Float?` | Roster uniqueness `U` — tertiary tie-break key when scores and prediction distance tie. See [consensus-axis.md](consensus-axis.md). |
+| `createdAt` | `ContestLineup` | `DateTime` | When the lineup was entered into the contest; tertiary tie-break key. |
 
 **Defaults**
 
@@ -149,7 +148,7 @@ For a given contest, compute `contestWinningScore = max(score)` over entries, th
 
 1. **Fantasy score** — higher `ContestLineup.score` wins.
 2. **Prediction distance** — lower `abs(prediction value − contestWinningScore)` wins.
-3. **Uniqueness index** — higher `U` wins (more distinctive roster).
+3. **Entry time** — earlier `createdAt` wins.
 
 Assign positions **1 … N** in sort order (no gaps, no shared position numbers).
 
@@ -169,7 +168,7 @@ flowchart TD
 
 ### Missing prediction
 
-If prediction is null or unparseable at rank time, distance is treated as **infinity** (worst). Entries with a set prediction always beat null predictions on distance. If both lack a prediction, step 3 (`U`) still separates them.
+If prediction is null or unparseable at rank time, distance is treated as **infinity** (worst). Entries with a set prediction always beat null predictions on distance. If both lack a prediction, step 3 (entry time) separates them.
 
 ### Payout structure (settlement)
 
@@ -271,7 +270,7 @@ cd server && pnpm test:run \
 | Duplicates include prediction | Allows intentional “same players, different contest entries” only when the user changes the tie-break guess. |
 | Unique positions everywhere | Simplifies leaderboard display and on-chain settlement; users always see a single rank. |
 | Contest winning score = max entry score | Tie-break measures closeness to “what it took to win this contest,” not a fixed cap or par. |
-| Entry time is no longer a tie-break key | Replaced by uniqueness index `U` — rewards more distinctive rosters when score and prediction still tie. See [consensus-axis.md](consensus-axis.md). |
+| Entry time is tertiary tie-break | Earlier `createdAt` wins when score and prediction distance still tie. |
 | Ranking in sport plugin | Each sport can define its own tie-break keys; platform calls `rankEntries` for live positions and settlement. |
 
 ---

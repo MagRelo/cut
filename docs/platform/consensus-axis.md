@@ -1,6 +1,6 @@
-# Uniqueness scoring
+# Popularity scoring
 
-How contest pick rates feed an optional scoring adjustment on lineup totals. **Uniqueness** is a first-class primitive in the sport package — configured on `ScoringRules`, applied during `aggregateLineupScore`, and overridable per sport.
+How contest pick rates modulate per-pick scores after lineups lock. **Popularity adjustment** is a scoring primitive — configured on `ScoringRules`, applied during lineup aggregation with contest context, and overridable per sport. It does **not** affect lineup building or the candidate picker.
 
 **Status:** Design spec. Not implemented in production scoring today.
 
@@ -20,43 +20,53 @@ flowchart LR
 |-------|-------|
 | Lineup score | Sum of `EventParticipant.total` per pick — no contest context |
 | `ScoringRules` | `{ aggregation: "sum", direction: "higher_wins" }` only |
-| Ownership UI | `ownershipPercentage` on `ParticipantRow` — never populated |
+| Popularity | Not applied — picking and scoring both use raw `EventParticipant.total` |
 
 Orchestration: [`updateContestLineups.ts`](../../server/src/services/updateContestLineups.ts) → `SportModule.aggregateLineupScore(eventId, eventParticipantIds)`.
 
 ---
 
+## When popularity applies
+
+Popularity is **scoring-only**. It runs after the contest locks — not while users are building lineups.
+
+| Phase | Contest status | Popularity |
+|-------|----------------|------------|
+| Entry open | `OPEN` | Off — users pick from the field with no ownership or popularity signal |
+| Locked / live | `ACTIVE` and later | On — pick rates computed from locked lineups; cron adjusts scores |
+
+Pick rates `o(i)` are an internal input to the scoring formula. They are **not** shown in the candidate picker or field list during entry.
+
+---
+
 ## The primitive
 
-**Uniqueness** measures how distinctive a lineup's picks are relative to other entries in the same contest.
+**Popularity adjustment** rewards or penalizes each pick based on how often that participant appears among **locked** lineups in the same contest.
 
 | Term | Definition |
 |------|------------|
-| **Pick rate** `o(i)` | Fraction of contest lineups that include participant *i* |
-| **Uniqueness** | Low pick rate; summarized at pick or roster level for scoring and UI |
-| **Uniqueness weight** | Dial on `ScoringRules`; `0` = disabled, non-zero = apply adjustment |
-
-**Pick rate** (field ownership) is distinct from on-chain **entry ownership** (secondary market shares).
+| **Pick rate** `o(i)` | Fraction of locked contest lineups that include participant *i* |
+| **Popularity weight** | Dial on `ScoringRules.popularity`; `0` = disabled, non-zero = apply per-pick adjustment |
 
 ### Where it lives
 
-Uniqueness belongs in the basic sport scoring contract — same layer as `aggregation` and `direction`:
+Popularity adjustment belongs in the basic sport scoring contract — same layer as `aggregation` and `direction`:
 
 ```
-Sport.scoringRules.uniqueness   → default for all events of that sport
-Event.metadata.uniqueness       → optional override
+Sport.scoringRules.popularity   → default for all events of that sport
+Event.metadata.popularity       → optional override
 Contest settings                → optional override
 SportModule                     → optional override of how adjustment is computed
 ```
 
-A sport that does not use uniqueness sets `weight: 0` (or omits the field). A sport that scores entirely from contest pick behavior implements that inside its own `aggregateLineupScore` and also leaves `weight: 0` — the crowd signal is already in the pick scores; a second uniqueness pass would double-count.
+A sport that does not use popularity adjustment sets `weight: 0` (or omits the field). A sport that scores entirely from contest pick behavior implements that inside its own `aggregateLineupScore` and also leaves `weight: 0` — the crowd signal is already in the pick scores; a second popularity pass would double-count.
 
 ### Sport package contract (target)
 
 ```typescript
-type UniquenessMode = "multiplicative" | "additive";
+type PopularityMode = "multiplicative" | "additive";
 
-interface UniquenessRules {
+interface PopularityRules {
   /** 0 = off. Positive rewards low-owned picks; negative rewards high-owned picks. */
   weight: number;
   /** Amplitude scaler. Default: 1. */
@@ -64,7 +74,7 @@ interface UniquenessRules {
   /** Max raw bonus weight before bonus-shift floor. Default: 2. */
   cap: number;
   /** How bonus applies to positive pick scores. Default: "multiplicative". */
-  mode: UniquenessMode;
+  mode: PopularityMode;
   /** Min contest entries before pick rates are computed. Default: 5. */
   minEntryFloor: number;
 }
@@ -72,15 +82,15 @@ interface UniquenessRules {
 interface ScoringRules {
   aggregation: ScoringAggregation;
   direction: ScoringDirection;
-  uniqueness?: UniquenessRules;
+  popularity?: PopularityRules;
 }
 ```
 
-`SportModule.aggregateLineupScore` gains contest context (at minimum `contestId`) so pick rates are contest-scoped. Sports may override the default uniqueness adjustment; the platform provides a shared default when `weight ≠ 0`.
+`SportModule.aggregateLineupScore` gains contest context (at minimum `contestId`) so pick rates are contest-scoped. Sports may override the default popularity adjustment; the platform provides a shared default when `weight ≠ 0`.
 
 Adjustment is always **per-pick** — each pick is adjusted individually, then summed. No roster-level bonus scope.
 
-No separate scoring-path taxonomy. Each sport declares how pick scores are produced and whether uniqueness adjusts them.
+No separate scoring-path taxonomy. Each sport declares how pick scores are produced and whether popularity adjustment applies.
 
 ### Default config per sport
 
@@ -90,40 +100,29 @@ No separate scoring-path taxonomy. Each sport declares how pick scores are produ
 | **F1** | `0` | — | — | — |
 | **Commodities** | `0` | — | — | — |
 
-Omit `uniqueness` or set `weight: 0` for sports that do not use the primitive.
+Omit `popularity` or set `weight: 0` for sports that do not use the primitive.
 
 ---
 
 ## Pick rates
 
-Computed **per contest** from locked lineups:
+Computed **per contest** from **locked** lineups at contest activation (and stable thereafter):
 
 ```
 o(i) = lineups_with_pick_i / total_lineups
 ```
 
-Returns `0` (uniqueness disabled) when `total_lineups < minEntryFloor` (default **5**).
+Returns no adjustment when `total_lineups < minEntryFloor` (default **5**).
 
 ### Live scoring
 
-Lineups lock when the contest activates. During play, the cron pipeline recomputes lineup scores on the regular schedule (every 5 minutes) — external pick totals (`e_i`) and uniqueness bonuses together. Pick rates are derived from the locked contest field each pass; once lineups are locked the rates are stable, but the pipeline does not cache a one-time snapshot.
-
-### Roster summary
-
-For UI and tie-breaking:
-
-| Metric | Formula |
-|--------|---------|
-| **Geometric mean** `C_geo` | `(Π o(i))^(1/n)` |
-| **Uniqueness index** `U` | `1 - C_geo` — 0 = all chalk, 1 = all unique |
-
-`U` is always computed and exposed when pick rates are available.
+When the contest activates, lineups lock and pick rates are computed once from the contest field. During play, the cron pipeline recomputes lineup scores on the regular schedule (every 5 minutes) — external pick totals (`e_i`) update each pass; `o(i)` stays fixed from the locked field.
 
 ---
 
 ## Design invariant: bonus-only
 
-When uniqueness adjusts scores, it is always a **bonus on top of full pick performance**, never a tax that reduces raw totals.
+When popularity adjustment is active, it is always a **bonus on top of full pick performance**, never a tax that reduces raw totals.
 
 **Why:** Player optics — chalk users keep every point their pick earned; contrarian users see an explicit bonus. No one watches a 22 become an 11.
 
@@ -146,13 +145,13 @@ finalScore = Σ adjusted_i
 
 `bonus_i` is always ≥ 0. The worst case on the dial (100% owned when weight > 0, or 0% owned when weight < 0) gets exactly zero bonus. Negative pick totals pass through unchanged.
 
-**Display:** show `baseScore` + `uniquenessBonus`. Never show negative adjustments to players.
+**Display (post-lock only):** show `baseScore` + `popularityBonus` on leaderboard and lineup views. Never show negative adjustments to players.
 
 ---
 
 ## Sport examples
 
-| Sport | Pick scores (`e_i`) from | `uniqueness.weight` | Notes |
+| Sport | Pick scores (`e_i`) from | `popularity.weight` | Notes |
 |-------|--------------------------|---------------------|-------|
 | **PGA golf** | Stableford via external feed | `0.5` | Bonus for contrarian picks on top of Stableford |
 | **F1** | OpenF1 points | `0` | Pure external sum |
@@ -163,109 +162,141 @@ finalScore = Σ adjusted_i
 
 ## Score decomposition
 
-When uniqueness is active, lineup scoring exposes:
+When popularity adjustment is active (contest locked), lineup scoring exposes:
 
 | Field | Meaning |
 |-------|---------|
 | `baseScore` | Sum of unadjusted pick totals |
-| `uniquenessBonus` | `finalScore - baseScore` |
+| `popularityBonus` | `finalScore - baseScore` (popularity bonus aggregate) |
 | `finalScore` | Ranked total |
-| `uniquenessIndex` | `U` — display and tie-break |
-| `pickRates[]` | Per-pick `o(i)` and `bonus_i` for UI |
+
+Per-pick `bonus` and `adjustedScore` are available post-lock via `Contest.pickPopularity` — not during picking.
 
 ### Storage
 
-**Today:** `EventParticipant.total` holds the external pick score `e_i` (event-scoped). `ContestLineup.score` holds a single lineup total. No uniqueness fields anywhere.
+**Today:** `EventParticipant.total` holds the external pick score `e_i` (event-scoped). `ContestLineup.score` holds a single lineup total. No popularity-adjustment fields anywhere.
 
-Per-pick uniqueness is **contest-scoped**, not event-scoped. Scottie's pick rate in a 500-entry public contest differs from a 12-person league — so it cannot live on `EventParticipant`, which is shared across all contests for that event.
-
-Three layers:
+Per-pick popularity is **contest-scoped**, not event-scoped — stored on `Contest.pickPopularity`, not `EventParticipant`.
 
 | Layer | Model | Stores |
 |-------|-------|--------|
-| **External pick score** | `EventParticipant` | `total` (`e_i`) — already exists; same for every contest |
-| **Contest pick adjustment** | `ContestParticipant` *(new)* | Per-pick uniqueness for one contest: `pickRate`, `bonus`, `adjustedScore` |
-| **Lineup total** | `ContestLineup` | Roster aggregates only: `baseScore`, `uniquenessBonus`, `score`, `uniquenessIndex` |
+| **External pick score** | `EventParticipant` | `total` (`e_i`) — unchanged |
+| **Player popularity** | `Contest.pickPopularity` | Per-player `pickRate`, `bonus`, `adjustedScore` for this contest |
+| **Lineup rollup** | `ContestLineup` | `baseScore`, `popularityBonus`, `score` only |
 
-#### `ContestParticipant` (new)
+```mermaid
+flowchart TB
+  subgraph event["Event scope"]
+    Feed[PGA feed] --> EP["EventParticipant.total = e_i"]
+  end
 
-One row per `(contestId, eventParticipantId)` — the contest-scoped scoring view of a field member.
+  subgraph contest["Contest scope — after lock"]
+    Lineups[Locked lineups] --> PP["Contest.pickPopularity"]
+    EP --> PP
+    PP --> CL["ContestLineup aggregates"]
+  end
+```
+
+#### `EventParticipant` (unchanged)
+
+`total` only. No popularity fields.
+
+#### `Contest` — player popularity cache
+
+Written when the contest locks for scoring. One JSON map per contest — no join table.
 
 | Field | Type | Purpose |
 |-------|------|---------|
-| `contestId` | FK | Contest scope |
-| `eventParticipantId` | FK | Field member |
-| `pickRate` | `Float` | `o(i)` — fraction of contest lineups with this pick |
-| `baseScore` | `Int?` | Denormalized `EventParticipant.total` at write time |
-| `bonus` | `Int?` | Uniqueness bonus applied to this pick |
-| `adjustedScore` | `Int?` | `baseScore` + bonus (or multiplicative equivalent, rounded) |
-
-Computed once per contest per cron pass. Every lineup that includes this pick reads the same `adjustedScore` — no duplication across `ContestLineup` rows.
+| `pickPopularity` | `Json?` | Per-player popularity — see shape below |
+| `pickPopularityLockedAt` | `DateTime?` | When pick rates were snapshotted from locked lineups |
 
 ```prisma
-model ContestParticipant {
-  id                 String @id @default(cuid())
-  contestId          String
-  eventParticipantId String
-  pickRate           Float
-  baseScore          Int?
-  bonus              Int?
-  adjustedScore      Int?
-
-  contest          Contest          @relation(...)
-  eventParticipant EventParticipant @relation(...)
-
-  @@unique([contestId, eventParticipantId])
+model Contest {
+  id                     String    @id @default(cuid())
+  eventId                String
+  status                 String
+  settings               Json?
+  pickPopularity         Json?
+  pickPopularityLockedAt DateTime?
+  // ...
 }
 ```
 
-#### `ContestLineup` (aggregates)
+**`pickPopularity` shape** — keyed by `eventParticipantId`:
+
+```json
+{
+  "clxyz_ep_scottie": {
+    "pickRate": 0.42,
+    "bonus": 3,
+    "adjustedScore": 25
+  }
+}
+```
+
+| Key | Meaning |
+|-----|---------|
+| `pickRate` | `o(i)` — fraction of locked contest lineups with this pick; stable after lock |
+| `bonus` | Popularity bonus for this pick at write time |
+| `adjustedScore` | Scored value for this pick in this contest |
+
+Include entries for players that appear in at least one locked lineup. When `popularity.weight = 0`, omit `pickPopularity` or set every `bonus` to `0` and `adjustedScore` to `e_i`.
+
+#### `ContestLineup` — aggregates only
 
 | Field | Type | Purpose |
 |-------|------|---------|
 | `score` | `Int?` | `finalScore` — rank, settle, timeline |
 | `baseScore` | `Int?` | `Σ EventParticipant.total` for this lineup's picks |
-| `uniquenessBonus` | `Int?` | `score - baseScore` |
-| `uniquenessIndex` | `Float?` | `U` — tie-break + UI |
+| `popularityBonus` | `Int?` | `score - baseScore` |
 
-Lineup totals are the **sum of `ContestParticipant.adjustedScore`** (and `baseScore`) for picks in that lineup — not a separate per-pick blob on the lineup row.
+No per-lineup breakdown JSON. Lineup totals are the sum of each pick's `pickPopularity[id].adjustedScore` (and `baseScore` from `EventParticipant.total`).
 
-When `uniqueness.weight = 0`: skip `ContestParticipant` writes (or set `bonus = 0`, `adjustedScore = baseScore`). `ContestLineup.baseScore = score`.
+When `popularity.weight = 0`: omit `pickPopularity`; `ContestLineup.baseScore = score`, `popularityBonus = 0`.
 
-#### UI reads
+#### UI reads (post-lock only)
 
 | Surface | Join path |
 |---------|-----------|
-| **Lineup card slots** | `LineupPick` → `ContestParticipant` (by contest + eventParticipantId) for `baseScore`, `bonus`, `pickRate` |
-| **Candidate picker / field** | `ContestParticipant` for all event participants in contest — ownership % on each row |
-| **Leaderboard** | `ContestLineup` for `baseScore` + `uniquenessBonus` + `score` |
+| **Lineup card slots** | `LineupPick` → `Contest.pickPopularity[eventParticipantId]` for `bonus`, `adjustedScore`; `EventParticipant.total` for base |
+| **Leaderboard** | `ContestLineup` for `baseScore` + `popularityBonus` + `score` |
 
-**Cron write** (`updateContestLineupsForEvent`):
+#### Implementation note: tournament vs contest display
 
-1. Compute pick rates → upsert `ContestParticipant` rows for the contest field.
-2. For each `ContestLineup`, sum its picks' `ContestParticipant` values → write lineup aggregates.
+Popularity is a **contest scoring** layer. Tournament views stay on raw `EventParticipant.total`; contest views show the adjustment after lock.
 
-**Timeline** (`ContestLineupTimeline`): `score` only (final total). Per-pick detail lives on `ContestParticipant`; lineup decomposition on `ContestLineup`.
+| Surface | Popularity | What to show |
+|---------|------------|--------------|
+| **Player detail** (`SportParticipantDetailModal`, sport `ParticipantDetail`) | No | Unadjusted tournament performance — Stableford/points, scorecard, leaderboard position. Same data as today. |
+| **Field leaderboard** (`EventLeaderboardPanel`) | No | Event field order and raw totals — not contest-adjusted. |
+| **Candidate picker** (`CandidatePicker`, `CandidateRow`) | No | Raw field data during entry; no ownership or bonus. |
+| **Lineup card slots** (`LineupContestCard` → `SportLineupPickRow`) | Yes, post-lock | Base (`EventParticipant.total`) + popularity bonus from `Contest.pickPopularity[id]`; or adjusted total. |
+| **Contest leaderboard** | Yes, post-lock | `ContestLineup.baseScore`, `popularityBonus`, `score`. |
 
----
+While contest is `OPEN`, lineup card slots show raw `EventParticipant.total` only — same as picking phase.
 
-## Ranking tie-break
+Use a **lineup-slot row variant** for adjusted display on the contest card. Do not add popularity to shared `ParticipantRow` used by the field list and picker — those surfaces remain event-scoped.
 
-When `rankEntries` breaks ties after fantasy score and prediction distance, **uniqueness index `U`** is the tertiary key — higher `U` wins. This replaces contest entry timestamp (`createdAt`).
+Player detail answers “how is this golfer doing in the tournament?” Lineup card answers “how is this pick scoring in my contest entry?”
 
-Sort cascade:
+#### Cron write (`updateContestLineupsForEvent`)
 
-1. **Fantasy score** — higher `finalScore` wins.
-2. **Prediction distance** — lower `abs(prediction − contestWinningScore)` wins.
-3. **Uniqueness index** — higher `U` wins.
+Per contest:
 
-See [lineup-tie-breaker.md](lineup-tie-breaker.md) for the full ranking and payout spec.
+1. If contest not yet locked for scoring (`OPEN`), score lineups as raw `Σ EventParticipant.total` only.
+2. On lock: compute `o(i)` from locked lineups → write `Contest.pickPopularity` and `pickPopularityLockedAt`.
+3. Each cron pass: refresh `bonus` and `adjustedScore` in `pickPopularity` as `e_i` updates; `pickRate` unchanged.
+4. For each `ContestLineup`: sum pick values → write `baseScore`, `score`, `popularityBonus`.
+
+**Timeline** (`ContestLineupTimeline`): `score` only. Per-pick detail on `Contest.pickPopularity`; lineup decomposition on `ContestLineup`.
+
+Ranking and tie-breaking are unchanged — see [lineup-tie-breaker.md](lineup-tie-breaker.md).
 
 ---
 
 ## Related docs
 
 - [architecture.md](architecture.md) — platform scoring pipeline
-- [lineup-tie-breaker.md](lineup-tie-breaker.md) — prediction tie-break and ranking cascade
+- [lineup-tie-breaker.md](lineup-tie-breaker.md) — prediction tie-break and ranking
 - [shape-ideas.md](../competitions/shape-ideas.md) — predict-the-consensus
 - [fit-guide.md](../competitions/fit-guide.md) — competition format evaluation

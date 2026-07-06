@@ -135,7 +135,7 @@ Grouped by domain. **Fit** is directional (Strong / Stretch / Hard) against the 
 
 | Idea | Event unit | Pool | Scoring sketch | Fit | Notes |
 |------|------------|------|----------------|-----|-------|
-| **Predict the consensus** | Multi-day entry window | 20–50 staff-seeded items | Points by pick frequency in the contest at lock | Strong | Crowd-as-score (path 2) — not ownership modulation on external feeds; see [consensus-axis.md](../platform/consensus-axis.md) |
+| **Predict the consensus** | Multi-day entry window | 20–50 staff-seeded items | Points by pick frequency in the contest at lock | Strong | Crowd-as-score (path 2) — not popularity adjustment on external feeds; see [consensus-axis.md](../platform/consensus-axis.md) |
 | **Community vote slate** | Multi-day vote window | 20–50 seeded items | Points by final rank from votes | Stretch | Requires vote storage, moderation, Sybil controls |
 | **League nomination pool** | League-scoped week | Member nominations → curated | Consensus or admin-final rank | Stretch | Ops-heavy; good v2 extension of consensus format |
 
@@ -147,7 +147,7 @@ A platform-native format where users pick items they believe **other entrants wi
 
 **One-liner:** *Pick the four albums you think everyone else will pick.*
 
-This is **path 2 (crowd-as-score)** in [consensus-axis.md](../platform/consensus-axis.md). Pick frequency *is* `e_i`. There is no second ownership-modulation layer on top — that dial applies only to external-signal sports (golf, F1, etc.).
+This is **path 2 (crowd-as-score)** in [consensus-axis.md](../platform/consensus-axis.md). Pick frequency *is* `e_i`. There is no second popularity-adjustment layer on top — that dial applies only to external-signal sports (golf, F1, etc.).
 
 ### How it maps to the engine
 
@@ -160,9 +160,9 @@ This is **path 2 (crowd-as-score)** in [consensus-axis.md](../platform/consensus
 | Tie-break | Predict pick rate (%) of the #1 most popular item |
 | Data source | Locked `ContestLineup` + `LineupPick` rows — no vote table |
 | Score source | **Crowd** — rank-based points from pick frequency at lock |
-| Ownership modulation | **N/A** — not the same as golf's `uniquenessWeight` dial |
+| Popularity adjustment | **N/A** — not the same as golf's `popularity.weight` dial |
 
-Same pick → aggregate → rank flow as golf. The sport plugin’s `syncLiveScores` computes pick rates from contest entries instead of calling an external API. Do not add `uniquenessWeight` on top — ownership already defines each pick's score.
+Same pick → aggregate → rank flow as golf. The sport plugin’s `syncLiveScores` computes pick rates from contest entries instead of calling an external API. Do not add a `popularity` layer on top — pick frequency already defines each pick's score.
 
 ### Scoring (rank-based, v1 default)
 
@@ -188,14 +188,16 @@ Consensus events are front-loaded: the interesting phase is **before lock**, not
 
 Many events can go lock → settle in one cron pass with no extended `LIVE` period.
 
-### Pick-rate visibility (product knob)
+### Pick-rate visibility (predict-the-consensus only)
+
+Optional product knob for **predict-the-consensus** events — not used for PGA popularity scoring, which never surfaces pick rates during entry. See [consensus-axis.md](../platform/consensus-axis.md).
 
 | Mode | UX | Tradeoff |
 |------|-----|----------|
 | **Hidden until lock** | Pure prediction; blank leaderboard until reveal | Best for competitive integrity |
 | **Live during entry** | Show `% of entries` per item in the picker | Herding drama; last-minute pile-ons before lock |
 
-Event metadata can declare `showPickRates: "never" | "afterMinEntries" | "always"`. The platform already passes `ownershipPercentage` into `ParticipantRow` — pick rate is the same display pattern.
+Event metadata can declare `showPickRates: "never" | "afterMinEntries" | "always"` for consensus-format events only.
 
 ### Why this over voting
 
@@ -212,7 +214,7 @@ Admin work: seed the field, write the prompt, set lock time.
 
 - **Per-contest scoring:** pick rates differ between a league contest (12 entries) and a public contest (200 entries). `aggregateLineupScore` may need `contestId` passed through; v1 can constrain to one contest per native event.
 - **Minimum entries:** require a floor (e.g. 5) before computing consensus so pick rates are meaningful.
-- **Suggested `sportId`:** `ptc-consensus` — one sport, many events with different prompts. Set `scoreSource: "crowd"` (or equivalent) so platform code skips path-1 ownership modulation.
+- **Suggested `sportId`:** `ptc-consensus` — one sport, many events with different prompts. Set `scoreSource: "crowd"` (or equivalent) so platform code skips path-1 popularity adjustment.
 - **Plugin checklist:** same as [add-sport-checklist.md](../../spec/platform/add-sport-checklist.md); Phase 1 spike proves pick-rate → rank → lineup score without any external API.
 
 ### Example v1: Crowd Reads
