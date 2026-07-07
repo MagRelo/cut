@@ -31,6 +31,7 @@ echo "Building with tag: $TAG (git $GIT_SHA)"
 # Set your Docker Hub username
 DOCKER_USERNAME="magrelo"
 DOCKER_IMAGE_NAME="cut-v4"
+CACHE_REF="$DOCKER_USERNAME/$DOCKER_IMAGE_NAME:buildcache"
 
 # Set up Docker buildx builder
 echo "Setting up Docker buildx builder..."
@@ -48,6 +49,9 @@ docker buildx build --platform "$PLATFORMS" \
   -t $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:latest \
   -f docker/Dockerfile \
   --build-arg GIT_SHA=$GIT_SHA \
+  --cache-from type=registry,ref=$CACHE_REF \
+  --cache-to type=registry,ref=$CACHE_REF,mode=max \
+  --provenance=false \
   --push .
 
 echo "Docker build complete!"

@@ -32,8 +32,7 @@ export default defineConfig(({ mode }) => {
       assetsDir: "assets",
       // Generate manifest for better cache control
       manifest: true,
-      // Enable source maps in production for better debugging
-      sourcemap: mode === "production",
+      sourcemap: false,
       // Optimize chunk size
       chunkSizeWarningLimit: 1000,
     },

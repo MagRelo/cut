@@ -1,0 +1,20 @@
+# Whitelist-only context: only manifests, prisma, and pre-built dist trees.
+**
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!package.json
+!.npmrc
+!server/package.json
+!server/prisma/**
+!server/dist/**
+!client/dist/**
+!packages/secondary-pricing/package.json
+!packages/secondary-pricing/dist/**
+!packages/sport-sdk/package.json
+!packages/sport-sdk/dist/**
+!packages/sport-pga-golf/package.json
+!packages/sport-pga-golf/dist/**
+!packages/sport-f1/package.json
+!packages/sport-f1/dist/**
+!packages/sport-commodities/package.json
+!packages/sport-commodities/dist/**
