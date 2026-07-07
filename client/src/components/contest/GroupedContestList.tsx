@@ -46,8 +46,7 @@ function GroupedContestSection({
 }) {
   const plugin = useSportUIPlugin(group.event.sportId);
   const eventShell = eventShellFromDirectoryEvent(group.event);
-  const heroImage =
-    plugin?.resolveEventHeroImage ? plugin.resolveEventHeroImage(eventShell) : null;
+  const heroImage = plugin?.resolveEventHeroImage ? plugin.resolveEventHeroImage(eventShell) : null;
   const hasHeroPanel = Boolean(group.event.sportId && heroImage);
 
   if (hasHeroPanel) {
@@ -55,14 +54,11 @@ function GroupedContestSection({
     const heroOverlayClassName =
       plugin?.eventHeroOverlayClassName ?? DEFAULT_EVENT_HERO_OVERLAY_CLASSNAME;
     return (
-      <section className="overflow-hidden rounded-md border border-slate-700 shadow-md">
+      <section className="overflow-hidden rounded-md border border-slate-600 shadow-md">
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 overflow-hidden" aria-hidden>
             <div
-              className={[
-                "absolute inset-0 bg-cover bg-center",
-                heroImageClassName,
-              ]
+              className={["absolute inset-0 bg-cover bg-center", heroImageClassName]
                 .filter(Boolean)
                 .join(" ")}
               style={{ backgroundImage: `url(${heroImage})` }}
@@ -95,11 +91,7 @@ function GroupedContestSection({
   return (
     <section className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
       {group.event.sportId ? (
-        <SportEventHeader
-          sportId={group.event.sportId}
-          event={eventShell}
-          variant="standalone"
-        />
+        <SportEventHeader sportId={group.event.sportId} event={eventShell} variant="standalone" />
       ) : (
         <header className="border-b border-slate-100 px-4 py-3">
           <h4 className="font-display text-base font-semibold text-gray-900">

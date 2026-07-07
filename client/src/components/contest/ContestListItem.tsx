@@ -94,7 +94,7 @@ export const ContestListItem = ({
   return (
     <div
       className={cn(
-        "group min-w-0 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow] duration-200 hover:border-blue-200 hover:shadow-md",
+        "group min-w-0 overflow-hidden rounded-md border border-slate-500 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow] duration-200 hover:border-blue-200 hover:shadow-md",
         className,
       )}
     >
