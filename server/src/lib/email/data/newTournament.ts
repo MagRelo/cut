@@ -1,8 +1,7 @@
-import { loadSummarySectionsFromFile } from "../../tournamentSummary.js";
+import { resolveSummarySectionsForEvent } from "../../tournamentSummary.js";
 import {
   formatEventSubtitle,
   loadEventForEmail,
-  summarySectionsFromEvent,
 } from "./event.js";
 import type { NewTournamentEmailData } from "../emails/newTournament.js";
 
@@ -12,10 +11,10 @@ export async function loadNewEventEmailData(
   const event = await loadEventForEmail(eventId);
   if (!event) return null;
 
-  let summarySections = summarySectionsFromEvent(event);
-  if (!summarySections) {
-    summarySections = await loadSummarySectionsFromFile(event.externalId);
-  }
+  const summarySections = await resolveSummarySectionsForEvent(
+    event.externalId,
+    event.summarySections,
+  );
 
   return {
     tournamentName: event.name,

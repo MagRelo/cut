@@ -26,7 +26,9 @@ Top level: array of sections. Each section:
 ```
 
 - `body` is required and must be non-empty.
-- `label` is optional; use `""` only for the Summary lead paragraph.
+- `label` is optional; used for bullet sections (Best Players and Odds, etc.).
+- Quote items (`They Out Here Sayin`) use `body`, `attribution`, and `color` (hex).
+- Legacy `Summary` section title is still accepted; prefer `They Out Here Sayin`.
 - Parser: `parseSummarySections()` in `server/src/lib/tournamentSummary.ts`.
 
 ## Canonical template
@@ -36,11 +38,12 @@ Replace `{...}` placeholders. Keep valid JSON.
 ```json
 [
   {
-    "title": "Summary",
+    "title": "They Out Here Sayin",
     "items": [
       {
-        "label": "",
-        "body": "{3–4 short sentences: story hook with tension, frank take on how the week plays, place/vibe, 2–3 names tied to the story. Conversational quote voice — light betting OK, no odds prices. See SKILL.md quote voice guide.}"
+        "body": "{CutBot quote: 3 short sentences. Evocative place/atmosphere, week stakes, max 2 names, forward hook. See SKILL.md CutBot quote voice.}",
+        "attribution": "CutBot",
+        "color": "#7cb68a"
       }
     ]
   },
@@ -129,31 +132,31 @@ Check **5–10 sources** per event for storylines, odds, and course context.
 **Audience:** golf fans on a betting platform — they want a quick, enticing read
 with real context, not a press release or odds terminal.
 
-**Summary quote (most important):**
+**CutBot quote (most important — first item in They Out Here Sayin):**
 
 | Do | Don't |
 |----|--------|
-| Open with a story hook or tension | Open with venue/history or field size |
-| Give a frank insider take on the week | Stack facts in one compound sentence |
-| Name 2–3 players tied to *why* they matter | List half the field |
-| Use conversational, direct sentences | Sound like a PGA media guide |
-| Light betting flavor (favorite, value, low scores) | Put American odds or market rank in Summary |
-| Sound opinionated but honest | Invent drama or hype |
+| Open with place, atmosphere, and week vibe | Open with contrarian or oppositional hooks |
+| Set stakes for the week (tune-up, defend, major next) | Stack 3+ player names in a row |
+| Name **at most 2** players tied to the story | List half the field (odds section does that) |
+| Use 3 tight, conversational sentences | Write one long compound sentence |
+| Sound evocative and inviting | Sound like a betting wire or PGA press release |
+| Light betting flavor (“tops the board,” “defends”) | Put American odds or market rank in the quote |
 
-**Sentence length:** aim for under ~25 words per sentence in Summary when possible.
+**Sentence length:** aim for under ~22 words per sentence in CutBot quotes.
 
 **Odds section:** one sentence per player; fan-readable reason to watch. Betting-aware
 phrasing and course fit are fine — avoid stacked stats and jargon.
 
 **Other sections:** factual and scannable (History, Course, Broadcast). Personality
-lives in Summary.
+lives in They Out Here Sayin (CutBot + user quotes).
 
 **Tense:** present tense for upcoming events.
 
 **Format:** no bullet characters inside `body` strings; no markdown.
 
 **Tone calibration:** use `quote variants` in the skill prompt to generate three
-Summary options before writing the file.
+CutBot options before writing the file.
 
 ## Post-tournament recap (optional)
 

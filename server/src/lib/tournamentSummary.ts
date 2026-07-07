@@ -1,46 +1,29 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  parseSummarySections,
+  type TournamentSummarySections,
+} from "@cut/sport-pga-golf";
 
-export type TournamentSummaryItem = {
-  label?: string;
-  body: string;
-};
-
-export type TournamentSummarySection = {
-  title: string;
-  items: TournamentSummaryItem[];
-};
-
-export type TournamentSummarySections = TournamentSummarySection[];
-
-/** Lead section: title "Summary" — prose paragraph(s), not bullets (see R2026021.json). */
-export function isSummaryLeadSection(section: TournamentSummarySection): boolean {
-  return section.title.trim().toLowerCase() === "summary";
-}
-
-function isSummaryItem(value: unknown): value is TournamentSummaryItem {
-  if (!value || typeof value !== "object") return false;
-  const item = value as TournamentSummaryItem;
-  if (typeof item.body !== "string" || item.body.trim() === "") return false;
-  if (item.label !== undefined && typeof item.label !== "string") return false;
-  return true;
-}
-
-function isSummarySection(value: unknown): value is TournamentSummarySection {
-  if (!value || typeof value !== "object") return false;
-  const section = value as TournamentSummarySection;
-  if (typeof section.title !== "string" || section.title.trim() === "") return false;
-  if (!Array.isArray(section.items) || section.items.length === 0) return false;
-  return section.items.every(isSummaryItem);
-}
-
-/** Parse `Tournament.summarySections` JSON (or tournamentSummaries/*.json file contents). */
-export function parseSummarySections(json: unknown): TournamentSummarySections | null {
-  if (!Array.isArray(json) || json.length === 0) return null;
-  if (!json.every(isSummarySection)) return null;
-  return json;
-}
+export {
+  DEFAULT_CUTBOT_ATTRIBUTION,
+  DEFAULT_QUOTE_COLOR,
+  findQuotesSection,
+  getNormalizedQuotes,
+  isQuotesSection,
+  isSummaryLeadSection,
+  normalizeHexColor,
+  normalizeQuoteItem,
+  parseSummarySections,
+  quoteColorsFromHex,
+  QUOTES_SECTION_DISPLAY_TITLE,
+  type NormalizedTournamentQuote,
+  type QuoteBlockColors,
+  type TournamentSummaryItem,
+  type TournamentSummarySection,
+  type TournamentSummarySections,
+} from "@cut/sport-pga-golf";
 
 const summariesDir = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -59,4 +42,17 @@ export async function loadSummarySectionsFromFile(
   } catch {
     return null;
   }
+}
+
+/**
+ * Summary sections for emails and previews: prefer `tournamentSummaries/{id}.json`
+ * so copy can be finalized before `service:init-event` syncs metadata to the DB.
+ */
+export async function resolveSummarySectionsForEvent(
+  externalId: string,
+  dbSummarySections: unknown,
+): Promise<TournamentSummarySections | null> {
+  const fromFile = await loadSummarySectionsFromFile(externalId);
+  if (fromFile) return fromFile;
+  return parseSummarySections(dbSummarySections);
 }

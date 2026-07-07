@@ -63,6 +63,20 @@ export {
 } from "./prop-bet.js";
 
 export {
-  createPgaGolfPropBetModule,
-  type PgaGolfPropBetHandlers,
-} from "./create-prop-bet-module.js";
+  DEFAULT_CUTBOT_ATTRIBUTION,
+  DEFAULT_QUOTE_COLOR,
+  findQuotesSection,
+  getNormalizedQuotes,
+  isQuotesSection,
+  isSummaryLeadSection,
+  normalizeHexColor,
+  normalizeQuoteItem,
+  parseSummarySections,
+  quoteColorsFromHex,
+  QUOTES_SECTION_DISPLAY_TITLE,
+  type NormalizedTournamentQuote,
+  type QuoteBlockColors,
+  type TournamentSummaryItem,
+  type TournamentSummarySection,
+  type TournamentSummarySections,
+} from "./tournamentSummary.js";

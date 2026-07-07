@@ -11,7 +11,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 const CANONICAL_SECTIONS = [
-  "Summary",
+  "They Out Here Sayin",
   "Best Players and Odds",
   "Tournament History",
   "Course and Format",
@@ -22,6 +22,8 @@ function isSummaryItem(value) {
   if (!value || typeof value !== "object") return false;
   if (typeof value.body !== "string" || value.body.trim() === "") return false;
   if (value.label !== undefined && typeof value.label !== "string") return false;
+  if (value.attribution !== undefined && typeof value.attribution !== "string") return false;
+  if (value.color !== undefined && typeof value.color !== "string") return false;
   return true;
 }
 
@@ -52,17 +54,24 @@ function validateSummarySections(json, filePath) {
     }
   }
 
-  const summarySection = json.find((s) => s.title.trim().toLowerCase() === "summary");
-  if (summarySection) {
-    if (summarySection.items.length !== 1) {
-      warnings.push('Summary section should have exactly one item.');
+  const quotesSection = json.find((s) => {
+    const key = s.title.trim().toLowerCase();
+    return key === "they out here sayin" || key === "summary";
+  });
+  if (quotesSection) {
+    if (quotesSection.items.length < 1 || quotesSection.items.length > 4) {
+      warnings.push("They Out Here Sayin should have 1–4 quote items (CutBot + up to 3 user quotes).");
     }
-    const lead = summarySection.items[0];
-    if (lead && lead.label !== "") {
-      warnings.push('Summary lead item should use an empty label ("").');
-    }
-    if (lead && lead.body.includes("•")) {
-      warnings.push("Summary body should be prose, not bullet characters.");
+    for (const [index, item] of quotesSection.items.entries()) {
+      if (item.body.includes("•")) {
+        warnings.push("Quote body should be prose, not bullet characters.");
+      }
+      if (index > 0 && !item.attribution?.trim()) {
+        warnings.push(`Quote item ${index + 1} should include attribution.`);
+      }
+      if (item.color && !/^#[0-9a-fA-F]{6}$/.test(item.color.trim())) {
+        warnings.push(`Quote item ${index + 1} color should be a 6-digit hex value like #00abb8.`);
+      }
     }
   }
 

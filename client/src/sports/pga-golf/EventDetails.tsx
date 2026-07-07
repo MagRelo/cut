@@ -6,9 +6,16 @@ import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
 interface GolfEventDetailsProps {
   event: CompetitionEventShell;
   className?: string;
+  hasSummary?: boolean;
+  onOpenSummary?: () => void;
 }
 
-export function GolfEventDetails({ event, className = "" }: GolfEventDetailsProps) {
+export function GolfEventDetails({
+  event,
+  className = "",
+  hasSummary = false,
+  onOpenSummary,
+}: GolfEventDetailsProps) {
   const meta = parseGolfEventMetadata(event.metadata);
   const name = meta.name ?? event.externalId;
   const locationLine = [meta.city?.trim(), meta.state?.trim()].filter(Boolean).join(", ");
@@ -73,6 +80,19 @@ export function GolfEventDetails({ event, className = "" }: GolfEventDetailsProp
           View Leaderboard
           <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
         </Link>
+        {hasSummary && onOpenSummary ? (
+          <>
+            {detailSeparator}
+            <button
+              type="button"
+              onClick={onOpenSummary}
+              className="inline-flex items-center gap-0.5 rounded-sm text-white/90 underline-offset-2 hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+            >
+              Tournament Preview
+              <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            </button>
+          </>
+        ) : null}
       </div>
     </div>
   );

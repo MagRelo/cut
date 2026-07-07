@@ -12,11 +12,11 @@ description: >-
 Produce a **casual-fan tournament preview** for a PGA Tour event and save it to
 `server/src/tournamentSummaries/{pgaTourId}.json`.
 
-Content appears in the app summary modal and the **New Tournament email** lead
-quote block (italic pull-quote). Write like a **conversational sports column with
-a take** — enticing, context-rich, frank about what matters this week. Light
-betting angles are fine (this is a betting product); save odds boards and deep
-jargon for **Best Players and Odds**.
+Content appears in the app tournament preview and the **New Tournament email**
+(first quote under **They Out Here Sayin:**). The **CutBot quote** is the lead —
+evocative, engaging, and sets the tone for the week. User quotes (added manually)
+can be spikier; CutBot should feel like a welcoming column intro. Light betting
+angles are fine; save odds boards and the full field for **Best Players and Odds**.
 
 ## Quick prompt (user copy-paste)
 
@@ -28,7 +28,7 @@ Replace the ID with any `pgaTourId`. Optional flags:
 
 - `write file` — save JSON (default)
 - `preview only` — show JSON in chat, do not write
-- `quote only` — rewrite the Summary `body` only; keep other sections unchanged
+- `quote only` — rewrite the CutBot quote item only; keep other quotes and sections unchanged
 - `quote variants` — output **three** labeled Summary bodies in chat (no file
   write); use to calibrate tone before committing
 - `recap` — post-tournament results instead of pre-event preview
@@ -85,7 +85,7 @@ standard preview.
 
 | Section | What to find |
 |--------|----------------|
-| Summary | **Story hook + insider take** — tension or surprise first, then place/names; 2–3 star names max; one frank “what to watch” angle (betting-friendly OK) |
+| They Out Here Sayin | **CutBot quote** — place/vibe first, week stakes, max 2 names; user quotes added manually |
 | Best Players and Odds | 8–10 contenders with American odds ranges (e.g. `+850 to +1000`) |
 | Tournament History | Venue, year founded, defending champion, tradition |
 | Course and Format | Course name, dates, purse, format, yardage/par profile |
@@ -103,21 +103,24 @@ Follow the canonical structure in [reference.md](reference.md).
 
 Rules:
 
-- **Summary** section: exactly one item with `"label": ""` and **3–4 short
-  sentences** (see quote voice guide below). No bullets in Summary.
+- **They Out Here Sayin** section: skill writes **only the first quote** (CutBot).
+  User quotes (0–3) are added manually later. Each quote item:
+  - `body` — **3 short sentences** (see CutBot quote voice below)
+  - `attribution` — `"CutBot"` for the skill quote
+  - `color` — `#7cb68a` for CutBot unless told otherwise
 - **Best Players and Odds**: 8–10 players; label format
   `"Player Name (+low to +high):"`; body is **one plain sentence** — why fans
   should care, not a stat dump.
-- **Voice:** conversational columnist with a take — story-first hook, frank
-  about the week's stakes, warm but not a PGA press release. A light betting
-  read (“favorite”, “value”, “board”, “low scores play”) is welcome in Summary;
-  save prices and full odds context for **Best Players and Odds**.
+- **CutBot voice:** evocative and week-setting — place and atmosphere first,
+  what's at stake this week, **at most 2 player names**. Warm and inviting, not
+  oppositional or contrarian. A light betting read (“tops the board,” “defends”)
+  is welcome; **no American odds** in the quote.
 - Use straight apostrophes in JSON (`'` inside strings is fine; avoid smart
   quotes that break JSON).
 
 Canonical section order:
 
-1. Summary
+1. They Out Here Sayin
 2. Best Players and Odds
 3. Tournament History
 4. Course and Format
@@ -148,67 +151,63 @@ event metadata. After updating a summary for the active event, re-run init:
 pnpm run service:init-event pga-golf R2026023
 ```
 
-## Summary quote voice
+## CutBot quote voice
 
-The Summary `body` renders as an **italic email pull-quote** — it should read
-like someone with an opinion, not a tournament fact sheet.
+The CutBot quote is the **first thing in the New Tournament email** — it should
+pull readers into the week: evocative place, real stakes, forward momentum. Save
+contrarian/spiky takes for user quotes later in the block.
 
-### Lead with (story-first)
+### Lead with
 
-1. **A hook with tension** — low scores coming, favorite under pressure, course
-   suits bombers or grinders, last chance before a major, etc.
-2. **Why that hook matters** — one frank line on how the week will actually play.
-3. **Place and vibe** — city, course, tradition in plain language (not a travel
-   brochure).
-4. **2–3 names tied to the story** — defending champ, course horse, betting
-   favorite, sentimental pick. Each name earns its mention.
+1. **Place and atmosphere** — city, coast, course vibe, season moment (e.g.
+   midsummer links, last stop before a major).
+2. **What makes this week matter** — field strength, defending champ storyline,
+   tune-up stakes, one framing line (not a fact stack).
+3. **At most 2 names** — betting favorite + one storyline pick (defending champ,
+   sentimental local, hot streak). The odds section carries everyone else.
+4. **Forward hook** — what's next (The Open, FedExCup push, etc.) when relevant.
 
 ### Writing rules
 
-- **Conversational.** Write like you're talking a friend through the week — direct,
-  readable, a little personality. Contractions are fine.
-- **Short sentences.** One idea per sentence. Avoid chains of clauses joined by
-  “while,” “with,” and comma splices.
-- **Frank insider takes** — “someone's going to go low,” “the board is wide open,”
-  “this is a nightmare for the cautious.” Opinionated but honest; don't invent drama.
-- **Light betting flavor** — favorites, value, the board, low scores, course fit
-  in plain English. **No American odds in Summary** (those belong in Best Players
-  and Odds). One betting angle per quote, not a market recap.
-- **Less stat density.** No yardage, par, purse, or field size in Summary — those
-  live in Course and Format.
+- **Evocative and engaging** — readers should *feel* the week, not get argued with.
+- **Conversational.** Direct, readable, a little personality. Contractions are fine.
+- **Three sentences** when possible. One idea per sentence; no comma-splice lists.
+- **Max 2 player names.** If you need a third storyline, describe it without a name.
+- **Light betting flavor** — “tops the board,” “defends,” “favorite” in plain English.
+  No American odds, no market recap.
+- **No stat density** — yardage, par, purse, field size belong in Course and Format.
 - Present tense for upcoming events. No markdown inside JSON strings.
 
-### Avoid in Summary
+### Avoid in CutBot quotes
 
-- Opening with venue/history before the hook (save place for sentence 2–3).
-- One compound sentence packing 4+ facts.
-- Odds-terminal voice: “profiles well,” “market rank,” “co-favorite at +X.”
-- Stacked betting jargon or multiple prices in the quote.
-- Amateur/pro debut details unless it’s *the* story of the week.
-- Listing more than three player names.
+- Oppositional openers (“doesn't care who's No. 1,” “the board is wrong”).
+- Stacking 3+ player names in a row.
+- Contrarian or dunking tone — that's for user quotes.
+- Odds-terminal jargon (“profiles well,” “market rank,” “co-favorite at +X”).
+- Opening with dry history or venue facts before atmosphere.
 
-### Gold-standard quote (target tone)
+### Gold-standard CutBot quote
 
-John Deere Classic — story hook, insider take, light betting read, conversational:
+Genesis Scottish Open (R2026541) — evocative, tight, week-setting:
 
-> Someone's going to shoot 62 this week. TPC Deere Run has been that kind of
-> track when conditions cooperate — low scores, fast leaderboards, and a whole
-> lot of guys thinking they have a chance. Spieth has two wins here and the
-> emotional tie; Campbell proved last year you don't need to be a household name
-> to steal the week. Small-town Silvis, big personalities, last chance to find
-> form before The Open.
+> North Berwick in July is links golf at its best — wind off the Firth, firm
+> fescue, and a field that feels like a major dress rehearsal. Scheffler tops
+> the board, McIlroy loves this stretch of coast, and Gotterup defends after
+> winning in Silvis on Sunday. The last big tune-up before the year's third major:
+> the British Open at Royal Birkdale.
 
 ### Calibrating tone (`quote variants`)
 
 When the user asks for **quote variants**, output three labeled options in chat
 only (no file write):
 
-- **A — Insider columnist** — frank, opinionated, betting-aware
-- **B — Conversational host** — warm, you-and-me, minimal betting
-- **C — Story-first hook** — tension/surprise open, then color (default target)
+- **A — Evocative host** — place and atmosphere, week stakes, max 2 names
+  **(CutBot default)**
+- **B — Storyline focus** — one narrative thread (defending champ, major tune-up)
+- **C — Insider edge** — slightly spikier; more betting-aware (use sparingly for CutBot)
 
 After the user picks a direction, apply it to the full summary or run
-`quote only` to update just the Summary `body`.
+`quote only` to update just the CutBot quote item.
 
 Preview in email chrome after choosing:
 
@@ -226,12 +225,11 @@ on the board”) — avoid stacked stats and approach-game jargon unless unavoid
 
 Gold-standard examples in the repo:
 
+- `server/src/tournamentSummaries/R2026541.json` — CutBot quote tone + multi-quote layout
 - `server/src/tournamentSummaries/R2026021.json` — odds section format
-- Summary quote tone — see **Gold-standard quote** above (prefer over older
-  nostalgia-first leads in existing files)
 
-Older files may use `Key Storylines` instead of `Summary`; **prefer the
-R2026021 layout** for new summaries.
+Older files may use `Summary` or `Key Storylines`; **prefer the R2026541 layout**
+for new summaries.
 
 ## Additional resources
 

@@ -1,53 +1,57 @@
 import { escapeHtml } from "../escape.js";
 import {
   EMPTY_SUMMARY_STYLE,
-  QUOTE_ATTRIBUTION_STYLE,
-  QUOTE_CELL_STYLE,
-  QUOTE_TEXT_STYLE,
+  FONT_QUOTE,
   SECTION_TITLE_STYLE,
   SUMMARY_ITEM_STYLE,
 } from "../styles.js";
 import {
-  isSummaryLeadSection,
+  getNormalizedQuotes,
+  isQuotesSection,
+  QUOTES_SECTION_DISPLAY_TITLE,
   type TournamentSummarySection,
   type TournamentSummarySections,
-} from "../../tournamentSummary.js";
+} from "@cut/sport-pga-golf";
 
-export function normalizeSummarySectionKey(key: string): string {
-  return key.trim().toLowerCase();
+export { normalizeSummarySectionKey } from "./summaryKeys.js";
+
+function quoteTextStyle(color: string, weight: 500 | 600 = 500): string {
+  return `font-family:${FONT_QUOTE};font-size:14px;font-weight:${weight};font-style:italic;line-height:1.5;color:${color};margin:0;`;
 }
 
-function findSummarySectionByKey(
-  sections: TournamentSummarySections,
-  key: string,
-): TournamentSummarySection | null {
-  const normalized = normalizeSummarySectionKey(key);
-  return (
-    sections.find((section) => normalizeSummarySectionKey(section.title) === normalized) ?? null
-  );
+function renderQuoteBlockHtml(
+  quote: string,
+  attribution: string,
+  colors: { border: string; bg: string; text: string },
+): string {
+  const textStyle = quoteTextStyle(colors.text);
+  const attributionStyle = quoteTextStyle(colors.text, 600);
+  const cellStyle = `border-left:3px solid ${colors.border};background-color:${colors.bg};padding:14px 16px;`;
+
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 12px;">
+  <tr>
+    <td style="${cellStyle}">
+      <p style="${textStyle}">&ldquo;${escapeHtml(quote)}&rdquo;</p>
+      <p style="${attributionStyle}margin:10px 0 0;text-align:right;">&mdash; ${escapeHtml(attribution)}</p>
+    </td>
+  </tr>
+</table>`;
 }
 
 export function renderLeadSummarySectionHtml(
   sections: TournamentSummarySections | null | undefined,
 ): string {
-  if (!sections || sections.length === 0) return "";
-  const leadItems = sections.filter(isSummaryLeadSection).flatMap((s) => s.items);
-  if (leadItems.length === 0) return "";
+  const quotes = getNormalizedQuotes(sections);
+  if (quotes.length === 0) return "";
 
-  const paragraphsHtml = leadItems
-    .map((item, index) => {
-      const margin = index < leadItems.length - 1 ? "margin:0 0 12px;" : "margin:0;";
-      return `<p style="${QUOTE_TEXT_STYLE}${margin}">&ldquo;${escapeHtml(item.body.trim())}&rdquo;</p>`;
-    })
+  const quoteBlocksHtml = quotes
+    .map((quote) => renderQuoteBlockHtml(quote.body, quote.attribution, quote.colors))
     .join("");
 
-  const attributionHtml = `<p style="${QUOTE_ATTRIBUTION_STYLE}margin:10px 0 0;text-align:right;">&mdash; CutBot</p>`;
-
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
-  <tr>
-    <td style="${QUOTE_CELL_STYLE}">${paragraphsHtml}${attributionHtml}</td>
-  </tr>
-</table>`;
+  return `<div style="margin:0 0 20px;">
+<h2 style="${SECTION_TITLE_STYLE}">${QUOTES_SECTION_DISPLAY_TITLE}</h2>
+${quoteBlocksHtml}
+</div>`;
 }
 
 function renderBulletSectionHtml(section: TournamentSummarySection): string {
@@ -72,9 +76,11 @@ export function renderSummarySectionByKeyHtml(
   key: string,
 ): string {
   if (!sections || sections.length === 0) return "";
-  const section = findSummarySectionByKey(sections, key);
+  const normalized = key.trim().toLowerCase();
+  const section =
+    sections.find((entry) => entry.title.trim().toLowerCase() === normalized) ?? null;
   if (!section) return "";
-  if (isSummaryLeadSection(section)) {
+  if (isQuotesSection(section)) {
     return renderLeadSummarySectionHtml([section]);
   }
   return renderBulletSectionHtml(section);
@@ -89,7 +95,7 @@ export function renderSummarySectionsEmailHtml(
 
   const leadHtml = renderLeadSummarySectionHtml(sections);
   const bulletHtml = sections
-    .filter((section) => !isSummaryLeadSection(section))
+    .filter((section) => !isQuotesSection(section))
     .map(renderBulletSectionHtml)
     .join("");
 
