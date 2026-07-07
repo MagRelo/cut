@@ -78,7 +78,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
           />
         </div>
 
-        <div className="mb-4">
+        <div className="mb-2">
           <ContestBeginCountdown
             contestStatus={contest.status}
             eventName={eventName}

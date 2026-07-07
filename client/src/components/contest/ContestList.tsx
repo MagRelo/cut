@@ -2,7 +2,7 @@ import { type Contest } from "../../types/contest";
 import { contestLobbyPath } from "../../utils/contestRoutes";
 import { Link } from "react-router-dom";
 import { LoadingSpinner } from "../common/LoadingSpinner";
-import { ContestListItem } from "./ContestListItem";
+import { ContestListItem, type ContestListItemVariant } from "./ContestListItem";
 
 interface ContestListProps {
   contests: Contest[];
@@ -10,6 +10,7 @@ interface ContestListProps {
   error: string | null;
   eventName?: string | null;
   eventStartDate?: string | null;
+  variant?: ContestListItemVariant;
 }
 
 export function ContestListConnectHint({
@@ -35,6 +36,7 @@ export const ContestList = ({
   error,
   eventName,
   eventStartDate,
+  variant = "default",
 }: ContestListProps) => {
   if (loading) {
     return (
@@ -66,6 +68,7 @@ export const ContestList = ({
             to={contestLobbyPath(contest.address)}
             eventName={eventName}
             eventStartDate={eventStartDate}
+            variant={variant}
           />
         ))}
       </div>

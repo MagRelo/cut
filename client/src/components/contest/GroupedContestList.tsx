@@ -7,11 +7,13 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useSportUIPlugin } from "../../hooks/useSportUI";
 import { SportEventHeader } from "../platform/SportEventHeader";
 import { ContestList, ContestListConnectHint } from "./ContestList";
+import type { ContestListItemVariant } from "./ContestListItem";
 
 interface GroupedContestListProps {
   groups: EventContestGroup[];
   loading: boolean;
   error: string | null;
+  variant?: ContestListItemVariant;
 }
 
 function eventShellFromDirectoryEvent(event: ContestDirectoryEvent): CompetitionEventShell {
@@ -35,7 +37,13 @@ function eventSublabel(event: ContestDirectoryEvent): string | null {
   return event.externalId;
 }
 
-function GroupedContestSection({ group }: { group: EventContestGroup }) {
+function GroupedContestSection({
+  group,
+  variant = "default",
+}: {
+  group: EventContestGroup;
+  variant?: ContestListItemVariant;
+}) {
   const plugin = useSportUIPlugin(group.event.sportId);
   const eventShell = eventShellFromDirectoryEvent(group.event);
   const heroImage =
@@ -75,6 +83,7 @@ function GroupedContestSection({ group }: { group: EventContestGroup }) {
                 error={null}
                 eventName={group.event.name}
                 eventStartDate={group.event.startDate}
+                variant={variant}
               />
             </div>
           </div>
@@ -108,13 +117,19 @@ function GroupedContestSection({ group }: { group: EventContestGroup }) {
           error={null}
           eventName={group.event.name}
           eventStartDate={group.event.startDate}
+          variant={variant}
         />
       </div>
     </section>
   );
 }
 
-export const GroupedContestList = ({ groups, loading, error }: GroupedContestListProps) => {
+export const GroupedContestList = ({
+  groups,
+  loading,
+  error,
+  variant = "default",
+}: GroupedContestListProps) => {
   const { user } = useAuth();
   const showConnectHint = !user && !loading && !error;
 
@@ -130,7 +145,7 @@ export const GroupedContestList = ({ groups, loading, error }: GroupedContestLis
     listContent = (
       <div className="space-y-8">
         {groups.map((group) => (
-          <GroupedContestSection key={group.event.id} group={group} />
+          <GroupedContestSection key={group.event.id} group={group} variant={variant} />
         ))}
       </div>
     );
