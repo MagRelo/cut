@@ -36,9 +36,14 @@ DOCKER_IMAGE_NAME="cut-v4"
 echo "Setting up Docker buildx builder..."
 docker buildx create --use --name multi-platform-builder || true
 
-# Build and push multi-platform image
-echo "Building and pushing multi-platform Docker image..."
-docker buildx build --platform linux/amd64,linux/arm64 \
+PLATFORMS="linux/amd64"
+if [ "$BUILD_ARM" = true ]; then
+  PLATFORMS="linux/amd64,linux/arm64"
+fi
+
+# Build and push image
+echo "Building and pushing Docker image for: $PLATFORMS"
+docker buildx build --platform "$PLATFORMS" \
   -t $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:$TAG \
   -t $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:latest \
   -f docker/Dockerfile \
