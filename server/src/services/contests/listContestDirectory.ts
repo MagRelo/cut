@@ -9,6 +9,7 @@ import {
   eventStartDate,
   type ContestDirectoryEvent,
 } from "../../utils/contestEventSummary.js";
+import { eventStatusFromMetadata } from "../../utils/eventStatus.js";
 
 export const RECENT_EVENTS_PER_SPORT = 3;
 
@@ -20,6 +21,7 @@ export type EventContestGroup = {
 };
 
 export type ContestDirectoryResponse = {
+  upcoming: EventContestGroup[];
   live: EventContestGroup[];
   past: EventContestGroup[];
 };
@@ -96,6 +98,7 @@ export async function listContestDirectory(
     orderBy: { name: "asc" },
   });
 
+  const upcomingEvents: EventWithSport[] = [];
   const liveEvents: EventWithSport[] = [];
   const pastEvents: EventWithSport[] = [];
 
@@ -116,7 +119,17 @@ export async function listContestDirectory(
         sport: { select: { id: true, name: true } },
       },
     });
-    liveEvents.push(...activeRows);
+
+    for (const event of activeRows) {
+      const status = eventStatusFromMetadata(event.metadata);
+      if (status === "LIVE") {
+        liveEvents.push(event);
+      } else if (status === "COMPLETE") {
+        pastEvents.push(event);
+      } else {
+        upcomingEvents.push(event);
+      }
+    }
   }
 
   if (scope === "past" || scope === "all") {
@@ -126,9 +139,9 @@ export async function listContestDirectory(
     }
   }
 
-  const eventIds = [...liveEvents, ...pastEvents].map((event) => event.id);
+  const eventIds = [...upcomingEvents, ...liveEvents, ...pastEvents].map((event) => event.id);
   if (eventIds.length === 0) {
-    return { live: [], past: [] };
+    return { upcoming: [], live: [], past: [] };
   }
 
   const visibility = await contestVisibilityWhere(userId, chainId !== undefined ? { chainId } : {});
@@ -148,17 +161,9 @@ export async function listContestDirectory(
     contestsByEventId.set(contest.eventId, existing);
   }
 
-  const liveEventIds = new Set(liveEvents.map((event) => event.id));
-  const pastEventIds = new Set(pastEvents.map((event) => event.id));
-
   return {
-    live: buildGroups(
-      liveEvents.filter((event) => liveEventIds.has(event.id)),
-      contestsByEventId,
-    ),
-    past: buildGroups(
-      pastEvents.filter((event) => pastEventIds.has(event.id)),
-      contestsByEventId,
-    ),
+    upcoming: buildGroups(upcomingEvents, contestsByEventId),
+    live: buildGroups(liveEvents, contestsByEventId),
+    past: buildGroups(pastEvents, contestsByEventId),
   };
 }

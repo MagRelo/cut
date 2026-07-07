@@ -39,6 +39,7 @@ export interface EventContestGroup {
 export type ContestDirectoryScope = "live" | "past" | "all";
 
 export interface ContestDirectoryResponse {
+  upcoming: EventContestGroup[];
   live: EventContestGroup[];
   past: EventContestGroup[];
 }

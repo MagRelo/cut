@@ -54,6 +54,11 @@ export {
 } from "./create-module.js";
 
 export {
+  createPgaGolfPropBetModule,
+  type PgaGolfPropBetHandlers,
+} from "./create-prop-bet-module.js";
+
+export {
   isGolfFinishInTopN,
   gradeGolfPropTicket,
   type GolfPropBetMarketMetadata,

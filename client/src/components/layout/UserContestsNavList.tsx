@@ -180,11 +180,11 @@ export function UserContestsNavList({
   const { data, isLoading, error } = useContestDirectory("live");
 
   const sortedContests = useMemo(() => {
-    const visible = flattenContestGroups(data?.live ?? []).filter(
+    const visible = flattenContestGroups([...(data?.upcoming ?? []), ...(data?.live ?? [])]).filter(
       (contest) => contest.status !== "CANCELLED",
     );
     return sortContestsForNav(visible);
-  }, [data?.live]);
+  }, [data?.upcoming, data?.live]);
 
   if (!user) {
     return null;
