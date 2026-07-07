@@ -84,6 +84,19 @@ function validateSummarySections(json, filePath) {
       if (!item.label || !item.label.includes("+")) {
         warnings.push(`Odds item missing American odds in label: "${item.label ?? ""}"`);
       }
+      const body = item.body ?? "";
+      const riskyPhrases = [
+        ["first win of", "season win claim — verify 2026 results"],
+        ["major winner", "major title — verify player has won a major"],
+        ["national open", "may confuse Scottish Open with The Open — be specific"],
+        ["won here", "verify win was at THIS event (PGA past results)"],
+        ["wins this season", "win count — verify on PGA Tour"],
+      ];
+      for (const [phrase, hint] of riskyPhrases) {
+        if (body.toLowerCase().includes(phrase)) {
+          warnings.push(`Odds blurb "${item.label ?? ""}": contains "${phrase}" — ${hint}`);
+        }
+      }
     }
   }
 

@@ -41,8 +41,9 @@ Copy this checklist and track progress:
 - [ ] Step 1: Resolve tournament from pgaTourId
 - [ ] Step 2: Web research (5–10 sources; see source table below)
 - [ ] Step 3: Draft JSON in canonical format
-- [ ] Step 4: Validate JSON
-- [ ] Step 5: Write file (unless preview only)
+- [ ] Step 4: Fact-check pass (see below — required before validate)
+- [ ] Step 5: Validate JSON
+- [ ] Step 6: Write file (unless preview only)
 ```
 
 ### Step 1: Resolve tournament
@@ -94,8 +95,9 @@ standard preview.
 **Odds sources:** Golf Channel, CBS Sports, DraftKings, Yahoo Sports, Action
 Network — report a **range** when books disagree.
 
-**Do not invent** withdrawals, tee times, or odds. If data is unavailable, use
-honest placeholders only where the template allows (e.g. generic broadcast line).
+**Do not invent** withdrawals, tee times, odds, win counts, past champions, or
+major titles. If a fact cannot be verified from **this week's event** sources,
+use a **course-fit or form opinion** instead of a specific historical claim.
 
 ### Step 3: Draft JSON
 
@@ -110,7 +112,8 @@ Rules:
   - `color` — `#7cb68a` for CutBot unless told otherwise
 - **Best Players and Odds**: 8–10 players; label format
   `"Player Name (+low to +high):"`; body is **one plain sentence** — why fans
-  should care, not a stat dump.
+  should care this week. **Verify every factual claim** (see Step 4); prefer
+  course fit over unverified history.
 - **CutBot voice:** evocative and week-setting — place and atmosphere first,
   what's at stake this week, **at most 2 player names**. Warm and inviting, not
   oppositional or contrarian. A light betting read (“tops the board,” “defends”)
@@ -126,7 +129,57 @@ Canonical section order:
 4. Course and Format
 5. Broadcast Information
 
-### Step 4: Validate
+### Step 4: Fact-check pass (required)
+
+Before validate/write, re-read every odds blurb and history line against sources.
+**This step prevents hallucinations** — do not skip it.
+
+#### Tournament scope (most common error)
+
+You are writing about **the event in `pgaTourId` only** — e.g. Genesis Scottish
+Open at Renaissance, not The Open Championship at Royal Birkdale.
+
+| Phrase | Means |
+|--------|--------|
+| "Defending champion" | Won **last year's edition of this event** |
+| "Won here" / "champion here" | Won **this tournament** at this course |
+| "2023 champion" | Won **this event** in 2023 — not a major unless the file is for that major |
+
+**Never** attribute a major win year to this week's event. McIlroy won The Open in
+2014 and the Scottish Open at Renaissance in 2023 — those are different facts.
+
+#### Odds blurbs — verify each player
+
+1. **Odds range** — pull from **2+ sportsbooks** the week of the event (DraftKings,
+   Golf Channel, CBS, Action Network). Widen the range if books disagree; do not
+   guess a tight band.
+2. **Season wins** — check PGA Tour results for 2026 before writing "first win,"
+   "second win," or "X wins this season."
+3. **Major champion** — only use if the player has actually won a major. When in
+   doubt, omit.
+4. **Past wins at this event** — confirm on PGA Tour **Past Results** / event
+   history for `{pgaTourId}`, not from memory.
+5. **Venue-specific lore** (U.S. Amateur site, college ties, etc.) — verify or
+   omit. Wrong venue history is worse than no history.
+
+#### Safe blurb patterns (when facts are shaky)
+
+- Course fit: "handles firm links well," "strong in the wind"
+- Recent form: "runner-up last month," "won two weeks ago" — **only if verified**
+- Event history: "2024 winner at Renaissance," "runner-up here last year" —
+   **only if verified on PGA past results**
+- Market: "near the top of the board," "live favorite"
+
+#### Red flags — stop and re-research
+
+- "Still hunting his first win of [year]" without checking season results
+- "Major winner" for a player without a major
+- "Won here" when the win was a different tournament or major
+- Win-count claims ("four wins this season")
+- Defending champion for the wrong event (e.g. Open champ ≠ Scottish Open defender)
+- Transferring facts from a tune-up major to this week's event
+
+### Step 5: Validate
 
 From repo root:
 
@@ -136,7 +189,7 @@ node .cursor/skills/tournament-summary/scripts/validate-summary.mjs server/src/t
 
 Fix any reported errors before writing or handing off.
 
-### Step 5: Write file
+### Step 6: Write file
 
 Save to:
 
@@ -217,9 +270,19 @@ pnpm --filter server run script:email-preview new-tournament open
 
 ### Odds blurbs
 
-Keep **one sentence**, fan-readable: recent win, past champ here, popular draw,
-hot streak, course fit. Betting-aware phrasing is fine (“live favorite,” “value
-on the board”) — avoid stacked stats and approach-game jargon unless unavoidable.
+Keep **one sentence**, fan-readable. **Every factual claim must be verified for
+this week's event** (Step 4) — wrong history is worse than vague course fit.
+
+| Verified fact type | OK to use |
+|--------------------|-----------|
+| Past winner at **this event** | "2023 Scottish Open winner at Renaissance" |
+| Defending champion | Only if they won **last year's this event** |
+| Recent form | "won the John Deere Sunday" — if verified this season |
+| Major champion | Only if player has won a major — cite the major, not this event |
+| Opinion | "elite links player," "strong in the wind," "near top of the board" |
+
+**Do not** confuse this week's tournament with The Open, with other Tour stops,
+or with major wins. **Do not** invent win counts or venue lore.
 
 ## Style reference
 

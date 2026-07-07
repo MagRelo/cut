@@ -115,17 +115,21 @@ Check **5–10 sources** per event for storylines, odds, and course context.
 - Official tournament name (including sponsor)
 - Dates (Thu–Sun typical; confirm year)
 - Purse and FedExCup points
-- Defending champion (prior calendar year winner for next edition)
+- **Defending champion of this event** — PGA Tour past results for `{pgaTourId}`
+- **Past winners at this event/course** — not major wins unless writing about a major
 - Field size (144 standard; 132 invitational; 72–80 Signature)
 - Course yardage and par from PGA Tour course tab
-- Withdrawals affecting the odds board (Scheffler, McIlroy, etc.)
+- Withdrawals affecting the odds board
+- **2026 season wins** for any player before claiming "first win" or win counts
+- **Major champion status** before using "major winner"
 
 ### Odds guidance
 
 - List **8–10** players, ordered roughly by market rank.
 - Use American odds with `+` prefix.
-- When books differ, show a range: `(+1800 to +2200)`.
-- Tie each pick to **course fit** or **recent form**, not just rank.
+- Pull ranges from **2+ sportsbooks** the week of the event; widen when books disagree.
+- Tie each pick to **verified** event history, recent form, or plain course-fit opinion.
+- When unsure of a fact, **use course fit** — never guess history.
 
 ### Writing style
 
@@ -145,8 +149,9 @@ with real context, not a press release or odds terminal.
 
 **Sentence length:** aim for under ~22 words per sentence in CutBot quotes.
 
-**Odds section:** one sentence per player; fan-readable reason to watch. Betting-aware
-phrasing and course fit are fine — avoid stacked stats and jargon.
+**Odds section:** one sentence per player; fan-readable reason to watch. **Verify
+factual claims against this event's past results** — see SKILL.md Step 4. Prefer
+course-fit opinion over unverified history.
 
 **Other sections:** factual and scannable (History, Course, Broadcast). Personality
 lives in They Out Here Sayin (CutBot + user quotes).
