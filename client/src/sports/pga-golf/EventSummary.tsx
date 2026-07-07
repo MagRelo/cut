@@ -15,7 +15,7 @@ export function resolveGolfEventHeroImage(event: EventSummaryProps["event"]): st
 export const GolfEventSummary: React.FC<EventSummaryProps> = ({ event, surface = "hero" }) => {
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const meta = parseGolfEventMetadata(event.metadata);
-  const hasSummary = Boolean(meta.summarySections);
+  const hasSummary = Boolean(meta?.summarySections);
 
   const details = (
     <GolfEventDetails
@@ -29,8 +29,8 @@ export const GolfEventSummary: React.FC<EventSummaryProps> = ({ event, surface =
     <TournamentSummaryModal
       isOpen={isSummaryOpen}
       onClose={() => setIsSummaryOpen(false)}
-      tournamentName={meta.name ?? event.externalId}
-      summarySections={meta.summarySections}
+      tournamentName={meta?.name ?? event.externalId}
+      summarySections={meta?.summarySections}
     />
   );
 

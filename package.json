@@ -15,6 +15,7 @@
     "server:dev": "pnpm --filter server run dev",
     "server:build": "pnpm --filter server run build",
     "docker:build": "bash docker/build.sh",
+    "docker:build:arm": "bash docker/build.sh --with-arm",
     "db:start": "docker compose -f docker/docker-compose.yml up -d",
     "db:stop": "docker compose -f docker/docker-compose.yml down",
     "db:logs": "docker compose -f docker/docker-compose.yml logs -f",

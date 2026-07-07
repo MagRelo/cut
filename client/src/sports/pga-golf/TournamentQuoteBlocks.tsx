@@ -1,4 +1,3 @@
-import React from "react";
 import {
   getNormalizedQuotes,
   QUOTES_SECTION_DISPLAY_TITLE,

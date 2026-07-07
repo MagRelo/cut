@@ -3,6 +3,22 @@
 # Exit on error
 set -e
 
+# Default: linux/amd64 only (remote prod). Pass --with-arm or set DOCKER_BUILD_ARM=1 for M1/local arm64.
+BUILD_ARM=false
+for arg in "$@"; do
+  case "$arg" in
+    --with-arm) BUILD_ARM=true ;;
+    -h|--help)
+      echo "Usage: docker/build.sh [--with-arm]"
+      echo "  --with-arm   Also build linux/arm64 (Apple Silicon / M1)"
+      exit 0
+      ;;
+  esac
+done
+if [ "${DOCKER_BUILD_ARM:-}" = "1" ] || [ "${DOCKER_BUILD_ARM:-}" = "true" ]; then
+  BUILD_ARM=true
+fi
+
 echo "Starting Docker build process..."
 
 # Generate unique tag using git commit SHA and timestamp

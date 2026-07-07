@@ -30,7 +30,8 @@ Check what's running: `curl -s https://<domain>/health` → `gitSha`. Deploy his
 ### Docker Build Only
 
 ```bash
-pnpm run docker:build
+pnpm run docker:build          # linux/amd64 only (default — remote prod)
+pnpm run docker:build:arm      # amd64 + arm64 (Apple Silicon / M1)
 ```
 
 ### Docker Compose (Local Development)
