@@ -25,11 +25,11 @@ export type QuoteBlockColors = {
   text: string;
 };
 
-export const QUOTES_SECTION_DISPLAY_TITLE = "They Out Here Sayin:";
+export const QUOTES_SECTION_DISPLAY_TITLE = "from the 19th hole:";
 export const DEFAULT_QUOTE_COLOR = "#7cb68a";
 export const DEFAULT_CUTBOT_ATTRIBUTION = "CutBot";
 
-const QUOTES_SECTION_KEYS = new Set(["they out here sayin", "summary"]);
+const QUOTES_SECTION_KEYS = new Set(["from the 19th hole", "they out here sayin", "summary"]);
 
 function isSummaryItem(value: unknown): value is TournamentSummaryItem {
   if (!value || typeof value !== "object") return false;
