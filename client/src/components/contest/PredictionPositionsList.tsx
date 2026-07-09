@@ -4,7 +4,7 @@ import { useWithdrawPrediction } from "../../hooks/useSpectatorOperations";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
 import { type Contest } from "../../types/contest";
-import { toEnglishOdds } from "../../utils/secondaryPurchasePreview";
+import { useOddsFormat } from "../../hooks/useOddsFormat";
 import { contestLineupDisplayName } from "../../lib/candidateUtils";
 
 import { resolveUserBorderColor } from "../../lib/lineupDisplay";
@@ -15,6 +15,7 @@ interface PredictionPositionsListProps {
 
 export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = ({ contest }) => {
   const userAddress = useEffectiveWalletAddress();
+  const { formatStakeReturnOdds } = useOddsFormat();
   const [withdrawingEntryId, setWithdrawingEntryId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -132,7 +133,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
               : impliedWinnings < 0.01
                 ? "< 0.01"
                 : impliedWinnings.toFixed(2);
-          const englishOddsDisplay = toEnglishOdds(deposited, impliedWinnings);
+          const oddsDisplay = formatStakeReturnOdds(deposited, impliedWinnings);
 
           return (
             <div
@@ -163,7 +164,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
 
                 <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem] gap-0.5 font-sans">
                   <div className="text-xs font-medium text-gray-700 leading-tight tabular-nums">
-                    {englishOddsDisplay}
+                    {oddsDisplay}
                   </div>
                   <div className="text-[10px] uppercase text-gray-500 font-medium tracking-wide leading-none">
                     Odds

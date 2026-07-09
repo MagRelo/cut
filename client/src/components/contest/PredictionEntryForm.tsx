@@ -16,7 +16,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useAddPrediction } from "../../hooks/useSpectatorOperations";
 import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransaction";
 import apiClient from "../../utils/apiClient";
-import { incrementalGlobalClaimDelta, toEnglishOdds } from "../../utils/secondaryPurchasePreview";
+import { useOddsFormat } from "../../hooks/useOddsFormat";
+import { incrementalGlobalClaimDelta } from "../../utils/secondaryPurchasePreview";
 import { captureWinnerPoolPositionRecorded } from "../../lib/analytics/posthog";
 import { contestLineupDisplayName } from "../../lib/candidateUtils";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
@@ -68,6 +69,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   poolSnapshot,
   onClose,
 }) => {
+  const { formatStakeReturnOdds } = useOddsFormat();
   const location = useLocation();
   const posthog = usePostHog();
   const { address } = useAccount();
@@ -193,12 +195,11 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     metricsReady && selectedEntryInfo ? metrics.purchaseAmountDisplay : "—";
   const incrementalNetDisplay =
     metricsReady && selectedEntryInfo ? metrics.incrementalNetDisplay : "—";
-  const projectedEnglishOdds = useMemo(() => {
+  const projectedOddsDisplay = useMemo(() => {
     const stake = Number.parseFloat(purchaseAmountDisplay);
     const projectedReturn = Number.parseFloat(incrementalNetDisplay);
-    if (!Number.isFinite(stake) || !Number.isFinite(projectedReturn)) return "—";
-    return toEnglishOdds(stake, projectedReturn);
-  }, [purchaseAmountDisplay, incrementalNetDisplay]);
+    return formatStakeReturnOdds(stake, projectedReturn);
+  }, [purchaseAmountDisplay, incrementalNetDisplay, formatStakeReturnOdds]);
 
   const projectedPayoutDisplay = useMemo(() => {
     const payout = Number.parseFloat(incrementalNetDisplay);
@@ -355,7 +356,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       <div className="flex items-start justify-around gap-4">
         <div className="text-center">
           <div className="text-lg font-semibold tabular-nums leading-none text-gray-800">
-            {projectedEnglishOdds}
+            {projectedOddsDisplay}
           </div>
           <div className="mt-1 text-[10px] uppercase leading-tight tracking-wide text-gray-500">
             Current Odds

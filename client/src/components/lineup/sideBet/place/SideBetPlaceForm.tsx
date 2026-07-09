@@ -2,6 +2,7 @@ import React from "react";
 import type { SideBetMarketSelectionDto } from "../../../../types/sideBet";
 import { SideBetLineupSummary } from "../shared/SideBetLineupSummary";
 import { SideBetStatsRow } from "../shared/SideBetStatsRow";
+import { useOddsFormat } from "../../../../hooks/useOddsFormat";
 import { MAX_TICKET_PAYOUT_USD } from "../shared/sideBetConstants";
 import { formatUsd } from "../shared/sideBetFormatters";
 
@@ -43,8 +44,11 @@ export const SideBetPlaceForm: React.FC<SideBetPlaceFormProps> = ({
   isRecording,
   onCancel,
   onPlaceTicket,
-}) => (
-  <div className="max-w-md space-y-3 overflow-hidden rounded-sm border border-gray-300 bg-white p-3 font-display">
+}) => {
+  const { formatOdds } = useOddsFormat();
+
+  return (
+    <div className="max-w-md space-y-3 overflow-hidden rounded-sm border border-gray-300 bg-white p-3 font-display">
     <div className="overflow-hidden rounded-md border border-blue-200 bg-gradient-to-tl from-blue-50 via-white to-white font-display shadow-md">
       <div className="space-y-3 p-3 text-sm">
         <div className="min-w-0">
@@ -66,7 +70,7 @@ export const SideBetPlaceForm: React.FC<SideBetPlaceFormProps> = ({
 
         <SideBetStatsRow
           stake={modalStakeTicketLine}
-          odds={activeSelection.americanDisplay}
+          odds={formatOdds(activeSelection.decimalOdds)}
           returnAmount={payoutPreview ? formatUsd(payoutPreview.totalReturn) : "—"}
           stakeClassName={modalStakeTicketLine === "—" ? "text-gray-400" : "text-gray-900"}
           returnClassName={payoutPreview ? "text-emerald-700" : "text-gray-400"}
@@ -129,5 +133,6 @@ export const SideBetPlaceForm: React.FC<SideBetPlaceFormProps> = ({
         {isPayingOracle ? "Confirm in wallet…" : isRecording ? "Recording…" : "Place Bet"}
       </button>
     </div>
-  </div>
-);
+    </div>
+  );
+};

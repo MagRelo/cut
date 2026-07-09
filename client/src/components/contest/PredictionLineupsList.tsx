@@ -3,6 +3,7 @@ import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { useContestEvent } from "../../hooks/useContestEvent";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
+import { useOddsFormat } from "../../hooks/useOddsFormat";
 import { computeTenDollarPurchasePreview } from "../../utils/secondaryPurchasePreview";
 import { PredictionEntryModal } from "./PredictionEntryModal";
 import {
@@ -22,6 +23,7 @@ interface PredictionLineupsListProps {
 
 export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ contest }) => {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  const { formatOdds } = useOddsFormat();
   const { candidates = [], sportId, status } = useContestEvent(contest);
   const { sort } = useCandidateSort(sportId);
   const candidatesByEventParticipantId = useMemo(
@@ -102,7 +104,8 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
             const userName = lineup?.user?.name || lineup?.user?.email || "Unknown";
             const lineupName = lineup ? contestLineupDisplayName(lineup) : "";
             const lineupNumberLabel = getLineupNumberLabel(lineupName);
-            const tenDollarEnglishOdds = preview.englishOdds;
+            const oddsDisplay =
+              preview.decimalOdds != null ? formatOdds(preview.decimalOdds) : "—";
 
             const userSettings = lineup?.user?.settings;
             const maybeColor =
@@ -155,7 +158,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                   <div className="flex-shrink-0 flex items-center gap-2">
                     <div className="text-right">
                       <div className="text-lg font-bold tabular-nums text-emerald-600 leading-none mb-0.5">
-                        {tenDollarEnglishOdds}
+                        {oddsDisplay}
                       </div>
                       <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none">
                         Odds

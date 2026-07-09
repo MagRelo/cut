@@ -6,6 +6,7 @@ import {
   SIDE_BET_COLUMNS,
   SIDE_BET_MARKET_GRID_H,
 } from "../shared/sideBetConstants";
+import { useOddsFormat } from "../../../../hooks/useOddsFormat";
 import { sideBetCellButtonClassNames } from "../shared/sideBetCellPalette";
 import { classNames, selectionForCell } from "../shared/sideBetFormatters";
 import type { SideBetMarketGridState } from "./resolveSideBetMarketState";
@@ -22,6 +23,7 @@ export interface SideBetMarketGridProps {
 }
 
 export const SideBetMarketGrid: React.FC<SideBetMarketGridProps> = ({ state, onSelect }) => {
+  const { formatOdds } = useOddsFormat();
   const isLoading = state.kind === "loading";
   const isDisabled = state.kind === "error" || state.kind === "unavailable";
   const selections =
@@ -68,7 +70,11 @@ export const SideBetMarketGrid: React.FC<SideBetMarketGridProps> = ({ state, onS
                 const cell = selectionForCell(selections, row, col);
                 if (!cell && state.kind === "ready") return <div key={cellKey} />;
 
-                const cellLabel = isDisabled ? "—" : (cell?.americanDisplay ?? "—");
+                const cellLabel = isDisabled
+                  ? "—"
+                  : cell
+                    ? formatOdds(cell.decimalOdds)
+                    : "—";
 
                 return (
                   <button

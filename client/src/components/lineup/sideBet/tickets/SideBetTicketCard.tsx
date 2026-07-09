@@ -2,6 +2,7 @@ import React from "react";
 import type { SideBetMarketTicketDto } from "../../../../types/sideBet";
 import { SideBetLineupSummary } from "../shared/SideBetLineupSummary";
 import { SideBetStatsRow } from "../shared/SideBetStatsRow";
+import { useOddsFormat } from "../../../../hooks/useOddsFormat";
 import {
   formatPlayerRosterLine,
   formatStakeDisplay,
@@ -24,6 +25,7 @@ export const SideBetTicketCard: React.FC<SideBetTicketCardProps> = ({
   userLabel,
   lineupNumberLabel,
 }) => {
+  const { formatOdds } = useOddsFormat();
   const ret = sideBetReturnDisplay(ticket);
   const stakeDisplay = formatStakeDisplay(ticket.stakeAmount);
 
@@ -52,7 +54,7 @@ export const SideBetTicketCard: React.FC<SideBetTicketCardProps> = ({
         />
         <SideBetStatsRow
           stake={`$${stakeDisplay}`}
-          odds={ticket.americanDisplayAtPlacement}
+          odds={formatOdds(ticket.decimalOddsAtPlacement)}
           returnAmount={ret.amount}
           returnClassName={ret.amountClass}
         />

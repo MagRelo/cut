@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { PageSection } from "../layout/PageSection";
 import { useAuth } from "../../contexts/AuthContext";
+import { ODDS_FORMAT_OPTIONS, parseOddsDisplayFormat } from "../../lib/oddsSettings";
 
 type DraftState = {
   name: string;
@@ -29,6 +30,7 @@ export function UserSettings() {
   const hasChanges =
     draft.name !== draft.originalName ||
     JSON.stringify(draft.settings) !== JSON.stringify(draft.originalSettings);
+  const selectedOddsFormat = parseOddsDisplayFormat(draft.settings);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,6 +116,39 @@ export function UserSettings() {
                     }`}
                     style={{ backgroundColor: color }}
                   />
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="oddsFormat"
+              className="block text-sm font-medium text-gray-700 font-display shrink-0"
+            >
+              Odds format
+            </label>
+            <p className="mt-1 text-xs text-gray-500">
+              How odds are shown in parlay markets and tickets.
+            </p>
+            <div className="mt-3 space-y-2">
+              {ODDS_FORMAT_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className="flex cursor-pointer items-start gap-3 rounded-sm border border-gray-200 px-3 py-2.5 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/40"
+                >
+                  <input
+                    type="radio"
+                    name="oddsFormat"
+                    value={option.value}
+                    checked={selectedOddsFormat === option.value}
+                    onChange={() => handleChange("oddsFormat", option.value)}
+                    className="mt-0.5 h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-gray-900">{option.label}</span>
+                    <span className="block text-xs text-gray-500">{option.description}</span>
+                  </span>
                 </label>
               ))}
             </div>
