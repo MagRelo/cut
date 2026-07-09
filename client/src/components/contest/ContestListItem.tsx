@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import type { CompetitionEventShell } from "@cut/sport-sdk";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { type Contest, type LeagueContest } from "../../types/contest";
+import { contestLobbyLinkState } from "../../lib/contestNavigation";
 import { formatContestStatus, contestStatusValueClass } from "../../lib/contestStatus";
 import { eventDisplayNameFromMetadata, eventStartDateFromMetadata } from "../../lib/eventMetadata";
 import { cn } from "../../lib/tabStyles";
@@ -68,6 +70,7 @@ interface ContestListItemProps {
   className?: string;
   eventName?: string | null;
   eventStartDate?: string | null;
+  eventShell?: CompetitionEventShell;
   variant?: ContestListItemVariant;
 }
 
@@ -77,6 +80,7 @@ export const ContestListItem = ({
   className,
   eventName: eventNameProp,
   eventStartDate: eventStartDateProp,
+  eventShell,
   variant = "default",
 }: ContestListItemProps) => {
   const entryCount = contest.contestLineups?.length ?? 0;
@@ -121,6 +125,7 @@ export const ContestListItem = ({
         </div>
         <Link
           to={to}
+          state={eventShell ? contestLobbyLinkState(eventShell, contest) : undefined}
           aria-label={`${actionLabel} ${contest.name} contest`}
           className={cn(
             viewButtonBaseClassName,

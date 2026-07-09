@@ -28,7 +28,7 @@ export const leaguesMatch = (pathname: string) => pathname.startsWith("/leagues"
 export const userGroupsMatch = (pathname: string) => pathname.startsWith("/user-groups");
 
 export const leaderboardMatch = (pathname: string) =>
-  /^\/sports\/[^/]+\/leaderboard$/.test(pathname);
+  /^\/sports\/[^/]+(\/events\/[^/]+)?\/leaderboard$/.test(pathname);
 
 export const accountMatch = (pathname: string) =>
   pathname.startsWith("/account") ||

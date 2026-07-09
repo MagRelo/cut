@@ -5,6 +5,7 @@ import {
   parseCommoditiesEventMetadata,
 } from "@cut/sport-commodities";
 import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
+import { leaderboardLinkState, leaderboardPath } from "../../lib/contestNavigation";
 import { formatCommoditiesEventStatusLabel, formatCommoditySessionWindow } from "./commodityUtils";
 
 interface CommodityEventDetailsProps {
@@ -27,6 +28,8 @@ export function CommodityEventDetails({ event, className = "" }: CommodityEventD
     commodities?.sessionOpen,
     commodities?.sessionClose,
   );
+  const leaderboardTo = leaderboardPath(event.sportId, event.id);
+  const leaderboardState = leaderboardLinkState(event);
 
   const detailSeparator = (
     <span className="text-[9px] leading-none text-white/60" aria-hidden>
@@ -38,7 +41,8 @@ export function CommodityEventDetails({ event, className = "" }: CommodityEventD
     <div className={["font-display text-sm leading-snug", className].filter(Boolean).join(" ")}>
       <h1 className="font-display text-2xl font-bold leading-snug tracking-tight text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)] sm:text-3xl">
         <Link
-          to={`/sports/${event.sportId}/leaderboard`}
+          to={leaderboardTo}
+          state={leaderboardState}
           className="rounded-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
         >
           {name}
@@ -55,7 +59,8 @@ export function CommodityEventDetails({ event, className = "" }: CommodityEventD
         <span>{status}</span>
         {detailSeparator}
         <Link
-          to={`/sports/${event.sportId}/leaderboard`}
+          to={leaderboardTo}
+          state={leaderboardState}
           className="inline-flex items-center gap-0.5 rounded-sm text-white/90 underline-offset-2 hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
         >
           View Leaderboard

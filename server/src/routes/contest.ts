@@ -301,6 +301,35 @@ contestRouter.get("/:id/timeline", optionalAuth, async (c) => {
   }
 });
 
+/** Contest lobby payload — contest detail + timeline; `:id` may be DB id or contract address. */
+contestRouter.get("/:id/lobby", optionalAuth, async (c) => {
+  try {
+    const contestId = await resolveContestDbId(c.req.param("id"));
+    if (!contestId) {
+      return c.json({ error: "Contest not found" }, 404);
+    }
+
+    const [formattedContest, timeline] = await Promise.all([
+      loadFormattedContestById(contestId),
+      getContestTimelineData(contestId),
+    ]);
+
+    if (!formattedContest) {
+      return c.json({ error: "Contest not found" }, 404);
+    }
+
+    const accessDenied = await leagueContestAccessDenied(c, formattedContest.userGroupId ?? null);
+    if (accessDenied) {
+      return accessDenied;
+    }
+
+    return c.json({ ...formattedContest, timeline });
+  } catch (error) {
+    console.error("Error fetching contest lobby:", error);
+    return c.json({ error: "Failed to fetch contest lobby" }, 500);
+  }
+});
+
 contestRouter.get("/:id", optionalAuth, async (c) => {
   try {
     const contestId = await resolveContestDbId(c.req.param("id"));

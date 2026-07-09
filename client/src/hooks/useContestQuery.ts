@@ -1,11 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useLocation } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
-import { type Contest, type ContestStatus, type TimelineData } from "../types/contest";
+import { type Contest, type ContestStatus } from "../types/contest";
 import { normalizeContestAddress } from "../utils/contestRoutes";
 import { useAuth } from "../contexts/AuthContext";
 import { eventStatusFromMetadata } from "../lib/eventMetadata";
+import {
+  getDirectoryContextForContest,
+  parseContestLobbyNavigationState,
+  placeholderContestFromNavigation,
+} from "../lib/contestNavigation";
 import { CONTEST_LOBBY_GC_MS, SERVER_SYNC_INTERVAL_MS } from "../lib/queryTiming";
 
 const TERMINAL_CONTEST_STATUSES: ContestStatus[] = ["SETTLED", "CLOSED", "CANCELLED"];
@@ -23,16 +30,30 @@ function isContestLiveTracked(contest: Contest | undefined): boolean {
  */
 export function useContestQuery(contestAddress: string | undefined) {
   const routeKey = contestAddress ? normalizeContestAddress(contestAddress) : "";
+  const location = useLocation();
+  const queryClient = useQueryClient();
+
+  const placeholderData = useMemo((): Contest | undefined => {
+    if (!routeKey) return undefined;
+    const navState = parseContestLobbyNavigationState(location.state);
+    if (navState) {
+      return placeholderContestFromNavigation(routeKey, navState);
+    }
+    const directoryContext = getDirectoryContextForContest(queryClient, routeKey);
+    if (directoryContext) {
+      return placeholderContestFromNavigation(routeKey, directoryContext);
+    }
+    return undefined;
+  }, [routeKey, location.state, queryClient]);
 
   return useQuery({
     queryKey: queryKeys.contests.byLobbyRoute(routeKey),
     queryFn: async () => {
       if (!routeKey) throw new Error("Contest address is required");
-      const contest = await apiClient.get<Contest>(`/contests/${routeKey}`);
-      const timeline = await apiClient.get<TimelineData>(`/contests/${contest.id}/timeline`);
-      return { ...contest, timeline };
+      return await apiClient.get<Contest>(`/contests/${routeKey}/lobby`);
     },
     enabled: !!routeKey,
+    placeholderData,
     staleTime: (query) =>
       isContestLiveTracked(query.state.data) ? SERVER_SYNC_INTERVAL_MS : Infinity,
     refetchInterval: (query) =>

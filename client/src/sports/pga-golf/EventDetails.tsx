@@ -2,6 +2,7 @@ import { ChevronRightIcon, ExclamationTriangleIcon } from "@heroicons/react/24/o
 import { Link } from "react-router-dom";
 import { golfEventStatusFromMetadata } from "@cut/sport-pga-golf";
 import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
+import { leaderboardLinkState, leaderboardPath } from "../../lib/contestNavigation";
 import { formatGolfEventStatus, parseGolfEventMetadata } from "./utils";
 
 interface GolfEventDetailsProps {
@@ -26,6 +27,8 @@ export function GolfEventDetails({
   const isScheduled = golfEventStatusFromMetadata(event.metadata) === "SCHEDULED";
   const showPreview = isScheduled && hasSummary && onOpenSummary;
   const showLeaderboard = !isScheduled;
+  const leaderboardTo = leaderboardPath(event.sportId, event.id);
+  const leaderboardState = leaderboardLinkState(event);
 
   const detailSeparator = (
     <span className="text-[9px] leading-none text-white/60" aria-hidden>
@@ -38,7 +41,8 @@ export function GolfEventDetails({
       <h1 className="font-display text-2xl font-bold leading-snug tracking-tight text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)] sm:text-3xl">
         {showLeaderboard ? (
           <Link
-            to={`/sports/${event.sportId}/leaderboard`}
+            to={leaderboardTo}
+            state={leaderboardState}
             className="rounded-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
           >
             {name}
@@ -84,7 +88,8 @@ export function GolfEventDetails({
           <>
             {detailSeparator}
             <Link
-              to={`/sports/${event.sportId}/leaderboard`}
+              to={leaderboardTo}
+              state={leaderboardState}
               className="inline-flex items-center gap-0.5 rounded-sm text-white/90 underline-offset-2 hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
             >
               View Leaderboard

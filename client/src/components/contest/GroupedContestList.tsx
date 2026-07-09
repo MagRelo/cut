@@ -1,8 +1,8 @@
 import { type ReactNode } from "react";
-import type { CompetitionEventShell } from "@cut/sport-sdk";
 import { DEFAULT_EVENT_HERO_OVERLAY_CLASSNAME } from "@cut/sport-sdk/ui";
 import type { ContestDirectoryEvent, EventContestGroup } from "../../types/contest";
 import { formatTournamentDateRange } from "../../lib/contestCreation";
+import { eventShellFromDirectoryEvent } from "../../lib/contestNavigation";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSportUIPlugin } from "../../hooks/useSportUI";
 import { SportEventHeader } from "../platform/SportEventHeader";
@@ -14,20 +14,6 @@ interface GroupedContestListProps {
   loading: boolean;
   error: string | null;
   variant?: ContestListItemVariant;
-}
-
-function eventShellFromDirectoryEvent(event: ContestDirectoryEvent): CompetitionEventShell {
-  return {
-    id: event.id,
-    sportId: event.sportId,
-    externalId: event.externalId,
-    isActive: event.isActive,
-    metadata: event.metadata ?? {
-      name: event.name,
-      startDate: event.startDate,
-      endDate: event.endDate,
-    },
-  };
 }
 
 function eventSublabel(event: ContestDirectoryEvent): string | null {
@@ -79,6 +65,7 @@ function GroupedContestSection({
                 error={null}
                 eventName={group.event.name}
                 eventStartDate={group.event.startDate}
+                eventShell={eventShell}
                 variant={variant}
               />
             </div>
@@ -109,6 +96,7 @@ function GroupedContestSection({
           error={null}
           eventName={group.event.name}
           eventStartDate={group.event.startDate}
+          eventShell={eventShell}
           variant={variant}
         />
       </div>

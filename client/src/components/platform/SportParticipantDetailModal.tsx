@@ -3,12 +3,14 @@ import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/re
 import type { Candidate, EventStatus } from "@cut/sport-sdk";
 import { useOptionalEventScope } from "../../contexts/EventScopeContext";
 import { useRequiredSportUIPlugin } from "../../hooks/useSportUI";
+import { leaderboardPath } from "../../lib/contestNavigation";
 
 export interface SportParticipantDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   candidate: Candidate | null;
   sportId: string;
+  eventId?: string;
   status: EventStatus;
   eventMetadata?: unknown;
   onShare?: (candidate: Candidate) => void;
@@ -20,6 +22,7 @@ export const SportParticipantDetailModal: React.FC<SportParticipantDetailModalPr
   onClose,
   candidate,
   sportId,
+  eventId,
   status,
   eventMetadata,
   onShare,
@@ -33,12 +36,15 @@ export const SportParticipantDetailModal: React.FC<SportParticipantDetailModalPr
   }
   const displayCandidate = candidate ?? candidateSnapshotRef.current;
   const resolvedMetadata = eventMetadata ?? scope?.metadata;
+  const resolvedEventId = eventId ?? scope?.eventId;
 
   const sharePlayerLeaderboardLink = async (targetCandidate: Candidate) => {
     if (typeof window === "undefined") return;
 
     const shareUrl = new URL(window.location.href);
-    shareUrl.pathname = `/sports/${sportId}/leaderboard`;
+    shareUrl.pathname = resolvedEventId
+      ? leaderboardPath(sportId, resolvedEventId)
+      : `/sports/${sportId}/leaderboard`;
     shareUrl.searchParams.set("playerId", String(targetCandidate.participantId));
     shareUrl.searchParams.delete("pgaTourId");
 

@@ -122,6 +122,7 @@ export const EventLeaderboardPanel: React.FC<EventLeaderboardPanelProps> = ({
         onClose={closePlayerModal}
         candidate={selectedCandidate}
         sportId={sportId}
+        eventId={eventId}
         status={resolvedStatus}
         eventMetadata={eventMetadata}
       />

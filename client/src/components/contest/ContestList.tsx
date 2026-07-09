@@ -1,3 +1,4 @@
+import type { CompetitionEventShell } from "@cut/sport-sdk";
 import { type Contest } from "../../types/contest";
 import { contestLobbyPath } from "../../utils/contestRoutes";
 import { Link } from "react-router-dom";
@@ -10,6 +11,7 @@ interface ContestListProps {
   error: string | null;
   eventName?: string | null;
   eventStartDate?: string | null;
+  eventShell?: CompetitionEventShell;
   variant?: ContestListItemVariant;
 }
 
@@ -36,6 +38,7 @@ export const ContestList = ({
   error,
   eventName,
   eventStartDate,
+  eventShell,
   variant = "default",
 }: ContestListProps) => {
   if (loading) {
@@ -68,6 +71,7 @@ export const ContestList = ({
             to={contestLobbyPath(contest.address)}
             eventName={eventName}
             eventStartDate={eventStartDate}
+            eventShell={eventShell}
             variant={variant}
           />
         ))}

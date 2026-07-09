@@ -2,6 +2,7 @@ import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import { f1EventStatusFromMetadata } from "@cut/sport-f1";
 import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
+import { leaderboardLinkState, leaderboardPath } from "../../lib/contestNavigation";
 import { formatF1EventStatusLabel, parseF1EventMetadataView } from "./utils";
 
 interface F1EventDetailsProps {
@@ -16,6 +17,8 @@ export function F1EventDetails({ event, className = "" }: F1EventDetailsProps) {
   const status = formatF1EventStatusLabel(f1EventStatusFromMetadata(event.metadata));
   const seasonRound =
     f1.season != null && f1.round != null ? `${f1.season} · Round ${f1.round}` : null;
+  const leaderboardTo = leaderboardPath(event.sportId, event.id);
+  const leaderboardState = leaderboardLinkState(event);
 
   const detailSeparator = (
     <span className="text-[9px] leading-none text-white/60" aria-hidden>
@@ -27,7 +30,8 @@ export function F1EventDetails({ event, className = "" }: F1EventDetailsProps) {
     <div className={["font-display text-sm leading-snug", className].filter(Boolean).join(" ")}>
       <h1 className="font-display text-2xl font-bold leading-snug tracking-tight text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)] sm:text-3xl">
         <Link
-          to={`/sports/${event.sportId}/leaderboard`}
+          to={leaderboardTo}
+          state={leaderboardState}
           className="rounded-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
         >
           {name}
@@ -54,7 +58,8 @@ export function F1EventDetails({ event, className = "" }: F1EventDetailsProps) {
         <span>{status}</span>
         {detailSeparator}
         <Link
-          to={`/sports/${event.sportId}/leaderboard`}
+          to={leaderboardTo}
+          state={leaderboardState}
           className="inline-flex items-center gap-0.5 rounded-sm text-white/90 underline-offset-2 hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
         >
           View Leaderboard

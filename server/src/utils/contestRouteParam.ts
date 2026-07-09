@@ -12,7 +12,8 @@ export function normalizeContestAddress(address: string): string {
 
 /**
  * Resolves a contest lookup param to the database id.
- * Used only for `GET /api/contests/:id` when the client passes a contract address from the lobby URL.
+ * Used for `GET /api/contests/:id`, `GET /api/contests/:id/timeline`, and `GET /api/contests/:id/lobby`
+ * when the client passes a contract address from the lobby URL.
  */
 export async function resolveContestDbId(routeParam: string): Promise<string | null> {
   const trimmed = routeParam.trim();
