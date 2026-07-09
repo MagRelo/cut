@@ -11,7 +11,7 @@ import { EventLineupsPanel } from "../../platform/EventLineupsPanel";
 import { ContestCard } from "../ContestCard";
 import { ContestPayoutsModal } from "../ContestPayoutsModal";
 import { ContestResultsPanel } from "../ContestResultsPanel";
-import { ContestBeginCountdown } from "./ContestBeginCountdown";
+import { ContestStatusBar } from "./ContestStatusBar";
 import { ContestPrimaryTab } from "./ContestPrimaryTab";
 import { ContestPredictionsPanel } from "./ContestPredictionsPanel";
 
@@ -79,7 +79,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
         </div>
 
         <div className="mb-2">
-          <ContestBeginCountdown
+          <ContestStatusBar
             contestStatus={contest.status}
             eventName={eventName}
             eventStartDate={eventStartDate}

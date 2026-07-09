@@ -4,7 +4,7 @@ import { type Contest, type LeagueContest } from "../../types/contest";
 import { formatContestStatus, contestStatusValueClass } from "../../lib/contestStatus";
 import { eventDisplayNameFromMetadata, eventStartDateFromMetadata } from "../../lib/eventMetadata";
 import { cn } from "../../lib/tabStyles";
-import { ContestBeginCountdown } from "./lobby/ContestBeginCountdown";
+import { ContestStatusBar } from "./lobby/ContestStatusBar";
 import { ContestCard } from "./ContestCard";
 
 const viewButtonBaseClassName =
@@ -103,7 +103,7 @@ export const ContestListItem = ({
       </div>
 
       <div className="mb-1">
-        <ContestBeginCountdown
+        <ContestStatusBar
           contestStatus={contest.status}
           eventName={eventName}
           eventStartDate={eventStartDate}
