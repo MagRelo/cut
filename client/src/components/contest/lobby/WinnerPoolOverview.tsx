@@ -11,11 +11,11 @@ export interface WinnerPoolOverviewProps {
 
 export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ mode }) => {
   return (
-    <div className="rounded-sm border border-gray-200 bg-gray-50 p-4 pt-3 font-display">
-      <h3 className="text-base font-semibold text-gray-900">Contest Winner Pool</h3>
+    <div className="rounded-sm border border-gray-300 bg-gray-50 p-4 pt-3 font-display">
+      <h3 className="text-base font-semibold text-gray-900">Winner Pool</h3>
 
       <p className="text-sm leading-relaxed text-gray-600">
-        Bet on which lineup will win this contest. Odds update as money enters the pool - get in
+        Bet on which lineup will win the contest. Odds update as money enters the pool - get in
         early to secure a larger share of the pot.{"  "}
         <Link to="/faq#winner-pool" className="ml-0.5 text-blue-600 hover:underline">
           Learn more...

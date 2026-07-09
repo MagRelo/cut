@@ -39,7 +39,7 @@ export const LEAGUES_TAB: NavTab = {
   match: (pathname) => leaguesMatch(pathname) || userGroupsMatch(pathname),
 };
 
-/** Indented links nested under Account in user menus. */
+/** Account links shown in the user menu. */
 export const ACCOUNT_SUB_LINKS = [
   ACCOUNT_HOME_LINK,
   LEAGUES_TAB,
@@ -51,7 +51,7 @@ export const LEFT_TABS: NavTab[] = [
   {
     key: "contests",
     to: "/contests",
-    label: "Live Contests",
+    label: "Events",
     match: contestsMatch,
   },
 ];

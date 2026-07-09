@@ -1,12 +1,11 @@
 import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Fragment, useEffect, useState } from "react";
-import { UserContestsNavList } from "./UserContestsNavList";
 import { Link, useLocation } from "react-router-dom";
 import { formatUnits } from "viem";
 import { useAuth } from "../../contexts/AuthContext";
 import { BRAND_WORDMARK } from "../../lib/brand";
-import { contestsHubMatch, signInReturnFrom } from "../../lib/navRoutes";
+import { signInReturnFrom } from "../../lib/navRoutes";
 import {
   ACCOUNT_HOME_LINK,
   ACCOUNT_SUB_LINKS,
@@ -17,21 +16,9 @@ import {
 const mobileNavItemBase =
   "block w-full rounded-md px-3 py-2.5 text-left text-sm font-medium font-display uppercase tracking-wider transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
 
-const mobileSectionHeaderBase =
-  "block w-full rounded-md px-3 pt-2 pb-0.5 text-left text-sm font-medium font-display uppercase tracking-wider transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
-
 function mobileNavItemClass(active: boolean) {
   return [
     mobileNavItemBase,
-    active
-      ? "bg-slate-100 text-slate-950 font-semibold"
-      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
-  ].join(" ");
-}
-
-function mobileSectionHeaderClass(active: boolean) {
-  return [
-    mobileSectionHeaderBase,
     active
       ? "bg-slate-100 text-slate-950 font-semibold"
       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
@@ -46,8 +33,6 @@ function mobileSubItemClass(active: boolean) {
       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
   ].join(" ");
 }
-
-const mobileContestInsetListClass = "ml-2 flex flex-col gap-0.5 border-l border-slate-100 pl-2";
 
 const mobileAccountInsetListClass =
   "ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2";
@@ -135,36 +120,16 @@ export const MobileNavMenu: React.FC = () => {
                     <nav aria-label="Main" className="flex-1 overflow-y-auto p-3">
                       <div className="flex flex-col gap-3">
                         {LEFT_TABS.map((tab) => (
-                          <div key={tab.key} className="flex flex-col">
-                            <Link
-                              to={tab.to}
-                              state={tab.state}
-                              onClick={closeMenu}
-                              aria-current={
-                                user && tab.key === "contests"
-                                  ? contestsHubMatch(location.pathname)
-                                    ? "page"
-                                    : undefined
-                                  : tab.match(location.pathname)
-                                    ? "page"
-                                    : undefined
-                              }
-                              className={
-                                user && tab.key === "contests"
-                                  ? mobileSectionHeaderClass(contestsHubMatch(location.pathname))
-                                  : mobileNavItemClass(tab.match(location.pathname))
-                              }
-                            >
-                              {tab.label}
-                            </Link>
-                            {user && tab.key === "contests" ? (
-                              <UserContestsNavList
-                                variant="mobile"
-                                onNavigate={closeMenu}
-                                insetListClass={mobileContestInsetListClass}
-                              />
-                            ) : null}
-                          </div>
+                          <Link
+                            key={tab.key}
+                            to={tab.to}
+                            state={tab.state}
+                            onClick={closeMenu}
+                            aria-current={tab.match(location.pathname) ? "page" : undefined}
+                            className={mobileNavItemClass(tab.match(location.pathname))}
+                          >
+                            {tab.label}
+                          </Link>
                         ))}
 
                         {user ? (

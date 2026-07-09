@@ -43,7 +43,7 @@ export const SideBetMarketGrid: React.FC<SideBetMarketGridProps> = ({ state, onS
           {ROW_ORDER.map((hitsLabel) => (
             <div
               key={hitsLabel}
-              className="px-2 py-1 text-center font-display text-sm font-semibold text-gray-900"
+              className="px-2 py-1 text-center font-display text-sm font-medium text-gray-900"
             >
               {hitsLabel}
             </div>
@@ -51,7 +51,7 @@ export const SideBetMarketGrid: React.FC<SideBetMarketGridProps> = ({ state, onS
 
           {SIDE_BET_COLUMNS.map((col) => (
             <React.Fragment key={col}>
-              <div className="self-center pr-2 text-right font-display text-sm font-semibold text-gray-900">
+              <div className="self-center pr-2 text-right font-display text-sm font-medium text-gray-900">
                 {col}
               </div>
               {ROW_ORDER.map((row) => {
@@ -86,7 +86,7 @@ export const SideBetMarketGrid: React.FC<SideBetMarketGridProps> = ({ state, onS
                     }}
                     className={classNames(
                       SIDE_BET_CELL_MIN_H,
-                      "flex w-full items-center justify-center rounded-md border px-1 font-display text-sm font-semibold tabular-nums transition-colors",
+                      "flex w-full items-center justify-center rounded-md border px-1 font-display text-sm font-medium tabular-nums transition-colors",
                       "focus:outline-none focus:ring-2 focus:ring-offset-1",
                       isDisabled || !cell
                         ? DISABLED_CELL_CLASS

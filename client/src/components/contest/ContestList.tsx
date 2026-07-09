@@ -60,7 +60,7 @@ export const ContestList = ({
         </p>
       </div>
     ) : (
-      <div className="grid gap-3">
+      <div className="grid gap-3 md:grid-cols-2">
         {contests.map((contest) => (
           <ContestListItem
             key={contest.id}

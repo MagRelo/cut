@@ -8,13 +8,9 @@ import {
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
 } from "../../lib/navTabs";
-import { UserContestsNavList } from "./UserContestsNavList";
 
 const menuItemClass =
   "block w-full px-4 py-2 text-left text-sm font-display text-slate-700 data-[focus]:bg-slate-50";
-
-const menuSubItemClass =
-  "block w-full py-2 pl-7 pr-4 text-left text-sm font-display text-slate-600 data-[focus]:bg-slate-50";
 
 export const UserMenu: React.FC = () => {
   const { logout, paymentTokenBalance, balancesUnavailable, isAdmin } = useAuth();
@@ -55,13 +51,12 @@ export const UserMenu: React.FC = () => {
         anchor="bottom end"
         className="z-50 mt-1 min-w-[11rem] rounded-md border border-slate-200 bg-white py-1 shadow-lg focus:outline-none"
       >
-        <UserContestsNavList variant="dropdown" />
         {ACCOUNT_SUB_LINKS.map((link) => (
           <MenuItem key={link.to}>
             {({ close }) => (
               <Link
                 to={link.to}
-                className={menuSubItemClass}
+                className={menuItemClass}
                 aria-current={link.match(location.pathname) ? "page" : undefined}
                 onClick={close}
               >

@@ -13,8 +13,7 @@ interface ContestStatusBarProps {
 const STATUS_BAR_BASE_CLASSNAME =
   "border bg-gradient-to-b px-3 py-2 text-center font-display text-xs font-medium text-gray-700";
 
-const SETTLED_SURFACE_CLASSNAME =
-  "border-slate-300 from-slate-100 via-gray-100/90 to-slate-200/50";
+const SETTLED_SURFACE_CLASSNAME = "border-slate-300 from-slate-100 via-gray-100/90 to-slate-200/50";
 
 function statusBarSurfaceClassName(contestStatus: ContestStatus): string {
   switch (contestStatus) {
@@ -74,6 +73,10 @@ export const ContestStatusBar: React.FC<ContestStatusBarProps> = ({
   eventName,
   eventStartDate,
 }) => {
+  if (contestStatus === "ACTIVE" || contestStatus === "LOCKED") {
+    return <div className="border-t border-slate-200" aria-hidden />;
+  }
+
   const isBeforeStart = isBeforeDate(eventStartDate);
   const content = statusBarContent(contestStatus, eventName, eventStartDate, isBeforeStart);
 
