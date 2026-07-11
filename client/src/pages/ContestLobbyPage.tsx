@@ -122,7 +122,7 @@ export const ContestLobby: React.FC = () => {
     return null;
   }, [contest, location.state, contestAddress, queryClient]);
 
-  const awaitingFullContest = isFetching && (isPlaceholderData || !contest?.timeline);
+  const isContestDataPending = isFetching && isPlaceholderData;
 
   if (isLoading && !contest) {
     if (eventShell) {
@@ -151,7 +151,7 @@ export const ContestLobby: React.FC = () => {
   }
 
   if (!contest || !viewModel) {
-    if (eventShell && awaitingFullContest) {
+    if (eventShell && isContestDataPending) {
       return <ContestLobbyLoadingShell eventShell={eventShell} />;
     }
 
@@ -173,6 +173,7 @@ export const ContestLobby: React.FC = () => {
         viewModel={viewModel}
         currentUserId={user?.id}
         isAuthenticated={Boolean(user)}
+        isContestDataPending={isContestDataPending}
       />
     </ContestEventScopeProvider>
   );

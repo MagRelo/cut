@@ -9,6 +9,7 @@ export interface ContestPrimaryTabProps {
   mode: PrimaryTabMode;
   entryListOpensModal: boolean;
   currentUserId?: string;
+  isContestDataPending?: boolean;
 }
 
 export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
@@ -16,6 +17,7 @@ export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
   mode,
   entryListOpensModal,
   currentUserId,
+  isContestDataPending = false,
 }) => {
   return (
     <div className="space-y-4">
@@ -24,6 +26,7 @@ export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
           timelineData={contest.timeline}
           sportId={contest.event?.sportId}
           currentUserId={currentUserId}
+          isLoading={isContestDataPending}
         />
       ) : null}
 

@@ -5,6 +5,7 @@ import { formatUnits } from "viem";
 import type { Contest, OnchainPaymentView } from "../../types/contest";
 import { useContestPayoutSections } from "../../hooks/useContestPayoutSections";
 import { contestPaymentDecimals } from "../../lib/paymentTokenSpend";
+import { LoadingSpinner } from "../common/LoadingSpinner";
 import { PositionBadge } from "./PositionBadge";
 import {
   ContestPayoutDividedRows,
@@ -18,6 +19,7 @@ import {
 
 interface ContestResultsPanelProps {
   contest: Contest;
+  isLoading?: boolean;
 }
 
 function ContestResultsSection({
@@ -69,12 +71,29 @@ function parseAmountWei(row: OnchainPaymentView): bigint | null {
   }
 }
 
-export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({ contest }) => {
+export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
+  contest,
+  isLoading = false,
+}) => {
   const { primary, secondary, referral, hasAnyRows } = useContestPayoutSections(contest);
   const paymentDecimals = contestPaymentDecimals(
     contest.chainId,
     contest.settings?.paymentTokenAddress ?? "",
   );
+
+  if (isLoading) {
+    return (
+      <ContestPayoutLayout>
+        <div
+          className="flex min-h-[160px] items-center justify-center"
+          aria-busy="true"
+          aria-label="Loading results"
+        >
+          <LoadingSpinner />
+        </div>
+      </ContestPayoutLayout>
+    );
+  }
 
   if (!hasAnyRows) {
     return (

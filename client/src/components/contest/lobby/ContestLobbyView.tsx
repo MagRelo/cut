@@ -20,6 +20,8 @@ export interface ContestLobbyViewProps {
   viewModel: ContestLobbyViewModel;
   currentUserId?: string;
   isAuthenticated: boolean;
+  /** True while placeholder handoff data is shown and the lobby fetch is still in flight. */
+  isContestDataPending?: boolean;
 }
 
 function tabIndexFromQuery(
@@ -38,6 +40,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   viewModel,
   currentUserId,
   isAuthenticated,
+  isContestDataPending = false,
 }) => {
   const [searchParams] = useSearchParams();
   const initialTabIndex = useMemo(() => {
@@ -150,6 +153,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                 mode={viewModel.primary.mode}
                 entryListOpensModal={viewModel.primary.entryListOpensModal}
                 currentUserId={currentUserId}
+                isContestDataPending={isContestDataPending}
               />
             </TabPanel>
 
@@ -165,7 +169,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
 
             {viewModel.layout.showResultsTab ? (
               <TabPanel className="p-4 focus:outline-none">
-                <ContestResultsPanel contest={contest} />
+                <ContestResultsPanel contest={contest} isLoading={isContestDataPending} />
               </TabPanel>
             ) : null}
           </TabPanels>
