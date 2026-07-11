@@ -54,7 +54,16 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   const fieldSportId = contest.event?.sportId;
 
   const [isPayoutsModalOpen, setIsPayoutsModalOpen] = useState(false);
-  const { eventShell, error: eventError, eventName, eventStartDate } = useContestEvent(contest);
+  const {
+    eventShell,
+    error: eventError,
+    eventName,
+    eventStartDate,
+    sportId,
+    currentPeriod,
+    periodDisplay,
+    periodStatusDisplay,
+  } = useContestEvent(contest);
   const plugin = useSportUIPlugin();
   const EventSummary = plugin?.EventSummary;
 
@@ -83,6 +92,10 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
             contestStatus={contest.status}
             eventName={eventName}
             eventStartDate={eventStartDate}
+            sportId={sportId}
+            currentPeriod={currentPeriod}
+            periodDisplay={periodDisplay}
+            periodStatusDisplay={periodStatusDisplay}
           />
         </div>
 

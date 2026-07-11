@@ -4,7 +4,13 @@ import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { type Contest, type LeagueContest } from "../../types/contest";
 import { contestLobbyLinkState } from "../../lib/contestNavigation";
 import { formatContestStatus, contestStatusValueClass } from "../../lib/contestStatus";
-import { eventDisplayNameFromMetadata, eventStartDateFromMetadata } from "../../lib/eventMetadata";
+import {
+  eventDisplayNameFromMetadata,
+  eventStartDateFromMetadata,
+  periodDisplayFromMetadata,
+  periodStatusDisplayFromMetadata,
+} from "../../lib/eventMetadata";
+import { currentPeriodFromMetadata } from "../../lib/eventPeriods";
 import { cn } from "../../lib/tabStyles";
 import { ContestStatusBar } from "./lobby/ContestStatusBar";
 import { ContestCard } from "./ContestCard";
@@ -86,13 +92,18 @@ export const ContestListItem = ({
   const entryCount = contest.contestLineups?.length ?? 0;
   const buyInValue = formatBuyInValue(contest.settings?.primaryDeposit);
   const league = contest as LeagueContest;
-  const metadata = contest.event?.metadata;
+  // List API often omits contest.event; prefer shell metadata from the event group header.
+  const metadata = contest.event?.metadata ?? eventShell?.metadata ?? null;
   const eventName =
     eventNameProp ??
     league.eventSummary?.name ??
     (eventDisplayNameFromMetadata(metadata, "") || null);
   const eventStartDate =
     eventStartDateProp ?? league.eventSummary?.startDate ?? eventStartDateFromMetadata(metadata);
+  const sportId = contest.event?.sportId ?? eventShell?.sportId;
+  const currentPeriod = currentPeriodFromMetadata(metadata);
+  const periodDisplay = periodDisplayFromMetadata(metadata);
+  const periodStatusDisplay = periodStatusDisplayFromMetadata(metadata);
   const actionLabel = contestListActionLabel(variant);
 
   return (
@@ -111,6 +122,10 @@ export const ContestListItem = ({
           contestStatus={contest.status}
           eventName={eventName}
           eventStartDate={eventStartDate}
+          sportId={sportId}
+          currentPeriod={currentPeriod}
+          periodDisplay={periodDisplay}
+          periodStatusDisplay={periodStatusDisplay}
         />
       </div>
       <div className="flex items-center gap-3 px-3 py-2">

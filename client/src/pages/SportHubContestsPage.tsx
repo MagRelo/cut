@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useParams } from "react-router-dom";
+import type { CompetitionEventShell } from "@cut/sport-sdk";
 import { ContestList, ContestListConnectHint } from "../components/contest/ContestList";
 import { PageHeader } from "../components/common/PageHeader";
 import { ErrorMessage } from "../components/common/ErrorMessage";
@@ -11,9 +12,12 @@ import { useContestsQuery } from "../hooks/useContestQuery";
 export const SportHubContests: React.FC = () => {
   const { sportId } = useParams<{ sportId: string }>();
   const { user } = useAuth();
-  const { eventId, isLoading: isEventLoading, error: fetchError } = useSportActiveEvent(
-    sportId ?? "",
-  );
+  const {
+    eventId,
+    event,
+    isLoading: isEventLoading,
+    error: fetchError,
+  } = useSportActiveEvent(sportId ?? "");
 
   const {
     data: contestsWithLineupsData,
@@ -33,6 +37,17 @@ export const SportHubContests: React.FC = () => {
     });
   }, [contestsWithLineupsData]);
 
+  const eventShell = useMemo((): CompetitionEventShell | undefined => {
+    if (!event) return undefined;
+    return {
+      id: event.id,
+      sportId: event.sportId,
+      externalId: event.externalId,
+      isActive: event.isActive,
+      metadata: event.metadata,
+    };
+  }, [event]);
+
   const showLoading =
     isEventLoading || (isContestsLoading && contestsWithLineupsData === undefined);
 
@@ -47,7 +62,12 @@ export const SportHubContests: React.FC = () => {
   return (
     <div className="mb-4 space-y-4">
       <PageHeader title="Live Contests" />
-      <ContestList contests={contests} loading={showLoading} error={error} />
+      <ContestList
+        contests={contests}
+        loading={showLoading}
+        error={error}
+        eventShell={eventShell}
+      />
       {!user && !showLoading && !error ? <ContestListConnectHint /> : null}
     </div>
   );

@@ -11,6 +11,7 @@ import {
   periodDisplayFromMetadata,
   periodStatusDisplayFromMetadata,
 } from "../lib/eventMetadata";
+import { currentPeriodFromMetadata } from "../lib/eventPeriods";
 import { useEventCandidatesQuery } from "./useSportData";
 
 export interface ContestEventState {
@@ -21,6 +22,7 @@ export interface ContestEventState {
   status: EventStatus;
   isEventEditable: boolean;
   eventName: string | null;
+  currentPeriod: number | null;
   periodDisplay: string | null;
   periodStatusDisplay: string | null;
   eventStartDate: string | null;
@@ -79,6 +81,7 @@ export function useContestEvent(contest: Contest | undefined): ContestEventState
     status,
     isEventEditable: isEventEditableFromMetadata(metadata),
     eventName: eventDisplayNameFromMetadata(metadata, ""),
+    currentPeriod: currentPeriodFromMetadata(metadata),
     periodDisplay: periodDisplayFromMetadata(metadata),
     periodStatusDisplay: periodStatusDisplayFromMetadata(metadata),
     eventStartDate: eventStartDateFromMetadata(metadata),

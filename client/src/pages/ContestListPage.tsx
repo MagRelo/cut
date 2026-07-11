@@ -29,7 +29,7 @@ export const Contests: React.FC = () => {
       {showLiveSection ? (
         <>
           {showUpcomingSection ? <hr className="border-gray-200" /> : null}
-          <PageHeader title="Live Events" />
+          <PageHeader title="In Progress" />
           <GroupedContestList groups={live} loading={false} error={null} />
         </>
       ) : null}
