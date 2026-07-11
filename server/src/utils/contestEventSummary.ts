@@ -13,10 +13,42 @@ export type ContestDirectoryEvent = ContestEventSummaryRecord & {
   metadata: unknown;
 };
 
-function metadataOf(raw: unknown): { name?: string; startDate?: string; endDate?: string } {
+function metadataOf(raw: unknown): {
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+  commodities?: { sessionOpen?: string; sessionClose?: string };
+} {
   return typeof raw === "object" && raw !== null
-    ? (raw as { name?: string; startDate?: string; endDate?: string })
+    ? (raw as {
+        name?: string;
+        startDate?: string;
+        endDate?: string;
+        commodities?: { sessionOpen?: string; sessionClose?: string };
+      })
     : {};
+}
+
+/** Platform startDate, or commodities sessionOpen when sport-specific dates are nested. */
+export function resolveEventStartDateString(metadata: unknown): string | null {
+  const meta = metadataOf(metadata);
+  if (meta.startDate) return meta.startDate;
+  if (meta.commodities?.sessionOpen) return meta.commodities.sessionOpen;
+  return null;
+}
+
+/** Platform endDate, or commodities sessionClose when sport-specific dates are nested. */
+export function resolveEventEndDateString(metadata: unknown): string | null {
+  const meta = metadataOf(metadata);
+  if (meta.endDate) return meta.endDate;
+  if (meta.commodities?.sessionClose) return meta.commodities.sessionClose;
+  return null;
+}
+
+function parseDateOrFallback(value: string | null, fallback: Date): Date {
+  if (!value) return fallback;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? fallback : parsed;
 }
 
 export function eventSummaryForContest(event: {
@@ -33,8 +65,8 @@ export function eventSummaryForContest(event: {
     sportName: event.sport.name,
     externalId: event.externalId,
     name: meta.name ?? event.externalId,
-    startDate: meta.startDate ?? null,
-    endDate: meta.endDate ?? null,
+    startDate: resolveEventStartDateString(event.metadata),
+    endDate: resolveEventEndDateString(event.metadata),
   };
 }
 
@@ -54,8 +86,11 @@ export function directoryEventFromRecord(event: {
 }
 
 export function eventStartDate(event: { metadata: unknown; createdAt: Date }): Date {
-  const startDate = metadataOf(event.metadata).startDate;
-  if (!startDate) return event.createdAt;
-  const parsed = new Date(startDate);
-  return Number.isNaN(parsed.getTime()) ? event.createdAt : parsed;
+  return parseDateOrFallback(resolveEventStartDateString(event.metadata), event.createdAt);
+}
+
+export function eventEndDate(event: { metadata: unknown; createdAt: Date }): Date {
+  const end = resolveEventEndDateString(event.metadata);
+  if (end) return parseDateOrFallback(end, eventStartDate(event));
+  return eventStartDate(event);
 }

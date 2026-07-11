@@ -68,6 +68,9 @@ export async function syncCommoditiesEventMetadata(eventId: string) {
     periodDisplay: commoditiesPeriodDisplay(currentPeriod),
     currentPeriod,
     periodStatusDisplay: commoditiesPeriodStatusDisplay(currentPeriod, sessionComplete),
+    // Platform directory / contest list sort by top-level startDate/endDate.
+    startDate: sessionOpen,
+    endDate: sessionClose,
     commodities: commoditiesPatch,
   });
 

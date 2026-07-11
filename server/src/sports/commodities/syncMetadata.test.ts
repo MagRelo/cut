@@ -60,6 +60,8 @@ describe("syncCommoditiesEventMetadata", () => {
 
     expect(commodities.sessionOpen).toBe("2026-06-30T14:00:00.000Z");
     expect(commodities.sessionClose).toBe("2026-06-30T18:00:00.000Z");
+    expect(updateArg.data.metadata.startDate).toBe("2026-06-30T14:00:00.000Z");
+    expect(updateArg.data.metadata.endDate).toBe("2026-06-30T18:00:00.000Z");
   });
 
   it("sets sessionStarted when wall clock passes session open", async () => {

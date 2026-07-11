@@ -7,6 +7,9 @@ export function mergeCommoditiesEventMetadata(
   patch: {
     name?: string;
     beautyImage?: string;
+    /** Platform directory dates (mirror sessionOpen/sessionClose). */
+    startDate?: string;
+    endDate?: string;
     commodities: Partial<CommoditiesEventMetadata>;
   } & EventPeriodPatch,
 ): Record<string, unknown> {
@@ -23,6 +26,8 @@ export function mergeCommoditiesEventMetadata(
     ...withPeriods,
     ...(patch.name ? { name: patch.name } : {}),
     ...(patch.beautyImage ? { beautyImage: patch.beautyImage } : {}),
+    ...(patch.startDate ? { startDate: patch.startDate } : {}),
+    ...(patch.endDate ? { endDate: patch.endDate } : {}),
     commodities: {
       ...existingCommodities,
       ...patch.commodities,

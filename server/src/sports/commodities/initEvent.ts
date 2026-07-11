@@ -33,6 +33,8 @@ export async function initCommoditiesEvent(
   const initialMetadata = mergeCommoditiesEventMetadata(event?.metadata, {
     name: formatSessionDisplayName(sessionWeek),
     beautyImage: DEFAULT_COMMODITY_BEAUTY_IMAGE,
+    startDate: bounds.sessionOpen,
+    endDate: bounds.sessionClose,
     commodities: {
       sessionDate: monday,
       sessionWeek,

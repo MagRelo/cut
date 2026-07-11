@@ -6,12 +6,14 @@ import {
 } from "../../utils/contestListQuery.js";
 import {
   directoryEventFromRecord,
+  eventEndDate,
   eventStartDate,
   type ContestDirectoryEvent,
 } from "../../utils/contestEventSummary.js";
 import { eventStatusFromMetadata } from "../../utils/eventStatus.js";
 
-export const RECENT_EVENTS_PER_SPORT = 3;
+/** Max past events shown across all sports (single timeline, not per-sport). */
+export const RECENT_PAST_EVENTS = 9;
 
 export type ContestDirectoryScope = "live" | "past" | "all";
 
@@ -37,32 +39,61 @@ type EventWithSport = {
   sport: { id: string; name: string };
 };
 
-async function recentInactiveEventsForSport(
-  sportId: string,
-  limit = RECENT_EVENTS_PER_SPORT,
+const eventSelect = {
+  id: true,
+  sportId: true,
+  externalId: true,
+  isActive: true,
+  metadata: true,
+  createdAt: true,
+  updatedAt: true,
+  sport: { select: { id: true, name: true } },
+} as const;
+
+type GroupSortKey = "start" | "end";
+
+function groupEventSortTime(event: ContestDirectoryEvent, sortKey: GroupSortKey): number {
+  const primary = sortKey === "end" ? event.endDate : event.startDate;
+  if (primary) return new Date(primary).getTime();
+  if (event.startDate) return new Date(event.startDate).getTime();
+  return 0;
+}
+
+function sortEventsByEndDateDesc(events: EventWithSport[]): EventWithSport[] {
+  return [...events].sort((a, b) => eventEndDate(b).getTime() - eventEndDate(a).getTime());
+}
+
+function sortEventsByStartDateDesc(events: EventWithSport[]): EventWithSport[] {
+  return [...events].sort((a, b) => eventStartDate(b).getTime() - eventStartDate(a).getTime());
+}
+
+function dedupeEvents(events: EventWithSport[]): EventWithSport[] {
+  const seen = new Set<string>();
+  const out: EventWithSport[] = [];
+  for (const event of events) {
+    if (seen.has(event.id)) continue;
+    seen.add(event.id);
+    out.push(event);
+  }
+  return out;
+}
+
+async function recentPastEvents(
+  sportIds: string[],
+  limit = RECENT_PAST_EVENTS,
 ): Promise<EventWithSport[]> {
   const events = await prisma.competitionEvent.findMany({
-    where: { sportId, isActive: false },
-    select: {
-      id: true,
-      sportId: true,
-      externalId: true,
-      isActive: true,
-      metadata: true,
-      createdAt: true,
-      updatedAt: true,
-      sport: { select: { id: true, name: true } },
-    },
+    where: { sportId: { in: sportIds }, isActive: false },
+    select: eventSelect,
   });
 
-  return events
-    .sort((a, b) => eventStartDate(b).getTime() - eventStartDate(a).getTime())
-    .slice(0, limit);
+  return sortEventsByEndDateDesc(events).slice(0, limit);
 }
 
 function buildGroups(
   events: EventWithSport[],
   contestsByEventId: Map<string, ReturnType<typeof formatContestResponse>[]>,
+  sortKey: GroupSortKey = "start",
 ): EventContestGroup[] {
   const groups: EventContestGroup[] = [];
 
@@ -80,11 +111,9 @@ function buildGroups(
     });
   }
 
-  return groups.sort((a, b) => {
-    const startA = a.event.startDate ? new Date(a.event.startDate).getTime() : 0;
-    const startB = b.event.startDate ? new Date(b.event.startDate).getTime() : 0;
-    return startB - startA;
-  });
+  return groups.sort(
+    (a, b) => groupEventSortTime(b.event, sortKey) - groupEventSortTime(a.event, sortKey),
+  );
 }
 
 export async function listContestDirectory(
@@ -97,27 +126,19 @@ export async function listContestDirectory(
     select: { id: true },
     orderBy: { name: "asc" },
   });
+  const sportIds = sports.map((sport) => sport.id);
 
   const upcomingEvents: EventWithSport[] = [];
   const liveEvents: EventWithSport[] = [];
-  const pastEvents: EventWithSport[] = [];
+  let pastEvents: EventWithSport[] = [];
 
   if (scope === "live" || scope === "all") {
     const activeRows = await prisma.competitionEvent.findMany({
       where: {
         isActive: true,
-        sportId: { in: sports.map((sport) => sport.id) },
+        sportId: { in: sportIds },
       },
-      select: {
-        id: true,
-        sportId: true,
-        externalId: true,
-        isActive: true,
-        metadata: true,
-        createdAt: true,
-        updatedAt: true,
-        sport: { select: { id: true, name: true } },
-      },
+      select: eventSelect,
     });
 
     for (const event of activeRows) {
@@ -133,10 +154,13 @@ export async function listContestDirectory(
   }
 
   if (scope === "past" || scope === "all") {
-    for (const sport of sports) {
-      const recent = await recentInactiveEventsForSport(sport.id);
-      pastEvents.push(...recent);
-    }
+    const recent = await recentPastEvents(sportIds);
+    pastEvents = sortEventsByEndDateDesc(dedupeEvents([...pastEvents, ...recent])).slice(
+      0,
+      RECENT_PAST_EVENTS,
+    );
+  } else {
+    pastEvents = sortEventsByEndDateDesc(dedupeEvents(pastEvents)).slice(0, RECENT_PAST_EVENTS);
   }
 
   const eventIds = [...upcomingEvents, ...liveEvents, ...pastEvents].map((event) => event.id);
@@ -162,8 +186,8 @@ export async function listContestDirectory(
   }
 
   return {
-    upcoming: buildGroups(upcomingEvents, contestsByEventId),
-    live: buildGroups(liveEvents, contestsByEventId),
-    past: buildGroups(pastEvents, contestsByEventId),
+    upcoming: buildGroups(sortEventsByStartDateDesc(upcomingEvents), contestsByEventId),
+    live: buildGroups(sortEventsByStartDateDesc(liveEvents), contestsByEventId),
+    past: buildGroups(pastEvents, contestsByEventId, "end"),
   };
 }
