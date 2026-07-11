@@ -66,7 +66,7 @@ function PeriodProgressContent({ chips }: { chips: PeriodProgressChip[] }) {
   return (
     <span className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
       <span
-        className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1"
+        className="inline-flex flex-wrap items-center justify-center gap-x-4 gap-y-1"
         role="list"
       >
         {chips.map((chip) => (
