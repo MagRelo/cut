@@ -14,7 +14,7 @@ export type NewTournamentEmailData = {
 };
 
 export function newTournamentSubject(data: NewTournamentEmailData): string {
-  return data.tournamentName;
+  return `New Contests: ${data.tournamentName}`;
 }
 
 export function buildNewTournamentBodyHtml(data: NewTournamentEmailData): string {
