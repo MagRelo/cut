@@ -1,18 +1,83 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
-import { type Contest, type CreateContestInput } from "../types/contest";
+import {
+  type Contest,
+  type ContestDirectoryResponse,
+  type CreateContestInput,
+} from "../types/contest";
 import { type ContestLineup } from "../types/lineup";
+import { normalizeContestAddress } from "../utils/contestRoutes";
 
 interface JoinContestParams {
   contestId: string;
+  contestAddress: string;
   lineupId: string;
   entryId: string;
 }
 
 interface LeaveContestParams {
   contestId: string;
+  contestAddress: string;
   contestLineupId: string;
+}
+
+type DirectorySnapshot = Array<[readonly unknown[], ContestDirectoryResponse | undefined]>;
+
+function lobbyQueryKey(contestAddress: string) {
+  return queryKeys.contests.byLobbyRoute(normalizeContestAddress(contestAddress));
+}
+
+function snapshotDirectoryCaches(queryClient: QueryClient): DirectorySnapshot {
+  return queryClient.getQueriesData<ContestDirectoryResponse>({
+    queryKey: [...queryKeys.contests.all, "directory"],
+  });
+}
+
+function patchDirectoryContestLineups(
+  queryClient: QueryClient,
+  contestAddress: string,
+  updateLineups: (lineups: ContestLineup[] | undefined) => ContestLineup[] | undefined,
+): void {
+  const normalized = normalizeContestAddress(contestAddress);
+  const sections = ["upcoming", "live", "past"] as const;
+
+  for (const [key, data] of snapshotDirectoryCaches(queryClient)) {
+    if (!data) continue;
+    let changed = false;
+    const next: ContestDirectoryResponse = {
+      upcoming: data.upcoming,
+      live: data.live,
+      past: data.past,
+    };
+
+    for (const section of sections) {
+      next[section] = data[section].map((group) => {
+        const contestIndex = group.contests.findIndex(
+          (entry) => normalizeContestAddress(entry.address) === normalized,
+        );
+        if (contestIndex < 0) return group;
+        changed = true;
+        const contests = [...group.contests];
+        const contest = contests[contestIndex]!;
+        contests[contestIndex] = {
+          ...contest,
+          contestLineups: updateLineups(contest.contestLineups),
+        };
+        return { ...group, contests };
+      });
+    }
+
+    if (changed) {
+      queryClient.setQueryData(key, next);
+    }
+  }
+}
+
+function restoreDirectoryCaches(queryClient: QueryClient, snapshot: DirectorySnapshot): void {
+  for (const [key, data] of snapshot) {
+    queryClient.setQueryData(key, data);
+  }
 }
 
 export function useCreateContest() {
@@ -31,10 +96,7 @@ export function useCreateContest() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.contests.byEvent(
-          variables.eventId,
-          variables.chainId,
-        ),
+        queryKey: queryKeys.contests.byEvent(variables.eventId, variables.chainId),
       });
     },
 
@@ -55,42 +117,50 @@ export function useJoinContest() {
       });
     },
 
-    onMutate: async ({ contestId, lineupId }) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.contests.byId(contestId) });
+    onMutate: async ({ contestAddress, contestId, lineupId }) => {
+      const lobbyKey = lobbyQueryKey(contestAddress);
+      await queryClient.cancelQueries({ queryKey: lobbyKey });
+      await queryClient.cancelQueries({
+        queryKey: [...queryKeys.contests.all, "directory"],
+      });
 
-      const previousContest = queryClient.getQueryData<Contest>(queryKeys.contests.byId(contestId));
+      const previousLobby = queryClient.getQueryData<Contest>(lobbyKey);
+      const previousDirectories = snapshotDirectoryCaches(queryClient);
 
-      if (previousContest) {
-        queryClient.setQueryData<Contest>(queryKeys.contests.byId(contestId), (old) => {
-          if (!old) return old;
+      const optimisticLineup: ContestLineup = {
+        id: `temp-${Date.now()}`,
+        contestId,
+        lineupId,
+        userId: "",
+        status: "ACTIVE",
+        position: 0,
+        score: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-          const optimisticLineup: ContestLineup = {
-            id: `temp-${Date.now()}`,
-            contestId,
-            lineupId,
-            userId: "",
-            status: "ACTIVE",
-            position: 0,
-            score: 0,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-
-          return {
-            ...old,
-            contestLineups: [...(old.contestLineups || []), optimisticLineup],
-          };
+      if (previousLobby) {
+        queryClient.setQueryData<Contest>(lobbyKey, {
+          ...previousLobby,
+          contestLineups: [...(previousLobby.contestLineups || []), optimisticLineup],
         });
       }
 
-      return { previousContest };
+      patchDirectoryContestLineups(queryClient, contestAddress, (lineups) => [
+        ...(lineups || []),
+        optimisticLineup,
+      ]);
+
+      return { previousLobby, previousDirectories, lobbyKey };
     },
 
-    onError: (err, { contestId }, context) => {
+    onError: (err, _vars, context) => {
       console.error("Failed to join contest:", err);
-      if (context?.previousContest) {
-        queryClient.setQueryData(queryKeys.contests.byId(contestId), context.previousContest);
+      if (!context) return;
+      if (context.previousLobby) {
+        queryClient.setQueryData(context.lobbyKey, context.previousLobby);
       }
+      restoreDirectoryCaches(queryClient, context.previousDirectories);
     },
 
     onSuccess: () => {
@@ -109,32 +179,39 @@ export function useLeaveContest() {
       return await apiClient.delete<Contest>(`/contests/${contestId}/lineups/${contestLineupId}`);
     },
 
-    onMutate: async ({ contestId, contestLineupId }) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.contests.byId(contestId) });
+    onMutate: async ({ contestAddress, contestLineupId }) => {
+      const lobbyKey = lobbyQueryKey(contestAddress);
+      await queryClient.cancelQueries({ queryKey: lobbyKey });
+      await queryClient.cancelQueries({
+        queryKey: [...queryKeys.contests.all, "directory"],
+      });
 
-      const previousContest = queryClient.getQueryData<Contest>(queryKeys.contests.byId(contestId));
+      const previousLobby = queryClient.getQueryData<Contest>(lobbyKey);
+      const previousDirectories = snapshotDirectoryCaches(queryClient);
 
-      if (previousContest) {
-        queryClient.setQueryData<Contest>(queryKeys.contests.byId(contestId), (old) => {
-          if (!old) return old;
-
-          return {
-            ...old,
-            contestLineups: (old.contestLineups || []).filter(
-              (lineup) => lineup.id !== contestLineupId,
-            ),
-          };
+      if (previousLobby) {
+        queryClient.setQueryData<Contest>(lobbyKey, {
+          ...previousLobby,
+          contestLineups: (previousLobby.contestLineups || []).filter(
+            (lineup) => lineup.id !== contestLineupId,
+          ),
         });
       }
 
-      return { previousContest };
+      patchDirectoryContestLineups(queryClient, contestAddress, (lineups) =>
+        (lineups || []).filter((lineup) => lineup.id !== contestLineupId),
+      );
+
+      return { previousLobby, previousDirectories, lobbyKey };
     },
 
-    onError: (err, { contestId }, context) => {
+    onError: (err, _vars, context) => {
       console.error("Failed to leave contest:", err);
-      if (context?.previousContest) {
-        queryClient.setQueryData(queryKeys.contests.byId(contestId), context.previousContest);
+      if (!context) return;
+      if (context.previousLobby) {
+        queryClient.setQueryData(context.lobbyKey, context.previousLobby);
       }
+      restoreDirectoryCaches(queryClient, context.previousDirectories);
     },
 
     onSuccess: () => {

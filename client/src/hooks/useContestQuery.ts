@@ -17,7 +17,7 @@ import { CONTEST_LOBBY_GC_MS, SERVER_SYNC_INTERVAL_MS } from "../lib/queryTiming
 
 const TERMINAL_CONTEST_STATUSES: ContestStatus[] = ["SETTLED", "CLOSED", "CANCELLED"];
 
-function isContestLiveTracked(contest: Contest | undefined): boolean {
+export function isContestLiveTracked(contest: Contest | undefined): boolean {
   if (!contest) return false;
   if (TERMINAL_CONTEST_STATUSES.includes(contest.status)) return false;
   if (eventStatusFromMetadata(contest.event?.metadata) === "COMPLETE") return false;

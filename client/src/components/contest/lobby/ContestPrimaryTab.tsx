@@ -1,5 +1,5 @@
 import React from "react";
-import { type Contest } from "../../../types/contest";
+import { type Contest, type TimelineData } from "../../../types/contest";
 import { type PrimaryTabMode } from "../../../types/contestLobby";
 import { ContestEntryList } from "../ContestEntryList";
 import { ContestTimelinesSection } from "./ContestTimelinesSection";
@@ -10,6 +10,8 @@ export interface ContestPrimaryTabProps {
   entryListOpensModal: boolean;
   currentUserId?: string;
   isContestDataPending?: boolean;
+  timelineData?: TimelineData;
+  isTimelineLoading?: boolean;
 }
 
 export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
@@ -18,15 +20,17 @@ export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
   entryListOpensModal,
   currentUserId,
   isContestDataPending = false,
+  timelineData,
+  isTimelineLoading = false,
 }) => {
   return (
     <div className="space-y-4">
       {mode === "liveTimeline" ? (
         <ContestTimelinesSection
-          timelineData={contest.timeline}
+          timelineData={timelineData}
           sportId={contest.event?.sportId}
           currentUserId={currentUserId}
-          isLoading={isContestDataPending}
+          isLoading={isTimelineLoading || (isContestDataPending && !timelineData)}
         />
       ) : null}
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
-import { type Contest } from "../../../types/contest";
+import { type Contest, type TimelineData } from "../../../types/contest";
 import { type ContestLobbyViewModel } from "../../../types/contestLobby";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { useContestEvent } from "../../../hooks/useContestEvent";
@@ -22,6 +22,8 @@ export interface ContestLobbyViewProps {
   isAuthenticated: boolean;
   /** True while placeholder handoff data is shown and the lobby fetch is still in flight. */
   isContestDataPending?: boolean;
+  timelineData?: TimelineData;
+  isTimelineLoading?: boolean;
 }
 
 function tabIndexFromQuery(
@@ -41,6 +43,8 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   currentUserId,
   isAuthenticated,
   isContestDataPending = false,
+  timelineData,
+  isTimelineLoading = false,
 }) => {
   const [searchParams] = useSearchParams();
   const initialTabIndex = useMemo(() => {
@@ -154,6 +158,8 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                 entryListOpensModal={viewModel.primary.entryListOpensModal}
                 currentUserId={currentUserId}
                 isContestDataPending={isContestDataPending}
+                timelineData={timelineData}
+                isTimelineLoading={isTimelineLoading}
               />
             </TabPanel>
 

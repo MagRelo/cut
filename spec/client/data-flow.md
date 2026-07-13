@@ -23,7 +23,9 @@
 | `sports.activeEvent(sportId)` | `GET /sports/:id/events/active` | |
 | `sports.candidates(sportId, eventId)` | `GET .../candidates` | |
 | `contests.byEvent(eventId, ...)` | `GET /contests?eventId=` | Replaces `byTournament` |
-| `contests.byLobbyRoute(address)` | `GET /contests/:address` | |
+| `contests.directory(scope, ...)` | `GET /contests/directory?scope=` | Multi-sport hub list |
+| `contests.byLobbyRoute(address)` | `GET /contests/:address/lobby` | Standings/status only — no timeline |
+| `contests.timeline(address)` | `GET /contests/:address/timeline` | Chart history; refreshes use `?since=` |
 | `lineups.byEvent(userId, eventId)` | `GET /lineups/:eventId` | User-scoped; response includes `PlatformLineup.score` |
 | `sideBet.market(lineupId)` | `GET /bets/side/lineup/:id/market` | |
 
@@ -77,6 +79,36 @@ sequenceDiagram
 
 ---
 
+## Contest lobby flow
+
+`/contest/:address` loads two queries in parallel after the contest status is known:
+
+| Hook | Key | API | Refresh |
+|------|-----|-----|---------|
+| `useContestQuery` | `contests.byLobbyRoute(address)` | `GET /contests/:address/lobby` | 5m poll + focus while live |
+| `useContestTimelineQuery` | `contests.timeline(address)` | `GET /contests/:address/timeline` (`?since=` on refresh) | Same cadence while live; enabled only when primary entry is locked (`status !== OPEN`) |
+
+Timeline `queryFn` merges deltas into the cached full series (`mergeTimelineData`). Lobby standings are replaced wholesale each fetch.
+
+Join/leave optimistically patches `byLobbyRoute` and matching directory cache entries, then invalidates `contests.all` on success.
+
+```mermaid
+sequenceDiagram
+  participant Page as ContestLobbyPage
+  participant ContestQ as useContestQuery
+  participant TimelineQ as useContestTimelineQuery
+  participant LobbyAPI as GET_lobby
+  participant TimelineAPI as GET_timeline
+
+  Page->>ContestQ: address
+  ContestQ->>LobbyAPI: contest standings
+  Page->>TimelineQ: address plus locked status
+  TimelineQ->>TimelineAPI: full or since lastTs
+  TimelineQ->>TimelineQ: mergeTimelineData
+```
+
+---
+
 ## Contest join flow
 
 ```mermaid
@@ -99,7 +131,7 @@ Order: **on-chain first**, then server indexes the entry. Server links `lineupId
 
 ## Contest list flow
 
-**Multi-sport hub** (`/contests`): `useLiveContestsAcrossSports` — per-sport active events, merged contest lists.
+**Multi-sport hub** (`/contests`): `useContestDirectory("all")` → `GET /contests/directory?scope=all` (upcoming / live / past sections). Focus refetch when stale; no interval poll for `scope=all`.
 
 **Sport hub** (`/sports/:sportId`):
 
@@ -148,10 +180,10 @@ sequenceDiagram
 | When | What |
 |------|------|
 | Route mount | React Query fetches on demand (no app-wide event prefetch) |
-| Contest lobby navigation | contest query by address |
-| After mutation | targeted `queryClient.invalidateQueries` |
+| Contest lobby navigation | Lobby standings + separate timeline query (timeline gated until entry locked) |
+| After mutation | targeted `queryClient.invalidateQueries`; join/leave also optimistic-patch lobby + directory |
 
-Stale times: sports 24h, active event/candidates 5m (see `useSportData.ts`).
+Stale times: sports 24h, active event/candidates 5m (see `useSportData.ts`). Lobby/timeline live poll matches server cron (`SERVER_SYNC_INTERVAL_MS`).
 
 ---
 

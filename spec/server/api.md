@@ -96,7 +96,8 @@ No auth. `{ status, service, timestamp }`
 |--------|------|------|-------------|
 | GET | `/` | optional | List contests for an **event** |
 | GET | `/:id` | optional | Contest detail (id or contract address) |
-| GET | `/:id/timeline` | optional | Score/position timeline |
+| GET | `/:id/lobby` | optional | Lobby standings/status (no timeline) |
+| GET | `/:id/timeline` | optional | Score timeline; optional `?since=` ISO for deltas |
 | POST | `/` | ✅ | Create contest (staff or league admin) |
 | POST | `/:id/lineups` | ✅ | Join contest with lineup |
 | DELETE | `/:id/lineups` | ✅ | Leave contest |

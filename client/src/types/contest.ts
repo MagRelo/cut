@@ -144,8 +144,6 @@ export interface Contest {
     /** Invite / network rewards payout rows (optional; populated when settlement exposes them). */
     rewardsPayouts?: RewardsPayoutResult[];
   };
-  /** Merged from `GET /contests/:id/lobby` (or `GET /contests/:id/timeline`) in `useContestQuery`. */
-  timeline?: TimelineData;
 }
 
 export type OnchainPaymentView = {

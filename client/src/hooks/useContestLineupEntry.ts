@@ -145,6 +145,7 @@ export function useContestLineupEntry(contest: Contest) {
         try {
           await joinContest.mutateAsync({
             contestId: contest.id,
+            contestAddress: contest.address,
             lineupId: pendingAction.lineupId,
             entryId: pendingAction.entryId,
           });
@@ -179,6 +180,7 @@ export function useContestLineupEntry(contest: Contest) {
           if (contestLineupId) {
             await leaveContest.mutateAsync({
               contestId: contest.id,
+              contestAddress: contest.address,
               contestLineupId,
             });
           }

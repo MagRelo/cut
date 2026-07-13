@@ -10,6 +10,7 @@ import { ContestLobbyView } from "../components/contest/lobby/ContestLobbyView";
 import { ContestListConnectHint } from "../components/contest/ContestList";
 import { ContestEventScopeProvider } from "../contexts/EventScopeContext";
 import { useContestQuery } from "../hooks/useContestQuery";
+import { useContestTimelineQuery } from "../hooks/useContestTimelineQuery";
 import { useContestLobbyState } from "../hooks/useContestLobbyState";
 import { useSportUIPlugin } from "../hooks/useSportUI";
 import { isApiError } from "../utils/apiError";
@@ -98,6 +99,11 @@ export const ContestLobby: React.FC = () => {
     isPlaceholderData,
     error: queryError,
   } = useContestQuery(contestAddress);
+  const {
+    data: timelineData,
+    isLoading: isTimelineLoading,
+    isFetching: isTimelineFetching,
+  } = useContestTimelineQuery(contestAddress, contest);
   const { viewModel } = useContestLobbyState(contest);
 
   const eventShell = useMemo((): CompetitionEventShell | null => {
@@ -123,6 +129,7 @@ export const ContestLobby: React.FC = () => {
   }, [contest, location.state, contestAddress, queryClient]);
 
   const isContestDataPending = isFetching && isPlaceholderData;
+  const isTimelinePending = timelineData === undefined && (isTimelineLoading || isTimelineFetching);
 
   if (isLoading && !contest) {
     if (eventShell) {
@@ -174,6 +181,8 @@ export const ContestLobby: React.FC = () => {
         currentUserId={user?.id}
         isAuthenticated={Boolean(user)}
         isContestDataPending={isContestDataPending}
+        timelineData={timelineData}
+        isTimelineLoading={isTimelinePending}
       />
     </ContestEventScopeProvider>
   );

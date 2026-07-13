@@ -24,7 +24,10 @@ Three state domains: **server cache** (React Query), **session** (Context), **ch
 | Sports list | 24h | — |
 | Active event | 5m | 5m |
 | Candidates | 5m | 5m |
-| Contests | hook-specific | often on focus |
+| Contest lobby (`byLobbyRoute`) | 5m while live; Infinity when terminal | 5m while live |
+| Contest timeline | 5m while live; Infinity when finished/terminal | 5m while live; full then `?since=` merge |
+| Contest directory (`scope=all`) | 5m | — (focus refetch) |
+| Side bet market | 0 | 60s |
 
 Global defaults in `queryClient.ts` apply where hooks do not override.
 
@@ -121,10 +124,10 @@ Prefer server cache over duplicating API data in local state.
 
 ## Invalidation map
 
-| Mutation | Invalidate |
-|----------|------------|
+| Mutation | Invalidate / patch |
+|----------|--------------------|
 | Save lineup | `lineups.byEvent`, `sideBet.market`, sometimes `auth/me` lineups |
-| Join/leave contest | `contests.byId`, `contests.byEvent`, lobby route key |
+| Join/leave contest | Optimistic patch `contests.byLobbyRoute` + directory caches; then invalidate `contests.all`, `lineups.all`, `user.contests` |
 | Update profile | `auth` user query |
 | Place side bet | `sideBet.tickets`, `sideBet.market` |
 

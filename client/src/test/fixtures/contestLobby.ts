@@ -309,10 +309,10 @@ export const contestWithPredictions: Contest = {
   ],
 };
 
-export const contestWithTimeline: Contest = {
-  ...contestWithLineups,
-  timeline: buildTimelineData(),
-};
+export const contestTimelineFixture: TimelineData = buildTimelineData();
+
+/** Active contest with lineups — use with `contestTimelineFixture` for timeline stories. */
+export const contestWithTimeline: Contest = contestWithLineups;
 
 export const contestLobbyViewModels: Record<string, ContestLobbyViewModel> = {
   openPreRound: deriveContestLobbyViewModel(contestFixtures.open, {

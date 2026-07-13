@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { lobbyDecorators } from "../../../../.storybook/decorators";
 import {
   contestFixtures,
+  contestTimelineFixture,
   contestWithLineups,
   contestWithTimeline,
 } from "../../../test/fixtures/contestLobby";
@@ -34,6 +35,7 @@ export const LiveTimeline: Story = {
     contest: contestWithTimeline,
     mode: "liveTimeline",
     entryListOpensModal: true,
+    timelineData: contestTimelineFixture,
   },
 };
 

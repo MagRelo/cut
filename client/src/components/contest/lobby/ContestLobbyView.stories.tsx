@@ -3,6 +3,7 @@ import { lobbyDecorators } from "../../../../.storybook/decorators";
 import {
   contestFixtures,
   contestLobbyViewModels,
+  contestTimelineFixture,
   contestWithLineups,
   contestWithTimeline,
 } from "../../../test/fixtures/contestLobby";
@@ -34,6 +35,7 @@ export const ActiveLive: Story = {
   args: {
     contest: contestWithTimeline,
     viewModel: contestLobbyViewModels.activeLive,
+    timelineData: contestTimelineFixture,
   },
 };
 

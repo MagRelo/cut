@@ -3,6 +3,7 @@ import { lobbyDecorators } from "../../.storybook/decorators";
 import {
   contestFixtures,
   contestWithLineups,
+  contestTimelineFixture,
   contestWithTimeline,
 } from "../test/fixtures/contestLobby";
 import { ContestLobbyView } from "../components/contest/lobby/ContestLobbyView";
@@ -46,6 +47,7 @@ export const ActiveTimeline: Story = {
       contestStateOnChain: ContestState.ACTIVE,
       hasWallet: true,
     }),
+    timelineData: contestTimelineFixture,
   },
 };
 

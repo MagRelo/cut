@@ -293,7 +293,20 @@ contestRouter.get("/:id/timeline", optionalAuth, async (c) => {
       return accessDenied;
     }
 
-    const timeline = await getContestTimelineData(contestId);
+    const sinceRaw = c.req.query("since");
+    let since: Date | undefined;
+    if (sinceRaw) {
+      const parsed = new Date(sinceRaw);
+      if (Number.isNaN(parsed.getTime())) {
+        return c.json({ error: "Invalid since timestamp" }, 400);
+      }
+      since = parsed;
+    }
+
+    const timeline = await getContestTimelineData(
+      contestId,
+      since ? { since } : undefined,
+    );
     return c.json(timeline);
   } catch (error) {
     console.error("Error fetching contest timeline:", error);
@@ -301,7 +314,7 @@ contestRouter.get("/:id/timeline", optionalAuth, async (c) => {
   }
 });
 
-/** Contest lobby payload — contest detail + timeline; `:id` may be DB id or contract address. */
+/** Contest lobby payload — contest detail (no timeline); `:id` may be DB id or contract address. */
 contestRouter.get("/:id/lobby", optionalAuth, async (c) => {
   try {
     const contestId = await resolveContestDbId(c.req.param("id"));
@@ -309,10 +322,7 @@ contestRouter.get("/:id/lobby", optionalAuth, async (c) => {
       return c.json({ error: "Contest not found" }, 404);
     }
 
-    const [formattedContest, timeline] = await Promise.all([
-      loadFormattedContestById(contestId),
-      getContestTimelineData(contestId),
-    ]);
+    const formattedContest = await loadFormattedContestById(contestId);
 
     if (!formattedContest) {
       return c.json({ error: "Contest not found" }, 404);
@@ -323,7 +333,7 @@ contestRouter.get("/:id/lobby", optionalAuth, async (c) => {
       return accessDenied;
     }
 
-    return c.json({ ...formattedContest, timeline });
+    return c.json(formattedContest);
   } catch (error) {
     console.error("Error fetching contest lobby:", error);
     return c.json({ error: "Failed to fetch contest lobby" }, 500);

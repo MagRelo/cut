@@ -71,6 +71,11 @@ export type ContestTimelineData = {
   }>;
 };
 
+export type GetContestTimelineDataOptions = {
+  /** When set, only snapshots with timestamp strictly after this instant are included. */
+  since?: Date;
+};
+
 type LineupMetaRow = {
   id: string;
   userId: string;
@@ -105,8 +110,16 @@ function buildLineupMetaMap(rows: LineupMetaRow[]) {
  * Build timeline chart data from ContestLineupTimeline snapshots for a contest.
  * Includes `contestFinished` and per-team `isPrimaryPayoutWinner` so the client can render
  * without merging contest results or normalizing entry ids.
+ *
+ * When `since` is set, only new data points are returned (teams with no new points omitted).
+ * Empty deltas still include `contestFinished` and `periods`.
  */
-export async function getContestTimelineData(contestId: string): Promise<ContestTimelineData> {
+export async function getContestTimelineData(
+  contestId: string,
+  options?: GetContestTimelineDataOptions,
+): Promise<ContestTimelineData> {
+  const since = options?.since;
+
   const [contest, snapshots, lineupRows] = await Promise.all([
     prisma.contest.findUnique({
       where: { id: contestId },
@@ -117,7 +130,10 @@ export async function getContestTimelineData(contestId: string): Promise<Contest
       },
     }),
     prisma.contestLineupTimeline.findMany({
-      where: { contestId },
+      where: {
+        contestId,
+        ...(since ? { timestamp: { gt: since } } : {}),
+      },
       select: {
         contestLineupId: true,
         timestamp: true,
