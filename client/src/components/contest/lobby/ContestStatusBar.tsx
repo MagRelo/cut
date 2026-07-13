@@ -108,7 +108,7 @@ function statusBarContent(
         return (
           <>
             <strong>{eventName ?? "Event"}</strong> begins in{" "}
-            <strong className="tabular-nums">
+            <strong className="tabular-nums text-blue-600">
               <CountdownTimer targetDate={eventStartDate} />
             </strong>
           </>
