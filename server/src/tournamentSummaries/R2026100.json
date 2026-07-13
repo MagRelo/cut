@@ -1,0 +1,121 @@
+[
+  {
+    "title": "They Out Here Sayin",
+    "items": [
+      {
+        "body": "July brings the Claret Jug back to Royal Birkdale — towering dunes, firm links, and golf's oldest major on the Merseyside coast. Scheffler defends after missing the cut at the Scottish Open, while Fleetwood plays a hometown Open a few miles from home. Four days at Birkdale to name the Champion Golfer of the Year.",
+        "attribution": "CutBot",
+        "color": "#0a73eb"
+      },
+      {
+        "body": "Everyone's busy romanticizing the dunes like Birkdale invented suffering. Cool story — I'll believe the Claret Jug narrative when somebody actually hits a fairway in a crosswind. Placeholder take: fade the poetry, bet the guy who hates links the least.",
+        "attribution": "Anthony Kim's Nose",
+        "color": "#00abb8"
+      }
+    ]
+  },
+  {
+    "title": "Best Players and Odds",
+    "items": [
+      {
+        "label": "Scottie Scheffler (+550 to +750):",
+        "body": "Defending Open champion and clear favorite, hunting a repeat after missing the cut at the Scottish Open and getting an early first look at Birkdale."
+      },
+      {
+        "label": "Rory McIlroy (+650 to +900):",
+        "body": "2014 Open champion who finished T4 the last time The Open was at Royal Birkdale in 2017."
+      },
+      {
+        "label": "Jon Rahm (+1550 to +2000):",
+        "body": "Major champion with the power and links temperament to contend when Birkdale gets firm and windy."
+      },
+      {
+        "label": "Tommy Fleetwood (+1400 to +2100):",
+        "body": "Southport native playing a true hometown Open at Royal Birkdale, where he finished T27 in 2017."
+      },
+      {
+        "label": "Matt Fitzpatrick (+1500 to +2100):",
+        "body": "English major winner and one of the steadiest wind players near the top of the board."
+      },
+      {
+        "label": "Xander Schauffele (+2000 to +2200):",
+        "body": "2024 Open champion returning to links golf with the ball-striking to handle a par-70 dune course."
+      },
+      {
+        "label": "Ludvig Aberg (+2200 to +3100):",
+        "body": "Elite iron player with the length and control that fit an accuracy-first Birkdale setup."
+      },
+      {
+        "label": "Cameron Young (+2800 to +3000):",
+        "body": "Powerful ball-striker who profiles well on firm links when the wind asks for flight control."
+      },
+      {
+        "label": "Chris Gotterup (+2800 to +3300):",
+        "body": "Riding hot form into the year's final major after winning the John Deere as the defending Scottish Open champion."
+      },
+      {
+        "label": "Collin Morikawa (+2700 to +3100):",
+        "body": "2021 Open champion whose precision iron play fits a Birkdale test that rewards fairways and greens."
+      }
+    ]
+  },
+  {
+    "title": "Tournament History",
+    "items": [
+      {
+        "label": "Venue:",
+        "body": "Royal Birkdale Golf Club in Southport, Merseyside, England, a dune links on the Lancashire coast."
+      },
+      {
+        "label": "Established:",
+        "body": "The Open Championship dates to 1860; Royal Birkdale first hosted in 1954 and this is its 11th Open."
+      },
+      {
+        "label": "Defending Champion:",
+        "body": "Scottie Scheffler won the 2025 Open at Royal Portrush by four shots, his first Claret Jug."
+      },
+      {
+        "label": "Tradition:",
+        "body": "Golf's oldest major crowns the Champion Golfer of the Year with the Claret Jug; Jordan Spieth won the last Birkdale Open in 2017."
+      }
+    ]
+  },
+  {
+    "title": "Course and Format",
+    "items": [
+      {
+        "label": "Course:",
+        "body": "Royal Birkdale Golf Club, Southport, England."
+      },
+      {
+        "label": "Dates:",
+        "body": "July 16 through July 19, 2026."
+      },
+      {
+        "label": "Purse:",
+        "body": "TBA ($17 million in 2025)."
+      },
+      {
+        "label": "Format:",
+        "body": "156-player field, 72-hole stroke play with a cut after 36 holes."
+      },
+      {
+        "label": "Course Profile:",
+        "body": "A 7,223-yard par-70 links routed through sand dunes, with firm fairways, heavy rough, and coastal wind that rewards accuracy over raw length."
+      }
+    ]
+  },
+  {
+    "title": "Broadcast Information",
+    "items": [
+      {
+        "label": "Coverage:",
+        "body": "Thursday and Friday early on Peacock (1:30-4 a.m. ET), then USA Network (4 a.m.-3:30 p.m. ET); weekend early on USA Network, main broadcast on NBC/Peacock (7 a.m. ET onward), with Live From The Open on Golf Channel."
+      },
+      {
+        "label": "Event Window:",
+        "body": "Competition runs July 16 through July 19, 2026."
+      }
+    ]
+  }
+]
