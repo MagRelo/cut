@@ -19,7 +19,7 @@ export function TokenBalances({ showContestHistoryLink = true }: TokenBalancesPr
     : Number(formatUnits(paymentTokenBalance ?? 0n, 6)).toFixed(2);
 
   return (
-    <PageSection variant="card">
+    <PageSection>
       <div className={`flex items-center justify-between ${showContestHistoryLink ? "mb-2" : ""}`}>
         <h2 className="min-w-0 text-lg font-semibold text-gray-700 font-display">
           Balance

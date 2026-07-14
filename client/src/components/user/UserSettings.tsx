@@ -57,8 +57,8 @@ export function UserSettings() {
   };
 
   return (
-    <PageSection variant="card">
-      <h2 className="text-lg font-semibold text-gray-700 mb-3 font-display">User Settings</h2>
+    <PageSection>
+      <h2 className="mb-3 font-display text-lg font-semibold text-gray-700">User Settings</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-4">

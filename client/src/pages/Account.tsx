@@ -11,7 +11,6 @@ import { UserSettings } from "../components/user/UserSettings";
 import { TokenBalances } from "../components/user/TokenBalances";
 import { useAuth } from "../contexts/AuthContext";
 import { useUserReferralSummary } from "../hooks/useUserReferralSummary";
-import { buildFundSendUrl } from "../lib/fundLinks";
 
 function truncateMiddle(value: string, head = 8, tail = 6) {
   if (value.length <= head + tail + 1) return value;
@@ -89,27 +88,10 @@ const ReferralNetworkPanel = ({
   error: string | null;
   levels: Array<{ depth: number; count: number }> | undefined;
 }) => {
-  const getDepthLabel = (depth: number) => {
-    if (depth === 1) return "Direct";
-    const suffix =
-      depth % 10 === 1 && depth % 100 !== 11
-        ? "st"
-        : depth % 10 === 2 && depth % 100 !== 12
-          ? "nd"
-          : depth % 10 === 3 && depth % 100 !== 13
-            ? "rd"
-            : "th";
-    return `${depth}${suffix}`;
-  };
   const totalPlayersInNetwork = (levels ?? []).reduce((sum, level) => sum + level.count, 0);
-  const levelsByDepth = new Map((levels ?? []).map((level) => [level.depth, level.count]));
-  const maxDepthToShow = Math.max(3, ...(levels ?? []).map((level) => level.depth));
-  const displayLevels = Array.from({ length: maxDepthToShow }, (_, index) => {
-    const depth = index + 1;
-    return { depth, count: levelsByDepth.get(depth) ?? 0 };
-  });
+
   return (
-    <PageSection variant="card">
+    <PageSection>
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg font-semibold text-gray-700">Your Invite Network</h2>
         {loading ? (
@@ -129,40 +111,6 @@ const ReferralNetworkPanel = ({
         </Link>
       </p>
 
-      <div className="space-y-3 rounded-sm border border-l-4 border-emerald-200/80 border-l-emerald-600 bg-emerald-50/50 p-4 sm:p-5">
-        {!loading && error ? <p className="font-display text-sm text-red-600">{error}</p> : null}
-        {loading ? (
-          <div className="space-y-2 py-px" aria-busy="true">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div
-                key={index}
-                className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 font-display text-sm"
-              >
-                <div className="h-5 w-16 animate-pulse rounded bg-emerald-200/60" />
-                <div className="h-5 w-8 animate-pulse justify-self-end rounded bg-emerald-200/60" />
-              </div>
-            ))}
-          </div>
-        ) : null}
-        {!loading && !error ? (
-          <div className="space-y-2 py-px">
-            {displayLevels.map((level) => (
-              <div
-                key={level.depth}
-                className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 font-display text-sm"
-              >
-                <span className="shrink-0 font-medium text-gray-700">
-                  {getDepthLabel(level.depth)}
-                </span>
-                <span className="text-right font-semibold tabular-nums text-emerald-900">
-                  {level.count}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </div>
-
       <ReferralLinkRow showSeparator />
     </PageSection>
   );
@@ -181,7 +129,7 @@ const WalletInfo = ({
   accountIdAddress: string | undefined;
 }) => {
   return (
-    <PageSection variant="card">
+    <PageSection>
       <h2 className="mb-3 font-display text-lg font-semibold text-gray-700">Account Information</h2>
 
       <div className="space-y-3">
@@ -195,36 +143,20 @@ const WalletInfo = ({
         ) : null}
 
         {accountIdAddress ? (
-          <>
-            <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
-              <span className="shrink-0 font-display text-sm font-medium text-gray-700">
-                Account ID
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
+            <span className="shrink-0 font-display text-sm font-medium text-gray-700">
+              Account ID
+            </span>
+            <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
+              <span
+                className="truncate text-right font-display text-xs text-gray-800"
+                title={accountIdAddress}
+              >
+                {truncateMiddle(accountIdAddress)}
               </span>
-              <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-                <span
-                  className="truncate text-right font-display text-xs text-gray-800"
-                  title={accountIdAddress}
-                >
-                  {truncateMiddle(accountIdAddress)}
-                </span>
-                <CopyButton text={accountIdAddress} />
-              </div>
+              <CopyButton text={accountIdAddress} />
             </div>
-            <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
-              <span className="shrink-0 font-display text-sm font-medium text-gray-700">
-                Share fund link
-              </span>
-              <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-                <span
-                  className="min-w-0 max-w-full truncate text-right font-display text-xs text-gray-800"
-                  title={buildFundSendUrl(accountIdAddress)}
-                >
-                  {truncateMiddle(buildFundSendUrl(accountIdAddress), 18, 8)}
-                </span>
-                <CopyButton text={buildFundSendUrl(accountIdAddress)} />
-              </div>
-            </div>
-          </>
+          </div>
         ) : null}
       </div>
 
@@ -264,33 +196,28 @@ export function UserPage() {
   const referralError = referralQueryError ? "Could not load referral stats." : null;
 
   return (
-    <div className="-m-4 bg-gray-100 p-4">
-      <div className="space-y-5">
-        <PageHeader title="Account Settings" className="mb-3" />
+    <>
+      <PageHeader title="Account Settings" />
 
-        {/* Minting Funds Panel - Only shows when pendingTokenMint flag is set */}
-        {/* <MintingUserFundsPanel /> */}
+      {/* Minting Funds Panel - Only shows when pendingTokenMint flag is set */}
+      {/* <MintingUserFundsPanel /> */}
 
-        {/* Token Balances */}
-        <TokenBalances showContestHistoryLink={false} />
+      <TokenBalances showContestHistoryLink={false} />
 
-        <ReferralNetworkPanel
-          loading={referralLoading}
-          error={referralError}
-          levels={referralLevels}
-        />
+      <UserSettings />
 
-        {/* User Settings */}
-        <UserSettings />
+      <ReferralNetworkPanel
+        loading={referralLoading}
+        error={referralError}
+        levels={referralLevels}
+      />
 
-        {/* Wallet Information */}
-        <WalletInfo
-          disconnect={logout}
-          canSignOut={!!address || !!smartWalletAddress}
-          userEmail={user?.email}
-          accountIdAddress={smartWalletAddress}
-        />
-      </div>
-    </div>
+      <WalletInfo
+        disconnect={logout}
+        canSignOut={!!address || !!smartWalletAddress}
+        userEmail={user?.email}
+        accountIdAddress={smartWalletAddress}
+      />
+    </>
   );
 }
