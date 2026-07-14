@@ -9,11 +9,12 @@ export const ODDS_FORMAT_SETTING_KEY = "oddsFormat" as const;
 export const ODDS_FORMAT_OPTIONS: {
   value: OddsDisplayFormat;
   label: string;
+  example: string;
   description: string;
 }[] = [
-  { value: "american", label: "American", description: "e.g. +200, -110" },
-  { value: "decimal", label: "Decimal", description: "e.g. 3.00, 1.91" },
-  { value: "english", label: "English (Fractional)", description: "e.g. 2/1, 10/11" },
+  { value: "american", label: "American", example: "+200", description: "e.g. +200, -110" },
+  { value: "decimal", label: "Decimal", example: "3.00", description: "e.g. 3.00, 1.91" },
+  { value: "english", label: "English", example: "2/1", description: "e.g. 2/1, 10/11" },
 ];
 
 export function parseOddsDisplayFormat(

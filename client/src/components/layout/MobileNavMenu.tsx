@@ -140,7 +140,7 @@ export const MobileNavMenu: React.FC = () => {
                                 onClick={closeMenu}
                                 className={mobileAccountHeaderClass}
                               >
-                                <span>My Account</span>
+                                <span>Account</span>
                                 {totalBalance !== null ? (
                                   <span className="font-semibold tabular-nums normal-case tracking-normal">
                                     ${totalBalance}

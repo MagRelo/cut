@@ -58,7 +58,7 @@ export function UserSettings() {
 
   return (
     <PageSection variant="card">
-      <h2 className="text-lg font-semibold text-gray-700 mb-3 font-display">Lineup Display</h2>
+      <h2 className="text-lg font-semibold text-gray-700 mb-3 font-display">User Settings</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-4">
@@ -122,42 +122,56 @@ export function UserSettings() {
           </div>
 
           <div>
-            <label
-              htmlFor="oddsFormat"
+            <span
+              id="oddsFormat-label"
               className="block text-sm font-medium text-gray-700 font-display shrink-0"
             >
               Odds format
-            </label>
+            </span>
             <p className="mt-1 text-xs text-gray-500">
               How odds are shown in parlay markets and tickets.
             </p>
-            <div className="mt-3 space-y-2">
-              {ODDS_FORMAT_OPTIONS.map((option) => (
-                <label
-                  key={option.value}
-                  className="flex cursor-pointer items-start gap-3 rounded-sm border border-gray-200 px-3 py-2.5 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/40"
-                >
-                  <input
-                    type="radio"
-                    name="oddsFormat"
-                    value={option.value}
-                    checked={selectedOddsFormat === option.value}
-                    onChange={() => handleChange("oddsFormat", option.value)}
-                    className="mt-0.5 h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium text-gray-900">{option.label}</span>
-                    <span className="block text-xs text-gray-500">{option.description}</span>
-                  </span>
-                </label>
-              ))}
+            <div
+              className="mt-3 grid grid-cols-3 gap-2"
+              role="radiogroup"
+              aria-labelledby="oddsFormat-label"
+            >
+              {ODDS_FORMAT_OPTIONS.map((option) => {
+                const selected = selectedOddsFormat === option.value;
+                return (
+                  <label key={option.value} className="cursor-pointer">
+                    <input
+                      type="radio"
+                      name="oddsFormat"
+                      value={option.value}
+                      checked={selected}
+                      onChange={() => handleChange("oddsFormat", option.value)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={`flex min-h-[2.75rem] w-full flex-col items-center justify-center rounded-md border px-1 py-1.5 font-display text-center shadow-sm transition-colors ${
+                        selected
+                          ? "border-gray-300 bg-white ring-2 ring-gray-400 ring-offset-2"
+                          : "border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="text-sm font-medium leading-tight text-gray-900">
+                        {option.label}
+                      </span>
+                      <span className="mt-0.5 text-xs tabular-nums text-gray-500">
+                        {option.example}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           </div>
         </div>
 
         {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
 
-        <div className="flex justify-center !mt-6">
+        <div className="flex justify-center !mt-10">
           <button
             type="submit"
             disabled={isLoading || !hasChanges}
