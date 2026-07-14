@@ -4,8 +4,12 @@ import type { ContestDirectoryResponse, ContestDirectoryScope } from "../types/c
 import apiClient from "../utils/apiClient";
 import { queryKeys } from "../utils/queryKeys";
 import { useAuth } from "../contexts/AuthContext";
-import { SERVER_SYNC_INTERVAL_MS } from "../lib/queryTiming";
+import { CONTEST_LIST_STALE_MS } from "../lib/queryTiming";
 
+/**
+ * Contest list/directory — no interval poll.
+ * Stales after 15m; refetch on focus so other users' contests / status changes appear.
+ */
 export function useContestDirectory(scope: ContestDirectoryScope = "all") {
   const { user } = useAuth();
   const { chainId, isConnected } = useAccount();
@@ -22,9 +26,9 @@ export function useContestDirectory(scope: ContestDirectoryScope = "all") {
         `/contests/directory?${params.toString()}`,
       );
     },
-    staleTime: scope === "past" ? Infinity : SERVER_SYNC_INTERVAL_MS,
-    refetchInterval: scope === "live" ? SERVER_SYNC_INTERVAL_MS : false,
-    refetchOnWindowFocus: scope !== "past",
+    staleTime: CONTEST_LIST_STALE_MS,
+    gcTime: 12 * 60 * 60 * 1000,
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
