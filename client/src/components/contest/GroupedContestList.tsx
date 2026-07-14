@@ -115,13 +115,8 @@ export const GroupedContestList = ({
 
   let listContent: ReactNode;
 
-  if (loading) {
-    listContent = <ContestList contests={[]} loading error={null} />;
-  } else if (error) {
-    listContent = <ContestList contests={[]} loading={false} error={error} />;
-  } else if (groups.length === 0) {
-    listContent = <ContestList contests={[]} loading={false} error={null} />;
-  } else {
+  // Prefer existing groups over the spinner so refetches don't rip hero images out.
+  if (groups.length > 0) {
     listContent = (
       <div className="space-y-8">
         {groups.map((group) => (
@@ -129,6 +124,12 @@ export const GroupedContestList = ({
         ))}
       </div>
     );
+  } else if (loading) {
+    listContent = <ContestList contests={[]} loading error={null} />;
+  } else if (error) {
+    listContent = <ContestList contests={[]} loading={false} error={error} />;
+  } else {
+    listContent = <ContestList contests={[]} loading={false} error={null} />;
   }
 
   return (

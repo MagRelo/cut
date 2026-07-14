@@ -9,7 +9,9 @@ export const Contests: React.FC = () => {
   const upcoming = data?.upcoming ?? [];
   const live = data?.live ?? [];
   const past = data?.past ?? [];
-  const showUpcomingSection = isLoading || upcoming.length > 0;
+  // Only swap to the spinner on the first load — keep cards mounted while refetching.
+  const showInitialLoading = isLoading && !data;
+  const showUpcomingSection = showInitialLoading || upcoming.length > 0;
   const showLiveSection = live.length > 0;
   const showPastSection = past.length > 0;
 
@@ -20,7 +22,7 @@ export const Contests: React.FC = () => {
           <PageHeader title="Upcoming Events" />
           <GroupedContestList
             groups={upcoming}
-            loading={isLoading}
+            loading={showInitialLoading}
             error={errorMessage}
             variant="upcoming"
           />
