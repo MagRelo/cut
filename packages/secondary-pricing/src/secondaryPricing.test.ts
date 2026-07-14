@@ -2,19 +2,32 @@ import { describe, expect, it } from "vitest";
 import {
   BASE_PRICE,
   BPS_DENOMINATOR,
+  COEFFICIENT,
   calculateSecondaryPrice,
   calculateTokensFromCollateral,
   simulateAddSecondaryPosition,
   splitPrimaryDeposit,
+  toShareUnits,
 } from "./secondaryPricing.js";
 
 describe("calculateSecondaryPrice", () => {
-  it("matches documented spot checks (scaled quadratic)", () => {
+  it("matches documented spot checks (scaled quadratic, COEFFICIENT=15)", () => {
     expect(calculateSecondaryPrice(0n)).toBe(BASE_PRICE);
     const s1e18 = 1_000_000_000_000_000_000n;
-    expect(calculateSecondaryPrice(s1e18)).toBe(BASE_PRICE + 1n);
+    expect(calculateSecondaryPrice(s1e18)).toBe(BASE_PRICE + COEFFICIENT);
     const s1e21 = 1_000_000_000_000_000_000_000n;
-    expect(calculateSecondaryPrice(s1e21)).toBe(BASE_PRICE + 1_000_000n);
+    expect(calculateSecondaryPrice(s1e21)).toBe(BASE_PRICE + COEFFICIENT * 1_000_000n);
+  });
+});
+
+describe("toShareUnits", () => {
+  it("is identity for 18-decimal payments", () => {
+    const amount = 10n ** 18n;
+    expect(toShareUnits(amount, 18)).toBe(amount);
+  });
+
+  it("scales 6-decimal USDC up to 18-decimal share units", () => {
+    expect(toShareUnits(1_000_000n, 6)).toBe(10n ** 18n);
   });
 });
 
@@ -41,7 +54,7 @@ describe("splitPrimaryDeposit", () => {
 });
 
 describe("simulateAddSecondaryPosition", () => {
-  it("mints only to buyer with full collateral on curve (current ContestController)", () => {
+  it("mints only to buyer with full collateral on curve (18-dec payment)", () => {
     const amount = 10n ** 19n;
     const entryLiquidity = 5n * 10n ** 18n;
 
@@ -49,6 +62,7 @@ describe("simulateAddSecondaryPosition", () => {
       amount,
       entryShares: 0n,
       entryLiquidity,
+      paymentDecimals: 18,
     });
 
     expect(r.investmentAmount).toBe(0n);
@@ -61,6 +75,19 @@ describe("simulateAddSecondaryPosition", () => {
     expect(r.newSecondaryTotalFunds).toBe(entryLiquidity + amount);
   });
 
+  it("scales 6-decimal payment before curve mint", () => {
+    const amount = 10_000_000n; // $10 USDC
+    const r = simulateAddSecondaryPosition({
+      amount,
+      entryShares: 0n,
+      entryLiquidity: 0n,
+      paymentDecimals: 6,
+    });
+    const expected = calculateTokensFromCollateral(0n, toShareUnits(amount, 6));
+    expect(r.tokensToMint).toBe(expected);
+    expect(r.newSecondaryTotalFunds).toBe(amount);
+  });
+
   it("continues curve from existing nonnegative supply", () => {
     const shares0 = 1_000n * 10n ** 18n;
     const amount = 10n ** 18n;
@@ -68,6 +95,7 @@ describe("simulateAddSecondaryPosition", () => {
       amount,
       entryShares: shares0,
       entryLiquidity: 20n * 10n ** 18n,
+      paymentDecimals: 18,
     });
     const expected = calculateTokensFromCollateral(shares0, amount);
     expect(r.tokensToMint).toBe(expected);

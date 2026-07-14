@@ -284,7 +284,7 @@ Contest lifecycle is sport-agnostic. The sport plugin only answers "should this 
 1. Event completes → sport plugin finishes final scoring
 2. Platform ranks all `ContestLineup` entries for contests on that event (via `sport.rankEntries`)
 3. Platform derives payout vector (via `sport.derivePayoutVector` or default policy: 100% to 1st if fewer than 10 entries, else 70/20/10 for top 3)
-4. Oracle calls `settleContest(winningEntries, payoutBps, ...)` on-chain
+4. Oracle calls `settleContest(winningEntries, payoutBps)` on-chain
 5. Oracle pushes primary and secondary payouts; indexes `OnchainPayment` rows
 6. Users claim or receive pushed payouts
 

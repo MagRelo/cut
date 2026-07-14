@@ -140,7 +140,7 @@ function loadContractAddresses(network) {
     DepositManager: config.depositManagerAddress,
     ContestFactory: config.contestFactoryAddress,
     ReferralGraph: config.referralGraphAddress,
-    RewardDistributor: config.rewardDistributorAddress,
+    RewardCalculator: config.rewardCalculatorAddress,
   };
 
   if (network.name === "base_sepolia" && config.paymentTokenAddress) {
@@ -173,7 +173,7 @@ function buildVerifyCommand(network, contractName, address, addresses) {
     DepositManager: "lib/yieldToken/src/DepositManager.sol",
     ContestFactory: "lib/contestCatalyst/src/ContestFactory.sol",
     ReferralGraph: "lib/referralTree/src/core/ReferralGraph.sol",
-    RewardDistributor: "lib/referralTree/src/core/RewardDistributor.sol",
+    RewardCalculator: "lib/referralTree/src/core/RewardCalculator.sol",
   };
 
   const contractPath = paths[contractName];
@@ -204,8 +204,8 @@ function buildVerifyCommand(network, contractName, address, addresses) {
     constructorArgs = `--constructor-args $(cast abi-encode "constructor(string,string)" "${name}" "${sym}")`;
   } else if (contractName === "ReferralGraph" && deployer) {
     constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,bytes32)" ${deployer} ${referralOracle} ${referralGroupId})`;
-  } else if (contractName === "RewardDistributor" && deployer && addresses.ReferralGraph) {
-    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address,bytes32)" ${deployer} ${addresses.ReferralGraph} ${referralOracle} ${referralGroupId})`;
+  } else if (contractName === "RewardCalculator") {
+    // no constructor args
   }
 
   return `forge verify-contract ${address} ${contractPath}:${contractName} --verifier blockscout --verifier-url ${network.blockscoutApiUrl} ${constructorArgs}`;
@@ -224,7 +224,7 @@ function verifyContracts(network, addresses) {
     "DepositManager",
     "ContestFactory",
     "ReferralGraph",
-    "RewardDistributor",
+    "RewardCalculator",
   ];
 
   for (const contractName of order) {

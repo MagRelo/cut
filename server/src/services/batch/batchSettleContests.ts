@@ -2,6 +2,7 @@
  * Batch settle contests (for cron jobs)
  *
  * Finds ACTIVE or LOCKED contests whose event is complete per the sport plugin.
+ * Settlement requires on-chain LOCKED; `settleContest` locks ACTIVE contests first.
  */
 
 import { prisma } from "../../lib/prisma.js";

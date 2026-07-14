@@ -6,13 +6,11 @@
 import type { Abi, TransactionReceipt } from "viem";
 import { getAddress, parseEventLogs } from "viem";
 import ContestController from "../../contracts/ContestController.json" with { type: "json" };
-import RewardDistributor from "../../contracts/RewardDistributor.json" with { type: "json" };
 import { getContestContract } from "../shared/contractClient.js";
 import { parseReferralGroupIdFromEnv } from "../../lib/referralConfig.js";
 import { insertOnchainPaymentRow, resolveUserIdForWallet } from "./onchainPayment.js";
 
 const contestAbi = ContestController.abi as Abi;
-const rewardDistributorAbi = RewardDistributor.abi as Abi;
 
 export type RecordSettlementReferralPaymentsInput = {
   contestId: string;
@@ -20,7 +18,6 @@ export type RecordSettlementReferralPaymentsInput = {
   contestAddress: string;
   paymentTokenAddress: string;
   settleReceipt: TransactionReceipt;
-  rewardDistributorAddress: `0x${string}`;
 };
 
 export async function recordSettlementReferralPayments(
@@ -32,32 +29,28 @@ export async function recordSettlementReferralPayments(
     contestAddress,
     paymentTokenAddress,
     settleReceipt,
-    rewardDistributorAddress,
   } = input;
 
   const contestAddr = getAddress(contestAddress);
-  const distributorAddr = getAddress(rewardDistributorAddress);
   const groupIdFromEnv = parseReferralGroupIdFromEnv();
 
   let referralRowCount = 0;
 
-  const chainLogs = parseEventLogs({
-    abi: rewardDistributorAbi,
-    eventName: "ChainRewardsDistributed",
+  const distributedLogs = parseEventLogs({
+    abi: contestAbi,
+    eventName: "ReferralNetworkFeeDistributed",
     logs: settleReceipt.logs,
   });
 
-  for (const log of chainLogs) {
-    if (getAddress(log.address) !== distributorAddr) continue;
+  for (const log of distributedLogs) {
+    if (getAddress(log.address) !== contestAddr) continue;
     const args = log.args as {
-      user: `0x${string}`;
-      totalAmount: bigint;
-      eventId: `0x${string}`;
+      winner: `0x${string}`;
+      payoutAnchor: `0x${string}`;
+      amount: bigint;
       recipients: readonly `0x${string}`[];
       amounts: readonly bigint[];
     };
-    const payoutAnchor = args.user;
-    const eventId = args.eventId;
     const recipients = args.recipients ?? [];
     const amounts = args.amounts ?? [];
     const len = Math.min(recipients.length, amounts.length);
@@ -78,9 +71,10 @@ export async function recordSettlementReferralPayments(
         transactionHash: settleReceipt.transactionHash,
         logIndex: Number(log.logIndex),
         metadata: {
-          eventId,
-          payoutAnchor,
+          winner: args.winner,
+          payoutAnchor: args.payoutAnchor,
           recipientIndex: i,
+          totalFee: args.amount.toString(),
           ...(groupIdFromEnv ? { groupId: groupIdFromEnv } : {}),
         },
       });

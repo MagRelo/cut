@@ -121,11 +121,9 @@ graph TB
 - `secondaryPositions`: ERC1155 token balances for predictions
 
 ### Economic State
-- `accumulatedOracleFee`: Total oracle fees collected
 - `primaryPrizePool`: Primary participant prize pool
-- `secondaryPrizePool`: Secondary market collateral
-- `primaryPositionSubsidy`: Position bonuses per entry
-- `primaryPrizePoolSubsidy`: Cross-subsidy to primary pool
+- `secondaryLiquidityPerEntry`: Secondary market liquidity per entry
+- `referralNetworkBps`: Fee skimmed from gross TVL at settlement
 
 ## Key Functions
 
@@ -133,19 +131,17 @@ graph TB
 - `addPrimaryPosition(entryId)`: Join contest as primary participant
 - `removePrimaryPosition(entryId)`: Leave contest (OPEN state only)
 - `activateContest()`: Start contest (oracle only)
-- `lockContest()`: Lock secondary positions (oracle only)
-- `settleContest(winningEntries, payouts)`: Settle contest (oracle only)
+- `lockContest()`: Lock secondary positions (oracle only; required before settle)
+- `settleContest(winningEntries, payouts)`: Settle contest (oracle only; LOCKED)
 - `closeContest()`: Force distribution after expiry (oracle only)
 
 ### Secondary Market
-- `addSecondaryPosition(entryId, amount)`: Add prediction
-- `removeSecondaryPosition(entryId, tokens)`: Remove prediction (OPEN only)
-- `calculateSecondaryPrice(entryId)`: Get current prediction price
+- `addSecondaryPosition(entryId, amount)`: Add prediction (ACTIVE only)
+- `removeSecondaryPosition(entryId, tokens)`: Remove prediction (OPEN or CANCELLED only)
 
 ### Claims
 - `claimPrimaryPayout(entryId)`: Claim primary winnings
 - `claimSecondaryPayout(entryId)`: Claim secondary winnings
-- `claimOracleFee()`: Claim accumulated fees (oracle only)
 
 ## Design Decisions
 

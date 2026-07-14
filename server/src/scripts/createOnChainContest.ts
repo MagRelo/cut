@@ -104,7 +104,8 @@ async function main(): Promise<void> {
 
   const factoryAddress = sepoliaContracts.contestFactoryAddress as Hex;
   const paymentToken = sepoliaContracts.paymentTokenAddress as Hex;
-  const rewardDistributor = sepoliaContracts.rewardDistributorAddress as Hex;
+  const referralGraph = sepoliaContracts.referralGraphAddress as Hex;
+  const rewardCalculator = sepoliaContracts.rewardCalculatorAddress as Hex;
   const primaryDepositAmount = BigInt(DEFAULT_PRIMARY_DEPOSIT * 1_000_000);
 
   console.log(`[chain] Creating contest on ${chainConfig.name} via ${factoryAddress}`);
@@ -122,7 +123,8 @@ async function main(): Promise<void> {
       BigInt(DEFAULT_REFERRAL_NETWORK_BPS),
       expiryTimestamp,
       0n,
-      rewardDistributor,
+      referralGraph,
+      rewardCalculator,
       referralGroupId,
     ],
   });

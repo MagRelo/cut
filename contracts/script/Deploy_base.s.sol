@@ -6,7 +6,7 @@ import {PlatformToken} from "../lib/yieldToken/src/PlatformToken.sol";
 import {DepositManager} from "../lib/yieldToken/src/DepositManager.sol";
 import {ContestFactory} from "../lib/contestCatalyst/src/ContestFactory.sol";
 import {ReferralGraph} from "../lib/referralTree/src/core/ReferralGraph.sol";
-import {RewardDistributor} from "../lib/referralTree/src/core/RewardDistributor.sol";
+import {RewardCalculator} from "../lib/referralTree/src/core/RewardCalculator.sol";
 
 contract DeployBase is Script {
     function run() external {
@@ -37,9 +37,8 @@ contract DeployBase is Script {
         ReferralGraph referralGraph = new ReferralGraph(deployer, referralOracle, referralGroupId);
         console2.log("ReferralGraph deployed to:", address(referralGraph));
 
-        RewardDistributor rewardDistributor =
-            new RewardDistributor(deployer, address(referralGraph), referralOracle, referralGroupId);
-        console2.log("RewardDistributor deployed to:", address(rewardDistributor));
+        RewardCalculator rewardCalculator = new RewardCalculator();
+        console2.log("RewardCalculator deployed to:", address(rewardCalculator));
 
         vm.stopBroadcast();
 
@@ -48,6 +47,6 @@ contract DeployBase is Script {
         console2.log("DepositManager:", address(depositManager));
         console2.log("ContestFactory:", address(contestFactory));
         console2.log("ReferralGraph:", address(referralGraph));
-        console2.log("RewardDistributor:", address(rewardDistributor));
+        console2.log("RewardCalculator:", address(rewardCalculator));
     }
 }

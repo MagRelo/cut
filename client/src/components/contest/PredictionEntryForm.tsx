@@ -163,6 +163,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       amount: amountBigInt,
       entryShares: selectedEntryInfo.totalSupply,
       entryLiquidity: selectedEntryInfo.entryLiquidity,
+      paymentDecimals: contestAmountDecimals,
       ...poolSnapshot,
     });
 

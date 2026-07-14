@@ -1,8 +1,8 @@
 /**
  * Lock a contest: ACTIVE → LOCKED
- * 
- * This is an optional step that closes secondary position entries before the
- * contest ends. Prevents last-second predictions when outcome is nearly certain.
+ *
+ * Closes secondary position entries. Required before on-chain settleContest
+ * (settlement reverts unless the contract is LOCKED).
  */
 
 import { prisma } from '../../lib/prisma.js';

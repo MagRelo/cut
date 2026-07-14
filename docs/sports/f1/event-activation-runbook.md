@@ -179,7 +179,7 @@ Not part of init — open when the race week goes live.
 |--------------|------------------|
 | `SCHEDULED` | Contests `OPEN`; lineups editable |
 | `LIVE` | Cron activates `OPEN` → `ACTIVE`; lineup lock at race start |
-| `COMPLETE` | Cron settles `ACTIVE` / `LOCKED` → `SETTLED` |
+| `COMPLETE` | Cron settles `LOCKED` → `SETTLED` (auto-locks ACTIVE contests first) |
 
 Testnet off-chain settlement (no on-chain tx): see `server/src/scripts/settleContestOffChain.ts`.
 

@@ -32,6 +32,7 @@ export function computeTenDollarPurchasePreview(
     amount: purchaseAmount,
     entryShares: input.totalSupply,
     entryLiquidity: input.entryLiquidity,
+    paymentDecimals: input.paymentDecimals,
     ...(input.poolSnapshot ?? {}),
   });
 

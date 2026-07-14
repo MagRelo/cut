@@ -4,7 +4,7 @@ import sepoliaContracts from "../contracts/sepolia.json" with { type: "json" };
 
 type ChainContractJson = {
   referralGraphAddress?: string;
-  rewardDistributorAddress?: string;
+  rewardCalculatorAddress?: string;
 };
 
 function chainContractsForId(chainId: number): ChainContractJson | null {
@@ -47,19 +47,23 @@ export function requireReferralGroupIdForSignup(): Hex {
 export function getReferralGraphAddress(chainId: number): `0x${string}` | null {
   const cfg = chainContractsForId(chainId);
   const raw = cfg?.referralGraphAddress?.trim();
-  if (!raw || !isAddress(raw)) return null;
+  if (!raw || !isAddress(raw) || getAddress(raw) === getAddress("0x0000000000000000000000000000000000000000")) {
+    return null;
+  }
   return raw as `0x${string}`;
 }
 
-/** RewardDistributor address for the chain (from `server/src/contracts/{base,sepolia}.json`). */
-export function getRewardDistributorAddress(chainId: number): `0x${string}` | null {
+/** RewardCalculator address for the chain (from `server/src/contracts/{base,sepolia}.json`). */
+export function getRewardCalculatorAddress(chainId: number): `0x${string}` | null {
   const cfg = chainContractsForId(chainId);
-  const raw = cfg?.rewardDistributorAddress?.trim();
-  if (!raw || !isAddress(raw)) return null;
+  const raw = cfg?.rewardCalculatorAddress?.trim();
+  if (!raw || !isAddress(raw) || getAddress(raw) === getAddress("0x0000000000000000000000000000000000000000")) {
+    return null;
+  }
   return raw as `0x${string}`;
 }
 
-/** REFERRAL_ROOT sentinel on ReferralGraph / RewardDistributor (no payable chain). */
+/** REFERRAL_ROOT sentinel on ReferralGraph (no payable chain). */
 export const REFERRAL_ROOT = "0x0000000000000000000000000000000000000001" as const;
 
 const DEFAULT_REFERRAL_SYNC_CHAIN_ID = 84532;

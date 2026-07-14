@@ -46,15 +46,15 @@ const BASE_SEPOLIA_AAVE_POOL = "0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27";
  * `Deploy_sepolia.s.sol` and `Deploy_base.s.sol`, plus `ContestController` (instances are created
  * via ContestFactory; not deployed in those root scripts).
  *
- * Deploy_sepolia: MockUSDC, ContestFactory, ReferralGraph, RewardDistributor
- * Deploy_base: PlatformToken, DepositManager, ContestFactory, ReferralGraph, RewardDistributor (legacy mainnet)
+ * Deploy_sepolia: MockUSDC, ContestFactory, ReferralGraph, RewardCalculator
+ * Deploy_base: PlatformToken, DepositManager, ContestFactory, ReferralGraph, RewardCalculator (legacy mainnet)
  */
 const ARTIFACT_COPY = [
   { dir: "MockUSDC.sol", file: "MockUSDC.json", dest: "MockUSDC.json" },
   { dir: "ContestFactory.sol", file: "ContestFactory.json", dest: "ContestFactory.json" },
   { dir: "ContestController.sol", file: "ContestController.json", dest: "ContestController.json" },
   { dir: "ReferralGraph.sol", file: "ReferralGraph.json", dest: "ReferralGraph.json" },
-  { dir: "RewardDistributor.sol", file: "RewardDistributor.json", dest: "RewardDistributor.json" },
+  { dir: "RewardCalculator.sol", file: "RewardCalculator.json", dest: "RewardCalculator.json" },
 ];
 
 const colors = {
@@ -174,7 +174,7 @@ function updateConfigFiles(network, addresses) {
         paymentTokenAddress,
         contestFactoryAddress: addresses.ContestFactory,
         referralGraphAddress: addresses.ReferralGraph,
-        rewardDistributorAddress: addresses.RewardDistributor,
+        rewardCalculatorAddress: addresses.RewardCalculator,
       }
     : {
         paymentTokenAddress,
@@ -183,7 +183,7 @@ function updateConfigFiles(network, addresses) {
         contestFactoryAddress: addresses.ContestFactory,
         aavePoolAddress,
         referralGraphAddress: addresses.ReferralGraph,
-        rewardDistributorAddress: addresses.RewardDistributor,
+        rewardCalculatorAddress: addresses.RewardCalculator,
       };
 
   const clientConfigPath = path.join(
@@ -270,7 +270,7 @@ function buildVerifyCommand(network, contractName, address, addresses) {
     DepositManager: "lib/yieldToken/src/DepositManager.sol",
     ContestFactory: "lib/contestCatalyst/src/ContestFactory.sol",
     ReferralGraph: "lib/referralTree/src/core/ReferralGraph.sol",
-    RewardDistributor: "lib/referralTree/src/core/RewardDistributor.sol",
+    RewardCalculator: "lib/referralTree/src/core/RewardCalculator.sol",
   };
 
   const contractPath = paths[contractName];
@@ -301,8 +301,8 @@ function buildVerifyCommand(network, contractName, address, addresses) {
     constructorArgs = `--constructor-args $(cast abi-encode "constructor(string,string)" "${name}" "${sym}")`;
   } else if (contractName === "ReferralGraph" && deployer) {
     constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,bytes32)" ${deployer} ${referralOracle} ${referralGroupId})`;
-  } else if (contractName === "RewardDistributor" && deployer && addresses.ReferralGraph) {
-    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address,bytes32)" ${deployer} ${addresses.ReferralGraph} ${referralOracle} ${referralGroupId})`;
+  } else if (contractName === "RewardCalculator") {
+    // no constructor args
   }
 
   return `forge verify-contract ${address} ${contractPath}:${contractName} --verifier blockscout --verifier-url ${network.blockscoutApiUrl} ${constructorArgs}`;
@@ -318,7 +318,7 @@ function verifyContracts(network, addresses) {
     "DepositManager",
     "ContestFactory",
     "ReferralGraph",
-    "RewardDistributor",
+    "RewardCalculator",
   ];
 
   for (const contractName of order) {

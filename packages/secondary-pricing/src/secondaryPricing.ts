@@ -2,13 +2,18 @@
  * Mirrors contestCatalyst `SecondaryPricing.sol` bonding curve math and
  * `ContestController.addSecondaryPosition`: the full payment mints ERC1155 to the buyer only.
  *
+ * Curve math always uses 18-decimal share units. Callers pass payment-token native amounts;
+ * `simulateAddSecondaryPosition` scales via `toShareUnits` before mint pricing.
+ *
  * Primary deposit split matches `_splitPrimaryDeposit` / `primaryDepositSecondarySubsidyBps`.
  */
 
 export const PRICE_PRECISION = 1_000_000n;
 export const BASE_PRICE = 1_000_000n;
-export const COEFFICIENT = 1n;
+export const COEFFICIENT = 15n;
 export const BPS_DENOMINATOR = 10_000n;
+/** Share / curve unit decimals (always 18; not payment-token decimals). */
+export const SHARE_DECIMALS = 18;
 
 const SHARES_SCALE = 1_000_000_000n; // 1e9
 const SHARES_SQ_DENOM = 1_000_000_000_000_000_000n; // 1e18
@@ -22,14 +27,32 @@ export function int256ToSigned(value: bigint): bigint {
   return value;
 }
 
-/** Net position shares used for pricing: max(netPosition, 0) in token units. */
+/** Net position shares used for pricing: max(netPosition, 0) in share units. */
 export function sharesForSecondaryPricing(netPositionAbiWord: bigint): bigint {
   const signed = int256ToSigned(netPositionAbiWord);
   return signed > 0n ? signed : 0n;
 }
 
 /**
- * Spot price per token, scaled by PRICE_PRECISION (same as `SecondaryPricing.calculatePrice`).
+ * Scale a payment-token amount into 18-decimal share units for curve math.
+ * Matches `SecondaryPricing.toShareUnits`.
+ */
+export function toShareUnits(paymentAmount: bigint, paymentDecimals: number): bigint {
+  if (paymentDecimals === SHARE_DECIMALS) {
+    return paymentAmount;
+  }
+  if (paymentDecimals < SHARE_DECIMALS) {
+    const scale = 10n ** BigInt(SHARE_DECIMALS - paymentDecimals);
+    if (paymentAmount > 0n && paymentAmount > (2n ** 256n - 1n) / scale) {
+      throw new Error("Payment scale overflow");
+    }
+    return paymentAmount * scale;
+  }
+  return paymentAmount / 10n ** BigInt(paymentDecimals - SHARE_DECIMALS);
+}
+
+/**
+ * Spot price per share unit, scaled by PRICE_PRECISION (same as `SecondaryPricing.calculatePrice`).
  */
 export function calculateSecondaryPrice(shares: bigint): bigint {
   const sharesSquared = (shares / SHARES_SCALE) * (shares / SHARES_SCALE);
@@ -39,6 +62,7 @@ export function calculateSecondaryPrice(shares: bigint): bigint {
 /**
  * Simpson's rule integration of price over [sharesInitial, sharesInitial + tokensToBuy).
  * Matches `SecondaryPricing._calculateIntegratedCost`.
+ * Cost is in 18-decimal share units.
  */
 export function calculateIntegratedCost(sharesInitial: bigint, tokensToBuy: bigint): bigint {
   if (tokensToBuy === 0n) {
@@ -56,7 +80,8 @@ export function calculateIntegratedCost(sharesInitial: bigint, tokensToBuy: bigi
 }
 
 /**
- * Tokens minted for collateral along the curve (binary search + Simpson), matching `calculateTokensFromCollateral`.
+ * Tokens minted for collateral along the curve (binary search + Simpson), matching
+ * `calculateTokensFromCollateral`. `payment` must already be in 18-decimal share units.
  */
 export function calculateTokensFromCollateral(shares: bigint, payment: bigint): bigint {
   if (payment === 0n) {
@@ -64,8 +89,26 @@ export function calculateTokensFromCollateral(shares: bigint, payment: bigint): 
   }
   const initialPrice = calculateSecondaryPrice(shares);
   const tokensEstimate = (payment * PRICE_PRECISION) / initialPrice;
-  let tokensLow = tokensEstimate / 2n;
+  if (tokensEstimate === 0n) {
+    return 0n;
+  }
+
+  // Bounds must sandwich the payment: cost(low) < payment <= cost(high).
+  let tokensLow = 0n;
   let tokensHigh = tokensEstimate * 2n;
+  if (tokensHigh < 2n) {
+    tokensHigh = 2n;
+  }
+  for (let e = 0; e < 32; e++) {
+    if (calculateIntegratedCost(shares, tokensHigh) >= payment) {
+      break;
+    }
+    if (tokensHigh > (2n ** 256n - 1n) / 2n) {
+      break;
+    }
+    tokensHigh *= 2n;
+  }
+
   for (let i = 0; i < 50; i++) {
     if (tokensHigh <= tokensLow + 1n) {
       break;
@@ -108,19 +151,28 @@ export type SecondaryPoolSnapshot = Record<string, never>;
 
 export interface SimulateAddSecondaryPositionInput {
   /**
-   * Payment token amount the buyer deposits (passed as `amount` to `addSecondaryPosition`).
+   * Payment token amount the buyer deposits (passed as `amount` to `addSecondaryPosition`),
+   * in payment-token native decimals.
    */
   amount: bigint;
 
   /**
-   * Current nonnegative secondary supply shares for the entry (from nonnegative `netPosition`).
+   * Current nonnegative secondary supply shares for the entry (from nonnegative `netPosition`),
+   * already in 18-decimal share units.
    */
   entryShares: bigint;
 
   /**
-   * Current liquidity backing the entry's secondary side (`secondaryLiquidityPerEntry(entryId)`).
+   * Current liquidity backing the entry's secondary side (`secondaryLiquidityPerEntry(entryId)`),
+   * in payment-token native decimals.
    */
   entryLiquidity: bigint;
+
+  /**
+   * ERC20 decimals of the payment token (used to normalize `amount` into share units).
+   * Defaults to 18 when omitted.
+   */
+  paymentDecimals?: number;
 }
 
 export interface SimulateAddSecondaryPositionResult {
@@ -155,9 +207,12 @@ export function simulateAddSecondaryPosition(
   input: SimulateAddSecondaryPositionInput,
 ): SimulateAddSecondaryPositionResult {
   const shares0 = input.entryShares;
+  const paymentDecimals = input.paymentDecimals ?? SHARE_DECIMALS;
+  const paymentShareUnits =
+    input.amount > 0n ? toShareUnits(input.amount, paymentDecimals) : 0n;
 
   const buyerTokens =
-    input.amount > 0n ? calculateTokensFromCollateral(shares0, input.amount) : 0n;
+    paymentShareUnits > 0n ? calculateTokensFromCollateral(shares0, paymentShareUnits) : 0n;
 
   if (input.amount > 0n && buyerTokens === 0n) {
     return {

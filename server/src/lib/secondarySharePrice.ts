@@ -12,8 +12,6 @@ import {
 import ContestController from "../contracts/ContestController.json" with { type: "json" };
 import { getChainConfig } from "./chainConfig.js";
 
-const TEN_DOLLAR_POSITION = parseUnits("10", 18);
-
 const abi = ContestController.abi as Abi;
 
 export async function fetchSecondaryPoolSnapshot(
@@ -22,6 +20,24 @@ export async function fetchSecondaryPoolSnapshot(
 ): Promise<SecondaryPoolSnapshot> {
   /** `addSecondaryPosition` does not read extra immutables for curve sizing; snapshot is empty. */
   return {};
+}
+
+export async function fetchPaymentTokenDecimals(
+  contestAddress: `0x${string}`,
+  chainId: number,
+): Promise<number> {
+  const { chain, rpcUrl } = getChainConfig(chainId);
+  const client = createPublicClient({ chain, transport: http(rpcUrl) });
+  try {
+    const decimals = (await client.readContract({
+      address: contestAddress,
+      abi,
+      functionName: "paymentTokenDecimals",
+    })) as number;
+    return Number(decimals);
+  } catch {
+    return 18;
+  }
 }
 
 export async function fetchNetPosition(
@@ -63,12 +79,15 @@ export function computeSharePriceUsdFromSnapshot(
   pool: SecondaryPoolSnapshot,
   netPositionRaw: bigint,
   entryLiquidityWei: bigint,
+  paymentDecimals = 18,
 ): number | null {
+  const tenDollarPosition = parseUnits("10", paymentDecimals);
   const entryShares = sharesForSecondaryPricing(netPositionRaw);
   const sim = simulateAddSecondaryPosition({
-    amount: TEN_DOLLAR_POSITION,
+    amount: tenDollarPosition,
     entryShares,
     entryLiquidity: entryLiquidityWei,
+    paymentDecimals,
     ...pool,
   });
   if (sim.tokensToMint === 0n) {
@@ -79,7 +98,7 @@ export function computeSharePriceUsdFromSnapshot(
     return null;
   }
   const payoutWei = (sim.tokensToMint * sim.newSecondaryTotalFunds) / newSupply;
-  const potentialWinnings = Number(formatUnits(payoutWei, 18));
+  const potentialWinnings = Number(formatUnits(payoutWei, paymentDecimals));
   if (!Number.isFinite(potentialWinnings) || potentialWinnings <= 0) {
     return null;
   }

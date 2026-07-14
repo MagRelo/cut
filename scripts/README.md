@@ -10,8 +10,8 @@ Automates Foundry deployment and follow-up steps:
 
 1. **Environment validation** — required variables (see `contracts/env.example`)
 2. **Contract deployment** — `forge script` for `Deploy_sepolia.s.sol` or `Deploy_base.s.sol`
-3. **Config updates** — writes `client/src/utils/contracts/{sepolia|base}.json` and matching `server/src/contracts/*.json` with addresses (`paymentTokenAddress`, `platformTokenAddress`, `depositManagerAddress`, `contestFactoryAddress`, `aavePoolAddress`, `referralGraphAddress`, `rewardDistributorAddress`)
-4. **Artifact copy** — copies compiled ABIs to **both** `server/src/contracts/` and `client/src/utils/contracts/` (see `ARTIFACT_COPY` in `deploy.js`: MockUSDC, DepositManager, ContestFactory, ContestController, PlatformToken, ReferralGraph, RewardDistributor)
+3. **Config updates** — writes `client/src/utils/contracts/{sepolia|base}.json` and matching `server/src/contracts/*.json` with addresses (`paymentTokenAddress`, `platformTokenAddress`, `depositManagerAddress`, `contestFactoryAddress`, `aavePoolAddress`, `referralGraphAddress`, `rewardCalculatorAddress`)
+4. **Artifact copy** — copies compiled ABIs to **both** `server/src/contracts/` and `client/src/utils/contracts/` (see `ARTIFACT_COPY` in `deploy.js`: MockUSDC, DepositManager, ContestFactory, ContestController, PlatformToken, ReferralGraph, RewardCalculator)
 5. **Verification** — optional Blockscout verification via `forge verify-contract` for deployed contracts
 
 **Copy artifacts only** (after `forge build` in `contracts/`, no deploy):
@@ -108,7 +108,7 @@ Networks: `sepolia` → Base Sepolia (`base_sepolia`, 84532); `base` → Base ma
 - **DepositManager** — USDC → Aave V3 pool on Sepolia (see script constants)  
 - **ContestFactory**  
 - **ReferralGraph**  
-- **RewardDistributor**
+- **RewardCalculator**
 
 ### Base mainnet (`Deploy_base.s.sol`)
 
@@ -116,7 +116,7 @@ Networks: `sepolia` → Base Sepolia (`base_sepolia`, 84532); `base` → Base ma
 - **DepositManager** — canonical Base USDC + Aave V3 pool addresses (in script)  
 - **ContestFactory**  
 - **ReferralGraph**  
-- **RewardDistributor**
+- **RewardCalculator**
 
 `ContestController` is not deployed by these scripts; instances are created via `ContestFactory`. Its ABI is still copied for app/server use.
 
@@ -156,7 +156,7 @@ Networks: `sepolia` → Base Sepolia (`base_sepolia`, 84532); `base` → Base ma
 ...
 ```
 
-Verification order in `deploy.js`: MockUSDC (Sepolia only), PlatformToken, DepositManager, ContestFactory, ReferralGraph, RewardDistributor.
+Verification order in `deploy.js`: MockUSDC (Sepolia only), PlatformToken, DepositManager, ContestFactory, ReferralGraph, RewardCalculator.
 
 ## Troubleshooting
 

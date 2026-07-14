@@ -144,7 +144,8 @@ export function useCreateContestSubmission(options?: UseCreateContestSubmissionO
       params.referralNetworkBps,
       params.expiryTimestamp,
       params.primaryDepositSecondarySubsidyBps,
-      params.rewardDistributor,
+      params.referralGraph,
+      params.rewardCalculator,
       params.referralGroupId,
     );
 

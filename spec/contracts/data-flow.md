@@ -55,7 +55,7 @@ sequenceDiagram
     participant SecondaryWinner
     
     Oracle->>Server: Trigger settlement
-    Server->>Contest: settleContest(winningEntries, payouts, referralReward, signature)
+    Server->>Contest: settleContest(winningEntries, payouts)
     Note over Server,Contest: Referral fee at settlement; REFERRAL rows from settlement receipt
     Contest->>Contest: Calculate primary payouts
     Contest->>Contest: Set secondary winner (first entry)
@@ -144,10 +144,10 @@ stateDiagram-v2
     OPEN --> CANCELLED: cancelContest()
     
     ACTIVE --> LOCKED: lockContest()
-    ACTIVE --> SETTLED: settleContest()
     ACTIVE --> CANCELLED: cancelContest()
     
     LOCKED --> SETTLED: settleContest()
+    LOCKED --> CANCELLED: cancelContest()
     
     SETTLED --> CLOSED: closeContest() after expiry
     
@@ -156,7 +156,7 @@ stateDiagram-v2
     
     note right of OPEN
         Primary: Join/Leave
-        Secondary: Add/Remove positions
+        Secondary: Closed
     end note
     
     note right of ACTIVE
@@ -167,6 +167,7 @@ stateDiagram-v2
     note right of LOCKED
         Primary: Locked
         Secondary: Closed
+        Settle required here
     end note
     
     note right of SETTLED
@@ -178,36 +179,29 @@ stateDiagram-v2
 
 ### Primary Deposit
 ```
-Input: amount (PlatformToken)
-├─ Oracle Fee: amount × 5% → accumulatedOracleFee
-└─ Net: amount × 95%
-   └─ Add to primaryPrizePool
-      └─ Check cross-subsidy (if primary > 30% target)
+Input: amount (payment token)
+└─ Split via primaryDepositSecondarySubsidyBps
+   ├─ Subsidy → secondaryPrimarySubsidyPerEntry[entryId]
+   └─ Remainder → primaryPrizePool
 ```
 
 ### Secondary Deposit
 ```
-Input: amount (PlatformToken), entryId
-├─ Oracle Fee: amount × 5% → accumulatedOracleFee
-└─ Net: amount × 95%
-   ├─ Position Bonus: net × 5% → primaryPositionSubsidy[entryId]
-   └─ Remaining: net × 90%
-      ├─ Cross-Subsidy: up to 15% → primaryPrizePoolSubsidy (if primary < 30%)
-      └─ Collateral: remainder → secondaryPrizePool
-         └─ Mint ERC1155 tokens based on LMSR price
+Input: amount (payment token), entryId
+├─ Normalize amount via toShareUnits(paymentTokenDecimals)
+├─ Mint ERC1155 shares via bonding curve (COEFFICIENT=15)
+└─ Add amount → secondaryLiquidityPerEntry[entryId]
 ```
 
 ### Settlement Calculation
 ```
+Gross TVL → deduct referralNetworkBps fee (ReferralGraph + RewardCalculator, or oracle fallback)
 Primary Payout:
-├─ Layer1Pool = primaryPrizePool + primaryPrizePoolSubsidy
-├─ For each winner: payout = Layer1Pool × payoutBps[i] / 10000
-└─ Position Bonus: primaryPositionSubsidy[entryId] (already allocated)
+├─ Remaining primary pool × payoutBps[i] / 10000 per winning entry
+└─ Secondary TVL aggregated onto winning entry when it has ERC1155 supply
 
 Secondary Payout:
-├─ Winner = first entry in winningEntries[]
-├─ Total winning tokens = balanceOf(winner, tokenId)
-├─ User share = userTokens / totalWinningTokens
-└─ Payout = userShare × secondaryPrizePool
+├─ Winner-take-all pro-rata on secondaryWinningEntry liquidity share
+└─ Dust remains for closeContest sweep
 ```
 

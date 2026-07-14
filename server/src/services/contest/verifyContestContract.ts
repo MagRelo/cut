@@ -18,7 +18,8 @@ export interface VerifyContestContractParams {
   referralNetworkBps: number;
   expiryTimestamp: number;
   primaryDepositSecondarySubsidyBps: number;
-  rewardDistributorAddress: string;
+  referralGraphAddress: string;
+  rewardCalculatorAddress: string;
   referralGroupId: Hex;
 }
 
@@ -71,6 +72,7 @@ export async function queueVerifyContestContract(params: VerifyContestContractPa
       { type: "uint256" },
       { type: "uint256" },
       { type: "address" },
+      { type: "address" },
       { type: "bytes32" },
     ],
     [
@@ -80,7 +82,8 @@ export async function queueVerifyContestContract(params: VerifyContestContractPa
       BigInt(params.referralNetworkBps),
       BigInt(params.expiryTimestamp),
       BigInt(params.primaryDepositSecondarySubsidyBps),
-      params.rewardDistributorAddress as `0x${string}`,
+      params.referralGraphAddress as `0x${string}`,
+      params.rewardCalculatorAddress as `0x${string}`,
       params.referralGroupId,
     ],
   );

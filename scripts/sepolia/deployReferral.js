@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Deploy only ReferralGraph + RewardDistributor on Base Sepolia (84532).
+ * Deploy only ReferralGraph + RewardCalculator on Base Sepolia (84532).
  * Uses `contracts/script/Deploy_sepolia_referral.s.sol`. Does not modify app config JSON.
  *
  * Prerequisites: `contracts/.env` with PRIVATE_KEY, BASE_SEPOLIA_RPC_URL, REFERRAL_GROUP_ID;

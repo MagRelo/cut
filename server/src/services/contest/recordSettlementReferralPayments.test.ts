@@ -47,29 +47,32 @@ describe("recordSettlementReferralPayments", () => {
     resolveUserMock.mockClear();
   });
 
-  it("records one row per ChainRewardsDistributed recipient", async () => {
-    const distributor = "0x2222222222222222222222222222222222222222";
+  it("records one row per ReferralNetworkFeeDistributed recipient", async () => {
+    const contest = "0x6666666666666666666666666666666666666666";
+    const winner = "0x8888888888888888888888888888888888888888";
     const payoutAnchor = "0x3333333333333333333333333333333333333333";
     const ref0 = "0x4444444444444444444444444444444444444444";
     const ref1 = "0x5555555555555555555555555555555555555555";
-    const eventId = "0x" + "ee".repeat(32);
 
     const topics = encodeEventTopics({
       abi: [
         {
           type: "event",
-          name: "ChainRewardsDistributed",
+          name: "ReferralNetworkFeeDistributed",
           inputs: [
-            { name: "user", type: "address", indexed: true },
-            { name: "totalAmount", type: "uint256", indexed: false },
-            { name: "eventId", type: "bytes32", indexed: true },
+            { name: "winner", type: "address", indexed: true },
+            { name: "payoutAnchor", type: "address", indexed: true },
+            { name: "amount", type: "uint256", indexed: false },
             { name: "recipients", type: "address[]", indexed: false },
             { name: "amounts", type: "uint256[]", indexed: false },
           ],
         },
       ],
-      eventName: "ChainRewardsDistributed",
-      args: { user: payoutAnchor as `0x${string}`, eventId: eventId as `0x${string}` },
+      eventName: "ReferralNetworkFeeDistributed",
+      args: {
+        winner: winner as `0x${string}`,
+        payoutAnchor: payoutAnchor as `0x${string}`,
+      },
     });
 
     const data = encodeAbiParameters(parseAbiParameters("uint256, address[], uint256[]"), [
@@ -80,7 +83,7 @@ describe("recordSettlementReferralPayments", () => {
 
     const receipt = makeReceipt([
       {
-        address: distributor as `0x${string}`,
+        address: contest as `0x${string}`,
         topics: topics as [`0x${string}`, ...`0x${string}`[]],
         data: data as `0x${string}`,
         blockHash: `0x${"00".repeat(32)}`,
@@ -95,10 +98,9 @@ describe("recordSettlementReferralPayments", () => {
     const result = await recordSettlementReferralPayments({
       contestId: "c1",
       chainId: 84532,
-      contestAddress: "0x6666666666666666666666666666666666666666",
+      contestAddress: contest,
       paymentTokenAddress: "0x7777777777777777777777777777777777777777",
       settleReceipt: receipt,
-      rewardDistributorAddress: distributor as `0x${string}`,
     });
 
     expect(result.referralRowCount).toBe(2);
@@ -108,6 +110,11 @@ describe("recordSettlementReferralPayments", () => {
       walletAddress: ref0,
       amountWei: "600",
       logIndex: 5,
+      metadata: expect.objectContaining({
+        winner,
+        payoutAnchor,
+        recipientIndex: 0,
+      }),
     });
   });
 
@@ -150,7 +157,6 @@ describe("recordSettlementReferralPayments", () => {
       contestAddress: contest,
       paymentTokenAddress: "0x7777777777777777777777777777777777777777",
       settleReceipt: receipt,
-      rewardDistributorAddress: "0x2222222222222222222222222222222222222222",
     });
 
     expect(result.referralRowCount).toBe(1);

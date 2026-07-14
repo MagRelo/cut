@@ -30,8 +30,7 @@ import { resolveContestDbId } from "../utils/contestRouteParam.js";
 import { formatOnchainPaymentsForContest } from "../utils/formatOnchainPayments.js";
 import { cloneLineup } from "../services/lineups/cloneLineup.js";
 import type { DetailedResult } from "../services/shared/types.js";
-import { getRewardDistributorAddress } from "../lib/referralConfig.js";
-import { parseReferralGroupIdFromEnv } from "../lib/referralConfig.js";
+import { getReferralGraphAddress, getRewardCalculatorAddress, parseReferralGroupIdFromEnv } from "../lib/referralConfig.js";
 import { primaryDepositWeiFromSettings } from "../lib/contractAddresses.js";
 import { contestListSelect, contestVisibilityWhere } from "../utils/contestListQuery.js";
 import { listContestDirectory } from "../services/contests/listContestDirectory.js";
@@ -449,7 +448,8 @@ contestRouter.post("/", requireAuth, async (c) => {
           : typeof settings.oracleFeeBps === "number"
             ? settings.oracleFeeBps
             : undefined;
-      const rewardDistributorAddress = getRewardDistributorAddress(chainId);
+      const referralGraphAddress = getReferralGraphAddress(chainId);
+      const rewardCalculatorAddress = getRewardCalculatorAddress(chainId);
       const referralGroupIdRaw =
         (settings as { referralGroupId?: string }).referralGroupId ?? parseReferralGroupIdFromEnv();
       const referralGroupId = referralGroupIdRaw as `0x${string}` | null;
@@ -459,7 +459,8 @@ contestRouter.post("/", requireAuth, async (c) => {
         typeof referralNetworkBps === "number" &&
         typeof settings.expiryTimestamp === "number" &&
         typeof bps === "number" &&
-        rewardDistributorAddress &&
+        referralGraphAddress &&
+        rewardCalculatorAddress &&
         referralGroupId
       ) {
         const primaryDepositAmountWei = primaryDepositWeiFromSettings(
@@ -475,7 +476,8 @@ contestRouter.post("/", requireAuth, async (c) => {
           referralNetworkBps,
           expiryTimestamp: settings.expiryTimestamp,
           primaryDepositSecondarySubsidyBps: bps,
-          rewardDistributorAddress,
+          referralGraphAddress,
+          rewardCalculatorAddress,
           referralGroupId,
         }).catch((err) => {
           console.error("Failed to queue contest contract verification:", err);

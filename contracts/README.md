@@ -28,15 +28,13 @@ Create a contest on top of any stream of events where:
 ### Phase 1: OPEN - Registration & Early Positions
 
 **State:** `ContestState.OPEN`  
-**Secondary Positions:** ✅ Available (early positions enabled)
+**Secondary Positions:** ❌ Not available (opens after activation)
 
 | Actor                      | Can Do                              | Function                                   |
 | -------------------------- | ----------------------------------- | ------------------------------------------ |
 | **Primary Participants**   | Join contest with entry ID          | `addPrimaryPosition(entryId)`              |
 | **Primary Participants**   | Leave contest (funds redistributed) | `removePrimaryPosition(entryId)`           |
-| **Secondary Participants** | Check prices                        | `calculateSecondaryPrice(entryId)`         |
-| **Secondary Participants** | Add position                        | `addSecondaryPosition(entryId, amount)`    |
-| **Secondary Participants** | Withdraw (100% refund)              | `removeSecondaryPosition(entryId, tokens)` |
+| **Secondary Participants** | ❌ Cannot add/withdraw              | -                                          |
 | **Oracle/Admin**           | Activate contest                    | `activateContest()`                        |
 
 **State transition:** Oracle calls `activateContest()` → `ACTIVE`
@@ -52,16 +50,14 @@ Create a contest on top of any stream of events where:
 | Actor                      | Can Do                 | Function                                 |
 | -------------------------- | ---------------------- | ---------------------------------------- |
 | **Primary Participants**   | ❌ Cannot join/leave   | -                                        |
-| **Secondary Participants** | Add positions (LMSR)   | `addSecondaryPosition(entryId, amount)`  |
+| **Secondary Participants** | Add positions          | `addSecondaryPosition(entryId, amount)`  |
 | **Secondary Participants** | ❌ Cannot withdraw     | -                                        |
-| **Secondary Participants** | Check prices           | `calculateSecondaryPrice(entryId)`       |
 | **Oracle/Admin**           | Lock contest           | `lockContest()`                          |
 | **Oracle/Admin**           | Cancel contest         | `cancelContest()`                        |
-| **Oracle/Admin**           | Settle (if not locked) | `settleContest(winningEntries, payouts)` |
 
 **State transition:** Oracle calls `lockContest()` → `LOCKED`
 
-**Note:** Once the contest is activated, secondary participants can still add new positions but CANNOT withdraw existing positions. This prevents unfair behavior as the competition progresses and outcomes become clearer.
+**Note:** Secondary buys open only after activation so primary removals in OPEN cannot orphan secondary funds. Buys during ACTIVE cannot be withdrawn until CANCELLED.
 
 ---
 
@@ -73,14 +69,11 @@ Create a contest on top of any stream of events where:
 | Actor                      | Can Do                 | Function                                     |
 | -------------------------- | ---------------------- | -------------------------------------------- |
 | **Primary Participants**   | ❌ Waiting for results | -                                            |
-| **Secondary Participants** | Check prices (locked)  | `calculateSecondaryPrice(entryId)`           |
 | **Secondary Participants** | ❌ Cannot add position | -                                            |
 | **Secondary Participants** | ❌ Cannot withdraw     | -                                            |
 | **Oracle/Admin**           | Settle contest         | `settleContest(winningEntries[], payouts[])` |
 
-**Purpose:** Competition is finishing, outcome not yet certain, but secondary positions locked to prevent last-second unfair positions.
-
-**Note:** This phase is optional - oracle can call `settleContest()` directly from ACTIVE state.
+**Purpose:** Secondary market is closed before settlement so buyers cannot front-run a known winner. Settlement requires LOCKED.
 
 **State transition:** Oracle calls `settleContest()` → `SETTLED`
 
@@ -165,27 +158,25 @@ Example:
 ```
                     OPEN
                      │
-                     │ Primary participants join
-                     │ Secondary participants add positions (early positions!)
-                     │ Secondary participants can withdraw (free exit)
+                     │ Primary participants join / leave
+                     │ Secondary market closed
                      │
                      │ Oracle: activateContest()
                      ▼
                   ACTIVE
                      │
                      │ Competition in progress
-                     │ Secondary participants continue adding positions
-                     │ NO withdrawals (positions locked in)
+                     │ Secondary participants can add positions
+                     │ NO secondary withdrawals (positions locked in)
                      │
-                     │ Oracle: lockContest() [OPTIONAL]
+                     │ Oracle: lockContest() (required before settle)
                      ▼
                   LOCKED
                      │
                      │ Competition finishing
-                     │ No more positions/withdrawals
+                     │ No more secondary positions
                      │
                      │ Oracle: settleContest(...)
-                     │ (Can also call from ACTIVE)
                      │ Calculates Layer 1 (Primary) prize payouts
                      │ Sets Layer 2 (Secondary) winner
                      ▼
@@ -204,7 +195,7 @@ Example:
                      ▼
                   (done)
 
-        (Alternative path from OPEN/ACTIVE only)
+        (Alternative path from OPEN/ACTIVE/LOCKED)
                      │
                      │ Oracle: cancelContest()
                      │ OR
