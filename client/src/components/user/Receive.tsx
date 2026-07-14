@@ -28,10 +28,10 @@ export const Receive = () => {
   return (
     <div className="space-y-4 font-display">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900">Request Funds</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Add Funds</h3>
         <p className="mb-4 text-sm text-gray-600">
-          Send your funding link to another player – they can transfer {tokenSymbol} directly to
-          your account.
+          Balances are funded player-to-player. Share your funding link with someone who already has{" "}
+          {tokenSymbol} and ask them to send you some.
         </p>
       </div>
 
