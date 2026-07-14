@@ -9,3 +9,15 @@ export function sideBetPricingMargin(): number {
   }
   return n;
 }
+
+/**
+ * Total return (stake × decimal odds) must stay strictly below this USD amount per ticket.
+ * Keep in sync with client `MAX_TICKET_PAYOUT_USD` in sideBetConstants.ts.
+ */
+export const MAX_TICKET_PAYOUT_USD = 2011;
+
+/** True when stake × decimal odds would reach or exceed the per-ticket payout cap. */
+export function exceedsMaxTicketPayout(stakeAmount: number, decimalOdds: number): boolean {
+  const totalReturn = stakeAmount * decimalOdds;
+  return Number.isFinite(totalReturn) && totalReturn >= MAX_TICKET_PAYOUT_USD;
+}

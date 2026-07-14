@@ -5,6 +5,10 @@ import { requireAuth } from "../middleware/auth.js";
 import { SideBetMarketStatus, SideBetTicketStatus } from "@prisma/client";
 import { sideBetsEnabled } from "../services/sideBets/featureFlag.js";
 import {
+  exceedsMaxTicketPayout,
+  MAX_TICKET_PAYOUT_USD,
+} from "../services/sideBets/sideBetPricingConfig.js";
+import {
   placementPlayersMapForTickets,
   sortedEventParticipantIds,
   type PlacementPlayerDto,
@@ -272,6 +276,10 @@ betsRouter.post("/side/tickets", requireAuth, async (c) => {
         throw Object.assign(new Error("SELECTION_NOT_FOUND"), { code: 409 });
       }
 
+      if (exceedsMaxTicketPayout(stakeAmount, selection.decimalOdds)) {
+        throw Object.assign(new Error("PAYOUT_CAP_EXCEEDED"), { code: 400 });
+      }
+
       const eventParticipantIds = sortedEventParticipantIds(lineup.picks);
 
       return tx.sideBetTicket.create({
@@ -351,7 +359,18 @@ betsRouter.post("/side/tickets", requireAuth, async (c) => {
       return c.json({ error: "No side bet market for this lineup" }, 404);
     }
     if (code === 403) return c.json({ error: "Forbidden" }, 403);
-    if (code === 400) return c.json({ error: "Lineup must have four players" }, 400);
+    if (code === 400) {
+      const msg = e instanceof Error ? e.message : "";
+      if (msg === "PAYOUT_CAP_EXCEEDED") {
+        return c.json(
+          {
+            error: `Total return must stay under $${MAX_TICKET_PAYOUT_USD} for a single ticket. Lower your stake.`,
+          },
+          400,
+        );
+      }
+      return c.json({ error: "Lineup must have four players" }, 400);
+    }
     if (code === 409) {
       const msg = e instanceof Error ? e.message : "Conflict";
       if (msg === "SELECTION_NOT_FOUND") {
