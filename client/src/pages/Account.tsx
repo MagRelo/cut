@@ -104,14 +104,16 @@ const ReferralNetworkPanel = ({
         ) : null}
       </div>
 
-      <p className="mb-3 font-display text-sm text-gray-700">
-        When they win, you earn.{" "}
-        <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
-          Learn more ...
-        </Link>
-      </p>
+      <div className="pl-3">
+        <p className="mb-3 font-display text-sm text-gray-700">
+          When they win, you earn.{" "}
+          <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
+            Learn more ...
+          </Link>
+        </p>
 
-      <ReferralLinkRow showSeparator />
+        <ReferralLinkRow showSeparator />
+      </div>
     </PageSection>
   );
 };
@@ -132,7 +134,7 @@ const WalletInfo = ({
     <PageSection>
       <h2 className="mb-3 font-display text-lg font-semibold text-gray-700">Account Information</h2>
 
-      <div className="space-y-3">
+      <div className="space-y-3 pl-3">
         {userEmail ? (
           <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4">
             <span className="shrink-0 font-display text-sm font-medium text-gray-700">Email</span>

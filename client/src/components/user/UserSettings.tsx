@@ -60,7 +60,7 @@ export function UserSettings() {
     <PageSection>
       <h2 className="mb-3 font-display text-lg font-semibold text-gray-700">User Settings</h2>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 pl-3">
         <div className="space-y-4">
           <div>
             <label
