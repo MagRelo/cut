@@ -1,8 +1,8 @@
 /**
  * Batch close contests (for cron jobs)
- * 
- * Finds all SETTLED contests that have reached their expiry timestamp,
- * then closes each one (sweeping unclaimed funds to oracle).
+ *
+ * Finds SETTLED or CANCELLED contests past expiry, then closes each one
+ * (sweeping residual funds to oracle).
  */
 
 import { prisma } from '../../lib/prisma.js';
@@ -11,13 +11,10 @@ import { getContestContract } from '../shared/contractClient.js';
 import { type BatchOperationResult } from '../shared/types.js';
 
 export async function batchCloseContests(): Promise<BatchOperationResult> {
-  // console.log('[batchCloseContests] Starting batch close');
-
   try {
-    // Find all SETTLED contests
     const contests = await prisma.contest.findMany({
       where: {
-        status: 'SETTLED',
+        status: { in: ['SETTLED', 'CANCELLED'] },
         chainId: {
           in: [8453, 84532], // Base and Base Sepolia
         },

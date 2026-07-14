@@ -1,19 +1,19 @@
 /**
- * Close a contest: SETTLED → CLOSED
- * 
- * Sweeps unclaimed funds to oracle after expiry timestamp.
- * Can only be called after contest expiry time has passed.
+ * Close a contest: SETTLED|CANCELLED → CLOSED
+ *
+ * Sweeps residual funds to oracle after expiry. Requires a terminal on-chain
+ * state (SETTLED or CANCELLED) and that expiry has passed.
  */
 
 import { prisma } from '../../lib/prisma.js';
 import { getContestContract, verifyOracle, readContestState } from '../shared/contractClient.js';
 import { ContestState, type OperationResult } from '../shared/types.js';
 
+const TERMINAL_DB_STATUSES = new Set(['SETTLED', 'CANCELLED']);
+const TERMINAL_CONTRACT_STATES = new Set([ContestState.SETTLED, ContestState.CANCELLED]);
+
 export async function closeContest(contestId: string): Promise<OperationResult> {
   try {
-    // console.log(`[closeContest] Starting close for contest ${contestId}`);
-
-    // Fetch contest from database
     const contest = await prisma.contest.findUnique({
       where: { id: contestId },
     });
@@ -26,16 +26,14 @@ export async function closeContest(contestId: string): Promise<OperationResult> 
       };
     }
 
-    // Validate contest status
-    if (contest.status !== 'SETTLED') {
+    if (!TERMINAL_DB_STATUSES.has(contest.status)) {
       return {
         success: false,
         contestId,
-        error: `Contest status is ${contest.status}, expected SETTLED`,
+        error: `Contest status is ${contest.status}, expected SETTLED or CANCELLED`,
       };
     }
 
-    // Verify oracle
     const isValidOracle = await verifyOracle(contest.address, contest.chainId);
     if (!isValidOracle) {
       return {
@@ -45,17 +43,15 @@ export async function closeContest(contestId: string): Promise<OperationResult> 
       };
     }
 
-    // Check contract state
     const contractState = await readContestState(contest.address, contest.chainId);
-    if (contractState !== ContestState.SETTLED) {
+    if (!TERMINAL_CONTRACT_STATES.has(contractState)) {
       return {
         success: false,
         contestId,
-        error: `Contract state is ${contractState}, expected ${ContestState.SETTLED} (SETTLED)`,
+        error: `Contract state is ${contractState}, expected ${ContestState.SETTLED} (SETTLED) or ${ContestState.CANCELLED} (CANCELLED)`,
       };
     }
 
-    // Read expiry timestamp from contract
     const contract = getContestContract(contest.address, contest.chainId);
     const expiryTimestamp = (await contract.read.expiryTimestamp!()) as bigint;
     const currentTime = Math.floor(Date.now() / 1000);
@@ -68,12 +64,10 @@ export async function closeContest(contestId: string): Promise<OperationResult> 
       };
     }
 
-    // Call contract to close (sweeps unclaimed funds to oracle)
     const hash = (await contract.write.closeContest!()) as string;
 
     console.log(`[closeContest] Transaction hash: ${hash}`);
 
-    // Update database
     await prisma.contest.update({
       where: { id: contestId },
       data: { status: 'CLOSED' },
@@ -95,4 +89,3 @@ export async function closeContest(contestId: string): Promise<OperationResult> 
     };
   }
 }
-

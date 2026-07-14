@@ -499,7 +499,9 @@ export const FAQPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="border border-gray-300 px-4 py-2 text-gray-700">
-                      Contest archived. All claims processed or forfeited.
+                      Contest archived after expiry. Unclaimed SETTLED payouts or un-refunded
+                      CANCELLED deposits may be swept. Close is only allowed from SETTLED or
+                      CANCELLED.
                     </td>
                   </tr>
                 </tbody>

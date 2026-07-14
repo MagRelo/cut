@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useWithdrawPrediction } from "../../hooks/useSpectatorOperations";
-import { useContestPredictionData } from "../../hooks/useContestPredictionData";
+import { ContestState, useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
 import { type Contest } from "../../types/contest";
 import { useOddsFormat } from "../../hooks/useOddsFormat";
@@ -29,13 +29,15 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
   }, [contest.contestLineups]);
 
   // Fetch prediction data
-  const { entryData, canWithdraw, isLoading } = useContestPredictionData({
+  const { entryData, canWithdraw, contestState, isLoading } = useContestPredictionData({
     contestAddress: contest.address,
     entryIds,
     enabled: !!userAddress,
     chainId: contest.chainId,
     paymentTokenAddress: contest.settings?.paymentTokenAddress,
   });
+
+  const isCancelled = contestState === ContestState.CANCELLED;
 
   // Filter to only show entries where user has a position
   const userPositions = useMemo(() => {
@@ -127,13 +129,16 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                 : deposited.toFixed(2);
 
           const impliedWinnings = parseFloat(position.impliedWinningsFormatted);
-          const impliedDisplay =
-            !Number.isFinite(impliedWinnings) || impliedWinnings < 0
+          const payoutAmount = isCancelled ? deposited : impliedWinnings;
+          const payoutDisplay =
+            !Number.isFinite(payoutAmount) || payoutAmount < 0
               ? "0.00"
-              : impliedWinnings < 0.01
+              : payoutAmount < 0.01
                 ? "< 0.01"
-                : impliedWinnings.toFixed(2);
-          const oddsDisplay = formatStakeReturnOdds(deposited, impliedWinnings);
+                : payoutAmount.toFixed(2);
+          const oddsDisplay = isCancelled
+            ? "—"
+            : formatStakeReturnOdds(deposited, impliedWinnings);
 
           return (
             <div
@@ -162,22 +167,24 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                   </div>
                 </div>
 
-                <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem] gap-0.5 font-sans">
-                  <div className="text-xs font-medium text-gray-700 leading-tight tabular-nums">
-                    {oddsDisplay}
+                {!isCancelled && (
+                  <div className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem] gap-0.5 font-sans">
+                    <div className="text-xs font-medium text-gray-700 leading-tight tabular-nums">
+                      {oddsDisplay}
+                    </div>
+                    <div className="text-[10px] uppercase text-gray-500 font-medium tracking-wide leading-none">
+                      Odds
+                    </div>
                   </div>
-                  <div className="text-[10px] uppercase text-gray-500 font-medium tracking-wide leading-none">
-                    Odds
-                  </div>
-                </div>
+                )}
 
                 <div className="flex-shrink-0 flex items-center gap-2">
                   <div className="text-right font-sans">
                     <div className="text-lg font-bold tabular-nums text-emerald-600 leading-none">
-                      ${impliedDisplay}
+                      ${payoutDisplay}
                     </div>
                     <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
-                      return
+                      {isCancelled ? "refund" : "return"}
                     </div>
                   </div>
                 </div>
@@ -196,6 +203,8 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
                         <LoadingSpinnerSmall />
                         Withdrawing...
                       </span>
+                    ) : isCancelled ? (
+                      "Withdraw refund"
                     ) : (
                       "Withdraw"
                     )}

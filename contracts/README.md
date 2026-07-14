@@ -93,29 +93,29 @@ Create a contest on top of any stream of events where:
 | **Secondary Participants** | Winners get payout, losers get 0                | Same function                      |
 | **Oracle/Admin**           | Distribute after expiry (see Phase 5)           | `closeContest()`                   |
 
-**State transition:** Oracle calls `closeContest()` (after expiry) → `CLOSED`
+**State transition:** Oracle calls `closeContest()` after expiry from SETTLED (or CANCELLED) → `CLOSED`
 
 ---
 
 ### Phase 5: CLOSED - Force Distribution (After Expiry)
 
 **State:** `ContestState.CLOSED`  
-**Trigger:** Oracle calls `closeContest()` after contest expiry
+**Trigger:** Oracle calls `closeContest()` after contest expiry from a terminal state (`SETTLED` or `CANCELLED`)
 
 | Actor            | Can Do                          | Function |
 | ---------------- | ------------------------------- | -------- |
 | **All Users**    | Already received forced payouts | -        |
 | **Oracle/Admin** | ❌ No more actions              | -        |
 
-**Purpose:** Prevent funds from being locked forever if users forget to claim.
+**Purpose:** Prevent funds from being locked forever if users forget to claim or refund.
 
 **How it works:**
 
-- After expiry timestamp, oracle can call `closeContest()`
-- Sweeps all unclaimed funds to treasury (oracle address)
+- After expiry timestamp, oracle can call `closeContest()` only from SETTLED or CANCELLED
+- Sweeps remaining contract balance to treasury (oracle address), including unclaimed payouts or un-refunded deposits
 - Primary participants who didn't claim lose their prizes
 - Winning secondary participants who didn't claim lose their winnings
-- Losing secondary participants already got nothing (winner-take-all)
+- Cancelled depositors who didn't withdraw lose residual refunds
 
 **Terminal state:** Contest fully closed, all funds distributed or swept.
 
@@ -125,30 +125,25 @@ Create a contest on top of any stream of events where:
 
 **State:** `ContestState.CANCELLED`
 
-| Actor                      | Can Do                                 | Function                                   |
-| -------------------------- | -------------------------------------- | ------------------------------------------ |
-| **Primary Participants**   | Get full refund (100% of deposit)      | `removePrimaryPosition(entryId)`           |
-| **Secondary Participants** | Check prices (locked)                  | `calculateSecondaryPrice(entryId)`         |
-| **Secondary Participants** | Get full refund (100% including fees!) | `removeSecondaryPosition(entryId, tokens)` |
-| **Oracle/Admin**           | ❌ No more actions                     | -                                          |
+| Actor                      | Can Do                                      | Function                                   |
+| -------------------------- | ------------------------------------------- | ------------------------------------------ |
+| **Primary Participants**   | Get full refund of deposit                  | `removePrimaryPosition(entryId)`           |
+| **Secondary Participants** | Refund tracked principal                    | `removeSecondaryPosition(entryId, tokens)` |
+| **Oracle/Admin**           | Close after expiry (sweep residuals)        | `closeContest()`                           |
 
-**Terminal state:** Contest cancelled, all deposits refunded.
+**Terminal state:** Contest cancelled; secondary withdraws refund `secondaryDepositedPerEntry` principal (not open-market pro-rata). After expiry, oracle may close and sweep leftovers.
 
 **How to get to CANCELLED:**
 
-- Oracle calls `cancelContest()` (anytime before SETTLED - settlement is final!)
+- Oracle calls `cancelContest()` (anytime before SETTLED — settlement is final)
 - Anyone calls `cancelExpired()` (after expiry timestamp, if not settled)
 
 **Refund guarantee:**
 
 ```
-Primary Participants: Get back full deposit amount (oracle fee, cross-subsidy, and position bonuses reversed)
-Secondary Participants: Get back 100% of what they deposited (all fees and bonuses reversed!)
-
-Example:
-- Secondary participant deposited 100 tokens
-- Oracle fee was 5, position bonus was 4.75, cross-subsidy was 13.54
-- If cancelled: Get back full 100 tokens ✅ (all accounting reversed)
+Primary Participants: Get back full deposit amount
+Secondary Participants (CANCELLED): Get back tracked principal (secondaryDepositedPerEntry)
+Secondary Participants (OPEN sell-back): Pro-rata share of entry liquidity
 ```
 
 ---
@@ -187,11 +182,12 @@ Example:
                      │
                      │ (After expiry)
                      │ Oracle: closeContest()
-                     │ Sweeps unclaimed funds
+                     │ (SETTLED or CANCELLED only)
+                     │ Sweeps residual balance
                      ▼
                   CLOSED
                      │
-                     │ All funds distributed
+                     │ All funds distributed or swept
                      ▼
                   (done)
 
@@ -199,14 +195,17 @@ Example:
                      │
                      │ Oracle: cancelContest()
                      │ OR
-                     │ Anyone: cancelExpired()
-                     │ (Cannot cancel after LOCKED/SETTLED)
+                     │ Anyone: cancelExpired() after expiry
+                     │ (Cannot cancel after SETTLED/CLOSED)
                      ▼
                  CANCELLED
                      │
-                     │ All refunds
+                     │ Refunds via remove primary/secondary
+                     │ (secondary = tracked principal)
+                     │
+                     │ (After expiry) Oracle: closeContest()
                      ▼
-                  (done)
+                  CLOSED
 ```
 
 ## 💰 Economic Model

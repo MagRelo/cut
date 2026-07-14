@@ -28,7 +28,7 @@ Golf-only: loads `server/src/tournamentSummaries/{externalId}.json` when present
 | `OPEN` → `ACTIVE` | `activateContest` / `batchActivateContests` |
 | `ACTIVE` → `LOCKED` | `lockContest` / `batchLockContests` (admin); also auto-locked by `settleContest` when still ACTIVE |
 | `LOCKED` → `SETTLED` | `settleContest` / `batchSettleContests` (locks first if contract is still ACTIVE) |
-| `SETTLED` → `CLOSED` | `closeContest` / `batchCloseContests` |
+| `SETTLED` / `CANCELLED` → `CLOSED` | `closeContest` / `batchCloseContests` (after expiry) |
 
 ---
 
