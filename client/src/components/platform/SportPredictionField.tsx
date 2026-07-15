@@ -44,6 +44,7 @@ export const SportPredictionField: React.FC<SportPredictionFieldProps> = ({
     <LineupWinningScoreSlider
       id={`${sportId}-lineup-points-prediction`}
       label={label}
+      description={rules.description}
       value={display}
       min={rules.min / scale}
       max={rules.max / scale}

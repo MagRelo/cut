@@ -3,6 +3,7 @@ import React from "react";
 interface LineupWinningScoreSliderProps {
   id?: string;
   label?: string;
+  description?: string;
   value: number;
   min?: number;
   max?: number;
@@ -20,6 +21,7 @@ const defaultFormat = (value: number) => String(value);
 export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> = ({
   id = "winning-score-prediction",
   label = "Tie-Breaker",
+  description,
   value,
   min = 1,
   max = 250,
@@ -47,6 +49,9 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
           <label htmlFor={id} className="block font-display text-base font-semibold text-gray-900">
             {label}
           </label>
+          {description ? (
+            <p className="mt-0.5 font-display text-xs leading-relaxed text-gray-600">{description}</p>
+          ) : null}
           <div className="mt-3 flex items-center gap-3">
             <input
               id={id}
