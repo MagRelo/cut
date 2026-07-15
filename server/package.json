@@ -57,7 +57,8 @@
     "script:commodities-inspect-candidates": "tsx src/scripts/commoditiesInspectCandidates.ts",
     "script:commodities-refresh-candidates": "tsx src/scripts/commoditiesRefreshCandidates.ts",
     "script:commodities-week-analysis": "tsx src/scripts/commoditiesWeekAnalysis.ts",
-    "script:commodities-scoring-models": "tsx src/scripts/commoditiesScoringModels.ts"
+    "script:commodities-scoring-models": "tsx src/scripts/commoditiesScoringModels.ts",
+    "script:analyze-decisive-candidates": "tsx src/scripts/analyzeDecisiveCandidates.ts"
   },
   "dependencies": {
     "@cut/sport-commodities": "workspace:*",

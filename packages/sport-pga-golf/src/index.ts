@@ -20,6 +20,24 @@ export {
 
 export { validateGolfRoster } from "./validation.js";
 export { rankGolfEntries, getContestWinningScore, tiebreakerDistance } from "./ranking.js";
+export {
+  remainingCapacity,
+  DEFAULT_MAX_PTS_PER_HOLE,
+  type RemainingCapacity,
+  type RemainingCapacityOptions,
+} from "./remainingCapacity.js";
+export {
+  analyzeDecisiveCandidates,
+  type AnalyzeDecisiveCandidatesInput,
+  type AnalyzeDecisiveCandidatesOptions,
+  type ConsensusCandidateRow,
+  type ContentionSummary,
+  type DecisiveAffectsEntry,
+  type DecisiveCandidateEntry,
+  type DecisiveCandidateParticipant,
+  type DecisiveCandidateRow,
+  type DecisiveCandidatesReport,
+} from "./decisiveCandidates.js";
 export { buildGolfCandidates, type EventParticipantRow } from "./candidates.js";
 export { golfCandidateSortConfig } from "./candidateSort.js";
 export {
