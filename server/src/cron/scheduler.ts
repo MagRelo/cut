@@ -22,6 +22,13 @@ class CronScheduler {
     this.isEnabled = enabled;
   }
 
+  private formatBatchFailureDetails(batch: BatchOperationResult): string[] {
+    return batch.results
+      .filter((r) => !r.success && r.error && !r.error.startsWith("deferred:"))
+      .map((r) => `${r.contestId}: ${r.error}`)
+      .slice(0, 25);
+  }
+
   private async executeWithErrorHandling(
     jobName: string,
     task: () => Promise<void | unknown>,
@@ -38,9 +45,18 @@ class CronScheduler {
           `[CRON] ${jobName} - Completed: ${batch.succeeded}/${batch.total} succeeded, ${batch.failed} failed${deferred > 0 ? `, ${deferred} deferred` : ""}`,
         );
         if (batch.failed > 0) {
-          pipelineErrors.push(
-            `${jobName}: ${batch.failed}/${batch.total} batch operations failed`,
-          );
+          const failureDetails = this.formatBatchFailureDetails(batch);
+          const summary = `${jobName}: ${batch.failed}/${batch.total} batch operations failed`;
+          if (failureDetails.length > 0) {
+            console.error(`[CRON] ${jobName} failures:`);
+            for (const detail of failureDetails) {
+              console.error(`[CRON]   - ${detail}`);
+            }
+            pipelineErrors.push(`${summary}\n${failureDetails.map((d) => `  - ${d}`).join("\n")}`);
+          } else {
+            console.error(`[CRON] ${summary} (no per-item error details)`);
+            pipelineErrors.push(summary);
+          }
         }
       } else {
         console.log(`[CRON] ${jobName} - Completed`);
@@ -98,6 +114,9 @@ class CronScheduler {
         console.error(
           `[CRON] ========== Pipeline Finished With Errors (${duration}s, ${pipelineErrors.length} issue(s)) ==========`,
         );
+        for (const issue of pipelineErrors) {
+          console.error(`[CRON] Issue:\n${issue}`);
+        }
         await reportBetterStackHeartbeatFailure({
           exitCode: 1,
           context: `Cron pipeline finished with ${pipelineErrors.length} error(s) in ${duration}s`,
