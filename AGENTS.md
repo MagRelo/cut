@@ -35,6 +35,23 @@ placeholders (enough to boot and serve API/DB data); **real Privy credentials ar
 actual user login/auth flows** and a funded oracle wallet + Base Sepolia RPC for on-chain
 contest settlement.
 
+### Logging in during dev (Privy test accounts)
+The app gates all user actions (build a lineup, enter a contest) behind Privy email OTP login,
+so real inbox access is normally needed. For automated/dev login, use Privy **test accounts**:
+1. App owner enables it once in the Privy Dashboard: **User management → Authentication →
+   Advanced → Enable test accounts** (the app already has `email_auth` on and `localhost:5173`
+   in allowed domains).
+2. Once enabled, Privy generates a static `test-XXXX@privy.io` email + fixed 6-digit OTP. Fetch
+   them with the app secret (no dashboard needed after enabling):
+   `GET https://api.privy.io/v1/apps/$PRIVY_APP_ID/test_credentials` (or the Node SDK
+   `privy.apps().getTestCredentials(appId)`), authenticating with `PRIVY_APP_ID` /
+   `PRIVY_APP_SECRET` from `server/.env`.
+3. Log in through the UI by entering that test email and OTP in the Privy modal. The first
+   successful login creates the Privy user + the Cut user record.
+
+Note: the Node SDK's `getTestAccessToken()` (headless token) is rejected here because the app has
+`allowed_domains` configured, so use the UI OTP flow above rather than the headless token.
+
 ### Lint / test
 - Server tests: `pnpm --filter server run test:run` (vitest).
 - Client lint: `pnpm run client:lint` — currently reports **pre-existing** errors in the
