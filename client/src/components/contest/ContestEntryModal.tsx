@@ -9,18 +9,25 @@ import {
   lineupPicksFromContestLineup,
 } from "../../lib/candidateUtils";
 import { useCandidateSort } from "../../hooks/useCandidateSort";
-import { lineupDisplayScore } from "../../lib/lineupScore";
+import {
+  lineupDisplayScore,
+  lineupPopularityBonus,
+  pickPopularityForParticipant,
+} from "../../lib/lineupScore";
 import { predictionNumericValue } from "../../lib/sportPrediction";
 import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
-import { SportParticipantRow } from "../platform/SportParticipantRow";
+import { SportLineupPickRow } from "../platform/SportLineupPickRow";
 import { EntryHeader } from "./EntryHeader";
-import { type ContestLineup } from "../../types/lineup";
+import type { ContestStatus } from "../../types/contest";
+import { type ContestLineup, type PickPopularityMap } from "../../types/lineup";
 
 interface ContestEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
   lineup: ContestLineup | null;
   userName?: string;
+  pickPopularity?: PickPopularityMap | null;
+  contestStatus?: ContestStatus;
 }
 
 export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
@@ -28,6 +35,8 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   onClose,
   lineup,
   userName,
+  pickPopularity = null,
+  contestStatus,
 }) => {
   const { candidates, status, sportId, metadata } = useEventScope();
   const { sort } = useCandidateSort(sportId);
@@ -55,6 +64,8 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   if (!lineup) return null;
 
   const totalPoints = lineupDisplayScore(lineup);
+  const popularityBonus = lineupPopularityBonus(lineup);
+  const showPickPopularity = contestStatus != null && contestStatus !== "OPEN";
 
   const userSettings = lineup.user?.settings;
   const maybeUserColor =
@@ -108,6 +119,8 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                         lineupName={contestLineupDisplayName(lineup)}
                         predictionValue={predictionValue}
                         totalPoints={totalPoints}
+                        baseScore={lineup.baseScore}
+                        popularityBonus={popularityBonus}
                       />
                     </div>
 
@@ -120,11 +133,19 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                           lineupCandidates.map((candidate, index) => (
                             <Fragment key={candidate.participantId}>
                               <div className="p-3">
-                                <SportParticipantRow
+                                <SportLineupPickRow
                                   candidate={candidate}
                                   status={status}
                                   eventMetadata={metadata}
                                   onClick={() => openDetailModal(candidate)}
+                                  popularityBonus={
+                                    showPickPopularity
+                                      ? pickPopularityForParticipant(
+                                          pickPopularity,
+                                          candidate.eventParticipantId,
+                                        )?.bonus
+                                      : null
+                                  }
                                 />
                               </div>
                               {index < lineupCandidates.length - 1 ? (

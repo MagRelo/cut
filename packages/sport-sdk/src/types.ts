@@ -14,9 +14,25 @@ export interface RosterRules {
   allowDuplicates: boolean;
 }
 
+export type PopularityMode = "multiplicative" | "additive";
+
+export interface PopularityRules {
+  /** 0 = off. Positive rewards low-owned picks; negative rewards high-owned picks. */
+  weight: number;
+  /** Amplitude scaler. Default: 1. */
+  strength?: number;
+  /** Max raw bonus weight before bonus-shift floor. Default: 2. */
+  cap?: number;
+  /** How bonus applies to positive pick scores. Default: "multiplicative". */
+  mode?: PopularityMode;
+  /** Min contest entries before pick rates are computed. Default: 5. */
+  minEntryFloor?: number;
+}
+
 export interface ScoringRules {
   aggregation: ScoringAggregation;
   direction: ScoringDirection;
+  popularity?: PopularityRules;
 }
 
 export interface SportSummary {

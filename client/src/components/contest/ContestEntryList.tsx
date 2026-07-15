@@ -1,6 +1,6 @@
 import { UserGroupIcon } from "@heroicons/react/24/outline";
 import { useMemo, useRef, useState } from "react";
-import { type ContestLineup } from "../../types/lineup";
+import { type ContestLineup, type PickPopularityMap } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
 import { arePrimaryActionsLocked, type ContestStatus } from "../../types/contest";
 import { useEventScope } from "../../contexts/EventScopeContext";
@@ -14,18 +14,21 @@ import {
 import { useCandidateSort } from "../../hooks/useCandidateSort";
 import { participantLastName } from "../../lib/candidateSorting";
 import { getLineupNumberLabel, resolveUserBorderColor } from "../../lib/lineupDisplay";
+import { lineupPopularityBonus } from "../../lib/lineupScore";
 
 interface ContestEntryListProps {
   contestLineups?: ContestLineup[];
   contestStatus: ContestStatus;
   /** When set, controls row click + display; otherwise derived from `contestStatus`. */
   entryListOpensModal?: boolean;
+  pickPopularity?: PickPopularityMap | null;
 }
 
 export const ContestEntryList = ({
   contestLineups,
   contestStatus,
   entryListOpensModal,
+  pickPopularity = null,
 }: ContestEntryListProps) => {
   const { candidates, sportId, status } = useEventScope();
   const { sort } = useCandidateSort(sportId);
@@ -148,6 +151,12 @@ export const ContestEntryList = ({
                     <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
                       PTS
                     </div>
+                    {lineupPopularityBonus(lineup) > 0 && lineup.baseScore != null ? (
+                      <div className="mt-1 text-[10px] font-medium tabular-nums text-gray-500">
+                        {lineup.baseScore}
+                        <span className="text-emerald-700"> +{lineupPopularityBonus(lineup)}</span>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -170,6 +179,8 @@ export const ContestEntryList = ({
         onClose={closeLineupModal}
         lineup={selectedLineup}
         userName={selectedLineup?.user?.name || selectedLineup?.user?.email || "Unknown User"}
+        pickPopularity={pickPopularity}
+        contestStatus={contestStatus}
       />
     </div>
   );

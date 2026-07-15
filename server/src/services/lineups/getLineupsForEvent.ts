@@ -14,6 +14,8 @@ const contestSelectForLineupList = {
   status: true,
   settings: true,
   results: true,
+  pickPopularity: true,
+  pickPopularityLockedAt: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -53,6 +55,8 @@ export async function getLineupsForEvent(userId: string, eventId: string) {
       lineupId: contestLineup.lineupId,
       position: contestLineup.position ?? 0,
       score: contestLineup.score,
+      baseScore: contestLineup.baseScore,
+      popularityBonus: contestLineup.popularityBonus,
       status: contestLineup.status,
       entryId: contestLineup.entryId,
       createdAt: contestLineup.createdAt,

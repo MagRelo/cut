@@ -24,6 +24,8 @@ type ContestLineupRow = {
   lineupId: string;
   position: number | null;
   score: number | null;
+  baseScore?: number | null;
+  popularityBonus?: number | null;
   status: string;
   entryId: string | null;
   createdAt: Date;
@@ -55,6 +57,8 @@ function formatContestLineup(
     lineupId: contestLineup.lineupId,
     position: contestLineup.position,
     score: contestLineup.score,
+    baseScore: contestLineup.baseScore ?? null,
+    popularityBonus: contestLineup.popularityBonus ?? null,
     status: contestLineup.status,
     entryId: contestLineup.entryId,
     createdAt: contestLineup.createdAt,

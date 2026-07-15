@@ -82,7 +82,7 @@ model Sport {
   slug         String   @unique    // URL segment: "golf"
   isEnabled    Boolean  @default(true)
   rosterRules  Json                // { slotCount: 4, minPicks: 1, maxPicks: 4 }
-  scoringRules Json                // { aggregation: "sum", direction: "higher_wins" }
+  scoringRules Json                // { aggregation, direction, popularity? }
   events       CompetitionEvent[]
 }
 ```
@@ -184,9 +184,7 @@ Sport implementations live in dedicated packages (e.g. `packages/sport-pga-golf`
 
 ### Scoring signals
 
-Today, lineup scores are the sum of external per-pick totals (`EventParticipant.total`) with no contest-scoped popularity adjustment.
-
-Each sport plugin produces per-pick scores in `aggregateLineupScore`. An optional **popularity adjustment** on `ScoringRules.popularity` can modulate pick totals based on contest pick rates **after lineups lock** — see [consensus-axis.md](consensus-axis.md). It does not affect the candidate picker. Sports that score from pick behavior (e.g. predict-the-consensus) bake that signal into pick scores and leave `popularity.weight` at `0`.
+Today, lineup scores are the sum of external per-pick totals (`EventParticipant.total`). After a contest leaves `OPEN`, [`updateContestLineupsForEvent`](../../server/src/services/updateContestLineups.ts) may apply an optional **popularity adjustment** from `ScoringRules.popularity` (contest pick rates) — see [consensus-axis.md](consensus-axis.md). Sports keep `aggregateLineupScore` as a raw sum; the platform writes `Contest.pickPopularity` and `ContestLineup.baseScore` / `popularityBonus` / `score`. All sports currently seed `weight: 0`. It does not affect the candidate picker. Sports that score from pick behavior (e.g. predict-the-consensus) bake that signal into pick scores and leave `popularity.weight` at `0`.
 
 ---
 

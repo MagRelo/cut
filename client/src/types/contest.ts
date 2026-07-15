@@ -1,6 +1,6 @@
 import type { PeriodRules } from "@cut/sport-sdk";
 import { type UserGroup } from "./userGroup";
-import { type ContestLineup } from "./lineup";
+import { type ContestLineup, type PickPopularityMap } from "./lineup";
 
 export interface ContestEvent {
   id: string;
@@ -124,6 +124,9 @@ export interface Contest {
   userGroup?: UserGroup;
   event?: ContestEvent;
   contestLineups?: ContestLineup[];
+  /** Per-player popularity after lock; keyed by eventParticipantId. */
+  pickPopularity?: PickPopularityMap | null;
+  pickPopularityLockedAt?: string | Date | null;
   _count?: {
     contestLineups: number;
   };

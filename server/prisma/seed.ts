@@ -16,9 +16,19 @@ const PGA_GOLF_ROSTER_RULES = {
   allowDuplicates: false,
 };
 
+/** All sports ship with weight 0 until popularity is deliberately enabled. */
+const DEFAULT_POPULARITY_RULES = {
+  weight: 0,
+  strength: 1,
+  cap: 2,
+  mode: "multiplicative" as const,
+  minEntryFloor: 5,
+};
+
 const PGA_GOLF_SCORING_RULES = {
   aggregation: "sum",
   direction: "higher_wins",
+  popularity: DEFAULT_POPULARITY_RULES,
 };
 
 const PGA_GOLF_PREDICTION_RULES = {
@@ -41,6 +51,7 @@ const F1_ROSTER_RULES = {
 const F1_SCORING_RULES = {
   aggregation: "sum",
   direction: "higher_wins",
+  popularity: DEFAULT_POPULARITY_RULES,
 };
 
 const F1_PREDICTION_RULES = {
@@ -63,6 +74,7 @@ const COMMODITIES_ROSTER_RULES = {
 const COMMODITIES_SCORING_RULES = {
   aggregation: "sum",
   direction: "higher_wins",
+  popularity: DEFAULT_POPULARITY_RULES,
 };
 
 const COMMODITIES_PREDICTION_RULES = {
