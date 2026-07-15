@@ -3,6 +3,23 @@
 Output of `analyzeDecisiveCandidates` in [`src/decisiveCandidates.ts`](./src/decisiveCandidates.ts).  
 CLI: `pnpm --filter server run script:analyze-decisive-candidates <contestId>`
 
+## Score basis
+
+Lineup standings and flip sweeps use the **same scoring path as contested live play**:
+
+1. Live external pick totals `e_i` from `EventParticipant.total`
+2. Frozen contest pick rates `o(i)` from `Contest.pickPopularity` (when present)
+3. Sport `ScoringRules.popularity` via `@cut/sport-sdk` `adjustPickScore`
+4. Lineup total = Σ adjusted pick scores
+
+Remaining capacity still comes from golf `scoreData` (holes left). When sweeping *R* remaining Stableford points for a golfer, the analyzer adds *R* to that pick’s `e_i`, then **re-scores every contention lineup through popularity** — so multiplicative bonuses amplify remaining points for lightly owned picks.
+
+Override weight for what-if runs: `--weight 0.5`.
+
+See [consensus-axis.md](../../docs/platform/consensus-axis.md).
+
+---
+
 ## Top-level fields
 
 | Field | Type | Meaning |
@@ -11,10 +28,11 @@ CLI: `pnpm --filter server run script:analyze-decisive-candidates <contestId>`
 | `eventId` | string | Competition event for the contest |
 | `period` | number \| null | Event `currentPeriod` (1–4 regulation; ≥401 playoff). Analysis is most useful in R4 when remaining capacity is small |
 | `paidCount` | number | How many places pay (`defaultPayoutVector`: 1 if &lt;10 entries, else 3) |
+| `popularityWeight` | number | Effective `ScoringRules.popularity.weight` for this run |
 | `contention` | object | Lineups still mathematically in the paid race (see below) |
 | `decisive` | array | Differentiating candidates sorted by leverage (highest `flipShare` first) |
 | `consensus` | array | Candidates owned by **every** contention lineup — move totals equally, not relative standings |
-| `notes` | string[] | Human-readable caveats (e.g. early round, all players finished) |
+| `notes` | string[] | Human-readable caveats (e.g. early round, popularity weight, all players finished) |
 
 ---
 

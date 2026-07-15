@@ -1,10 +1,14 @@
-import { defaultPayoutVector } from "@cut/sport-sdk";
+import {
+  adjustPickScore,
+  defaultPayoutVector,
+  normalizePopularityRules,
+  type PopularityRules,
+} from "@cut/sport-sdk";
 import { rankGolfEntries } from "./ranking.js";
 import { remainingCapacity, DEFAULT_MAX_PTS_PER_HOLE } from "./remainingCapacity.js";
 
 export interface DecisiveCandidateEntry {
   entryId: string;
-  score: number;
   prediction: unknown | null;
   createdAt: Date;
   eventParticipantIds: string[];
@@ -14,13 +18,15 @@ export interface DecisiveCandidateParticipant {
   eventParticipantId: string;
   displayName: string;
   scoreData: unknown;
+  /** Live external pick total `e_i` (`EventParticipant.total`). */
+  total: number;
 }
 
 export interface AnalyzeDecisiveCandidatesOptions {
   maxPtsPerHole?: number;
   /** Override contention slack (points below paid cut). */
   slackOverride?: number;
-  /** Floor for derived slack. Default 0. */
+  /** Floor for derived slack. Default 8. */
   minSlack?: number;
   /** Cap for derived slack. Default unlimited. */
   maxSlack?: number;
@@ -32,6 +38,13 @@ export interface AnalyzeDecisiveCandidatesInput {
   currentPeriod?: number | null;
   entries: DecisiveCandidateEntry[];
   participants: DecisiveCandidateParticipant[];
+  /** Sport `ScoringRules.popularity` (weight 0 = raw sum). */
+  popularity?: PopularityRules | null;
+  /**
+   * Frozen contest pick rates `o(i)` keyed by eventParticipantId.
+   * Used when `popularity.weight ≠ 0`. Missing rates are treated as 0.
+   */
+  pickRates?: Record<string, number> | null;
   options?: AnalyzeDecisiveCandidatesOptions;
 }
 
@@ -74,10 +87,20 @@ export interface DecisiveCandidatesReport {
   eventId: string;
   period: number | null;
   paidCount: number;
+  /** Effective popularity weight used for scoring. */
+  popularityWeight: number;
   contention: ContentionSummary;
   decisive: DecisiveCandidateRow[];
   consensus: ConsensusCandidateRow[];
   notes: string[];
+}
+
+interface ScoredEntry {
+  entryId: string;
+  score: number;
+  prediction: unknown | null;
+  createdAt: Date;
+  eventParticipantIds: string[];
 }
 
 const DEFAULT_MIN_SLACK = 8;
@@ -86,12 +109,46 @@ function paidSetKey(entryIds: string[]): string {
   return [...entryIds].sort().join(",");
 }
 
-function buildContentionSet(
+/** Contest lineup finalScore from live pick totals + popularity. */
+export function scoreLineupFromTotals(
+  eventParticipantIds: readonly string[],
+  totalsById: Map<string, number>,
+  pickRates: Record<string, number> | null | undefined,
+  popularity: PopularityRules | null | undefined,
+): number {
+  const rules = normalizePopularityRules(popularity);
+  let sum = 0;
+  for (const epId of eventParticipantIds) {
+    const e = totalsById.get(epId) ?? 0;
+    const o = pickRates?.[epId] ?? 0;
+    sum += adjustPickScore(e, o, rules).adjustedScore;
+  }
+  return sum;
+}
+
+function scoreEntries(
   entries: DecisiveCandidateEntry[],
+  totalsById: Map<string, number>,
+  pickRates: Record<string, number> | null | undefined,
+  popularity: PopularityRules | null | undefined,
+): ScoredEntry[] {
+  return entries.map((e) => ({
+    ...e,
+    score: scoreLineupFromTotals(
+      e.eventParticipantIds,
+      totalsById,
+      pickRates,
+      popularity,
+    ),
+  }));
+}
+
+function buildContentionSet(
+  entries: ScoredEntry[],
   paidCount: number,
   participantCapacity: Map<string, number>,
   options: AnalyzeDecisiveCandidatesOptions,
-): { contention: DecisiveCandidateEntry[]; slackUsed: number; leaderScore: number; cutScore: number } {
+): { contention: ScoredEntry[]; slackUsed: number; leaderScore: number; cutScore: number } {
   const sorted = [...entries].sort((a, b) => b.score - a.score);
   const leaderScore = sorted[0]?.score ?? 0;
   const cutIndex = Math.min(paidCount, sorted.length) - 1;
@@ -120,6 +177,10 @@ function buildContentionSet(
 /**
  * Identify golf contest candidates whose remaining scores can still change
  * winner / paid-set outcomes among lineups still in contention.
+ *
+ * Lineup scores are recomputed from live `EventParticipant.total` values run
+ * through the same popularity adjustment as contest scoring (when weight ≠ 0).
+ * Remaining-point sweeps add *R* to that player’s external total, then re-score.
  */
 export function analyzeDecisiveCandidates(
   input: AnalyzeDecisiveCandidatesInput,
@@ -128,6 +189,8 @@ export function analyzeDecisiveCandidates(
   const options = input.options ?? {};
   const maxPtsPerHole = options.maxPtsPerHole ?? DEFAULT_MAX_PTS_PER_HOLE;
   const period = input.currentPeriod ?? null;
+  const popularityRules = normalizePopularityRules(input.popularity);
+  const pickRates = input.pickRates ?? null;
 
   const entries = input.entries.filter((e) => e.entryId);
   const paidCount = Math.max(1, defaultPayoutVector(entries.length).length);
@@ -138,13 +201,26 @@ export function analyzeDecisiveCandidates(
     );
   }
 
+  if (popularityRules.weight !== 0) {
+    notes.push(
+      `popularity.weight=${popularityRules.weight} (${popularityRules.mode}); remaining sweeps re-score through popularity adjustment.`,
+    );
+    if (!pickRates || Object.keys(pickRates).length === 0) {
+      notes.push(
+        "No pickRates provided while popularity.weight ≠ 0; pick rates default to 0 (max contrarian bonus for positive weight).",
+      );
+    }
+  }
+
   const participantById = new Map(
     input.participants.map((p) => [p.eventParticipantId, p]),
   );
 
+  const totalsById = new Map<string, number>();
   const participantCapacity = new Map<string, number>();
   const participantHolesLeft = new Map<string, number>();
   for (const p of input.participants) {
+    totalsById.set(p.eventParticipantId, p.total);
     const cap = remainingCapacity(p.scoreData, {
       maxPtsPerHole,
       currentPeriod: period,
@@ -159,6 +235,7 @@ export function analyzeDecisiveCandidates(
       eventId: input.eventId,
       period,
       paidCount,
+      popularityWeight: popularityRules.weight,
       contention: {
         entryIds: [],
         slackUsed: 0,
@@ -172,8 +249,10 @@ export function analyzeDecisiveCandidates(
     };
   }
 
+  const scored = scoreEntries(entries, totalsById, pickRates, input.popularity);
+
   const { contention, slackUsed, leaderScore, cutScore } = buildContentionSet(
-    entries,
+    scored,
     paidCount,
     participantCapacity,
     options,
@@ -191,7 +270,6 @@ export function analyzeDecisiveCandidates(
     ).map((r) => [r.entryId, r.position]),
   );
 
-  // Ownership within contention
   const ownersByParticipant = new Map<string, Set<string>>();
   for (const entry of contention) {
     for (const pid of entry.eventParticipantIds) {
@@ -248,10 +326,18 @@ export function analyzeDecisiveCandidates(
     const sweepMax = Math.max(0, maxRemaining);
 
     for (let R = 0; R <= sweepMax; R++) {
+      const totalsWithR = new Map(totalsById);
+      totalsWithR.set(pid, (totalsWithR.get(pid) ?? 0) + R);
+
       const ranked = rankGolfEntries(
         contention.map((e) => ({
           entryId: e.entryId,
-          score: e.score + (owners.has(e.entryId) ? R : 0),
+          score: scoreLineupFromTotals(
+            e.eventParticipantIds,
+            totalsWithR,
+            pickRates,
+            input.popularity,
+          ),
           prediction: e.prediction,
           createdAt: e.createdAt,
         })),
@@ -268,8 +354,6 @@ export function analyzeDecisiveCandidates(
     }
 
     const steps = sweepMax + 1;
-    // Exclude R=0 from flip share numerator interest: R=0 never flips vs itself.
-    // flipShare = fraction of remaining outcomes (including R=0) that differ from R=0 baseline.
     const flipShare = steps > 0 ? flips / steps : 0;
 
     decisive.push({
@@ -309,6 +393,7 @@ export function analyzeDecisiveCandidates(
     eventId: input.eventId,
     period,
     paidCount,
+    popularityWeight: popularityRules.weight,
     contention: {
       entryIds: contention.map((e) => e.entryId),
       slackUsed,

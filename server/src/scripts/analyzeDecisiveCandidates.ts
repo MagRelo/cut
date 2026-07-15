@@ -1,14 +1,19 @@
 /**
  * Analyze decisive candidates for a PGA golf contest.
  *
+ * Scores are recomputed from live EventParticipant.total values, then run
+ * through ScoringRules.popularity (same path as contest scoring). Remaining
+ * Stableford sweeps add R to that pick’s external total and re-score.
+ *
  * Usage:
  *   pnpm --filter server run script:analyze-decisive-candidates <contestId>
  *   pnpm --filter server run script:analyze-decisive-candidates --event <eventId>
  *
- * Optional flags (no `--` separator for pnpm script args at repo root — run via filter):
+ * Optional flags:
  *   --event <eventId>   analyze every contest on the event
  *   --slack <n>         override contention slack
  *   --max-pts <n>       max stableford pts per remaining hole (default 4)
+ *   --weight <n>        override sport popularity.weight for this run
  */
 
 import "dotenv/config";
@@ -18,7 +23,11 @@ import {
   type DecisiveCandidateEntry,
   type DecisiveCandidateParticipant,
 } from "@cut/sport-pga-golf";
-import { readCurrentPeriod } from "@cut/sport-sdk";
+import {
+  readCurrentPeriod,
+  type PopularityRules,
+  type ScoringRules,
+} from "@cut/sport-sdk";
 import { prisma } from "../lib/prisma.js";
 import { lineupPicksInclude } from "../utils/prismaIncludes.js";
 
@@ -27,6 +36,7 @@ function parseArgs(argv: string[]) {
   let eventId: string | undefined;
   let slack: number | undefined;
   let maxPts: number | undefined;
+  let weight: number | undefined;
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
@@ -36,12 +46,14 @@ function parseArgs(argv: string[]) {
       slack = Number(argv[++i]);
     } else if (arg === "--max-pts") {
       maxPts = Number(argv[++i]);
+    } else if (arg === "--weight") {
+      weight = Number(argv[++i]);
     } else if (!arg.startsWith("-") && !contestId) {
       contestId = arg;
     }
   }
 
-  return { contestId, eventId, slack, maxPts };
+  return { contestId, eventId, slack, maxPts, weight };
 }
 
 function displayNameFromParticipant(metadata: unknown, fallback: string): string {
@@ -58,11 +70,43 @@ function displayNameFromParticipant(metadata: unknown, fallback: string): string
   return fallback;
 }
 
-async function loadContestInput(contestId: string) {
+function parseScoringRules(raw: unknown): ScoringRules {
+  if (typeof raw !== "object" || raw === null) {
+    return { aggregation: "sum", direction: "higher_wins" };
+  }
+  const obj = raw as Partial<ScoringRules>;
+  const rules: ScoringRules = {
+    aggregation: "sum",
+    direction: obj.direction === "lower_wins" ? "lower_wins" : "higher_wins",
+  };
+  if (obj.popularity != null) {
+    rules.popularity = obj.popularity;
+  }
+  return rules;
+}
+
+function pickRatesFromPopularity(raw: unknown): Record<string, number> | null {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    return null;
+  }
+  const rates: Record<string, number> = {};
+  for (const [epId, entry] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const pickRate = (entry as { pickRate?: unknown }).pickRate;
+    if (typeof pickRate === "number") {
+      rates[epId] = pickRate;
+    }
+  }
+  return Object.keys(rates).length > 0 ? rates : null;
+}
+
+async function loadContestInput(contestId: string, weightOverride?: number) {
   const contest = await prisma.contest.findUnique({
     where: { id: contestId },
     include: {
-      event: true,
+      event: {
+        include: { sport: { select: { scoringRules: true } } },
+      },
       contestLineups: {
         include: {
           lineup: {
@@ -82,6 +126,15 @@ async function loadContestInput(contestId: string) {
     );
   }
 
+  const scoringRules = parseScoringRules(contest.event.sport.scoringRules);
+  let popularity: PopularityRules | null | undefined = scoringRules.popularity;
+  if (weightOverride != null && Number.isFinite(weightOverride)) {
+    popularity = {
+      ...(popularity ?? { weight: 0 }),
+      weight: weightOverride,
+    };
+  }
+
   const entries: DecisiveCandidateEntry[] = [];
   const participants = new Map<string, DecisiveCandidateParticipant>();
 
@@ -90,7 +143,6 @@ async function loadContestInput(contestId: string) {
     const picks = cl.lineup.picks;
     entries.push({
       entryId: cl.entryId,
-      score: cl.score ?? 0,
       prediction: cl.lineup.prediction,
       createdAt: cl.createdAt,
       eventParticipantIds: picks.map((p) => p.eventParticipantId),
@@ -106,6 +158,7 @@ async function loadContestInput(contestId: string) {
           ep.participant.displayName || ep.id,
         ),
         scoreData: ep.scoreData,
+        total: ep.total ?? 0,
       });
     }
   }
@@ -116,22 +169,34 @@ async function loadContestInput(contestId: string) {
     currentPeriod: readCurrentPeriod(contest.event.metadata),
     entries,
     participants: [...participants.values()],
+    popularity: popularity ?? null,
+    pickRates: pickRatesFromPopularity(contest.pickPopularity),
     eventExternalId: contest.event.externalId,
     contestStatus: contest.status,
+    persistedScores: contest.contestLineups
+      .filter((cl) => cl.entryId)
+      .map((cl) => ({
+        entryId: cl.entryId!,
+        score: cl.score,
+        baseScore: cl.baseScore,
+        popularityBonus: cl.popularityBonus,
+      })),
   };
 }
 
 async function analyzeOne(
   contestId: string,
-  options: { slack?: number; maxPts?: number },
+  options: { slack?: number; maxPts?: number; weight?: number },
 ) {
-  const loaded = await loadContestInput(contestId);
+  const loaded = await loadContestInput(contestId, options.weight);
   const report = analyzeDecisiveCandidates({
     contestId: loaded.contestId,
     eventId: loaded.eventId,
     currentPeriod: loaded.currentPeriod,
     entries: loaded.entries,
     participants: loaded.participants,
+    popularity: loaded.popularity,
+    pickRates: loaded.pickRates,
     options: {
       slackOverride: options.slack,
       maxPtsPerHole: options.maxPts,
@@ -143,17 +208,22 @@ async function analyzeOne(
       eventExternalId: loaded.eventExternalId,
       contestStatus: loaded.contestStatus,
       entryCount: loaded.entries.length,
+      popularity: loaded.popularity ?? { weight: 0 },
+      pickRatesLocked: loaded.pickRates != null,
+      persistedScores: loaded.persistedScores,
     },
     report,
   };
 }
 
 async function main(): Promise<void> {
-  const { contestId, eventId, slack, maxPts } = parseArgs(process.argv.slice(2));
+  const { contestId, eventId, slack, maxPts, weight } = parseArgs(
+    process.argv.slice(2),
+  );
 
   if (!contestId && !eventId) {
     console.error(
-      "Usage: script:analyze-decisive-candidates <contestId> | --event <eventId> [--slack n] [--max-pts n]",
+      "Usage: script:analyze-decisive-candidates <contestId> | --event <eventId> [--slack n] [--max-pts n] [--weight n]",
     );
     process.exit(1);
   }
@@ -175,7 +245,7 @@ async function main(): Promise<void> {
 
   const results = [];
   for (const id of contestIds) {
-    results.push(await analyzeOne(id, { slack, maxPts }));
+    results.push(await analyzeOne(id, { slack, maxPts, weight }));
   }
 
   console.log(JSON.stringify(results.length === 1 ? results[0] : results, null, 2));

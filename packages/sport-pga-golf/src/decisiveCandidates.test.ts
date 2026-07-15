@@ -3,13 +3,11 @@ import { analyzeDecisiveCandidates } from "./decisiveCandidates.js";
 
 function entry(
   id: string,
-  score: number,
   picks: string[],
   createdAt = new Date("2026-01-01T00:00:00Z"),
 ) {
   return {
     entryId: id,
-    score,
     prediction: { type: "winningLineupTotal", value: 100 },
     createdAt,
     eventParticipantIds: picks,
@@ -19,6 +17,7 @@ function entry(
 function participant(
   id: string,
   displayName: string,
+  total: number,
   holesLeft: number,
   played = 18 - holesLeft,
 ) {
@@ -28,6 +27,7 @@ function participant(
   return {
     eventParticipantId: id,
     displayName,
+    total,
     scoreData: {
       leaderboardPosition: "T5",
       rCurrent: {
@@ -48,18 +48,19 @@ function participant(
 
 describe("analyzeDecisiveCandidates", () => {
   it("puts universal ownership in consensus, not decisive", () => {
+    // a: 60+40=100; b: 60+38=98
     const report = analyzeDecisiveCandidates({
       contestId: "c1",
       eventId: "e1",
       currentPeriod: 4,
       entries: [
-        entry("a", 100, ["scheffler", "x"]),
-        entry("b", 98, ["scheffler", "y"]),
+        entry("a", ["scheffler", "x"]),
+        entry("b", ["scheffler", "y"]),
       ],
       participants: [
-        participant("scheffler", "Scheffler", 4),
-        participant("x", "Player X", 4),
-        participant("y", "Player Y", 4),
+        participant("scheffler", "Scheffler", 60, 4),
+        participant("x", "Player X", 40, 4),
+        participant("y", "Player Y", 38, 4),
       ],
       options: { maxPtsPerHole: 4, slackOverride: 20 },
     });
@@ -74,22 +75,23 @@ describe("analyzeDecisiveCandidates", () => {
       "x",
       "y",
     ]);
+    expect(report.popularityWeight).toBe(0);
   });
 
   it("flags a duel differentiator that can flip the winner", () => {
-    // A leads by 3; only B owns "closer" who can still score up to 8.
+    // Leader 50+50=100; chaser 50+47=97. Closer can add up to 8.
     const report = analyzeDecisiveCandidates({
       contestId: "c1",
       eventId: "e1",
       currentPeriod: 4,
       entries: [
-        entry("leader", 100, ["p1", "p2"]),
-        entry("chaser", 97, ["p1", "closer"]),
+        entry("leader", ["p1", "p2"]),
+        entry("chaser", ["p1", "closer"]),
       ],
       participants: [
-        participant("p1", "Shared", 0),
-        participant("p2", "LeaderOnly", 0),
-        participant("closer", "Closer", 2), // maxRemaining = 8 with 4pts/hole
+        participant("p1", "Shared", 50, 0),
+        participant("p2", "LeaderOnly", 50, 0),
+        participant("closer", "Closer", 47, 2),
       ],
       options: { maxPtsPerHole: 4, slackOverride: 10 },
     });
@@ -107,12 +109,12 @@ describe("analyzeDecisiveCandidates", () => {
       eventId: "e1",
       currentPeriod: 4,
       entries: [
-        entry("a", 100, ["done"]),
-        entry("b", 90, ["other"]),
+        entry("a", ["done"]),
+        entry("b", ["other"]),
       ],
       participants: [
-        participant("done", "Done", 0),
-        participant("other", "Other", 0),
+        participant("done", "Done", 100, 0),
+        participant("other", "Other", 90, 0),
       ],
       options: { slackOverride: 20 },
     });
@@ -126,46 +128,47 @@ describe("analyzeDecisiveCandidates", () => {
   });
 
   it("detects paid-set flips when winner stays the same (10+ entries)", () => {
-    // 10 entries → payout top 3. Leader locked; spots 2–4 fight over one player.
     const entries = [
-      entry("e1", 120, ["shared", "lock"], new Date("2026-01-01T00:00:01Z")),
-      entry("e2", 100, ["shared", "swing"], new Date("2026-01-01T00:00:02Z")),
-      entry("e3", 99, ["shared"], new Date("2026-01-01T00:00:03Z")),
-      entry("e4", 98, ["shared", "swing"], new Date("2026-01-01T00:00:04Z")),
-      entry("e5", 50, ["bench"], new Date("2026-01-01T00:00:05Z")),
-      entry("e6", 49, ["bench"], new Date("2026-01-01T00:00:06Z")),
-      entry("e7", 48, ["bench"], new Date("2026-01-01T00:00:07Z")),
-      entry("e8", 47, ["bench"], new Date("2026-01-01T00:00:08Z")),
-      entry("e9", 46, ["bench"], new Date("2026-01-01T00:00:09Z")),
-      entry("e10", 45, ["bench"], new Date("2026-01-01T00:00:10Z")),
+      entry("e1", ["shared", "lock"], new Date("2026-01-01T00:00:01Z")),
+      entry("e2", ["shared", "swing"], new Date("2026-01-01T00:00:02Z")),
+      entry("e3", ["shared", "mid"], new Date("2026-01-01T00:00:03Z")),
+      entry("e4", ["shared", "swingB"], new Date("2026-01-01T00:00:04Z")),
+      entry("e5", ["bench"], new Date("2026-01-01T00:00:05Z")),
+      entry("e6", ["bench"], new Date("2026-01-01T00:00:06Z")),
+      entry("e7", ["bench"], new Date("2026-01-01T00:00:07Z")),
+      entry("e8", ["bench"], new Date("2026-01-01T00:00:08Z")),
+      entry("e9", ["bench"], new Date("2026-01-01T00:00:09Z")),
+      entry("e10", ["bench"], new Date("2026-01-01T00:00:10Z")),
     ];
 
+    // e1=120, e2=100, e3=99, e4=98; bench=50
     const report = analyzeDecisiveCandidates({
       contestId: "c1",
       eventId: "e1",
       currentPeriod: 4,
       entries,
       participants: [
-        participant("shared", "Shared", 0),
-        participant("lock", "Lock", 0),
-        participant("swing", "Swing", 2), // maxRemaining 8
-        participant("bench", "Bench", 0),
+        participant("shared", "Shared", 70, 0),
+        participant("lock", "Lock", 50, 0),
+        participant("swing", "Swing", 30, 2),
+        participant("mid", "Mid", 29, 0),
+        participant("swingB", "SwingB", 28, 2),
+        participant("bench", "Bench", 50, 0),
       ],
       options: { maxPtsPerHole: 4, slackOverride: 5 },
     });
 
     expect(report.paidCount).toBe(3);
-    // With slack 5 and cutScore=99 (3rd), threshold=94 → e1–e4 in contention (not bench).
     expect(report.contention.entryIds).toEqual(
       expect.arrayContaining(["e1", "e2", "e3", "e4"]),
     );
     expect(report.contention.entryIds).not.toContain("e5");
 
-    const swing = report.decisive.find((d) => d.eventParticipantId === "swing");
-    expect(swing).toBeDefined();
-    expect(swing!.flipShare).toBeGreaterThan(0);
-    // Winner e1 should stay; paid set can still change as e4 catches e3.
-    expect(swing!.minSwingToFlip).not.toBeNull();
+    const swingB = report.decisive.find((d) => d.eventParticipantId === "swingB");
+    expect(swingB).toBeDefined();
+    expect(swingB!.flipShare).toBeGreaterThan(0);
+    // Winner e1 stays; paid set changes when e4 catches e3 (98+2=100).
+    expect(swingB!.minSwingToFlip).toBe(2);
   });
 
   it("derives contention slack from remaining capacity in the top band", () => {
@@ -173,16 +176,15 @@ describe("analyzeDecisiveCandidates", () => {
       contestId: "c1",
       eventId: "e1",
       currentPeriod: 4,
-      // <10 entries → paidCount 1; cut = leader 100
       entries: [
-        entry("a", 100, ["hot"]),
-        entry("b", 92, ["cold"]),
-        entry("c", 80, ["gone"]),
+        entry("a", ["hot"]),
+        entry("b", ["cold"]),
+        entry("c", ["gone"]),
       ],
       participants: [
-        participant("hot", "Hot", 2), // maxRemaining 8 → slack max(8,8)=8 → threshold 92
-        participant("cold", "Cold", 0),
-        participant("gone", "Gone", 0),
+        participant("hot", "Hot", 100, 2),
+        participant("cold", "Cold", 92, 0),
+        participant("gone", "Gone", 80, 0),
       ],
       options: { maxPtsPerHole: 4 },
     });
@@ -200,14 +202,14 @@ describe("analyzeDecisiveCandidates", () => {
       eventId: "e1",
       currentPeriod: 4,
       entries: [
-        entry("a", 119, ["p1"]),
-        entry("b", 114, ["p2"]),
-        entry("c", 100, ["p3"]),
+        entry("a", ["p1"]),
+        entry("b", ["p2"]),
+        entry("c", ["p3"]),
       ],
       participants: [
-        participant("p1", "P1", 0),
-        participant("p2", "P2", 0),
-        participant("p3", "P3", 0),
+        participant("p1", "P1", 119, 0),
+        participant("p2", "P2", 114, 0),
+        participant("p3", "P3", 100, 0),
       ],
     });
 
@@ -216,5 +218,53 @@ describe("analyzeDecisiveCandidates", () => {
       expect.arrayContaining(["a", "b"]),
     );
     expect(report.contention.entryIds).not.toContain("c");
+  });
+
+  it("re-scores remaining sweeps through popularity adjustment", () => {
+    // Large raw gap: weight 0 cannot flip within remaining holes.
+    // Low-owned closer gets a multiplicative bonus so fewer points are needed.
+    const baseInput = {
+      contestId: "c1",
+      eventId: "e1",
+      currentPeriod: 4,
+      entries: [
+        entry("leader", ["chalk"]),
+        entry("chaser", ["closer"]),
+      ],
+      participants: [
+        participant("chalk", "Chalk", 150, 0),
+        participant("closer", "Closer", 95, 3), // maxRemaining 12
+      ],
+      pickRates: { chalk: 0.8, closer: 0.2 },
+      options: { maxPtsPerHole: 4, slackOverride: 60 },
+    };
+
+    const raw = analyzeDecisiveCandidates({
+      ...baseInput,
+      popularity: { weight: 0 },
+    });
+    const weighted = analyzeDecisiveCandidates({
+      ...baseInput,
+      popularity: {
+        weight: 0.5,
+        strength: 1,
+        cap: 2,
+        mode: "multiplicative",
+      },
+    });
+
+    const rawCloser = raw.decisive.find((d) => d.eventParticipantId === "closer");
+    const weightedCloser = weighted.decisive.find(
+      (d) => d.eventParticipantId === "closer",
+    );
+
+    expect(rawCloser).toBeDefined();
+    expect(weightedCloser).toBeDefined();
+    expect(rawCloser!.minSwingToFlip).toBeNull();
+    expect(weightedCloser!.minSwingToFlip).toBe(6);
+    expect(weighted.popularityWeight).toBe(0.5);
+    expect(weighted.notes.some((n) => n.includes("popularity.weight=0.5"))).toBe(
+      true,
+    );
   });
 });

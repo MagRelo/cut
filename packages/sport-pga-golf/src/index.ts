@@ -28,6 +28,7 @@ export {
 } from "./remainingCapacity.js";
 export {
   analyzeDecisiveCandidates,
+  scoreLineupFromTotals,
   type AnalyzeDecisiveCandidatesInput,
   type AnalyzeDecisiveCandidatesOptions,
   type ConsensusCandidateRow,
