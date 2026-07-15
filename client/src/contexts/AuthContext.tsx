@@ -1,19 +1,38 @@
-import { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract } from "wagmi";
 import { usePrivy, useLogin } from "@privy-io/react-auth";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useQueryClient } from "@tanstack/react-query";
 import { erc20Abi } from "viem";
 import { usePostHog } from "posthog-js/react";
-import {
-  captureAccountFirstFunded,
-  captureAuthSessionSynced,
-} from "../lib/analytics/posthog";
+import { captureAccountFirstFunded, captureAuthSessionSynced } from "../lib/analytics/posthog";
 import { ApiError, handleApiResponse, isApiError } from "../utils/apiError";
 import { getContractAddress } from "../utils/blockchainUtils";
 import { registerAuthTokenHandlers } from "../lib/authToken";
 import { getTargetChainIdFromEnv } from "../config/targetChain";
 import { clearStoredReferrerAddress, getStoredReferrerAddress } from "../lib/referralCapture";
+
+/** Membership + nested group as returned by GET /auth/me. */
+export type AuthUserGroupMembership = {
+  id: string;
+  userId: string;
+  userGroupId: string;
+  role: string;
+  joinedAt: string;
+  userGroup: {
+    id: string;
+    name: string;
+    description?: string | null;
+  };
+};
 
 export interface AuthUser {
   id: string;
@@ -23,7 +42,7 @@ export interface AuthUser {
   phone: string | null;
   email: string | null;
   isVerified: boolean;
-  userGroups: Array<unknown>;
+  userGroups: AuthUserGroupMembership[];
   chainId: number;
   walletAddress: string;
   pendingTokenMint?: boolean;
@@ -44,6 +63,8 @@ interface AuthContextData {
   clearLoginError: () => void;
   updateUser: (updatedUser: { name?: string }) => Promise<void>;
   updateUserSettings: (settings: Record<string, unknown>) => Promise<void>;
+  /** Re-fetch GET /auth/me (e.g. after join/leave league so `userGroups` stays current). */
+  refreshUser: () => Promise<void>;
   logout: () => Promise<void>;
   isAdmin: () => boolean;
   getCurrentUser: () => AuthUser | null;
@@ -287,6 +308,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [request],
   );
 
+  const refreshUser = useCallback(async () => {
+    const targetChainId = getTargetChainIdFromEnv();
+    const response = await request<AuthUser>("GET", "/auth/me", undefined, targetChainId);
+    setUser(response);
+  }, [request]);
+
   const getCurrentUser = useCallback((): AuthUser | null => {
     return user;
   }, [user]);
@@ -403,8 +430,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setServerSessionError(null);
           clearStoredReferrerAddress();
           setUser(response);
-          const userIdentityChanged =
-            previousUserId !== null && previousUserId !== response.id;
+          const userIdentityChanged = previousUserId !== null && previousUserId !== response.id;
           if (isInitialUserLoad || userIdentityChanged) {
             queryClient.invalidateQueries({ queryKey: ["lineups"] });
             queryClient.invalidateQueries({ queryKey: ["user"] });
@@ -485,6 +511,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearLoginError,
       updateUser,
       updateUserSettings,
+      refreshUser,
       logout,
       isAdmin,
       getCurrentUser,
@@ -506,6 +533,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearLoginError,
       updateUser,
       updateUserSettings,
+      refreshUser,
       logout,
       isAdmin,
       getCurrentUser,
@@ -545,6 +573,7 @@ const storybookAuthContextValue: AuthContextData = {
   clearLoginError: () => undefined,
   updateUser: async () => undefined,
   updateUserSettings: async () => undefined,
+  refreshUser: async () => undefined,
   logout: async () => undefined,
   isAdmin: () => false,
   getCurrentUser: () => storybookAuthUser,
