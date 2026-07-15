@@ -35,7 +35,7 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 | `id` | `pga-golf` |
 | `slug` | URL segment |
 | `rosterRules` | `{ slotCount: 4, minPicks: 0, maxPicks: 4, allowDuplicates: false }` |
-| `scoringRules` | `{ aggregation: "sum", direction: "higher_wins" }` |
+| `scoringRules` | `{ aggregation: "sum", direction: "higher_wins", popularity?: PopularityRules }` — see [consensus-axis.md](../../docs/platform/consensus-axis.md) |
 
 ### CompetitionEvent
 | Field | Purpose |

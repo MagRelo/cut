@@ -101,9 +101,9 @@ model Sport {
 
 | Model | Purpose |
 |-------|---------|
-| `Contest` | Competition instance. `eventId` (determines sport), optional `userGroupId` (league scope). On-chain `address`, `settings`, `results`. |
-| `ContestLineup` | A lineup entered into a contest. `score`, `position`, `entryId` (on-chain). |
-| `ContestLineupTimeline` | Score/position snapshots over time. |
+| `Contest` | Competition instance. `eventId` (determines sport), optional `userGroupId` (league scope). On-chain `address`, `settings`, `results`. After lock: `pickPopularity`, `pickPopularityLockedAt` (see [consensus-axis.md](consensus-axis.md)). |
+| `ContestLineup` | A lineup entered into a contest. `score` (final ranked total), `baseScore`, `popularityBonus`, `position`, `entryId` (on-chain). |
+| `ContestLineupTimeline` | Score/position snapshots over time (`score` = final total). |
 | `UserGroup` | League. **No sport field.** Hosts contests across any enabled sport. |
 | `UserGroupMember` | League membership (`ADMIN` or `MEMBER`). |
 
@@ -184,7 +184,9 @@ Sport implementations live in dedicated packages (e.g. `packages/sport-pga-golf`
 
 ### Scoring signals
 
-Today, lineup scores are the sum of external per-pick totals (`EventParticipant.total`). After a contest leaves `OPEN`, [`updateContestLineupsForEvent`](../../server/src/services/updateContestLineups.ts) may apply an optional **popularity adjustment** from `ScoringRules.popularity` (contest pick rates) — see [consensus-axis.md](consensus-axis.md). Sports keep `aggregateLineupScore` as a raw sum; the platform writes `Contest.pickPopularity` and `ContestLineup.baseScore` / `popularityBonus` / `score`. All sports currently seed `weight: 0`. It does not affect the candidate picker. Sports that score from pick behavior (e.g. predict-the-consensus) bake that signal into pick scores and leave `popularity.weight` at `0`.
+### Scoring signals
+
+Lineup scores start from external per-pick totals (`EventParticipant.total`). After a contest leaves `OPEN`, [`updateContestLineupsForEvent`](../../server/src/services/updateContestLineups.ts) applies an optional **popularity adjustment** from `ScoringRules.popularity` (contest pick rates) — see [consensus-axis.md](consensus-axis.md). Sport plugins expose raw pick totals via `aggregateLineupScore`; the platform writes `Contest.pickPopularity` and `ContestLineup.baseScore` / `popularityBonus` / `score`. Registered sports use `popularity.weight: 0` (raw sum only). The dial does not affect the candidate picker. Sports that score from pick behavior (e.g. predict-the-consensus) bake that signal into pick scores and leave `popularity.weight` at `0`.
 
 ---
 
@@ -248,8 +250,8 @@ Core platform endpoints:
 **Platform components** (sport-agnostic shell in `client/src/components/platform/`):
 
 - `CandidatePicker` — search and sort over `Candidate[]`
-- `SportLineupPickRow` — single pick row in roster editor
-- `SportParticipantRow` / `SportParticipantDetailModal` — display lists and scorecard modal
+- `SportLineupPickRow` — contest roster pick row (optional post-lock popularity bonus; see [consensus-axis.md](consensus-axis.md))
+- `SportParticipantRow` / `SportParticipantDetailModal` — field/event display lists and scorecard modal (no contest popularity)
 - `SportEventHeader` — leaderboard event hero → plugin `EventSummary`
 - `SportPredictionField` — delegates to plugin prediction input
 
@@ -360,5 +362,5 @@ client/
 | `UserGroup` / leagues | Cross-sport by design; sport flows through `Contest.eventId` |
 | Wallet / Privy / on-chain payments | One wallet per user across all sports |
 | Referral network | One graph per user; fees apply to any contest |
-| `ContestLineup` / timeline | Stores aggregated score and position only |
+| `ContestLineup` / timeline | Stores aggregated score (`finalScore`), optional `baseScore` / `popularityBonus`, and position; popularity map is contest-scoped |
 | Tie-breaker comparator | Same comparison structure; prediction field is the sport-specific part |

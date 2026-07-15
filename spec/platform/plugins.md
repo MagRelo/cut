@@ -67,13 +67,15 @@ Handlers inject all database and external API access so the package stays testab
 ```typescript
 interface SportUIPlugin {
   CandidateRow: React.FC<CandidateRowProps>;       // picker (scheduled card; live delegates to ParticipantRow)
-  ParticipantRow: React.FC<ParticipantRowProps>;   // display lists (leaderboard, lineup slots, contest entries)
+  ParticipantRow: React.FC<ParticipantRowProps>;   // field / event lists (leaderboard, picker live row) — no contest popularity
   ParticipantDetail: React.FC<ParticipantDetailProps>; // detail modal (scorecard header + round tabs + hole table)
   PredictionField?: React.FC<PredictionFieldProps>;
   EventSummary?: React.FC<{ event: CompetitionEventShell }>;
   candidateSortConfig: CandidateSortConfig;        // per-context sort key order for platform lists
 }
 ```
+
+Contest lineup slots use platform `SportLineupPickRow` (wraps `ParticipantRow` plus optional post-lock popularity bonus). See [consensus-axis.md](../../docs/platform/consensus-axis.md).
 
 **Candidate sort contexts** (`@cut/sport-sdk` `sortCandidates`):
 

@@ -2,8 +2,6 @@
 
 How contest pick rates modulate per-pick scores after lineups lock. **Popularity adjustment** is a scoring primitive — configured on `ScoringRules`, applied by the platform during lineup aggregation with contest context. It does **not** affect lineup building or the candidate picker.
 
-**Status:** Implemented. All sports seed `popularity.weight: 0` (no adjustment until weight is raised).
-
 ---
 
 ## Pipeline
@@ -21,7 +19,7 @@ flowchart LR
 |-------|----------|
 | Lineup score | Sum of pick totals; after lock, optional popularity bonus when `weight ≠ 0` |
 | `ScoringRules` | `{ aggregation, direction, popularity? }` |
-| Popularity | Platform applies in [`updateContestLineups.ts`](../../server/src/services/updateContestLineups.ts) using `@cut/sport-sdk` helpers. Sports still return raw `EventParticipant.total` sums via `aggregateLineupScore`. |
+| Popularity | Platform applies in [`updateContestLineups.ts`](../../server/src/services/updateContestLineups.ts) using `@cut/sport-sdk` helpers (`computePickRates`, `adjustPickScore`, `buildPickPopularityMap`, `sumLineupScores`). Sport plugins expose raw pick totals via `aggregateLineupScore` / per-pick `EventParticipant.total`. |
 
 ---
 
@@ -32,7 +30,7 @@ Popularity is **scoring-only**. It runs after the contest locks — not while us
 | Phase | Contest status | Popularity |
 |-------|----------------|------------|
 | Entry open | `OPEN` | Off — users pick from the field with no ownership or popularity signal |
-| Locked / live | `ACTIVE` and later | On — pick rates computed from locked lineups; cron adjusts scores when `weight ≠ 0` |
+| Locked / live | `ACTIVE` and later | Pick rates from locked lineups; adjustment applies when `weight ≠ 0` |
 
 Pick rates `o(i)` are an internal input to the scoring formula. They are **not** shown in the candidate picker or field list during entry.
 
@@ -47,17 +45,15 @@ Pick rates `o(i)` are an internal input to the scoring formula. They are **not**
 | **Pick rate** `o(i)` | Fraction of locked contest lineups that include participant *i* |
 | **Popularity weight** | Dial on `ScoringRules.popularity`; `0` = disabled, non-zero = apply per-pick adjustment |
 
-### Where it lives
-
-Popularity adjustment belongs in the basic sport scoring contract — same layer as `aggregation` and `direction`:
+### Configuration sources
 
 ```
 Sport.scoringRules.popularity   → default for all events of that sport
-Event.metadata.popularity       → optional override (not wired yet)
-Contest settings                → optional override (not wired yet)
 ```
 
-A sport that does not use popularity adjustment sets `weight: 0` (or omits the field). A sport that scores entirely from contest pick behavior implements that inside its own `aggregateLineupScore` and also leaves `weight: 0` — the crowd signal is already in the pick scores; a second popularity pass would double-count.
+Optional event- or contest-level overrides are out of scope for the current contract; the dial is sport-scoped via `Sport.scoringRules`.
+
+A sport that does not use popularity adjustment sets `weight: 0` (or omits the field). A sport that scores entirely from contest pick behavior produces those pick scores inside its plugin and also leaves `weight: 0` — the crowd signal is already in the pick scores; a second popularity pass would double-count.
 
 ### Sport package contract
 
@@ -84,13 +80,11 @@ interface ScoringRules {
 }
 ```
 
-`SportModule.aggregateLineupScore` remains a raw sum of pick totals. The platform orchestrator loads per-pick `e_i`, applies shared popularity math from `@cut/sport-sdk` (`computePickRates`, `adjustPickScore`, `buildPickPopularityMap`, `sumLineupScores`), and writes contest/lineup fields.
+`SportModule.aggregateLineupScore` returns the sum of raw pick totals. The platform orchestrator loads per-pick `e_i`, applies shared popularity math when `weight ≠ 0`, and writes contest/lineup fields.
 
 Adjustment is always **per-pick** — each pick is adjusted individually, then summed. No roster-level bonus scope.
 
 ### Default config per sport
-
-All sports ship with weight **0** until deliberately enabled. Defaults for the other dials when present:
 
 | Sport | `weight` | `strength` | `cap` | `mode` | `minEntryFloor` |
 |-------|----------|------------|-------|--------|-----------------|
@@ -98,7 +92,7 @@ All sports ship with weight **0** until deliberately enabled. Defaults for the o
 | **F1** | `0` | `1` | `2` | `multiplicative` | `5` |
 | **Commodities** | `0` | `1` | `2` | `multiplicative` | `5` |
 
-Raise `weight` (e.g. PGA → `0.5`) via `Sport.scoringRules` seed/DB to enable the primitive for that sport.
+With `weight: 0`, lineup totals equal the sum of external pick scores (no popularity bonus). Non-zero `weight` enables the adjustment for that sport via `Sport.scoringRules`.
 
 Omit `popularity` or set `weight: 0` for sports that do not use the primitive.
 
@@ -116,7 +110,7 @@ Returns no adjustment when `total_lineups < minEntryFloor` (default **5**).
 
 ### Live scoring
 
-When the contest activates, lineups lock and pick rates are computed once from the contest field. During play, the cron pipeline recomputes lineup scores on the regular schedule (every 5 minutes) — external pick totals (`e_i`) update each pass; `o(i)` stays fixed from the locked field.
+When the contest activates, lineups lock and pick rates are snapshotted once (`Contest.pickPopularityLockedAt`). During play, the cron pipeline recomputes lineup scores on the regular schedule (every 5 minutes) — external pick totals (`e_i`) update each pass; `o(i)` stays fixed from the locked field.
 
 ---
 
@@ -145,7 +139,7 @@ finalScore = Σ adjusted_i
 
 `bonus_i` is always ≥ 0. The worst case on the dial (100% owned when weight > 0, or 0% owned when weight < 0) gets exactly zero bonus. Negative pick totals pass through unchanged.
 
-**Display (post-lock only):** show `baseScore` + `popularityBonus` on leaderboard and lineup views. Never show negative adjustments to players.
+**Display (post-lock only):** show `baseScore` + `popularityBonus` on leaderboard and lineup views when a bonus is present. Never show negative adjustments to players.
 
 ---
 
@@ -153,7 +147,7 @@ finalScore = Σ adjusted_i
 
 | Sport | Pick scores (`e_i`) from | `popularity.weight` | Notes |
 |-------|--------------------------|---------------------|-------|
-| **PGA golf** | Stableford via external feed | `0` (raise to enable) | Bonus for contrarian picks on top of Stableford when weight > 0 |
+| **PGA golf** | Stableford via external feed | `0` | External sum; non-zero weight would add contrarian bonus on Stableford |
 | **F1** | OpenF1 points | `0` | Pure external sum |
 | **Commodities** | Market returns | `0` | Pure external sum |
 | **Predict-the-consensus** | Pick-frequency points at lock | `0` | Crowd signal is already `e_i`; see [shape-ideas.md](../competitions/shape-ideas.md) |
@@ -162,27 +156,25 @@ finalScore = Σ adjusted_i
 
 ## Score decomposition
 
-When popularity adjustment is active (contest locked), lineup scoring exposes:
+When a contest is locked for scoring, lineup scoring exposes:
 
 | Field | Meaning |
 |-------|---------|
 | `baseScore` | Sum of unadjusted pick totals |
 | `popularityBonus` | `finalScore - baseScore` (popularity bonus aggregate) |
-| `finalScore` | Ranked total |
+| `finalScore` (`score`) | Ranked total |
 
-Per-pick `bonus` and `adjustedScore` are available post-lock via `Contest.pickPopularity` — not during picking.
+Per-pick `bonus` and `adjustedScore` are available post-lock via `Contest.pickPopularity` — not during picking. When `weight = 0`, `baseScore = score` and `popularityBonus = 0`.
 
 ### Storage
-
-`EventParticipant.total` holds the external pick score `e_i` (event-scoped). Contest-scoped popularity and lineup aggregates:
 
 Per-pick popularity is **contest-scoped**, not event-scoped — stored on `Contest.pickPopularity`, not `EventParticipant`.
 
 | Layer | Model | Stores |
 |-------|-------|--------|
-| **External pick score** | `EventParticipant` | `total` (`e_i`) — unchanged |
+| **External pick score** | `EventParticipant` | `total` (`e_i`) |
 | **Player popularity** | `Contest.pickPopularity` | Per-player `pickRate`, `bonus`, `adjustedScore` for this contest |
-| **Lineup rollup** | `ContestLineup` | `baseScore`, `popularityBonus`, `score` only |
+| **Lineup rollup** | `ContestLineup` | `baseScore`, `popularityBonus`, `score` |
 
 ```mermaid
 flowchart TB
@@ -197,7 +189,7 @@ flowchart TB
   end
 ```
 
-#### `EventParticipant` (unchanged)
+#### `EventParticipant`
 
 `total` only. No popularity fields.
 
@@ -240,7 +232,7 @@ model Contest {
 | `bonus` | Popularity bonus for this pick at write time |
 | `adjustedScore` | Scored value for this pick in this contest |
 
-Include entries for players that appear in at least one locked lineup. When `popularity.weight = 0`, omit `pickPopularity` or set every `bonus` to `0` and `adjustedScore` to `e_i`.
+Include entries for players that appear in at least one locked lineup. When `popularity.weight = 0`, omit `pickPopularity` (or leave bonuses at `0` / `adjustedScore = e_i`).
 
 #### `ContestLineup` — aggregates only
 
@@ -250,7 +242,7 @@ Include entries for players that appear in at least one locked lineup. When `pop
 | `baseScore` | `Int?` | `Σ EventParticipant.total` for this lineup's picks |
 | `popularityBonus` | `Int?` | `score - baseScore` |
 
-No per-lineup breakdown JSON. Lineup totals are the sum of each pick's `pickPopularity[id].adjustedScore` (and `baseScore` from `EventParticipant.total`).
+No per-lineup breakdown JSON. Lineup totals are the sum of each pick's `pickPopularity[id].adjustedScore` when a map is present (otherwise the sum of `EventParticipant.total`).
 
 When `popularity.weight = 0`: omit `pickPopularity`; `ContestLineup.baseScore = score`, `popularityBonus = 0`.
 
@@ -261,19 +253,19 @@ When `popularity.weight = 0`: omit `pickPopularity`; `ContestLineup.baseScore = 
 | **Lineup card slots** | `LineupPick` → `Contest.pickPopularity[eventParticipantId]` for `bonus`, `adjustedScore`; `EventParticipant.total` for base |
 | **Leaderboard** | `ContestLineup` for `baseScore` + `popularityBonus` + `score` |
 
-#### Implementation note: tournament vs contest display
+#### Tournament vs contest display
 
-Popularity is a **contest scoring** layer. Tournament views stay on raw `EventParticipant.total`; contest views show the adjustment after lock.
+Popularity is a **contest scoring** layer. Tournament views stay on raw `EventParticipant.total`; contest views may show the adjustment after lock.
 
 | Surface | Popularity | What to show |
 |---------|------------|--------------|
-| **Player detail** (`SportParticipantDetailModal`, sport `ParticipantDetail`) | No | Unadjusted tournament performance — Stableford/points, scorecard, leaderboard position. Same data as today. |
-| **Field leaderboard** (`EventLeaderboardPanel`) | No | Event field order and raw totals — not contest-adjusted. |
-| **Candidate picker** (`CandidatePicker`, `CandidateRow`) | No | Raw field data during entry; no ownership or bonus. |
-| **Lineup card slots** (`LineupContestCard` → `SportLineupPickRow`) | Yes, post-lock | Base (`EventParticipant.total`) + popularity bonus from `Contest.pickPopularity[id]`; or adjusted total. |
-| **Contest leaderboard** | Yes, post-lock | `ContestLineup.baseScore`, `popularityBonus`, `score`. |
+| **Player detail** (`SportParticipantDetailModal`, sport `ParticipantDetail`) | No | Unadjusted tournament performance — Stableford/points, scorecard, leaderboard position |
+| **Field leaderboard** (`EventLeaderboardPanel`) | No | Event field order and raw totals — not contest-adjusted |
+| **Candidate picker** (`CandidatePicker`, `CandidateRow`) | No | Raw field data during entry; no ownership or bonus |
+| **Lineup card slots** (`LineupContestCard` → `SportLineupPickRow`) | Yes, post-lock | Base (`EventParticipant.total`) + popularity bonus from `Contest.pickPopularity[id]` when present |
+| **Contest leaderboard** | Yes, post-lock | `ContestLineup.baseScore`, `popularityBonus`, `score` (decomposition when `popularityBonus > 0`) |
 
-While contest is `OPEN`, lineup card slots show raw `EventParticipant.total` only — same as picking phase.
+While contest is `OPEN`, lineup card slots show raw `EventParticipant.total` only — same as the picking phase.
 
 Use a **lineup-slot row variant** for adjusted display on the contest card. Do not add popularity to shared `ParticipantRow` used by the field list and picker — those surfaces remain event-scoped.
 
@@ -283,14 +275,14 @@ Player detail answers “how is this golfer doing in the tournament?” Lineup c
 
 Per contest:
 
-1. If contest not yet locked for scoring (`OPEN`), score lineups as raw `Σ EventParticipant.total` only.
-2. On lock: compute `o(i)` from locked lineups → write `Contest.pickPopularity` and `pickPopularityLockedAt`.
+1. If contest not yet locked for scoring (`OPEN`), score lineups as raw `Σ EventParticipant.total` only; write `baseScore = score`, `popularityBonus = 0`.
+2. On lock: compute `o(i)` from locked lineups → write `Contest.pickPopularity` (when `weight ≠ 0`) and `pickPopularityLockedAt`.
 3. Each cron pass: refresh `bonus` and `adjustedScore` in `pickPopularity` as `e_i` updates; `pickRate` unchanged.
 4. For each `ContestLineup`: sum pick values → write `baseScore`, `score`, `popularityBonus`.
 
 **Timeline** (`ContestLineupTimeline`): `score` only. Per-pick detail on `Contest.pickPopularity`; lineup decomposition on `ContestLineup`.
 
-Ranking and tie-breaking are unchanged — see [lineup-tie-breaker.md](lineup-tie-breaker.md).
+Ranking and tie-breaking use `ContestLineup.score` (`finalScore`) — see [lineup-tie-breaker.md](lineup-tie-breaker.md).
 
 ---
 
