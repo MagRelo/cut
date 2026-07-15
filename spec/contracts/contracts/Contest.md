@@ -17,7 +17,7 @@ The Contest contract is the core smart contract that implements a combined conte
 ## Key State Variables
 
 ### Immutable Parameters
-- `paymentToken`: ERC20 token used for deposits (PlatformToken/CUT)
+- `paymentToken`: ERC20 token used for deposits (USDC on Base; MockUSDC on Sepolia)
 - `oracle`: Address that controls contest state transitions
 - `primaryDepositAmount`: Fixed deposit amount for primary participants
 - `oracleFeeBps`: Oracle fee in basis points (e.g., 500 = 5%)
@@ -148,18 +148,13 @@ The Contest contract is the core smart contract that implements a combined conte
     - Transfers share to caller
   - Otherwise: returns 0
 
-#### `claimOracleFee()`
-- **Purpose**: Claim accumulated oracle fees
-- **Access**: Oracle only
-- **Effects**: Transfers `accumulatedOracleFee` to oracle
-
 ## Dependencies
 
 - **OpenZeppelin Contracts**:
   - `ERC1155`: For secondary position tokens
   - `ReentrancyGuard`: Security protection
   - `SafeERC20`: Safe token transfers
-- **PlatformToken**: Payment token for deposits
+- **Payment token**: ERC20 used for deposits (USDC / xUSDC)
 - **Oracle**: Address that controls state transitions
 
 ## Economic Model

@@ -33,11 +33,6 @@ const NETWORKS = {
   },
 };
 
-const BASE_MAINNET_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const BASE_MAINNET_AAVE_V3_POOL = "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5";
-const BASE_SEPOLIA_USDC = "0xba50Cd2A20f6DA35D788639E581bca8d0B5d4D5f";
-const BASE_SEPOLIA_AAVE_POOL = "0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27";
-
 const colors = {
   reset: "\x1b[0m",
   bright: "\x1b[1m",
@@ -136,8 +131,6 @@ function loadContractAddresses(network) {
   const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 
   const addresses = {
-    PlatformToken: config.platformTokenAddress,
-    DepositManager: config.depositManagerAddress,
     ContestFactory: config.contestFactoryAddress,
     ReferralGraph: config.referralGraphAddress,
     RewardDistributor: config.rewardDistributorAddress,
@@ -169,8 +162,6 @@ function buildVerifyCommand(network, contractName, address, addresses) {
 
   const paths = {
     MockUSDC: "src/mocks/MockUSDC.sol",
-    PlatformToken: "lib/yieldToken/src/PlatformToken.sol",
-    DepositManager: "lib/yieldToken/src/DepositManager.sol",
     ContestFactory: "lib/contestCatalyst/src/ContestFactory.sol",
     ReferralGraph: "lib/referralTree/src/core/ReferralGraph.sol",
     RewardDistributor: "lib/referralTree/src/core/RewardDistributor.sol",
@@ -183,26 +174,7 @@ function buildVerifyCommand(network, contractName, address, addresses) {
   if (contractName === "MockUSDC") {
     return `forge verify-contract ${address} ${contractPath}:MockUSDC --verifier blockscout --verifier-url ${network.blockscoutApiUrl}`;
   }
-  if (contractName === "DepositManager") {
-    let usdc;
-    let pool;
-    if (network.name === "base_sepolia") {
-      usdc = addresses.MockUSDC;
-      pool = BASE_SEPOLIA_AAVE_POOL;
-    } else if (network.name === "base") {
-      usdc = BASE_MAINNET_USDC;
-      pool = BASE_MAINNET_AAVE_V3_POOL;
-    } else {
-      usdc = addresses.USDC;
-      pool = addresses.Pool;
-    }
-    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address)" ${usdc} ${addresses.PlatformToken} ${pool})`;
-  } else if (contractName === "PlatformToken") {
-    const isSepolia = network.name === "base_sepolia";
-    const name = isSepolia ? "xCUT" : "Cut Platform Token";
-    const sym = isSepolia ? "xCUT" : "CUT";
-    constructorArgs = `--constructor-args $(cast abi-encode "constructor(string,string)" "${name}" "${sym}")`;
-  } else if (contractName === "ReferralGraph" && deployer) {
+  if (contractName === "ReferralGraph" && deployer) {
     constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,bytes32)" ${deployer} ${referralOracle} ${referralGroupId})`;
   } else if (contractName === "RewardDistributor" && deployer && addresses.ReferralGraph) {
     constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address,bytes32)" ${deployer} ${addresses.ReferralGraph} ${referralOracle} ${referralGroupId})`;
@@ -218,14 +190,7 @@ function verifyContracts(network, addresses) {
   let successCount = 0;
   let failCount = 0;
 
-  const order = [
-    "MockUSDC",
-    "PlatformToken",
-    "DepositManager",
-    "ContestFactory",
-    "ReferralGraph",
-    "RewardDistributor",
-  ];
+  const order = ["MockUSDC", "ContestFactory", "ReferralGraph", "RewardDistributor"];
 
   for (const contractName of order) {
     const address = addresses[contractName];

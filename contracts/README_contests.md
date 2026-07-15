@@ -215,10 +215,6 @@ After settlement, users claim their payouts:
 claimPrimaryPayout(entryId)
   → pays primaryPrizePoolPayouts[entryId] + primaryPositionSubsidy[entryId]
 
-// Oracle claims accumulated fees
-claimOracleFee()
-  → pays accumulatedOracleFee
-
 // Secondary participants claim winnings (winner-take-all)
 claimSecondaryPayout(entryId)
   → if entryId == secondaryWinningEntry:
@@ -287,10 +283,6 @@ function settleContest(
 // Stores all payouts, first entry is secondary winner
 // payoutBps must sum to 10000 (100%)
 
-// Claim accumulated oracle fees
-function claimOracleFee() external
-// Callable by oracle, pays accumulatedOracleFee
-
 // Cancel contest (enables full refunds)
 function cancelContest() external onlyOracle
 ```
@@ -340,7 +332,6 @@ function closeContest() external onlyOracle
 │ SETTLED                                                          │
 │  • Primary: claimPrimaryPayout()                                │
 │  • Secondary: claimSecondaryPayout()                            │
-│  • Oracle: claimOracleFee()                                     │
 │  • Oracle: pushPrimaryPayouts() / pushSecondaryPayouts()        │
 │  • Oracle: closeContest() [after expiry]                        │
 └─────────────────┬───────────────────────────────────────────────┘
