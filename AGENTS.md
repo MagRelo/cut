@@ -52,6 +52,23 @@ so real inbox access is normally needed. For automated/dev login, use Privy **te
 Note: the Node SDK's `getTestAccessToken()` (headless token) is rejected here because the app has
 `allowed_domains` configured, so use the UI OTP flow above rather than the headless token.
 
+### Exercising the fantasy flow (events, leagues, contests, lineups)
+- Seeding an event: `pnpm --filter server run service:init-event pga-golf <pgaTourId>` pulls a real
+  PGA tournament into Postgres and marks it the active event (newest wins). It reads `PGA_API_KEY`
+  from the shell env (Prisma auto-loads `.env` for `DATABASE_URL`, but this script does **not**
+  load `.env` for other vars), so run it with the env exported.
+- Event editability gates contest creation: an event is only joinable when its status is
+  `SCHEDULED` (derived from the PGA `tournamentStatus`). Completed tournaments (e.g. `R2026033`,
+  PGA Championship) are `COMPLETE` and rejected with "This event has started or finished". Pick an
+  upcoming tournament id for a joinable event. Caveat: far-future events (e.g. TOUR Championship
+  `R2026060`) can be `SCHEDULED` but have an empty field (0 lineup candidates) until the field is
+  published, so the lineup builder needs an upcoming event that already has a field.
+- Creating a league is a pure DB write (no chain) and works with just a logged-in Privy user.
+- Creating a contest and entering lineups deploy/interact with on-chain contracts (ContestFactory
+  / ContestController) on Base Sepolia via the user's Privy smart wallet, so they need gas —
+  either a funded wallet or a Pimlico sponsorship policy (`VITE_PIMLICO_SPONSORSHIP_POLICY_ID`).
+  Without those, contest creation/entry fails at the wallet transaction step.
+
 ### Lint / test
 - Server tests: `pnpm --filter server run test:run` (vitest).
 - Client lint: `pnpm run client:lint` — currently reports **pre-existing** errors in the
