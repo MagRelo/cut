@@ -50,6 +50,7 @@ async function sendHeartbeatRequest(
       signal: AbortSignal.timeout(HEARTBEAT_TIMEOUT_MS),
     };
     if (options?.body !== undefined) {
+      init.headers = { "Content-Type": "text/plain; charset=utf-8" };
       init.body = options.body;
     }
     const response = await fetch(url, init);
