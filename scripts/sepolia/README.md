@@ -40,5 +40,5 @@ pnpm run push-secondary-payouts
 ## Notes
 
 - MockUSDC uses **6 decimals**.
-- Contests use MockUSDC as the payment token directly (no PlatformToken / DepositManager).
+- Contests use MockUSDC as the payment token directly.
 - Referral network fees are paid during `settleContest` (no separate oracle fee claim).

@@ -6,12 +6,12 @@
 graph TB
     subgraph blockchain[Base Blockchain]
         CF[ContestFactory]
-        C1[Contest 1]
-        C2[Contest 2]
-        CN[Contest N]
-        DM[DepositManager]
-        PT[PlatformToken]
-        CUSDC[Compound V3]
+        C1[ContestController 1]
+        C2[ContestController 2]
+        CN[ContestController N]
+        RG[ReferralGraph]
+        RC[RewardCalculator]
+        PT[PaymentToken USDC]
     end
     
     subgraph server[Server Layer]
@@ -31,53 +31,44 @@ graph TB
     C1 -->|uses| PT
     C2 -->|uses| PT
     CN -->|uses| PT
-    
-    DM -->|mints/burns| PT
-    DM -->|deposits| CUSDC
+    C1 -->|referral fees| RG
+    C1 -->|fee split| RC
     
     API -->|reads/writes| C1
     API -->|reads/writes| C2
     API -->|reads/writes| CN
-    API -->|reads| DM
+    API -->|register| RG
     
     UI -->|reads/writes via| WAGMI
     WAGMI -->|reads/writes| C1
     WAGMI -->|reads/writes| C2
     WAGMI -->|reads/writes| CN
-    WAGMI -->|reads/writes| DM
 ```
 
 ## Contract Relationships
 
-### ContestFactory → Contest
-- Factory creates Contest instances
-- Each Contest is independent
+### ContestFactory → ContestController
+- Factory creates ContestController instances
+- Each contest is independent
 - Factory tracks all created contests
 
-### Contest → PlatformToken
-- Contest uses PlatformToken for deposits
-- Participants deposit PlatformToken to join
-- Payouts are in PlatformToken
+### ContestController → PaymentToken
+- Contests escrow the payment token (canonical USDC on Base, MockUSDC on Sepolia)
+- Participants deposit payment token to join
+- Payouts are in the same payment token
 
-### DepositManager → PlatformToken
-- DepositManager mints PlatformToken on USDC deposit
-- DepositManager burns PlatformToken on USDC withdrawal
-- 1:1 ratio maintained
-
-### DepositManager → Compound V3
-- USDC deposited to Compound V3 for yield
-- Yield stays in contract (platform benefit)
-- Fallback to direct storage if Compound unavailable
+### ContestController → ReferralGraph / RewardCalculator
+- Settlement skims `referralNetworkBps` and splits via RewardCalculator over ReferralGraph ancestors
 
 ## Key Architectural Patterns
 
 ### Factory Pattern
-- **ContestFactory** creates Contest instances
+- **ContestFactory** creates ContestController instances
 - Centralized creation and tracking
 - Consistent initialization parameters
 
 ### State Machine Pattern
-- **Contest** uses enum-based state machine
+- **ContestController** uses enum-based state machine
 - States: OPEN, ACTIVE, LOCKED, SETTLED, CANCELLED, CLOSED
 - State transitions controlled by oracle/admin
 - Prevents invalid operations
@@ -86,44 +77,28 @@ graph TB
 - **Layer 0 (Oracle)**: External data provider
 - **Layer 1 (Primary)**: Competition participants
 - **Layer 2 (Secondary)**: Prediction market participants
-- Unified in single Contest contract
+- Unified in single ContestController contract
 
 ### Economic Model
-- **Oracle Fee**: 5% deducted at deposit time
-- **Position Bonus**: 5% to entry owners
-- **Cross-Subsidy**: Dynamic pool balancing (target 30% primary)
-- **LMSR Pricing**: Logarithmic market scoring rule for secondary market
+- **Referral network fee**: Skimmed from gross TVL at settlement
+- **Cross-Subsidy**: Dynamic pool balancing
+- **Bonding curve / LMSR-style pricing**: Secondary market shares
 
 ## Security Patterns
 
 ### Reentrancy Protection
-- All contracts use OpenZeppelin's ReentrancyGuard
+- Controllers use ReentrancyGuard
 - External calls protected
 - State changes before external calls
 
 ### Access Control
-- Oracle/admin functions protected
-- Ownable pattern for DepositManager
-- Immutable parameters prevent changes
+- Oracle/admin functions protected (OPS_ORACLE)
+- Immutable contest parameters after create
 
 ### Safe Token Handling
-- SafeERC20 for all token transfers
+- SafeERC20 / SafeTransferLib for token transfers
 - Proper approval patterns
 - Error handling for failed transfers
-
-## Data Structures
-
-### Contest State
-- `state`: Current contest state (enum)
-- `entries[]`: Array of entry IDs
-- `entryOwner`: Mapping of entry ID to owner
-- `primaryDeposits`: Mapping of entry ID to deposit amount
-- `secondaryPositions`: ERC1155 token balances for predictions
-
-### Economic State
-- `primaryPrizePool`: Primary participant prize pool
-- `secondaryLiquidityPerEntry`: Secondary market liquidity per entry
-- `referralNetworkBps`: Fee skimmed from gross TVL at settlement
 
 ## Key Functions
 
@@ -132,7 +107,7 @@ graph TB
 - `removePrimaryPosition(entryId)`: Leave contest (OPEN state only)
 - `activateContest()`: Start contest (oracle only)
 - `lockContest()`: Lock secondary positions (oracle only; required before settle)
-- `settleContest(winningEntries, payouts)`: Settle contest (oracle only; LOCKED)
+- `settleContest(winningEntries, payoutBps)`: Settle contest (oracle only; LOCKED)
 - `closeContest()`: Force distribution after expiry (oracle only)
 
 ### Secondary Market
@@ -142,30 +117,3 @@ graph TB
 ### Claims
 - `claimPrimaryPayout(entryId)`: Claim primary winnings
 - `claimSecondaryPayout(entryId)`: Claim secondary winnings
-
-## Design Decisions
-
-### Why Single Contract for Contest?
-- Unified state management
-- Atomic operations across layers
-- Simplified deployment
-- Gas efficiency for common operations
-
-### Why LMSR for Secondary Market?
-- Provides liquidity without market makers
-- Price discovery mechanism
-- Prevents manipulation
-- Well-established in prediction markets
-
-### Why Cross-Subsidy?
-- Maintains balance between primary and secondary markets
-- Prevents one side from dominating
-- Ensures both markets remain viable
-- Configurable target ratio (30% primary)
-
-### Why Compound V3 Integration?
-- Generates yield on idle USDC
-- Platform benefits from yield
-- Users get 1:1 conversion regardless
-- Fallback mechanism if Compound unavailable
-

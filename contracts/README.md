@@ -340,8 +340,6 @@ Works with any competition format you can imagine:
 - **Any Scoring System:** Your oracle reports results - contracts handle payouts
 - **Configurable Economics:** Set deposit amounts, fees, LMSR curves per contest
 - **Multiple Payouts:** Distribute prizes however you want (60/30/10, winner-take-all, top 10, etc.)
-- **Yield Generation:** Idle USDC earns Compound V3 yield for platform treasury
-- **Custom Branding:** Deploy tokens with your platform's name and symbol
 
 ### ⚡ Instant, Trustless Settlement
 

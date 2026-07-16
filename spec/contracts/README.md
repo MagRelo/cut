@@ -4,56 +4,48 @@
 
 The contracts layer implements the core blockchain functionality for Play The Cut:
 
-- **Contest Management**: Smart contracts for creating and managing fantasy golf contests
-- **Prediction Markets**: Secondary market for betting on contest outcomes using LMSR pricing
-- **Token Management**: Platform token (CUT) minting, burning, and USDC deposit management
+- **Contest Management**: Smart contracts for creating and managing contests
+- **Prediction Markets**: Secondary market for betting on contest outcomes
+- **Referral Network**: On-chain referral graph and fee split at settlement
 - **Economic Model**: Fee structures, cross-subsidies, and payout mechanisms
 
 ## Key Components
 
 ### Core Contracts
 
-1. **Contest.sol** - Main contest contract
+1. **ContestController** - Main contest contract (via ContestFactory)
 
    - Three-layer architecture (Oracle, Primary, Secondary)
    - State machine (OPEN → ACTIVE → LOCKED → SETTLED → CLOSED)
    - Primary participant deposits and prize distribution
-   - Secondary prediction market with LMSR pricing
+   - Secondary prediction market
    - Cross-subsidy mechanism for pool balancing
 
-2. **ContestFactory.sol** - Factory for creating Contest contracts
+2. **ContestFactory** - Factory for creating ContestController contracts
 
    - Centralized contest creation
-   - Automatic liquidity parameter calculation
    - Contest tracking and management
 
-3. **DepositManager.sol** - USDC deposit and CUT token management
+3. **ReferralGraph** - On-chain referral registration / ancestry
 
-   - 1:1 USDC to CUT token conversion
-   - Compound V3 integration for yield generation
-   - Token minting/burning on deposit/withdrawal
-
-4. **PlatformToken.sol** - ERC20 token for the platform (CUT)
-   - Standard ERC20 implementation
-   - Used as payment token for contests
+4. **RewardCalculator** - Stateless referral fee split math used at settlement
 
 ### Mock Contracts
 
-- **MockUSDC.sol** - Mock USDC for testing
-- **MockCompound.sol** - Mock Compound V3 for testing
+- **MockUSDC.sol** - Mock payment token for Sepolia testing
 
 ## Dependencies
 
-- **OpenZeppelin Contracts**: Security standards (ReentrancyGuard, SafeERC20, ERC1155, Ownable)
+- **solmate / solady**: Token helpers, ownership, transfer libs
 - **Base Blockchain**: Deployed on Base (mainnet) and Base Sepolia (testnet)
-- **Compound V3**: For yield generation on USDC deposits
+- **Payment token**: Canonical USDC on Base; MockUSDC on Sepolia
 
 ## Interfaces
 
 ### With Server
 
 - Server reads contract state via RPC calls
-- Server writes to contracts via oracle/admin functions:
+- Server writes to contracts via oracle/admin functions (OPS_ORACLE):
   - `activateContest()` - Start contest
   - `lockContest()` - Lock secondary positions
   - `settleContest()` - Settle and distribute prizes
@@ -78,20 +70,13 @@ The contracts layer implements the core blockchain functionality for Play The Cu
 - **Layer 1 (Primary)**: Competition participants with fixed deposits
 - **Layer 2 (Secondary)**: Prediction market on primary outcomes
 
-### Economic Model
-
-- **Oracle Fee**: 5% deducted from all deposits
-- **Position Bonus**: 5% of secondary deposits go to entry owners
-- **Cross-Subsidy**: Dynamic reallocation to maintain 30% primary target
-- **Winner-Take-All**: Secondary market uses winner-take-all payout
-
 ### State Machine
 
 Contests progress through states: OPEN → ACTIVE → LOCKED → SETTLED → CLOSED
 
 - **OPEN**: Registration, early positions, withdrawals allowed
-- **ACTIVE**: Competition running, positions locked, no withdrawals
-- **LOCKED**: Competition finishing, secondary positions closed
+- **ACTIVE**: Competition running, primary locked, secondary add only
+- **LOCKED**: Secondary closed; settle required here
 - **SETTLED**: Results in, users claim payouts
 - **CLOSED**: Force distributed, all funds moved
 
@@ -101,8 +86,6 @@ Contests progress through states: OPEN → ACTIVE → LOCKED → SETTLED → CLO
 - [Contract Data Flow](data-flow.md)
 - [Contest Contract](contracts/Contest.md)
 - [ContestFactory Contract](contracts/ContestFactory.md)
-- [DepositManager Contract](contracts/DepositManager.md)
-- [PlatformToken Contract](contracts/PlatformToken.md)
 
 ## Reference Documentation
 

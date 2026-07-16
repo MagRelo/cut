@@ -11,4 +11,4 @@ pnpm run verify:contracts:base
 
 Env vars live in **`contracts/.env`**. See [contracts/env.example](../../contracts/env.example) and the root [scripts/README.md](../README.md).
 
-Legacy yield-token helpers (`depositUSDC`, `checkPlatformTokenBalance`, `emergencyWithdrawAll`) lived under this folder and are archived at `scripts/archive/base/` — contests escrow **USDC** directly; there is no PlatformToken / DepositManager / Aave stack in the current deploy path.
+Contests escrow **USDC** directly.

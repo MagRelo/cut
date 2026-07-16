@@ -26,7 +26,7 @@ The ContestFactory contract provides a centralized way to create and manage Cont
 ### `createContest(...)`
 - **Purpose**: Create a new Contest contract
 - **Parameters**:
-  - `paymentToken`: ERC20 token address (typically PlatformToken)
+  - `paymentToken`: ERC20 token address (USDC on Base, MockUSDC on Sepolia)
   - `oracle`: Oracle address for state control
   - `contestantDepositAmount`: Required deposit for contestants
   - `oracleFee`: Oracle fee in basis points (max 1000 = 10%)
@@ -58,8 +58,8 @@ This creates:
 
 ## Dependencies
 
-- **Contest.sol**: Creates instances of this contract
-- **PlatformToken**: Typically used as payment token
+- **ContestController**: Creates instances of this contract
+- **Payment token**: ERC20 used for deposits and payouts
 
 ## Events
 

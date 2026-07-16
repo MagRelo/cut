@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Script.sol";
 import {ContestFactory} from "../lib/contestCatalyst/src/ContestFactory.sol";
 
-/// @notice Base Sepolia (84532): deploy only `ContestFactory` (no MockUSDC, PlatformToken, etc.).
+/// @notice Base Sepolia (84532): deploy only `ContestFactory`.
 contract DeploySepoliaContestFactory is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PK");

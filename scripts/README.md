@@ -35,8 +35,6 @@ Base Sepolia (chain 84532) helpers:
 
 Details: [Sepolia Scripts README](./sepolia/README.md).
 
-Yield-token helpers (`depositUSDC`, etc.) are archived under `scripts/archive/` — contests use the payment token directly.
-
 ## Prerequisites
 
 ### Environment
