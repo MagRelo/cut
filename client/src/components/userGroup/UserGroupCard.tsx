@@ -1,5 +1,23 @@
 import { Link } from "react-router-dom";
+import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { type UserGroupListItem } from "../../types/userGroup";
+import { cn } from "../../lib/tabStyles";
+
+const viewButtonClassName =
+  "inline-flex min-w-[88px] items-center justify-center gap-1 rounded border border-blue-500 bg-blue-500 px-4 py-1.5 font-display text-sm text-white transition-colors hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500";
+
+function LeagueListStat({ value, label }: { value: string | number; label: string }) {
+  return (
+    <div className="min-w-0 text-center">
+      <div className="font-display text-sm font-bold tabular-nums leading-none text-gray-900">
+        {value}
+      </div>
+      <div className="mt-1 text-[9px] font-semibold uppercase leading-none tracking-wide text-gray-500">
+        {label}
+      </div>
+    </div>
+  );
+}
 
 interface UserGroupCardProps {
   userGroup: UserGroupListItem;
@@ -10,14 +28,17 @@ export const UserGroupCard = ({ userGroup }: UserGroupCardProps) => {
     return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
   };
 
+  const leaguePath = `/leagues/${userGroup.id}`;
+
   return (
-    <Link
-      to={`/leagues/${userGroup.id}`}
-      className="group block w-full min-w-0 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+    <div
+      className={cn(
+        "group min-w-0 overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow] duration-200 hover:border-blue-200 hover:shadow-md",
+      )}
     >
-      <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow,background-color] duration-200 group-hover:border-blue-200 group-hover:bg-blue-50/40 group-hover:shadow-md">
+      <div className="px-3 pb-2 pt-4">
         <div className="flex min-w-0 items-center gap-2">
-          <h3 className="min-w-0 flex-1 truncate font-display text-xl font-bold leading-tight tracking-tight text-gray-900">
+          <h3 className="min-w-0 flex-1 truncate font-display text-2xl font-bold leading-tight tracking-tight text-gray-900">
             {userGroup.name}
           </h3>
           <span
@@ -35,21 +56,22 @@ export const UserGroupCard = ({ userGroup }: UserGroupCardProps) => {
             {userGroup.description}
           </p>
         ) : null}
-        <dl className="mt-2.5 grid grid-cols-2 gap-x-4 text-center">
-          <div>
-            <dt className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Members</dt>
-            <dd className="font-display text-sm font-semibold tabular-nums text-gray-900">
-              {userGroup.memberCount}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Contests</dt>
-            <dd className="font-display text-sm font-semibold tabular-nums text-gray-900">
-              {userGroup.contestCount}
-            </dd>
-          </div>
-        </dl>
       </div>
-    </Link>
+
+      <div className="flex items-center gap-3 px-3 py-2">
+        <div className="grid min-w-0 flex-1 grid-cols-2 gap-2">
+          <LeagueListStat value={userGroup.memberCount} label="Members" />
+          <LeagueListStat value={userGroup.contestCount} label="Contests" />
+        </div>
+        <Link
+          to={leaguePath}
+          aria-label={`View ${userGroup.name} league`}
+          className={viewButtonClassName}
+        >
+          View
+          <ChevronRightIcon className="h-4 w-4 shrink-0" aria-hidden />
+        </Link>
+      </div>
+    </div>
   );
 };

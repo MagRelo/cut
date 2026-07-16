@@ -12,7 +12,7 @@ interface UserGroupListProps {
 export const UserGroupList = ({ userGroups, loading, error }: UserGroupListProps) => {
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
+      <div className="flex items-center justify-center py-12">
         <LoadingSpinner />
       </div>
     );
@@ -24,15 +24,15 @@ export const UserGroupList = ({ userGroups, loading, error }: UserGroupListProps
 
   if (!userGroups || userGroups.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 text-lg mb-4">You're not a member of any leagues yet.</p>
-        <p className="text-gray-400 text-sm">Create a league or accept an invite to get started.</p>
+      <div className="py-12 text-center">
+        <p className="mb-4 text-lg text-gray-500">You're not a member of any leagues yet.</p>
+        <p className="text-sm text-gray-400">Create a league or accept an invite to get started.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="mb-4 space-y-3">
       {userGroups.map((userGroup) => (
         <UserGroupCard key={userGroup.id} userGroup={userGroup} />
       ))}
