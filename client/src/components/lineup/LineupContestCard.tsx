@@ -1,14 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
-import { SideBetPanel } from "./sideBet/SideBetPanel";
 import { PlusIcon, UserIcon } from "@heroicons/react/24/outline";
 import { CandidatePicker } from "../platform/CandidatePicker";
 import { SportLineupPickRow } from "../platform/SportLineupPickRow";
 import { SportParticipantRow } from "../platform/SportParticipantRow";
 import type { Candidate } from "@cut/sport-sdk";
 import type { ContestLineup } from "../../types/lineup";
-import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
 import type { EventStatus } from "../../types/event";
 import {
   candidatesByEventParticipantIdMap,
@@ -17,7 +14,6 @@ import {
   lineupPicksFromContestLineup,
 } from "../../lib/candidateUtils";
 import { useCandidateSort } from "../../hooks/useCandidateSort";
-import { participantLastName } from "../../lib/candidateSorting";
 import { lineupDisplayScore } from "../../lib/lineupScore";
 import {
   candidatesForPlatformLineup,
@@ -39,8 +35,6 @@ import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/lineupPredictio
 import { useSportRosterRules } from "../../hooks/useSportRosterRules";
 import { useSportPredictionRules } from "../../hooks/useSportPredictionRules";
 
-import { getLineupNumberLabel } from "../../lib/lineupDisplay";
-
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
 const isValidHexColor = (value: unknown): value is string => {
@@ -61,7 +55,6 @@ interface LineupContestCardProps {
 }
 
 const PLAYERS_TAB_PANEL_CLASS = "flow-root";
-const PARLAYS_TAB_PANEL_CLASS = "min-h-[18.5rem] py-3 flow-root";
 
 export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   lineup,
@@ -73,7 +66,6 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   eventMetadata,
   isEventEditable,
 }) => {
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
   const [sliderError, setSliderError] = useState<string | null>(null);
@@ -206,8 +198,6 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     ? slotEditor.slots.filter((candidate): candidate is Candidate => candidate !== null)
     : sort(initialCandidates, "lineupPicks", status);
 
-  const playerCount = canEditSlots ? slotEditor.filledCount : initialCandidates.length;
-
   const totalPoints = lineupDisplayScore(lineup);
 
   const userSettings = lineup.user?.settings;
@@ -217,11 +207,6 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       : undefined;
   const userColorHex = typeof maybeUserColor === "string" ? maybeUserColor : undefined;
   const resolvedBorderColor = isValidHexColor(userColorHex) ? userColorHex : DEFAULT_USER_COLOR;
-  const sideBetLineupNumberLabel = getLineupNumberLabel(lineupName);
-  const sideBetPlayerLastNames = displayCandidates
-    .map((candidate) => participantLastName(candidate))
-    .join(", ");
-  const sideBetUserLabel = lineup.user?.name || lineup.user?.email || "Unknown User";
 
   return (
     <div className="bg-white">
@@ -252,137 +237,101 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Players */}
       <div className="px-3 pb-3 pt-0">
-        <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-          <TabList className={tabListClassName("space-x-1")}>
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                tabButtonClassName(selected, { compact: true })
-              }
-            >
-              Players ({playerCount})
-            </Tab>
-            <Tab
-              className={({ selected }: { selected: boolean }) =>
-                tabButtonClassName(selected, { compact: true })
-              }
-            >
-              Parlays
-            </Tab>
-          </TabList>
-
-          <div>
-            {/* PLAYERS TAB */}
-            <TabPanel className={PLAYERS_TAB_PANEL_CLASS}>
-              <div className="py-3">
-                {canEditSlots
-                  ? slotEditor.slots.map((candidate, index) => (
-                      <div key={`slot-${index}`} className="p-3">
-                        {candidate ? (
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                              <SportLineupPickRow
-                                candidate={candidate}
-                                status={status}
-                                eventMetadata={eventMetadata}
-                                onClick={() => openDetailModal(candidate)}
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => slotEditor.openSlot(index)}
-                              disabled={slotActionsDisabled}
-                              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                              aria-label={`Edit pick in slot ${index + 1}`}
-                            >
-                              <svg
-                                className="h-4 w-4 shrink-0"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                aria-hidden="true"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                                />
-                              </svg>
-                              Edit
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between gap-3">
-                            <button
-                              type="button"
-                              onClick={() => slotEditor.openSlot(index)}
-                              disabled={slotActionsDisabled}
-                              className="flex min-w-0 flex-1 items-center gap-3 text-left font-display disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
-                                <UserIcon className="h-6 w-6 text-slate-300" aria-hidden />
-                              </div>
-                              <span className="truncate text-md font-semibold leading-tight text-slate-400">
-                                No selection
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => slotEditor.openSlot(index)}
-                              disabled={slotActionsDisabled}
-                              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                              aria-label={`Add pick to slot ${index + 1}`}
-                            >
-                              <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
-                              Add
-                            </button>
-                          </div>
-                        )}
+        <div className={PLAYERS_TAB_PANEL_CLASS}>
+          <div className="mb-4 mt-3 space-y-6">
+            {canEditSlots
+              ? slotEditor.slots.map((candidate, index) => (
+                  <div key={`slot-${index}`} className="px-3">
+                    {candidate ? (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <SportLineupPickRow
+                            candidate={candidate}
+                            status={status}
+                            eventMetadata={eventMetadata}
+                            onClick={() => openDetailModal(candidate)}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => slotEditor.openSlot(index)}
+                          disabled={slotActionsDisabled}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={`Edit pick in slot ${index + 1}`}
+                        >
+                          <svg
+                            className="h-4 w-4 shrink-0"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                            />
+                          </svg>
+                          Edit
+                        </button>
                       </div>
-                    ))
-                  : displayCandidates.map((candidate) => (
-                      <div key={candidate.participantId} className="p-3">
-                        <SportParticipantRow
-                          candidate={candidate}
-                          status={status}
-                          eventMetadata={eventMetadata}
-                          onClick={() => openDetailModal(candidate)}
-                        />
+                    ) : (
+                      <div className="flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => slotEditor.openSlot(index)}
+                          disabled={slotActionsDisabled}
+                          className="flex min-w-0 flex-1 items-center gap-3 text-left font-display disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
+                            <UserIcon className="h-6 w-6 text-slate-300" aria-hidden />
+                          </div>
+                          <span className="truncate text-md font-semibold leading-tight text-slate-400">
+                            No selection
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => slotEditor.openSlot(index)}
+                          disabled={slotActionsDisabled}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={`Add pick to slot ${index + 1}`}
+                        >
+                          <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
+                          Add
+                        </button>
                       </div>
-                    ))}
-              </div>
-              {canEditSlots ? (
-                <SportPredictionField
-                  value={toLineupPredictionValue(prediction)}
-                  onChange={(value) => {
-                    const next = predictionNumericValue(value);
-                    if (next != null) setPrediction(next);
-                  }}
-                  disabled={slotActionsDisabled}
-                  error={sliderError}
-                />
-              ) : (
-                <SportPredictionField
-                  value={toLineupPredictionValue(serverPrediction)}
-                  readOnly
-                />
-              )}
-            </TabPanel>
-
-            {/* PARLAYS TAB */}
-            <TabPanel className={PARLAYS_TAB_PANEL_CLASS}>
-              <SideBetPanel
-                borderColor={resolvedBorderColor}
-                userLabel={sideBetUserLabel}
-                lineupNumberLabel={sideBetLineupNumberLabel}
-                playerLastNamesLine={sideBetPlayerLastNames}
-                lineupId={lineupId}
-              />
-            </TabPanel>
+                    )}
+                  </div>
+                ))
+              : displayCandidates.map((candidate) => (
+                  <div key={candidate.participantId} className="px-3">
+                    <SportParticipantRow
+                      candidate={candidate}
+                      status={status}
+                      eventMetadata={eventMetadata}
+                      onClick={() => openDetailModal(candidate)}
+                    />
+                  </div>
+                ))}
           </div>
-        </TabGroup>
+          {canEditSlots ? (
+            <SportPredictionField
+              value={toLineupPredictionValue(prediction)}
+              onChange={(value) => {
+                const next = predictionNumericValue(value);
+                if (next != null) setPrediction(next);
+              }}
+              disabled={slotActionsDisabled}
+              error={sliderError}
+            />
+          ) : (
+            <SportPredictionField value={toLineupPredictionValue(serverPrediction)} readOnly />
+          )}
+        </div>
       </div>
 
       {canEditSlots && eventId ? (

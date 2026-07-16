@@ -27,6 +27,7 @@ import { TransferFundsPage } from "./pages/AccountTransferFundsPage";
 import { SportHubPage } from "./pages/SportHubPage";
 import { ContestLobby } from "./pages/ContestLobbyPage";
 import { Contests } from "./pages/ContestListPage";
+import { EventParlaysPage } from "./pages/EventParlaysPage";
 import {
   SportContestRedirect,
   UserGroupToLeagueRedirect,
@@ -90,6 +91,14 @@ const AppShell: React.FC = () => {
             <Route path="/" element={<Navigate to="/contests" replace />} />
             <Route path="/sports/:sportId" element={<SportHubPage />} />
             <Route path="/sports/:sportId/events/:eventId/leaderboard" element={<LeaderboardPage />} />
+            <Route
+              path="/sports/:sportId/events/:eventId/parlays"
+              element={
+                <ProtectedRoute>
+                  <EventParlaysPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/sports/:sportId/leaderboard" element={<LeaderboardPage />} />
             <Route path="/sports/:sportId/contests/:id" element={<SportContestRedirect />} />
             <Route path="/home" element={<Home />} />
