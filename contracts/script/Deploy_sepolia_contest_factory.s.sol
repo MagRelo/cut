@@ -7,7 +7,7 @@ import {ContestFactory} from "../lib/contestCatalyst/src/ContestFactory.sol";
 /// @notice Base Sepolia (84532): deploy only `ContestFactory` (no MockUSDC, PlatformToken, etc.).
 contract DeploySepoliaContestFactory is Script {
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PK");
 
         vm.startBroadcast(deployerPrivateKey);
 

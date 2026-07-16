@@ -66,7 +66,7 @@ Read from `server/src/contracts/{sepolia,base}.json` and `client/src/utils/contr
 Minimal Sepolia redeploy (keeps existing MockUSDC):
 
 ```bash
-# contracts/.env: PRIVATE_KEY, BASE_SEPOLIA_RPC_URL, REFERRAL_GROUP_ID, REFERRAL_ORACLE
+# contracts/.env: DEPLOYER_PK, OPS_ORACLE_PK, BASE_SEPOLIA_RPC_URL, REFERRAL_GROUP_ID
 pnpm run sepolia:deploy-referral
 pnpm run sepolia:deploy-contest-factory
 ```
@@ -84,9 +84,9 @@ Patch `referralGraphAddress`, `rewardCalculatorAddress`, and `contestFactoryAddr
 | Variable | Purpose |
 |----------|---------|
 | `REFERRAL_GROUP_ID` | `bytes32` — same on graph and contests |
-| `REFERRAL_ORACLE_ROOT_ADDRESS` | Oracle root wallet (defaults to `ORACLE_ADDRESS`) |
+| `OPS_ORACLE_PK` | Signs `register` / `batchRegister`; its address is the tree root under `REFERRAL_ROOT` (contest + referral oracle) |
+| `OPS_ORACLE_ADDRESS` | Optional; pins the OPS_ORACLE address instead of deriving from `OPS_ORACLE_PK` |
 | `REFERRAL_SYNC_CHAIN_ID` | Optional; scripts default `84532` |
-| `ORACLE_PRIVATE_KEY` | Signs `register` / `batchRegister` |
 
 ### After deploy
 

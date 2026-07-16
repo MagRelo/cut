@@ -6,19 +6,21 @@ Helpers for contracts deployed by `contracts/script/Deploy_sepolia.s.sol`. Env v
 
 ### `mintPaymentToken.js`
 
-Mints **MockUSDC** (`paymentTokenAddress` in `server/src/contracts/sepolia.json`) to `RECIPIENT_ADDRESS`. Caller must be the token **owner** (typically the deployer). Uses `mint(address,uint256)`.
+Mints **MockUSDC** (`paymentTokenAddress` in `server/src/contracts/sepolia.json`) to `RECIPIENT_ADDRESS`. Caller must be the token **owner** (the deployer). Uses `mint(address,uint256)`.
 
-**Required env:** `PRIVATE_KEY`, `RECIPIENT_ADDRESS`
+**Required env:** `DEPLOYER_PK`, `RECIPIENT_ADDRESS`
 
 **Optional env:** `BASE_SEPOLIA_RPC_URL`, `AMOUNT` (6 decimals; default `10000000000`), `USE_LATEST_DEPLOYMENT`, `PAYMENT_TOKEN_ADDRESS` (manual mode)
 
 ### `deployReferral.js` / `deployContestFactory.js`
 
-Partial redeploys — see root [scripts/README.md](../README.md).
+Partial redeploys (use `DEPLOYER_PK`) — see root [scripts/README.md](../README.md).
 
 ### `pushPayouts.js`
 
-Oracle push of primary or secondary payouts after settlement.
+OPS_ORACLE push of primary or secondary payouts after settlement.
+
+**Required env:** `OPS_ORACLE_PK` (must be the contest oracle)
 
 ## Prerequisites
 

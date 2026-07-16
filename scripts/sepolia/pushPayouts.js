@@ -6,7 +6,7 @@
  *   node scripts/sepolia/pushPayouts.js secondary <controllerAddress>
  *   pnpm run push-primary-payouts -- 0x...
  *
- * Env (contracts/.env): PRIVATE_KEY
+ * Env (contracts/.env): OPS_ORACLE_PK (must be the contest oracle)
  * Optional: CONTEST_CONTROLLER_ADDRESS if you omit the CLI address
  * Primary: ENTRY_IDS — comma-separated entry ids, e.g. ENTRY_IDS=1,2,3
  * Secondary: ENTRY_ID — winning entry id; PARTICIPANTS — comma-separated addresses
@@ -82,12 +82,12 @@ async function main() {
     process.exit(1);
   }
 
-  const PRIVATE_KEY = process.env.PRIVATE_KEY;
+  const PRIVATE_KEY = process.env.OPS_ORACLE_PK;
   const RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
   const contestAddress = addressArg?.trim() || process.env.CONTEST_CONTROLLER_ADDRESS;
 
   if (!PRIVATE_KEY) {
-    throw new Error("PRIVATE_KEY is required in contracts/.env");
+    throw new Error("OPS_ORACLE_PK is required in contracts/.env");
   }
   if (!contestAddress || !isAddress(contestAddress)) {
     throw new Error(

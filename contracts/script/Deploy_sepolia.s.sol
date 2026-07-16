@@ -10,9 +10,10 @@ import {RewardCalculator} from "../lib/referralTree/src/core/RewardCalculator.so
 /// @notice Base Sepolia (84532): MockUSDC (xUSDC) + ContestFactory + referral stack.
 contract DeploySepolia is Script {
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PK");
         address deployer = vm.addr(deployerPrivateKey);
-        address referralOracle = vm.envOr("REFERRAL_ORACLE", deployer);
+        uint256 opsOraclePk = vm.envOr("OPS_ORACLE_PK", uint256(0));
+        address referralOracle = opsOraclePk != 0 ? vm.addr(opsOraclePk) : deployer;
         bytes32 referralGroupId = vm.envBytes32("REFERRAL_GROUP_ID");
 
         vm.startBroadcast(deployerPrivateKey);

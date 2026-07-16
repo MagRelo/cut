@@ -105,8 +105,7 @@ function runCommand(command, cwd = projectRoot) {
   }
 }
 
-function getDeployerAddress() {
-  const pk = process.env.PRIVATE_KEY;
+function addressFromPk(pk) {
   if (!pk) return null;
   try {
     return execSync(`cast wallet address ${pk}`, {
@@ -118,10 +117,15 @@ function getDeployerAddress() {
   }
 }
 
+function getDeployerAddress() {
+  return addressFromPk(process.env.DEPLOYER_PK);
+}
+
+/** OPS_ORACLE address, derived from OPS_ORACLE_PK; falls back to the deployer. */
 function getReferralOracleAddress() {
-  const o = process.env.REFERRAL_ORACLE;
-  if (!o || o === "") return "0x0000000000000000000000000000000000000000";
-  return o;
+  const fromOps = addressFromPk(process.env.OPS_ORACLE_PK);
+  if (fromOps) return fromOps;
+  return getDeployerAddress() ?? "0x0000000000000000000000000000000000000000";
 }
 
 function getReferralGroupId() {
@@ -295,7 +299,7 @@ function verifyContracts(network, addresses) {
 function checkEnvironment() {
   logStep("Checking environment variables");
 
-  const requiredVars = ["PRIVATE_KEY"];
+  const requiredVars = ["DEPLOYER_PK"];
 
   const missingVars = requiredVars.filter((varName) => !process.env[varName]);
 

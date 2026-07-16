@@ -47,7 +47,7 @@ Copy and fill `contracts/env.example` → `contracts/.env`:
 cp contracts/env.example contracts/.env
 ```
 
-Typical variables include `PRIVATE_KEY`, `BASE_SEPOLIA_RPC_URL` / `BASE_RPC_URL`, and `BASESCAN_API_KEY` where needed. See `contracts/env.example` for the full list.
+Typical variables include `DEPLOYER_PK`, `OPS_ORACLE_PK`, `BASE_SEPOLIA_RPC_URL` / `BASE_RPC_URL`, and `BASESCAN_API_KEY` where needed. See `contracts/env.example` for the full list.
 
 ### Tooling
 
