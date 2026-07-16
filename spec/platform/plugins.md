@@ -53,7 +53,7 @@ Handlers inject all database and external API access so the package stays testab
 | `GET /sports/:sportId/events/:eventId/candidates` | `getCandidatePool` |
 | `POST /api/lineups/:eventId` | `validateRoster` |
 | `runSportEventPipeline` | sync hooks + live scores |
-| `updateContestLineupsForEvent` | `aggregateLineupScore`, `rankEntries` |
+| `updateContestLineupsForEvent` | Loads per-pick totals, applies platform popularity when `ScoringRules.popularity.weight ≠ 0`, writes `Contest.pickPopularity` + lineup `baseScore` / `popularityBonus` / `score`; then `rankEntries` |
 | `settleContest` | `rankEntries`, `derivePayoutVector` |
 | `batchActivateContests` / `batchSettleContests` | `shouldActivateContest`, `shouldSettleContest` via event status |
 
@@ -67,13 +67,15 @@ Handlers inject all database and external API access so the package stays testab
 ```typescript
 interface SportUIPlugin {
   CandidateRow: React.FC<CandidateRowProps>;       // picker (scheduled card; live delegates to ParticipantRow)
-  ParticipantRow: React.FC<ParticipantRowProps>;   // display lists (leaderboard, lineup slots, contest entries)
+  ParticipantRow: React.FC<ParticipantRowProps>;   // field / event lists (leaderboard, picker live row) — no contest popularity
   ParticipantDetail: React.FC<ParticipantDetailProps>; // detail modal (scorecard header + round tabs + hole table)
   PredictionField?: React.FC<PredictionFieldProps>;
   EventSummary?: React.FC<{ event: CompetitionEventShell }>;
   candidateSortConfig: CandidateSortConfig;        // per-context sort key order for platform lists
 }
 ```
+
+Contest lineup slots use platform `SportLineupPickRow` (wraps `ParticipantRow` plus optional post-lock popularity bonus). See [consensus-axis.md](../../docs/platform/consensus-axis.md).
 
 **Candidate sort contexts** (`@cut/sport-sdk` `sortCandidates`):
 

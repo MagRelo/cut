@@ -257,6 +257,8 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
                 eventStatus={eventStatus}
                 eventMetadata={eventMetadata}
                 isEventEditable={isLineupEditable}
+                pickPopularity={contest.pickPopularity}
+                contestStatus={contest.status}
               />
               <ContestLineupJoinActions contest={contest} lineupId={row.id} entry={contestEntry} />
             </div>

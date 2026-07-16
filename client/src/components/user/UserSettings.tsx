@@ -10,7 +10,9 @@ type DraftState = {
   originalSettings: Record<string, unknown>;
 };
 
-function draftFromUser(user: { name?: string | null; settings?: Record<string, unknown> | null } | null | undefined): DraftState {
+function draftFromUser(
+  user: { name?: string | null; settings?: Record<string, unknown> | null } | null | undefined,
+): DraftState {
   const name = user?.name || "";
   const settings = user?.settings || {};
   return { name, settings, originalName: name, originalSettings: settings };
@@ -57,15 +59,15 @@ export function UserSettings() {
   };
 
   return (
-    <PageSection variant="card">
-      <h2 className="text-lg font-semibold text-gray-700 mb-3 font-display">Lineup Display</h2>
+    <PageSection>
+      <h2 className="mb-3 font-display text-lg font-semibold text-gray-700">User Settings</h2>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-8 pl-3">
         <div className="space-y-4">
           <div>
             <label
               htmlFor="name"
-              className="block text-sm font-medium text-gray-700 font-display shrink-0"
+              className="block shrink-0 font-display text-sm font-medium text-gray-700"
             >
               Name
             </label>
@@ -74,7 +76,7 @@ export function UserSettings() {
               id="name"
               value={draft.name}
               onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
-              className="mt-1 block w-full rounded-sm border border-gray-300 bg-white py-2.5 px-3 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="mt-1 block w-full rounded-sm border border-gray-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-gray-100"
               placeholder="Enter your name"
             />
           </div>
@@ -82,7 +84,7 @@ export function UserSettings() {
           <div>
             <label
               htmlFor="color"
-              className="block text-sm font-medium text-gray-700 font-display shrink-0"
+              className="block shrink-0 font-display text-sm font-medium text-gray-700"
             >
               Color
             </label>
@@ -99,7 +101,7 @@ export function UserSettings() {
                 "#9600CC",
                 "#00B86B",
               ].map((color) => (
-                <label key={color} className="flex flex-col items-center cursor-pointer">
+                <label key={color} className="flex cursor-pointer flex-col items-center">
                   <input
                     type="radio"
                     name="color"
@@ -122,46 +124,65 @@ export function UserSettings() {
           </div>
 
           <div>
-            <label
-              htmlFor="oddsFormat"
-              className="block text-sm font-medium text-gray-700 font-display shrink-0"
+            <span
+              id="oddsFormat-label"
+              className="block shrink-0 font-display text-sm font-medium text-gray-700"
             >
-              Odds format
-            </label>
-            <p className="mt-1 text-xs text-gray-500">
-              How odds are shown in parlay markets and tickets.
-            </p>
-            <div className="mt-3 space-y-2">
-              {ODDS_FORMAT_OPTIONS.map((option) => (
-                <label
-                  key={option.value}
-                  className="flex cursor-pointer items-start gap-3 rounded-sm border border-gray-200 px-3 py-2.5 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/40"
-                >
-                  <input
-                    type="radio"
-                    name="oddsFormat"
-                    value={option.value}
-                    checked={selectedOddsFormat === option.value}
-                    onChange={() => handleChange("oddsFormat", option.value)}
-                    className="mt-0.5 h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium text-gray-900">{option.label}</span>
-                    <span className="block text-xs text-gray-500">{option.description}</span>
-                  </span>
-                </label>
-              ))}
+              Odds Format
+            </span>
+            <div
+              className="mt-3 grid grid-cols-3 gap-4 p-1"
+              role="radiogroup"
+              aria-labelledby="oddsFormat-label"
+            >
+              {ODDS_FORMAT_OPTIONS.map((option) => {
+                const selected = selectedOddsFormat === option.value;
+                return (
+                  <label key={option.value} className="cursor-pointer">
+                    <input
+                      type="radio"
+                      name="oddsFormat"
+                      value={option.value}
+                      checked={selected}
+                      onChange={() => handleChange("oddsFormat", option.value)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={`flex min-h-[2.75rem] w-full flex-col items-center justify-center rounded-md border px-1 py-1.5 text-center font-display shadow-sm transition-colors ${
+                        selected
+                          ? "border-white bg-blue-500 text-white ring-2 ring-gray-400 ring-offset-4"
+                          : "border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span
+                        className={`text-sm font-medium leading-tight ${
+                          selected ? "text-white" : "text-gray-900"
+                        }`}
+                      >
+                        {option.label}
+                      </span>
+                      <span
+                        className={`mt-0.5 text-xs tabular-nums ${
+                          selected ? "text-blue-100" : "text-gray-500"
+                        }`}
+                      >
+                        {option.example}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
+        {error && <div className="mt-2 text-sm text-red-500">{error}</div>}
 
-        <div className="flex justify-center !mt-6">
+        <div className="flex justify-center">
           <button
             type="submit"
             disabled={isLoading || !hasChanges}
-            className="inline-block min-w-[120px] bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-1 px-3 rounded border border-blue-500 transition-colors text-sm font-display"
+            className="inline-block min-w-[120px] rounded border border-blue-500 bg-blue-500 px-3 py-1 font-display text-sm text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading ? "Saving..." : "Save"}
           </button>

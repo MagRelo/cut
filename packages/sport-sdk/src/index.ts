@@ -6,6 +6,8 @@ export type {
   LineupPickShell,
   MarketSnapshot,
   PayoutVector,
+  PopularityMode,
+  PopularityRules,
   PredictionRules,
   PropBetGrade,
   PropBetResultsShell,
@@ -52,6 +54,24 @@ export type { SportModule } from "./sport-module.js";
 export type { PropBetModule } from "./prop-bet-module.js";
 
 export { defaultPayoutVector } from "./payout.js";
+
+export type {
+  AdjustedPickScore,
+  NormalizedPopularityRules,
+  PickPopularityEntry,
+  PickPopularityMap,
+} from "./popularity.js";
+export {
+  adjustPickScore,
+  buildPickPopularityMap,
+  computePickRates,
+  DEFAULT_POPULARITY_CAP,
+  DEFAULT_POPULARITY_MIN_ENTRY_FLOOR,
+  DEFAULT_POPULARITY_MODE,
+  DEFAULT_POPULARITY_STRENGTH,
+  normalizePopularityRules,
+  sumLineupScores,
+} from "./popularity.js";
 
 export type {
   CandidateSortConfig,

@@ -85,8 +85,8 @@ sequenceDiagram
 
 | Hook | Key | API | Refresh |
 |------|-----|-----|---------|
-| `useContestQuery` | `contests.byLobbyRoute(address)` | `GET /contests/:address/lobby` | 5m poll + focus while live |
-| `useContestTimelineQuery` | `contests.timeline(address)` | `GET /contests/:address/timeline` (`?since=` on refresh) | Same cadence while live; enabled only when primary entry is locked (`status !== OPEN`) |
+| `useContestQuery` | `contests.byLobbyRoute(address)` | `GET /contests/:address/lobby` | 5m poll + focus while ACTIVE/LOCKED |
+| `useContestTimelineQuery` | `contests.timeline(address)` | `GET /contests/:address/timeline` (`?since=` on refresh) | Same cadence while ACTIVE/LOCKED; enabled only when primary entry is locked (`status !== OPEN`) |
 
 Timeline `queryFn` merges deltas into the cached full series (`mergeTimelineData`). Lobby standings are replaced wholesale each fetch.
 
@@ -131,7 +131,7 @@ Order: **on-chain first**, then server indexes the entry. Server links `lineupId
 
 ## Contest list flow
 
-**Multi-sport hub** (`/contests`): `useContestDirectory("all")` → `GET /contests/directory?scope=all` (upcoming / live / past sections). Focus refetch when stale; no interval poll for `scope=all`.
+**Multi-sport hub** (`/contests`): `useContestDirectory("all")` → `GET /contests/directory?scope=all` (upcoming / live / past sections). `staleTime: 15m`, focus refetch when stale; no interval poll.
 
 **Sport hub** (`/sports/:sportId`):
 

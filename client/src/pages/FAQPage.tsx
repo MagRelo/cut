@@ -620,7 +620,7 @@ export const FAQPage: React.FC = () => {
                 </Link>
               </li>
               <li>
-                Deposit or send xUSDC from{" "}
+                Request funds or send xUSDC from{" "}
                 <Link to="/account/funds" className="text-blue-600 hover:underline">
                   Account → Manage funds
                 </Link>

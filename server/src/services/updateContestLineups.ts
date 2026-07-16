@@ -1,8 +1,67 @@
-import { readCurrentPeriod } from "@cut/sport-sdk";
+import {
+  buildPickPopularityMap,
+  computePickRates,
+  normalizePopularityRules,
+  readCurrentPeriod,
+  sumLineupScores,
+  type PickPopularityMap,
+  type ScoringRules,
+} from "@cut/sport-sdk";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { requireSportModule } from "../sports/registry.js";
 import { lineupPicksInclude } from "../utils/prismaIncludes.js";
 import { getActiveEvents } from "./events/getActiveEvents.js";
+
+function parseScoringRules(raw: unknown): ScoringRules {
+  if (typeof raw !== "object" || raw === null) {
+    return { aggregation: "sum", direction: "higher_wins" };
+  }
+  const obj = raw as Partial<ScoringRules>;
+  const rules: ScoringRules = {
+    aggregation: "sum",
+    direction: obj.direction === "lower_wins" ? "lower_wins" : "higher_wins",
+  };
+  if (obj.popularity != null) {
+    rules.popularity = obj.popularity;
+  }
+  return rules;
+}
+
+function parsePickPopularity(raw: unknown): PickPopularityMap | null {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    return null;
+  }
+  const map: PickPopularityMap = {};
+  for (const [epId, entry] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const row = entry as Record<string, unknown>;
+    if (
+      typeof row.pickRate !== "number" ||
+      typeof row.bonus !== "number" ||
+      typeof row.adjustedScore !== "number"
+    ) {
+      continue;
+    }
+    map[epId] = {
+      pickRate: row.pickRate,
+      bonus: row.bonus,
+      adjustedScore: row.adjustedScore,
+    };
+  }
+  return Object.keys(map).length > 0 ? map : null;
+}
+
+function pickRatesFromPopularityMap(
+  map: PickPopularityMap | null,
+): Map<string, number> | null {
+  if (!map) return null;
+  const rates = new Map<string, number>();
+  for (const [epId, entry] of Object.entries(map)) {
+    rates.set(epId, entry.pickRate);
+  }
+  return rates.size > 0 ? rates : null;
+}
 
 export async function updateContestLineupsForEvent(
   eventId: string,
@@ -10,13 +69,25 @@ export async function updateContestLineupsForEvent(
 ): Promise<void> {
   const module = requireSportModule(sportId);
 
+  const sport = await prisma.sport.findUnique({
+    where: { id: sportId },
+    select: { scoringRules: true },
+  });
+  const scoringRules = parseScoringRules(sport?.scoringRules);
+  const popularityRules = normalizePopularityRules(scoringRules.popularity);
+
   const contestLineups = await prisma.contestLineup.findMany({
     where: {
       contest: { eventId },
     },
     include: {
       contest: {
-        select: { id: true },
+        select: {
+          id: true,
+          status: true,
+          pickPopularity: true,
+          pickPopularityLockedAt: true,
+        },
       },
       lineup: {
         include: lineupPicksInclude,
@@ -28,16 +99,23 @@ export async function updateContestLineupsForEvent(
     return;
   }
 
-  for (const contestLineup of contestLineups) {
-    const eventParticipantIds = contestLineup.lineup.picks.map(
-      (pick) => pick.eventParticipantId,
-    );
-    const totalScore = await module.aggregateLineupScore(eventId, eventParticipantIds);
-    contestLineup.score = totalScore;
-    await prisma.contestLineup.update({
-      where: { id: contestLineup.id },
-      data: { score: totalScore },
+  const allEventParticipantIds = [
+    ...new Set(
+      contestLineups.flatMap((cl) =>
+        cl.lineup.picks.map((pick) => pick.eventParticipantId),
+      ),
+    ),
+  ];
+
+  const totalsByEventParticipantId = new Map<string, number>();
+  if (allEventParticipantIds.length > 0) {
+    const rows = await prisma.eventParticipant.findMany({
+      where: { id: { in: allEventParticipantIds } },
+      select: { id: true, total: true },
     });
+    for (const row of rows) {
+      totalsByEventParticipantId.set(row.id, row.total ?? 0);
+    }
   }
 
   const contestLineupsByContest = contestLineups.reduce(
@@ -51,6 +129,75 @@ export async function updateContestLineupsForEvent(
     },
     {} as Record<string, typeof contestLineups>,
   );
+
+  for (const [contestId, lineups] of Object.entries(contestLineupsByContest)) {
+    const contest = lineups[0]!.contest;
+    const isOpen = contest.status === "OPEN";
+
+    let pickPopularity: PickPopularityMap | null = null;
+
+    if (!isOpen) {
+      const lineupPickLists = lineups.map((cl) =>
+        cl.lineup.picks.map((pick) => pick.eventParticipantId),
+      );
+
+      let frozenRates = pickRatesFromPopularityMap(
+        parsePickPopularity(contest.pickPopularity),
+      );
+
+      if (contest.pickPopularityLockedAt == null) {
+        frozenRates = computePickRates(
+          lineupPickLists,
+          popularityRules.minEntryFloor,
+        );
+      } else if (frozenRates == null && popularityRules.weight !== 0) {
+        // Lineups are locked; recompute rates if map was omitted while weight was 0.
+        frozenRates = computePickRates(
+          lineupPickLists,
+          popularityRules.minEntryFloor,
+        );
+      }
+
+      pickPopularity = buildPickPopularityMap(
+        frozenRates,
+        totalsByEventParticipantId,
+        popularityRules,
+      );
+
+      await prisma.contest.update({
+        where: { id: contestId },
+        data: {
+          pickPopularity:
+            pickPopularity === null
+              ? Prisma.DbNull
+              : (pickPopularity as unknown as Prisma.InputJsonValue),
+          ...(contest.pickPopularityLockedAt == null
+            ? { pickPopularityLockedAt: new Date() }
+            : {}),
+        },
+      });
+    }
+
+    for (const contestLineup of lineups) {
+      const eventParticipantIds = contestLineup.lineup.picks.map(
+        (pick) => pick.eventParticipantId,
+      );
+      const { baseScore, score, popularityBonus } = sumLineupScores(
+        eventParticipantIds,
+        totalsByEventParticipantId,
+        isOpen ? null : pickPopularity,
+      );
+
+      contestLineup.score = score;
+      contestLineup.baseScore = baseScore;
+      contestLineup.popularityBonus = popularityBonus;
+
+      await prisma.contestLineup.update({
+        where: { id: contestLineup.id },
+        data: { score, baseScore, popularityBonus },
+      });
+    }
+  }
 
   for (const lineups of Object.values(contestLineupsByContest)) {
     const ranked = module.rankEntries(

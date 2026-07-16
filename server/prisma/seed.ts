@@ -16,9 +16,19 @@ const PGA_GOLF_ROSTER_RULES = {
   allowDuplicates: false,
 };
 
+/** All sports ship with weight 0 until popularity is deliberately enabled. */
+const DEFAULT_POPULARITY_RULES = {
+  weight: 0,
+  strength: 1,
+  cap: 2,
+  mode: "multiplicative" as const,
+  minEntryFloor: 5,
+};
+
 const PGA_GOLF_SCORING_RULES = {
   aggregation: "sum",
   direction: "higher_wins",
+  popularity: DEFAULT_POPULARITY_RULES,
 };
 
 const PGA_GOLF_PREDICTION_RULES = {
@@ -27,6 +37,8 @@ const PGA_GOLF_PREDICTION_RULES = {
   defaultRandomMin: 95,
   defaultRandomMax: 145,
   label: "Tie-Breaker",
+  description:
+    "Used to break ties – Your guess at how many Stableford points the winning lineup will score in this contest.",
 };
 
 const F1_ROSTER_RULES = {
@@ -39,6 +51,7 @@ const F1_ROSTER_RULES = {
 const F1_SCORING_RULES = {
   aggregation: "sum",
   direction: "higher_wins",
+  popularity: DEFAULT_POPULARITY_RULES,
 };
 
 const F1_PREDICTION_RULES = {
@@ -47,6 +60,8 @@ const F1_PREDICTION_RULES = {
   defaultRandomMin: 45,
   defaultRandomMax: 75,
   label: "Tie-Breaker (winning lineup pts)",
+  description:
+    "Your guess at how many championship points the winning lineup will score in a contest.",
 };
 
 const COMMODITIES_ROSTER_RULES = {
@@ -59,6 +74,7 @@ const COMMODITIES_ROSTER_RULES = {
 const COMMODITIES_SCORING_RULES = {
   aggregation: "sum",
   direction: "higher_wins",
+  popularity: DEFAULT_POPULARITY_RULES,
 };
 
 const COMMODITIES_PREDICTION_RULES = {
@@ -67,6 +83,8 @@ const COMMODITIES_PREDICTION_RULES = {
   defaultRandomMin: 40,
   defaultRandomMax: 90,
   label: "Tie-Breaker (winning lineup pts)",
+  description:
+    "Your guess at the winning lineup's total score in a contest, on the same scale as lineup points.",
 };
 
 async function main() {
@@ -124,7 +142,7 @@ async function main() {
       id: "commodities",
       name: "Commodity Picks",
       slug: "commodities",
-      isEnabled: false,
+      isEnabled: true,
       rosterRules: COMMODITIES_ROSTER_RULES,
       scoringRules: COMMODITIES_SCORING_RULES,
       predictionRules: COMMODITIES_PREDICTION_RULES,
@@ -132,7 +150,7 @@ async function main() {
     update: {
       name: "Commodity Picks",
       slug: "commodities",
-      isEnabled: false,
+      isEnabled: true,
       rosterRules: COMMODITIES_ROSTER_RULES,
       scoringRules: COMMODITIES_SCORING_RULES,
       predictionRules: COMMODITIES_PREDICTION_RULES,

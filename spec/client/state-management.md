@@ -24,9 +24,9 @@ Three state domains: **server cache** (React Query), **session** (Context), **ch
 | Sports list | 24h | — |
 | Active event | 5m | 5m |
 | Candidates | 5m | 5m |
-| Contest lobby (`byLobbyRoute`) | 5m while live; Infinity when terminal | 5m while live |
-| Contest timeline | 5m while live; Infinity when finished/terminal | 5m while live; full then `?since=` merge |
-| Contest directory (`scope=all`) | 5m | — (focus refetch) |
+| Contest lobby (`byLobbyRoute`) | 5m while ACTIVE/LOCKED; Infinity otherwise | 5m while ACTIVE/LOCKED |
+| Contest timeline | 5m while ACTIVE/LOCKED; Infinity when finished/terminal | 5m while ACTIVE/LOCKED; full then `?since=` merge |
+| Contest directory | 15m | — (focus refetch when stale) |
 | Side bet market | 0 | 60s |
 
 Global defaults in `queryClient.ts` apply where hooks do not override.

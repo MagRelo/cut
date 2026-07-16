@@ -60,6 +60,8 @@ const contestDetailSelect = {
   status: true,
   settings: true,
   results: true,
+  pickPopularity: true,
+  pickPopularityLockedAt: true,
   createdAt: true,
   updatedAt: true,
   event: true,

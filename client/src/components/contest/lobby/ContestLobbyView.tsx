@@ -94,7 +94,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
           />
         </div>
 
-        <div className="mb-2">
+        <div className="mb-3">
           <ContestStatusBar
             contestStatus={contest.status}
             eventName={eventName}

@@ -368,6 +368,8 @@ userGroupRouter.get("/:id/contests", requireAuth, requireUserGroupMember, async 
         status: true,
         settings: true,
         results: true,
+        pickPopularity: true,
+        pickPopularityLockedAt: true,
         createdAt: true,
         updatedAt: true,
         event: {
@@ -393,6 +395,8 @@ userGroupRouter.get("/:id/contests", requireAuth, requireUserGroupMember, async 
             lineupId: true,
             position: true,
             score: true,
+            baseScore: true,
+            popularityBonus: true,
             status: true,
             entryId: true,
             createdAt: true,

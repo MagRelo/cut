@@ -3,6 +3,11 @@ module.exports = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      colors: {
+        gray: {
+          25: 'oklch(99.2% 0 0)',
+        },
+      },
       maxWidth: {
         /** Main app column (nav, content, footer) */
         shell: '56rem',

@@ -287,8 +287,8 @@ export const LeagueStarterGuidePage: React.FC = () => {
             </p>
             <ul className="list-disc space-y-1 pl-6">
               <li>
-                <strong>Deposit</strong> — copy your wallet address and receive funds from another
-                player or an external sender.
+                <strong>Request Funds</strong> — share a link with someone who has funds so they can
+                transfer to your account.
               </li>
               <li>
                 <strong>Send</strong> — peer-to-peer transfer: enter a recipient&apos;s wallet

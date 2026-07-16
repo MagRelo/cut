@@ -340,6 +340,7 @@ Works with any competition format you can imagine:
 - **Any Scoring System:** Your oracle reports results - contracts handle payouts
 - **Configurable Economics:** Set deposit amounts, fees, LMSR curves per contest
 - **Multiple Payouts:** Distribute prizes however you want (60/30/10, winner-take-all, top 10, etc.)
+- **Payment Token:** Contests settle in the configured ERC20 (USDC on Base; MockUSDC on Sepolia)
 
 ### ⚡ Instant, Trustless Settlement
 

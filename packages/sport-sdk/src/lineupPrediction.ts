@@ -7,6 +7,8 @@ export interface PredictionRules {
   defaultRandomMax: number;
   /** Slider label. */
   label?: string;
+  /** Helper text under the label in the lineup editor. */
+  description?: string;
   /** Stored value ÷ displayScale = UI value (default 1). */
   displayScale?: number;
   /** Slider step in UI units (default 1, or 1/displayScale when scaled). */

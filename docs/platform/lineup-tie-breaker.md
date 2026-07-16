@@ -25,7 +25,7 @@ The prediction serves two roles:
 | --- | --- |
 | **Lineup** | User’s roster for an event (`Lineup`), up to four picks keyed by `eventParticipantId`. |
 | **Contest lineup** | That roster entered into a specific contest (`ContestLineup`); has score, position, `createdAt`. |
-| **Fantasy score** | Sum of roster participants’ event totals (`ContestLineup.score`). |
+| **Fantasy score** | Contest-ranked total on `ContestLineup.score` (sum of pick totals, with optional popularity bonus after lock — see [consensus-axis.md](consensus-axis.md)). |
 | **Winning lineup total prediction** | Integer in `Lineup.prediction` (`{ type: "winningLineupTotal", value }`); user’s guess of the winning lineup total in a contest. Valid range comes from `Sport.predictionRules`. |
 | **Contest winning score** | `max(ContestLineup.score)` across all entries in that contest at ranking time. |
 | **Prediction distance** | `abs(prediction value − contestWinningScore)`; lower is better. |
@@ -39,7 +39,9 @@ The prediction serves two roles:
 | `prediction` | `Lineup` | `Json?` | `{ type: "winningLineupTotal", value: number }`. Range from `Sport.predictionRules` (golf: 1–250; F1: 1–120; commodities: -100–250). Stored on the lineup, not per contest entry. |
 | `predictionRules` | `Sport` | `Json` | `{ min, max, defaultRandomMin, defaultRandomMax }` — per-sport slider range and server random defaults. |
 | `eventParticipantId` | `LineupPick` | `String` | Pick identity for roster slots. |
-| `score` | `ContestLineup` | `Int` | Live and final fantasy total. |
+| `score` | `ContestLineup` | `Int` | Live and final fantasy total (`finalScore`). |
+| `baseScore` | `ContestLineup` | `Int?` | Sum of unadjusted pick totals (see [consensus-axis.md](consensus-axis.md)). |
+| `popularityBonus` | `ContestLineup` | `Int?` | `score - baseScore`. |
 | `position` | `ContestLineup` | `Int` | Unique rank within the contest (1 = best). |
 | `createdAt` | `ContestLineup` | `DateTime` | When the lineup was entered into the contest; tertiary tie-break key. |
 
@@ -183,7 +185,7 @@ Each position receives at most one winner; remainder dust rules apply to the fir
 
 ### Live leaderboard
 
-`updateContestLineupsForEvent` (cron pipeline, every 5 minutes when the sport reports live scoring) recalculates scores from participant totals, then calls `requireSportModule(sportId).rankEntries` and writes unique `position` values per contest. Timeline snapshots record score and position after each run.
+`updateContestLineupsForEvent` (cron pipeline, every 5 minutes when the sport reports live scoring) recalculates `ContestLineup.score` (and `baseScore` / `popularityBonus` when applicable — [consensus-axis.md](consensus-axis.md)), then calls `requireSportModule(sportId).rankEntries` and writes unique `position` values per contest. Timeline snapshots record score and position after each run.
 
 ---
 

@@ -15,6 +15,9 @@ interface EntryHeaderProps {
   lineupName?: string;
   predictionValue?: number | null;
   totalPoints: number;
+  /** When set and > 0, show score decomposition under PTS. */
+  popularityBonus?: number | null;
+  baseScore?: number | null;
   showArrow?: boolean;
   onClick?: () => void;
 }
@@ -25,10 +28,14 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
   lineupName,
   predictionValue,
   totalPoints,
+  popularityBonus,
+  baseScore,
   showArrow = false,
   onClick,
 }) => {
   const resolvedBorderColor = isValidHexColor(userColorHex) ? userColorHex : DEFAULT_USER_COLOR;
+  const showDecomp =
+    popularityBonus != null && popularityBonus > 0 && baseScore != null;
 
   return (
     <div
@@ -71,6 +78,12 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
             <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none mt-0.5">
               PTS
             </div>
+            {showDecomp ? (
+              <div className="mt-1 text-[10px] font-medium tabular-nums text-gray-500">
+                {baseScore}
+                <span className="text-emerald-700"> +{popularityBonus}</span>
+              </div>
+            ) : null}
           </div>
           {showArrow && (
             <svg

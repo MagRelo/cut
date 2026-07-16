@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../contexts/AuthContext";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import {
@@ -21,6 +22,7 @@ import {
  */
 export function useCreateUserGroup() {
   const queryClient = useQueryClient();
+  const { refreshUser } = useAuth();
 
   return useMutation({
     mutationFn: async (params: CreateUserGroupInput) => {
@@ -30,6 +32,7 @@ export function useCreateUserGroup() {
     onSuccess: () => {
       // Invalidate all user group queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
+      void refreshUser();
     },
 
     onError: (err) => {
@@ -47,6 +50,7 @@ export function useCreateUserGroup() {
  */
 export function useUpdateUserGroup() {
   const queryClient = useQueryClient();
+  const { refreshUser } = useAuth();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateUserGroupInput }) => {
@@ -59,7 +63,7 @@ export function useUpdateUserGroup() {
 
       // Snapshot the previous value
       const previousGroup = queryClient.getQueryData<UserGroupDetailResponse>(
-        queryKeys.userGroups.byId(id)
+        queryKeys.userGroups.byId(id),
       );
 
       // Optimistically update
@@ -88,6 +92,7 @@ export function useUpdateUserGroup() {
       // Update cache with server data
       queryClient.setQueryData(queryKeys.userGroups.byId(id), data);
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
+      void refreshUser();
     },
   });
 }
@@ -100,6 +105,7 @@ export function useUpdateUserGroup() {
  */
 export function useDeleteUserGroup() {
   const queryClient = useQueryClient();
+  const { refreshUser } = useAuth();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -109,6 +115,7 @@ export function useDeleteUserGroup() {
     onSuccess: () => {
       // Invalidate all user group queries
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
+      void refreshUser();
     },
 
     onError: (err) => {
@@ -154,11 +161,12 @@ export function useAddUserGroupMember() {
  */
 export function useRemoveUserGroupMember() {
   const queryClient = useQueryClient();
+  const { refreshUser } = useAuth();
 
   return useMutation({
     mutationFn: async ({ id, userId }: { id: string; userId: string }) => {
       return await apiClient.delete<{ success: boolean; message: string }>(
-        `/userGroups/${id}/members/${userId}`
+        `/userGroups/${id}/members/${userId}`,
       );
     },
 
@@ -168,7 +176,7 @@ export function useRemoveUserGroupMember() {
 
       // Snapshot the previous value
       const previousMembers = queryClient.getQueryData<UserGroupMembersResponse>(
-        queryKeys.userGroups.members(id)
+        queryKeys.userGroups.members(id),
       );
 
       // Optimistically remove the member
@@ -181,7 +189,7 @@ export function useRemoveUserGroupMember() {
               ...old,
               members: old.members.filter((m) => m.userId !== userId),
             };
-          }
+          },
         );
       }
 
@@ -200,6 +208,7 @@ export function useRemoveUserGroupMember() {
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.members(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.byId(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
+      void refreshUser();
     },
   });
 }
@@ -233,6 +242,7 @@ export function useGenerateLeagueInvite() {
 
 export function useJoinLeague() {
   const queryClient = useQueryClient();
+  const { refreshUser } = useAuth();
 
   return useMutation({
     mutationFn: async (params: JoinUserGroupInput) => {
@@ -241,6 +251,7 @@ export function useJoinLeague() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
+      void refreshUser();
     },
     onError: (err) => {
       console.error("Failed to join league:", err);

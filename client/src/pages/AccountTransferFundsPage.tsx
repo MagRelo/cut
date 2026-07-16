@@ -29,7 +29,7 @@ export function TransferFundsPage() {
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
               >
-                Deposit
+                Add Funds
               </Tab>
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}

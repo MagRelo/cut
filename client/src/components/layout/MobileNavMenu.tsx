@@ -10,7 +10,9 @@ import {
   ACCOUNT_HOME_LINK,
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
+  LEAGUES_TAB,
   LEFT_TABS,
+  leagueNavItemsFromAuth,
 } from "../../lib/navTabs";
 
 const mobileNavItemBase =
@@ -34,8 +36,7 @@ function mobileSubItemClass(active: boolean) {
   ].join(" ");
 }
 
-const mobileAccountInsetListClass =
-  "ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2";
+const mobileInsetListClass = "ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2";
 
 const mobileAccountHeaderClass = [
   mobileNavItemBase,
@@ -47,6 +48,7 @@ export const MobileNavMenu: React.FC = () => {
   const location = useLocation();
   const { user, logout, paymentTokenBalance, balancesUnavailable, isAdmin } = useAuth();
   const showAdminNav = Boolean(user) && isAdmin();
+  const leagues = leagueNavItemsFromAuth(user?.userGroups);
 
   useEffect(() => {
     setOpen(false);
@@ -126,8 +128,14 @@ export const MobileNavMenu: React.FC = () => {
                             state={tab.state}
                             onClick={closeMenu}
                             aria-current={tab.match(location.pathname) ? "page" : undefined}
-                            className={mobileNavItemClass(tab.match(location.pathname))}
+                            className={`${mobileNavItemClass(tab.match(location.pathname))} inline-flex items-center gap-2`}
                           >
+                            {tab.liveDot ? (
+                              <span
+                                className="h-2 w-2 shrink-0 rounded-full bg-blue-500"
+                                aria-hidden
+                              />
+                            ) : null}
                             {tab.label}
                           </Link>
                         ))}
@@ -136,11 +144,47 @@ export const MobileNavMenu: React.FC = () => {
                           <>
                             <div className="flex flex-col">
                               <Link
+                                to={LEAGUES_TAB.to}
+                                onClick={closeMenu}
+                                aria-current={
+                                  location.pathname === LEAGUES_TAB.to ? "page" : undefined
+                                }
+                                className={mobileNavItemClass(
+                                  location.pathname === LEAGUES_TAB.to ||
+                                    location.pathname === "/user-groups",
+                                )}
+                              >
+                                {LEAGUES_TAB.label}
+                              </Link>
+
+                              {leagues.length > 0 ? (
+                                <div className={mobileInsetListClass}>
+                                  {leagues.map((league) => (
+                                    <Link
+                                      key={league.id}
+                                      to={league.to}
+                                      onClick={closeMenu}
+                                      aria-current={
+                                        league.match(location.pathname) ? "page" : undefined
+                                      }
+                                      className={mobileSubItemClass(
+                                        league.match(location.pathname),
+                                      )}
+                                    >
+                                      {league.name}
+                                    </Link>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+
+                            <div className="flex flex-col">
+                              <Link
                                 to={ACCOUNT_HOME_LINK.to}
                                 onClick={closeMenu}
                                 className={mobileAccountHeaderClass}
                               >
-                                <span>My Account</span>
+                                <span>Account</span>
                                 {totalBalance !== null ? (
                                   <span className="font-semibold tabular-nums normal-case tracking-normal">
                                     ${totalBalance}
@@ -152,7 +196,7 @@ export const MobileNavMenu: React.FC = () => {
                                 )}
                               </Link>
 
-                              <div className={mobileAccountInsetListClass}>
+                              <div className={mobileInsetListClass}>
                                 {ACCOUNT_SUB_LINKS.map((link) => (
                                   <Link
                                     key={link.to}

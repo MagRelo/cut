@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Tab, TabGroup, TabList, TabPanel } from "@headlessui/react";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { PageSection } from "../components/layout/PageSection";
-import { UserGroupMembersList } from "../components/userGroup/UserGroupMembersList";
 import { UserGroupSettings } from "../components/userGroup/UserGroupSettings";
 import { UserGroupMemberManagement } from "../components/userGroup/UserGroupMemberManagement";
 import { UserGroupInvitePanel } from "../components/userGroup/UserGroupInvitePanel";
@@ -13,14 +12,12 @@ import { groupContestsByEvent } from "../lib/contestGroups";
 import { useUserGroupQuery, useUserGroupContestsQuery } from "../hooks/useUserGroupQuery";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
-import { useAuth } from "../contexts/AuthContext";
 import { isApiError } from "../utils/apiError";
 import { tabButtonClassName, tabListClassName } from "../lib/tabStyles";
 
 export const UserGroupDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { data: userGroup, isLoading, error, refetch } = useUserGroupQuery(id);
   const {
@@ -41,10 +38,7 @@ export const UserGroupDetailPage = () => {
 
   const contestsErrorMessage = contestsError instanceof Error ? contestsError.message : null;
 
-  const contestGroups = useMemo(
-    () => groupContestsByEvent(leagueContests ?? []),
-    [leagueContests],
-  );
+  const contestGroups = useMemo(() => groupContestsByEvent(leagueContests ?? []), [leagueContests]);
 
   const isAdmin = userGroup?.currentUserRole === "ADMIN";
 
@@ -77,8 +71,15 @@ export const UserGroupDetailPage = () => {
   );
 
   const membersContent = (
-    <div className="space-y-5">
-      <UserGroupMembersList members={userGroup.members} currentUserId={user?.id} />
+    <div className="-m-2 bg-gray-100 p-4">
+      <PageSection variant="card">
+        <UserGroupMemberManagement
+          userGroupId={userGroup.id}
+          members={userGroup.members}
+          onMemberAdded={() => refetch()}
+          onMemberRemoved={() => refetch()}
+        />
+      </PageSection>
     </div>
   );
 
@@ -103,15 +104,6 @@ export const UserGroupDetailPage = () => {
             inviteUrl={userGroup.inviteUrl}
             onInviteUpdated={() => refetch()}
             variant="manage"
-          />
-        </PageSection>
-
-        <PageSection variant="card">
-          <UserGroupMemberManagement
-            userGroupId={userGroup.id}
-            members={userGroup.members}
-            onMemberAdded={() => refetch()}
-            onMemberRemoved={() => refetch()}
           />
         </PageSection>
 
@@ -142,7 +134,7 @@ export const UserGroupDetailPage = () => {
       <PageSection variant="default" className="overflow-hidden !border-b-0 !p-0 !pb-0">
         <header className="px-2 pb-4 pt-2">
           <div>
-            <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-gray-900 sm:text-3xl">
+            <h1 className="mb-1 font-display text-2xl font-bold leading-tight tracking-tight text-gray-900 sm:text-3xl">
               {userGroup.name}
             </h1>
             {userGroup.description ? (
@@ -169,21 +161,29 @@ export const UserGroupDetailPage = () => {
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               Contests
             </Tab>
-            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
-              Members
-            </Tab>
             {isAdmin ? (
-              <Tab
-                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-              >
-                Manage
-              </Tab>
+              <>
+                <Tab
+                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                >
+                  Members
+                </Tab>
+                <Tab
+                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                >
+                  Manage
+                </Tab>
+              </>
             ) : null}
           </TabList>
           <div className="px-2 py-4">
             <TabPanel className="focus:outline-none">{contestContent}</TabPanel>
-            <TabPanel className="focus:outline-none">{membersContent}</TabPanel>
-            {isAdmin ? <TabPanel className="focus:outline-none">{manageContent}</TabPanel> : null}
+            {isAdmin ? (
+              <>
+                <TabPanel className="focus:outline-none">{membersContent}</TabPanel>
+                <TabPanel className="focus:outline-none">{manageContent}</TabPanel>
+              </>
+            ) : null}
           </div>
         </TabGroup>
       </PageSection>

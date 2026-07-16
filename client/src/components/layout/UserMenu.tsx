@@ -7,16 +7,30 @@ import { accountMatch } from "../../lib/navRoutes";
 import {
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
+  LEAGUES_TAB,
+  LEFT_TABS,
+  leagueNavItemsFromAuth,
 } from "../../lib/navTabs";
 
 const menuItemClass =
   "block w-full px-4 py-2 text-left text-sm font-display text-slate-700 data-[focus]:bg-slate-50";
 
+const menuItemActiveClass =
+  "block w-full px-4 py-2 text-left text-sm font-display font-semibold text-slate-950 data-[focus]:bg-slate-50";
+
+const menuSubItemClass =
+  "block w-full px-4 py-1.5 pl-7 text-left text-sm font-display text-slate-600 data-[focus]:bg-slate-50";
+
+const menuSubItemActiveClass =
+  "block w-full px-4 py-1.5 pl-7 text-left text-sm font-display font-semibold text-slate-950 data-[focus]:bg-slate-50";
+
 export const UserMenu: React.FC = () => {
-  const { logout, paymentTokenBalance, balancesUnavailable, isAdmin } = useAuth();
+  const { user, logout, paymentTokenBalance, balancesUnavailable, isAdmin } = useAuth();
   const showAdminNav = isAdmin();
   const location = useLocation();
   const isAccountActive = accountMatch(location.pathname);
+  const leagues = leagueNavItemsFromAuth(user?.userGroups);
+  const liveContestsTab = LEFT_TABS[0];
 
   const totalBalance = balancesUnavailable
     ? null
@@ -49,42 +63,109 @@ export const UserMenu: React.FC = () => {
 
       <MenuItems
         anchor="bottom end"
-        className="z-50 mt-1 min-w-[11rem] rounded-md border border-slate-200 bg-white py-1 shadow-lg focus:outline-none"
+        className="z-50 mt-1 min-w-[14rem] rounded-md border border-slate-200 bg-white py-1 shadow-lg focus:outline-none"
       >
-        {ACCOUNT_SUB_LINKS.map((link) => (
-          <MenuItem key={link.to}>
-            {({ close }) => (
+        <MenuItem>
+          {({ close }) => {
+            const active = liveContestsTab.match(location.pathname);
+            return (
               <Link
-                to={link.to}
-                className={menuItemClass}
-                aria-current={link.match(location.pathname) ? "page" : undefined}
+                to={liveContestsTab.to}
+                state={liveContestsTab.state}
+                className={`${active ? menuItemActiveClass : menuItemClass} inline-flex items-center gap-2`}
+                aria-current={active ? "page" : undefined}
                 onClick={close}
               >
-                {link.label}
+                {liveContestsTab.liveDot ? (
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-hidden />
+                ) : null}
+                {liveContestsTab.label}
               </Link>
-            )}
-          </MenuItem>
-        ))}
-        {showAdminNav
-          ? ADMIN_MENU_LINKS.map((link) => (
-              <MenuItem key={link.to}>
-                {({ close }) => (
-                  <Link
-                    to={link.to}
-                    className={menuItemClass}
-                    aria-current={
-                      location.pathname === link.to || location.pathname.startsWith(`${link.to}/`)
-                        ? "page"
-                        : undefined
-                    }
-                    onClick={close}
-                  >
-                    {link.label}
-                  </Link>
-                )}
-              </MenuItem>
-            ))
-          : null}
+            );
+          }}
+        </MenuItem>
+
+        <MenuItem>
+          {({ close }) => {
+            const active =
+              location.pathname === LEAGUES_TAB.to || location.pathname === "/user-groups";
+            return (
+              <Link
+                to={LEAGUES_TAB.to}
+                className={active ? menuItemActiveClass : menuItemClass}
+                aria-current={active ? "page" : undefined}
+                onClick={close}
+              >
+                {LEAGUES_TAB.label}
+              </Link>
+            );
+          }}
+        </MenuItem>
+
+        {leagues.map((league) => {
+          const active = league.match(location.pathname);
+          return (
+            <MenuItem key={league.id}>
+              {({ close }) => (
+                <Link
+                  to={league.to}
+                  className={active ? menuSubItemActiveClass : menuSubItemClass}
+                  aria-current={active ? "page" : undefined}
+                  onClick={close}
+                >
+                  {league.name}
+                </Link>
+              )}
+            </MenuItem>
+          );
+        })}
+
+        <div className="my-1 border-t border-slate-100" role="separator" />
+
+        {ACCOUNT_SUB_LINKS.map((link) => {
+          const active = link.match(location.pathname);
+          return (
+            <MenuItem key={link.to}>
+              {({ close }) => (
+                <Link
+                  to={link.to}
+                  className={active ? menuItemActiveClass : menuItemClass}
+                  aria-current={active ? "page" : undefined}
+                  onClick={close}
+                >
+                  {link.label}
+                </Link>
+              )}
+            </MenuItem>
+          );
+        })}
+
+        {showAdminNav ? (
+          <>
+            <div className="my-1 border-t border-slate-100" role="separator" />
+            {ADMIN_MENU_LINKS.map((link) => {
+              const active =
+                location.pathname === link.to || location.pathname.startsWith(`${link.to}/`);
+              return (
+                <MenuItem key={link.to}>
+                  {({ close }) => (
+                    <Link
+                      to={link.to}
+                      className={active ? menuItemActiveClass : menuItemClass}
+                      aria-current={active ? "page" : undefined}
+                      onClick={close}
+                    >
+                      {link.label}
+                    </Link>
+                  )}
+                </MenuItem>
+              );
+            })}
+          </>
+        ) : null}
+
+        <div className="my-1 border-t border-slate-100" role="separator" />
+
         <MenuItem>
           <button type="button" className={menuItemClass} onClick={() => void logout()}>
             Sign Out

@@ -32,8 +32,11 @@ function NavTabLink({
       to={tab.to}
       state={tab.state}
       aria-current={active ? "page" : undefined}
-      className={tabLinkClass(active)}
+      className={`${tabLinkClass(active)} inline-flex items-center gap-1.5`}
     >
+      {tab.liveDot ? (
+        <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-hidden />
+      ) : null}
       {tab.label}
     </Link>
   );

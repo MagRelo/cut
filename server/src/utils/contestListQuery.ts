@@ -14,6 +14,8 @@ export const contestListSelect = {
   status: true,
   settings: true,
   results: true,
+  pickPopularity: true,
+  pickPopularityLockedAt: true,
   createdAt: true,
   updatedAt: true,
   userGroup: {
@@ -30,6 +32,8 @@ export const contestListSelect = {
       lineupId: true,
       position: true,
       score: true,
+      baseScore: true,
+      popularityBonus: true,
       status: true,
       entryId: true,
       createdAt: true,
