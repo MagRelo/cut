@@ -213,19 +213,21 @@ model LineupPick {
 }
 
 model Contest {
-  id          String   @id @default(cuid())
-  name        String
-  endTime     DateTime
-  address     String
-  chainId     Int
-  eventId     String
-  status      String
-  userGroupId String?
-  description String?
-  settings    Json?
-  results     Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                     String    @id @default(cuid())
+  name                   String
+  endTime                DateTime
+  address                String
+  chainId                Int
+  eventId                String
+  status                 String
+  userGroupId            String?
+  description            String?
+  settings               Json?
+  results                Json?
+  pickPopularity         Json?
+  pickPopularityLockedAt DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   event                 CompetitionEvent              @relation(fields: [eventId], references: [id])
   userGroup             UserGroup?                      @relation(fields: [userGroupId], references: [id])
@@ -243,16 +245,18 @@ model Contest {
 }
 
 model ContestLineup {
-  id        String   @id @default(cuid())
-  contestId String
-  lineupId  String
-  userId    String
-  entryId   String?
-  status    String
-  score     Int?
-  position  Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  contestId       String
+  lineupId        String
+  userId          String
+  entryId         String?
+  status          String
+  score           Int?
+  baseScore       Int?
+  popularityBonus Int?
+  position        Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   contest   Contest                 @relation(fields: [contestId], references: [id])
   lineup    Lineup                  @relation(fields: [lineupId], references: [id])

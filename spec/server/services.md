@@ -34,7 +34,7 @@ Golf sync handlers: `server/src/sports/pga-golf/` (`initEvent`, `syncMetadata`, 
 | Service | Purpose |
 |---------|---------|
 | `contest/settleContest.ts` | Rank + on-chain settlement |
-| `updateContestLineups.ts` | Live scores/positions for an event |
+| `updateContestLineups.ts` | Live scores/positions for an event; platform popularity adjustment after lock ([consensus-axis.md](../../docs/platform/consensus-axis.md)) |
 | `batch/batchActivateContests.ts` | OPEN → ACTIVE |
 | `batch/batchSettleContests.ts` | ACTIVE/LOCKED → SETTLED |
 | `batch/batchCloseContests.ts` | Post-settlement cleanup |

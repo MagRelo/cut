@@ -212,9 +212,9 @@ Admin work: seed the field, write the prompt, set lock time.
 
 ### Implementation notes
 
-- **Per-contest scoring:** pick rates differ between a league contest (12 entries) and a public contest (200 entries). `aggregateLineupScore` may need `contestId` passed through; v1 can constrain to one contest per native event.
+- **Per-contest scoring:** pick rates differ between a league contest (12 entries) and a public contest (200 entries). Crowd-as-score sports need contest-scoped totals; v1 can constrain to one contest per native event.
 - **Minimum entries:** require a floor (e.g. 5) before computing consensus so pick rates are meaningful.
-- **Suggested `sportId`:** `ptc-consensus` — one sport, many events with different prompts. Set `scoreSource: "crowd"` (or equivalent) so platform code skips path-1 popularity adjustment.
+- **Suggested `sportId`:** `ptc-consensus` — one sport, many events with different prompts. Leave `ScoringRules.popularity.weight` at `0` so path-1 popularity adjustment does not double-count pick-frequency scores.
 - **Plugin checklist:** same as [add-sport-checklist.md](../../spec/platform/add-sport-checklist.md); Phase 1 spike proves pick-rate → rank → lineup score without any external API.
 
 ### Example v1: Crowd Reads

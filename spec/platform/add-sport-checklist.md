@@ -50,6 +50,7 @@ Contests, leagues, wallets, referrals, and on-chain contracts require **no chang
 ## Phase 2 — Database seed
 
 - [ ] Add `<SPORT>_ROSTER_RULES`, `<SPORT>_SCORING_RULES`, `<SPORT>_PREDICTION_RULES` to `server/prisma/seed.ts`
+- [ ] Include `scoringRules.popularity` (`weight: 0` unless this sport uses path-1 popularity adjustment — [consensus-axis.md](../../docs/platform/consensus-axis.md))
 - [ ] Upsert `Sport` row: `id`, `name`, `slug`, `isEnabled`, `rosterRules`, `scoringRules`, `predictionRules`
 - [ ] Run `pnpm --filter server run db:seed` and verify `GET /api/sports` returns the new sport
 - [ ] Set `isEnabled: false` until server + client plugins are registered if deploying to a shared environment early

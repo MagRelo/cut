@@ -39,4 +39,4 @@ Pass arguments to scripts **without** a `--` separator — e.g. `pnpm run servic
 
 ## Live Data Updates
 
-When `ENABLE_CRON=true`, a single pipeline runs every **5 minutes** (`server/src/cron/scheduler.ts`). For each active `CompetitionEvent`, the sport plugin syncs metadata and field, then—when the event is live—pulls PGA leaderboard/scorecards for field participants and updates `EventParticipant` scores. Contest lineup totals and positions are recalculated in the same pass. Spec: `spec/server/cron.md`.
+When `ENABLE_CRON=true`, a single pipeline runs every **5 minutes** (`server/src/cron/scheduler.ts`). For each active `CompetitionEvent`, the sport plugin syncs metadata and field, then—when the event is live—pulls live scores for field participants and updates `EventParticipant` totals. Contest lineup totals and positions are recalculated in the same pass (including optional popularity adjustment after contests lock — [docs/platform/consensus-axis.md](../../docs/platform/consensus-axis.md)). Spec: `spec/server/cron.md`.

@@ -5,7 +5,6 @@ import { SideBetPanel } from "./sideBet/SideBetPanel";
 import { PlusIcon, UserIcon } from "@heroicons/react/24/outline";
 import { CandidatePicker } from "../platform/CandidatePicker";
 import { SportLineupPickRow } from "../platform/SportLineupPickRow";
-import { SportParticipantRow } from "../platform/SportParticipantRow";
 import type { Candidate } from "@cut/sport-sdk";
 import type { ContestLineup } from "../../types/lineup";
 import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
@@ -18,7 +17,7 @@ import {
 } from "../../lib/candidateUtils";
 import { useCandidateSort } from "../../hooks/useCandidateSort";
 import { participantLastName } from "../../lib/candidateSorting";
-import { lineupDisplayScore } from "../../lib/lineupScore";
+import { lineupDisplayScore, lineupPopularityBonus, pickPopularityForParticipant } from "../../lib/lineupScore";
 import {
   candidatesForPlatformLineup,
   platformLineupEventParticipantIds,
@@ -38,6 +37,8 @@ import {
 import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/lineupPrediction";
 import { useSportRosterRules } from "../../hooks/useSportRosterRules";
 import { useSportPredictionRules } from "../../hooks/useSportPredictionRules";
+import type { PickPopularityMap } from "../../types/lineup";
+import type { ContestStatus } from "../../types/contest";
 
 import { getLineupNumberLabel } from "../../lib/lineupDisplay";
 
@@ -58,6 +59,9 @@ interface LineupContestCardProps {
   eventStatus: EventStatus;
   eventMetadata?: unknown;
   isEventEditable: boolean;
+  /** Contest pick popularity (post-lock only). */
+  pickPopularity?: PickPopularityMap | null;
+  contestStatus?: ContestStatus;
 }
 
 const PLAYERS_TAB_PANEL_CLASS = "flow-root";
@@ -72,6 +76,8 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   eventStatus,
   eventMetadata,
   isEventEditable,
+  pickPopularity = null,
+  contestStatus,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -209,6 +215,8 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const playerCount = canEditSlots ? slotEditor.filledCount : initialCandidates.length;
 
   const totalPoints = lineupDisplayScore(lineup);
+  const popularityBonus = lineupPopularityBonus(lineup);
+  const showPickPopularity = contestStatus != null && contestStatus !== "OPEN";
 
   const userSettings = lineup.user?.settings;
   const maybeUserColor =
@@ -244,9 +252,17 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 text-right">
-            <div className="text-xl font-bold leading-none text-gray-900">{totalPoints}</div>
-            <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
-              PTS
+            <div>
+              <div className="text-xl font-bold leading-none text-gray-900">{totalPoints}</div>
+              <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
+                PTS
+              </div>
+              {popularityBonus > 0 && lineup.baseScore != null ? (
+                <div className="mt-1 text-[10px] font-medium tabular-nums text-gray-500">
+                  {lineup.baseScore}
+                  <span className="text-emerald-700"> +{popularityBonus}</span>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -287,6 +303,14 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                                 status={status}
                                 eventMetadata={eventMetadata}
                                 onClick={() => openDetailModal(candidate)}
+                                popularityBonus={
+                                  showPickPopularity
+                                    ? pickPopularityForParticipant(
+                                        pickPopularity,
+                                        candidate.eventParticipantId,
+                                      )?.bonus
+                                    : null
+                                }
                               />
                             </div>
                             <button
@@ -344,11 +368,19 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                     ))
                   : displayCandidates.map((candidate) => (
                       <div key={candidate.participantId} className="p-3">
-                        <SportParticipantRow
+                        <SportLineupPickRow
                           candidate={candidate}
                           status={status}
                           eventMetadata={eventMetadata}
                           onClick={() => openDetailModal(candidate)}
+                          popularityBonus={
+                            showPickPopularity
+                              ? pickPopularityForParticipant(
+                                  pickPopularity,
+                                  candidate.eventParticipantId,
+                                )?.bonus
+                              : null
+                          }
                         />
                       </div>
                     ))}
