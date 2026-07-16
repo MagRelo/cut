@@ -18,27 +18,12 @@ interface ContestStatusBarProps {
   currentPeriod?: number | null;
   periodDisplay?: string | null;
   periodStatusDisplay?: string | null;
+  /** Optional surface override (border / background). */
+  className?: string;
 }
 
-const STATUS_BAR_BASE_CLASSNAME =
-  "border bg-gradient-to-b px-3 py-2 text-center font-display text-xs font-medium text-gray-700";
-
-const SETTLED_SURFACE_CLASSNAME = "border-slate-300 from-slate-100 via-gray-100/90 to-slate-200/50";
-
-function statusBarSurfaceClassName(contestStatus: ContestStatus): string {
-  switch (contestStatus) {
-    case "OPEN":
-    case "ACTIVE":
-    case "LOCKED":
-    case "SETTLED":
-    case "CLOSED":
-      return SETTLED_SURFACE_CLASSNAME;
-    case "CANCELLED":
-      return "border-rose-100 from-rose-50 via-red-50/90 to-rose-100/30";
-    default:
-      return SETTLED_SURFACE_CLASSNAME;
-  }
-}
+const STATUS_BAR_CLASSNAME =
+  "border border-slate-300 bg-gradient-to-b from-slate-100 via-gray-100/90 to-slate-200/50 px-3 py-2 text-center font-display text-xs font-medium text-gray-700";
 
 function isBeforeDate(targetDate: string | null | undefined): boolean {
   if (!targetDate) return false;
@@ -120,6 +105,16 @@ function statusBarContent(
   }
 }
 
+function StatusBarShell({
+  className,
+  children,
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return <div className={cn(STATUS_BAR_CLASSNAME, className)}>{children}</div>;
+}
+
 export const ContestStatusBar: React.FC<ContestStatusBarProps> = ({
   contestStatus,
   eventName,
@@ -128,6 +123,7 @@ export const ContestStatusBar: React.FC<ContestStatusBarProps> = ({
   currentPeriod,
   periodDisplay,
   periodStatusDisplay,
+  className,
 }) => {
   const isLiveContest = contestStatus === "ACTIVE" || contestStatus === "LOCKED";
   const periodChips = isLiveContest
@@ -144,22 +140,22 @@ export const ContestStatusBar: React.FC<ContestStatusBarProps> = ({
       return <div className="border-t border-slate-200" aria-hidden />;
     }
     return (
-      <div className={cn(STATUS_BAR_BASE_CLASSNAME, statusBarSurfaceClassName(contestStatus))}>
+      <StatusBarShell className={className}>
         <PeriodProgressContent chips={periodChips} />
-      </div>
+      </StatusBarShell>
     );
   }
 
-  const isBeforeStart = isBeforeDate(eventStartDate);
-  const content = statusBarContent(contestStatus, eventName, eventStartDate, isBeforeStart);
+  const content = statusBarContent(
+    contestStatus,
+    eventName,
+    eventStartDate,
+    isBeforeDate(eventStartDate),
+  );
 
   if (!content) {
     return null;
   }
 
-  return (
-    <div className={cn(STATUS_BAR_BASE_CLASSNAME, statusBarSurfaceClassName(contestStatus))}>
-      {content}
-    </div>
-  );
+  return <StatusBarShell className={className}>{content}</StatusBarShell>;
 };
