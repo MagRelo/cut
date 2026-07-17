@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
+import { useReadContract } from "wagmi";
 import type { Contest } from "../../types/contest";
 import type { AuthUser } from "../../contexts/AuthContext";
 import type { ContestLineup, PlatformLineupListItem } from "../../types/lineup";
@@ -9,12 +10,10 @@ import { useLineupData } from "../../hooks/useLineupData";
 import { useContestLineupEntry } from "../../hooks/useContestLineupEntry";
 import {
   eventDisplayNameFromMetadata,
-  eventStatusDisplayFromMetadata,
   eventStatusFromMetadata,
 } from "../../lib/eventMetadata";
-import {
-  canEditLineupForContest,
-} from "../../lib/lineupEditable";
+import { canEditLineupForContest } from "../../lib/lineupEditable";
+import ContestContract from "../../utils/contracts/ContestController.json";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { PageSection } from "../layout/PageSection";
 import { ErrorMessage } from "../common/ErrorMessage";
@@ -83,17 +82,25 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
   const [createError, setCreateError] = useState<string | null>(null);
   const [copyingLineupId, setCopyingLineupId] = useState<string | null>(null);
 
+  const { data: contestStateOnChain } = useReadContract({
+    address: contest.address as `0x${string}`,
+    abi: ContestContract.abi,
+    functionName: "state",
+    chainId: contest.chainId as 8453 | 84532 | undefined,
+    query: { enabled: Boolean(contest.address) },
+  });
+
   const eventStatus = useMemo(() => eventStatusFromMetadata(eventMetadata), [eventMetadata]);
   const isLineupEditable = useMemo(
-    () => canEditLineupForContest(contest.status, eventMetadata),
-    [contest.status, eventMetadata],
+    () =>
+      canEditLineupForContest(
+        contest.status,
+        contestStateOnChain !== undefined ? Number(contestStateOnChain) : undefined,
+      ),
+    [contest.status, contestStateOnChain],
   );
   const displayEventName = useMemo(
     () => eventDisplayNameFromMetadata(eventMetadata),
-    [eventMetadata],
-  );
-  const eventStatusDisplay = useMemo(
-    () => eventStatusDisplayFromMetadata(eventMetadata),
     [eventMetadata],
   );
 
@@ -274,11 +281,11 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
           <div className="mb-2 flex items-center gap-2">
             <span className="text-lg text-gray-600">🏌️</span>
             <div className="font-display text-lg font-semibold text-gray-900">
-              Event {eventStatusDisplay}!
+              Contest {contest.status}
             </div>
           </div>
           <p className="text-sm text-gray-600">
-            Check back when the next event opens to create your lineup.
+            Lineups can only be created or edited while this contest is open for entry.
           </p>
           <Link
             to="/contests"

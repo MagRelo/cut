@@ -51,6 +51,13 @@ export const ContestPredictionsPanel: React.FC<ContestPredictionsPanelProps> = (
 
       {mode === "claim" ? <PredictionClaimPanel contest={contest} /> : null}
 
+      {mode === "locked" ? (
+        <div className="space-y-2">
+          <h4 className="px-0.5 font-display text-sm font-semibold text-gray-800">Your bets</h4>
+          <PredictionPositionsList contest={contest} />
+        </div>
+      ) : null}
+
       {mode === "positions" ? <PredictionPositionsList contest={contest} /> : null}
     </div>
   );

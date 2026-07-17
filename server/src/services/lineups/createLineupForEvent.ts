@@ -40,16 +40,7 @@ export async function createLineupForEvent(input: CreateLineupInput) {
     return { error: "not_found" as const };
   }
 
-  const eventBlock = await getEventEditBlock(event.id, event.sportId);
-  if (eventBlock) {
-    const http = lineupEditBlockToHttp(eventBlock);
-    return {
-      error: "not_editable" as const,
-      status: http.status,
-      body: http.body,
-    };
-  }
-
+  // Contest-scoped create: gate on contest OPEN (on-chain preferred). Event-only create: event gate.
   if (input.contestId) {
     const contestBlock = await getContestEditBlock(input.contestId);
     if (contestBlock) {
@@ -68,6 +59,16 @@ export async function createLineupForEvent(input: CreateLineupInput) {
     );
     if (!scope.ok) {
       return { error: scope.error };
+    }
+  } else {
+    const eventBlock = await getEventEditBlock(event.id, event.sportId);
+    if (eventBlock) {
+      const http = lineupEditBlockToHttp(eventBlock);
+      return {
+        error: "not_editable" as const,
+        status: http.status,
+        body: http.body,
+      };
     }
   }
 

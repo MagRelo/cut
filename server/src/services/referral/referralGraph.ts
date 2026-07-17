@@ -48,6 +48,22 @@ export async function referralGraphIsRegistered(
   }) as Promise<boolean>;
 }
 
+export async function referralGraphGetReferrer(
+  chainId: number,
+  contractAddress: `0x${string}`,
+  userAddress: `0x${string}`,
+  groupId: Hex,
+): Promise<`0x${string}`> {
+  const publicClient = getReferralPublicClient(chainId);
+  const referrer = (await publicClient.readContract({
+    address: contractAddress,
+    abi: ReferralGraph.abi,
+    functionName: "getReferrer",
+    args: [userAddress, groupId],
+  })) as string;
+  return referrer.toLowerCase() as `0x${string}`;
+}
+
 export async function referralGraphRegister(
   chainId: number,
   contractAddress: `0x${string}`,

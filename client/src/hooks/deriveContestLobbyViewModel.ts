@@ -96,7 +96,8 @@ export function deriveContestLobbyViewModel(
     phase,
     layout: {
       showLineupsTab,
-      showPredictionsTab: !isSettled,
+      // Winner pool opens after activate (ACTIVE/LOCKED); hide while OPEN and after settle.
+      showPredictionsTab: phase === "live" || phase === "locked",
       showResultsTab: isSettled,
       lineupsTabIndex,
       contestTabIndex,

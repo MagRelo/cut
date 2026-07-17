@@ -90,20 +90,23 @@ Patch `referralGraphAddress`, `rewardCalculatorAddress`, and `contestFactoryAddr
 
 ### After deploy
 
+Canonical rebuild (Sepolia or Base — set `REFERRAL_SYNC_CHAIN_ID` to `84532` or `8453`):
+
 ```bash
-pnpm --filter server run script:bootstrap-referral-oracle-root
-pnpm --filter server run script:register-users-under-oracle-root -- --dry-run
-pnpm --filter server run script:register-users-under-oracle-root
-pnpm --filter server run service:batch-sync-referral-graph   # repeat until deferred: 0
+pnpm --filter server run script:rematerialize-referral-graph --dry-run
+pnpm --filter server run script:rematerialize-referral-graph --reset-hashes
 ```
 
 | Script | Role |
 |--------|------|
-| `bootstrapReferralOracleRoot.ts` | `register(oracle, REFERRAL_ROOT, groupId)` |
-| `registerUsersUnderOracleRoot.ts` | Organic users + invite chain heads → parent oracle |
-| `batchSyncReferralGraph.ts` | Invited users → `batchRegister` under inviter |
+| `rematerializeReferralGraph.ts` | Phase 0 optional hash reset → oracle root → organics → invite waves (inviter primary wallet) → parent audit |
+| `bootstrapReferralOracleRoot.ts` | Thin helper: `register(oracle, REFERRAL_ROOT, groupId)` |
+| `registerUsersUnderOracleRoot.ts` | Organics only (`referredByUserId` and `referrerAddress` null) |
+| `batchSyncReferralGraph.ts` | Ongoing cron: pending `referralOnchainTxHash: null`; fails on parent mismatch |
 
-**Multi-wallet users:** Invite links may use a different chain wallet than the user’s primary row. If sync stays deferred, register every wallet on that chain used as a referrer (oracle parent if organic, inviter parent when invited).
+**Do not** register invited users under the oracle as “missing parents.” ReferralGraph cannot re-parent.
+
+**Multi-wallet users:** Parent resolution uses the inviter’s `isPrimary` wallet on the target chain (`pickWalletForChain`). If sync stays deferred, the inviter needs a primary wallet row on that chain.
 
 ### Ongoing
 
@@ -113,6 +116,7 @@ pnpm --filter server run service:batch-sync-referral-graph   # repeat until defe
 | Invited signup | DB fields from `?ref=`; cron sync when referrer is on-chain |
 | Cron (every 5 min) | Pipeline job 7 — defer until referrer is registered |
 | Settlement | `settleContest(winners, payoutBps)`; winner must be on-graph |
+| Fresh graph / Base cutover | `script:rematerialize-referral-graph --reset-hashes` |
 
 ---
 
@@ -123,6 +127,8 @@ pnpm --filter server run service:batch-sync-referral-graph   # repeat until defe
 | Config / addresses | `server/src/lib/referralConfig.ts` |
 | Register / batch | `server/src/services/referral/referralGraph.ts` |
 | Bootstrap helpers | `server/src/services/referral/referralGraphSetup.ts` |
+| Parent resolver | `server/src/services/referral/resolveReferralParent.ts` |
+| Full rematerialize | `server/src/services/referral/rematerializeReferralGraph.ts` |
 | Cron sync | `server/src/services/batch/batchSyncReferralGraph.ts` |
 | Settlement | `server/src/services/contest/settleContest.ts` |
 | Settlement guard | `server/src/services/referral/assertWinnerRegisteredOnGraph.ts` |

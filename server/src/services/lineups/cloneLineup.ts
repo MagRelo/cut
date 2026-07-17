@@ -3,6 +3,7 @@ import { formatLineupResponse, lineupDetailInclude } from "./formatLineup.js";
 import { writeLineupPicks } from "./validateLineupPicks.js";
 import { markSideBetMarketStaleAfterRosterChange } from "../sideBets/markSideBetMarketStaleAfterRosterChange.js";
 import { validateLineupContestScope } from "./validateLineupContestScope.js";
+import { getContestEditBlock, lineupEditBlockToHttp } from "../../utils/lineupEditable.js";
 
 export type CloneLineupInput = {
   sourceLineupId: string;
@@ -25,6 +26,18 @@ export async function cloneLineup(input: CloneLineupInput) {
 
   if (!source || source.userId !== input.userId) {
     return { error: "not_found" as const };
+  }
+
+  // Gate on the *target* contest (OPEN), not whether the source lineup is still editable
+  // in an older contest it was entered into.
+  const contestBlock = await getContestEditBlock(input.targetContestId);
+  if (contestBlock) {
+    const http = lineupEditBlockToHttp(contestBlock);
+    return {
+      error: "not_editable" as const,
+      status: http.status,
+      body: http.body,
+    };
   }
 
   const scope = await validateLineupContestScope(

@@ -1,23 +1,23 @@
 import type { EventStatus } from "@cut/sport-sdk";
 import { prisma } from "../lib/prisma.js";
 import { requireSportModule } from "../sports/registry.js";
-
-export const LINEUP_LOCKED_CONTEST_STATUSES = [
-  "LOCKED",
-  "SETTLED",
-  "CLOSED",
-  "CANCELLED",
-] as const;
+import { readContestState } from "../services/shared/contractClient.js";
+import {
+  arePrimaryActionsLocked,
+  contractStateToStatus,
+  type ContestStatus,
+} from "../services/shared/types.js";
 
 export type LineupEditBlock =
   | { code: "not_found" }
   | { code: "event_not_editable"; eventStatus: EventStatus }
   | { code: "contest_not_editable"; contestId: string; contestStatus: string };
 
+/**
+ * Contest-scoped lineup create/edit matches primary join/leave: only while OPEN.
+ */
 export function contestAllowsLineupEdits(status: string): boolean {
-  return !LINEUP_LOCKED_CONTEST_STATUSES.includes(
-    status as (typeof LINEUP_LOCKED_CONTEST_STATUSES)[number],
-  );
+  return !arePrimaryActionsLocked(status as ContestStatus);
 }
 
 export async function getEventEditBlock(
@@ -34,6 +34,25 @@ export async function getEventEditBlock(
   return null;
 }
 
+async function resolveContestStatusForEdit(contest: {
+  id: string;
+  status: string;
+  address: string;
+  chainId: number;
+}): Promise<string> {
+  try {
+    const onChain = await readContestState(contest.address, contest.chainId);
+    return contractStateToStatus(onChain);
+  } catch (error) {
+    console.warn(
+      `[lineupEditable] Falling back to DB status for contest ${contest.id}:`,
+      error instanceof Error ? error.message : error,
+    );
+    return contest.status;
+  }
+}
+
+/** Contest-scoped edits: contest OPEN only (prefer on-chain state). No event gate. */
 export async function getContestEditBlock(
   contestId: string,
 ): Promise<LineupEditBlock | null> {
@@ -42,8 +61,8 @@ export async function getContestEditBlock(
     select: {
       id: true,
       status: true,
-      eventId: true,
-      event: { select: { sportId: true } },
+      address: true,
+      chainId: true,
     },
   });
 
@@ -51,15 +70,16 @@ export async function getContestEditBlock(
     return { code: "not_found" };
   }
 
-  if (!contestAllowsLineupEdits(contest.status)) {
+  const status = await resolveContestStatusForEdit(contest);
+  if (!contestAllowsLineupEdits(status)) {
     return {
       code: "contest_not_editable",
       contestId: contest.id,
-      contestStatus: contest.status,
+      contestStatus: status,
     };
   }
 
-  return getEventEditBlock(contest.eventId, contest.event.sportId);
+  return null;
 }
 
 export async function getLineupEditBlock(
@@ -75,7 +95,9 @@ export async function getLineupEditBlock(
       contestLineups: {
         select: {
           contestId: true,
-          contest: { select: { status: true } },
+          contest: {
+            select: { id: true, status: true, address: true, chainId: true },
+          },
         },
       },
     },
@@ -85,36 +107,43 @@ export async function getLineupEditBlock(
     return { code: "not_found" };
   }
 
-  const eventBlock = await getEventEditBlock(lineup.eventId, lineup.event.sportId);
-  if (eventBlock) {
-    return eventBlock;
-  }
+  const contestScoped =
+    Boolean(lineup.contestId) || lineup.contestLineups.length > 0;
 
-  for (const entry of lineup.contestLineups) {
-    if (!contestAllowsLineupEdits(entry.contest.status)) {
-      return {
-        code: "contest_not_editable",
-        contestId: entry.contestId,
-        contestStatus: entry.contest.status,
-      };
+  // Contest-scoped lineups follow contest OPEN (on-chain preferred), not event status.
+  if (contestScoped) {
+    for (const entry of lineup.contestLineups) {
+      const status = await resolveContestStatusForEdit(entry.contest);
+      if (!contestAllowsLineupEdits(status)) {
+        return {
+          code: "contest_not_editable",
+          contestId: entry.contestId,
+          contestStatus: status,
+        };
+      }
     }
-  }
 
-  if (lineup.contestId) {
-    const contest = await prisma.contest.findUnique({
-      where: { id: lineup.contestId },
-      select: { id: true, status: true },
-    });
-    if (contest && !contestAllowsLineupEdits(contest.status)) {
-      return {
-        code: "contest_not_editable",
-        contestId: contest.id,
-        contestStatus: contest.status,
-      };
+    if (lineup.contestId) {
+      const contest = await prisma.contest.findUnique({
+        where: { id: lineup.contestId },
+        select: { id: true, status: true, address: true, chainId: true },
+      });
+      if (contest) {
+        const status = await resolveContestStatusForEdit(contest);
+        if (!contestAllowsLineupEdits(status)) {
+          return {
+            code: "contest_not_editable",
+            contestId: contest.id,
+            contestStatus: status,
+          };
+        }
+      }
     }
+
+    return null;
   }
 
-  return null;
+  return getEventEditBlock(lineup.eventId, lineup.event.sportId);
 }
 
 export function lineupEditBlockToHttp(block: LineupEditBlock): {
@@ -138,7 +167,7 @@ export function lineupEditBlockToHttp(block: LineupEditBlock): {
         status: 403,
         body: {
           error: "Contest lineup editing is not allowed",
-          message: "Cannot edit lineups after a contest has locked or settled",
+          message: "Cannot edit lineups after contest entry has closed",
           contestId: block.contestId,
           contestStatus: block.contestStatus,
         },

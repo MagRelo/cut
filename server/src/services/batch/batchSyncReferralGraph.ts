@@ -1,12 +1,15 @@
 /**
  * Push pending users to ReferralGraph (one register tx per user).
- * Organic users → oracle root; invited users → inviter when inviter is on-chain.
+ * Organic users → oracle root; invited users → inviter primary wallet when on-chain.
  */
 
 import { getAddress, type Hex } from "viem";
 import { prisma } from "../../lib/prisma.js";
 import { getReferralGraphAddress } from "../../lib/referralConfig.js";
-import { referralGraphIsRegistered } from "../referral/referralGraph.js";
+import {
+  referralGraphGetReferrer,
+  referralGraphIsRegistered,
+} from "../referral/referralGraph.js";
 import {
   bootstrapReferralOracleRoot,
   isOracleRootRegistered,
@@ -14,6 +17,10 @@ import {
   resolveReferralGraphSetup,
   type ReferralGraphSetup,
 } from "../referral/referralGraphSetup.js";
+import {
+  isOrganicReferralUser,
+  resolveExpectedReferralParent,
+} from "../referral/resolveReferralParent.js";
 import { type BatchOperationResult } from "../shared/types.js";
 import { pickWalletPublicKeyForChain } from "../../utils/pickWalletForChain.js";
 
@@ -39,11 +46,17 @@ function userWalletOnChain(u: PendingUser): string | null {
   return pickWalletPublicKeyForChain(u.wallets, cid);
 }
 
-async function resolveReferrer(
+async function resolveReferrerForSync(
   u: PendingUser,
   setup: ReferralGraphSetup,
-): Promise<{ ready: boolean; referrer: `0x${string}` | null }> {
-  if (!u.referrerAddress) {
+): Promise<{ ready: boolean; referrer: `0x${string}` | null; error?: string }> {
+  const resolved = await resolveExpectedReferralParent(u, setup.chainId, setup.oracleRoot);
+
+  if (resolved.kind === "error") {
+    return { ready: false, referrer: null, error: resolved.error };
+  }
+
+  if (resolved.kind === "organic") {
     if (!(await isOracleRootRegistered(setup))) {
       await bootstrapReferralOracleRoot(setup);
     }
@@ -51,14 +64,14 @@ async function resolveReferrer(
     return { ready, referrer: ready ? setup.oracleRoot : null };
   }
 
-  const ref = getAddress(u.referrerAddress).toLowerCase() as `0x${string}`;
+  // Invited: never use oracle; wait until parent is on-chain
   const onChain = await referralGraphIsRegistered(
     setup.chainId,
     setup.graphAddress,
-    ref,
+    resolved.parent,
     setup.groupId,
   );
-  return { ready: onChain, referrer: ref };
+  return { ready: onChain, referrer: resolved.parent };
 }
 
 export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
@@ -90,13 +103,43 @@ export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
     }
 
     try {
+      const setup = resolveReferralGraphSetup(chainId);
       const registered = await referralGraphIsRegistered(
         chainId,
         graphAddr,
-        userAddr as `0x${string}`,
+        getAddress(userAddr).toLowerCase() as `0x${string}`,
         groupId,
       );
+
       if (registered) {
+        const expected = await resolveExpectedReferralParent(u, chainId, setup.oracleRoot);
+        if (expected.kind === "error") {
+          failed += 1;
+          results.push({
+            success: false,
+            contestId: u.id,
+            error: `already on-chain but cannot resolve expected parent: ${expected.error}`,
+          });
+          continue;
+        }
+
+        const actual = await referralGraphGetReferrer(
+          chainId,
+          graphAddr,
+          getAddress(userAddr).toLowerCase() as `0x${string}`,
+          groupId,
+        );
+        const expectedParent = expected.parent.toLowerCase();
+        if (actual !== expectedParent) {
+          failed += 1;
+          results.push({
+            success: false,
+            contestId: u.id,
+            error: `parent mismatch: on-chain ${actual}, expected ${expectedParent}`,
+          });
+          continue;
+        }
+
         await prisma.user.update({
           where: { id: u.id },
           data: { referralOnchainTxHash: ALREADY_ON_CHAIN },
@@ -148,8 +191,27 @@ export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
         continue;
       }
 
-      const { ready, referrer } = await resolveReferrer(u, setup);
+      // Refuse to register invitees under oracle if resolution somehow yields organic incorrectly
+      if (!isOrganicReferralUser(u)) {
+        const expected = await resolveExpectedReferralParent(u, chainId, setup.oracleRoot);
+        if (expected.kind === "invited" && expected.parent === setup.oracleRoot.toLowerCase()) {
+          failed += 1;
+          results.push({
+            success: false,
+            contestId: u.id,
+            error: "refusing to register invitee under oracle",
+          });
+          continue;
+        }
+      }
+
+      const { ready, referrer, error } = await resolveReferrerForSync(u, setup);
       if (!ready || !referrer) {
+        if (error && !u.referrerAddress && !u.referredByUserId) {
+          // organic waiting on oracle — defer
+        } else if (error && (u.referrerAddress || u.referredByUserId)) {
+          // keep deferred for missing parent wallet etc. — only fail hard errors later
+        }
         notReady.push(u);
         continue;
       }
@@ -172,6 +234,21 @@ export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
         );
 
         if (skipped && !txHash) {
+          const actual = await referralGraphGetReferrer(
+            setup.chainId,
+            setup.graphAddress,
+            getAddress(userAddr).toLowerCase() as `0x${string}`,
+            setup.groupId,
+          );
+          if (actual !== referrer.toLowerCase()) {
+            failed += 1;
+            results.push({
+              success: false,
+              contestId: u.id,
+              error: `parent mismatch after skip: on-chain ${actual}, expected ${referrer}`,
+            });
+            continue;
+          }
           await prisma.user.update({
             where: { id: u.id },
             data: { referralOnchainTxHash: ALREADY_ON_CHAIN },
@@ -214,9 +291,10 @@ export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
     results.push({
       success: false,
       contestId: u.id,
-      error: u.referrerAddress
-        ? "deferred: referrer not registered on chain yet"
-        : "deferred: oracle root not registered on chain yet",
+      error:
+        u.referrerAddress || u.referredByUserId
+          ? "deferred: referrer not registered on chain yet"
+          : "deferred: oracle root not registered on chain yet",
     });
   }
 

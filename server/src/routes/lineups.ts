@@ -25,7 +25,6 @@ function contestScopeErrorResponse(error: string) {
 lineupsRouter.post(
   "/clone/:lineupId",
   requireAuth,
-  requireLineupEditable,
   async (c) => {
     try {
       const sourceLineupId = c.req.param("lineupId");
@@ -48,6 +47,9 @@ lineupsRouter.post(
       if ("error" in result) {
         if (result.error === "not_found") {
           return c.json({ error: "Lineup not found" }, 404);
+        }
+        if (result.error === "not_editable") {
+          return c.json(result.body, result.status);
         }
         const scoped = contestScopeErrorResponse(result.error);
         return c.json(scoped.body, scoped.status);
