@@ -21,12 +21,6 @@ export {
 export { validateGolfRoster } from "./validation.js";
 export { rankGolfEntries, getContestWinningScore, tiebreakerDistance } from "./ranking.js";
 export {
-  remainingCapacity,
-  DEFAULT_MAX_PTS_PER_HOLE,
-  type RemainingCapacity,
-  type RemainingCapacityOptions,
-} from "./remainingCapacity.js";
-export {
   buildGenericScoringModel,
   createSeededRandom,
   extractGenericHoleOutcomes,
@@ -40,19 +34,24 @@ export {
   type SampledGolfOutcome,
 } from "./genericProjection.js";
 export {
-  analyzeDecisiveCandidates,
+  analyzeContestCommentary,
   scoreLineupFromTotals,
-  type AnalyzeDecisiveCandidatesInput,
-  type AnalyzeDecisiveCandidatesOptions,
-  type ConsensusCandidateRow,
-  type ContentionSummary,
-  type DecisiveCandidateEntry,
-  type DecisiveCandidateParticipant,
-  type DecisiveCandidateRow,
-  type DecisiveCandidatesReport,
-  type LineupOutlook,
+  type AnalyzeContestCommentaryInput,
+  type ContestCommentaryConsensusPlayer,
+  type ContestCommentaryContext,
+  type ContestCommentaryAnalysisOptions,
+  type ContestCommentaryEntry,
+  type ContestCommentaryLineup,
+  type ContestCommentaryLineupRoute,
+  type ContestCommentaryLineupRarity,
+  type ContestCommentaryParticipant,
+  type ContestCommentaryPlayer,
+  type ContestCommentaryRouteNeed,
+  type ContestCommentaryRoutePlausibility,
+  type ContestCommentarySharedDependency,
+  type ContestCommentarySharedDownsideRisk,
   type LineupOutlookTier,
-} from "./decisiveCandidates.js";
+} from "./contestCommentary.js";
 export { buildGolfCandidates, type EventParticipantRow } from "./candidates.js";
 export { golfCandidateSortConfig } from "./candidateSort.js";
 export {

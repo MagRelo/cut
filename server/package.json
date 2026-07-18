@@ -59,14 +59,15 @@
     "script:commodities-refresh-candidates": "tsx src/scripts/commoditiesRefreshCandidates.ts",
     "script:commodities-week-analysis": "tsx src/scripts/commoditiesWeekAnalysis.ts",
     "script:commodities-scoring-models": "tsx src/scripts/commoditiesScoringModels.ts",
-    "script:analyze-decisive-candidates": "tsx src/scripts/analyzeDecisiveCandidates.ts"
+    "script:contest-commentary": "NODE_NO_WARNINGS=1 tsx src/scripts/contestCommentary.ts"
   },
   "dependencies": {
+    "@cursor/sdk": "^1.0.23",
+    "@cut/secondary-pricing": "workspace:*",
     "@cut/sport-commodities": "workspace:*",
     "@cut/sport-f1": "workspace:*",
     "@cut/sport-pga-golf": "workspace:*",
     "@cut/sport-sdk": "workspace:*",
-    "@cut/secondary-pricing": "workspace:*",
     "@hono/node-server": "^1.19.3",
     "@prisma/client": "^5.10.0",
     "@privy-io/node": "^0.11.0",

@@ -18,6 +18,8 @@ export interface RemainingRoundPlan {
 export interface SampledGolfOutcome {
   stableford: number;
   strokesToPar: number;
+  holeInOnes: number;
+  negativeHoles: number;
 }
 
 const FALLBACK_WEIGHTS: Array<[stableford: number, strokesToPar: number, weight: number]> = [
@@ -193,12 +195,21 @@ export function sampleRoundPlan(
   for (const plan of plans) {
     let stableford = 0;
     let strokesToPar = 0;
+    let holeInOnes = 0;
+    let negativeHoles = 0;
     for (const par of plan.pars) {
       const outcome = sampleGenericHole(par, model, random);
       stableford += outcome.stableford;
       strokesToPar += outcome.strokesToPar;
+      if (outcome.stableford === 15) holeInOnes++;
+      if (outcome.stableford < 0) negativeHoles++;
     }
-    sampled.set(plan.round, { stableford, strokesToPar });
+    sampled.set(plan.round, {
+      stableford,
+      strokesToPar,
+      holeInOnes,
+      negativeHoles,
+    });
   }
   return sampled;
 }
