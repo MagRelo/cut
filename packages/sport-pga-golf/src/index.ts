@@ -27,17 +27,31 @@ export {
   type RemainingCapacityOptions,
 } from "./remainingCapacity.js";
 export {
+  buildGenericScoringModel,
+  createSeededRandom,
+  extractGenericHoleOutcomes,
+  quantile,
+  remainingRoundPlan,
+  sampleGenericHole,
+  sampleRoundPlan,
+  type GenericHoleOutcome,
+  type GenericScoringModel,
+  type RemainingRoundPlan,
+  type SampledGolfOutcome,
+} from "./genericProjection.js";
+export {
   analyzeDecisiveCandidates,
   scoreLineupFromTotals,
   type AnalyzeDecisiveCandidatesInput,
   type AnalyzeDecisiveCandidatesOptions,
   type ConsensusCandidateRow,
   type ContentionSummary,
-  type DecisiveAffectsEntry,
   type DecisiveCandidateEntry,
   type DecisiveCandidateParticipant,
   type DecisiveCandidateRow,
   type DecisiveCandidatesReport,
+  type LineupOutlook,
+  type LineupOutlookTier,
 } from "./decisiveCandidates.js";
 export { buildGolfCandidates, type EventParticipantRow } from "./candidates.js";
 export { golfCandidateSortConfig } from "./candidateSort.js";

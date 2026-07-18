@@ -4,11 +4,27 @@ import {
   normalizePopularityRules,
   type PopularityRules,
 } from "@cut/sport-sdk";
+import {
+  buildGenericScoringModel,
+  createSeededRandom,
+  quantile,
+  remainingRoundPlan,
+  sampleRoundPlan,
+  type GenericScoringModel,
+  type RemainingRoundPlan,
+} from "./genericProjection.js";
+import { positionBonus } from "./live-scores.js";
 import { rankGolfEntries } from "./ranking.js";
-import { remainingCapacity, DEFAULT_MAX_PTS_PER_HOLE } from "./remainingCapacity.js";
+
+export interface AnalyzeDecisiveCandidatesOptions {
+  simulations?: number;
+  seed?: number;
+  minPayoutProbability?: number;
+}
 
 export interface DecisiveCandidateEntry {
   entryId: string;
+  displayName?: string;
   prediction: unknown | null;
   createdAt: Date;
   eventParticipantIds: string[];
@@ -18,18 +34,7 @@ export interface DecisiveCandidateParticipant {
   eventParticipantId: string;
   displayName: string;
   scoreData: unknown;
-  /** Live external pick total `e_i` (`EventParticipant.total`). */
   total: number;
-}
-
-export interface AnalyzeDecisiveCandidatesOptions {
-  maxPtsPerHole?: number;
-  /** Override contention slack (points below paid cut). */
-  slackOverride?: number;
-  /** Floor for derived slack. Default 8. */
-  minSlack?: number;
-  /** Cap for derived slack. Default unlimited. */
-  maxSlack?: number;
 }
 
 export interface AnalyzeDecisiveCandidatesInput {
@@ -37,29 +42,40 @@ export interface AnalyzeDecisiveCandidatesInput {
   eventId: string;
   currentPeriod?: number | null;
   entries: DecisiveCandidateEntry[];
+  /** Full event field; contest picks are a subset. */
   participants: DecisiveCandidateParticipant[];
-  /** Sport `ScoringRules.popularity` (weight 0 = raw sum). */
+  scoringModel?: GenericScoringModel;
   popularity?: PopularityRules | null;
-  /**
-   * Frozen contest pick rates `o(i)` keyed by eventParticipantId.
-   * Used when `popularity.weight ≠ 0`. Missing rates are treated as 0.
-   */
   pickRates?: Record<string, number> | null;
   options?: AnalyzeDecisiveCandidatesOptions;
 }
 
+export type LineupOutlookTier =
+  | "favorite"
+  | "in_the_hunt"
+  | "outside_shot"
+  | "effectively_out";
+
+export interface LineupOutlook {
+  entryId: string;
+  displayName: string;
+  scoreNow: number;
+  positionNow: number;
+  gapToCut: number;
+  projectedLow: number;
+  projectedMedian: number;
+  projectedHigh: number;
+  winProbability: number;
+  payoutProbability: number;
+  tier: LineupOutlookTier;
+}
+
 export interface ContentionSummary {
   entryIds: string[];
-  slackUsed: number;
   leaderScore: number;
   cutScore: number;
   paidCount: number;
-}
-
-export interface DecisiveAffectsEntry {
-  entryId: string;
-  positionNow: number;
-  owns: boolean;
+  definition: "plausible_payout_probability";
 }
 
 export interface DecisiveCandidateRow {
@@ -67,18 +83,29 @@ export interface DecisiveCandidateRow {
   displayName: string;
   ownership: string;
   ownersCount: number;
-  contentionSize: number;
+  lineupCount: number;
   holesLeft: number;
-  maxRemaining: number;
-  minSwingToFlip: number | null;
-  flipShare: number;
-  affects: DecisiveAffectsEntry[];
+  roundsLeft: number;
+  likelyRemaining: {
+    low: number;
+    median: number;
+    high: number;
+  };
+  payoutSwing: number;
+  ownerPayoutWhenCold: number;
+  ownerPayoutWhenHot: number;
+  affectedEntryIds: string[];
+  affectedUserNames: string[];
 }
 
 export interface ConsensusCandidateRow {
   eventParticipantId: string;
   displayName: string;
   ownership: string;
+  ownersCount: number;
+  cohortSize: number;
+  payoutSwing: number;
+  consensusStrength: number;
   reason: string;
 }
 
@@ -87,322 +114,477 @@ export interface DecisiveCandidatesReport {
   eventId: string;
   period: number | null;
   paidCount: number;
-  /** Effective popularity weight used for scoring. */
   popularityWeight: number;
+  simulationCount: number;
+  seed: number;
   contention: ContentionSummary;
+  lineupOutlooks: LineupOutlook[];
   decisive: DecisiveCandidateRow[];
   consensus: ConsensusCandidateRow[];
   notes: string[];
 }
 
-interface ScoredEntry {
-  entryId: string;
-  score: number;
-  prediction: unknown | null;
-  createdAt: Date;
-  eventParticipantIds: string[];
+interface ParticipantState {
+  participant: DecisiveCandidateParticipant;
+  plans: RemainingRoundPlan[];
+  stablefordNow: number;
+  leaderboardNow: number;
+  status: string;
 }
 
-const DEFAULT_MIN_SLACK = 8;
-
-function paidSetKey(entryIds: string[]): string {
-  return [...entryIds].sort().join(",");
+interface ScenarioRecord {
+  paidSet: Set<string>;
+  remainingByParticipant: Map<string, number>;
 }
 
-/** Contest lineup finalScore from live pick totals + popularity. */
-export function scoreLineupFromTotals(
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function scoreDataNumber(scoreData: unknown, key: string): number | null {
+  const value = asRecord(scoreData)?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function leaderboardTotal(scoreData: unknown): number {
+  const raw = asRecord(scoreData)?.leaderboardTotal;
+  if (raw === "E" || raw === "EVEN" || raw === "Even") return 0;
+  const parsed = typeof raw === "number" ? raw : Number(raw);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function leaderboardStatus(scoreData: unknown): string {
+  const position = asRecord(scoreData)?.leaderboardPosition;
+  return typeof position === "string" ? position.toUpperCase() : "";
+}
+
+function stablefordNow(participant: DecisiveCandidateParticipant): number {
+  const direct = scoreDataNumber(participant.scoreData, "stableford");
+  if (direct != null) return direct;
+  const cut = scoreDataNumber(participant.scoreData, "cut") ?? 0;
+  const bonus = scoreDataNumber(participant.scoreData, "bonus") ?? 0;
+  return participant.total - cut - bonus;
+}
+
+function probability(value: number): number {
+  return Math.round(value * 10_000) / 10_000;
+}
+
+function scoreLineupFromTotals(
   eventParticipantIds: readonly string[],
   totalsById: Map<string, number>,
   pickRates: Record<string, number> | null | undefined,
   popularity: PopularityRules | null | undefined,
 ): number {
   const rules = normalizePopularityRules(popularity);
-  let sum = 0;
-  for (const epId of eventParticipantIds) {
-    const e = totalsById.get(epId) ?? 0;
-    const o = pickRates?.[epId] ?? 0;
-    sum += adjustPickScore(e, o, rules).adjustedScore;
-  }
-  return sum;
+  return eventParticipantIds.reduce((sum, eventParticipantId) => {
+    const total = totalsById.get(eventParticipantId) ?? 0;
+    const pickRate = pickRates?.[eventParticipantId] ?? 0;
+    return sum + adjustPickScore(total, pickRate, rules).adjustedScore;
+  }, 0);
 }
 
-function scoreEntries(
-  entries: DecisiveCandidateEntry[],
-  totalsById: Map<string, number>,
-  pickRates: Record<string, number> | null | undefined,
-  popularity: PopularityRules | null | undefined,
-): ScoredEntry[] {
-  return entries.map((e) => ({
-    ...e,
-    score: scoreLineupFromTotals(
-      e.eventParticipantIds,
-      totalsById,
-      pickRates,
-      popularity,
-    ),
-  }));
+function assignFinishBonuses(
+  projectedStrokes: Map<string, number>,
+): Map<string, number> {
+  const sorted = [...projectedStrokes].sort((a, b) => a[1] - b[1]);
+  const bonuses = new Map<string, number>();
+  let previousScore: number | null = null;
+  let position = 0;
+  for (let index = 0; index < sorted.length; index++) {
+    const [participantId, score] = sorted[index]!;
+    if (score !== previousScore) position = index + 1;
+    bonuses.set(participantId, positionBonus(String(position)));
+    previousScore = score;
+  }
+  return bonuses;
 }
 
-function buildContentionSet(
-  entries: ScoredEntry[],
-  paidCount: number,
-  participantCapacity: Map<string, number>,
-  options: AnalyzeDecisiveCandidatesOptions,
-): { contention: ScoredEntry[]; slackUsed: number; leaderScore: number; cutScore: number } {
-  const sorted = [...entries].sort((a, b) => b.score - a.score);
-  const leaderScore = sorted[0]?.score ?? 0;
-  const cutIndex = Math.min(paidCount, sorted.length) - 1;
-  const cutScore = sorted[Math.max(0, cutIndex)]?.score ?? 0;
-
-  const topBand = sorted.slice(0, Math.max(paidCount, 1));
-  const topBandPickIds = new Set(topBand.flatMap((e) => e.eventParticipantIds));
-  let derivedSlack = 0;
-  for (const id of topBandPickIds) {
-    derivedSlack = Math.max(derivedSlack, participantCapacity.get(id) ?? 0);
+function madeCutIds(
+  states: readonly ParticipantState[],
+  strokesThroughRoundTwo: Map<string, number>,
+  period: number | null,
+): Set<string> {
+  if (period != null && period >= 3) {
+    return new Set(
+      states
+        .filter((state) => state.status !== "CUT" && state.status !== "WD")
+        .map((state) => state.participant.eventParticipantId),
+    );
   }
 
-  const minSlack = options.minSlack ?? DEFAULT_MIN_SLACK;
-  let slackUsed =
-    options.slackOverride ?? Math.max(minSlack, derivedSlack);
-  if (options.maxSlack != null) {
-    slackUsed = Math.min(slackUsed, options.maxSlack);
+  const eligible = states
+    .filter((state) => state.status !== "WD")
+    .map((state) => [
+      state.participant.eventParticipantId,
+      strokesThroughRoundTwo.get(state.participant.eventParticipantId) ??
+        state.leaderboardNow,
+    ] as const)
+    .sort((a, b) => a[1] - b[1]);
+  const cutoffIndex = Math.min(64, eligible.length - 1);
+  const cutoffScore = eligible[cutoffIndex]?.[1] ?? Number.POSITIVE_INFINITY;
+  return new Set(
+    eligible.filter(([, score]) => score <= cutoffScore).map(([id]) => id),
+  );
+}
+
+function tierFor(
+  payoutProbability: number,
+  isTopPayoutChance: boolean,
+  minPayoutProbability: number,
+): LineupOutlookTier {
+  if (isTopPayoutChance && payoutProbability > 0) return "favorite";
+  if (payoutProbability >= 0.15) return "in_the_hunt";
+  if (payoutProbability >= minPayoutProbability) return "outside_shot";
+  return "effectively_out";
+}
+
+function ownerPayoutRate(
+  records: readonly ScenarioRecord[],
+  participantId: string,
+  owners: ReadonlySet<string>,
+  threshold: number,
+  direction: "cold" | "hot",
+): number {
+  let opportunities = 0;
+  let paid = 0;
+  for (const record of records) {
+    const remaining = record.remainingByParticipant.get(participantId) ?? 0;
+    const include = direction === "cold" ? remaining <= threshold : remaining >= threshold;
+    if (!include) continue;
+    for (const entryId of owners) {
+      opportunities++;
+      if (record.paidSet.has(entryId)) paid++;
+    }
   }
-
-  const threshold = cutScore - slackUsed;
-  const contention = sorted.filter((e) => e.score >= threshold);
-
-  return { contention, slackUsed, leaderScore, cutScore };
+  return opportunities > 0 ? paid / opportunities : 0;
 }
 
 /**
- * Identify golf contest candidates whose remaining scores can still change
- * winner / paid-set outcomes among lineups still in contention.
- *
- * Lineup scores are recomputed from live `EventParticipant.total` values run
- * through the same popularity adjustment as contest scoring (when weight ≠ 0).
- * Remaining-point sweeps add *R* to that player’s external total, then re-score.
+ * Produces a commentary-oriented contest outlook from generic PGA outcomes.
+ * It estimates plausible chances; it does not claim mathematical elimination.
  */
 export function analyzeDecisiveCandidates(
   input: AnalyzeDecisiveCandidatesInput,
 ): DecisiveCandidatesReport {
-  const notes: string[] = [];
-  const options = input.options ?? {};
-  const maxPtsPerHole = options.maxPtsPerHole ?? DEFAULT_MAX_PTS_PER_HOLE;
-  const period = input.currentPeriod ?? null;
-  const popularityRules = normalizePopularityRules(input.popularity);
-  const pickRates = input.pickRates ?? null;
-
-  const entries = input.entries.filter((e) => e.entryId);
+  const entries = input.entries.filter((entry) => entry.entryId);
   const paidCount = Math.max(1, defaultPayoutVector(entries.length).length);
-
-  if (period != null && period < 4) {
-    notes.push(
-      `currentPeriod=${period}; sensitivity is most informative in R4 when remaining capacity is small.`,
-    );
-  }
-
-  if (popularityRules.weight !== 0) {
-    notes.push(
-      `popularity.weight=${popularityRules.weight} (${popularityRules.mode}); remaining sweeps re-score through popularity adjustment.`,
-    );
-    if (!pickRates || Object.keys(pickRates).length === 0) {
-      notes.push(
-        "No pickRates provided while popularity.weight ≠ 0; pick rates default to 0 (max contrarian bonus for positive weight).",
-      );
-    }
-  }
-
-  const participantById = new Map(
-    input.participants.map((p) => [p.eventParticipantId, p]),
+  const period = input.currentPeriod ?? null;
+  const rules = normalizePopularityRules(input.popularity);
+  const simulationCount = Math.min(
+    10_000,
+    Math.max(100, Math.round(input.options?.simulations ?? 2_000)),
   );
-
-  const totalsById = new Map<string, number>();
-  const participantCapacity = new Map<string, number>();
-  const participantHolesLeft = new Map<string, number>();
-  for (const p of input.participants) {
-    totalsById.set(p.eventParticipantId, p.total);
-    const cap = remainingCapacity(p.scoreData, {
-      maxPtsPerHole,
-      currentPeriod: period,
-    });
-    participantCapacity.set(p.eventParticipantId, cap.maxRemaining);
-    participantHolesLeft.set(p.eventParticipantId, cap.holesLeft);
+  const seed = Math.round(input.options?.seed ?? 2026);
+  const minPayoutProbability = Math.min(
+    0.25,
+    Math.max(0, input.options?.minPayoutProbability ?? 0.02),
+  );
+  const model = input.scoringModel ?? buildGenericScoringModel([]);
+  const notes: string[] = [
+    "Outlooks use a generic PGA golfer distribution; player skill and form are intentionally not modeled.",
+  ];
+  if (period != null && period < 3) {
+    notes.push(
+      `currentPeriod=${period}; cut and future-round uncertainty make this an early structural outlook.`,
+    );
   }
-
+  if (model.sampleCount === 0) {
+    notes.push("Historical calibration was unavailable; built-in generic scoring frequencies were used.");
+  }
   if (entries.length === 0) {
     return {
       contestId: input.contestId,
       eventId: input.eventId,
       period,
       paidCount,
-      popularityWeight: popularityRules.weight,
+      popularityWeight: rules.weight,
+      simulationCount,
+      seed,
       contention: {
         entryIds: [],
-        slackUsed: 0,
         leaderScore: 0,
         cutScore: 0,
         paidCount,
+        definition: "plausible_payout_probability",
       },
+      lineupOutlooks: [],
       decisive: [],
       consensus: [],
       notes: [...notes, "No contest entries to analyze."],
     };
   }
 
-  const scored = scoreEntries(entries, totalsById, pickRates, input.popularity);
-
-  const { contention, slackUsed, leaderScore, cutScore } = buildContentionSet(
-    scored,
-    paidCount,
-    participantCapacity,
-    options,
+  const states: ParticipantState[] = input.participants.map((participant) => ({
+    participant,
+    plans: remainingRoundPlan(participant.scoreData, period),
+    stablefordNow: stablefordNow(participant),
+    leaderboardNow: leaderboardTotal(participant.scoreData),
+    status: leaderboardStatus(participant.scoreData),
+  }));
+  const stateById = new Map(
+    states.map((state) => [state.participant.eventParticipantId, state]),
   );
-
-  const contentionSize = contention.length;
-  const positionNowByEntryId = new Map(
-    rankGolfEntries(
-      contention.map((e) => ({
-        entryId: e.entryId,
-        score: e.score,
-        prediction: e.prediction,
-        createdAt: e.createdAt,
-      })),
-    ).map((r) => [r.entryId, r.position]),
+  const currentTotals = new Map(
+    states.map((state) => [
+      state.participant.eventParticipantId,
+      state.participant.total,
+    ]),
   );
+  const currentRanked = rankGolfEntries(
+    entries.map((entry) => ({
+      entryId: entry.entryId,
+      prediction: entry.prediction,
+      createdAt: entry.createdAt,
+      score: scoreLineupFromTotals(
+        entry.eventParticipantIds,
+        currentTotals,
+        input.pickRates,
+        input.popularity,
+      ),
+    })),
+  );
+  const currentById = new Map(currentRanked.map((entry) => [entry.entryId, entry]));
+  const leaderScore = currentRanked[0]?.score ?? 0;
+  const cutScore =
+    currentRanked[Math.min(paidCount, currentRanked.length) - 1]?.score ?? 0;
+
+  const projectedScores = new Map(entries.map((entry) => [entry.entryId, [] as number[]]));
+  const wins = new Map(entries.map((entry) => [entry.entryId, 0]));
+  const payouts = new Map(entries.map((entry) => [entry.entryId, 0]));
+  const records: ScenarioRecord[] = [];
+  const random = createSeededRandom(seed);
+
+  for (let simulation = 0; simulation < simulationCount; simulation++) {
+    const sampledById = new Map<
+      string,
+      ReturnType<typeof sampleRoundPlan>
+    >();
+    const strokesThroughRoundTwo = new Map<string, number>();
+    for (const state of states) {
+      const sampled = sampleRoundPlan(state.plans, model, random);
+      sampledById.set(state.participant.eventParticipantId, sampled);
+      let strokes = state.leaderboardNow;
+      for (const [round, outcome] of sampled) {
+        if (round <= 2) strokes += outcome.strokesToPar;
+      }
+      strokesThroughRoundTwo.set(state.participant.eventParticipantId, strokes);
+    }
+
+    const madeCut = madeCutIds(states, strokesThroughRoundTwo, period);
+    const projectedStrokes = new Map<string, number>();
+    const remainingByParticipant = new Map<string, number>();
+    for (const state of states) {
+      const id = state.participant.eventParticipantId;
+      if (!madeCut.has(id)) continue;
+      let strokes = state.leaderboardNow;
+      let stableford = 0;
+      for (const [round, outcome] of sampledById.get(id) ?? []) {
+        if (round <= 2 || madeCut.has(id)) {
+          strokes += outcome.strokesToPar;
+          stableford += outcome.stableford;
+        }
+      }
+      projectedStrokes.set(id, strokes);
+      remainingByParticipant.set(id, stableford);
+    }
+    for (const state of states) {
+      if (!remainingByParticipant.has(state.participant.eventParticipantId)) {
+        let stableford = 0;
+        for (const [round, outcome] of
+          sampledById.get(state.participant.eventParticipantId) ?? []) {
+          if (round <= 2) stableford += outcome.stableford;
+        }
+        remainingByParticipant.set(state.participant.eventParticipantId, stableford);
+      }
+    }
+
+    const finishBonuses = assignFinishBonuses(projectedStrokes);
+    const projectedTotals = new Map<string, number>();
+    for (const state of states) {
+      const id = state.participant.eventParticipantId;
+      const madeCutBonus = madeCut.has(id) ? 3 : 0;
+      projectedTotals.set(
+        id,
+        state.stablefordNow +
+          (remainingByParticipant.get(id) ?? 0) +
+          madeCutBonus +
+          (finishBonuses.get(id) ?? 0),
+      );
+    }
+
+    const ranked = rankGolfEntries(
+      entries.map((entry) => {
+        const score = scoreLineupFromTotals(
+          entry.eventParticipantIds,
+          projectedTotals,
+          input.pickRates,
+          input.popularity,
+        );
+        projectedScores.get(entry.entryId)!.push(score);
+        return {
+          entryId: entry.entryId,
+          prediction: entry.prediction,
+          createdAt: entry.createdAt,
+          score,
+        };
+      }),
+    );
+    const paidSet = new Set(ranked.slice(0, paidCount).map((entry) => entry.entryId));
+    const winner = ranked[0]?.entryId;
+    if (winner) wins.set(winner, (wins.get(winner) ?? 0) + 1);
+    for (const entryId of paidSet) {
+      payouts.set(entryId, (payouts.get(entryId) ?? 0) + 1);
+    }
+    records.push({ paidSet, remainingByParticipant });
+  }
+
+  const rawOutlooks = entries.map((entry) => {
+    const current = currentById.get(entry.entryId);
+    const scores = projectedScores.get(entry.entryId) ?? [];
+    const payoutProbability = (payouts.get(entry.entryId) ?? 0) / simulationCount;
+    return {
+      entryId: entry.entryId,
+      displayName: entry.displayName?.trim() || entry.entryId,
+      scoreNow: current?.score ?? 0,
+      positionNow: current?.position ?? entries.length,
+      gapToCut: Math.max(0, cutScore - (current?.score ?? 0)),
+      projectedLow: quantile(scores, 0.1),
+      projectedMedian: quantile(scores, 0.5),
+      projectedHigh: quantile(scores, 0.9),
+      winProbability: probability((wins.get(entry.entryId) ?? 0) / simulationCount),
+      payoutProbability: probability(payoutProbability),
+      tier: "effectively_out" as LineupOutlookTier,
+    };
+  });
+  const maxPayoutProbability = Math.max(
+    ...rawOutlooks.map((outlook) => outlook.payoutProbability),
+  );
+  const lineupOutlooks = rawOutlooks
+    .map((outlook) => ({
+      ...outlook,
+      tier: tierFor(
+        outlook.payoutProbability,
+        outlook.payoutProbability === maxPayoutProbability,
+        minPayoutProbability,
+      ),
+    }))
+    .sort(
+      (a, b) =>
+        b.payoutProbability - a.payoutProbability ||
+        a.positionNow - b.positionNow,
+    );
+  const contentionIds = lineupOutlooks
+    .filter((outlook) => outlook.tier !== "effectively_out")
+    .map((outlook) => outlook.entryId);
+  const consensusCohortIds = contentionIds;
+  const consensusCohort = new Set(consensusCohortIds);
+  const consensusThreshold = Math.ceil(consensusCohortIds.length * 0.5);
 
   const ownersByParticipant = new Map<string, Set<string>>();
-  for (const entry of contention) {
-    for (const pid of entry.eventParticipantIds) {
-      let owners = ownersByParticipant.get(pid);
+  for (const entry of entries) {
+    for (const participantId of new Set(entry.eventParticipantIds)) {
+      let owners = ownersByParticipant.get(participantId);
       if (!owners) {
         owners = new Set();
-        ownersByParticipant.set(pid, owners);
+        ownersByParticipant.set(participantId, owners);
       }
       owners.add(entry.entryId);
     }
   }
-
-  const consensus: ConsensusCandidateRow[] = [];
-  const differentiators: string[] = [];
-
-  for (const [pid, owners] of ownersByParticipant) {
-    const ownersCount = owners.size;
-    if (ownersCount === contentionSize && contentionSize > 0) {
-      const p = participantById.get(pid);
-      consensus.push({
-        eventParticipantId: pid,
-        displayName: p?.displayName ?? pid,
-        ownership: `${ownersCount}/${contentionSize}`,
-        reason: "owned by all contention lineups",
-      });
-    } else if (ownersCount > 0 && ownersCount < contentionSize) {
-      differentiators.push(pid);
-    }
-  }
-
+  const entryById = new Map(entries.map((entry) => [entry.entryId, entry]));
   const decisive: DecisiveCandidateRow[] = [];
-
-  for (const pid of differentiators) {
-    const owners = ownersByParticipant.get(pid)!;
-    const maxRemaining = participantCapacity.get(pid) ?? 0;
-    const holesLeft = participantHolesLeft.get(pid) ?? 0;
-    const p = participantById.get(pid);
-
-    const baselineRanked = rankGolfEntries(
-      contention.map((e) => ({
-        entryId: e.entryId,
-        score: e.score,
-        prediction: e.prediction,
-        createdAt: e.createdAt,
-      })),
+  const consensus: ConsensusCandidateRow[] = [];
+  for (const [participantId, owners] of ownersByParticipant) {
+    const state = stateById.get(participantId);
+    if (!state) continue;
+    const remaining = records.map(
+      (record) => record.remainingByParticipant.get(participantId) ?? 0,
     );
-    const baselineWinner = baselineRanked[0]?.entryId ?? null;
-    const baselinePaid = paidSetKey(
-      baselineRanked.slice(0, paidCount).map((r) => r.entryId),
+    const low = quantile(remaining, 0.1);
+    const median = quantile(remaining, 0.5);
+    const high = quantile(remaining, 0.9);
+    if (state.plans.length === 0 || high === low) continue;
+    const coldThreshold = quantile(remaining, 0.25);
+    const hotThreshold = quantile(remaining, 0.75);
+    const cold = ownerPayoutRate(records, participantId, owners, coldThreshold, "cold");
+    const hot = ownerPayoutRate(records, participantId, owners, hotThreshold, "hot");
+    const payoutSwing = probability(Math.max(0, hot - cold));
+    const cohortOwners = [...owners].filter((entryId) =>
+      consensusCohort.has(entryId),
     );
-
-    let flips = 0;
-    let minSwingToFlip: number | null = null;
-    const sweepMax = Math.max(0, maxRemaining);
-
-    for (let R = 0; R <= sweepMax; R++) {
-      const totalsWithR = new Map(totalsById);
-      totalsWithR.set(pid, (totalsWithR.get(pid) ?? 0) + R);
-
-      const ranked = rankGolfEntries(
-        contention.map((e) => ({
-          entryId: e.entryId,
-          score: scoreLineupFromTotals(
-            e.eventParticipantIds,
-            totalsWithR,
-            pickRates,
-            input.popularity,
-          ),
-          prediction: e.prediction,
-          createdAt: e.createdAt,
-        })),
-      );
-      const winner = ranked[0]?.entryId ?? null;
-      const paid = paidSetKey(ranked.slice(0, paidCount).map((r) => r.entryId));
-      const changed = winner !== baselineWinner || paid !== baselinePaid;
-      if (changed) {
-        flips += 1;
-        if (R > 0 && minSwingToFlip === null) {
-          minSwingToFlip = R;
-        }
-      }
+    if (
+      consensusCohortIds.length > 0 &&
+      cohortOwners.length >= Math.max(2, consensusThreshold)
+    ) {
+      const ownershipShare = cohortOwners.length / consensusCohortIds.length;
+      consensus.push({
+        eventParticipantId: participantId,
+        displayName: state.participant.displayName,
+        ownership: `${cohortOwners.length}/${consensusCohortIds.length}`,
+        ownersCount: cohortOwners.length,
+        cohortSize: consensusCohortIds.length,
+        payoutSwing,
+        consensusStrength: probability(
+          ownershipShare * (1 - payoutSwing),
+        ),
+        reason: `shared by ${cohortOwners.length} of ${consensusCohortIds.length} plausible contenders with limited relative payout impact`,
+      });
     }
-
-    const steps = sweepMax + 1;
-    const flipShare = steps > 0 ? flips / steps : 0;
-
+    if (owners.size === entries.length) continue;
     decisive.push({
-      eventParticipantId: pid,
-      displayName: p?.displayName ?? pid,
-      ownership: `${owners.size}/${contentionSize}`,
+      eventParticipantId: participantId,
+      displayName: state.participant.displayName,
+      ownership: `${owners.size}/${entries.length}`,
       ownersCount: owners.size,
-      contentionSize,
-      holesLeft,
-      maxRemaining,
-      minSwingToFlip,
-      flipShare,
-      affects: contention.map((e) => ({
-        entryId: e.entryId,
-        positionNow: positionNowByEntryId.get(e.entryId) ?? 0,
-        owns: owners.has(e.entryId),
-      })),
+      lineupCount: entries.length,
+      holesLeft: state.plans.reduce((sum, plan) => sum + plan.pars.length, 0),
+      roundsLeft: state.plans.length,
+      likelyRemaining: { low, median, high },
+      payoutSwing,
+      ownerPayoutWhenCold: probability(cold),
+      ownerPayoutWhenHot: probability(hot),
+      affectedEntryIds: [...owners],
+      affectedUserNames: [...owners].map(
+        (entryId) => entryById.get(entryId)?.displayName?.trim() || entryId,
+      ),
     });
   }
-
-  decisive.sort((a, b) => {
-    if (b.flipShare !== a.flipShare) return b.flipShare - a.flipShare;
-    const aSwing = a.minSwingToFlip ?? Number.POSITIVE_INFINITY;
-    const bSwing = b.minSwingToFlip ?? Number.POSITIVE_INFINITY;
-    if (aSwing !== bSwing) return aSwing - bSwing;
-    return a.displayName.localeCompare(b.displayName);
-  });
-
-  if (decisive.every((d) => d.maxRemaining === 0) && decisive.length > 0) {
-    notes.push(
-      "All differentiators are finished (maxRemaining=0); report is structural ownership only.",
-    );
-  }
+  decisive.sort(
+    (a, b) =>
+      b.payoutSwing - a.payoutSwing ||
+      a.ownersCount - b.ownersCount ||
+      a.displayName.localeCompare(b.displayName),
+  );
+  consensus.sort(
+    (a, b) =>
+      b.consensusStrength - a.consensusStrength ||
+      a.payoutSwing - b.payoutSwing ||
+      a.displayName.localeCompare(b.displayName),
+  );
 
   return {
     contestId: input.contestId,
     eventId: input.eventId,
     period,
     paidCount,
-    popularityWeight: popularityRules.weight,
+    popularityWeight: rules.weight,
+    simulationCount,
+    seed,
     contention: {
-      entryIds: contention.map((e) => e.entryId),
-      slackUsed,
+      entryIds: contentionIds,
       leaderScore,
       cutScore,
       paidCount,
+      definition: "plausible_payout_probability",
     },
+    lineupOutlooks,
     decisive,
     consensus,
     notes,
   };
 }
+
+export { scoreLineupFromTotals };

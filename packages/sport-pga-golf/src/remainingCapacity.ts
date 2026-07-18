@@ -1,4 +1,7 @@
-/** Golf remaining scoring capacity from persisted EventParticipant.scoreData. */
+/**
+ * Legacy fixed-rate capacity diagnostic from persisted scoreData.
+ * This is not a realistic projection or a mathematical Stableford maximum.
+ */
 
 export const DEFAULT_MAX_PTS_PER_HOLE = 4;
 
@@ -44,7 +47,7 @@ function roundNumberFromRound(round: unknown): number | null {
 }
 
 /**
- * Estimates how many stableford points a golfer can still add this event.
+ * Applies a caller-selected fixed rate to the current round's unplayed holes.
  * Prefers rCurrent, then the round matching currentPeriod, then r4.
  */
 export function remainingCapacity(

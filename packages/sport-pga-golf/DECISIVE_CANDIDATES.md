@@ -1,121 +1,134 @@
-# Decisive Candidates Report Metrics
+# Realistic Contest Outlook
 
-Output of `analyzeDecisiveCandidates` in [`src/decisiveCandidates.ts`](./src/decisiveCandidates.ts).  
-CLI: `pnpm --filter server run script:analyze-decisive-candidates <contestId>`
+The decisive-candidates report produces commentary-oriented PGA contest
+outlooks. It estimates plausible lineup and golfer leverage from generic PGA
+scoring outcomes. It does not claim mathematical elimination or model
+player-specific skill.
 
-## Score basis
+Run a contest report:
 
-Lineup standings and flip sweeps use the **same scoring path as contested live play**:
-
-1. Live external pick totals `e_i` from `EventParticipant.total`
-2. Frozen contest pick rates `o(i)` from `Contest.pickPopularity` (when present)
-3. Sport `ScoringRules.popularity` via `@cut/sport-sdk` `adjustPickScore`
-4. Lineup total = Σ adjusted pick scores
-
-Remaining capacity still comes from golf `scoreData` (holes left). When sweeping *R* remaining Stableford points for a golfer, the analyzer adds *R* to that pick’s `e_i`, then **re-scores every contention lineup through popularity** — so multiplicative bonuses amplify remaining points for lightly owned picks.
-
-Override weight for what-if runs: `--weight 0.5`.
-
-See [consensus-axis.md](../../docs/platform/consensus-axis.md).
-
----
-
-## Top-level fields
-
-| Field | Type | Meaning |
-|-------|------|---------|
-| `contestId` | string | Contest analyzed |
-| `eventId` | string | Competition event for the contest |
-| `period` | number \| null | Event `currentPeriod` (1–4 regulation; ≥401 playoff). Analysis is most useful in R4 when remaining capacity is small |
-| `paidCount` | number | How many places pay (`defaultPayoutVector`: 1 if &lt;10 entries, else 3) |
-| `popularityWeight` | number | Effective `ScoringRules.popularity.weight` for this run |
-| `contention` | object | Lineups still mathematically in the paid race (see below) |
-| `decisive` | array | Differentiating candidates sorted by leverage (highest `flipShare` first) |
-| `consensus` | array | Candidates owned by **every** contention lineup — move totals equally, not relative standings |
-| `notes` | string[] | Human-readable caveats (e.g. early round, popularity weight, all players finished) |
-
----
-
-## `contention`
-
-The set **S** of lineups whose remaining scores can still decide paid outcomes.
-
-| Field | Meaning |
-|-------|---------|
-| `entryIds` | Contest entry IDs in S (score ≥ `cutScore - slackUsed`) |
-| `slackUsed` | Points allowed below the paid cut. Default = `max(minSlack=8, max remaining among picks on current paid-place lineups)`. Override with `--slack` |
-| `leaderScore` | Highest lineup score in the contest |
-| `cutScore` | Score of the current Nth place (`N = paidCount`) — the paid cut |
-| `paidCount` | Same as top-level `paidCount` |
-
-**Read:** A wider S early in R4 (large remaining) is expected; late R4 S shrinks as `slackUsed` collapses toward the floor.
-
----
-
-## `decisive[]` (differentiators)
-
-Candidates owned by **some but not all** of S. Only these can change relative order via their remaining points.
-
-| Field | Meaning |
-|-------|---------|
-| `eventParticipantId` | DB id for the pick target |
-| `displayName` | Golfer display name |
-| `ownership` | `"k/n"` — owned by *k* of *n* contention lineups |
-| `ownersCount` | *k* |
-| `contentionSize` | *n* = `\|S\|` |
-| `holesLeft` | Unplayed holes on the current round scorecard (null stableford slots) |
-| `maxRemaining` | Optimistic upper bound: `holesLeft × maxPtsPerHole` (default 4). `0` = finished / WD / CUT — no future flip from this player alone |
-| `minSwingToFlip` | Smallest extra points *R* (&gt; 0) that changes the **winner** or **paid-set** when added only to owners. `null` if no *R* in `0…maxRemaining` flips outcomes |
-| `flipShare` | Fraction of remaining outcomes `R ∈ {0…maxRemaining}` where winner or paid-set differs from the *R = 0* baseline. Higher = more decisive. `0` when finished or margins are already locked |
-| `affects` | Per contention entry: `entryId`, `positionNow` (rank within S today), `owns` (whether that lineup has this golfer) |
-
-**Interpretation tips**
-
-- High `flipShare` + small `minSwingToFlip` → watch this player now.
-- High ownership (e.g. `4/5`) with low `flipShare` → almost consensus; little relative leverage left.
-- `maxRemaining === 0` → structural ownership only; the swing already happened (or never will).
-
----
-
-## `consensus[]`
-
-| Field | Meaning |
-|-------|---------|
-| `eventParticipantId` | DB id |
-| `displayName` | Golfer name |
-| `ownership` | Always `"n/n"` for contention size *n* |
-| `reason` | Usually `"owned by all contention lineups"` |
-
-These golfers still matter for absolute scores / narrative (“everyone’s Scheffler”), but **not** for who beats whom inside S.
-
----
-
-## What is *not* in the report
-
-- Joint multi-player outcomes (univariate sweep only — a lower bound on importance)
-- Stroke-play / DataGolf finish probabilities
-- Side bets or secondary market
-
----
-
-## Prompt: report → tight paragraph
-
-Paste this when summarizing CLI / analyzer JSON into user-facing copy:
-
-```
-You are summarizing a Play The Cut golf contest “decisive candidates” JSON report.
-
-Write one tight paragraph (3–5 sentences) for a contest lobby or Sunday watchlist.
-
-Rules:
-- Lead with the race shape: how many lineups are in contention, paid places, and the score band (leader / cut / slack) in plain language.
-- Name at most 2–3 decisive golfers by displayName. Prefer highest flipShare, then lowest minSwingToFlip. Mention ownership (e.g. “2 of 5 contention lineups”) and whether they still have holes left.
-- If consensus golfers exist, mention one as shared / not differentiating — don’t list everyone.
-- If notes say players are finished (maxRemaining=0) or period < 4, say the report is structural / early, not a live must-watch.
-- Skip raw IDs, flipShare decimals, and entryIds unless essential. No bullet lists. No hype.
-- Do not invent scores, holes, or golfers not in the JSON.
-
-JSON:
+```sh
+pnpm --filter server run script:analyze-decisive-candidates <contestId>
 ```
 
-Append the report JSON after the prompt.
+Run every contest for an event:
+
+```sh
+pnpm --filter server run script:analyze-decisive-candidates --event <eventId>
+```
+
+Optional flags:
+
+- `--simulations <100–10000>` controls scenario count. Default: `2000`.
+- `--seed <number>` makes scenario sampling reproducible. Default: `2026`.
+- `--weight <number>` overrides the sport popularity weight.
+
+## Generic golfer model
+
+Historical `EventParticipant.scoreData.r1`–`r4` hole arrays calibrate anonymous
+outcome frequencies for par-3, par-4, and par-5 holes. The model recomputes
+paired Stableford and stroke-to-par outcomes from each persisted par and gross
+score; migrated aggregate totals are not used for calibration.
+
+The scoring space matches production:
+
+- Albatross or better: `+15`
+- Hole-in-one: `+10`
+- Eagle: `+5`
+- Birdie: `+2`
+- Par: `0`
+- Bogey: `-1`
+- Double bogey or worse: `-3`
+
+Every active golfer samples from the same distributions. Current score, current
+leaderboard position, holes completed, cut status, and rounds remaining differ
+between golfers; skill, form, course fit, weather, and player history do not.
+The current round's unplayed holes and every future regulation round are
+included. `CUT` and `WD` golfers receive no future holes.
+
+When historical calibration is unavailable, the package uses a conservative
+built-in generic distribution over the same scoring outcomes.
+
+## Scenario scoring
+
+Each seeded scenario:
+
+1. Samples a paired Stableford and stroke result for every remaining hole in
+   the full event field.
+2. Projects the round-two cut when the event has not reached round three.
+3. Recomputes final leaderboard positions and the `+10/+5/+3` finishing bonus.
+4. Applies the made-cut bonus.
+5. Re-scores every contest lineup through the configured popularity rules.
+6. Ranks the full contest with the production prediction and entry-time
+   tiebreakers.
+
+Shared picks move every owning lineup in the same scenario. A trailing lineup's
+combined remaining roster opportunity is therefore modeled directly instead
+of being compared with a global score slack.
+
+## Lineup outlooks
+
+`lineupOutlooks` is sorted by payout probability, then current position. Each
+row contains:
+
+- Current score, position, and gap to the paid cut
+- Projected 10th-percentile, median, and 90th-percentile scores
+- Scenario win and payout frequencies
+- A conversational outlook tier
+
+Tiers:
+
+- `favorite`: the lineup with the highest nonzero payout frequency
+- `in_the_hunt`: payout frequency of at least 15%
+- `outside_shot`: payout frequency of at least 2%
+- `effectively_out`: payout frequency below 2%
+
+`contention.entryIds` contains every lineup above the `effectively_out`
+threshold, including the favorite. This is a **plausible contention set**, not a
+proof of mathematical possibility.
+
+## Decisive golfers
+
+`decisive` contains golfers owned by some, but not all, contest lineups and
+whose generic remaining outcomes vary.
+
+- `likelyRemaining` is the 10th/50th/90th percentile of sampled remaining
+  Stableford points.
+- `payoutSwing` is the difference between owner payout rates in the golfer's
+  hot and cold scenario quartiles.
+- `ownerPayoutWhenCold` and `ownerPayoutWhenHot` expose those component rates.
+- `affectedEntryIds` and `affectedUserNames` identify the owners.
+- `holesLeft` includes the current-round remainder and future rounds.
+
+`consensus` is the inverse view of decisiveness: golfers whose outcomes matter
+less to relative standings because they are shared across the plausible
+contention set. A golfer qualifies when at least half of plausible contenders
+own him, with at least two owners. `consensusStrength` combines that shared
+ownership with the inverse of the same hot-versus-cold `payoutSwing` used by
+the decisive ranking. Higher values mean “many contenders have him, and his
+good or bad scenarios do relatively little to separate them.”
+
+A majority-owned golfer may appear in both lists: he can be broadly shared
+while still separating the minority of lineups without him. Universal contest
+ownership removes him from `decisive` entirely.
+
+## Confidence and commentary
+
+The report is designed to support phrases such as “in the hunt,” “has an
+outside shot,” and “could swing the payout race.” Do not translate its output
+into claims that a lineup is mathematically alive or eliminated.
+
+Confidence is strongest late in round four, when fewer generic outcomes remain.
+Earlier reports include cut and future-round uncertainty and should be framed
+as a broad contest outlook. Numerical probabilities are internal heuristics;
+user-facing copy should prefer tiers, score bands, named lineups, ownership,
+and the golfers creating separation.
+
+The CLI emits:
+
+- Calibration sample counts
+- Missing participant-total warnings
+- Persisted-versus-recomputed lineup score drift
+- The deterministic seed and simulation count
+
+Warnings should be resolved or reflected in commentary before publication.
