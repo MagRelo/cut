@@ -36,10 +36,5 @@ export default defineConfig(({ mode }) => {
       // Optimize chunk size
       chunkSizeWarningLimit: 1000,
     },
-    define: {
-      // Expose env variables to the client
-      "process.env.VITE_NODE_ENV": JSON.stringify(env.VITE_NODE_ENV),
-      "process.env.VITE_API_URL": JSON.stringify(env.VITE_API_URL),
-    },
   };
 });

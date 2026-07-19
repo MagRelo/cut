@@ -134,7 +134,7 @@ Ship the new settle stack to production while the client remains on **Base Sepol
 - [ ] Build/release image (`pnpm run deploy` / release pipeline)
 - [ ] Swarm: roll **web** (`ENABLE_CRON=false`)
 - [ ] Cron host: **same** build, `ENABLE_CRON=true`, restart `cron-app`
-- [ ] Env on web + cron (Sepolia soak):
+- [ ] Env on web + cron (Sepolia soak). Inventories: [`swarm/env/web.env.example`](swarm/env/web.env.example), [`swarm/env/cron.env.example`](swarm/env/cron.env.example), [`client/.env.example`](client/.env.example) (bake `VITE_*` before image build):
 
 
 | Check                                               | Done |

@@ -223,7 +223,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const config = useMemo(
     () => ({
-      baseURL: import.meta.env.VITE_API_URL || "http://localhost:4000/api",
+      baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
       headers: {
         "Content-Type": "application/json",
       },

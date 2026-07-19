@@ -19,10 +19,7 @@ export function buildContestSettings(
     paymentTokenSymbol,
     oracle: import.meta.env.VITE_ORACLE_ADDRESS || "",
     primaryDeposit: 10,
-    referralNetworkBps:
-      Number(import.meta.env.VITE_REFERRAL_NETWORK_BPS) ||
-      Number(import.meta.env.VITE_ORACLE_FEE_BPS) ||
-      500,
+    referralNetworkBps: Number(import.meta.env.VITE_REFERRAL_NETWORK_BPS) || 500,
     referralGroupId: import.meta.env.VITE_REFERRAL_GROUP_ID || "",
     primaryDepositSecondarySubsidyBps: Number(
       import.meta.env.VITE_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS ?? 0,

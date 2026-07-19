@@ -5,9 +5,7 @@
  * @see https://docs.privy.io/wallets/using-wallets/evm-smart-wallets/setup/configuring-sdk#overriding-paymaster-context
  */
 function getSponsorshipPolicyIdFromEnv(): string {
-  const raw =
-    import.meta.env.VITE_PIMLICO_SPONSORSHIP_POLICY_ID ??
-    import.meta.env.VITE_SPONSORSHIP_POLICY_ID;
+  const raw = import.meta.env.VITE_PIMLICO_SPONSORSHIP_POLICY_ID;
   return typeof raw === "string" ? raw.trim() : "";
 }
 

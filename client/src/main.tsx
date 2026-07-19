@@ -12,11 +12,13 @@ import { unregisterServiceWorker } from "./utils/unregisterServiceWorker";
 // Unregister any existing service workers
 unregisterServiceWorker();
 
+const posthogKey = import.meta.env.VITE_POSTHOG_KEY?.trim();
+
 const app = (
   <React.StrictMode>
-    {import.meta.env.PROD ? (
+    {import.meta.env.PROD && posthogKey ? (
       <PostHogProvider
-        apiKey={import.meta.env.VITE_POSTHOG_KEY}
+        apiKey={posthogKey}
         options={{
           api_host: "https://analytics.mattlovan.dev",
           loaded: (posthog) => {

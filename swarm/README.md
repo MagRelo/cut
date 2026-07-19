@@ -61,7 +61,7 @@ Use your droplet’s **actual** VPC IP if it differs. **Alternative:** `docker s
 
 If Swarm is already initialized, skip this block. To reset: `docker swarm leave --force` (destroys the local swarm state).
 
-1. **Env files** — They should already exist at **`swarm/env/web.env`** and **`swarm/env/nginx.env`**. Open them and confirm values (especially **`PRIMARY_HOSTNAME`**, **`LETSENCRYPT_EMAIL`**, **`STACK_NAME`** in `nginx.env`, and **`ALLOWED_ORIGINS`** / **`DATABASE_URL`** in `web.env`; mirror [`server/.env.example`](../server/.env.example) for anything missing). **`ENABLE_CRON=false`** in `web.env` is expected (the stack also forces it). Ensure permissions: **`chmod 600 swarm/env/*.env`**. If a file is missing, copy from the matching **`*.example`** in the same directory.
+1. **Env files** — They should already exist at **`swarm/env/web.env`** and **`swarm/env/nginx.env`**. Open them and confirm values (especially **`PRIMARY_HOSTNAME`**, **`LETSENCRYPT_EMAIL`**, **`STACK_NAME`** in `nginx.env`, and **`ALLOWED_ORIGINS`** / **`DATABASE_URL`** / **`OPS_ORACLE_PK`** / **`PRIVY_*`** / **`REFERRAL_GROUP_ID`** in `web.env`). The **`*.env.example`** files are **full inventories** for that host (required uncommented; defaults and optionals commented) — copy from the matching example, then fill secrets. Mirror anything else from [`server/.env.example`](../server/.env.example). **`ENABLE_CRON=false`** in `web.env` is expected (the stack also forces it). Ensure permissions: **`chmod 600 swarm/env/*.env`**. If a file is missing, copy from the matching **`*.example`** in the same directory.
 
 2. **Cron (off Swarm)**  
    Swarm does **not** run `cron-app`. For another machine, copy [`env/cron.env.example`](env/cron.env.example) → `cron.env` there and run `node dist/src/cron-app.js` (or `pnpm --filter server run start:cron`) with that env — not required on this droplet.
@@ -90,10 +90,11 @@ If Swarm is already initialized, skip this block. To reset: `docker swarm leave 
 
 ## 3. Build the client for production (CI or build host)
 
-The app image bakes in Vite output. Before `docker build`, set at least:
+The app image bakes in Vite output. **`VITE_*` are bake-time only** (not Swarm `web.env`). Before `docker build`, set them in **`client/.env.production`** (see full list in [`client/.env.example`](../client/.env.example)), at least:
 
 - `VITE_API_URL` — public API base, e.g. `https://your-domain.com/api`
-- `VITE_PRIVY_APP_ID`, `VITE_TARGET_CHAIN`, `VITE_ORACLE_ADDRESS`, paymaster / PostHog keys as needed (see [`client/.env.example`](../client/.env.example)).
+- `VITE_PRIVY_APP_ID`, `VITE_ORACLE_ADDRESS`, `VITE_REFERRAL_GROUP_ID`, `VITE_SIDE_BET_STAKE_RECIPIENT`
+- `VITE_TARGET_CHAIN` (default testnet if unset), paymaster / PostHog as needed
 
 Then run root `pnpm deploy` (or `pnpm client:build && pnpm server:build && docker build …`) so `client/dist` is copied into the image per [`docker/Dockerfile`](../docker/Dockerfile).
 
