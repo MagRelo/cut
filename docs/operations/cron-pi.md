@@ -9,7 +9,7 @@
 | SSH  | `ssh magrelo@100.114.121.5` (Tailscale)         |
 | Repo | `~/node/cut-v2`                                 |
 | Env  | `server/.env` (`chmod 600`)                     |
-| PM2  | `cut-cron` → `pnpm run start:cron` in `server/` |
+| PM2  | `cut-cron` → `node dist/src/cron-app.js` in `server/` |
 
 ---
 
@@ -60,11 +60,14 @@ cd ~/node/cut-v2/server && set -a && source .env && set +a && pnpm exec prisma m
 
 ## PM2
 
-**First start:**
+Start **Node on the built file** (do not `pm2 start pnpm` — PM2 treats the pnpm shim as JS and crashes).
+
+**First start / recreate after env or entrypoint changes:**
 
 ```bash
 cd ~/node/cut-v2/server
-NODE_ENV=production pm2 start pnpm --name cut-cron -- run start:cron
+pm2 delete cut-cron 2>/dev/null || true
+NODE_ENV=production pm2 start dist/src/cron-app.js --name cut-cron
 pm2 save && pm2 startup   # run the sudo command it prints once
 ```
 
