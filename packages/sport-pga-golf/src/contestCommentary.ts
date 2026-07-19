@@ -181,9 +181,27 @@ export interface ContestCommentarySharedDownsideRisk {
   negativeHoleProbability: number;
 }
 
+export type ContestCommentaryTournamentPhase =
+  | "leaders_not_started"
+  | "leaders_on_front_nine"
+  | "leaders_approaching_turn"
+  | "leaders_on_back_nine"
+  | "leaders_closing"
+  | "leaders_finished"
+  | "unknown";
+
+export interface ContestCommentaryTournamentProgress {
+  round: number | null;
+  phase: ContestCommentaryTournamentPhase;
+  leaderHolesRemaining: number | null;
+  leaderParticipantIds: string[];
+  leaderNames: string[];
+}
+
 export interface ContestCommentaryContext {
   period: number | null;
   paidCount: number;
+  tournamentProgress: ContestCommentaryTournamentProgress;
   race: {
     leaderScore: number;
     cutScore: number;
@@ -261,6 +279,18 @@ function percentileRank(values: readonly number[], target: number): number {
   return probability(
     values.filter((value) => value <= target).length / values.length,
   );
+}
+
+function tournamentPhase(
+  holesRemaining: number | null,
+): ContestCommentaryTournamentPhase {
+  if (holesRemaining == null) return "unknown";
+  if (holesRemaining >= 18) return "leaders_not_started";
+  if (holesRemaining >= 11) return "leaders_on_front_nine";
+  if (holesRemaining >= 9) return "leaders_approaching_turn";
+  if (holesRemaining >= 4) return "leaders_on_back_nine";
+  if (holesRemaining >= 1) return "leaders_closing";
+  return "leaders_finished";
 }
 
 function scoreLineupFromTotals(
@@ -389,6 +419,13 @@ export function analyzeContestCommentary(
     return {
       period,
       paidCount,
+      tournamentProgress: {
+        round: period,
+        phase: "unknown",
+        leaderHolesRemaining: null,
+        leaderParticipantIds: [],
+        leaderNames: [],
+      },
       race: {
         leaderScore: 0,
         cutScore: 0,
@@ -420,6 +457,36 @@ export function analyzeContestCommentary(
   const stateById = new Map(
     states.map((state) => [state.participant.eventParticipantId, state]),
   );
+  const tournamentLeaders = [...states]
+    .filter((state) => state.status !== "CUT" && state.status !== "WD")
+    .sort(
+      (a, b) =>
+        a.leaderboardNow - b.leaderboardNow ||
+        a.participant.displayName.localeCompare(b.participant.displayName),
+    )
+    .slice(0, 3);
+  const leaderHolesRemaining =
+    typeof period === "number" && tournamentLeaders.length > 0
+      ? quantile(
+          tournamentLeaders.map(
+            (state) =>
+              state.plans.find((plan) => plan.round === period)?.pars.length ??
+              0,
+          ),
+          0.5,
+        )
+      : null;
+  const tournamentProgress: ContestCommentaryTournamentProgress = {
+    round: period,
+    phase: tournamentPhase(leaderHolesRemaining),
+    leaderHolesRemaining,
+    leaderParticipantIds: tournamentLeaders.map(
+      (state) => state.participant.eventParticipantId,
+    ),
+    leaderNames: tournamentLeaders.map(
+      (state) => state.participant.displayName,
+    ),
+  };
   const currentTotals = new Map(
     states.map((state) => [
       state.participant.eventParticipantId,
@@ -1005,6 +1072,7 @@ export function analyzeContestCommentary(
   return {
     period,
     paidCount,
+    tournamentProgress,
     race: {
       leaderScore,
       cutScore,

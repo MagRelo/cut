@@ -92,6 +92,9 @@ describe("analyzeContestCommentary", () => {
       cutScore: 18,
       contenderCount: 3,
     });
+    expect(first.tournamentProgress.phase).toBe(
+      "leaders_approaching_turn",
+    );
     expect(
       first.contentionLineups.filter((lineup) => lineup.tier === "favorite"),
     ).toHaveLength(1);
@@ -234,6 +237,7 @@ describe("analyzeContestCommentary", () => {
     const context = analyze([], [], 1);
 
     expect(context.contentionLineups).toEqual([]);
+    expect(context.tournamentProgress.phase).toBe("unknown");
     expect(context.highLeveragePlayers).toEqual([]);
     expect(context.highRarityLineups).toEqual([]);
   });

@@ -50,6 +50,8 @@ export {
   type ContestCommentaryRoutePlausibility,
   type ContestCommentarySharedDependency,
   type ContestCommentarySharedDownsideRisk,
+  type ContestCommentaryTournamentPhase,
+  type ContestCommentaryTournamentProgress,
   type LineupOutlookTier,
 } from "./contestCommentary.js";
 export { buildGolfCandidates, type EventParticipantRow } from "./candidates.js";

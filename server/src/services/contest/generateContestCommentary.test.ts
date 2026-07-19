@@ -10,6 +10,13 @@ import type { CommentaryTextGenerator } from "./commentaryTextGenerator.js";
 const context: ContestCommentaryContext = {
   period: 4,
   paidCount: 3,
+  tournamentProgress: {
+    round: 4,
+    phase: "leaders_on_back_nine",
+    leaderHolesRemaining: 6,
+    leaderParticipantIds: ["golfer"],
+    leaderNames: ["Golfer"],
+  },
   race: { leaderScore: 100, cutScore: 80, contenderCount: 2 },
   contentionLineups: [
     {
