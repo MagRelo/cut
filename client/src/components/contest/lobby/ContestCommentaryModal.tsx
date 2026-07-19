@@ -48,27 +48,27 @@ export const ContestCommentaryModal: React.FC<ContestCommentaryModalProps> = ({
               Live contest intelligence
             </div>
             <h3 className="mt-0.5 font-display text-xl font-bold tracking-tight">
-              The field, decoded.
+              The contest, decoded.
             </h3>
           </div>
         </div>
         <p className="mt-3 max-w-md font-display text-sm leading-relaxed text-blue-100">
-          Cutbot weighs the live scores, lineup leverage, and paths to victory to find the story
-          hiding inside the standings.
+          Cutbot weighs the live scores, lineup leverage, and time remaining to find the paths to
+          victory.
         </p>
       </div>
 
       <div className="bg-slate-50 p-5">
         <figure>
           <blockquote className="rounded-sm border border-l-[3px] border-blue-200 border-l-blue-600 bg-white p-5 text-blue-950 shadow-sm">
-            <p className="whitespace-pre-line font-serif text-base font-medium italic leading-relaxed">
+            <p className="whitespace-pre-line font-mono text-base font-medium italic leading-relaxed">
               &ldquo;{commentary}&rdquo;
             </p>
-            <footer className="mt-5 text-right font-serif text-base font-semibold italic">
+            <footer className="mt-5 text-right font-mono text-base font-normal italic">
               &mdash; 🤖 Cutbot
             </footer>
             {formattedGeneratedAt ? (
-              <p className="mt-1 text-right font-display text-xs italic text-blue-950/60">
+              <p className="mt-1 text-right font-mono text-xs italic text-blue-950/60">
                 Generated {formattedGeneratedAt}
               </p>
             ) : null}
