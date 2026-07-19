@@ -38,6 +38,7 @@
     "service:batch-sync-referral-graph": "tsx src/services/batch/batchSyncReferralGraph.ts",
     "script:bootstrap-referral-oracle-root": "tsx src/scripts/bootstrapReferralOracleRoot.ts",
     "script:register-users-under-oracle-root": "tsx src/scripts/registerUsersUnderOracleRoot.ts",
+    "script:rematerialize-referral-graph": "tsx src/scripts/rematerializeReferralGraph.ts",
     "script:sync-user-wallets-from-privy": "tsx src/scripts/syncUserWalletsFromPrivy.ts",
     "script:send-test-email": "tsx src/scripts/sendTestEmail.ts",
     "script:email-preview": "tsx src/scripts/emailPreview.ts",

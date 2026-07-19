@@ -21,7 +21,8 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
     referralNetworkBps: number,
     expiryTimestamp: bigint,
     primaryDepositSecondarySubsidyBps: number,
-    rewardDistributor: string,
+    referralGraph: string,
+    rewardCalculator: string,
     referralGroupId: Hex,
   ) => {
     return [
@@ -34,7 +35,8 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
           BigInt(referralNetworkBps),
           expiryTimestamp,
           BigInt(primaryDepositSecondarySubsidyBps),
-          rewardDistributor as `0x${string}`,
+          referralGraph as `0x${string}`,
+          rewardCalculator as `0x${string}`,
           referralGroupId,
         ],
         functionName: "createContest",

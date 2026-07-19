@@ -120,7 +120,7 @@ The sections above are a **forward model** — personas, funnel targets, and sca
 | Primary TVL / MAU / month | ~$37 | ~$37 |
 | Contest fee as % of primary TVL | ~6.5% blended | ~7% when secondary included |
 
-**Platform income** = oracle’s share of contest referral-network fees (indexed `OnchainPayment` kind `REFERRAL` to `ORACLE_ADDRESS`) **plus** net side-bet P&L on **settled** tickets (stake minus estimated payout). User-to-user referral shares are pass-through, not platform income.
+**Platform income** = oracle’s share of contest referral-network fees (indexed `OnchainPayment` kind `REFERRAL` to the OPS_ORACLE address) **plus** net side-bet P&L on **settled** tickets (stake minus estimated payout). User-to-user referral shares are pass-through, not platform income.
 
 **Adjusted** adds estimated May contest fees that settled on-chain but were **not indexed** in `OnchainPayment` until June (primary TVL × 7%). June indexed amounts match settlement snapshots closely (e.g. RBC Canadian: $170 gross → $11.90 fee; U.S. Open: $413.85 gross → $31.15 fee).
 

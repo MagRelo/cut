@@ -94,7 +94,8 @@ export type CreateContestFactoryCallParams = {
   referralNetworkBps: number;
   expiryTimestamp: bigint;
   primaryDepositSecondarySubsidyBps: number;
-  rewardDistributor: string;
+  referralGraph: string;
+  rewardCalculator: string;
   referralGroupId: Hex;
 };
 
@@ -113,9 +114,14 @@ export function buildCreateContestFactoryCallParams(
     return { error: "Payment token is not configured." };
   }
 
-  const rewardDistributor = getContractAddress(chainId, "rewardDistributorAddress");
-  if (!rewardDistributor) {
-    return { error: "Reward distributor is not configured for this chain." };
+  const referralGraph = getContractAddress(chainId, "referralGraphAddress");
+  if (!referralGraph) {
+    return { error: "Referral graph is not configured for this chain." };
+  }
+
+  const rewardCalculator = getContractAddress(chainId, "rewardCalculatorAddress");
+  if (!rewardCalculator) {
+    return { error: "Reward calculator is not configured for this chain." };
   }
 
   const referralGroupId = resolveReferralGroupId(pending.settings.referralGroupId);
@@ -132,7 +138,8 @@ export function buildCreateContestFactoryCallParams(
       referralNetworkBps: s.referralNetworkBps ?? s.oracleFeeBps ?? 0,
       expiryTimestamp: BigInt(s.expiryTimestamp),
       primaryDepositSecondarySubsidyBps: s.primaryDepositSecondarySubsidyBps,
-      rewardDistributor,
+      referralGraph,
+      rewardCalculator,
       referralGroupId,
     },
   };

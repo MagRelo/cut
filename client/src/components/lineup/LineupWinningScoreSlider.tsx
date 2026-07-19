@@ -36,7 +36,7 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
   const displayValue = formatValue(value);
 
   return (
-    <div className="border-t border-gray-100 p-3 pb-1 pt-4">
+    <div className="border-t border-gray-100 p-3">
       {readOnly ? (
         <div className="flex items-center justify-between gap-3">
           <span className="font-display text-sm font-medium text-gray-900">{label}</span>

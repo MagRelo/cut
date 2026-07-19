@@ -45,12 +45,12 @@ const ContractsPage: React.FC = () => {
         blockExplorerUrl: explorer(extra.referralGraphAddress),
       });
     }
-    if (extra.rewardDistributorAddress) {
+    if (extra.rewardCalculatorAddress) {
       contracts.push({
-        name: "Reward Distributor",
-        address: extra.rewardDistributorAddress,
-        description: "Referral reward distribution",
-        blockExplorerUrl: explorer(extra.rewardDistributorAddress),
+        name: "Reward Calculator",
+        address: extra.rewardCalculatorAddress,
+        description: "Referral reward split math",
+        blockExplorerUrl: explorer(extra.rewardCalculatorAddress),
       });
     }
 

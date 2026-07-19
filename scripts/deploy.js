@@ -42,15 +42,15 @@ const BASE_MAINNET_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
  * `Deploy_sepolia.s.sol` and `Deploy_base.s.sol`, plus `ContestController` (instances are created
  * via ContestFactory; not deployed in those root scripts).
  *
- * Deploy_sepolia: MockUSDC, ContestFactory, ReferralGraph, RewardDistributor
- * Deploy_base: ContestFactory, ReferralGraph, RewardDistributor (payment token = canonical USDC)
+ * Deploy_sepolia: MockUSDC, ContestFactory, ReferralGraph, RewardCalculator
+ * Deploy_base: ContestFactory, ReferralGraph, RewardCalculator (payment token = canonical USDC)
  */
 const ARTIFACT_COPY = [
   { dir: "MockUSDC.sol", file: "MockUSDC.json", dest: "MockUSDC.json" },
   { dir: "ContestFactory.sol", file: "ContestFactory.json", dest: "ContestFactory.json" },
   { dir: "ContestController.sol", file: "ContestController.json", dest: "ContestController.json" },
   { dir: "ReferralGraph.sol", file: "ReferralGraph.json", dest: "ReferralGraph.json" },
-  { dir: "RewardDistributor.sol", file: "RewardDistributor.json", dest: "RewardDistributor.json" },
+  { dir: "RewardCalculator.sol", file: "RewardCalculator.json", dest: "RewardCalculator.json" },
 ];
 
 const colors = {
@@ -105,8 +105,7 @@ function runCommand(command, cwd = projectRoot) {
   }
 }
 
-function getDeployerAddress() {
-  const pk = process.env.PRIVATE_KEY;
+function addressFromPk(pk) {
   if (!pk) return null;
   try {
     return execSync(`cast wallet address ${pk}`, {
@@ -118,10 +117,15 @@ function getDeployerAddress() {
   }
 }
 
+function getDeployerAddress() {
+  return addressFromPk(process.env.DEPLOYER_PK);
+}
+
+/** OPS_ORACLE address, derived from OPS_ORACLE_PK; falls back to the deployer. */
 function getReferralOracleAddress() {
-  const o = process.env.REFERRAL_ORACLE;
-  if (!o || o === "") return "0x0000000000000000000000000000000000000000";
-  return o;
+  const fromOps = addressFromPk(process.env.OPS_ORACLE_PK);
+  if (fromOps) return fromOps;
+  return getDeployerAddress() ?? "0x0000000000000000000000000000000000000000";
 }
 
 function getReferralGroupId() {
@@ -163,7 +167,7 @@ function updateConfigFiles(network, addresses) {
     paymentTokenAddress,
     contestFactoryAddress: addresses.ContestFactory,
     referralGraphAddress: addresses.ReferralGraph,
-    rewardDistributorAddress: addresses.RewardDistributor,
+    rewardCalculatorAddress: addresses.RewardCalculator,
   };
 
   const clientConfigPath = path.join(
@@ -239,7 +243,6 @@ function copyContractArtifacts() {
 }
 
 function buildVerifyCommand(network, contractName, address, addresses) {
-  const contractsDir = path.join(projectRoot, "contracts");
   const deployer = getDeployerAddress();
   const referralOracle = getReferralOracleAddress();
   const referralGroupId = getReferralGroupId();
@@ -248,7 +251,7 @@ function buildVerifyCommand(network, contractName, address, addresses) {
     MockUSDC: "src/mocks/MockUSDC.sol",
     ContestFactory: "lib/contestCatalyst/src/ContestFactory.sol",
     ReferralGraph: "lib/referralTree/src/core/ReferralGraph.sol",
-    RewardDistributor: "lib/referralTree/src/core/RewardDistributor.sol",
+    RewardCalculator: "lib/referralTree/src/core/RewardCalculator.sol",
   };
 
   const contractPath = paths[contractName];
@@ -260,8 +263,8 @@ function buildVerifyCommand(network, contractName, address, addresses) {
   }
   if (contractName === "ReferralGraph" && deployer) {
     constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,bytes32)" ${deployer} ${referralOracle} ${referralGroupId})`;
-  } else if (contractName === "RewardDistributor" && deployer && addresses.ReferralGraph) {
-    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address,bytes32)" ${deployer} ${addresses.ReferralGraph} ${referralOracle} ${referralGroupId})`;
+  } else if (contractName === "RewardCalculator") {
+    // no constructor args
   }
 
   return `forge verify-contract ${address} ${contractPath}:${contractName} --verifier blockscout --verifier-url ${network.blockscoutApiUrl} ${constructorArgs}`;
@@ -271,7 +274,7 @@ function verifyContracts(network, addresses) {
   logStep(`Verifying contracts on ${network.blockscoutUrl}`);
 
   const contractsDir = path.join(projectRoot, "contracts");
-  const order = ["MockUSDC", "ContestFactory", "ReferralGraph", "RewardDistributor"];
+  const order = ["MockUSDC", "ContestFactory", "ReferralGraph", "RewardCalculator"];
 
   for (const contractName of order) {
     const address = addresses[contractName];
@@ -296,7 +299,7 @@ function verifyContracts(network, addresses) {
 function checkEnvironment() {
   logStep("Checking environment variables");
 
-  const requiredVars = ["PRIVATE_KEY"];
+  const requiredVars = ["DEPLOYER_PK"];
 
   const missingVars = requiredVars.filter((varName) => !process.env[varName]);
 

@@ -91,11 +91,11 @@ export function useContestPredictionData(options: UseContestPredictionDataOption
     },
   });
 
-  /** Curve sizing for `addSecondaryPosition` does not depend on extra on-chain immutables. */
+  /** Curve sizing for `addSecondaryPosition` uses payment decimals + share-unit math. */
   const poolSnapshot: SecondaryPoolSnapshot | undefined = useMemo(() => ({}), []);
 
   // Helper to determine if predictions are available
-  const canPredict = contestState === ContestState.OPEN || contestState === ContestState.ACTIVE;
+  const canPredict = contestState === ContestState.ACTIVE;
   const canWithdraw = contestState === ContestState.OPEN || contestState === ContestState.CANCELLED;
   const canClaim = contestState === ContestState.SETTLED;
 

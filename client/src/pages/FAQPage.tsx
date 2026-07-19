@@ -298,11 +298,12 @@ export const FAQPage: React.FC = () => {
             </h3>
             <ul className="list-disc space-y-1 pl-6 text-gray-700">
               <li>
-                <span className="font-semibold">ACTIVE (Mon-Wed):</span> Place and withdraw wagers.
+                <span className="font-semibold">OPEN:</span> Winner Pool is closed. Enter or leave
+                the contest and build lineups.
               </li>
               <li>
-                <span className="font-semibold">OPEN (Thu-Sun):</span> Place wagers, but you cannot
-                withdraw them.
+                <span className="font-semibold">ACTIVE:</span> Place Winner Pool wagers. You cannot
+                withdraw them once placed.
               </li>
               <li>
                 <span className="font-semibold">LOCKED:</span> No wager changes allowed; waiting for
@@ -312,7 +313,7 @@ export const FAQPage: React.FC = () => {
             <p className="mt-2 text-gray-700">
               <span className="font-semibold">Note:</span> Winner Pool betting does not lock on a
               fixed day or round. The operator may lock the market at any time, based on the
-              tournament and pool activity.
+              tournament and pool activity. Settlement requires the contest to be LOCKED.
             </p>
           </div>
 
@@ -431,8 +432,8 @@ export const FAQPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="border border-gray-300 px-4 py-2 text-gray-700">
-                      Contest becomes available. Users can join/leave, build lineups, and place
-                      wagers.
+                      Contest becomes available. Users can join/leave and build lineups. Winner Pool
+                      opens after activation.
                     </td>
                   </tr>
                   <tr className="bg-gray-50">
@@ -498,7 +499,9 @@ export const FAQPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="border border-gray-300 px-4 py-2 text-gray-700">
-                      Contest archived. All claims processed or forfeited.
+                      Contest archived after expiry. Unclaimed SETTLED payouts or un-refunded
+                      CANCELLED deposits may be swept. Close is only allowed from SETTLED or
+                      CANCELLED.
                     </td>
                   </tr>
                 </tbody>

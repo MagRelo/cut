@@ -19,6 +19,7 @@ import { baseSepolia } from "viem/chains";
 import ContestFactory from "../contracts/ContestFactory.json" with { type: "json" };
 import sepoliaContracts from "../contracts/sepolia.json" with { type: "json" };
 import { getChainConfig } from "../lib/chainConfig.js";
+import { getOpsOracleAddress, getOpsOraclePrivateKey } from "../lib/opsOracle.js";
 import { parseReferralGroupIdFromEnv } from "../lib/referralConfig.js";
 import { prisma } from "../lib/prisma.js";
 
@@ -44,14 +45,8 @@ function parseArgs(): { eventId: string; name: string } {
 async function main(): Promise<void> {
   const { eventId, name } = parseArgs();
 
-  const privateKey = process.env.ORACLE_PRIVATE_KEY?.trim();
-  const oracle = process.env.ORACLE_ADDRESS?.trim();
-  if (!privateKey?.startsWith("0x") || privateKey.length !== 66) {
-    throw new Error("ORACLE_PRIVATE_KEY must be set to a valid 32-byte hex string");
-  }
-  if (!oracle) {
-    throw new Error("ORACLE_ADDRESS is required");
-  }
+  const privateKey = getOpsOraclePrivateKey();
+  const oracle = getOpsOracleAddress();
 
   const referralGroupId = parseReferralGroupIdFromEnv();
   if (!referralGroupId) {
@@ -104,7 +99,8 @@ async function main(): Promise<void> {
 
   const factoryAddress = sepoliaContracts.contestFactoryAddress as Hex;
   const paymentToken = sepoliaContracts.paymentTokenAddress as Hex;
-  const rewardDistributor = sepoliaContracts.rewardDistributorAddress as Hex;
+  const referralGraph = sepoliaContracts.referralGraphAddress as Hex;
+  const rewardCalculator = sepoliaContracts.rewardCalculatorAddress as Hex;
   const primaryDepositAmount = BigInt(DEFAULT_PRIMARY_DEPOSIT * 1_000_000);
 
   console.log(`[chain] Creating contest on ${chainConfig.name} via ${factoryAddress}`);
@@ -122,7 +118,8 @@ async function main(): Promise<void> {
       BigInt(DEFAULT_REFERRAL_NETWORK_BPS),
       expiryTimestamp,
       0n,
-      rewardDistributor,
+      referralGraph,
+      rewardCalculator,
       referralGroupId,
     ],
   });

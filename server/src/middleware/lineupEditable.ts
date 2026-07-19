@@ -5,8 +5,10 @@ import {
 } from "../utils/lineupEditable.js";
 
 /**
- * Blocks lineup edits when the event is LIVE/COMPLETE or the lineup's contest is locked/settled.
+ * Blocks edits to an existing lineup when that lineup's contest is no longer OPEN
+ * (or, for event-only lineups, when the event is LIVE/COMPLETE).
  * Requires :lineupId route param and authenticated user.
+ * Not used for clone-into-contest — that gates on the target contest instead.
  */
 export const requireLineupEditable = async (
   c: Context,

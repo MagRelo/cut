@@ -10,8 +10,8 @@ Automates Foundry deployment and follow-up steps:
 
 1. **Environment validation** — required variables (see `contracts/env.example`)
 2. **Contract deployment** — `forge script` for `Deploy_sepolia.s.sol` or `Deploy_base.s.sol`
-3. **Config updates** — writes `client/src/utils/contracts/{sepolia|base}.json` and matching `server/src/contracts/*.json` with addresses (`paymentTokenAddress`, `contestFactoryAddress`, `referralGraphAddress`, `rewardDistributorAddress`)
-4. **Artifact copy** — copies compiled ABIs to **both** `server/src/contracts/` and `client/src/utils/contracts/` (see `ARTIFACT_COPY` in `deploy.js`: MockUSDC, ContestFactory, ContestController, ReferralGraph, RewardDistributor)
+3. **Config updates** — writes `client/src/utils/contracts/{sepolia|base}.json` and matching `server/src/contracts/*.json` with addresses (`paymentTokenAddress`, `contestFactoryAddress`, `referralGraphAddress`, `rewardCalculatorAddress`)
+4. **Artifact copy** — copies compiled ABIs to **both** `server/src/contracts/` and `client/src/utils/contracts/` (see `ARTIFACT_COPY` in `deploy.js`: MockUSDC, ContestFactory, ContestController, ReferralGraph, RewardCalculator)
 5. **Verification** — optional Blockscout verification via `forge verify-contract` for deployed contracts
 
 **Copy artifacts only** (after `forge build` in `contracts/`, no deploy):
@@ -29,8 +29,8 @@ Re-verify already deployed contracts on Blockscout. Useful if verification faile
 Base Sepolia (chain 84532) helpers:
 
 - `mintPaymentToken.js` — mint `MockUSDC` when your wallet is the token owner
-- `deployContestFactory.js` — deploy only `ContestFactory` via `Deploy_sepolia_contest_factory.s.sol` (no app config updates; copy `contestFactoryAddress` from forge output yourself or run `pnpm run deploy:copy-artifacts` after `forge build`)
-- `deployReferral.js` — deploy referral graph / distributor only
+- `deployContestFactory.js` — deploy only `ContestFactory` via `Deploy_sepolia_contest_factory.s.sol`
+- `deployReferral.js` — deploy referral graph / calculator only
 - `pushPayouts.js` — oracle push primary/secondary payouts
 
 Details: [Sepolia Scripts README](./sepolia/README.md).
@@ -45,7 +45,7 @@ Copy and fill `contracts/env.example` → `contracts/.env`:
 cp contracts/env.example contracts/.env
 ```
 
-Typical variables include `PRIVATE_KEY`, `BASE_SEPOLIA_RPC_URL` / `BASE_RPC_URL`, and `BASESCAN_API_KEY` where needed. See `contracts/env.example` for the full list.
+Typical variables include `DEPLOYER_PK`, `OPS_ORACLE_PK`, `BASE_SEPOLIA_RPC_URL` / `BASE_RPC_URL`, and `BASESCAN_API_KEY` where needed. See `contracts/env.example` for the full list.
 
 ### Tooling
 
@@ -82,6 +82,8 @@ node scripts/verify.js [sepolia|base]
 ```bash
 # Sepolia
 pnpm run mint-tokens
+pnpm run push-primary-payouts
+pnpm run push-secondary-payouts
 ```
 
 Networks: `sepolia` → Base Sepolia (`base_sepolia`, 84532); `base` → Base mainnet (8453).
@@ -90,18 +92,18 @@ Networks: `sepolia` → Base Sepolia (`base_sepolia`, 84532); `base` → Base ma
 
 ### Base Sepolia (`Deploy_sepolia.s.sol`)
 
-- **MockUSDC** — mintable test USDC (`paymentTokenAddress`)
+- **MockUSDC** — mintable test USDC
 - **ContestFactory**
 - **ReferralGraph**
-- **RewardDistributor**
+- **RewardCalculator**
 
 ### Base mainnet (`Deploy_base.s.sol`)
 
 - **ContestFactory**
 - **ReferralGraph**
-- **RewardDistributor**
+- **RewardCalculator**
 
-Payment token on mainnet is **canonical Base USDC** (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`) — written into config by `deploy.js`, not deployed by the forge script.
+Payment token on Base is **canonical USDC** (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`) — written into config by `deploy.js`, not deployed.
 
 `ContestController` is not deployed by these scripts; instances are created via `ContestFactory`. Its ABI is still copied for app/server use.
 
@@ -113,35 +115,6 @@ Payment token on mainnet is **canonical Base USDC** (`0x833589fCD6eDb6E08f4c7C32
 - `server/src/contracts/sepolia.json` / `base.json`
 
 **Copied ABIs** (after deploy or `deploy:copy-artifacts`): listed in `ARTIFACT_COPY` inside `deploy.js`.
-
-## Example deploy output (illustrative)
-
-```
-🚀 Starting deployment to base_sepolia
-
-=== Checking environment variables ===
-✅ Environment variables check passed
-
-=== Deploying contracts to base_sepolia ===
-ℹ️ Running: forge script script/Deploy_sepolia.s.sol ...
-✅ Deployed contracts
-
-=== Updating configuration files for base_sepolia ===
-✅ Updated client config: .../client/src/utils/contracts/sepolia.json
-✅ Updated server config: .../server/src/contracts/sepolia.json
-
-=== Copying contract artifacts to server and client ===
-✅ Copied MockUSDC.json to server
-✅ Copied ContestController.json to client
-...
-
-=== Verifying contracts on https://base-sepolia.blockscout.com ===
-ℹ️ Verifying MockUSDC at 0x...
-✅ Verified MockUSDC
-...
-```
-
-Verification order in `deploy.js`: MockUSDC (Sepolia only), ContestFactory, ReferralGraph, RewardDistributor.
 
 ## Troubleshooting
 

@@ -8,81 +8,80 @@ Related: [referral-network.md](../platform/referral-network.md) · [economics-sk
 
 **User wallets** (Privy smart wallets) are not platform roles; they are listed only where cashflows touch them. User gas sponsorship (e.g. paymaster) is a **USD opex** line — not a wallet role here.
 
+There are exactly **two platform keys**:
+
 ```text
-Infra            Deployer          — one-time ETH spend; then cold
-Cron-Ops         Contest + referral oracles — leak ETH; accrue paymentToken
-Marketing_test   Side-bet in/out   — paymentToken ledger only
+DEPLOYER_PK      Infra / Deployer  — one-time ETH spend; then cold
+OPS_ORACLE_PK    Cron-Ops OPS_ORACLE — contest + referral oracle in one EOA; leaks ETH, accrues paymentToken
 ```
+
+(Marketing_test side-bet wallets are a paymentToken ledger, not a signing key held by the app.)
 
 ---
 
-## 1. Infra — Deployer
+## 1. Infra — Deployer (`DEPLOYER_PK`)
 
 **Shape:** One-time (or rare) deploy expense. Fund with **ETH**, run `Deploy_base.s.sol` (or Sepolia), then treat as a **cold wallet** unless you leave it as long-lived contract owner (see below). No ongoing prize or side-bet custody.
 
 | Role | Purpose | Holds keys? | Env / config | Known address |
 |------|---------|-------------|--------------|---------------|
-| **Deployer** | Broadcasts forge scripts; may inherit contract ownership / default oracle auth | Yes — `contracts/.env` `PRIVATE_KEY` | Deploy time only | TBD |
+| **Deployer** | Broadcasts forge scripts; inherits contract ownership | Yes — `contracts/.env` `DEPLOYER_PK` | Deploy time only | TBD |
 
 | Asset | Direction | Notes |
 |-------|-----------|-------|
 | ETH | Out (one-time) | Deploy (+ optional verify / retries / ownership transfers) |
 | Payment token | None | Deployer is not a settlement destination |
 
-Env: `contracts/.env` → `PRIVATE_KEY`, `REFERRAL_ORACLE`, `REFERRAL_GROUP_ID`, RPC.
+Env: `contracts/.env` → `DEPLOYER_PK`, `OPS_ORACLE_PK` (its address becomes the ReferralGraph oracle), `REFERRAL_GROUP_ID`, RPC.
 
 ### Deploy cost estimate (Base mainnet)
 
-`Deploy_base` creates **three** contracts in one broadcast: ContestFactory, ReferralGraph, RewardDistributor. Creation bytecode is large (ContestFactory alone ~20 KB; stack ~31 KB total) — most of the fee is **L1 data**, which tracks Ethereum congestion.
+`Deploy_base` creates **three** contracts in one broadcast: ContestFactory, ReferralGraph, RewardCalculator. Creation bytecode is large (ContestFactory alone ~20 KB) — most of the fee is **L1 data**, which tracks Ethereum congestion.
 
 | Scenario | Rough ETH | Rough USD (at ~$2–3k ETH) |
 |----------|-----------|---------------------------|
 | Quiet L1 / happy path | **~0.001–0.005 ETH** | **~$2–15** |
 | Busy L1 or retries | **~0.005–0.02 ETH** | **~$15–50** |
 
-**Practical fund:** put **0.02 ETH** on the deployer EOA for mainnet cutover (covers deploy + a couple retries + `transferOwnership` txs). Sepolia is cheap/test ETH. Re-estimate before go-live with `forge script … --estimate` / a dry RPC quote — fees move with L1.
+**Practical fund:** put **0.02 ETH** on the deployer EOA for mainnet cutover (covers deploy + a couple retries + `transferOwnership` txs). Sepolia is cheap/test ETH. Re-estimate before go-live with `forge script … --estimate` — fees move with L1.
 
-Blockscout / Basescan verification is usually free API-side (no on-chain spend).
+### Roles the deployer inherits
 
-### Roles the deployer inherits (or might)
-
-From `Deploy_base.s.sol` as written today (`initialOwner = deployer`, `REFERRAL_ORACLE` defaults to deployer if unset):
+From `Deploy_base.s.sol` as written today (`initialOwner = deployer`; the ReferralGraph oracle is the **`OPS_ORACLE_PK` address**, falling back to the deployer only if `OPS_ORACLE_PK` is unset):
 
 | Cap / role | Contract | Deployer gets it? | What it can do | Keep on deployer? |
 |------------|----------|-------------------|----------------|-------------------|
 | **`owner`** | `ReferralGraph` | **Yes** (constructor `initialOwner`) | `authorizeOracle` / `unauthorizeOracle`, `transferOwnership` | Maybe — admin capability; often move to a multi-sig / cold Ops admin after cutover |
-| **`owner`** | `RewardDistributor` | **Yes** (constructor `initialOwner`) | Same oracle auth + `transferOwnership` (and other owner-gated admin) | Same as graph — usually transfer with graph |
-| **Authorized referral oracle** (`REFERRAL_GROUP_ID`) | Graph + Distributor | **Only if** `REFERRAL_ORACLE` unset (defaults to deployer) | `register` / `batchRegister` / skiplist (oracle paths) | **No** for steady state — set `REFERRAL_ORACLE` to **Cron-Ops** address at deploy so the hot oracle key holds this, not the cold deployer |
+| **Authorized referral oracle** (`REFERRAL_GROUP_ID`) | `ReferralGraph` | **No** if `OPS_ORACLE_PK` is set (its address is authed instead) | `register` / `batchRegister` / skiplist (oracle paths) | **No** — this belongs to OPS_ORACLE, not the cold deployer |
 | **ContestFactory owner** | `ContestFactory` | **No** | Factory is not Ownable; anyone can `createContest` | N/A |
-| **ContestController oracle / host** | Per contest | **No** (not set by deploy script) | Lifecycle / settle | Set at `createContest` → **Cron-Ops** (`VITE_ORACLE_ADDRESS`) |
+| **ContestController oracle / host** | Per contest | **No** (not set by deploy script) | Lifecycle / settle | Set at `createContest` → **OPS_ORACLE** (`VITE_ORACLE_ADDRESS`) |
 | **MockUSDC owner** (Sepolia only) | `MockUSDC` | **Yes** on `Deploy_sepolia` | `mint` / `burn` | Sepolia faucet-style; not a mainnet role |
 
-**Implication:** Deployer **will** be Ownable admin of the referral stack unless you transfer afterward. Deployer **might** also be the referral oracle if you forget `REFERRAL_ORACLE` — avoid that for mainnet. Contests never assign the deploy key as contest oracle by default.
+**Implication:** Deployer **will** be Ownable admin of `ReferralGraph` unless you transfer afterward. As long as `OPS_ORACLE_PK` is set at deploy, the deployer is **not** the referral oracle. Contests never assign the deploy key as contest oracle by default.
 
 Post-deploy options:
 
 1. **Cold deployer keeps ownership** — rare ops; deploy key must stay safe forever for `authorizeOracle` / rescue.
 2. **`transferOwnership` → multi-sig / Ops admin** — recommended if ownership stays in play.
-3. **Renounce ownership** — only if you are sure you will never need to rotate referral oracles.
+3. **Renounce ownership** — only if you are sure you will never need to rotate the OPS_ORACLE authorization.
 
 ### Open
 
 - [ ] Document deployer address for the Base mainnet deploy.
 - [ ] Decide **owner disposition** after deploy: keep cold / multi-sig / renounce.
-- [ ] Set `REFERRAL_ORACLE` = Cron-Ops (contest oracle) at deploy — do not leave default = deployer on mainnet.
+- [ ] Set `OPS_ORACLE_PK` at deploy so its address (not the deployer) is the authorized referral oracle on mainnet.
 
 ---
 
-## 2. Cron-Ops — Contest + referral oracles
+## 2. Cron-Ops — OPS_ORACLE (`OPS_ORACLE_PK`)
 
-**Shape:** Hot keys on web + cron hosts ([cron-pi.md](cron-pi.md)). Compromising these = full contest and referral control.
+**Shape:** One hot key on web + cron hosts ([cron-pi.md](cron-pi.md)) that is **both the contest oracle and the referral oracle**. Compromising it = full contest and referral control.
 
 | Role | Purpose | Holds keys? | Env / config | Known address |
 |------|---------|-------------|--------------|---------------|
-| **Contest oracle** | Create / activate / lock / settle / close; push primary/secondary payouts; usually also `register` / `batchRegister` | Yes — server + cron | `ORACLE_ADDRESS`, `ORACLE_PRIVATE_KEY`; client `VITE_ORACLE_ADDRESS` | TBD |
-| **Referral oracle** | Authorized on `ReferralGraph` + `RewardDistributor` for `REFERRAL_GROUP_ID`; tree root under `REFERRAL_ROOT` | Optional separate key | Deploy `REFERRAL_ORACLE`; runtime `REFERRAL_ORACLE_ROOT_ADDRESS` (defaults to `ORACLE_ADDRESS`); optional `REFERRAL_ORACLE_PRIVATE_KEY` | Prefer **same EOA as contest oracle** |
+| **OPS_ORACLE** | Contest: create / activate / lock / settle / close; push primary/secondary payouts. Referral: authorized on `ReferralGraph` for `REFERRAL_GROUP_ID`, `register` / `batchRegister`, and tree root under `REFERRAL_ROOT` | Yes — server + cron | `OPS_ORACLE_PK` (address derived, or pin `OPS_ORACLE_ADDRESS`); client `VITE_ORACLE_ADDRESS` | TBD |
 
-`VITE_ORACLE_ADDRESS` must match `ORACLE_PRIVATE_KEY`, on-chain contest `oracle`, and (unless split) referral oracle / root.
+The OPS_ORACLE address must match `OPS_ORACLE_PK`, the on-chain contest `oracle`, the authorized `ReferralGraph` oracle, the referral tree root, and client `VITE_ORACLE_ADDRESS`.
 
 ### Balance model
 
@@ -96,12 +95,12 @@ Post-deploy options:
 User ──deposit──► ContestController
                       │
                       ├─ settleContest → prizes (claim/push to users)
-                      └─ referralNetworkBps → RewardDistributor
+                      └─ referralNetworkBps → RewardCalculator split
                                               ├─ user referrers
-                                              └─ oracle ancestor ──paymentToken──► Cron-Ops wallet
+                                              └─ oracle ancestor ──paymentToken──► OPS_ORACLE wallet
 ```
 
-Contest escrow itself is **not** Cron-Ops balance — users move payment token in/out of controllers. Cron-Ops only needs **ETH float** for gas and will **accrue paymentToken** from referral ancestor fees over time (platform income core; see [economics-sketch.md](../internal/economics-sketch.md) and [referral-network.md](../platform/referral-network.md)).
+Contest escrow itself is **not** OPS_ORACLE balance — users move payment token in/out of controllers. OPS_ORACLE only needs **ETH float** for gas and will **accrue paymentToken** from referral ancestor fees over time (platform income core; see [economics-sketch.md](../internal/economics-sketch.md) and [referral-network.md](../platform/referral-network.md)).
 
 ### Ops funding
 
@@ -110,15 +109,15 @@ Contest escrow itself is **not** Cron-Ops balance — users move payment token i
 | ETH | Keep warm enough for a busy settle week + referral sync batch; top up when low |
 | Payment token | No pre-fund required; optionally sweep accrued fees to cold / operating accounts on a schedule |
 
-Env: `server/.env` / cron / swarm → `ORACLE_*`, optional `REFERRAL_ORACLE_*`, RPC; client → `VITE_ORACLE_ADDRESS`, `VITE_REFERRAL_GROUP_ID`.
+Env: `server/.env` / cron / swarm → `OPS_ORACLE_PK` (optional `OPS_ORACLE_ADDRESS`), RPC; client → `VITE_ORACLE_ADDRESS`, `VITE_REFERRAL_GROUP_ID`.
 
-**Open:** Confirm mainnet contest oracle address; confirm referral oracle ≡ contest oracle.
+**Open:** Confirm mainnet OPS_ORACLE address; fund with Base ETH before cutover.
 
 ---
 
 ## 3. Marketing_test — Side-bet in / out
 
-**Shape:** A **paymentToken ledger** only — no meaningful ETH role beyond optional outbound-tx gas if ops sends payouts from `out`. Separate from contest escrow and Cron-Ops keys.
+**Shape:** A **paymentToken ledger** only — no meaningful ETH role beyond optional outbound-tx gas if ops sends payouts from `out`. Separate from contest escrow and the OPS_ORACLE key.
 
 | Role | Purpose | Holds keys? | Env / config | Known address |
 |------|---------|-------------|--------------|---------------|
@@ -153,12 +152,11 @@ Env: client `VITE_SIDE_BET_STAKE_RECIPIENT`; server `SIDE_BETS_ENABLED` (+ DataG
 
 ## Address register
 
-| Bucket | Role | Base Sepolia | Base mainnet |
-|--------|------|--------------|--------------|
-| Infra | Deployer | | |
-| Cron-Ops | Contest oracle | | |
-| Cron-Ops | Referral oracle / root | | |
-| Marketing_test | Side-bet in | | `0x6569E9BA175fA46FFf13bc649E0D92813E507a06` |
-| Marketing_test | Side-bet out | | |
+| Bucket | Role | Env key | Base Sepolia | Base mainnet |
+|--------|------|---------|--------------|--------------|
+| Infra | Deployer | `DEPLOYER_PK` | | |
+| Cron-Ops | OPS_ORACLE (contest + referral + root) | `OPS_ORACLE_PK` | | |
+| Marketing_test | Side-bet in | `VITE_SIDE_BET_STAKE_RECIPIENT` | | `0x6569E9BA175fA46FFf13bc649E0D92813E507a06` |
+| Marketing_test | Side-bet out | — | | |
 
 Never commit private keys. Addresses only in this doc; keys only in sealed env / secrets managers.

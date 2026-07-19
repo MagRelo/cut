@@ -6,16 +6,12 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { getChainConfig } from "../../lib/chainConfig.js";
+import { getOpsOraclePrivateKey } from "../../lib/opsOracle.js";
 import ReferralGraph from "../../contracts/ReferralGraph.json" with { type: "json" };
 
+/** Referral txs are signed by the unified OPS_ORACLE key. */
 export function getReferralOraclePrivateKey(): Hex {
-  const raw = process.env.REFERRAL_ORACLE_PRIVATE_KEY?.trim() || process.env.ORACLE_PRIVATE_KEY?.trim();
-  if (!raw || !raw.startsWith("0x") || raw.length !== 66) {
-    throw new Error(
-      "REFERRAL_ORACLE_PRIVATE_KEY or ORACLE_PRIVATE_KEY must be a 32-byte hex string starting with 0x",
-    );
-  }
-  return raw as Hex;
+  return getOpsOraclePrivateKey();
 }
 
 export function getReferralWalletClient(chainId: number) {
@@ -50,6 +46,22 @@ export async function referralGraphIsRegistered(
     functionName: "isRegistered",
     args: [userAddress, groupId],
   }) as Promise<boolean>;
+}
+
+export async function referralGraphGetReferrer(
+  chainId: number,
+  contractAddress: `0x${string}`,
+  userAddress: `0x${string}`,
+  groupId: Hex,
+): Promise<`0x${string}`> {
+  const publicClient = getReferralPublicClient(chainId);
+  const referrer = (await publicClient.readContract({
+    address: contractAddress,
+    abi: ReferralGraph.abi,
+    functionName: "getReferrer",
+    args: [userAddress, groupId],
+  })) as string;
+  return referrer.toLowerCase() as `0x${string}`;
 }
 
 export async function referralGraphRegister(

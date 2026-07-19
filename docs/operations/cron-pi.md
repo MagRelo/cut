@@ -27,7 +27,7 @@ From [`swarm/env/cron.env.example`](../../swarm/env/cron.env.example). Minimum:
 
 - `NODE_ENV=production`, `ENABLE_CRON=true`
 - `DATABASE_URL` (allowlist Pi outbound IP on DB firewall)
-- `ORACLE_ADDRESS`, `ORACLE_PRIVATE_KEY`
+- `OPS_ORACLE_PK` (contest + referral oracle; address derived from the key)
 - `BETTERSTACK_HEARTBEAT_URL` (recommended)
 
 Add `PGA_API_KEY`, `DATAGOLF_API_KEY`, `SIDE_BETS_ENABLED`, RPC URLs as needed.

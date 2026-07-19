@@ -1,8 +1,11 @@
 /**
- * Settle a contest: ACTIVE/LOCKED → SETTLED
+ * Settle a contest: LOCKED → SETTLED (auto-locks ACTIVE contests first)
  *
  * Calculates winners and payouts via the sport plugin, then calls settleContest()
- * on-chain. Pure accounting — no transfers happen in settlement.
+ * on-chain. On-chain settlement requires LOCKED; if the contract is still ACTIVE,
+ * this service locks first so cron/admin settle cannot front-run the secondary market.
+ * Primary/secondary prize transfers happen later via push*; referral network fees
+ * are paid from contest balance during settlement.
  */
 
 import { defaultPayoutVector } from "@cut/sport-sdk";
@@ -17,10 +20,9 @@ import {
   readContestState,
 } from "../shared/contractClient.js";
 import { executeContestPayoutPushes } from "./pushContestPayouts.js";
-import { buildSettlementReferralArgs } from "./buildSettlementReferralArgs.js";
 import { assertWinnerRegisteredOnReferralGraph } from "../referral/assertWinnerRegisteredOnGraph.js";
 import { recordSettlementReferralPayments } from "./recordSettlementReferralPayments.js";
-import { getRewardDistributorAddress } from "../../lib/referralConfig.js";
+import { lockContest } from "./lockContest.js";
 import {
   ContestState,
   type OperationResult,
@@ -171,18 +173,31 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       };
     }
 
-    const contractState = await readContestState(contest.address, contest.chainId);
-    const awaitingOnChainSettlement =
-      contractState === ContestState.ACTIVE || contractState === ContestState.LOCKED;
+    let contractState = await readContestState(contest.address, contest.chainId);
     const recoveringOffChainSettlement =
       contractState === ContestState.SETTLED &&
       (contest.status === "ACTIVE" || contest.status === "LOCKED");
+
+    if (contractState === ContestState.ACTIVE && !recoveringOffChainSettlement) {
+      console.log(`[settleContest] Contract ACTIVE; locking before settle for contest ${contestId}`);
+      const lockResult = await lockContest(contestId);
+      if (!lockResult.success) {
+        return {
+          success: false,
+          contestId,
+          error: `Failed to lock before settle: ${lockResult.error ?? "unknown error"}`,
+        };
+      }
+      contractState = await readContestState(contest.address, contest.chainId);
+    }
+
+    const awaitingOnChainSettlement = contractState === ContestState.LOCKED;
 
     if (!awaitingOnChainSettlement && !recoveringOffChainSettlement) {
       return {
         success: false,
         contestId,
-        error: `Contract state is ${contractState}, expected ${ContestState.ACTIVE} (ACTIVE), ${ContestState.LOCKED} (LOCKED), or ${ContestState.SETTLED} (SETTLED) while DB is ACTIVE/LOCKED`,
+        error: `Contract state is ${contractState}, expected ${ContestState.LOCKED} (LOCKED), or ${ContestState.SETTLED} (SETTLED) while DB is ACTIVE/LOCKED`,
       };
     }
 
@@ -278,12 +293,6 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       };
     }
 
-    const referralArgs = await buildSettlementReferralArgs({
-      contestAddress: contest.address,
-      chainId: contest.chainId,
-      winningEntryId: winningEntryStr,
-    });
-
     const winningEntriesBigInt = winningEntries.map((id) => BigInt(id));
     const payoutBpsBigInt = payoutBps.map((bp) => BigInt(bp));
 
@@ -309,8 +318,6 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       hash = (await contract.write.settleContest!([
         winningEntriesBigInt,
         payoutBpsBigInt,
-        referralArgs.referralReward,
-        referralArgs.referralSignature,
       ])) as `0x${string}`;
 
       console.log(`[settleContest] Transaction submitted: ${hash}`);
@@ -336,21 +343,13 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       row.positionBonusAmountWei = "0";
     }
 
-    const rewardDistributorAddress = getRewardDistributorAddress(contest.chainId);
-    if (rewardDistributorAddress) {
-      await recordSettlementReferralPayments({
-        contestId,
-        chainId: contest.chainId,
-        contestAddress: contest.address,
-        paymentTokenAddress,
-        settleReceipt,
-        rewardDistributorAddress,
-      });
-    } else {
-      console.warn(
-        `[settleContest] No rewardDistributorAddress for chain ${contest.chainId}; skipping referral payment indexing`,
-      );
-    }
+    await recordSettlementReferralPayments({
+      contestId,
+      chainId: contest.chainId,
+      contestAddress: contest.address,
+      paymentTokenAddress,
+      settleReceipt,
+    });
 
     const pushResult = await executeContestPayoutPushes({
       contestId,

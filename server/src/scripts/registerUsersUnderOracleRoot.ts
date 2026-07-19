@@ -1,12 +1,13 @@
 /**
- * Register organic users and invite chain heads under the oracle root (Option B step 2).
- * Users with an invite referrer are synced via batchSyncReferralGraph.
+ * Register organic users under the oracle root (no invite fields).
+ * Prefer `script:rematerialize-referral-graph` for a full DB→chain rebuild.
  *
  *   pnpm --filter server run script:register-users-under-oracle-root
- *   pnpm --filter server run script:register-users-under-oracle-root -- --dry-run
+ *   pnpm --filter server run script:register-users-under-oracle-root --dry-run
  */
 
 import "dotenv/config";
+import { getAddress } from "viem";
 import { prisma } from "../lib/prisma.js";
 import { getReferralSyncChainIdFromEnv } from "../lib/referralConfig.js";
 import {
@@ -16,12 +17,13 @@ import {
   registerWalletOnReferralGraph,
   resolveReferralGraphSetup,
 } from "../services/referral/referralGraphSetup.js";
+import { referralGraphGetReferrer } from "../services/referral/referralGraph.js";
 import { pickWalletPublicKeyForChain } from "../utils/pickWalletForChain.js";
 
 const ALREADY_ON_CHAIN = "already_registered";
 
 function hasDryRunFlag(): boolean {
-  return process.argv.includes("--dry-run");
+  return process.argv.includes("--dry-run") || process.argv.includes("dry-run");
 }
 
 async function main() {
@@ -42,6 +44,7 @@ async function main() {
   const users = await prisma.user.findMany({
     where: {
       referrerAddress: null,
+      referredByUserId: null,
       wallets: { some: { chainId } },
     },
     include: { wallets: true },
@@ -55,13 +58,26 @@ async function main() {
     const wallet = pickWalletPublicKeyForChain(u.wallets, chainId);
     if (!wallet) continue;
 
-    if (wallet === setup.oracleRoot) {
+    if (wallet.toLowerCase() === setup.oracleRoot.toLowerCase()) {
       skippedAlready += 1;
       continue;
     }
 
     try {
       if (await isWalletRegisteredOnGraph(setup, wallet)) {
+        const parent = await referralGraphGetReferrer(
+          setup.chainId,
+          setup.graphAddress,
+          getAddress(wallet).toLowerCase() as `0x${string}`,
+          setup.groupId,
+        );
+        if (parent !== setup.oracleRoot.toLowerCase()) {
+          failed += 1;
+          console.error(
+            `failed user=${u.id}: already registered under ${parent}, expected oracle`,
+          );
+          continue;
+        }
         if (!dryRun && !u.referralOnchainTxHash) {
           await prisma.user.update({
             where: { id: u.id },

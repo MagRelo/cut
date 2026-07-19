@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Deploy only ReferralGraph + RewardDistributor on Base Sepolia (84532).
+ * Deploy only ReferralGraph + RewardCalculator on Base Sepolia (84532).
  * Uses `contracts/script/Deploy_sepolia_referral.s.sol`. Does not modify app config JSON.
  *
- * Prerequisites: `contracts/.env` with PRIVATE_KEY, BASE_SEPOLIA_RPC_URL, REFERRAL_GROUP_ID;
- * optional REFERRAL_ORACLE (defaults to deployer).
+ * Prerequisites: `contracts/.env` with DEPLOYER_PK, BASE_SEPOLIA_RPC_URL, REFERRAL_GROUP_ID;
+ * optional OPS_ORACLE_PK (oracle defaults to deployer if unset).
  *
  * Usage (from repo root):
  *   node scripts/sepolia/deployReferral.js
@@ -22,12 +22,12 @@ const contractsDir = path.join(projectRoot, "contracts");
 
 dotenv.config({ path: path.join(contractsDir, ".env") });
 
-const privateKey = process.env.PRIVATE_KEY;
+const privateKey = process.env.DEPLOYER_PK;
 const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL;
 const referralGroupId = process.env.REFERRAL_GROUP_ID?.trim();
 
 if (!privateKey) {
-  console.error("Missing PRIVATE_KEY (set in contracts/.env)");
+  console.error("Missing DEPLOYER_PK (set in contracts/.env)");
   process.exit(1);
 }
 if (!rpcUrl) {

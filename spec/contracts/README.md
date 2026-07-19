@@ -6,14 +6,14 @@ The contracts layer implements the core blockchain functionality for Play The Cu
 
 - **Contest Management**: Smart contracts for creating and managing contests
 - **Prediction Markets**: Secondary market for betting on contest outcomes
-- **Economic Model**: Referral-network fees, cross-subsidies, and payout mechanisms
-- **Referral Graph**: On-chain invite tree and reward distribution
+- **Referral Network**: On-chain referral graph and fee split at settlement
+- **Economic Model**: Fee structures, cross-subsidies, and payout mechanisms
 
 ## Key Components
 
 ### Core Contracts
 
-1. **ContestController** — Main contest contract (instances via factory)
+1. **ContestController** - Main contest contract (via ContestFactory)
 
    - Three-layer architecture (Oracle, Primary, Secondary)
    - State machine (OPEN → ACTIVE → LOCKED → SETTLED → CLOSED)
@@ -21,33 +21,31 @@ The contracts layer implements the core blockchain functionality for Play The Cu
    - Secondary prediction market
    - Cross-subsidy mechanism for pool balancing
 
-2. **ContestFactory** — Factory for creating ContestController contracts
+2. **ContestFactory** - Factory for creating ContestController contracts
 
    - Centralized contest creation
    - Contest tracking and management
 
-3. **ReferralGraph** / **RewardDistributor** — On-chain referral tree and fee splits
+3. **ReferralGraph** - On-chain referral registration / ancestry
+
+4. **RewardCalculator** - Stateless referral fee split math used at settlement
 
 ### Mock Contracts
 
-- **MockUSDC** — Mintable 6-decimal payment token for Base Sepolia only
-
-### Payment token
-
-- **Base mainnet:** canonical USDC (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`)
-- **Base Sepolia:** MockUSDC (`xUSDC`)
+- **MockUSDC.sol** - Mock payment token for Sepolia testing
 
 ## Dependencies
 
-- **contestCatalyst** / **referralTree** git submodules
-- **Base Blockchain**: Base (mainnet) and Base Sepolia (testnet)
+- **solmate / solady**: Token helpers, ownership, transfer libs
+- **Base Blockchain**: Deployed on Base (mainnet) and Base Sepolia (testnet)
+- **Payment token**: Canonical USDC on Base; MockUSDC on Sepolia
 
 ## Interfaces
 
 ### With Server
 
 - Server reads contract state via RPC calls
-- Server writes to contracts via oracle/admin functions:
+- Server writes to contracts via oracle/admin functions (OPS_ORACLE):
   - `activateContest()` - Start contest
   - `lockContest()` - Lock secondary positions
   - `settleContest()` - Settle and distribute prizes
@@ -76,6 +74,12 @@ The contracts layer implements the core blockchain functionality for Play The Cu
 
 Contests progress through states: OPEN → ACTIVE → LOCKED → SETTLED → CLOSED
 
+- **OPEN**: Registration, early positions, withdrawals allowed
+- **ACTIVE**: Competition running, primary locked, secondary add only
+- **LOCKED**: Secondary closed; settle required here
+- **SETTLED**: Results in, users claim payouts
+- **CLOSED**: Force distributed, all funds moved
+
 ## Quick Links
 
 - [Contract Architecture](architecture.md)
@@ -87,4 +91,3 @@ Contests progress through states: OPEN → ACTIVE → LOCKED → SETTLED → CLO
 
 - [Contracts README](../../contracts/README.md) - Detailed contest lifecycle and economics
 - [Contest Technical Reference](../../contracts/README_contests.md) - Technical API reference
-- [Referral network](../../docs/platform/referral-network.md)

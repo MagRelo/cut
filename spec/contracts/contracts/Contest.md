@@ -17,29 +17,25 @@ The Contest contract is the core smart contract that implements a combined conte
 ## Key State Variables
 
 ### Immutable Parameters
-- `paymentToken`: ERC20 token used for deposits (USDC on Base; MockUSDC on Sepolia)
+- `paymentToken`: ERC20 token used for deposits
+- `paymentTokenDecimals`: ERC20 decimals of `paymentToken` (curve share-unit normalization)
 - `oracle`: Address that controls contest state transitions
 - `primaryDepositAmount`: Fixed deposit amount for primary participants
-- `oracleFeeBps`: Oracle fee in basis points (e.g., 500 = 5%)
+- `referralNetworkBps`: Referral network fee in basis points (e.g., 500 = 5% of gross TVL at settle)
 - `expiryTimestamp`: Contest expiration timestamp
-- `liquidityParameter`: LMSR liquidity parameter
-- `demandSensitivityBps`: LMSR demand sensitivity
-- `positionBonusShareBps`: Portion of subsidy for position bonuses
-- `targetPrimaryShareBps`: Target primary share for cross-subsidy (e.g., 3000 = 30%)
-- `maxCrossSubsidyBps`: Maximum cross-subsidy per deposit (e.g., 1500 = 15%)
+- `primaryDepositSecondarySubsidyBps`: Portion of each primary deposit credited to secondary TVL
+- `referralGraph`: ReferralGraph contract
+- `rewardCalculator`: RewardCalculator contract
+- `referralGroupId`: Referral group for settlement fee routing
 
 ### Mutable State
 - `state`: Current contest state (OPEN, ACTIVE, LOCKED, SETTLED, CANCELLED, CLOSED)
-- `accumulatedOracleFee`: Total oracle fees collected
-- `entries[]`: Array of entry IDs
+- `entries[]`: Array of entry IDs (capped at `MAX_ENTRIES` = 500)
 - `entryOwner`: Mapping of entry ID to owner address
-- `primaryDeposits`: Mapping of entry ID to deposit amount
 - `primaryPrizePool`: Primary participant prize pool
-- `secondaryPrizePool`: Secondary market collateral
-- `primaryPositionSubsidy`: Position bonuses per entry
-- `primaryPrizePoolSubsidy`: Cross-subsidy to primary pool
+- `secondaryLiquidityPerEntry`: Secondary market liquidity per entry
 - `primaryPrizePoolPayouts`: Payout amounts per entry (set at settlement)
-- `secondaryWinner`: Winning entry ID for secondary market (set at settlement)
+- `secondaryWinningEntry`: Winning entry ID for secondary market (set at settlement)
 
 ## Key Functions
 
@@ -108,7 +104,7 @@ The Contest contract is the core smart contract that implements a combined conte
 #### `settleContest(uint256[] winningEntries, uint256[] payoutBps)`
 - **Purpose**: Settle contest and calculate payouts
 - **Access**: Oracle only
-- **State**: ACTIVE or LOCKED
+- **State**: LOCKED
 - **Effects**:
   - Calculates primary payouts based on `payoutBps`
   - Sets `secondaryWinner` to first entry in `winningEntries`
@@ -143,30 +139,27 @@ The Contest contract is the core smart contract that implements a combined conte
 - **Purpose**: Claim secondary winnings
 - **State**: SETTLED
 - **Effects**:
-  - If `entryId == secondaryWinner`:
-    - Calculates user's share of `secondaryPrizePool`
+  - If `entryId == secondaryWinningEntry`:
+    - Calculates user's share of that entry's secondary liquidity
     - Transfers share to caller
   - Otherwise: returns 0
 
 ## Dependencies
 
-- **OpenZeppelin Contracts**:
-  - `ERC1155`: For secondary position tokens
-  - `ReentrancyGuard`: Security protection
-  - `SafeERC20`: Safe token transfers
-- **Payment token**: ERC20 used for deposits (USDC / xUSDC)
+- **Solady ERC1155 / ReentrancyGuard / SafeTransferLib**
+- **ReferralGraph + RewardCalculator**: Settlement fee distribution
+- **Payment token**: ERC20 for deposits
 - **Oracle**: Address that controls state transitions
 
 ## Economic Model
 
 ### Fee Structure
-- **Oracle Fee**: 5% deducted from all deposits
-- **Position Bonus**: 5% of secondary deposits to entry owners
-- **Cross-Subsidy**: Up to 15% reallocation to maintain 30% primary target
+- **Referral network fee**: `referralNetworkBps` of gross TVL deducted once at `settleContest`
+- **Primary→secondary subsidy**: `primaryDepositSecondarySubsidyBps` of each primary deposit
 
 ### Payout Structure
-- **Primary**: Performance-based prizes + position bonuses
-- **Secondary**: Winner-take-all based on prediction tokens
+- **Primary**: Performance-based prizes via `payoutBps`
+- **Secondary**: Winner-take-all pro-rata on the winning entry's secondary liquidity
 
 ## Security Considerations
 

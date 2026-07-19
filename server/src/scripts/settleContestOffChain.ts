@@ -8,7 +8,7 @@
  *   cd server && node --import tsx src/scripts/settleContestOffChain.ts \
  *     --contest-id <id> --execute
  *
- * Env: DATABASE_URL, ORACLE_PRIVATE_KEY, ORACLE_ADDRESS, BASE_SEPOLIA_RPC_URL
+ * Env: DATABASE_URL, OPS_ORACLE_PK, BASE_SEPOLIA_RPC_URL
  */
 
 import "dotenv/config";
@@ -29,6 +29,7 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
 import MockUSDC from "../contracts/MockUSDC.json" with { type: "json" };
+import { getOpsOracleAddress, getOpsOraclePrivateKey } from "../lib/opsOracle.js";
 import { prisma } from "../lib/prisma.js";
 import { getContestContract, getPublicClient } from "../services/shared/contractClient.js";
 import type {
@@ -415,11 +416,7 @@ async function simulateSettlement(contestId: string): Promise<SimulationResult> 
     }
   }
 
-  const oracleAddress = process.env.ORACLE_ADDRESS?.trim();
-  if (!oracleAddress?.startsWith("0x")) {
-    throw new Error("ORACLE_ADDRESS must be set for referral mint");
-  }
-  const referralWallet = oracleAddress as Address;
+  const referralWallet = getOpsOracleAddress() as Address;
 
   if (contractTokenBalanceWei < grossWei) {
     warnings.push(
@@ -546,12 +543,7 @@ function printPreview(sim: SimulationResult): void {
 async function executeTransfers(
   sim: SimulationResult,
 ): Promise<Array<MintTransfer & { transactionHash: Hash }>> {
-  const privateKey = process.env.ORACLE_PRIVATE_KEY?.trim();
-  if (!privateKey) {
-    throw new Error("ORACLE_PRIVATE_KEY is required for --execute");
-  }
-
-  const account = privateKeyToAccount(privateKey as `0x${string}`);
+  const account = privateKeyToAccount(getOpsOraclePrivateKey());
   const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
   const walletClient = createWalletClient({
     account,

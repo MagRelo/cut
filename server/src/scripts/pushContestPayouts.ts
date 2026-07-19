@@ -9,7 +9,7 @@
  * or:
  *   CONTEST_ID=<contestId> pnpm --filter server run service:push-contest-payouts
  *
- * Env (same as other oracle services): ORACLE_PRIVATE_KEY, ORACLE_ADDRESS, chain RPC via chainConfig.
+ * Env (same as other oracle services): OPS_ORACLE_PK, chain RPC via chainConfig.
  */
 
 import { prisma } from "../lib/prisma.js";
@@ -62,7 +62,7 @@ async function main() {
 
   const isValidOracle = await verifyOracle(contest.address, contest.chainId);
   if (!isValidOracle) {
-    console.error("Oracle address mismatch (ORACLE_ADDRESS vs contract oracle).");
+    console.error("Oracle address mismatch (OPS_ORACLE_PK vs contract oracle).");
     process.exit(1);
   }
 

@@ -7,6 +7,7 @@ const {
   validateLineupContestScope,
   writeLineupPicks,
   markSideBetMarketStaleAfterRosterChange,
+  getContestEditBlock,
 } = vi.hoisted(() => ({
   findUnique: vi.fn(),
   findUniqueOrThrow: vi.fn(),
@@ -14,6 +15,7 @@ const {
   validateLineupContestScope: vi.fn(),
   writeLineupPicks: vi.fn(),
   markSideBetMarketStaleAfterRosterChange: vi.fn(),
+  getContestEditBlock: vi.fn(),
 }));
 
 vi.mock("../../lib/prisma.js", () => ({
@@ -34,12 +36,29 @@ vi.mock("../sideBets/markSideBetMarketStaleAfterRosterChange.js", () => ({
   markSideBetMarketStaleAfterRosterChange,
 }));
 
+vi.mock("../../utils/lineupEditable.js", () => ({
+  getContestEditBlock,
+  lineupEditBlockToHttp: (block: {
+    code: string;
+    contestId?: string;
+    contestStatus?: string;
+  }) => ({
+    status: 403 as const,
+    body: {
+      error: "Contest lineup editing is not allowed",
+      contestId: block.contestId,
+      contestStatus: block.contestStatus,
+    },
+  }),
+}));
+
 import { cloneLineup } from "./cloneLineup.js";
 
 describe("cloneLineup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     validateLineupContestScope.mockResolvedValue({ ok: true });
+    getContestEditBlock.mockResolvedValue(null);
     writeLineupPicks.mockResolvedValue(undefined);
     markSideBetMarketStaleAfterRosterChange.mockResolvedValue(undefined);
   });
@@ -73,6 +92,35 @@ describe("cloneLineup", () => {
     });
 
     expect(result).toEqual({ error: "not_found" });
+  });
+
+  it("returns not_editable when target contest is not OPEN", async () => {
+    findUnique.mockResolvedValue({
+      id: "lineup-1",
+      userId: "user-1",
+      eventId: "event-1",
+      name: "My lineup",
+      prediction: null,
+      picks: [{ eventParticipantId: "ep-1" }],
+    });
+    getContestEditBlock.mockResolvedValue({
+      code: "contest_not_editable",
+      contestId: "contest-2",
+      contestStatus: "ACTIVE",
+    });
+
+    const result = await cloneLineup({
+      sourceLineupId: "lineup-1",
+      userId: "user-1",
+      targetContestId: "contest-2",
+    });
+
+    expect(result).toMatchObject({
+      error: "not_editable",
+      status: 403,
+      body: { contestId: "contest-2", contestStatus: "ACTIVE" },
+    });
+    expect(validateLineupContestScope).not.toHaveBeenCalled();
   });
 
   it("returns scope error when target contest is invalid", async () => {
@@ -131,6 +179,7 @@ describe("cloneLineup", () => {
       targetContestId: "contest-2",
     });
 
+    expect(getContestEditBlock).toHaveBeenCalledWith("contest-2");
     expect(create).toHaveBeenCalledWith({
       data: {
         userId: "user-1",

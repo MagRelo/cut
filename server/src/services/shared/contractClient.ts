@@ -5,6 +5,7 @@
 import { createPublicClient, createWalletClient, http, getContract, type WalletClient } from "viem";
 import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import { getChainConfig } from "../../lib/chainConfig.js";
+import { getOpsOracleAddress, getOpsOraclePrivateKey } from "../../lib/opsOracle.js";
 import ContestController from "../../contracts/ContestController.json" with { type: "json" };
 
 /**
@@ -14,21 +15,14 @@ export function getWalletClient(chainId: number): {
   walletClient: WalletClient;
   account: PrivateKeyAccount;
 } {
-  // Validate private key
-  const privateKey = process.env.ORACLE_PRIVATE_KEY;
-  if (!privateKey) {
-    throw new Error("ORACLE_PRIVATE_KEY environment variable is required");
-  }
-
-  if (!privateKey.startsWith("0x") || privateKey.length !== 66) {
-    throw new Error("ORACLE_PRIVATE_KEY must be a valid 32-byte hex string starting with 0x");
-  }
+  // OPS_ORACLE key (contest + referral); throws if missing/malformed
+  const privateKey = getOpsOraclePrivateKey();
 
   // Get chain configuration
   const chainConfig = getChainConfig(chainId);
 
   // Create account and wallet client
-  const account = privateKeyToAccount(privateKey as `0x${string}`);
+  const account = privateKeyToAccount(privateKey);
   const walletClient = createWalletClient({
     account,
     chain: chainConfig.chain,
@@ -66,10 +60,7 @@ export function getContestContract(contestAddress: string, chainId: number) {
  * Verify oracle address matches expected oracle
  */
 export async function verifyOracle(contestAddress: string, chainId: number): Promise<boolean> {
-  const expectedOracle = process.env.ORACLE_ADDRESS;
-  if (!expectedOracle) {
-    throw new Error("ORACLE_ADDRESS environment variable is required");
-  }
+  const expectedOracle = getOpsOracleAddress();
 
   const contract = getContestContract(contestAddress, chainId);
   const actualOracle = (await contract.read.oracle!()) as string;

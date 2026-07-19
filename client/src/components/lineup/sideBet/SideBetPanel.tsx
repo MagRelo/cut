@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import type { SideBetMarketSelectionDto } from "../../../types/sideBet";
 import { useSideBetMarketQuery } from "../../../hooks/useSideBetQueries";
+import { tabButtonClassName, tabListClassName } from "../../../lib/tabStyles";
 import { SideBetMarketSection } from "./market/SideBetMarketSection";
 import { SideBetNoLineupPrompt } from "./SideBetNoLineupPrompt";
 import { SideBetPlaceModal } from "./place/SideBetPlaceModal";
@@ -46,24 +48,32 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
 
   return (
     <div className="rounded-sm bg-white p-2">
-      <h4 className="font-display text-base font-semibold text-gray-900">Lineup Parlays</h4>
-
       {!lineupId ? <SideBetNoLineupPrompt /> : null}
 
       {lineupId ? (
-        <SideBetMarketSection
-          lineupId={lineupId}
-          onSelect={setActiveSelection}
-        />
-      ) : null}
-
-      {lineupId ? (
-        <SideBetTicketsSection
-          lineupId={lineupId}
-          borderColor={borderColor}
-          userLabel={userLabel}
-          lineupNumberLabel={lineupNumberLabel}
-        />
+        <TabGroup>
+          <TabList className={tabListClassName("mt-2 space-x-1")}>
+            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
+              Place
+            </Tab>
+            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
+              Your parlays
+            </Tab>
+          </TabList>
+          <TabPanels className="pt-3">
+            <TabPanel className="focus:outline-none">
+              <SideBetMarketSection lineupId={lineupId} onSelect={setActiveSelection} />
+            </TabPanel>
+            <TabPanel className="focus:outline-none">
+              <SideBetTicketsSection
+                lineupId={lineupId}
+                borderColor={borderColor}
+                userLabel={userLabel}
+                lineupNumberLabel={lineupNumberLabel}
+              />
+            </TabPanel>
+          </TabPanels>
+        </TabGroup>
       ) : null}
 
       <SideBetPlaceModal

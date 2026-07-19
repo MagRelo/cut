@@ -59,7 +59,7 @@ export interface Env {
   ALLOWED_ORIGINS: string;
   BASE_RPC_URL: string;
   BASE_SEPOLIA_RPC_URL: string;
-  ORACLE_PRIVATE_KEY: string;
+  OPS_ORACLE_PK: string;
   PLATFORM_TOKEN_ADDRESS: string;
   PAYMENT_TOKEN_ADDRESS: string;
   TREASURY_ADDRESS: string;

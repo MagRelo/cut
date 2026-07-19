@@ -6,39 +6,39 @@
 graph TB
     subgraph blockchain[Base Blockchain]
         CF[ContestFactory]
-        C1[Contest 1]
-        C2[Contest 2]
-        CN[Contest N]
+        C1[ContestController 1]
+        C2[ContestController 2]
+        CN[ContestController N]
         RG[ReferralGraph]
-        RD[RewardDistributor]
-        PT[PaymentToken USDC or xUSDC]
+        RC[RewardCalculator]
+        PT[PaymentToken USDC]
     end
-
+    
     subgraph server[Server Layer]
         API[API Routes]
         SVC[Services]
     end
-
+    
     subgraph client[Client Layer]
         UI[User Interface]
         WAGMI[Wagmi Hooks]
     end
-
+    
     CF -->|creates| C1
     CF -->|creates| C2
     CF -->|creates| CN
-
+    
     C1 -->|uses| PT
     C2 -->|uses| PT
     CN -->|uses| PT
-    C1 -->|settle fees| RD
-    RD -->|reads| RG
-
+    C1 -->|referral fees| RG
+    C1 -->|fee split| RC
+    
     API -->|reads/writes| C1
     API -->|reads/writes| C2
     API -->|reads/writes| CN
-    API -->|oracle txs| RG
-
+    API -->|register| RG
+    
     UI -->|reads/writes via| WAGMI
     WAGMI -->|reads/writes| C1
     WAGMI -->|reads/writes| C2
@@ -50,50 +50,70 @@ graph TB
 ### ContestFactory → ContestController
 - Factory creates ContestController instances
 - Each contest is independent
-- Factory tracks created contests
+- Factory tracks all created contests
 
-### ContestController → Payment Token
-- Contest uses ERC20 payment token for deposits (canonical USDC on Base; MockUSDC on Sepolia)
-- Participants deposit to join; payouts return the same token
+### ContestController → PaymentToken
+- Contests escrow the payment token (canonical USDC on Base, MockUSDC on Sepolia)
+- Participants deposit payment token to join
+- Payouts are in the same payment token
 
-### ContestController → ReferralGraph / RewardDistributor
-- Settlement routes `referralNetworkBps` fee through the distributor
-- See [referral-network.md](../../docs/platform/referral-network.md)
+### ContestController → ReferralGraph / RewardCalculator
+- Settlement skims `referralNetworkBps` and splits via RewardCalculator over ReferralGraph ancestors
 
 ## Key Architectural Patterns
 
 ### Factory Pattern
 - **ContestFactory** creates ContestController instances
 - Centralized creation and tracking
+- Consistent initialization parameters
 
 ### State Machine Pattern
+- **ContestController** uses enum-based state machine
 - States: OPEN, ACTIVE, LOCKED, SETTLED, CANCELLED, CLOSED
 - State transitions controlled by oracle/admin
+- Prevents invalid operations
 
 ### Three-Layer Architecture
 - **Layer 0 (Oracle)**: External data provider
 - **Layer 1 (Primary)**: Competition participants
 - **Layer 2 (Secondary)**: Prediction market participants
-- Unified in a single ContestController
+- Unified in single ContestController contract
+
+### Economic Model
+- **Referral network fee**: Skimmed from gross TVL at settlement
+- **Cross-Subsidy**: Dynamic pool balancing
+- **Bonding curve / LMSR-style pricing**: Secondary market shares
 
 ## Security Patterns
 
 ### Reentrancy Protection
-- Contests use ReentrancyGuard on external value flows
+- Controllers use ReentrancyGuard
+- External calls protected
+- State changes before external calls
 
 ### Access Control
-- Oracle/admin functions protected
-- Immutable parameters prevent changes after create
+- Oracle/admin functions protected (OPS_ORACLE)
+- Immutable contest parameters after create
 
 ### Safe Token Handling
-- SafeERC20 / SafeTransferLib patterns for token moves
+- SafeERC20 / SafeTransferLib for token transfers
+- Proper approval patterns
+- Error handling for failed transfers
 
-## Data Structures
+## Key Functions
 
-### Contest State
-- `state`: Current contest state (enum)
-- `entries[]`: Array of entry IDs
-- `entryOwner`: Mapping of entry ID to owner
-- `primaryDeposits`: Mapping of entry ID to deposit amount
+### Contest Lifecycle
+- `addPrimaryPosition(entryId)`: Join contest as primary participant
+- `removePrimaryPosition(entryId)`: Leave contest (OPEN state only)
+- `activateContest()`: Start contest (oracle only)
+- `lockContest()`: Lock secondary positions (oracle only; required before settle)
+- `settleContest(winningEntries, payoutBps)`: Settle contest (oracle only; LOCKED)
+- `closeContest()`: Force distribution after expiry (oracle only)
 
-See individual contract specs under `contracts/` for full field lists.
+### Secondary Market
+- `addSecondaryPosition(entryId, amount)`: Add prediction (ACTIVE only)
+- `removeSecondaryPosition(entryId, tokens)`: Remove prediction (OPEN or CANCELLED only)
+
+### Claims
+- `claimPrimaryPayout(entryId)`: Claim primary winnings
+- `claimSecondaryPayout(entryId)`: Claim secondary winnings

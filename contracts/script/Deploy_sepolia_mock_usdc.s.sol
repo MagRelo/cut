@@ -7,7 +7,7 @@ import {MockUSDC} from "../src/mocks/MockUSDC.sol";
 /// @notice Base Sepolia (84532): deploy only MockUSDC (xUSDC).
 contract DeploySepoliaMockUsdc is Script {
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PK");
         address deployer = vm.addr(deployerPrivateKey);
 
         vm.startBroadcast(deployerPrivateKey);

@@ -40,14 +40,15 @@ function normalizePrivateKey(key) {
 }
 
 async function mintPaymentToken() {
-  const PRIVATE_KEY = process.env.PRIVATE_KEY;
+  // MockUSDC minting is owner-gated → use the deployer key (token owner).
+  const PRIVATE_KEY = process.env.DEPLOYER_PK;
   const RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
   const RECIPIENT_ADDRESS = process.env.RECIPIENT_ADDRESS;
   const AMOUNT = process.env.AMOUNT || "10000000000"; // 10000 USDC (6 decimals)
   const USE_LATEST_DEPLOYMENT = process.env.USE_LATEST_DEPLOYMENT === "true";
 
   if (!PRIVATE_KEY) {
-    throw new Error("PRIVATE_KEY environment variable is required");
+    throw new Error("DEPLOYER_PK environment variable is required");
   }
 
   if (!RECIPIENT_ADDRESS) {

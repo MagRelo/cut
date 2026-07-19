@@ -13,7 +13,11 @@ export interface ContractConfig {
   contestFactoryAddress: string;
   /** ReferralGraph (same source of truth as `server/src/contracts/*.json`). */
   referralGraphAddress?: string;
-  rewardDistributorAddress?: string;
+  rewardCalculatorAddress?: string;
+  /** Legacy mainnet config only — not deployed on Sepolia after xUSDC migration. */
+  platformTokenAddress?: string;
+  depositManagerAddress?: string;
+  aavePoolAddress?: string;
 }
 
 /**

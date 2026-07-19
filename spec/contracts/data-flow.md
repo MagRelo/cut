@@ -8,14 +8,14 @@ sequenceDiagram
     participant Client
     participant Contest
     participant PaymentToken
-
+    
     User->>Client: Join contest
     Client->>PaymentToken: Approve contest to spend tokens
     Client->>Contest: addPrimaryPosition(entryId)
     Contest->>PaymentToken: Transfer deposit amount
     Contest->>Contest: Update entryOwner[entryId] = user
     Contest->>Contest: Update primaryDeposits[entryId] = amount
-    Contest->>Contest: Apply fee / pool accounting
+    Contest->>Contest: Add to primaryPrizePool
     Contest-->>Client: Success
     Client-->>User: Success message
 ```
@@ -28,13 +28,14 @@ sequenceDiagram
     participant Client
     participant Contest
     participant PaymentToken
-
+    
     User->>Client: Add prediction
     Client->>PaymentToken: Approve contest to spend tokens
     Client->>Contest: addSecondaryPosition(entryId, amount)
     Contest->>PaymentToken: Transfer amount
+    Contest->>Contest: Calculate share price
     Contest->>Contest: Mint ERC1155 tokens to user
-    Contest->>Contest: Apply fee / position bonus / cross-subsidy
+    Contest->>Contest: Add to secondary liquidity
     Contest-->>Client: Tokens minted
     Client-->>User: Success message
 ```
@@ -49,48 +50,44 @@ sequenceDiagram
     participant PaymentToken
     participant PrimaryWinner
     participant SecondaryWinner
-
+    
     Oracle->>Server: Trigger settlement
-    Server->>Contest: settleContest(winningEntries, payouts, referralReward, signature)
-    Note over Server,Contest: Referral fee at settlement; REFERRAL rows from settlement receipt
+    Server->>Contest: settleContest(winningEntries, payoutBps)
+    Note over Server,Contest: Referral fee at settlement via ReferralGraph + RewardCalculator
     Contest->>Contest: Calculate primary payouts
     Contest->>Contest: Set secondary winner
     Contest->>Contest: Update state to SETTLED
     Contest-->>Server: Settlement complete
-
+    
     PrimaryWinner->>Contest: claimPrimaryPayout(entryId)
     Contest->>PaymentToken: Transfer to winner
     Contest-->>PrimaryWinner: Payout received
-
+    
     SecondaryWinner->>Contest: claimSecondaryPayout(entryId)
     Contest->>PaymentToken: Transfer to winner
     Contest-->>SecondaryWinner: Payout received
 ```
-
-Payment token is canonical **USDC** on Base mainnet and **MockUSDC (xUSDC)** on Sepolia.
 
 ## Economic Flow (Deposit Processing)
 
 ```mermaid
 flowchart TD
     Deposit[User Deposits Amount]
-    Deposit --> OracleFee[Fee slice]
-    Deposit --> NetAmount[Net amount]
-
+    Deposit --> NetAmount[Net amount after any subsidies]
+    
     NetAmount --> Primary{Primary or Secondary?}
-
-    Primary --> PrimaryPool[Add to primary prize pool]
-    Primary --> CheckRatio{Primary share?}
-    CheckRatio -->|Above target| CrossSubsidy1[Cross-subsidy to secondary]
-    CheckRatio -->|At/under target| NoSubsidy1[No cross-subsidy]
-
+    
+    Primary --> PrimaryPool[Add to primaryPrizePool]
+    Primary --> CheckRatio{Primary share high?}
+    CheckRatio -->|Yes| CrossSubsidy1[Subsidy to Secondary]
+    CheckRatio -->|No| NoSubsidy1[No cross-subsidy]
+    
     NetAmount --> Secondary{Secondary Deposit}
-    Secondary --> PositionBonus[Position bonus to entry]
-    Secondary --> Remaining[Remainder]
-    Remaining --> CheckRatio2{Primary share?}
-    CheckRatio2 -->|Below target| CrossSubsidy2[Cross-subsidy to primary]
-    CheckRatio2 -->|At/above target| NoSubsidy2[No cross-subsidy]
-    Remaining --> SecondaryPool[Add to secondary prize pool]
+    Secondary --> Remaining[Liquidity / shares]
+    Remaining --> CheckRatio2{Primary share low?}
+    CheckRatio2 -->|Yes| CrossSubsidy2[Subsidy to Primary]
+    CheckRatio2 -->|No| NoSubsidy2[No cross-subsidy]
+    Remaining --> SecondaryPool[Add to secondary liquidity]
 ```
 
 ## State Transition Flow
@@ -98,36 +95,37 @@ flowchart TD
 ```mermaid
 stateDiagram-v2
     [*] --> OPEN: Contest Created
-
+    
     OPEN --> ACTIVE: activateContest()
     OPEN --> CANCELLED: cancelContest()
-
+    
     ACTIVE --> LOCKED: lockContest()
-    ACTIVE --> SETTLED: settleContest()
     ACTIVE --> CANCELLED: cancelContest()
-
+    
     LOCKED --> SETTLED: settleContest()
-
+    LOCKED --> CANCELLED: cancelContest()
+    
     SETTLED --> CLOSED: closeContest() after expiry
-
+    
     CLOSED --> [*]
     CANCELLED --> [*]
-
+    
     note right of OPEN
         Primary: Join/Leave
-        Secondary: Add/Remove positions
+        Secondary: Closed
     end note
-
+    
     note right of ACTIVE
         Primary: Locked
         Secondary: Add only
     end note
-
+    
     note right of LOCKED
         Primary: Locked
         Secondary: Closed
+        Settle required here
     end note
-
+    
     note right of SETTLED
         Users claim payouts
     end note
@@ -138,26 +136,27 @@ stateDiagram-v2
 ### Primary Deposit
 ```
 Input: amount (payment token)
-├─ Fee slices per contest settings
-└─ Net → primary prize pool (+ optional cross-subsidy)
+└─ Split via primaryDepositSecondarySubsidyBps
+   ├─ Subsidy → secondaryPrimarySubsidyPerEntry[entryId]
+   └─ Remainder → primaryPrizePool
 ```
 
 ### Secondary Deposit
 ```
 Input: amount (payment token), entryId
-├─ Fee slices per contest settings
-├─ Position bonus → entry owner allocation
-└─ Remainder → secondary prize pool (+ optional cross-subsidy)
+├─ Normalize amount via toShareUnits(paymentTokenDecimals)
+├─ Mint ERC1155 shares via bonding curve
+└─ Add amount → secondaryLiquidityPerEntry[entryId]
 ```
 
 ### Settlement Calculation
 ```
+Gross TVL → deduct referralNetworkBps fee (ReferralGraph + RewardCalculator)
 Primary Payout:
-├─ Layer1Pool = primary prize + subsidy
-├─ For each winner: payout = Layer1Pool × payoutBps[i] / 10000
-└─ Position bonus if allocated
+├─ Remaining primary pool × payoutBps[i] / 10000 per winning entry
+└─ Secondary TVL aggregated onto winning entry when it has ERC1155 supply
 
 Secondary Payout:
-├─ Winner entry liquidity share
-└─ Pro-rata of secondary prize pool
+├─ Winner-take-all pro-rata on secondaryWinningEntry liquidity share
+└─ Dust remains for closeContest sweep
 ```

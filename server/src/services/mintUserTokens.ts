@@ -21,13 +21,14 @@ function loadPaymentTokenAddressFromSepolia(): string {
 
 const contractConfig = {
     paymentTokenAddress: loadPaymentTokenAddressFromSepolia(),
-    oracleWalletPrivateKey: process.env.ORACLE_PRIVATE_KEY || '',
+    oracleWalletPrivateKey:
+        process.env.OPS_ORACLE_PK || process.env.ORACLE_PRIVATE_KEY || '',
     rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
 };
 
 function initializeWalletAndContracts() {
     if (!contractConfig.oracleWalletPrivateKey) {
-        throw new Error('ORACLE_PRIVATE_KEY environment variable is required');
+        throw new Error('OPS_ORACLE_PK environment variable is required');
     }
 
     if (

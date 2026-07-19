@@ -3,7 +3,7 @@
  * Deploy only ContestFactory on Base Sepolia (84532).
  * Uses `contracts/script/Deploy_sepolia_contest_factory.s.sol`. Does not modify app config JSON.
  *
- * Prerequisites: `contracts/.env` with PRIVATE_KEY and BASE_SEPOLIA_RPC_URL; Foundry (`forge`).
+ * Prerequisites: `contracts/.env` with DEPLOYER_PK and BASE_SEPOLIA_RPC_URL; Foundry (`forge`).
  *
  * Usage (from repo root):
  *   node scripts/sepolia/deployContestFactory.js
@@ -21,11 +21,11 @@ const contractsDir = path.join(projectRoot, "contracts");
 
 dotenv.config({ path: path.join(contractsDir, ".env") });
 
-const privateKey = process.env.PRIVATE_KEY;
+const privateKey = process.env.DEPLOYER_PK;
 const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL;
 
 if (!privateKey) {
-  console.error("Missing PRIVATE_KEY (set in contracts/.env)");
+  console.error("Missing DEPLOYER_PK (set in contracts/.env)");
   process.exit(1);
 }
 if (!rpcUrl) {

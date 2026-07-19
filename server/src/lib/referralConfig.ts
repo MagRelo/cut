@@ -1,10 +1,11 @@
 import { getAddress, isAddress, type Hex } from "viem";
 import baseContracts from "../contracts/base.json" with { type: "json" };
 import sepoliaContracts from "../contracts/sepolia.json" with { type: "json" };
+import { getOpsOracleAddress } from "./opsOracle.js";
 
 type ChainContractJson = {
   referralGraphAddress?: string;
-  rewardDistributorAddress?: string;
+  rewardCalculatorAddress?: string;
 };
 
 function chainContractsForId(chainId: number): ChainContractJson | null {
@@ -47,19 +48,23 @@ export function requireReferralGroupIdForSignup(): Hex {
 export function getReferralGraphAddress(chainId: number): `0x${string}` | null {
   const cfg = chainContractsForId(chainId);
   const raw = cfg?.referralGraphAddress?.trim();
-  if (!raw || !isAddress(raw)) return null;
+  if (!raw || !isAddress(raw) || getAddress(raw) === getAddress("0x0000000000000000000000000000000000000000")) {
+    return null;
+  }
   return raw as `0x${string}`;
 }
 
-/** RewardDistributor address for the chain (from `server/src/contracts/{base,sepolia}.json`). */
-export function getRewardDistributorAddress(chainId: number): `0x${string}` | null {
+/** RewardCalculator address for the chain (from `server/src/contracts/{base,sepolia}.json`). */
+export function getRewardCalculatorAddress(chainId: number): `0x${string}` | null {
   const cfg = chainContractsForId(chainId);
-  const raw = cfg?.rewardDistributorAddress?.trim();
-  if (!raw || !isAddress(raw)) return null;
+  const raw = cfg?.rewardCalculatorAddress?.trim();
+  if (!raw || !isAddress(raw) || getAddress(raw) === getAddress("0x0000000000000000000000000000000000000000")) {
+    return null;
+  }
   return raw as `0x${string}`;
 }
 
-/** REFERRAL_ROOT sentinel on ReferralGraph / RewardDistributor (no payable chain). */
+/** REFERRAL_ROOT sentinel on ReferralGraph (no payable chain). */
 export const REFERRAL_ROOT = "0x0000000000000000000000000000000000000001" as const;
 
 const DEFAULT_REFERRAL_SYNC_CHAIN_ID = 84532;
@@ -76,19 +81,11 @@ export function getReferralSyncChainIdFromEnv(): number {
 }
 
 /**
- * Oracle wallet used as ultimate tree root under REFERRAL_ROOT (Option B).
- * Prefers REFERRAL_ORACLE_ROOT_ADDRESS, then ORACLE_ADDRESS.
+ * OPS_ORACLE wallet used as ultimate tree root under REFERRAL_ROOT (Option B).
+ * Resolved from OPS_ORACLE_PK / OPS_ORACLE_ADDRESS (with legacy fallbacks).
  */
 export function getReferralOracleRootAddress(chainId: number): `0x${string}` {
-  const fromEnv =
-    process.env.REFERRAL_ORACLE_ROOT_ADDRESS?.trim() ||
-    process.env.ORACLE_ADDRESS?.trim();
-  if (!fromEnv || !isAddress(fromEnv)) {
-    throw new Error(
-      "REFERRAL_ORACLE_ROOT_ADDRESS or ORACLE_ADDRESS must be a valid EVM address",
-    );
-  }
-  const normalized = getAddress(fromEnv).toLowerCase() as `0x${string}`;
+  const normalized = getOpsOracleAddress().toLowerCase() as `0x${string}`;
   if (chainId !== 8453 && chainId !== 84532) {
     throw new Error(`Unsupported referral chain id: ${chainId}`);
   }

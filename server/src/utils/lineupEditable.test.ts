@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findFirst, findUnique, getEventStatus } = vi.hoisted(() => ({
+const { findFirst, findUnique, getEventStatus, readContestState } = vi.hoisted(() => ({
   findFirst: vi.fn(),
   findUnique: vi.fn(),
   getEventStatus: vi.fn(),
+  readContestState: vi.fn(),
 }));
 
 vi.mock("../lib/prisma.js", () => ({
@@ -19,15 +20,21 @@ vi.mock("../sports/registry.js", () => ({
   }),
 }));
 
+vi.mock("../services/shared/contractClient.js", () => ({
+  readContestState,
+}));
+
 import {
   contestAllowsLineupEdits,
+  getContestEditBlock,
   getLineupEditBlock,
 } from "./lineupEditable.js";
+import { ContestState } from "../services/shared/types.js";
 
 describe("contestAllowsLineupEdits", () => {
-  it("allows OPEN and ACTIVE", () => {
+  it("allows OPEN only (same as primary join/leave)", () => {
     expect(contestAllowsLineupEdits("OPEN")).toBe(true);
-    expect(contestAllowsLineupEdits("ACTIVE")).toBe(true);
+    expect(contestAllowsLineupEdits("ACTIVE")).toBe(false);
   });
 
   it("blocks LOCKED, SETTLED, CLOSED, and CANCELLED", () => {
@@ -35,6 +42,42 @@ describe("contestAllowsLineupEdits", () => {
     expect(contestAllowsLineupEdits("SETTLED")).toBe(false);
     expect(contestAllowsLineupEdits("CLOSED")).toBe(false);
     expect(contestAllowsLineupEdits("CANCELLED")).toBe(false);
+  });
+});
+
+describe("getContestEditBlock", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("blocks ACTIVE using on-chain state even if DB says OPEN", async () => {
+    findUnique.mockResolvedValue({
+      id: "contest-1",
+      status: "OPEN",
+      address: "0xabc",
+      chainId: 84532,
+    });
+    readContestState.mockResolvedValue(ContestState.ACTIVE);
+
+    const result = await getContestEditBlock("contest-1");
+
+    expect(result).toEqual({
+      code: "contest_not_editable",
+      contestId: "contest-1",
+      contestStatus: "ACTIVE",
+    });
+  });
+
+  it("allows when on-chain is OPEN", async () => {
+    findUnique.mockResolvedValue({
+      id: "contest-1",
+      status: "OPEN",
+      address: "0xabc",
+      chainId: 84532,
+    });
+    readContestState.mockResolvedValue(ContestState.OPEN);
+
+    await expect(getContestEditBlock("contest-1")).resolves.toBeNull();
   });
 });
 
@@ -51,7 +94,7 @@ describe("getLineupEditBlock", () => {
     expect(result).toEqual({ code: "not_found" });
   });
 
-  it("blocks when event is complete", async () => {
+  it("blocks event-only lineups when event is complete", async () => {
     findFirst.mockResolvedValue({
       eventId: "event-1",
       contestId: null,
@@ -65,7 +108,7 @@ describe("getLineupEditBlock", () => {
     expect(result).toEqual({ code: "event_not_editable", eventStatus: "COMPLETE" });
   });
 
-  it("blocks when lineup is entered in a settled contest", async () => {
+  it("blocks contest-scoped lineup when contest is ACTIVE (ignores event)", async () => {
     findFirst.mockResolvedValue({
       eventId: "event-1",
       contestId: "contest-1",
@@ -73,10 +116,16 @@ describe("getLineupEditBlock", () => {
       contestLineups: [
         {
           contestId: "contest-1",
-          contest: { status: "CLOSED" },
+          contest: {
+            id: "contest-1",
+            status: "ACTIVE",
+            address: "0xabc",
+            chainId: 84532,
+          },
         },
       ],
     });
+    readContestState.mockResolvedValue(ContestState.ACTIVE);
     getEventStatus.mockResolvedValue("SCHEDULED");
 
     const result = await getLineupEditBlock("lineup-1", "user-1");
@@ -84,11 +133,12 @@ describe("getLineupEditBlock", () => {
     expect(result).toEqual({
       code: "contest_not_editable",
       contestId: "contest-1",
-      contestStatus: "CLOSED",
+      contestStatus: "ACTIVE",
     });
+    expect(getEventStatus).not.toHaveBeenCalled();
   });
 
-  it("returns null when event and contests are editable", async () => {
+  it("returns null when contest-scoped lineup is OPEN on-chain", async () => {
     findFirst.mockResolvedValue({
       eventId: "event-1",
       contestId: "contest-1",
@@ -96,12 +146,22 @@ describe("getLineupEditBlock", () => {
       contestLineups: [
         {
           contestId: "contest-1",
-          contest: { status: "OPEN" },
+          contest: {
+            id: "contest-1",
+            status: "OPEN",
+            address: "0xabc",
+            chainId: 84532,
+          },
         },
       ],
     });
-    getEventStatus.mockResolvedValue("SCHEDULED");
-    findUnique.mockResolvedValue({ id: "contest-1", status: "OPEN" });
+    findUnique.mockResolvedValue({
+      id: "contest-1",
+      status: "OPEN",
+      address: "0xabc",
+      chainId: 84532,
+    });
+    readContestState.mockResolvedValue(ContestState.OPEN);
 
     const result = await getLineupEditBlock("lineup-1", "user-1");
 

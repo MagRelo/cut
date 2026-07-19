@@ -22,14 +22,11 @@ export const SideBetTicketsSection: React.FC<SideBetTicketsSectionProps> = ({
   if (!lineupId || ticketsState.kind === "hidden") return null;
 
   return (
-    <div className="mt-6 border-t border-gray-200 pt-4">
-      <h4 className="mb-2 font-display text-base font-semibold text-gray-900">Your parlays</h4>
-      <SideBetTicketsList
-        state={ticketsState}
-        borderColor={borderColor}
-        userLabel={userLabel}
-        lineupNumberLabel={lineupNumberLabel}
-      />
-    </div>
+    <SideBetTicketsList
+      state={ticketsState}
+      borderColor={borderColor}
+      userLabel={userLabel}
+      lineupNumberLabel={lineupNumberLabel}
+    />
   );
 };

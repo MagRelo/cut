@@ -39,8 +39,7 @@ function derivePredictionsPanelMode(
     return "connectWallet";
   }
 
-  const canPredictOnChain =
-    contestStateOnChain === ContestState.OPEN || contestStateOnChain === ContestState.ACTIVE;
+  const canPredictOnChain = contestStateOnChain === ContestState.ACTIVE;
   const canClaim = contestStateOnChain === ContestState.SETTLED;
   const isLockedOnChain = contestStateOnChain === ContestState.LOCKED;
 
@@ -68,8 +67,7 @@ export function deriveContestLobbyViewModel(
   const primaryActionsLocked = arePrimaryActionsLocked(contest.status);
   const isSettled = phase === "settled";
 
-  const canPredictOnChain =
-    contestStateOnChain === ContestState.OPEN || contestStateOnChain === ContestState.ACTIVE;
+  const canPredictOnChain = contestStateOnChain === ContestState.ACTIVE;
   const secondaryActionsLocked = areSecondaryActionsLocked(contest.status);
   const placeWagerTabLocked = !canPredictOnChain || secondaryActionsLocked;
 
@@ -98,7 +96,8 @@ export function deriveContestLobbyViewModel(
     phase,
     layout: {
       showLineupsTab,
-      showPredictionsTab: !isSettled,
+      // Winner pool opens after activate (ACTIVE/LOCKED); hide while OPEN and after settle.
+      showPredictionsTab: phase === "live" || phase === "locked",
       showResultsTab: isSettled,
       lineupsTabIndex,
       contestTabIndex,

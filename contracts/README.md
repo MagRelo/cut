@@ -28,15 +28,13 @@ Create a contest on top of any stream of events where:
 ### Phase 1: OPEN - Registration & Early Positions
 
 **State:** `ContestState.OPEN`  
-**Secondary Positions:** ✅ Available (early positions enabled)
+**Secondary Positions:** ❌ Not available (opens after activation)
 
 | Actor                      | Can Do                              | Function                                   |
 | -------------------------- | ----------------------------------- | ------------------------------------------ |
 | **Primary Participants**   | Join contest with entry ID          | `addPrimaryPosition(entryId)`              |
 | **Primary Participants**   | Leave contest (funds redistributed) | `removePrimaryPosition(entryId)`           |
-| **Secondary Participants** | Check prices                        | `calculateSecondaryPrice(entryId)`         |
-| **Secondary Participants** | Add position                        | `addSecondaryPosition(entryId, amount)`    |
-| **Secondary Participants** | Withdraw (100% refund)              | `removeSecondaryPosition(entryId, tokens)` |
+| **Secondary Participants** | ❌ Cannot add/withdraw              | -                                          |
 | **Oracle/Admin**           | Activate contest                    | `activateContest()`                        |
 
 **State transition:** Oracle calls `activateContest()` → `ACTIVE`
@@ -52,16 +50,14 @@ Create a contest on top of any stream of events where:
 | Actor                      | Can Do                 | Function                                 |
 | -------------------------- | ---------------------- | ---------------------------------------- |
 | **Primary Participants**   | ❌ Cannot join/leave   | -                                        |
-| **Secondary Participants** | Add positions (LMSR)   | `addSecondaryPosition(entryId, amount)`  |
+| **Secondary Participants** | Add positions          | `addSecondaryPosition(entryId, amount)`  |
 | **Secondary Participants** | ❌ Cannot withdraw     | -                                        |
-| **Secondary Participants** | Check prices           | `calculateSecondaryPrice(entryId)`       |
 | **Oracle/Admin**           | Lock contest           | `lockContest()`                          |
 | **Oracle/Admin**           | Cancel contest         | `cancelContest()`                        |
-| **Oracle/Admin**           | Settle (if not locked) | `settleContest(winningEntries, payouts)` |
 
 **State transition:** Oracle calls `lockContest()` → `LOCKED`
 
-**Note:** Once the contest is activated, secondary participants can still add new positions but CANNOT withdraw existing positions. This prevents unfair behavior as the competition progresses and outcomes become clearer.
+**Note:** Secondary buys open only after activation so primary removals in OPEN cannot orphan secondary funds. Buys during ACTIVE cannot be withdrawn until CANCELLED.
 
 ---
 
@@ -73,14 +69,11 @@ Create a contest on top of any stream of events where:
 | Actor                      | Can Do                 | Function                                     |
 | -------------------------- | ---------------------- | -------------------------------------------- |
 | **Primary Participants**   | ❌ Waiting for results | -                                            |
-| **Secondary Participants** | Check prices (locked)  | `calculateSecondaryPrice(entryId)`           |
 | **Secondary Participants** | ❌ Cannot add position | -                                            |
 | **Secondary Participants** | ❌ Cannot withdraw     | -                                            |
 | **Oracle/Admin**           | Settle contest         | `settleContest(winningEntries[], payouts[])` |
 
-**Purpose:** Competition is finishing, outcome not yet certain, but secondary positions locked to prevent last-second unfair positions.
-
-**Note:** This phase is optional - oracle can call `settleContest()` directly from ACTIVE state.
+**Purpose:** Secondary market is closed before settlement so buyers cannot front-run a known winner. Settlement requires LOCKED.
 
 **State transition:** Oracle calls `settleContest()` → `SETTLED`
 
@@ -100,29 +93,29 @@ Create a contest on top of any stream of events where:
 | **Secondary Participants** | Winners get payout, losers get 0                | Same function                      |
 | **Oracle/Admin**           | Distribute after expiry (see Phase 5)           | `closeContest()`                   |
 
-**State transition:** Oracle calls `closeContest()` (after expiry) → `CLOSED`
+**State transition:** Oracle calls `closeContest()` after expiry from SETTLED (or CANCELLED) → `CLOSED`
 
 ---
 
 ### Phase 5: CLOSED - Force Distribution (After Expiry)
 
 **State:** `ContestState.CLOSED`  
-**Trigger:** Oracle calls `closeContest()` after contest expiry
+**Trigger:** Oracle calls `closeContest()` after contest expiry from a terminal state (`SETTLED` or `CANCELLED`)
 
 | Actor            | Can Do                          | Function |
 | ---------------- | ------------------------------- | -------- |
 | **All Users**    | Already received forced payouts | -        |
 | **Oracle/Admin** | ❌ No more actions              | -        |
 
-**Purpose:** Prevent funds from being locked forever if users forget to claim.
+**Purpose:** Prevent funds from being locked forever if users forget to claim or refund.
 
 **How it works:**
 
-- After expiry timestamp, oracle can call `closeContest()`
-- Sweeps all unclaimed funds to treasury (oracle address)
+- After expiry timestamp, oracle can call `closeContest()` only from SETTLED or CANCELLED
+- Sweeps remaining contract balance to treasury (oracle address), including unclaimed payouts or un-refunded deposits
 - Primary participants who didn't claim lose their prizes
 - Winning secondary participants who didn't claim lose their winnings
-- Losing secondary participants already got nothing (winner-take-all)
+- Cancelled depositors who didn't withdraw lose residual refunds
 
 **Terminal state:** Contest fully closed, all funds distributed or swept.
 
@@ -132,30 +125,25 @@ Create a contest on top of any stream of events where:
 
 **State:** `ContestState.CANCELLED`
 
-| Actor                      | Can Do                                 | Function                                   |
-| -------------------------- | -------------------------------------- | ------------------------------------------ |
-| **Primary Participants**   | Get full refund (100% of deposit)      | `removePrimaryPosition(entryId)`           |
-| **Secondary Participants** | Check prices (locked)                  | `calculateSecondaryPrice(entryId)`         |
-| **Secondary Participants** | Get full refund (100% including fees!) | `removeSecondaryPosition(entryId, tokens)` |
-| **Oracle/Admin**           | ❌ No more actions                     | -                                          |
+| Actor                      | Can Do                                      | Function                                   |
+| -------------------------- | ------------------------------------------- | ------------------------------------------ |
+| **Primary Participants**   | Get full refund of deposit                  | `removePrimaryPosition(entryId)`           |
+| **Secondary Participants** | Refund tracked principal                    | `removeSecondaryPosition(entryId, tokens)` |
+| **Oracle/Admin**           | Close after expiry (sweep residuals)        | `closeContest()`                           |
 
-**Terminal state:** Contest cancelled, all deposits refunded.
+**Terminal state:** Contest cancelled; secondary withdraws refund `secondaryDepositedPerEntry` principal (not open-market pro-rata). After expiry, oracle may close and sweep leftovers.
 
 **How to get to CANCELLED:**
 
-- Oracle calls `cancelContest()` (anytime before SETTLED - settlement is final!)
+- Oracle calls `cancelContest()` (anytime before SETTLED — settlement is final)
 - Anyone calls `cancelExpired()` (after expiry timestamp, if not settled)
 
 **Refund guarantee:**
 
 ```
-Primary Participants: Get back full deposit amount (oracle fee, cross-subsidy, and position bonuses reversed)
-Secondary Participants: Get back 100% of what they deposited (all fees and bonuses reversed!)
-
-Example:
-- Secondary participant deposited 100 tokens
-- Oracle fee was 5, position bonus was 4.75, cross-subsidy was 13.54
-- If cancelled: Get back full 100 tokens ✅ (all accounting reversed)
+Primary Participants: Get back full deposit amount
+Secondary Participants (CANCELLED): Get back tracked principal (secondaryDepositedPerEntry)
+Secondary Participants (OPEN sell-back): Pro-rata share of entry liquidity
 ```
 
 ---
@@ -165,27 +153,25 @@ Example:
 ```
                     OPEN
                      │
-                     │ Primary participants join
-                     │ Secondary participants add positions (early positions!)
-                     │ Secondary participants can withdraw (free exit)
+                     │ Primary participants join / leave
+                     │ Secondary market closed
                      │
                      │ Oracle: activateContest()
                      ▼
                   ACTIVE
                      │
                      │ Competition in progress
-                     │ Secondary participants continue adding positions
-                     │ NO withdrawals (positions locked in)
+                     │ Secondary participants can add positions
+                     │ NO secondary withdrawals (positions locked in)
                      │
-                     │ Oracle: lockContest() [OPTIONAL]
+                     │ Oracle: lockContest() (required before settle)
                      ▼
                   LOCKED
                      │
                      │ Competition finishing
-                     │ No more positions/withdrawals
+                     │ No more secondary positions
                      │
                      │ Oracle: settleContest(...)
-                     │ (Can also call from ACTIVE)
                      │ Calculates Layer 1 (Primary) prize payouts
                      │ Sets Layer 2 (Secondary) winner
                      ▼
@@ -196,26 +182,30 @@ Example:
                      │
                      │ (After expiry)
                      │ Oracle: closeContest()
-                     │ Sweeps unclaimed funds
+                     │ (SETTLED or CANCELLED only)
+                     │ Sweeps residual balance
                      ▼
                   CLOSED
                      │
-                     │ All funds distributed
+                     │ All funds distributed or swept
                      ▼
                   (done)
 
-        (Alternative path from OPEN/ACTIVE only)
+        (Alternative path from OPEN/ACTIVE/LOCKED)
                      │
                      │ Oracle: cancelContest()
                      │ OR
-                     │ Anyone: cancelExpired()
-                     │ (Cannot cancel after LOCKED/SETTLED)
+                     │ Anyone: cancelExpired() after expiry
+                     │ (Cannot cancel after SETTLED/CLOSED)
                      ▼
                  CANCELLED
                      │
-                     │ All refunds
+                     │ Refunds via remove primary/secondary
+                     │ (secondary = tracked principal)
+                     │
+                     │ (After expiry) Oracle: closeContest()
                      ▼
-                  (done)
+                  CLOSED
 ```
 
 ## 💰 Economic Model
@@ -348,7 +338,7 @@ Works with any competition format you can imagine:
 
 - **Entry-Based:** One user can have multiple entries (strategies, lineups, teams)
 - **Any Scoring System:** Your oracle reports results - contracts handle payouts
-- **Configurable Economics:** Set deposit amounts, fees, curves per contest
+- **Configurable Economics:** Set deposit amounts, fees, LMSR curves per contest
 - **Multiple Payouts:** Distribute prizes however you want (60/30/10, winner-take-all, top 10, etc.)
 - **Payment Token:** Contests settle in the configured ERC20 (USDC on Base; MockUSDC on Sepolia)
 

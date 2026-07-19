@@ -85,24 +85,27 @@ function runCommand(command, cwd = projectRoot) {
   }
 }
 
-function getDeployerAddress() {
-  const pk = process.env.PRIVATE_KEY;
+function addressFromPk(pk) {
   if (!pk) return null;
   try {
     return execSync(`cast wallet address ${pk}`, {
       cwd: path.join(projectRoot, "contracts"),
       encoding: "utf8",
-      shell: true,
     }).trim();
   } catch {
     return null;
   }
 }
 
+function getDeployerAddress() {
+  return addressFromPk(process.env.DEPLOYER_PK);
+}
+
+/** OPS_ORACLE address, derived from OPS_ORACLE_PK; falls back to the deployer. */
 function getReferralOracleAddress() {
-  const o = process.env.REFERRAL_ORACLE;
-  if (!o || o === "") return "0x0000000000000000000000000000000000000000";
-  return o;
+  const fromOps = addressFromPk(process.env.OPS_ORACLE_PK);
+  if (fromOps) return fromOps;
+  return getDeployerAddress() ?? "0x0000000000000000000000000000000000000000";
 }
 
 function getReferralGroupId() {
@@ -119,7 +122,7 @@ function loadContractAddresses(network) {
     "server",
     "src",
     "contracts",
-    `${network.name === "base_sepolia" ? "sepolia" : "base"}.json`
+    `${network.name === "base_sepolia" ? "sepolia" : "base"}.json`,
   );
 
   if (!fs.existsSync(configPath)) {
@@ -133,7 +136,7 @@ function loadContractAddresses(network) {
   const addresses = {
     ContestFactory: config.contestFactoryAddress,
     ReferralGraph: config.referralGraphAddress,
-    RewardDistributor: config.rewardDistributorAddress,
+    RewardCalculator: config.rewardCalculatorAddress,
   };
 
   if (network.name === "base_sepolia" && config.paymentTokenAddress) {
@@ -142,8 +145,8 @@ function loadContractAddresses(network) {
 
   const filteredAddresses = Object.fromEntries(
     Object.entries(addresses).filter(
-      ([_, addr]) => addr && addr !== "0x0000000000000000000000000000000000000000"
-    )
+      ([_, addr]) => addr && addr !== "0x0000000000000000000000000000000000000000",
+    ),
   );
 
   logSuccess(`Loaded ${Object.keys(filteredAddresses).length} contract addresses`);
@@ -164,7 +167,7 @@ function buildVerifyCommand(network, contractName, address, addresses) {
     MockUSDC: "src/mocks/MockUSDC.sol",
     ContestFactory: "lib/contestCatalyst/src/ContestFactory.sol",
     ReferralGraph: "lib/referralTree/src/core/ReferralGraph.sol",
-    RewardDistributor: "lib/referralTree/src/core/RewardDistributor.sol",
+    RewardCalculator: "lib/referralTree/src/core/RewardCalculator.sol",
   };
 
   const contractPath = paths[contractName];
@@ -176,8 +179,8 @@ function buildVerifyCommand(network, contractName, address, addresses) {
   }
   if (contractName === "ReferralGraph" && deployer) {
     constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,bytes32)" ${deployer} ${referralOracle} ${referralGroupId})`;
-  } else if (contractName === "RewardDistributor" && deployer && addresses.ReferralGraph) {
-    constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address,bytes32)" ${deployer} ${addresses.ReferralGraph} ${referralOracle} ${referralGroupId})`;
+  } else if (contractName === "RewardCalculator") {
+    // no constructor args
   }
 
   return `forge verify-contract ${address} ${contractPath}:${contractName} --verifier blockscout --verifier-url ${network.blockscoutApiUrl} ${constructorArgs}`;
@@ -190,7 +193,7 @@ function verifyContracts(network, addresses) {
   let successCount = 0;
   let failCount = 0;
 
-  const order = ["MockUSDC", "ContestFactory", "ReferralGraph", "RewardDistributor"];
+  const order = ["MockUSDC", "ContestFactory", "ReferralGraph", "RewardCalculator"];
 
   for (const contractName of order) {
     const address = addresses[contractName];
@@ -229,7 +232,7 @@ function main() {
   const network = NETWORKS[networkArg];
 
   log(
-    `${colors.bright}${colors.magenta}🔍 Starting contract verification on ${network.name}${colors.reset}`
+    `${colors.bright}${colors.magenta}🔍 Starting contract verification on ${network.name}${colors.reset}`,
   );
 
   try {
