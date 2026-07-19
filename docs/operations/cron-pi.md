@@ -7,7 +7,7 @@
 |      |                                                 |
 | ---- | ----------------------------------------------- |
 | SSH  | `ssh magrelo@100.114.121.5` (Tailscale)         |
-| Repo | `~/cut`                                         |
+| Repo | `~/node/cut-v2`                                 |
 | Env  | `server/.env` (`chmod 600`)                     |
 | PM2  | `cut-cron` → `pnpm run start:cron` in `server/` |
 
@@ -23,7 +23,15 @@ ssh magrelo@100.114.121.5
 
 ## Env (`server/.env`)
 
-From [`swarm/env/cron.env.example`](../../swarm/env/cron.env.example). Minimum:
+Create **`swarm/env/cron.env`** locally from [`swarm/env/cron.env.example`](../../swarm/env/cron.env.example), then push it to the Pi (same idea as `web.env` / `nginx.env` on the droplet):
+
+```bash
+scp ./swarm/env/cron.env \
+  magrelo@100.114.121.5:~/node/cut-v2/server/.env
+ssh magrelo@100.114.121.5 "chmod 600 ~/node/cut-v2/server/.env"
+```
+
+Minimum:
 
 - `NODE_ENV=production`, `ENABLE_CRON=true`
 - `DATABASE_URL` (allowlist Pi outbound IP on DB firewall)
@@ -45,7 +53,7 @@ pm2 logs cut-cron --lines 30
 If the release has DB migrations, run **before** `pm2 restart`:
 
 ```bash
-cd ~/cut/server && set -a && source .env && set +a && pnpm exec prisma migrate deploy
+cd ~/node/cut-v2/server && set -a && source .env && set +a && pnpm exec prisma migrate deploy
 ```
 
 ---
@@ -55,7 +63,7 @@ cd ~/cut/server && set -a && source .env && set +a && pnpm exec prisma migrate d
 **First start:**
 
 ```bash
-cd ~/cut/server
+cd ~/node/cut-v2/server
 NODE_ENV=production pm2 start pnpm --name cut-cron -- run start:cron
 pm2 save && pm2 startup   # run the sudo command it prints once
 ```
@@ -73,7 +81,7 @@ Expect `CRON-ONLY APPLICATION`, `Cron Enabled: true`, and `[CRON]` lines every ~
 ## One-off CLI
 
 ```bash
-cd ~/cut && set -a && source server/.env && set +a
+cd ~/node/cut-v2 && set -a && source server/.env && set +a
 pnpm run service:init-event pga-golf R2026033
 ```
 
