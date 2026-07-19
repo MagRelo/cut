@@ -17,10 +17,11 @@ flowchart TD
   C --> D[For each event: runSportEventPipeline]
   D --> E[refreshOpenSideBetQuotes]
   E --> F[batchActivateContests]
-  F --> G[batchSettleContests]
-  G --> H[batchCloseContests]
-  H --> I[batchSyncReferralGraph]
-  I --> J[Done]
+  F --> G[batchGenerateContestCommentary]
+  G --> H[batchSettleContests]
+  H --> I[batchCloseContests]
+  I --> J[batchSyncReferralGraph]
+  J --> K[Done]
 ```
 
 ### 1. Sport event pipeline
@@ -51,13 +52,19 @@ For each `CompetitionEvent` with `isActive=true`:
 
 ### 3. Contest batches
 
-| Batch | Typical transition |
-|-------|-------------------|
-| `batchActivateContests` | `OPEN` → `ACTIVE` when sport says event is live |
-| `batchSettleContests` | → `SETTLED` when event complete + oracle flow |
-| `batchCloseContests` | → `CLOSED` after settlement window |
+| Batch                            | Typical transition                                                       |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| `batchActivateContests`          | `OPEN` → `ACTIVE` when sport says event is live                          |
+| `batchGenerateContestCommentary` | Refresh latest live PGA analysis when missing or at least 20 minutes old |
+| `batchSettleContests`            | → `SETTLED` when event complete + oracle flow                            |
+| `batchCloseContests`             | → `CLOSED` after settlement window                                       |
 
 Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event status.
+
+Commentary generation requires `CONTEST_COMMENTARY_ENABLED=true` and
+`CURSOR_API_KEY`. It runs only for entered `ACTIVE` or `LOCKED` PGA contests
+whose event is active and reports `LIVE`. Each successful update replaces the
+latest `Contest.commentary` snapshot; failures preserve the previous update.
 
 ### 4. Referral graph
 
@@ -74,14 +81,14 @@ Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event statu
 
 ## Manual / CLI operations
 
-| Task | Command / API |
-|------|----------------|
-| Init golf event | `pnpm run service:init-event pga-golf R2026033` |
-| Init commodities event | `pnpm run service:init-event commodities 2026-W27` |
-| Sync commodities (manual) | `service:sync-commodities-metadata` · `-field` · `-scores` |
-| Lock contests | `POST /api/admin/contests/lock-eligible` |
-| Side-bet lock/settle/close | `POST /api/admin/bets/side/*` |
-| Email blast | `pnpm --filter server run script:send-blast new-tournament` |
+| Task                       | Command / API                                               |
+| -------------------------- | ----------------------------------------------------------- |
+| Init golf event            | `pnpm run service:init-event pga-golf R2026033`             |
+| Init commodities event     | `pnpm run service:init-event commodities 2026-W27`          |
+| Sync commodities (manual)  | `service:sync-commodities-metadata` · `-field` · `-scores`  |
+| Lock contests              | `POST /api/admin/contests/lock-eligible`                    |
+| Side-bet lock/settle/close | `POST /api/admin/bets/side/*`                               |
+| Email blast                | `pnpm --filter server run script:send-blast new-tournament` |
 
 See [docs/sports/golf/event-activation-runbook.md](../../docs/sports/golf/event-activation-runbook.md).
 

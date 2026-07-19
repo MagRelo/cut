@@ -11,19 +11,13 @@ import { requireAuth, optionalAuth, getOptionalUserId } from "../middleware/auth
 import { isStaffUserType } from "../middleware/admin.js";
 import { requireContestPrimaryActionsUnlocked } from "../middleware/contestStatus.js";
 import { contestLineupsIncludeWithoutPlayers } from "../utils/prismaIncludes.js";
-import {
-  formatContestResponse,
-  loadLineupDetailsById,
-} from "../utils/formatContestResponse.js";
+import { formatContestResponse, loadLineupDetailsById } from "../utils/formatContestResponse.js";
 import {
   hasMinimumPlayers,
   isDuplicateInContest,
   getParticipantIdsFromLineup,
 } from "../utils/lineupValidation.js";
-import {
-  canAccessLeagueContest,
-  isUserGroupAdmin,
-} from "../utils/userGroup.js";
+import { canAccessLeagueContest, isUserGroupAdmin } from "../utils/userGroup.js";
 import { getContestTimelineData } from "../utils/contestTimeline.js";
 import { queueVerifyContestContract } from "../services/contest/verifyContestContract.js";
 import { resolveContestDbId } from "../utils/contestRouteParam.js";
@@ -62,6 +56,8 @@ const contestDetailSelect = {
   results: true,
   pickPopularity: true,
   pickPopularityLockedAt: true,
+  commentary: true,
+  commentaryGeneratedAt: true,
   createdAt: true,
   updatedAt: true,
   event: true,
@@ -108,8 +104,7 @@ async function loadFormattedContestById(contestId: string) {
   const contestOracleAddress =
     typeof contestSettings?.oracle === "string" ? contestSettings.oracle : undefined;
   const onchainPayments =
-    contest.onchainPayments?.length &&
-    (contest.status === "SETTLED" || contest.status === "CLOSED")
+    contest.onchainPayments?.length && (contest.status === "SETTLED" || contest.status === "CLOSED")
       ? formatOnchainPaymentsForContest(
           contest.onchainPayments,
           results?.detailedResults,
@@ -304,10 +299,7 @@ contestRouter.get("/:id/timeline", optionalAuth, async (c) => {
       since = parsed;
     }
 
-    const timeline = await getContestTimelineData(
-      contestId,
-      since ? { since } : undefined,
-    );
+    const timeline = await getContestTimelineData(contestId, since ? { since } : undefined);
     return c.json(timeline);
   } catch (error) {
     console.error("Error fetching contest timeline:", error);

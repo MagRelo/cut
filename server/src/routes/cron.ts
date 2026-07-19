@@ -7,6 +7,7 @@ const PIPELINE_STEPS = [
   "getActiveEvents → runSportEventPipeline per active event",
   "refreshOpenSideBetQuotes (when SIDE_BETS_ENABLED + DATAGOLF_API_KEY)",
   "batchActivateContests",
+  "batchGenerateContestCommentary (when enabled; 20-minute freshness cutoff)",
   "batchSettleContests",
   "batchCloseContests",
   "batchSyncReferralGraph",

@@ -127,6 +127,9 @@ export interface Contest {
   /** Per-player popularity after lock; keyed by eventParticipantId. */
   pickPopularity?: PickPopularityMap | null;
   pickPopularityLockedAt?: string | Date | null;
+  /** Latest generated live-contest analysis. */
+  commentary?: string | null;
+  commentaryGeneratedAt?: string | Date | null;
   _count?: {
     contestLineups: number;
   };

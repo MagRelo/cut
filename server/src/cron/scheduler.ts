@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { getActiveEvents } from "../services/events/getActiveEvents.js";
 import { runSportEventPipeline } from "../services/cron/runSportEventPipeline.js";
 import { batchActivateContests } from "../services/batch/batchActivateContests.js";
+import { batchGenerateContestCommentary } from "../services/batch/batchGenerateContestCommentary.js";
 import { batchSettleContests } from "../services/batch/batchSettleContests.js";
 import { batchCloseContests } from "../services/batch/batchCloseContests.js";
 import { batchSyncReferralGraph } from "../services/batch/batchSyncReferralGraph.js";
@@ -65,7 +66,10 @@ class CronScheduler {
       console.error(`[CRON] ${jobName} - Error:`, error);
       pipelineErrors.push(`${jobName}: ${formatErrorForHeartbeat(error)}`);
 
-      if ((error as { code?: string })?.code === "P2037" || (error as Error)?.message?.includes("connection")) {
+      if (
+        (error as { code?: string })?.code === "P2037" ||
+        (error as Error)?.message?.includes("connection")
+      ) {
         console.log(`[CRON] ${jobName} - Connection error, waiting 30 seconds before next attempt`);
         await new Promise((resolve) => setTimeout(resolve, 30000));
       }
@@ -103,10 +107,23 @@ class CronScheduler {
         pipelineErrors,
       );
 
-      await this.executeWithErrorHandling("Activate Contests", batchActivateContests, pipelineErrors);
+      await this.executeWithErrorHandling(
+        "Activate Contests",
+        batchActivateContests,
+        pipelineErrors,
+      );
+      await this.executeWithErrorHandling(
+        "Generate Contest Commentary",
+        batchGenerateContestCommentary,
+        pipelineErrors,
+      );
       await this.executeWithErrorHandling("Settle Contests", batchSettleContests, pipelineErrors);
       await this.executeWithErrorHandling("Close Contests", batchCloseContests, pipelineErrors);
-      await this.executeWithErrorHandling("Sync Referral Graph", batchSyncReferralGraph, pipelineErrors);
+      await this.executeWithErrorHandling(
+        "Sync Referral Graph",
+        batchSyncReferralGraph,
+        pipelineErrors,
+      );
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 

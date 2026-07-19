@@ -63,8 +63,14 @@ pnpm --filter server run script:contest-commentary <contestId> --context
 
 Neither command creates a report file.
 
-## Out of scope
+## Scheduled delivery
 
-API routes, cron registration, feed persistence, deduplication, notification
-delivery, and fallback-copy policy are intentionally left to future callers of
-the same service.
+When `CONTEST_COMMENTARY_ENABLED=true` and `CURSOR_API_KEY` is configured, the
+server cron pipeline refreshes commentary for entered `ACTIVE` or `LOCKED` PGA
+contests while their event reports `LIVE`. The refresh runs after live scoring
+and lineup updates and replaces `Contest.commentary` when the current snapshot
+is missing or at least 20 minutes old. Generation failures leave the previous
+snapshot intact.
+
+The contest lobby API includes the latest commentary and generation timestamp.
+The client exposes that snapshot from the Winner Pool information panel.
