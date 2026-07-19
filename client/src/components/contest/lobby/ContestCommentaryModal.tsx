@@ -60,18 +60,19 @@ export const ContestCommentaryModal: React.FC<ContestCommentaryModalProps> = ({
 
       <div className="bg-slate-50 p-5">
         <figure>
-          <blockquote className="rounded-sm border border-l-[3px] border-blue-200 border-l-blue-600 bg-white p-5 text-blue-950 shadow-sm">
-            <p className="whitespace-pre-line font-mono text-base font-medium italic leading-relaxed">
-              &ldquo;{commentary}&rdquo;
-            </p>
-            <footer className="mt-5 text-right font-mono text-base font-normal italic">
-              &mdash; 🤖 Cutbot
-            </footer>
+          <blockquote className="rounded-sm border border-l-[3px] border-blue-200 border-l-blue-600 bg-blue-50 p-5 text-blue-950 shadow-sm">
             {formattedGeneratedAt ? (
-              <p className="mt-1 text-right font-mono text-xs italic text-blue-950/60">
-                Generated {formattedGeneratedAt}
+              <p className="mb-4 font-mono text-xs italic text-blue-950/60">
+                Generated {formattedGeneratedAt}:
               </p>
             ) : null}
+
+            <p className="whitespace-pre-line font-mono text-sm font-medium italic leading-relaxed">
+              &ldquo;{commentary}&rdquo;
+            </p>
+            <footer className="mt-5 text-right font-mono text-sm font-normal italic">
+              &mdash; 🤖 Cutbot
+            </footer>
           </blockquote>
         </figure>
       </div>

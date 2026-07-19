@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
 import { type Contest } from "../../../types/contest";
 import { type PredictionsPanelMode } from "../../../types/contestLobby";
 import { ContestCommentaryModal } from "./ContestCommentaryModal";
+import { Link } from "react-router-dom";
 
 export interface WinnerPoolOverviewProps {
   contest: Contest;
@@ -10,20 +10,23 @@ export interface WinnerPoolOverviewProps {
   placeWagerTabLocked: boolean;
 }
 
-export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest, mode }) => {
+export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest }) => {
   const [isCommentaryOpen, setIsCommentaryOpen] = useState(false);
 
   return (
     <>
-      <div className="overflow-hidden font-display">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          {mode === "claim" ? (
-            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
-              Winnings ready to claim
-            </span>
-          ) : null}
+      <div className="space-y-3 overflow-hidden rounded-sm border border-slate-200 bg-slate-50 p-3 font-display">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Winner Pool</h2>
+          <p className="text-sm leading-relaxed text-slate-600">
+            Back the winning lineup to win a share of the pool.{" "}
+          </p>
+          <Link to="/faq#winner-pool" className="text-sm font-medium text-blue-700 hover:underline">
+            How it works →
+          </Link>
         </div>
 
+        {/* Commentary modal button, if available */}
         {contest.commentary ? (
           <button
             type="button"
@@ -49,25 +52,10 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest,
               →
             </span>
           </button>
-        ) : (
-          <div className="flex items-center gap-3 rounded-sm border border-slate-200 bg-slate-50 p-3">
-            <span aria-hidden="true" className="text-xl">
-              🤖
-            </span>
-            <p className="text-xs leading-relaxed text-slate-600">
-              Cutbot is watching the field. Live contest analysis will appear here.
-            </p>
-          </div>
-        )}
-
-        {/* <Link
-          to="/faq#winner-pool"
-          className="mt-3 block text-xs font-semibold text-gray-500 hover:underline"
-        >
-          How the Winner Pool works →
-        </Link> */}
+        ) : null}
       </div>
 
+      {/* Commentary modal, if available */}
       {contest.commentary ? (
         <ContestCommentaryModal
           isOpen={isCommentaryOpen}
