@@ -82,7 +82,7 @@ function statusBarContent(
     case "CLOSED":
       return (
         <span className="inline-flex items-center justify-center gap-1">
-          Complete • Bets Settled
+          Contest Complete
           <CheckIcon className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden />
         </span>
       );
