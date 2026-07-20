@@ -201,9 +201,6 @@ export function UserPage() {
     <>
       <PageHeader title="Account Settings" />
 
-      {/* Minting Funds Panel - Only shows when pendingTokenMint flag is set */}
-      {/* <MintingUserFundsPanel /> */}
-
       <TokenBalances showContestHistoryLink={false} />
 
       <UserSettings />
