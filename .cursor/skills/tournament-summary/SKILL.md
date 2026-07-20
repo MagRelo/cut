@@ -109,7 +109,7 @@ Rules:
   User quotes (0–3) are added manually later. Each quote item:
   - `body` — **3 short sentences** (see CutBot quote voice below)
   - `attribution` — `"CutBot"` for the skill quote
-  - `color` — `#7cb68a` for CutBot unless told otherwise
+  - `color` — `#3b82f6` (Tailwind blue-500 / primary button) for CutBot unless told otherwise
 - **Best Players and Odds**: 8–10 players; label format
   `"Player Name (+low to +high):"`; body is **one plain sentence** — why fans
   should care this week. **Verify every factual claim** (see Step 4); prefer

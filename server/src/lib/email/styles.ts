@@ -15,9 +15,9 @@ export const SECTION_TITLE_STYLE = `font-family:${FONT_DISPLAY};font-size:14px;f
 
 export const SUMMARY_ITEM_STYLE = `font-family:${FONT_BODY};font-size:14px;line-height:1.45;color:#3f3f46;margin:0 0 10px;padding-left:16px;`;
 
-export const QUOTE_BG = "#f3f8f5";
-export const QUOTE_BORDER = "#7cb68a";
-export const QUOTE_TEXT_COLOR = "#2f5233";
+export const QUOTE_BG = "#ebf3fe";
+export const QUOTE_BORDER = "#3b82f6";
+export const QUOTE_TEXT_COLOR = "#204887";
 
 export const QUOTE_TEXT_STYLE = `font-family:${FONT_QUOTE};font-size:14px;font-weight:500;font-style:italic;line-height:1.5;color:${QUOTE_TEXT_COLOR};margin:0;`;
 

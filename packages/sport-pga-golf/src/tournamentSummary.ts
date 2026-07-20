@@ -26,7 +26,8 @@ export type QuoteBlockColors = {
 };
 
 export const QUOTES_SECTION_DISPLAY_TITLE = "from the 19th hole:";
-export const DEFAULT_QUOTE_COLOR = "#7cb68a";
+/** Tailwind blue-500 — matches primary button blue */
+export const DEFAULT_QUOTE_COLOR = "#3b82f6";
 export const DEFAULT_CUTBOT_ATTRIBUTION = "CutBot";
 
 const QUOTES_SECTION_KEYS = new Set(["from the 19th hole", "they out here sayin", "summary"]);

@@ -43,7 +43,7 @@ Replace `{...}` placeholders. Keep valid JSON.
       {
         "body": "{CutBot quote: 3 short sentences. Evocative place/atmosphere, week stakes, max 2 names, forward hook. See SKILL.md CutBot quote voice.}",
         "attribution": "CutBot",
-        "color": "#7cb68a"
+        "color": "#3b82f6"
       }
     ]
   },

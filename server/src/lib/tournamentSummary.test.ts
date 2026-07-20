@@ -63,7 +63,7 @@ describe("parseSummarySections", () => {
       {
         title: "They Out Here Sayin",
         items: [
-          { body: "Opening paragraph text.", attribution: "CutBot", color: "#7cb68a" },
+          { body: "Opening paragraph text.", attribution: "CutBot", color: "#3b82f6" },
           {
             body: "Second hot take.",
             attribution: "Anthony Kim's Nose",

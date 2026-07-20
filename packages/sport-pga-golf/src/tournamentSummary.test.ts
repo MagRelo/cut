@@ -42,7 +42,7 @@ describe("tournamentSummary", () => {
     const quotes = getNormalizedQuotes(sections);
     expect(quotes).toHaveLength(2);
     expect(quotes[0]?.attribution).toBe("CutBot");
-    expect(quotes[0]?.color).toBe("#7cb68a");
+    expect(quotes[0]?.color).toBe("#3b82f6");
     expect(quotes[1]?.attribution).toBe("Anthony Kim's Nose");
     expect(quotes[1]?.colors.border).toBe("#00abb8");
   });
