@@ -4,10 +4,7 @@ import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { type Contest } from "../../types/contest";
 import { contestLobbyLinkState } from "../../lib/contestNavigation";
 import { formatContestStatus, contestStatusValueClass } from "../../lib/contestStatus";
-import { periodDisplayFromMetadata, periodStatusDisplayFromMetadata } from "../../lib/eventMetadata";
-import { currentPeriodFromMetadata } from "../../lib/eventPeriods";
 import { cn } from "../../lib/tabStyles";
-import { ContestStatusBar } from "./lobby/ContestStatusBar";
 import { ContestCard } from "./ContestCard";
 
 const viewButtonBaseClassName =
@@ -82,12 +79,6 @@ export const ContestListItem = ({
 }: ContestListItemProps) => {
   const entryCount = contest.contestLineups?.length ?? 0;
   const buyInValue = formatBuyInValue(contest.settings?.primaryDeposit);
-  // List API often omits contest.event; prefer shell metadata from the event group header.
-  const metadata = contest.event?.metadata ?? eventShell?.metadata ?? null;
-  const sportId = contest.event?.sportId ?? eventShell?.sportId;
-  const currentPeriod = currentPeriodFromMetadata(metadata);
-  const periodDisplay = periodDisplayFromMetadata(metadata);
-  const periodStatusDisplay = periodStatusDisplayFromMetadata(metadata);
   const actionLabel = contestListActionLabel(variant);
 
   return (
@@ -97,18 +88,11 @@ export const ContestListItem = ({
         className,
       )}
     >
-      <div className="px-3 pb-2 pt-4">
+      <div className="p-2 pt-3">
         <ContestCard contest={contest} />
       </div>
 
-      <ContestStatusBar
-        contestStatus={contest.status}
-        sportId={sportId}
-        currentPeriod={currentPeriod}
-        periodDisplay={periodDisplay}
-        periodStatusDisplay={periodStatusDisplay}
-      />
-      <div className="flex items-center gap-3 px-3 py-2">
+      <div className="flex items-center gap-3 border-t border-slate-200 p-2 pt-3">
         <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
           <ContestListStat value={buyInValue} label="Buy-in" />
           <ContestListStat value={entryCount} label="Entries" />
