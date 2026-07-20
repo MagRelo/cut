@@ -1,8 +1,8 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { type Contest } from "../../../types/contest";
 import { type PredictionsPanelMode } from "../../../types/contestLobby";
 import { ContestCommentaryModal } from "./ContestCommentaryModal";
-import { Link } from "react-router-dom";
 
 export interface WinnerPoolOverviewProps {
   contest: Contest;
@@ -10,7 +10,8 @@ export interface WinnerPoolOverviewProps {
   placeWagerTabLocked: boolean;
 }
 
-export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest }) => {
+export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest, mode }) => {
+  const isLocked = mode === "locked";
   const [isCommentaryOpen, setIsCommentaryOpen] = useState(false);
 
   return (
@@ -18,12 +19,29 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest 
       <div className="space-y-3 overflow-hidden rounded-sm border border-slate-200 bg-slate-50 p-3 font-display">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Winner Pool</h2>
-          <p className="text-sm leading-relaxed text-slate-600">
-            Back the winning lineup to win a share of the pool.{" "}
-          </p>
-          <Link to="/faq#winner-pool" className="text-sm font-medium text-blue-700 hover:underline">
-            How it works →
-          </Link>
+          {isLocked ? (
+            <p className="text-sm leading-relaxed text-slate-600">
+              Betting is closed. Existing wagers are locked until the contest settles.{" "}
+              <Link
+                to="/faq#winner-pool"
+                className="text-sm font-medium text-blue-700 hover:underline"
+              >
+                How it works →
+              </Link>
+            </p>
+          ) : (
+            <>
+              <p className="text-sm leading-relaxed text-slate-600">
+                Back the winning lineup to win a share of the pool.{" "}
+              </p>
+              <Link
+                to="/faq#winner-pool"
+                className="text-sm font-medium text-blue-700 hover:underline"
+              >
+                How it works →
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Commentary modal button, if available */}

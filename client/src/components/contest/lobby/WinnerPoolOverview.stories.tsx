@@ -20,6 +20,13 @@ type Story = StoryObj<typeof meta>;
 
 export const WithoutCommentary: Story = {};
 
+export const Locked: Story = {
+  args: {
+    mode: "locked",
+    placeWagerTabLocked: true,
+  },
+};
+
 export const WithCommentary: Story = {
   args: {
     contest: {
