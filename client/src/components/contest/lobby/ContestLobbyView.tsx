@@ -64,8 +64,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   const {
     eventShell,
     error: eventError,
-    eventName,
-    eventStartDate,
     sportId,
     currentPeriod,
     periodDisplay,
@@ -94,17 +92,13 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
           />
         </div>
 
-        <div className="mb-3">
-          <ContestStatusBar
-            contestStatus={contest.status}
-            eventName={eventName}
-            eventStartDate={eventStartDate}
-            sportId={sportId}
-            currentPeriod={currentPeriod}
-            periodDisplay={periodDisplay}
-            periodStatusDisplay={periodStatusDisplay}
-          />
-        </div>
+        <ContestStatusBar
+          contestStatus={contest.status}
+          sportId={sportId}
+          currentPeriod={currentPeriod}
+          periodDisplay={periodDisplay}
+          periodStatusDisplay={periodStatusDisplay}
+        />
 
         <TabGroup
           selectedIndex={selectedIndex}

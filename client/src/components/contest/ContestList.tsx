@@ -9,8 +9,6 @@ interface ContestListProps {
   contests: Contest[];
   loading: boolean;
   error: string | null;
-  eventName?: string | null;
-  eventStartDate?: string | null;
   eventShell?: CompetitionEventShell;
   variant?: ContestListItemVariant;
 }
@@ -36,8 +34,6 @@ export const ContestList = ({
   contests,
   loading,
   error,
-  eventName,
-  eventStartDate,
   eventShell,
   variant = "default",
 }: ContestListProps) => {
@@ -69,8 +65,6 @@ export const ContestList = ({
             key={contest.id}
             contest={contest}
             to={contestLobbyPath(contest.address)}
-            eventName={eventName}
-            eventStartDate={eventStartDate}
             eventShell={eventShell}
             variant={variant}
           />

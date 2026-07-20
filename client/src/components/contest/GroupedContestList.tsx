@@ -63,8 +63,6 @@ function GroupedContestSection({
                 contests={group.contests}
                 loading={false}
                 error={null}
-                eventName={group.event.name}
-                eventStartDate={group.event.startDate}
                 eventShell={eventShell}
                 variant={variant}
               />
@@ -94,8 +92,6 @@ function GroupedContestSection({
           contests={group.contests}
           loading={false}
           error={null}
-          eventName={group.event.name}
-          eventStartDate={group.event.startDate}
           eventShell={eventShell}
           variant={variant}
         />

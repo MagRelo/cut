@@ -3,6 +3,10 @@ import { Link } from "react-router-dom";
 import { golfEventStatusFromMetadata } from "@cut/sport-pga-golf";
 import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
 import { leaderboardLinkState, leaderboardPath } from "../../lib/contestNavigation";
+import {
+  EventCountdownLine,
+  shouldShowEventCountdown,
+} from "../../components/platform/EventCountdownLine";
 import { formatGolfEventStatus, parseGolfEventMetadata } from "./utils";
 
 interface GolfEventDetailsProps {
@@ -11,6 +15,12 @@ interface GolfEventDetailsProps {
   hasSummary?: boolean;
   onOpenSummary?: () => void;
 }
+
+const metaRowClassName =
+  "mt-1 flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 font-medium text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]";
+
+const actionLinkClassName =
+  "inline-flex items-center gap-0.5 rounded-sm text-white/90 underline-offset-2 hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80";
 
 export function GolfEventDetails({
   event,
@@ -25,6 +35,7 @@ export function GolfEventDetails({
   const periodStatusDisplay = meta.periodStatusDisplay?.trim() || formatGolfEventStatus(meta.status);
   const isSuspended = meta.periodStatusDisplay === "Suspended";
   const isScheduled = golfEventStatusFromMetadata(event.metadata) === "SCHEDULED";
+  const showCountdown = shouldShowEventCountdown(event.metadata);
   const showPreview = isScheduled && hasSummary && onOpenSummary;
   const showLeaderboard = !isScheduled;
   const leaderboardTo = leaderboardPath(event.sportId, event.id);
@@ -68,48 +79,45 @@ export function GolfEventDetails({
         </div>
       ) : null}
 
-      <div className="mt-1 flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 font-medium text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
-        {periodDisplay}
-        {detailSeparator}
-        <span>
-          {isSuspended ? (
-            <span className="inline-flex items-center gap-1 text-yellow-300">
-              <ExclamationTriangleIcon
-                className="h-3.5 w-3.5 shrink-0 text-yellow-300"
-                aria-hidden
-              />
-              <span>{periodStatusDisplay}</span>
-            </span>
-          ) : (
-            <span>{periodStatusDisplay}</span>
-          )}
-        </span>
-        {showLeaderboard ? (
+      <div className={metaRowClassName}>
+        {showCountdown ? (
+          <EventCountdownLine metadata={event.metadata} />
+        ) : (
           <>
+            {periodDisplay}
             {detailSeparator}
-            <Link
-              to={leaderboardTo}
-              state={leaderboardState}
-              className="inline-flex items-center gap-0.5 rounded-sm text-white/90 underline-offset-2 hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-            >
+            <span>
+              {isSuspended ? (
+                <span className="inline-flex items-center gap-1 text-yellow-300">
+                  <ExclamationTriangleIcon
+                    className="h-3.5 w-3.5 shrink-0 text-yellow-300"
+                    aria-hidden
+                  />
+                  <span>{periodStatusDisplay}</span>
+                </span>
+              ) : (
+                <span>{periodStatusDisplay}</span>
+              )}
+            </span>
+          </>
+        )}
+      </div>
+
+      {showPreview || showLeaderboard ? (
+        <div className={metaRowClassName}>
+          {showLeaderboard ? (
+            <Link to={leaderboardTo} state={leaderboardState} className={actionLinkClassName}>
               View Leaderboard
               <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
             </Link>
-          </>
-        ) : showPreview ? (
-          <>
-            {detailSeparator}
-            <button
-              type="button"
-              onClick={onOpenSummary}
-              className="inline-flex items-center gap-0.5 rounded-sm text-white/90 underline-offset-2 hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-            >
+          ) : (
+            <button type="button" onClick={onOpenSummary} className={actionLinkClassName}>
               Tournament Preview
               <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
             </button>
-          </>
-        ) : null}
-      </div>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

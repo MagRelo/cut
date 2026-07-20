@@ -18,8 +18,6 @@ import {
   getDirectoryContextForContest,
   parseContestLobbyNavigationState,
 } from "../lib/contestNavigation";
-import { eventDisplayNameFromMetadata, eventStartDateFromMetadata } from "../lib/eventMetadata";
-import { ContestStatusBar } from "../components/contest/lobby/ContestStatusBar";
 
 function ContestNotFound({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
@@ -58,8 +56,6 @@ function ContestNotFound({ isAuthenticated }: { isAuthenticated: boolean }) {
 function ContestLobbyLoadingShell({ eventShell }: { eventShell: CompetitionEventShell }) {
   const plugin = useSportUIPlugin(eventShell.sportId);
   const EventSummary = plugin?.EventSummary;
-  const eventName = eventDisplayNameFromMetadata(eventShell.metadata, "");
-  const eventStartDate = eventStartDateFromMetadata(eventShell.metadata);
 
   return (
     <div>
@@ -70,13 +66,6 @@ function ContestLobbyLoadingShell({ eventShell }: { eventShell: CompetitionEvent
             <div className="h-5 w-2/3 rounded bg-slate-200" />
             <div className="h-4 w-1/2 rounded bg-slate-100" />
           </div>
-        </div>
-        <div className="mb-2">
-          <ContestStatusBar
-            contestStatus="OPEN"
-            eventName={eventName}
-            eventStartDate={eventStartDate}
-          />
         </div>
         <div className="flex min-h-[120px] items-center justify-center p-4">
           <LoadingSpinner />

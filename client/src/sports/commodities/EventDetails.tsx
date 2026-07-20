@@ -6,12 +6,22 @@ import {
 } from "@cut/sport-commodities";
 import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
 import { leaderboardLinkState, leaderboardPath } from "../../lib/contestNavigation";
+import {
+  EventCountdownLine,
+  shouldShowEventCountdown,
+} from "../../components/platform/EventCountdownLine";
 import { formatCommoditiesEventStatusLabel, formatCommoditySessionWindow } from "./commodityUtils";
 
 interface CommodityEventDetailsProps {
   event: CompetitionEventShell;
   className?: string;
 }
+
+const metaRowClassName =
+  "mt-1 flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 font-medium text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]";
+
+const actionLinkClassName =
+  "inline-flex items-center gap-0.5 rounded-sm text-white/90 underline-offset-2 hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80";
 
 export function CommodityEventDetails({ event, className = "" }: CommodityEventDetailsProps) {
   const meta =
@@ -28,14 +38,9 @@ export function CommodityEventDetails({ event, className = "" }: CommodityEventD
     commodities?.sessionOpen,
     commodities?.sessionClose,
   );
+  const showCountdown = shouldShowEventCountdown(event.metadata);
   const leaderboardTo = leaderboardPath(event.sportId, event.id);
   const leaderboardState = leaderboardLinkState(event);
-
-  const detailSeparator = (
-    <span className="text-[9px] leading-none text-white/60" aria-hidden>
-      ●
-    </span>
-  );
 
   return (
     <div className={["font-display text-sm leading-snug", className].filter(Boolean).join(" ")}>
@@ -55,14 +60,12 @@ export function CommodityEventDetails({ event, className = "" }: CommodityEventD
         </span>
       </div>
 
-      <div className="mt-1 flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 font-medium text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
-        <span>{status}</span>
-        {detailSeparator}
-        <Link
-          to={leaderboardTo}
-          state={leaderboardState}
-          className="inline-flex items-center gap-0.5 rounded-sm text-white/90 underline-offset-2 hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-        >
+      <div className={metaRowClassName}>
+        {showCountdown ? <EventCountdownLine metadata={event.metadata} /> : <span>{status}</span>}
+      </div>
+
+      <div className={metaRowClassName}>
+        <Link to={leaderboardTo} state={leaderboardState} className={actionLinkClassName}>
           View Leaderboard
           <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
         </Link>
