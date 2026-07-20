@@ -82,7 +82,7 @@ export function getReferralSyncChainIdFromEnv(): number {
 
 /**
  * OPS_ORACLE wallet used as ultimate tree root under REFERRAL_ROOT (Option B).
- * Resolved from OPS_ORACLE_PK / OPS_ORACLE_ADDRESS (with legacy fallbacks).
+ * Resolved from OPS_ORACLE_PK / OPS_ORACLE_ADDRESS.
  */
 export function getReferralOracleRootAddress(chainId: number): `0x${string}` {
   const normalized = getOpsOracleAddress().toLowerCase() as `0x${string}`;

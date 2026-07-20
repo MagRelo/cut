@@ -21,8 +21,7 @@ function loadPaymentTokenAddressFromSepolia(): string {
 
 const contractConfig = {
     paymentTokenAddress: loadPaymentTokenAddressFromSepolia(),
-    oracleWalletPrivateKey:
-        process.env.OPS_ORACLE_PK || process.env.ORACLE_PRIVATE_KEY || '',
+    oracleWalletPrivateKey: process.env.OPS_ORACLE_PK || '',
     rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
 };
 
