@@ -6,10 +6,10 @@ import type { useContestLineupEntry } from "../../hooks/useContestLineupEntry";
 import { CheckIcon } from "@heroicons/react/20/solid";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
-const joinActionsFooterClassName = "border-t border-gray-200 bg-gray-50 px-3 py-2.5 font-display";
+const joinActionsFooterClassName = "border-t border-gray-200 bg-slate-50 px-3 py-2.5 font-display";
 
 const EnteredInContestLabel = () => (
-  <div className="flex items-center justify-center gap-1.5 text-sm font-medium text-emerald-700">
+  <div className="flex items-center justify-center gap-1.5 text-sm font-medium text-emerald-600">
     <CheckIcon className="h-4 w-4 shrink-0" aria-hidden />
     Entered in this contest
   </div>
