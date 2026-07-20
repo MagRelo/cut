@@ -25,21 +25,24 @@ function seasonStat(season: PerformanceSeason | undefined, titles: string[]): st
   return "0";
 }
 
-function dgRankFromParticipant(participant: Record<string, unknown>): number | undefined {
+function dataGolfRecord(participant: Record<string, unknown>): Record<string, unknown> | undefined {
   const dataGolf = participant.dataGolf;
   if (dataGolf && typeof dataGolf === "object" && !Array.isArray(dataGolf)) {
-    const rank = (dataGolf as Record<string, unknown>).dg_rank;
-    if (typeof rank === "number") return rank;
+    return dataGolf as Record<string, unknown>;
   }
   const performance = participant.performance;
   if (performance && typeof performance === "object" && !Array.isArray(performance)) {
     const legacy = (performance as Record<string, unknown>).dataGolfRanking;
     if (legacy && typeof legacy === "object" && !Array.isArray(legacy)) {
-      const rank = (legacy as Record<string, unknown>).dg_rank;
-      if (typeof rank === "number") return rank;
+      return legacy as Record<string, unknown>;
     }
   }
   return undefined;
+}
+
+function dgRankFromParticipant(participant: Record<string, unknown>): number | undefined {
+  const rank = dataGolfRecord(participant)?.dg_rank;
+  return typeof rank === "number" ? rank : undefined;
 }
 
 function performanceSeasons(participant: Record<string, unknown>): PerformanceSeason[] {
