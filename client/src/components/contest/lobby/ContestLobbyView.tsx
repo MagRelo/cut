@@ -11,7 +11,6 @@ import { EventLineupsPanel } from "../../platform/EventLineupsPanel";
 import { ContestCard } from "../ContestCard";
 import { ContestPayoutsModal } from "../ContestPayoutsModal";
 import { ContestResultsPanel } from "../ContestResultsPanel";
-import { ContestStatusBar } from "./ContestStatusBar";
 import { ContestPrimaryTab } from "./ContestPrimaryTab";
 import { ContestPredictionsPanel } from "./ContestPredictionsPanel";
 
@@ -61,14 +60,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   const fieldSportId = contest.event?.sportId;
 
   const [isPayoutsModalOpen, setIsPayoutsModalOpen] = useState(false);
-  const {
-    eventShell,
-    error: eventError,
-    sportId,
-    currentPeriod,
-    periodDisplay,
-    periodStatusDisplay,
-  } = useContestEvent(contest);
+  const { eventShell, error: eventError } = useContestEvent(contest);
   const plugin = useSportUIPlugin();
   const EventSummary = plugin?.EventSummary;
 
@@ -91,14 +83,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
             }
           />
         </div>
-
-        <ContestStatusBar
-          contestStatus={contest.status}
-          sportId={sportId}
-          currentPeriod={currentPeriod}
-          periodDisplay={periodDisplay}
-          periodStatusDisplay={periodStatusDisplay}
-        />
 
         <TabGroup
           selectedIndex={selectedIndex}
