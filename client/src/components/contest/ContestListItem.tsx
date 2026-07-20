@@ -14,10 +14,15 @@ const viewButtonActiveClassName =
   "border-blue-500 bg-blue-500 text-white hover:bg-blue-600 focus-visible:outline-blue-500";
 
 const viewButtonPastClassName =
-  "border-slate-300 bg-slate-200 text-slate-700 hover:bg-slate-200 focus-visible:outline-slate-500";
+  "border-slate-300 bg-slate-200 text-slate-800 hover:bg-slate-200 focus-visible:outline-slate-500";
 
 function isPastContestStatus(status: Contest["status"]): boolean {
   return status === "SETTLED" || status === "CLOSED";
+}
+
+function contestListFooterClass(status: Contest["status"]): string {
+  if (status === "OPEN" || status === "ACTIVE") return "border-blue-200 bg-blue-50";
+  return "border-slate-300 bg-slate-100";
 }
 
 function isPastViewButton(contest: Contest, variant: ContestListItemVariant): boolean {
@@ -92,7 +97,12 @@ export const ContestListItem = ({
         <ContestCard contest={contest} />
       </div>
 
-      <div className="flex items-center gap-3 border-t border-slate-200 p-2 pt-3">
+      <div
+        className={cn(
+          "flex items-center gap-3 border-t p-2 pt-2.5",
+          contestListFooterClass(contest.status),
+        )}
+      >
         <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
           <ContestListStat value={buyInValue} label="Buy-in" />
           <ContestListStat value={entryCount} label="Entries" />
