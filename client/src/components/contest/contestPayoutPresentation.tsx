@@ -76,9 +76,29 @@ export function ContestPayoutDividedRows({ children }: { children: ReactNode }) 
   return <div className="space-y-2">{children}</div>;
 }
 
-export function ContestPayoutRow({ left, right }: { left: ReactNode; right: ReactNode }) {
+export function ContestPayoutRow({
+  left,
+  right,
+  userColor,
+}: {
+  left: ReactNode;
+  right: ReactNode;
+  /** When set, colors the row's outer left border (same pattern as lineup list items). */
+  userColor?: string;
+}) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-sm border border-gray-200 bg-white p-3 font-display shadow-sm">
+    <div
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-sm border border-gray-200 bg-white p-3 py-2 font-display shadow-sm"
+      style={
+        userColor
+          ? {
+              borderLeftColor: userColor,
+              borderLeftWidth: "5px",
+              borderLeftStyle: "solid",
+            }
+          : undefined
+      }
+    >
       <div className="min-w-0">{left}</div>
       <div className="shrink-0 text-right">{right}</div>
     </div>
