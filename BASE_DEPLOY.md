@@ -23,8 +23,6 @@ ABI: `settleContest(entries, bps)` via `ReferralGraph` + `RewardCalculator` (no 
 
 ---
 
-
-
 ## 0. Preconditions
 
 - [x] Work on `**newSettle**` until section 2 merge; prod stays on pre-`newSettle` until then
@@ -32,12 +30,10 @@ ABI: `settleContest(entries, bps)` via `ReferralGraph` + `RewardCalculator` (no 
 - [x] `ReferralGraph` ownership remains on the **deployer** (cold after broadcast; no transfer / renounce)
 - [x] Document addresses (before Sepolia deploy):
 
-
 | Role                            | Env key         | Address | Notes                                                                   |
 | ------------------------------- | --------------- | ------- | ----------------------------------------------------------------------- |
 | Deployer (cold)                 | `DEPLOYER_PK`   | TBD     | `contracts/.env`, forge broadcast; keeps `ReferralGraph` ownership      |
 | OPS_ORACLE (contest + referral) | `OPS_ORACLE_PK` | TBD     | One EOA; authed as ReferralGraph oracle at deploy. **Not** the deployer |
-
 
 - [x] Fund deployer with Sepolia ETH (section 1) and later **~0.02 ETH** on Base (section 3)
 - [x] Fund OPS_ORACLE with enough **ETH** on each chain it will sign on (Sepolia for soak; Base for section 3+)
@@ -46,8 +42,6 @@ ABI: `settleContest(entries, bps)` via `ReferralGraph` + `RewardCalculator` (no 
 USDC treasury / wallet seeding is funded outside this plan.
 
 ---
-
-
 
 ## 1. Sepolia deploy + smoke (`newSettle`)
 
@@ -75,8 +69,6 @@ pnpm run verify:contracts:sepolia
 - [x] `pnpm run deploy:copy-artifacts`
 - [x] Verify on Blockscout (`pnpm run verify:contracts:sepolia`)
 
-
-
 ### 1b. Roles on Sepolia
 
 - [x] `OPS_ORACLE_PK` set at deploy; its address is the ReferralGraph oracle (Sepolia soak: same EOA as deployer)
@@ -84,8 +76,6 @@ pnpm run verify:contracts:sepolia
 - [x] Server/local: `OPS_ORACLE_PK` matches on-chain contest + referral oracle
 - [x] `REFERRAL_GROUP_ID` matches on-chain auth
 - [x] `REFERRAL_SYNC_CHAIN_ID=84532`
-
-
 
 ### 1c. Rebuild referral graph
 
@@ -106,8 +96,6 @@ New graph (after rematerialize redeploy):
 - ReferralGraph `0x82b6029706825361379272B1B8679C858D779Ca6`
 - RewardCalculator `0xbABc5295825E4AA8D10C098a22f78364309d45fe`
 
-
-
 ### 1d. Smoke / acceptance
 
 - [x] Create contest on new graph: **rematerializeSmoke** `0x4AEB6018B063589B392F808007036DC1844ef48B` / DB `cmrp9q7er0001mdxrul1k8be1` (10 xUSDC, 700 bps)
@@ -115,27 +103,24 @@ New graph (after rematerialize redeploy):
 - [x] Lock → settle — **2-arg** `settleContest` (`0x88e08db7…51b8`)
 - [x] Referral fee transfers + `OnchainPayment` `REFERRAL` rows (**3**): DipChutney 0.357 / One Direction 0.214 / oracle 0.129 xUSDC
 - [x] Push primary (`0x62f9d517…458a5`)
-- [ ] Close after expiry (incl. CANCELLED if needed)
+- [x] Close after expiry (incl. CANCELLED if needed)
 - [x] **Gate:** rematerialize + invite-chain fee smoke green (close optional)
 
 Verified: entrant → DipChutney → One Direction → oracle (not oracle-only).
 
 ---
 
-
-
 ## 2. Merge `newSettle` → `main` and deploy (prod stays on Sepolia)
 
 Ship the new settle stack to production while the client remains on **Base Sepolia** (`VITE_TARGET_CHAIN=testnet`, chain `84532`).
 
-- [ ] Rebase/merge latest `main` into `newSettle` if needed; resolve conflicts
-- [ ] Merge `newSettle` → `main`
-- [ ] Push `main`
-- [ ] Build/release image (`pnpm run deploy` / release pipeline)
-- [ ] Swarm: roll **web** (`ENABLE_CRON=false`)
-- [ ] Cron host: **same** build, `ENABLE_CRON=true`, restart `cron-app`
-- [ ] Env on web + cron (Sepolia soak). Inventories: [`swarm/env/web.env.example`](swarm/env/web.env.example), [`swarm/env/cron.env.example`](swarm/env/cron.env.example), [`client/.env.example`](client/.env.example) (bake `VITE_*` before image build):
-
+- [x] Rebase/merge latest `main` into `newSettle` if needed; resolve conflicts
+- [x] Merge `newSettle` → `main`
+- [x] Push `main`
+- [x] Build/release image (`pnpm run deploy` / release pipeline)
+- [x] Swarm: roll **web** (`ENABLE_CRON=false`)
+- [x] Cron host: **same** build, `ENABLE_CRON=true`, restart `cron-app`
+- [x] Env on web + cron (Sepolia soak). Inventories: `[swarm/env/web.env.example](swarm/env/web.env.example)`, `[swarm/env/cron.env.example](swarm/env/cron.env.example)`, `[client/.env.example](client/.env.example)` (bake `VITE_*` before image build):
 
 | Check                                               | Done |
 | --------------------------------------------------- | ---- |
@@ -148,13 +133,10 @@ Ship the new settle stack to production while the client remains on **Base Sepol
 | No `rewardDistributorAddress` required              | [ ]  |
 | `GET /api/cron/status` OK                           | [ ]  |
 
-
-- [ ] Post-deploy prod smoke on Sepolia: create small contest → enter → settle path healthy
-- [ ] **Gate:** section 3 Base work can proceed in parallel with the soak; do **not** flip the client to Base yet
+- [x] Post-deploy prod smoke on Sepolia: create small contest → enter → settle path healthy
+- [x] **Gate:** section 3 Base work can proceed in parallel with the soak; do **not** flip the client to Base yet
 
 ---
-
-
 
 ## 3. Sepolia soak (~1 week) + Base prep in parallel
 
@@ -167,21 +149,17 @@ Prod users and contests remain on Sepolia. Prepare Base mainnet without switchin
 - [ ] Cron settle / lock / close paths stable
 - [ ] No settle calls against **old** contest addresses with the new ABI (use old tooling for leftovers)
 
-
-
 ### 3b. Deploy Base contracts
 
 Same stack as Sepolia, minus MockUSDC. Can run from `main` or a short-lived branch once section 2 is merged.
 
 `Deploy_base.s.sol` deploys:
 
-
 | Contract           | Notes                                                          |
 | ------------------ | -------------------------------------------------------------- |
 | `ContestFactory`   | New contests only                                              |
 | `ReferralGraph`    | `initialOwner` = deployer; oracle auth for `REFERRAL_GROUP_ID` |
 | `RewardCalculator` | Stateless                                                      |
-
 
 Payment token is **not** deployed — canonical Base USDC is written into config by `scripts/deploy.js`.
 
@@ -208,8 +186,6 @@ pnpm run deploy:contracts:base
 - [ ] Ops scripts / local smoke: `REFERRAL_SYNC_CHAIN_ID=8453`
 - [ ] OPS_ORACLE funded with Base ETH
 
-
-
 ### 3d. Rebuild referral graph on Base
 
 Same rematerialize script as Sepolia; point env at Base:
@@ -224,8 +200,6 @@ pnpm --filter server run script:rematerialize-referral-graph --reset-hashes
 - [ ] Organics under oracle; invitees under inviter primary on `8453`
 - [ ] Audit clean (zero parent mismatches / deferred)
 
-
-
 ### 3e. Base smoke (pre–client flip)
 
 Use a local or staging build pointed at Base — **not** the Sepolia prod client. Test wallets must already hold Base USDC (seeded outside this plan).
@@ -236,15 +210,12 @@ Use a local or staging build pointed at Base — **not** the Sepolia prod client
 
 ---
 
-
-
 ## 4. Client → Base only (last)
 
 After ~1 week on Sepolia and Base smoke is green, point production wallets at Base `8453`.
 
 - [ ] Prod client: `VITE_TARGET_CHAIN=mainnet` (Base only for user-facing chain)
 - [ ] Web + cron env cutover to Base:
-
 
 | Check                                                                | Done |
 | -------------------------------------------------------------------- | ---- |
@@ -254,7 +225,6 @@ After ~1 week on Sepolia and Base smoke is green, point production wallets at Ba
 | `VITE_ORACLE_ADDRESS` / `OPS_ORACLE_PK` unchanged and funded on Base | [ ]  |
 | `REFERRAL_GROUP_ID` unchanged                                        | [ ]  |
 
-
 - [ ] Rebuild/redeploy web (and cron if env-only changes need a restart)
 - [ ] Smoke UI on Base: balances, create contest, entry path
 - [ ] First real Base contest (small entry / soft cap)
@@ -262,10 +232,7 @@ After ~1 week on Sepolia and Base smoke is green, point production wallets at Ba
 
 ---
 
-
-
 ## 5. Rollback / holds
-
 
 | If this fails…                             | Hold / do this                                                     |
 | ------------------------------------------ | ------------------------------------------------------------------ |
@@ -276,30 +243,23 @@ After ~1 week on Sepolia and Base smoke is green, point production wallets at Ba
 | Client Base flip breaks wallet UX          | Revert `VITE_TARGET_CHAIN` to `testnet`; keep Base contracts as-is |
 | Need to settle an **old** leftover contest | Use **old** settle tooling; never new ABI on old controllers       |
 
-
 ---
-
-
 
 ## Quick command index
 
-
-| Step                        | Command                                                            |
-| --------------------------- | ------------------------------------------------------------------ |
-| Sepolia deploy              | `pnpm run deploy:contracts:sepolia`                                |
-| Base deploy                 | `pnpm run deploy:contracts:base`                                   |
-| Copy ABIs                   | `pnpm run deploy:copy-artifacts`                                   |
+| Step                        | Command                                                                       |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| Sepolia deploy              | `pnpm run deploy:contracts:sepolia`                                           |
+| Base deploy                 | `pnpm run deploy:contracts:base`                                              |
+| Copy ABIs                   | `pnpm run deploy:copy-artifacts`                                              |
 | Rematerialize graph         | `pnpm --filter server run script:rematerialize-referral-graph --reset-hashes` |
-| Bootstrap oracle root       | `pnpm --filter server run script:bootstrap-referral-oracle-root`   |
-| Register organics only      | `pnpm --filter server run script:register-users-under-oracle-root` |
-| Sync invites (cron)         | `pnpm --filter server run service:batch-sync-referral-graph`       |
-| Sepolia mint xUSDC          | `pnpm run mint-tokens`                                             |
-| Merge (after Sepolia smoke) | `git checkout main && git merge newSettle`                         |
-
+| Bootstrap oracle root       | `pnpm --filter server run script:bootstrap-referral-oracle-root`              |
+| Register organics only      | `pnpm --filter server run script:register-users-under-oracle-root`            |
+| Sync invites (cron)         | `pnpm --filter server run service:batch-sync-referral-graph`                  |
+| Sepolia mint xUSDC          | `pnpm run mint-tokens`                                                        |
+| Merge (after Sepolia smoke) | `git checkout main && git merge newSettle`                                    |
 
 ---
-
-
 
 ## Open decisions
 
