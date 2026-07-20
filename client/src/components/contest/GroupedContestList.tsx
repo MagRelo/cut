@@ -40,7 +40,7 @@ function GroupedContestSection({
     const heroOverlayClassName =
       plugin?.eventHeroOverlayClassName ?? DEFAULT_EVENT_HERO_OVERLAY_CLASSNAME;
     return (
-      <section className="overflow-hidden rounded-md border border-slate-600 shadow-md">
+      <section className="overflow-hidden rounded-md border border-slate-300 shadow-md">
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 overflow-hidden" aria-hidden>
             <div
@@ -114,7 +114,7 @@ export const GroupedContestList = ({
   // Prefer existing groups over the spinner so refetches don't rip hero images out.
   if (groups.length > 0) {
     listContent = (
-      <div className="space-y-8">
+      <div className="space-y-4">
         {groups.map((group) => (
           <GroupedContestSection key={group.event.id} group={group} variant={variant} />
         ))}

@@ -19,13 +19,7 @@ function tabLinkClass(active: boolean) {
   ].join(" ");
 }
 
-function NavTabLink({
-  tab,
-  pathname,
-}: {
-  tab: (typeof LEFT_TABS)[number];
-  pathname: string;
-}) {
+function NavTabLink({ tab, pathname }: { tab: (typeof LEFT_TABS)[number]; pathname: string }) {
   const active = tab.match(pathname);
   return (
     <Link
@@ -53,8 +47,8 @@ export const TopNav: React.FC = () => {
           to="/"
           className="flex shrink-0 items-center gap-2 rounded-sm opacity-90 transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
         >
-          <img src="/logo-transparent.png" alt="" className="h-7 w-auto" />
-          <span className="font-display text-lg uppercase tracking-widest text-slate-900">
+          <img src="/logo-transparent.png" alt="" className="h-8 w-auto" />
+          <span className="mt-1 font-display text-lg uppercase leading-snug tracking-widest text-slate-900">
             {BRAND_WORDMARK}
           </span>
         </Link>
