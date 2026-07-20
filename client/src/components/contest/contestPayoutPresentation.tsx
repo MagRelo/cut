@@ -73,12 +73,12 @@ export function ContestPayoutSection({
 }
 
 export function ContestPayoutDividedRows({ children }: { children: ReactNode }) {
-  return <div className="divide-y divide-slate-200 pl-3">{children}</div>;
+  return <div className="space-y-2">{children}</div>;
 }
 
 export function ContestPayoutRow({ left, right }: { left: ReactNode; right: ReactNode }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-sm border border-gray-200 bg-white p-3 font-display shadow-sm">
       <div className="min-w-0">{left}</div>
       <div className="shrink-0 text-right">{right}</div>
     </div>

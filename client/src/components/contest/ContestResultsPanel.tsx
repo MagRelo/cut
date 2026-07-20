@@ -32,14 +32,14 @@ function ContestResultsSection({
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-2 py-1">
-      <div>
-        <h2 className="text-xl font-semibold leading-tight text-slate-900">{title}</h2>
+    <section className="py-1">
+      <h2 className="text-xl font-semibold leading-tight text-slate-900">{title}</h2>
+      <div className="space-y-3">
         {description != null ? (
-          <div className="mt-1 text-xs leading-tight text-slate-500">{description}</div>
+          <div className="text-xs leading-tight text-slate-500">{description}</div>
         ) : null}
+        {children}
       </div>
-      {children}
     </section>
   );
 }
@@ -109,7 +109,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
         title="Contest"
         description={
           <>
-            Payouts are based on final standings. Ties pool winnings and split evenly.{" "}
+            Contest payouts are based on final standings.{" "}
             <Link to="/faq#contest-gameplay" className="text-blue-600 hover:underline">
               Learn more...
             </Link>
@@ -164,12 +164,10 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                           <ContestPayoutSubAmount>{row.score} pts</ContestPayoutSubAmount>
                         ) : null}
                       </>
+                    ) : row.score != null ? (
+                      <ContestPayoutRowSubtitle>{row.score} pts</ContestPayoutRowSubtitle>
                     ) : (
-                      row.score != null ? (
-                        <ContestPayoutRowSubtitle>{row.score} pts</ContestPayoutRowSubtitle>
-                      ) : (
-                        <span className="text-xs text-slate-400">—</span>
-                      )
+                      <span className="text-xs text-slate-400">—</span>
                     )
                   }
                 />
@@ -179,13 +177,11 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
         )}
       </ContestResultsSection>
 
-      <hr className="border-slate-200" />
-
       <ContestResultsSection
         title="Winner Pool"
         description={
           <>
-            Winner-ticket holders split this pool proportionally.{" "}
+            Winner-ticket holders split the pool proportionally.{" "}
             <Link to="/faq#winner-pool" className="text-blue-600 hover:underline">
               Learn more...
             </Link>
@@ -216,12 +212,9 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                   }
                   right={
                     wei !== null ? (
-                      <>
-                        <ContestPayoutGradientMoney>
-                          {formatDollarFromWei(wei, paymentDecimals)}
-                        </ContestPayoutGradientMoney>
-                        <ContestPayoutSubAmount>payout</ContestPayoutSubAmount>
-                      </>
+                      <ContestPayoutGradientMoney>
+                        {formatDollarFromWei(wei, paymentDecimals)}
+                      </ContestPayoutGradientMoney>
                     ) : (
                       <span className="text-xs text-slate-400">—</span>
                     )
@@ -233,13 +226,11 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
         )}
       </ContestResultsSection>
 
-      <hr className="border-slate-200" />
-
       <ContestResultsSection
-        title="Rewards"
+        title="Referral Rewards"
         description={
           <>
-            Grow the game, reward the community, and give value back to players.{" "}
+            When your friends win, you win.{" "}
             <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
               Learn more...
             </Link>
@@ -261,16 +252,14 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                       style={row.userColor ? { borderLeftColor: row.userColor } : undefined}
                     >
                       <ContestPayoutRowTitle>{row.username}</ContestPayoutRowTitle>
+                      <ContestPayoutRowSubtitle>Referral Reward</ContestPayoutRowSubtitle>
                     </div>
                   }
                   right={
                     wei !== null ? (
-                      <>
-                        <ContestPayoutGradientMoney>
-                          {formatDollarFromWei(wei, paymentDecimals)}
-                        </ContestPayoutGradientMoney>
-                        <ContestPayoutSubAmount>reward</ContestPayoutSubAmount>
-                      </>
+                      <ContestPayoutGradientMoney>
+                        {formatDollarFromWei(wei, paymentDecimals)}
+                      </ContestPayoutGradientMoney>
                     ) : (
                       <span className="text-xs text-slate-400">—</span>
                     )
