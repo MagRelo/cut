@@ -29,4 +29,16 @@ export const BODY_TITLE_H1_STYLE = `margin:0 0 4px;font-family:${FONT_DISPLAY};f
 
 export const BODY_SUBTITLE_STYLE = `margin:0 0 18px;font-family:${FONT_DISPLAY};font-size:13px;font-weight:600;color:#52525b;line-height:1.35;`;
 
+/** Course · place row under the event title (new-tournament header). */
+export const BODY_META_LINE_STYLE = `margin:0 0 2px;font-family:${FONT_DISPLAY};font-size:13px;font-weight:600;color:#52525b;line-height:1.35;`;
+
+/** Date range row under course/place. */
+export const BODY_DATE_LINE_STYLE = `margin:0 0 18px;font-family:${FONT_DISPLAY};font-size:13px;font-weight:600;color:#52525b;line-height:1.35;`;
+
+/** Date row when followed by the description in the announcement block. */
+export const BODY_DATE_LINE_TIGHT_STYLE = `margin:0;font-family:${FONT_DISPLAY};font-size:13px;font-weight:600;color:#52525b;line-height:1.35;`;
+
+/** Short description under the announcement header (Event Blurb prose). */
+export const ANNOUNCEMENT_DESCRIPTION_STYLE = `margin:12px 0 0;font-family:${FONT_DISPLAY};font-size:13px;font-weight:400;color:#52525b;line-height:1.45;`;
+
 export const EMPTY_SUMMARY_STYLE = `font-family:${FONT_BODY};font-size:14px;color:#71717a;margin:0;`;

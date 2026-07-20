@@ -1,5 +1,9 @@
 import { formatInTimeZone } from "date-fns-tz";
-import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
+import {
+  formatEventCourseLine as formatCourseLineShared,
+  formatEventPlace as formatPlaceShared,
+  PGA_GOLF_SPORT_ID,
+} from "@cut/sport-pga-golf";
 import { prisma } from "../../prisma.js";
 import { parseSummarySections } from "../../tournamentSummary.js";
 
@@ -72,6 +76,31 @@ export function mapEventForEmail(event: {
   };
 }
 
+/** "Blaine, Minnesota" — city and state only (matches in-app event header). */
+export function formatEventPlace(event: { city: string; state: string }): string {
+  return formatPlaceShared(event.city, event.state);
+}
+
+/** "TPC Twin Cities · Blaine, Minnesota" */
+export function formatEventCourseLine(event: {
+  course: string;
+  city: string;
+  state: string;
+}): string {
+  return formatCourseLineShared(event.course, event.city, event.state);
+}
+
+/** "Jul 23–Jul 26, 2026" (ET) */
+export function formatEventDateRange(event: {
+  startDate: Date;
+  endDate: Date;
+}): string {
+  const start = formatInTimeZone(event.startDate, ET, "MMM d");
+  const end = formatInTimeZone(event.endDate, ET, "MMM d, yyyy");
+  return `${start}–${end}`;
+}
+
+/** Single-line subtitle for emails that still use one meta row. */
 export function formatEventSubtitle(event: {
   course: string;
   city: string;
@@ -79,10 +108,9 @@ export function formatEventSubtitle(event: {
   startDate: Date;
   endDate: Date;
 }): string {
-  const location = [event.course, event.city, event.state].filter(Boolean).join(" · ");
-  const start = formatInTimeZone(event.startDate, ET, "MMM d");
-  const end = formatInTimeZone(event.endDate, ET, "MMM d, yyyy");
-  return `${location} — ${start}–${end}`;
+  const courseLine = formatEventCourseLine(event);
+  const dates = formatEventDateRange(event);
+  return [courseLine, dates].filter(Boolean).join(" — ");
 }
 
 export function formatLockLabel(endTime: Date): string {

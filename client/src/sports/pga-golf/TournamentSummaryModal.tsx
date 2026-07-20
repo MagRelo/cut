@@ -1,15 +1,22 @@
 import { Modal } from "../../components/common/Modal";
 import {
+  isEventBlurbSection,
   isQuotesSection,
   parseSummarySections,
   type TournamentSummarySection,
 } from "@cut/sport-pga-golf";
+import { TournamentAnnouncementCard } from "./TournamentAnnouncementCard";
 import { TournamentQuoteBlocks } from "./TournamentQuoteBlocks";
 
 interface TournamentSummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
   tournamentName: string;
+  course?: string | null;
+  city?: string | null;
+  state?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
   summarySections: unknown;
 }
 
@@ -38,16 +45,23 @@ export function TournamentSummaryModal({
   isOpen,
   onClose,
   tournamentName,
+  course,
+  city,
+  state,
+  startDate,
+  endDate,
   summarySections,
 }: TournamentSummaryModalProps) {
   const sections = parseSummarySections(summarySections);
-  const bulletSections = sections?.filter((section) => !isQuotesSection(section)) ?? [];
+  const bulletSections =
+    sections?.filter((section) => !isQuotesSection(section) && !isEventBlurbSection(section)) ??
+    [];
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={tournamentName}
+      title="Tournament Preview"
       maxWidth="2xl"
       scrollable
       maxHeight="80vh"
@@ -57,6 +71,15 @@ export function TournamentSummaryModal({
         <p className="text-sm text-zinc-500">No tournament summary available.</p>
       ) : (
         <div className="space-y-6">
+          <TournamentAnnouncementCard
+            tournamentName={tournamentName}
+            course={course}
+            city={city}
+            state={state}
+            startDate={startDate}
+            endDate={endDate}
+            summarySections={sections}
+          />
           <TournamentQuoteBlocks sections={sections} />
           {bulletSections.map(renderBulletSection)}
         </div>

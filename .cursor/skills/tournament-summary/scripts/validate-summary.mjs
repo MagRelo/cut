@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Validates tournament summary JSON against the schema used by
- * server/src/lib/tournamentSummary.ts
+ * packages/sport-pga-golf (parseSummarySections / getEventBlurb).
  *
  * Usage:
  *   node .cursor/skills/tournament-summary/scripts/validate-summary.mjs path/to/R2026023.json
@@ -12,8 +12,8 @@ import path from "node:path";
 
 const CANONICAL_SECTIONS = [
   "They Out Here Sayin",
+  "Event Blurb",
   "Best Players and Odds",
-  "Tournament History",
   "Course and Format",
   "Broadcast Information",
 ];
@@ -50,7 +50,13 @@ function validateSummarySections(json, filePath) {
   const titles = json.map((s) => s.title.trim());
   for (const expected of CANONICAL_SECTIONS) {
     if (!titles.includes(expected)) {
-      warnings.push(`Missing canonical section: "${expected}"`);
+      if (expected === "Event Blurb" && titles.includes("Tournament History")) {
+        warnings.push(
+          'Prefer canonical section "Event Blurb" (legacy "Tournament History" still works).',
+        );
+      } else {
+        warnings.push(`Missing canonical section: "${expected}"`);
+      }
     }
   }
 
@@ -72,6 +78,25 @@ function validateSummarySections(json, filePath) {
       if (item.color && !/^#[0-9a-fA-F]{6}$/.test(item.color.trim())) {
         warnings.push(`Quote item ${index + 1} color should be a 6-digit hex value like #00abb8.`);
       }
+    }
+  }
+
+  const blurbSection = json.find((s) => {
+    const key = s.title.trim().toLowerCase();
+    return key === "event blurb" || key === "tournament history";
+  });
+  if (blurbSection) {
+    if (blurbSection.items.length !== 1) {
+      warnings.push(
+        "Event Blurb should be a single prose item (one body, no labels) for the announcement card.",
+      );
+    }
+    const item = blurbSection.items[0];
+    if (item?.label?.trim()) {
+      warnings.push("Event Blurb item should omit label — body only.");
+    }
+    if (item?.body?.includes("•")) {
+      warnings.push("Event Blurb should be prose, not bullet characters.");
     }
   }
 
@@ -144,7 +169,7 @@ async function main() {
   }
 
   console.log(`OK: ${filePath} (${parsed.length} sections)`);
-  process.exit(warnings.length > 0 ? 0 : 0);
+  process.exit(0);
 }
 
 main();

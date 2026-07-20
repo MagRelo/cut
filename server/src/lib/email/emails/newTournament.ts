@@ -1,15 +1,17 @@
 import { appPath } from "../appUrl.js";
 import { renderCtaBlock } from "../blocks/cta.js";
+import { renderEventAnnouncementHtml } from "../blocks/eventAnnouncement.js";
 import { renderLeadSummarySectionHtml, renderSummarySectionByKeyHtml } from "../blocks/summary.js";
-import { escapeHtml } from "../escape.js";
-import { BODY_SUBTITLE_STYLE, BODY_TITLE_H1_STYLE } from "../styles.js";
 import { wrapEmailHtml } from "../templates.js";
 import type { RenderedEmail } from "../types.js";
 import type { TournamentSummarySections } from "../../tournamentSummary.js";
 
 export type NewTournamentEmailData = {
   tournamentName: string;
-  subtitle: string;
+  /** "TPC Twin Cities · Blaine, Minnesota" */
+  courseLine: string;
+  /** "Jul 23–Jul 26, 2026" */
+  dateLine: string;
   summarySections: TournamentSummarySections | null;
 };
 
@@ -18,13 +20,16 @@ export function newTournamentSubject(data: NewTournamentEmailData): string {
 }
 
 export function buildNewTournamentBodyHtml(data: NewTournamentEmailData): string {
-  const subtitleHtml = data.subtitle.trim()
-    ? `<p style="${BODY_SUBTITLE_STYLE}">${escapeHtml(data.subtitle.trim())}</p>`
-    : "";
+  const announcementHtml = renderEventAnnouncementHtml({
+    tournamentName: data.tournamentName,
+    courseLine: data.courseLine,
+    dateLine: data.dateLine,
+    summarySections: data.summarySections,
+  });
   const leadHtml = renderLeadSummarySectionHtml(data.summarySections);
+  // Event Blurb is shown in the announcement card (not as its own bullet section).
   const sectionKeyOrder = [
     "Best Players and Odds",
-    "Tournament History",
     "Course and Format",
     "Broadcast Information",
   ] as const;
@@ -34,8 +39,7 @@ export function buildNewTournamentBodyHtml(data: NewTournamentEmailData): string
   const topSectionsHtml = renderedSections.slice(0, 1).join("");
   const bottomSectionsHtml = renderedSections.slice(1).join("");
 
-  return `<h1 style="${BODY_TITLE_H1_STYLE}">${escapeHtml(data.tournamentName)}</h1>
-${subtitleHtml}
+  return `${announcementHtml}
 ${leadHtml}
 ${topSectionsHtml}
 ${renderCtaBlock({ label: "Build your lineup", href: appPath("/contests") }, { margin: "24px 0 36px" })}

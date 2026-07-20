@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatEventCourseLine,
+  getEventBlurb,
   getNormalizedQuotes,
+  isEventBlurbSection,
   isQuotesSection,
   normalizeHexColor,
   parseSummarySections,
@@ -14,6 +17,40 @@ describe("tournamentSummary", () => {
     expect(isQuotesSection({ title: "Summary", items: [{ body: "x" }] })).toBe(true);
     expect(isQuotesSection({ title: "Best Players and Odds", items: [{ body: "x" }] })).toBe(
       false,
+    );
+  });
+
+  it("recognizes Event Blurb and legacy Tournament History", () => {
+    expect(isEventBlurbSection({ title: "Event Blurb", items: [{ body: "x" }] })).toBe(true);
+    expect(isEventBlurbSection({ title: "Tournament History", items: [{ body: "x" }] })).toBe(
+      true,
+    );
+    expect(isEventBlurbSection({ title: "Course and Format", items: [{ body: "x" }] })).toBe(
+      false,
+    );
+  });
+
+  it("joins Event Blurb bodies into announcement prose", () => {
+    const sections = parseSummarySections([
+      {
+        title: "Event Blurb",
+        items: [{ body: "First sentence." }],
+      },
+    ]);
+    expect(getEventBlurb(sections)).toBe("First sentence.");
+
+    const legacy = parseSummarySections([
+      {
+        title: "Tournament History",
+        items: [{ body: "A." }, { body: "B." }],
+      },
+    ]);
+    expect(getEventBlurb(legacy)).toBe("A. B.");
+  });
+
+  it("formats course · place lines", () => {
+    expect(formatEventCourseLine("TPC Twin Cities", "Blaine", "Minnesota")).toBe(
+      "TPC Twin Cities · Blaine, Minnesota",
     );
   });
 

@@ -26,11 +26,19 @@ export type QuoteBlockColors = {
 };
 
 export const QUOTES_SECTION_DISPLAY_TITLE = "from the 19th hole:";
+/** Canonical section title for the announcement-card blurb. */
+export const EVENT_BLURB_SECTION_TITLE = "Event Blurb";
 /** Tailwind blue-500 — matches primary button blue */
 export const DEFAULT_QUOTE_COLOR = "#3b82f6";
 export const DEFAULT_CUTBOT_ATTRIBUTION = "CutBot";
 
 const QUOTES_SECTION_KEYS = new Set(["from the 19th hole", "they out here sayin", "summary"]);
+/** Canonical + legacy titles for the announcement prose section. */
+const EVENT_BLURB_SECTION_KEYS = new Set(["event blurb", "tournament history"]);
+
+function normalizeSectionTitle(title: string): string {
+  return title.trim().toLowerCase();
+}
 
 function isSummaryItem(value: unknown): value is TournamentSummaryItem {
   if (!value || typeof value !== "object") return false;
@@ -99,7 +107,17 @@ export function quoteColorsFromHex(color: string): QuoteBlockColors {
 }
 
 export function isQuotesSection(section: TournamentSummarySection): boolean {
-  return QUOTES_SECTION_KEYS.has(section.title.trim().toLowerCase());
+  return QUOTES_SECTION_KEYS.has(normalizeSectionTitle(section.title));
+}
+
+/** Announcement-card prose section (`Event Blurb`; legacy `Tournament History` still matches). */
+export function isEventBlurbSection(section: TournamentSummarySection): boolean {
+  return EVENT_BLURB_SECTION_KEYS.has(normalizeSectionTitle(section.title));
+}
+
+/** @deprecated Use isEventBlurbSection */
+export function isHistorySection(section: TournamentSummarySection): boolean {
+  return isEventBlurbSection(section);
 }
 
 /** @deprecated Use isQuotesSection */
@@ -111,6 +129,57 @@ export function findQuotesSection(
   sections: TournamentSummarySections,
 ): TournamentSummarySection | null {
   return sections.find(isQuotesSection) ?? null;
+}
+
+export function findEventBlurbSection(
+  sections: TournamentSummarySections | null | undefined,
+): TournamentSummarySection | null {
+  if (!sections) return null;
+  return sections.find(isEventBlurbSection) ?? null;
+}
+
+/** @deprecated Use findEventBlurbSection */
+export function findHistorySection(
+  sections: TournamentSummarySections | null | undefined,
+): TournamentSummarySection | null {
+  return findEventBlurbSection(sections);
+}
+
+/**
+ * Prose for the announcement card — joins Event Blurb (or legacy History) item bodies.
+ * Prefer a single unlabeled item in new summaries.
+ */
+export function getEventBlurb(
+  sections: TournamentSummarySections | null | undefined,
+): string | null {
+  const blurb = findEventBlurbSection(sections);
+  if (!blurb) return null;
+  const description = blurb.items
+    .map((item) => item.body.trim())
+    .filter(Boolean)
+    .join(" ");
+  return description || null;
+}
+
+/** @deprecated Use getEventBlurb */
+export function getHistoryDescription(
+  sections: TournamentSummarySections | null | undefined,
+): string | null {
+  return getEventBlurb(sections);
+}
+
+/** "Blaine, Minnesota" */
+export function formatEventPlace(city?: string | null, state?: string | null): string {
+  return [city?.trim(), state?.trim()].filter(Boolean).join(", ");
+}
+
+/** "TPC Twin Cities · Blaine, Minnesota" */
+export function formatEventCourseLine(
+  course?: string | null,
+  city?: string | null,
+  state?: string | null,
+): string {
+  return [course?.trim(), formatEventPlace(city, state)].filter(Boolean).join(" · ");
 }
 
 export function normalizeQuoteItem(

@@ -30,6 +30,11 @@ export const GolfEventSummary: React.FC<EventSummaryProps> = ({ event, surface =
       isOpen={isSummaryOpen}
       onClose={() => setIsSummaryOpen(false)}
       tournamentName={meta?.name ?? event.externalId}
+      course={meta?.course}
+      city={meta?.city}
+      state={meta?.state}
+      startDate={meta?.startDate}
+      endDate={meta?.endDate}
       summarySections={meta?.summarySections}
     />
   );

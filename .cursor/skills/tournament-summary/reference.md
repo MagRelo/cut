@@ -9,6 +9,18 @@ server/src/tournamentSummaries/{pgaTourId}.json
 Loaded by `server/src/lib/tournamentSummary.ts` and
 `server/src/sports/pga-golf/initEvent.ts` (via `loadSummarySections`).
 
+## How content is presented
+
+| JSON section | Surface |
+|--------------|---------|
+| **Event Blurb** | Announcement card (email + in-app preview): name, course · place, dates, then this prose |
+| **They Out Here Sayin** | Quote blocks under **from the 19th hole:** |
+| **Best Players and Odds** | Bullet list |
+| **Course and Format** | Bullet list |
+| **Broadcast Information** | Bullet list |
+
+Legacy title **Tournament History** is still accepted as Event Blurb. Prefer **Event Blurb**.
+
 ## JSON schema
 
 Top level: array of sections. Each section:
@@ -27,9 +39,10 @@ Top level: array of sections. Each section:
 
 - `body` is required and must be non-empty.
 - `label` is optional; used for bullet sections (Best Players and Odds, etc.).
+- **Event Blurb:** exactly **one** item, **body only** (no `label`).
 - Quote items (`They Out Here Sayin`) use `body`, `attribution`, and `color` (hex).
 - Legacy `Summary` section title is still accepted; prefer `They Out Here Sayin`.
-- Parser: `parseSummarySections()` in `server/src/lib/tournamentSummary.ts`.
+- Parser: `parseSummarySections()` / `getEventBlurb()` in `@cut/sport-pga-golf`.
 
 ## Canonical template
 
@@ -48,21 +61,20 @@ Replace `{...}` placeholders. Keep valid JSON.
     ]
   },
   {
+    "title": "Event Blurb",
+    "items": [
+      {
+        "body": "{2 short sentences for the announcement card: course character + one notable beat (tradition, defending champ, FedExCup context). No labels. Do not repeat the course/city/date already shown in the card header.}"
+      }
+    ]
+  },
+  {
     "title": "Best Players and Odds",
     "items": [
       {
         "label": "{Player} (+{low} to +{high}):",
         "body": "{One plain sentence: why fans should watch this player this week.}"
       }
-    ]
-  },
-  {
-    "title": "Tournament History",
-    "items": [
-      { "label": "Venue:", "body": "{Course and location.}" },
-      { "label": "Established:", "body": "{Year and notable fact.}" },
-      { "label": "Defending Champion:", "body": "{Last winner and year.}" },
-      { "label": "Tradition:", "body": "{Event identity or charity/legacy note.}" }
     ]
   },
   {
@@ -136,7 +148,15 @@ Check **5–10 sources** per event for storylines, odds, and course context.
 **Audience:** golf fans on a betting platform — they want a quick, enticing read
 with real context, not a press release or odds terminal.
 
-**CutBot quote (most important — first item in They Out Here Sayin):**
+**Event Blurb (announcement card):**
+
+| Do | Don't |
+|----|--------|
+| 2 short sentences | Bullet lists or Venue:/Established: labels |
+| Course character + one notable beat | Repeat course/city/dates from the card header |
+| Tradition, defending champ, or week stakes | Dense fact stacks (purse, yardage — use Course and Format) |
+
+**CutBot quote (They Out Here Sayin):**
 
 | Do | Don't |
 |----|--------|
@@ -153,8 +173,8 @@ with real context, not a press release or odds terminal.
 factual claims against this event's past results** — see SKILL.md Step 4. Prefer
 course-fit opinion over unverified history.
 
-**Other sections:** factual and scannable (History, Course, Broadcast). Personality
-lives in They Out Here Sayin (CutBot + user quotes).
+**Other sections:** factual and scannable (Course, Broadcast). Personality lives in
+They Out Here Sayin (CutBot + user quotes); context teaser lives in Event Blurb.
 
 **Tense:** present tense for upcoming events.
 
@@ -167,10 +187,9 @@ CutBot options before writing the file.
 
 If the user requests `recap` or the event is complete:
 
-- Rewrite **Summary** as a results paragraph (winner, margin, playoff, storyline).
+- Rewrite **Event Blurb** / quotes as a results teaser if useful.
 - Replace **Best Players and Odds** with **Top Finishers** or keep odds section
   only if user wants pre-event content preserved elsewhere.
-- Update **Defending Champion** in History for the *next* year's file, not this one.
 
 For finished events, prefer generating the **next** week's preview unless the
 user explicitly wants a results write-up in the same file.

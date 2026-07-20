@@ -1,6 +1,7 @@
 import { resolveSummarySectionsForEvent } from "../../tournamentSummary.js";
 import {
-  formatEventSubtitle,
+  formatEventCourseLine,
+  formatEventDateRange,
   loadEventForEmail,
 } from "./event.js";
 import type { NewTournamentEmailData } from "../emails/newTournament.js";
@@ -18,7 +19,8 @@ export async function loadNewEventEmailData(
 
   return {
     tournamentName: event.name,
-    subtitle: formatEventSubtitle(event),
+    courseLine: formatEventCourseLine(event),
+    dateLine: formatEventDateRange(event),
     summarySections,
   };
 }

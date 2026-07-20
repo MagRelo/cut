@@ -12,8 +12,9 @@ description: >-
 Produce a **casual-fan tournament preview** for a PGA Tour event and save it to
 `server/src/tournamentSummaries/{pgaTourId}.json`.
 
-Content appears in the app tournament preview and the **New Tournament email**
-(first quote under **They Out Here Sayin:**). The **CutBot quote** is the lead —
+Content appears in the **announcement card** (Event Blurb + event header) and under
+**from the 19th hole:** (They Out Here Sayin) in both the in-app tournament preview
+and the **New Tournament email**. The **CutBot quote** is the lead voice —
 evocative, engaging, and sets the tone for the week. User quotes (added manually)
 can be spikier; CutBot should feel like a welcoming column intro. Light betting
 angles are fine; save odds boards and the full field for **Best Players and Odds**.
@@ -87,8 +88,8 @@ standard preview.
 | Section | What to find |
 |--------|----------------|
 | They Out Here Sayin | **CutBot quote** — place/vibe first, week stakes, max 2 names; user quotes added manually |
+| Event Blurb | **Announcement card prose** — 2 sentences: course character + one notable beat (not a fact list) |
 | Best Players and Odds | 8–10 contenders with American odds ranges (e.g. `+850 to +1000`) |
-| Tournament History | Venue, year founded, defending champion, tradition |
 | Course and Format | Course name, dates, purse, format, yardage/par profile |
 | Broadcast Information | TV/streaming windows (Golf Channel, CBS, ESPN, etc.) |
 
@@ -110,6 +111,10 @@ Rules:
   - `body` — **3 short sentences** (see CutBot quote voice below)
   - `attribution` — `"CutBot"` for the skill quote
   - `color` — `#3b82f6` (Tailwind blue-500 / primary button) for CutBot unless told otherwise
+- **Event Blurb**: exactly **one** item, `body` only (no `label`). **Two short
+  sentences** for the announcement card — course character + one notable beat
+  (tradition, defending champ, FedExCup context). Do **not** repeat course/city/dates
+  already shown in the card header from event metadata.
 - **Best Players and Odds**: 8–10 players; label format
   `"Player Name (+low to +high):"`; body is **one plain sentence** — why fans
   should care this week. **Verify every factual claim** (see Step 4); prefer
@@ -124,14 +129,14 @@ Rules:
 Canonical section order:
 
 1. They Out Here Sayin
-2. Best Players and Odds
-3. Tournament History
+2. Event Blurb
+3. Best Players and Odds
 4. Course and Format
 5. Broadcast Information
 
 ### Step 4: Fact-check pass (required)
 
-Before validate/write, re-read every odds blurb and history line against sources.
+Before validate/write, re-read every odds blurb and Event Blurb against sources.
 **This step prevents hallucinations** — do not skip it.
 
 #### Tournament scope (most common error)
@@ -206,9 +211,10 @@ pnpm run service:init-event pga-golf R2026023
 
 ## CutBot quote voice
 
-The CutBot quote is the **first thing in the New Tournament email** — it should
-pull readers into the week: evocative place, real stakes, forward momentum. Save
-contrarian/spiky takes for user quotes later in the block.
+The CutBot quote sits under **from the 19th hole:** in the New Tournament email
+and in-app preview — after the announcement card. It should pull readers into the
+week: evocative place, real stakes, forward momentum. Save contrarian/spiky takes
+for user quotes later in the block.
 
 ### Lead with
 
@@ -288,11 +294,12 @@ or with major wins. **Do not** invent win counts or venue lore.
 
 Gold-standard examples in the repo:
 
+- `server/src/tournamentSummaries/R2026525.json` — Event Blurb + announcement card layout
 - `server/src/tournamentSummaries/R2026541.json` — CutBot quote tone + multi-quote layout
 - `server/src/tournamentSummaries/R2026021.json` — odds section format
 
-Older files may use `Summary` or `Key Storylines`; **prefer the R2026541 layout**
-for new summaries.
+Older files may use `Tournament History` (labeled bullets) or `Summary`; **prefer
+the Event Blurb + R2026541 quote layout** for new summaries.
 
 ## Additional resources
 
