@@ -93,5 +93,4 @@ export const ADMIN_TAB: NavTab = {
 
 export const ADMIN_MENU_LINKS = [
   { to: "/admin", label: "Admin Tools" },
-  { to: "/admin/users", label: "Manage Users" },
 ] as const;

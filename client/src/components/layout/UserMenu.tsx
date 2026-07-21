@@ -40,10 +40,10 @@ export const UserMenu: React.FC = () => {
     <Menu as="div" className="relative shrink-0">
       <MenuButton
         className={[
-          "inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium font-display transition-colors",
+          "inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 font-display text-sm font-medium transition-colors",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40",
           isAccountActive
-            ? "bg-slate-100 text-slate-950 font-semibold"
+            ? "bg-slate-100 font-semibold text-slate-950"
             : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
         ].join(" ")}
         aria-label="My Account menu"
@@ -174,8 +174,10 @@ export const UserMenu: React.FC = () => {
               rel="noopener noreferrer"
               className={`${menuItemClass} inline-flex items-center gap-1.5`}
               onClick={close}
+              aria-label="Cut Merch"
             >
-              Cut Merch
+              <img src="/logo-transparent.png" alt="" className="h-5 w-auto shrink-0" />
+              MERCH
               <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
             </a>
           )}

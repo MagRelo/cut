@@ -186,11 +186,11 @@ export const MobileNavMenu: React.FC = () => {
                               >
                                 <span>Account</span>
                                 {totalBalance !== null ? (
-                                  <span className="font-semibold tabular-nums normal-case tracking-normal">
+                                  <span className="font-semibold normal-case tabular-nums tracking-normal">
                                     ${totalBalance}
                                   </span>
                                 ) : (
-                                  <span className="tabular-nums normal-case tracking-normal text-amber-800">
+                                  <span className="normal-case tabular-nums tracking-normal text-amber-800">
                                     —
                                   </span>
                                 )}
@@ -202,7 +202,9 @@ export const MobileNavMenu: React.FC = () => {
                                     key={link.to}
                                     to={link.to}
                                     onClick={closeMenu}
-                                    aria-current={link.match(location.pathname) ? "page" : undefined}
+                                    aria-current={
+                                      link.match(location.pathname) ? "page" : undefined
+                                    }
                                     className={mobileSubItemClass(link.match(location.pathname))}
                                   >
                                     {link.label}
@@ -239,9 +241,18 @@ export const MobileNavMenu: React.FC = () => {
                               rel="noopener noreferrer"
                               onClick={closeMenu}
                               className={`${mobileNavItemClass(false)} inline-flex items-center gap-1.5`}
+                              aria-label="Cut Merch"
                             >
-                              Cut Merch
-                              <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                              <img
+                                src="/logo-transparent.png"
+                                alt=""
+                                className="h-5 w-auto shrink-0"
+                              />
+                              MERCH
+                              <ArrowTopRightOnSquareIcon
+                                className="h-3.5 w-3.5 shrink-0"
+                                aria-hidden
+                              />
                             </a>
 
                             <button
@@ -260,9 +271,18 @@ export const MobileNavMenu: React.FC = () => {
                               rel="noopener noreferrer"
                               onClick={closeMenu}
                               className={`${mobileNavItemClass(false)} inline-flex items-center gap-1.5`}
+                              aria-label="Cut Merch"
                             >
-                              Cut Merch
-                              <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                              <img
+                                src="/logo-transparent.png"
+                                alt=""
+                                className="h-5 w-auto shrink-0"
+                              />
+                              MERCH
+                              <ArrowTopRightOnSquareIcon
+                                className="h-3.5 w-3.5 shrink-0"
+                                aria-hidden
+                              />
                             </a>
                             <Link
                               to="/connect"
