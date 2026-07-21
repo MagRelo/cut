@@ -19,6 +19,19 @@ export const ContestCard = ({
   linkUserGroup = false,
 }: ContestCardProps) => {
   const { displayPot, showLoading, showPotUnavailable } = useContestPotDisplay(contest);
+  const isFreeContest = (contest.settings?.primaryDeposit ?? 0) === 0;
+  const showPot = !isFreeContest;
+
+  const potValue = showPot ? (
+    <div>
+      <div className="font-display text-xl font-bold tabular-nums leading-none text-emerald-600">
+        {showLoading ? "..." : showPotUnavailable ? "—" : `$${displayPot}`}
+      </div>
+      <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
+        POT
+      </div>
+    </div>
+  ) : null;
 
   return (
     <div className="flex w-full min-w-0 items-center justify-between gap-2.5">
@@ -49,37 +62,25 @@ export const ContestCard = ({
         </p>
       </div>
 
-      <div className="flex flex-shrink-0 items-center gap-1.5">
-        {onPotClick ? (
-          <button
-            type="button"
-            onClick={onPotClick}
-            aria-label="Contest settings"
-            className="ml-2 mr-2 flex items-center gap-3 rounded text-right transition hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-          >
-            {showPotIcon ? (
-              <Cog6ToothIcon className="h-5 w-5 shrink-0 text-slate-400" aria-hidden />
-            ) : null}
-            <div>
-              <div className="font-display text-xl font-bold tabular-nums leading-none text-emerald-600">
-                {showLoading ? "..." : showPotUnavailable ? "—" : `$${displayPot}`}
-              </div>
-              <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
-                POT
-              </div>
-            </div>
-          </button>
-        ) : (
-          <div className="ml-2 mr-2 text-right">
-            <div className="font-display text-xl font-bold tabular-nums leading-none text-emerald-600">
-              {showLoading ? "..." : showPotUnavailable ? "—" : `$${displayPot}`}
-            </div>
-            <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
-              POT
-            </div>
-          </div>
-        )}
-      </div>
+      {showPot || (onPotClick && showPotIcon) ? (
+        <div className="flex flex-shrink-0 items-center gap-1.5">
+          {onPotClick ? (
+            <button
+              type="button"
+              onClick={onPotClick}
+              aria-label="Contest settings"
+              className="ml-2 mr-2 flex items-center gap-3 rounded text-right transition hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+            >
+              {showPotIcon ? (
+                <Cog6ToothIcon className="h-5 w-5 shrink-0 text-slate-400" aria-hidden />
+              ) : null}
+              {potValue}
+            </button>
+          ) : (
+            <div className="ml-2 mr-2 text-right">{potValue}</div>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 };
