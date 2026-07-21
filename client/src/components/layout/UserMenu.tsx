@@ -1,5 +1,5 @@
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ArrowTopRightOnSquareIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { formatUnits } from "viem";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
@@ -165,6 +165,21 @@ export const UserMenu: React.FC = () => {
         ) : null}
 
         <div className="my-1 border-t border-slate-100" role="separator" />
+
+        <MenuItem>
+          {({ close }) => (
+            <a
+              href="https://playthecut.printful.me/?sort=price"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${menuItemClass} inline-flex items-center gap-1.5`}
+              onClick={close}
+            >
+              Cut Merch
+              <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            </a>
+          )}
+        </MenuItem>
 
         <MenuItem>
           <button type="button" className={menuItemClass} onClick={() => void logout()}>

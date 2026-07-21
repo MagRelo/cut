@@ -1,4 +1,5 @@
 import React from "react";
+import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { signInReturnFrom } from "../../lib/navRoutes";
@@ -67,13 +68,24 @@ export const TopNav: React.FC = () => {
             {user ? (
               <UserMenu />
             ) : (
-              <Link
-                to="/connect"
-                state={{ from: signInReturnFrom }}
-                className={tabLinkClass(location.pathname === "/connect")}
-              >
-                Sign In
-              </Link>
+              <>
+                <a
+                  href="https://playthecut.printful.me/?sort=price"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${tabLinkClass(false)} inline-flex items-center gap-1`}
+                >
+                  Cut Merch
+                  <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                </a>
+                <Link
+                  to="/connect"
+                  state={{ from: signInReturnFrom }}
+                  className={tabLinkClass(location.pathname === "/connect")}
+                >
+                  Sign In
+                </Link>
+              </>
             )}
           </div>
         </nav>

@@ -1,5 +1,5 @@
 import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import { ArrowTopRightOnSquareIcon, Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Fragment, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { formatUnits } from "viem";
@@ -233,6 +233,17 @@ export const MobileNavMenu: React.FC = () => {
                                 ))
                               : null}
 
+                            <a
+                              href="https://playthecut.printful.me/?sort=price"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={closeMenu}
+                              className={`${mobileNavItemClass(false)} inline-flex items-center gap-1.5`}
+                            >
+                              Cut Merch
+                              <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            </a>
+
                             <button
                               type="button"
                               className={mobileNavItemClass(false)}
@@ -242,15 +253,27 @@ export const MobileNavMenu: React.FC = () => {
                             </button>
                           </>
                         ) : (
-                          <Link
-                            to="/connect"
-                            state={{ from: signInReturnFrom }}
-                            onClick={closeMenu}
-                            aria-current={location.pathname === "/connect" ? "page" : undefined}
-                            className={mobileNavItemClass(location.pathname === "/connect")}
-                          >
-                            Sign In
-                          </Link>
+                          <>
+                            <a
+                              href="https://playthecut.printful.me/?sort=price"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={closeMenu}
+                              className={`${mobileNavItemClass(false)} inline-flex items-center gap-1.5`}
+                            >
+                              Cut Merch
+                              <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            </a>
+                            <Link
+                              to="/connect"
+                              state={{ from: signInReturnFrom }}
+                              onClick={closeMenu}
+                              aria-current={location.pathname === "/connect" ? "page" : undefined}
+                              className={mobileNavItemClass(location.pathname === "/connect")}
+                            >
+                              Sign In
+                            </Link>
+                          </>
                         )}
                       </div>
                     </nav>
