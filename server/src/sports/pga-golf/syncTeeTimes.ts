@@ -87,6 +87,9 @@ export async function syncGolfTeeTimes(eventId: string): Promise<number> {
     }
 
     const scoreData = asScoreDataRecord(row.scoreData);
+    if (JSON.stringify(scoreData.teeTimes ?? null) === JSON.stringify(teeTimes)) {
+      continue;
+    }
     scoreData.teeTimes = teeTimes;
 
     await prisma.eventParticipant.update({

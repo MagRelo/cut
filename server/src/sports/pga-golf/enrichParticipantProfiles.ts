@@ -12,8 +12,8 @@ import {
 } from "../../services/odds/dataGolfFieldUpdates.js";
 import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 
-/** Keep at or below default Prisma connection_limit (5). */
-const PROFILE_CHUNK = 4;
+/** Parallel HTTP fetches only; DB writes are sequential to avoid pool/lock pile-ups. */
+const PROFILE_FETCH_CHUNK = 4;
 
 function normalizeScandinavianChars(str: string): string {
   return str
@@ -137,6 +137,24 @@ function asMeta(metadata: unknown): ParticipantMeta {
   return { ...(metadata as ParticipantMeta) };
 }
 
+function stableSerialize(value: unknown): string {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerialize(item)).join(",")}]`;
+  }
+  const obj = value as Record<string, unknown>;
+  const keys = Object.keys(obj).sort();
+  return `{${keys
+    .map((key) => `${JSON.stringify(key)}:${stableSerialize(obj[key])}`)
+    .join(",")}}`;
+}
+
+function metadataUnchanged(existing: ParticipantMeta, next: ParticipantMeta): boolean {
+  return stableSerialize(existing) === stableSerialize(next);
+}
+
 async function loadDataGolfLookups(): Promise<{
   dgLookup: Map<string, DataGolfRanking>;
   dgIdToRanking: Map<number, DataGolfRanking>;
@@ -198,16 +216,17 @@ export async function enrichGolfParticipantProfiles(eventId: string): Promise<nu
 
   const { dgLookup, dgIdToRanking, pgaTourIdToDgId } = await loadDataGolfLookups();
   let updated = 0;
+  let skipped = 0;
 
-  for (let i = 0; i < inField.length; i += PROFILE_CHUNK) {
-    const chunk = inField.slice(i, i + PROFILE_CHUNK);
-    await Promise.all(
+  for (let i = 0; i < inField.length; i += PROFILE_FETCH_CHUNK) {
+    const chunk = inField.slice(i, i + PROFILE_FETCH_CHUNK);
+    const prepared = await Promise.all(
       chunk.map(async (row) => {
         const existing = asMeta(row.participant.metadata);
         const pgaTourId =
           (typeof existing.pgaTourId === "string" ? existing.pgaTourId : null) ??
           row.participant.externalId;
-        if (!pgaTourId) return;
+        if (!pgaTourId) return null;
 
         const profile = await getPlayerProfileOverview(pgaTourId).catch(() => null);
         const fedexStanding = profile?.profileStandings?.find(
@@ -264,15 +283,30 @@ export async function enrichGolfParticipantProfiles(eventId: string): Promise<nu
             : resolveExistingDataGolf(existing),
         };
 
-        await prisma.participant.update({
-          where: { id: row.participantId },
-          data: { metadata: nextMeta as object },
-        });
-        updated++;
+        return {
+          participantId: row.participantId,
+          existing,
+          nextMeta,
+        };
       }),
     );
+
+    for (const item of prepared) {
+      if (!item) continue;
+      if (metadataUnchanged(item.existing, item.nextMeta)) {
+        skipped++;
+        continue;
+      }
+      await prisma.participant.update({
+        where: { id: item.participantId },
+        data: { metadata: item.nextMeta as object },
+      });
+      updated++;
+    }
   }
 
-  console.log(`[enrichParticipantProfiles] Updated ${updated} participant profiles for ${eventId}`);
+  console.log(
+    `[enrichParticipantProfiles] event=${eventId} updated=${updated} skipped=${skipped}`,
+  );
   return updated;
 }

@@ -84,13 +84,14 @@ function shouldRunFieldHygiene(
 async function maybeRunFieldHygiene(
   eventId: string,
   eventMetadata: unknown,
-  fieldChanged: boolean,
+  /** Only membership / field-size changes force an immediate enrich+tee pass. */
+  membershipChanged: boolean,
 ): Promise<void> {
   const meta = asMeta(eventMetadata);
   const nowIso = new Date().toISOString();
   const patch: MetaRecord = {};
 
-  if (shouldRunFieldHygiene(meta.lastFieldEnrichAt, fieldChanged)) {
+  if (shouldRunFieldHygiene(meta.lastFieldEnrichAt, membershipChanged)) {
     try {
       await enrichGolfParticipantProfiles(eventId);
       patch.lastFieldEnrichAt = nowIso;
@@ -102,7 +103,7 @@ async function maybeRunFieldHygiene(
     }
   }
 
-  if (shouldRunFieldHygiene(meta.lastTeeTimeSyncAt, fieldChanged)) {
+  if (shouldRunFieldHygiene(meta.lastTeeTimeSyncAt, membershipChanged)) {
     try {
       await syncGolfTeeTimes(eventId);
       patch.lastTeeTimeSyncAt = nowIso;
@@ -166,7 +167,8 @@ export async function syncGolfParticipantField(eventId: string) {
     typeof asMeta(event.metadata).lastSyncedFieldCount === "number"
       ? (asMeta(event.metadata).lastSyncedFieldCount as number)
       : null;
-  let fieldChanged =
+  /** New/removed players or field-size change — forces enrich/tee; name/owgr tweaks do not. */
+  let membershipChanged =
     priorFieldCount == null || priorFieldCount !== fieldData.players.length;
 
   let participantsUpserted = 0;
@@ -209,7 +211,7 @@ export async function syncGolfParticipantField(eventId: string) {
       participantId = created.id;
       participantByExternalId.set(fieldPlayer.id, created);
       participantsUpserted++;
-      fieldChanged = true;
+      membershipChanged = true;
     } else if (participantNeedsFieldUpdate(existing, displayName, fieldKeys)) {
       const updated = await prisma.participant.update({
         where: { id: existing.id },
@@ -239,7 +241,7 @@ export async function syncGolfParticipantField(eventId: string) {
       });
       linkedParticipantIds.add(participantId);
       eventLinksCreated++;
-      fieldChanged = true;
+      membershipChanged = true;
     }
   }
 
@@ -262,7 +264,7 @@ export async function syncGolfParticipantField(eventId: string) {
           },
         },
       });
-      fieldChanged = true;
+      membershipChanged = true;
     }
   }
 
@@ -282,8 +284,9 @@ export async function syncGolfParticipantField(eventId: string) {
 
   console.log(
     `[syncGolfParticipantField] event=${eventId} field=${fieldData.players.length} ` +
-      `participantWrites=${participantsUpserted} newEventLinks=${eventLinksCreated} fieldChanged=${fieldChanged}`,
+      `participantWrites=${participantsUpserted} newEventLinks=${eventLinksCreated} ` +
+      `membershipChanged=${membershipChanged}`,
   );
 
-  await maybeRunFieldHygiene(event.id, eventMeta, fieldChanged);
+  await maybeRunFieldHygiene(event.id, eventMeta, membershipChanged);
 }
