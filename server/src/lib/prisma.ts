@@ -5,11 +5,28 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
-// Helper to safely append connection parameters
+function parsePositiveInt(raw: string | undefined, fallback: number): number {
+  if (raw == null || raw.trim() === "") return fallback;
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+/** Append Prisma connection pool params. Overridable via env (cron Pi → remote DB). */
 function appendConnectionParams(url: string): string {
+  const connectionLimit = parsePositiveInt(process.env.PRISMA_CONNECTION_LIMIT, 5);
+  const poolTimeout = parsePositiveInt(process.env.PRISMA_POOL_TIMEOUT, 20);
+  const connectTimeout = parsePositiveInt(process.env.PRISMA_CONNECT_TIMEOUT, 10);
+  // Default 60s: home/Pi → managed DB RTT; 10s caused client aborts + orphaned server queries.
+  const socketTimeout = parsePositiveInt(process.env.PRISMA_SOCKET_TIMEOUT, 60);
+
   const separator = url.includes("?") ? "&" : "?";
-  // Hardcoded connection limits for development stability
-  return `${url}${separator}connection_limit=5&pool_timeout=20&connect_timeout=10&socket_timeout=10`;
+  return (
+    `${url}${separator}` +
+    `connection_limit=${connectionLimit}` +
+    `&pool_timeout=${poolTimeout}` +
+    `&connect_timeout=${connectTimeout}` +
+    `&socket_timeout=${socketTimeout}`
+  );
 }
 
 let prismaInstance: PrismaClient | undefined;

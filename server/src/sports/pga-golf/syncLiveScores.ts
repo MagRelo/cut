@@ -64,9 +64,43 @@ function scoreDataFromPayload(
   };
 }
 
+/** Fingerprint of scoring fields the UI / lineup totals depend on. */
+function liveScoreFingerprint(
+  total: number,
+  scoreData: Record<string, unknown>,
+): string {
+  return JSON.stringify({
+    total,
+    leaderboardPosition: scoreData.leaderboardPosition ?? null,
+    leaderboardTotal: scoreData.leaderboardTotal ?? null,
+    cut: scoreData.cut ?? null,
+    bonus: scoreData.bonus ?? null,
+    stableford: scoreData.stableford ?? null,
+    r1: scoreData.r1 ?? null,
+    r2: scoreData.r2 ?? null,
+    r3: scoreData.r3 ?? null,
+    r4: scoreData.r4 ?? null,
+    rCurrent: scoreData.rCurrent ?? null,
+  });
+}
+
+function existingLiveScoreFingerprint(
+  total: number | null | undefined,
+  existingScoreData: unknown,
+): string {
+  const prior =
+    existingScoreData &&
+    typeof existingScoreData === "object" &&
+    !Array.isArray(existingScoreData)
+      ? (existingScoreData as Record<string, unknown>)
+      : {};
+  return liveScoreFingerprint(total ?? 0, prior);
+}
+
 interface PendingUpdate {
   eventParticipantId: string;
   existingScoreData: unknown;
+  existingTotal: number | null;
   payload: GolfParticipantScoreUpdate;
 }
 
@@ -140,6 +174,7 @@ export async function syncGolfLiveScores(eventId: string) {
         return {
           eventParticipantId: eventParticipant.id,
           existingScoreData: eventParticipant.scoreData,
+          existingTotal: eventParticipant.total,
           payload,
         };
       }),
@@ -155,18 +190,34 @@ export async function syncGolfLiveScores(eventId: string) {
     roundIconConfigFromEnv(),
   );
 
-  for (const { eventParticipantId, existingScoreData, payload } of pending) {
+  let updated = 0;
+  let skipped = 0;
+
+  for (const {
+    eventParticipantId,
+    existingScoreData,
+    existingTotal,
+    payload,
+  } of pending) {
+    const nextScoreData = scoreDataFromPayload(existingScoreData, payload);
+    const nextFp = liveScoreFingerprint(payload.total ?? 0, nextScoreData);
+    const prevFp = existingLiveScoreFingerprint(existingTotal, existingScoreData);
+    if (nextFp === prevFp) {
+      skipped++;
+      continue;
+    }
+
     await prisma.eventParticipant.update({
       where: { id: eventParticipantId },
       data: {
         total: payload.total,
-        scoreData: scoreDataFromPayload(
-          existingScoreData,
-          payload,
-        ) as Prisma.InputJsonValue,
+        scoreData: nextScoreData as Prisma.InputJsonValue,
       },
     });
+    updated++;
   }
 
-  console.log(`[pga-golf] Synced live scores for ${pending.length} participants on ${eventId}`);
+  console.log(
+    `[pga-golf] Synced live scores for ${eventId}: updated=${updated} skipped=${skipped} fetched=${pending.length}`,
+  );
 }

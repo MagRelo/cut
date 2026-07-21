@@ -34,11 +34,18 @@ ssh magrelo@100.114.121.5 "chmod 600 ~/node/cut-v2/server/.env"
 Minimum:
 
 - `NODE_ENV=production`, `ENABLE_CRON=true`
-- `DATABASE_URL` (allowlist Pi outbound IP on DB firewall)
+- `DATABASE_URL` (allowlist Pi outbound IP on DB firewall; prefer **direct** DB URL, not pgBouncer)
+- `PRISMA_SOCKET_TIMEOUT=60` (or higher) — required for Pi → managed Postgres RTT; default in code is 60
 - `OPS_ORACLE_PK` (contest + referral oracle; address derived from the key)
 - `BETTERSTACK_HEARTBEAT_URL` (recommended)
 
 Add `PGA_API_KEY`, `DATAGOLF_API_KEY`, `SIDE_BETS_ENABLED`, RPC URLs as needed.
+
+### Pipeline load (PGA)
+
+Every 5 minutes the hot path is **live scores + contest lineup scores/positions** (with no-op skips). Field membership upserts run every tick but skip unchanged rows. Profile enrichment and tee times run about every **30 minutes** (or when the field changes), tracked on `CompetitionEvent.metadata` as `lastFieldEnrichAt` / `lastTeeTimeSyncAt`.
+
+If DigitalOcean shows multi-minute `UPDATE "Participant"` / `ContestLineup` queries, terminate those sessions and check that only this Pi process has `ENABLE_CRON=true` against the DB.
 
 ---
 

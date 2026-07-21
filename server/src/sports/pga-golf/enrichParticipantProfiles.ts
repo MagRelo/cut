@@ -12,7 +12,8 @@ import {
 } from "../../services/odds/dataGolfFieldUpdates.js";
 import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 
-const PROFILE_CHUNK = 8;
+/** Keep at or below default Prisma connection_limit (5). */
+const PROFILE_CHUNK = 4;
 
 function normalizeScandinavianChars(str: string): string {
   return str

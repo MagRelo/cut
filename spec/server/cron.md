@@ -34,10 +34,34 @@ For each `CompetitionEvent` with `isActive=true`:
 2. `syncParticipantField`
 3. `handleWithdrawals` (if plugin implements)
 4. If live (`shouldSyncLiveScores` on metadata — golf: `golfShouldSyncLiveScores`; commodities: `commoditiesShouldSyncLiveScores`):
-   - `syncLiveScores`
-   - `updateContestLineupsForEvent` — aggregates lineup scores (raw pick totals + optional popularity adjustment after contest lock; see [consensus-axis.md](../../docs/platform/consensus-axis.md)), ranks entries, writes timeline snapshots
+   - `syncLiveScores` (skips `EventParticipant` rows whose total / score fingerprint is unchanged)
+   - `updateContestLineupsForEvent` — aggregates lineup scores (raw pick totals + optional popularity adjustment after contest lock; see [consensus-axis.md](../../docs/platform/consensus-axis.md)), ranks entries, writes timeline snapshots **only for lineups that changed**
+
+**PGA field sync cadences** (`server/src/sports/pga-golf/syncField.ts`):
+
+| Work | Cadence |
+| ---- | ------- |
+| Field membership + names (`Participant` / `EventParticipant`) | Every 5m, but **skips unchanged rows**; merges `metadata` (does not wipe enrich fields) |
+| Profile enrich (`lastFieldEnrichAt`) | About every **30 minutes**, or when the field changes |
+| Tee times (`lastTeeTimeSyncAt`) | About every **30 minutes**, or when the field changes |
+| Live scores + lineup scores/positions | Every 5m while live (no-op skips when unchanged) |
+
+Multi-minute hung `UPDATE`s on primary keys are a bug symptom (client timeout / lock pile-up), not expected load for this traffic size.
 
 **Commodities:** metadata and field sync every pass; live scores only when `sessionStarted && !sessionComplete`. No golf-style leaderboard/scorecard fetch — prices come from Hyperliquid candles/marks. Manual sync: `service:sync-commodities-metadata`, `-field`, `-scores`.
+
+### Prisma connection params (cron host)
+
+`server/src/lib/prisma.ts` appends pool params to `DATABASE_URL`. Override via env (see `swarm/env/cron.env.example`):
+
+| Env | Default |
+| --- | ------- |
+| `PRISMA_CONNECTION_LIMIT` | `5` |
+| `PRISMA_POOL_TIMEOUT` | `20` |
+| `PRISMA_CONNECT_TIMEOUT` | `10` |
+| `PRISMA_SOCKET_TIMEOUT` | `60` |
+
+Pi cron should keep `PRISMA_SOCKET_TIMEOUT` at least `60` (home → managed Postgres RTT). Prefer the direct DB URL; pgBouncer does not fix lock storms from parallel per-row updates.
 
 ### 2. Side-bet quote refresh
 
