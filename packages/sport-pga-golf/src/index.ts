@@ -36,11 +36,15 @@ export {
 export {
   analyzeContestCommentary,
   scoreLineupFromTotals,
+  resolveCommentaryStage,
   type AnalyzeContestCommentaryInput,
   type ContestCommentaryConsensusPlayer,
   type ContestCommentaryContext,
   type ContestCommentaryAnalysisOptions,
   type ContestCommentaryEntry,
+  type ContestCommentaryEventProgress,
+  type ContestCommentaryLeaderPace,
+  type ContestCommentaryLeaderProgress,
   type ContestCommentaryLineup,
   type ContestCommentaryLineupRoute,
   type ContestCommentaryLineupRarity,
@@ -50,10 +54,13 @@ export {
   type ContestCommentaryRoutePlausibility,
   type ContestCommentarySharedDependency,
   type ContestCommentarySharedDownsideRisk,
-  type ContestCommentaryTournamentPhase,
-  type ContestCommentaryTournamentProgress,
+  type ContestCommentaryStageId,
   type LineupOutlookTier,
 } from "./contestCommentary.js";
+export {
+  buildPgaContestCommentaryPrompt,
+  type BuildPgaContestCommentaryPromptOptions,
+} from "./contestCommentaryPrompt.js";
 export { buildGolfCandidates, type EventParticipantRow } from "./candidates.js";
 export { golfCandidateSortConfig } from "./candidateSort.js";
 export {

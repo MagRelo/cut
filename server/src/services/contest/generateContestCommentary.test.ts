@@ -10,12 +10,15 @@ import type { CommentaryTextGenerator } from "./commentaryTextGenerator.js";
 const context: ContestCommentaryContext = {
   period: 4,
   paidCount: 3,
-  tournamentProgress: {
-    round: 4,
-    phase: "leaders_on_back_nine",
-    leaderHolesRemaining: 6,
-    leaderParticipantIds: ["golfer"],
-    leaderNames: ["Golfer"],
+  eventProgress: {
+    period: 4,
+    stageId: "final_round",
+    leaderProgress: {
+      holesRemaining: 6,
+      pace: "back_nine",
+      leaderParticipantIds: ["golfer"],
+      leaderNames: ["Golfer"],
+    },
   },
   race: { leaderScore: 100, cutScore: 80, contenderCount: 2 },
   contentionLineups: [
@@ -79,9 +82,29 @@ describe("contest commentary generation", () => {
     expect(prompt).toContain("125-175 words");
     expect(prompt).toContain('"displayName":"Alice"');
     expect(prompt).toContain("shock-jock irreverence");
+    expect(prompt).toContain("Stage: final round");
+    expect(prompt).toContain("eventProgress.leaderProgress");
     expect(prompt).toContain("Treat route metrics as analytical guidance");
     expect(prompt).toContain("Return only the finished commentary");
     expect(prompt).toContain("Distinguish lineup rarity from lineup quality");
+  });
+
+  it("uses opening-round stage instructions without leader-pace framing", () => {
+    const openingContext: ContestCommentaryContext = {
+      ...context,
+      period: 1,
+      eventProgress: {
+        period: 1,
+        stageId: "opening_round",
+      },
+    };
+    const prompt = buildContestCommentaryPrompt(openingContext);
+
+    expect(prompt).toContain("Stage: opening round");
+    expect(prompt).toContain("Wave tee times");
+    expect(prompt).toContain("highLeveragePlayers");
+    expect(prompt).not.toContain("Stage: final round");
+    expect(prompt).not.toContain("prioritize routes to winning");
   });
 
   it("retries one invalid output and returns the valid commentary", async () => {

@@ -7,7 +7,7 @@ import { generateContestCommentary } from "../services/contest/generateContestCo
 import {
   contestCommentaryVoices,
   type ContestCommentaryVoiceId,
-} from "../services/contest/contestCommentaryVoices.js";
+} from "@cut/sport-sdk";
 import { gracefulShutdown } from "../lib/prisma.js";
 
 function finiteFlag(name: string, value: string | undefined): number {

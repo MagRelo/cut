@@ -27,17 +27,43 @@ generator using `CURSOR_API_KEY`; tests and future providers can supply the
 ## Direct context contract
 
 `analyzeContestCommentary` returns `ContestCommentaryContext` directly. The
-context contains the race and paid cut, ordered contention lineups,
-high-leverage golfers and their owners, high-rarity lineups and
-differentiators, consensus golfers, uncertainty notes, and compact simulation
-metadata. Scenario arrays, full-field projections, and per-entry affect lists
-remain private simulation details.
+context contains period-aware `eventProgress`, the race and paid cut, ordered
+contention lineups, high-leverage golfers and their owners, high-rarity
+lineups and differentiators, consensus golfers, uncertainty notes, and compact
+simulation metadata. Scenario arrays, full-field projections, and per-entry
+affect lists remain private simulation details.
 
 Ownership, leverage, rarity, payout impact, and consensus all use the same
 contention cohort. Participant and entry IDs establish identity; display names
 are labels only. Rarity is normalized by each lineup's actual roster size.
 Rarity measures differentiation, not lineup quality. Exactly one tied lineup is
 chosen as the favorite, and paid-place count is passed explicitly to analysis.
+
+### Event progress stages
+
+`resolveCommentaryStage(period)` maps the active period to an event-long stage:
+
+| Period | Stage ID | Leader progress |
+| --- | --- | --- |
+| 1 | `opening_round` | omitted |
+| 2 | `cut_round` | omitted |
+| 3 | `weekend_move` | included |
+| 4 | `final_round` | included |
+| other / null | `unknown` | omitted |
+
+Weekend stages attach `eventProgress.leaderProgress` (leader names, holes
+remaining, and pace) because tee times are ordered. Early rounds omit it so
+commentary is not framed around leader-wave pacing.
+
+## Prompt assembly
+
+Shared broadcast voices live in `@cut/sport-sdk`
+(`contestCommentaryVoices`). PGA stage instructions live in
+`packages/sport-pga-golf/src/contestCommentaryPrompt.ts` via
+`buildPgaContestCommentaryPrompt`. Each stage owns its analytical framing
+(ownership/leverage early; routes and leader pace on the weekend). A short
+output contract (no invented facts; plain prose only) always appends. The
+server prompt helper only supplies word limits and delegates to that builder.
 
 ## Calibration
 

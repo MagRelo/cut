@@ -1,3 +1,4 @@
+import type { ContestCommentaryVoiceId } from "@cut/sport-sdk";
 import type { ContestCommentaryContext } from "@cut/sport-pga-golf";
 import {
   buildContestCommentaryContext,
@@ -14,7 +15,6 @@ import {
   CursorCommentaryTextGenerator,
   type CommentaryTextGenerator,
 } from "./commentaryTextGenerator.js";
-import type { ContestCommentaryVoiceId } from "./contestCommentaryVoices.js";
 
 export interface GenerateContestCommentaryOptions {
   analysis?: BuildContestCommentaryContextOptions;

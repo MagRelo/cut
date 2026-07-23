@@ -92,9 +92,8 @@ describe("analyzeContestCommentary", () => {
       cutScore: 18,
       contenderCount: 3,
     });
-    expect(first.tournamentProgress.phase).toBe(
-      "leaders_approaching_turn",
-    );
+    expect(first.eventProgress.stageId).toBe("final_round");
+    expect(first.eventProgress.leaderProgress?.pace).toBe("approaching_turn");
     expect(
       first.contentionLineups.filter((lineup) => lineup.tier === "favorite"),
     ).toHaveLength(1);
@@ -237,8 +236,86 @@ describe("analyzeContestCommentary", () => {
     const context = analyze([], [], 1);
 
     expect(context.contentionLineups).toEqual([]);
-    expect(context.tournamentProgress.phase).toBe("unknown");
+    expect(context.eventProgress.stageId).toBe("final_round");
+    expect(context.eventProgress.leaderProgress).toBeUndefined();
     expect(context.highLeveragePlayers).toEqual([]);
     expect(context.highRarityLineups).toEqual([]);
+  });
+
+  it("resolves period stages and gates leaderProgress to weekend rounds", () => {
+    const entries = [
+      entry("a", "A", ["a"]),
+      entry("b", "B", ["b"]),
+    ];
+    const participants = [
+      participant("a", 20, 9),
+      participant("b", 19, 9),
+    ];
+
+    const opening = analyzeContestCommentary({
+      contestId: "contest",
+      eventId: "event",
+      currentPeriod: 1,
+      paidCount: 1,
+      entries,
+      participants: participants.map((row) => ({
+        ...row,
+        scoreData: {
+          ...row.scoreData,
+          r1: round(1, 9),
+          r2: round(2, 0),
+          r3: round(3, 0),
+          r4: round(4, 0),
+        },
+      })),
+      scoringModel,
+      options: { simulations: 100, seed: 7 },
+    });
+    expect(opening.eventProgress.stageId).toBe("opening_round");
+    expect(opening.eventProgress.leaderProgress).toBeUndefined();
+
+    const cut = analyzeContestCommentary({
+      contestId: "contest",
+      eventId: "event",
+      currentPeriod: 2,
+      paidCount: 1,
+      entries,
+      participants: participants.map((row) => ({
+        ...row,
+        scoreData: {
+          ...row.scoreData,
+          r1: round(1, 18),
+          r2: round(2, 9),
+          r3: round(3, 0),
+          r4: round(4, 0),
+        },
+      })),
+      scoringModel,
+      options: { simulations: 100, seed: 7 },
+    });
+    expect(cut.eventProgress.stageId).toBe("cut_round");
+    expect(cut.eventProgress.leaderProgress).toBeUndefined();
+
+    const weekend = analyzeContestCommentary({
+      contestId: "contest",
+      eventId: "event",
+      currentPeriod: 3,
+      paidCount: 1,
+      entries,
+      participants: participants.map((row) => ({
+        ...row,
+        scoreData: {
+          ...row.scoreData,
+          r1: round(1, 18),
+          r2: round(2, 18),
+          r3: round(3, 9),
+          r4: round(4, 0),
+        },
+      })),
+      scoringModel,
+      options: { simulations: 100, seed: 7 },
+    });
+    expect(weekend.eventProgress.stageId).toBe("weekend_move");
+    expect(weekend.eventProgress.leaderProgress?.pace).toBe("approaching_turn");
   });
 });

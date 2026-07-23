@@ -181,27 +181,39 @@ export interface ContestCommentarySharedDownsideRisk {
   negativeHoleProbability: number;
 }
 
-export type ContestCommentaryTournamentPhase =
-  | "leaders_not_started"
-  | "leaders_on_front_nine"
-  | "leaders_approaching_turn"
-  | "leaders_on_back_nine"
-  | "leaders_closing"
-  | "leaders_finished"
+export type ContestCommentaryStageId =
+  | "opening_round"
+  | "cut_round"
+  | "weekend_move"
+  | "final_round"
   | "unknown";
 
-export interface ContestCommentaryTournamentProgress {
-  round: number | null;
-  phase: ContestCommentaryTournamentPhase;
-  leaderHolesRemaining: number | null;
+export type ContestCommentaryLeaderPace =
+  | "not_started"
+  | "front_nine"
+  | "approaching_turn"
+  | "back_nine"
+  | "closing"
+  | "finished";
+
+export interface ContestCommentaryLeaderProgress {
+  holesRemaining: number | null;
+  pace: ContestCommentaryLeaderPace;
   leaderParticipantIds: string[];
   leaderNames: string[];
+}
+
+export interface ContestCommentaryEventProgress {
+  period: number | null;
+  stageId: ContestCommentaryStageId;
+  /** Present only for weekend_move / final_round */
+  leaderProgress?: ContestCommentaryLeaderProgress;
 }
 
 export interface ContestCommentaryContext {
   period: number | null;
   paidCount: number;
-  tournamentProgress: ContestCommentaryTournamentProgress;
+  eventProgress: ContestCommentaryEventProgress;
   race: {
     leaderScore: number;
     cutScore: number;
@@ -281,16 +293,32 @@ function percentileRank(values: readonly number[], target: number): number {
   );
 }
 
-function tournamentPhase(
+export function resolveCommentaryStage(
+  period: number | null | undefined,
+): ContestCommentaryStageId {
+  if (period == null || !Number.isFinite(period)) return "unknown";
+  const rounded = Math.round(period);
+  if (rounded === 1) return "opening_round";
+  if (rounded === 2) return "cut_round";
+  if (rounded === 3) return "weekend_move";
+  if (rounded === 4) return "final_round";
+  return "unknown";
+}
+
+function stageIncludesLeaderProgress(stageId: ContestCommentaryStageId): boolean {
+  return stageId === "weekend_move" || stageId === "final_round";
+}
+
+function leaderPace(
   holesRemaining: number | null,
-): ContestCommentaryTournamentPhase {
-  if (holesRemaining == null) return "unknown";
-  if (holesRemaining >= 18) return "leaders_not_started";
-  if (holesRemaining >= 11) return "leaders_on_front_nine";
-  if (holesRemaining >= 9) return "leaders_approaching_turn";
-  if (holesRemaining >= 4) return "leaders_on_back_nine";
-  if (holesRemaining >= 1) return "leaders_closing";
-  return "leaders_finished";
+): ContestCommentaryLeaderPace {
+  if (holesRemaining == null) return "finished";
+  if (holesRemaining >= 18) return "not_started";
+  if (holesRemaining >= 11) return "front_nine";
+  if (holesRemaining >= 9) return "approaching_turn";
+  if (holesRemaining >= 4) return "back_nine";
+  if (holesRemaining >= 1) return "closing";
+  return "finished";
 }
 
 function scoreLineupFromTotals(
@@ -416,15 +444,13 @@ export function analyzeContestCommentary(
     notes.push("Historical calibration was unavailable; built-in generic scoring frequencies were used.");
   }
   if (entries.length === 0) {
+    const stageId = resolveCommentaryStage(period);
     return {
       period,
       paidCount,
-      tournamentProgress: {
-        round: period,
-        phase: "unknown",
-        leaderHolesRemaining: null,
-        leaderParticipantIds: [],
-        leaderNames: [],
+      eventProgress: {
+        period,
+        stageId,
       },
       race: {
         leaderScore: 0,
@@ -457,6 +483,7 @@ export function analyzeContestCommentary(
   const stateById = new Map(
     states.map((state) => [state.participant.eventParticipantId, state]),
   );
+  const stageId = resolveCommentaryStage(period);
   const tournamentLeaders = [...states]
     .filter((state) => state.status !== "CUT" && state.status !== "WD")
     .sort(
@@ -476,16 +503,23 @@ export function analyzeContestCommentary(
           0.5,
         )
       : null;
-  const tournamentProgress: ContestCommentaryTournamentProgress = {
-    round: period,
-    phase: tournamentPhase(leaderHolesRemaining),
-    leaderHolesRemaining,
-    leaderParticipantIds: tournamentLeaders.map(
-      (state) => state.participant.eventParticipantId,
-    ),
-    leaderNames: tournamentLeaders.map(
-      (state) => state.participant.displayName,
-    ),
+  const eventProgress: ContestCommentaryEventProgress = {
+    period,
+    stageId,
+    ...(stageIncludesLeaderProgress(stageId)
+      ? {
+          leaderProgress: {
+            holesRemaining: leaderHolesRemaining,
+            pace: leaderPace(leaderHolesRemaining),
+            leaderParticipantIds: tournamentLeaders.map(
+              (state) => state.participant.eventParticipantId,
+            ),
+            leaderNames: tournamentLeaders.map(
+              (state) => state.participant.displayName,
+            ),
+          },
+        }
+      : {}),
   };
   const currentTotals = new Map(
     states.map((state) => [
@@ -1072,7 +1106,7 @@ export function analyzeContestCommentary(
   return {
     period,
     paidCount,
-    tournamentProgress,
+    eventProgress,
     race: {
       leaderScore,
       cutScore,

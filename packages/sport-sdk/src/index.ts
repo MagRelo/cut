@@ -55,6 +55,12 @@ export type { PropBetModule } from "./prop-bet-module.js";
 
 export { defaultPayoutVector } from "./payout.js";
 
+export type { ContestCommentaryVoice, ContestCommentaryVoiceId } from "./contestCommentaryVoices.js";
+export {
+  contestCommentaryVoices,
+  DEFAULT_CONTEST_COMMENTARY_VOICE_ID,
+} from "./contestCommentaryVoices.js";
+
 export type {
   AdjustedPickScore,
   NormalizedPopularityRules,
