@@ -56,7 +56,7 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest,
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-bold text-blue-950">Contest Breakdown</span>
-              <span className="block text-xs leading-relaxed text-blue-800">
+              <span className="block text-xs leading-relaxed text-blue-600">
                 See each lineup's path to victory.
               </span>
             </span>
