@@ -13,8 +13,8 @@ const viewButtonBaseClassName =
 const viewButtonActiveClassName =
   "border-blue-500 bg-blue-500 text-white hover:bg-blue-600 focus-visible:outline-blue-500";
 
-const viewButtonPastClassName =
-  "border-slate-300 bg-slate-200 text-slate-800 hover:bg-slate-200 focus-visible:outline-slate-500";
+const viewLinkPastClassName =
+  "inline-flex min-w-[88px] items-center justify-center gap-1 px-4 py-1.5 font-display text-sm text-slate-800 transition-colors hover:text-slate-950 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500";
 
 function isPastContestStatus(status: Contest["status"]): boolean {
   return status === "SETTLED" || status === "CLOSED";
@@ -116,12 +116,11 @@ export const ContestListItem = ({
           to={to}
           state={eventShell ? contestLobbyLinkState(eventShell, contest) : undefined}
           aria-label={`${actionLabel} ${contest.name} contest`}
-          className={cn(
-            viewButtonBaseClassName,
+          className={
             isPastViewButton(contest, variant)
-              ? viewButtonPastClassName
-              : viewButtonActiveClassName,
-          )}
+              ? viewLinkPastClassName
+              : cn(viewButtonBaseClassName, viewButtonActiveClassName)
+          }
         >
           {actionLabel}
           <ChevronRightIcon className="h-4 w-4 shrink-0" aria-hidden />

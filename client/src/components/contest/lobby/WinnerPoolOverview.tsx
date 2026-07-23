@@ -34,10 +34,7 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest,
               <p className="text-sm leading-relaxed text-slate-600">
                 Back the winning lineup to win a share of the pool.{" "}
               </p>
-              <Link
-                to="/faq#winner-pool"
-                className="text-sm font-medium text-blue-700 hover:underline"
-              >
+              <Link to="/faq#winner-pool" className="text-sm font-medium text-blue-500">
                 How it works →
               </Link>
             </>
