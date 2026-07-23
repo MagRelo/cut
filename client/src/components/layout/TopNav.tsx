@@ -74,10 +74,10 @@ export const TopNav: React.FC = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`${tabLinkClass(false)} inline-flex items-center gap-1`}
-                  aria-label="Cut Merch"
+                  aria-label="Cut Store"
                 >
                   <img src="/logo-transparent.png" alt="" className="h-5 w-auto shrink-0" />
-                  MERCH
+                  STORE
                   <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 </a>
                 <Link
