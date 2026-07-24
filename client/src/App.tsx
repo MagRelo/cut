@@ -21,7 +21,6 @@ import {
 import { Home } from "./pages/Home";
 import { ConnectPage } from "./pages/ConnectPage";
 import { UserPage } from "./pages/Account";
-import { UserHistoryPage } from "./pages/UserHistoryPage";
 import { TransferFundsPage } from "./pages/AccountTransferFundsPage";
 
 import { SportHubPage } from "./pages/SportHubPage";
@@ -128,11 +127,7 @@ const AppShell: React.FC = () => {
             />
             <Route
               path="/account/history"
-              element={
-                <ProtectedRoute>
-                  <UserHistoryPage />
-                </ProtectedRoute>
-              }
+              element={<Navigate to="/account/funds?tab=activity" replace />}
             />
             <Route
               path="/account/funds"

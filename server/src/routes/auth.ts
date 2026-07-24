@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { formatLineupResponse, lineupDetailInclude } from "../services/lineups/formatLineup.js";
+import { getUserTransactions } from "../services/user/getUserTransactions.js";
 
 const authRouter = new Hono();
 const MAX_REFERRAL_SUMMARY_DEPTH = 10;
@@ -295,6 +296,18 @@ authRouter.get("/contests", requireAuth, async (c) => {
   } catch (error) {
     console.error("Error fetching user contest history:", error);
     return c.json({ error: "Failed to fetch contest history" }, 500);
+  }
+});
+
+// Synthetic activity feed: entries, predictions, side bets, payouts
+authRouter.get("/transactions", requireAuth, async (c) => {
+  try {
+    const user = c.get("user");
+    const transactions = await getUserTransactions(user.userId);
+    return c.json({ transactions });
+  } catch (error) {
+    console.error("Error fetching user transactions:", error);
+    return c.json({ error: "Failed to fetch transactions" }, 500);
   }
 });
 

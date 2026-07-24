@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { Receive } from "../components/user/Receive.tsx";
 import { Send } from "../components/user/Send.tsx";
+import { UserActivityPanel } from "../components/user/UserActivityPanel";
 import { tabButtonClassName, tabListClassName } from "../lib/tabStyles";
-import { parseFundPageSearchParams } from "../lib/fundLinks";
+import { fundPageTabIndex, parseFundPageSearchParams } from "../lib/fundLinks";
 
 export function TransferFundsPage() {
   const [searchParams] = useSearchParams();
@@ -13,7 +14,12 @@ export function TransferFundsPage() {
     () => parseFundPageSearchParams(searchParams.toString()),
     [searchParams],
   );
-  const [selectedIndex, setSelectedIndex] = useState(tab === "send" ? 1 : 0);
+  const initialIndex = fundPageTabIndex(tab);
+  const [selectedIndex, setSelectedIndex] = useState(initialIndex);
+
+  useEffect(() => {
+    setSelectedIndex(fundPageTabIndex(tab));
+  }, [tab]);
 
   return (
     <>
@@ -36,6 +42,11 @@ export function TransferFundsPage() {
               >
                 Send
               </Tab>
+              <Tab
+                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+              >
+                Activity
+              </Tab>
             </TabList>
             <div className="px-4 py-2">
               <TabPanel>
@@ -50,6 +61,9 @@ export function TransferFundsPage() {
                     lockRecipient={Boolean(recipient)}
                   />
                 </div>
+              </TabPanel>
+              <TabPanel>
+                <UserActivityPanel />
               </TabPanel>
             </div>
           </TabGroup>

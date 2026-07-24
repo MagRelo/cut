@@ -48,6 +48,7 @@ No auth. `{ status, service, timestamp }`
 | PUT | `/update` | ✅ | Update display name |
 | PUT | `/settings` | ✅ | Update settings JSON |
 | GET | `/contests` | ✅ | User's contest history |
+| GET | `/transactions` | ✅ | Synthetic activity feed (entries, predictions, side bets, payouts) |
 
 ---
 
@@ -101,7 +102,7 @@ No auth. `{ status, service, timestamp }`
 | POST | `/` | ✅ | Create contest (staff or league admin) |
 | POST | `/:id/lineups` | ✅ | Join contest with lineup |
 | DELETE | `/:id/lineups` | ✅ | Leave contest |
-| POST | `/:id/secondary-participants` | ✅ | Record secondary market participant |
+| POST | `/:id/secondary-participants` | ✅ | Record secondary market participant (`amountWei` optional; accumulated on upsert) |
 
 **GET `/` query:**
 - `eventId` (required) — was `tournamentId` in legacy
@@ -208,3 +209,4 @@ Staff only (`requireAdmin`).
 | `useUserGroupContestsQuery` | `GET /userGroups/:id/contests` |
 | Lineup save | `POST /lineups/:eventId` (create) or `PUT /lineups/:lineupId` (update) |
 | `useAuth` / `/me` | `GET /auth/me` |
+| `useUserTransactions` / Manage Funds → Activity | `GET /auth/transactions` |

@@ -218,7 +218,7 @@ contestRouter.post("/:id/secondary-participants", requireAuth, async (c) => {
     if (!validation.success) {
       return c.json({ error: "Invalid request body", details: validation.error.errors }, 400);
     }
-    const { entryId, transactionHash, chainId } = validation.data;
+    const { entryId, transactionHash, chainId, amountWei } = validation.data;
     const user = c.get("user");
 
     const contest = await prisma.contest.findUnique({
@@ -243,6 +243,24 @@ contestRouter.post("/:id/secondary-participants", requireAuth, async (c) => {
 
     const walletAddress = user.address.toLowerCase();
 
+    const existing = await prisma.contestSecondaryParticipant.findUnique({
+      where: {
+        contestId_entryId_walletAddress: {
+          contestId,
+          entryId,
+          walletAddress,
+        },
+      },
+      select: { amountWei: true },
+    });
+
+    let nextAmountWei: string | undefined;
+    if (amountWei != null) {
+      const incoming = BigInt(amountWei);
+      const prior = existing?.amountWei != null ? BigInt(existing.amountWei) : 0n;
+      nextAmountWei = (prior + incoming).toString();
+    }
+
     await prisma.contestSecondaryParticipant.upsert({
       where: {
         contestId_entryId_walletAddress: {
@@ -257,11 +275,13 @@ contestRouter.post("/:id/secondary-participants", requireAuth, async (c) => {
         walletAddress,
         userId: user.userId,
         chainId,
+        amountWei: amountWei ?? null,
         lastTransactionHash: transactionHash,
       },
       update: {
         lastTransactionHash: transactionHash,
         userId: user.userId,
+        ...(nextAmountWei != null ? { amountWei: nextAmountWei } : {}),
       },
     });
 

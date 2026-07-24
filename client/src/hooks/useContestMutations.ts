@@ -167,6 +167,7 @@ export function useJoinContest() {
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.lineups.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.user.contests() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.transactions() });
     },
   });
 }
@@ -218,6 +219,7 @@ export function useLeaveContest() {
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.lineups.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.user.contests() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.user.transactions() });
     },
   });
 }

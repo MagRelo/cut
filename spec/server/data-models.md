@@ -102,7 +102,9 @@ See [consensus-axis.md](../../docs/platform/consensus-axis.md) for shape and cro
 - Time series of `score` (final total) and `position` per entry for charts
 
 ### ContestSecondaryParticipant
-- Secondary market buyers indexed from chain events
+- Secondary market buyers indexed from client after on-chain buys
+- `amountWei` — cumulative payment-token wei deposited on this `(contest, entry, wallet)` position (optional; null for pre-field historical rows)
+- `lastTransactionHash` — most recent buy tx
 
 ### OnchainPayment
 - Indexed payout rows (`PRIMARY`, `SECONDARY`, `REFERRAL`)

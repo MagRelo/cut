@@ -11,16 +11,10 @@ export type NavTab = {
   liveDot?: boolean;
 };
 
-export const CONTEST_HISTORY_LINK = {
-  to: "/account/history",
-  label: "Contest History",
-  match: (pathname: string) => pathname === "/account/history",
-} as const;
-
 export const ACCOUNT_FUNDS_LINK = {
   to: "/account/funds",
   label: "Manage Funds",
-  match: (pathname: string) => pathname === "/account/funds",
+  match: (pathname: string) => pathname === "/account/funds" || pathname === "/account/history",
 } as const;
 
 export const ACCOUNT_HOME_LINK = {
@@ -40,7 +34,6 @@ export const LEAGUES_TAB: NavTab = {
 export const ACCOUNT_SUB_LINKS = [
   ACCOUNT_HOME_LINK,
   ACCOUNT_FUNDS_LINK,
-  CONTEST_HISTORY_LINK,
 ] as const;
 
 export type LeagueNavItem = {

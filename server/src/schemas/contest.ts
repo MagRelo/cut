@@ -118,6 +118,11 @@ export const recordContestSecondaryParticipantSchema = z.object({
     .refine((val) => [8453, 84532].includes(val), {
       message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
     }),
+  /** Payment-token wei for this buy (decimal string). Accumulated on upsert. */
+  amountWei: z
+    .string()
+    .regex(/^\d+$/, "amountWei must be a non-negative decimal integer string")
+    .optional(),
 });
 
 // Schema for contest query parameters

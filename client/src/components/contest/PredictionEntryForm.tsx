@@ -250,6 +250,9 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
               entryId,
               transactionHash: lastReceipt.transactionHash,
               chainId: contest.chainId,
+              ...(purchaseAmountWei != null
+                ? { amountWei: purchaseAmountWei.toString() }
+                : {}),
             },
             { requiresAuth: true },
           );

@@ -28,17 +28,17 @@ export function TokenBalances({ showContestHistoryLink = true }: TokenBalancesPr
           </Link>
         </h2>
         <div className="min-w-0 justify-end text-right">
-          {balanceTotal !== null ? (
-            <div className="text-lg font-semibold text-gray-800 font-display tabular-nums">
-              ${balanceTotal}
-            </div>
-          ) : (
+          {balancesUnavailable ? (
             <span
               className="text-lg font-semibold text-amber-800 font-display tabular-nums"
               title="Could not load balance from the network"
             >
               —
             </span>
+          ) : (
+            <div className="text-lg font-semibold text-gray-800 font-display tabular-nums">
+              ${balanceTotal}
+            </div>
           )}
         </div>
       </div>
@@ -72,10 +72,10 @@ export function TokenBalances({ showContestHistoryLink = true }: TokenBalancesPr
       {showContestHistoryLink && (
         <div className="mt-4 pt-4 border-t border-gray-200">
           <Link
-            to="/account/history"
+            to="/account/funds?tab=activity"
             className="text-sm text-blue-600 hover:text-blue-700 font-medium"
           >
-            Contest history →
+            Activity →
           </Link>
         </div>
       )}
