@@ -84,22 +84,23 @@ describe("buildPgaContestCommentaryPrompt", () => {
   });
 
   it("selects story instructions and word limits for feed prompts", () => {
-    const racePrompt = buildPgaContestFeedPrompt({
-      storyType: "race_shakeup",
+    const swingPrompt = buildPgaContestFeedPrompt({
+      storyType: "score_swing",
       factPack: {
-        storyType: "race_shakeup",
+        storyType: "score_swing",
         stageId: "final_round",
         period: 4,
         paidCount: 1,
         race: baseContext.race,
-        changes: [],
-        contentionLineups: [],
+        events: [],
+        impacts: [],
       },
     });
-    expect(racePrompt).toContain("Story: race shakeup");
-    expect(racePrompt).toContain("50-100 words");
-    expect(racePrompt).toContain("STORY_FACTS_JSON=");
-    expect(racePrompt).toContain("Stage: final round");
+    expect(swingPrompt).toContain("Story: score swing");
+    expect(swingPrompt).toContain("event → result");
+    expect(swingPrompt).toContain("50-100 words");
+    expect(swingPrompt).toContain("STORY_FACTS_JSON=");
+    expect(swingPrompt).toContain("Stage: final round");
 
     const leveragePrompt = buildPgaContestFeedPrompt({
       storyType: "leverage_spike",
@@ -113,6 +114,7 @@ describe("buildPgaContestCommentaryPrompt", () => {
       },
     });
     expect(leveragePrompt).toContain("Story: leverage spike");
+    expect(leveragePrompt).toContain("event → result");
     expect(leveragePrompt).toContain("40-80 words");
     expect(leveragePrompt).toContain("Stage: opening round");
   });

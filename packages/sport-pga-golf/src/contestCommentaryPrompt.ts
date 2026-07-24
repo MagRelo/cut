@@ -10,6 +10,15 @@ import type {
 } from "./contestFeed.js";
 import { CONTEST_FEED_WORD_LIMITS } from "./contestFeed.js";
 
+/**
+ * Causal beat for live updates: tournament golf moves first; contest standings
+ * follow. Applies to every feed story type.
+ */
+const NARRATIVE_PATTERN: readonly string[] = [
+  'Narrative pattern: event → result. The thing that changes is tournament player scoring; contest movement is the result. Prefer causal beats like "Scheffler double-bogeys 13 and 14, which drops Noodles to 9th"—golfer event first, then what it does to a user\'s position, leverage, or paid-cut status.',
+  "When hole-level detail is absent from the facts, still keep that order using whatever golf score movement is present, then the contest consequence. Never invent hole results or golfer outcomes.",
+];
+
 /** Always-on output contract — no stage-specific analytical framing. */
 const OUTPUT_CONTRACT: readonly string[] = [
   "Do not invent scores, odds, ownership, names, injuries, tee times, or golf results.",
@@ -20,19 +29,19 @@ const OUTPUT_CONTRACT: readonly string[] = [
 
 /** Story-type framing is primary; stage instructions are an overlay. */
 const STORY_INSTRUCTIONS: Record<ContestFeedActiveStoryType, readonly string[]> = {
-  race_shakeup: [
-    "Story: race shakeup. Focus only on the contest leaderboard / paid-cut movement in STORY_FACTS_JSON.",
-    "Name the users whose positions moved and connect the move to scores when present. Do not widen into a full contest recap, routes, or ownership ladders.",
-    "One tight beat: what changed, who it helps or hurts, and why it matters for the paid places.",
+  score_swing: [
+    "Story: score swing. Focus only on the hole events and contest impacts in STORY_FACTS_JSON.",
+    "Hard-require event → result: lead with the golfer hole result(s) from events (label, hole number), then what that did to owning users in impacts (position / paid-cut moves). Do not invent holes beyond events.",
+    "Keep it one tight causal beat. Do not widen into a full contest recap, routes, or ownership ladders.",
   ],
   leverage_spike: [
     "Story: leverage spike. Focus only on the golfer(s) whose contest leverage rose in STORY_FACTS_JSON.",
-    "Connect the golfer to owning users. Explain why this player now swings the contest—not a full race board or route analysis.",
+    "Frame as event → result: the golfer's scoring or standing is the event; the swing for owning users is the result. Explain why this player now moves the contest—not a full race board or route analysis.",
     "Keep it flash-length and concrete. Do not invent hole results beyond the supplied facts.",
   ],
   stage_recap: [
     "Story: stage recap. Write a full contest outlook using the supplied contest context JSON.",
-    "Cover the race, ownership/leverage or routes as the stage overlay directs, and keep the finish worth watching.",
+    "When citing live movement, keep event → result order (tournament scoring → contest consequence). Cover the race, ownership/leverage or routes as the stage overlay directs, and keep the finish worth watching.",
   ],
 };
 
@@ -149,6 +158,7 @@ export function buildPgaContestFeedPrompt(
     "Write one live contest feed update using only the supplied JSON facts.",
     `Length must be ${minWords}-${maxWords} words.`,
     ...voice.instructions,
+    ...NARRATIVE_PATTERN,
     ...storyInstructions,
     ...stageInstructions,
     ...OUTPUT_CONTRACT,

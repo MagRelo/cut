@@ -55,7 +55,7 @@ const diagnostics = {
 };
 
 function builder() {
-  return Promise.resolve({ context, diagnostics });
+  return Promise.resolve({ context, diagnostics, contestPlayers: [] });
 }
 
 class SequenceGenerator implements CommentaryTextGenerator {

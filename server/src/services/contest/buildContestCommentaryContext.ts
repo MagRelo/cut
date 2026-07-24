@@ -5,6 +5,7 @@ import {
   type ContestCommentaryContext,
   type ContestCommentaryEntry,
   type ContestCommentaryParticipant,
+  type ContestFeedContestPlayer,
 } from "@cut/sport-pga-golf";
 import {
   computePickRates,
@@ -44,6 +45,8 @@ export interface ContestCommentaryDiagnostics {
 export interface BuiltContestCommentaryContext {
   context: ContestCommentaryContext;
   diagnostics: ContestCommentaryDiagnostics;
+  /** Contest-owned golfers with scorecards for event-first feed stories. */
+  contestPlayers: ContestFeedContestPlayer[];
 }
 
 function displayNameFromParticipant(metadata: unknown, fallback: string): string {
@@ -83,6 +86,43 @@ function pickRatesFromPopularity(raw: unknown): Record<string, number> | null {
     if (typeof pickRate === "number") rates[participantId] = pickRate;
   }
   return Object.keys(rates).length > 0 ? rates : null;
+}
+
+function buildContestFeedPlayers(
+  entries: ContestCommentaryEntry[],
+  participants: ContestCommentaryParticipant[],
+): ContestFeedContestPlayer[] {
+  const byId = new Map(
+    participants.map((participant) => [
+      participant.eventParticipantId,
+      participant,
+    ]),
+  );
+  const owners = new Map<
+    string,
+    { entryIds: string[]; names: string[] }
+  >();
+  for (const entry of entries) {
+    for (const participantId of new Set(entry.eventParticipantIds)) {
+      const row = owners.get(participantId) ?? { entryIds: [], names: [] };
+      row.entryIds.push(entry.entryId);
+      if (entry.displayName?.trim()) row.names.push(entry.displayName.trim());
+      owners.set(participantId, row);
+    }
+  }
+  const players: ContestFeedContestPlayer[] = [];
+  for (const [participantId, ownership] of owners) {
+    const participant = byId.get(participantId);
+    if (!participant) continue;
+    players.push({
+      eventParticipantId: participantId,
+      displayName: participant.displayName,
+      scoreData: participant.scoreData,
+      ownerEntryIds: ownership.entryIds,
+      ownerNames: ownership.names,
+    });
+  }
+  return players;
 }
 
 export async function buildContestCommentaryContext(
@@ -222,6 +262,7 @@ export async function buildContestCommentaryContext(
 
   return {
     context,
+    contestPlayers: buildContestFeedPlayers(entries, participants),
     diagnostics: {
       eventExternalId: contest.event.externalId,
       contestStatus: contest.status,

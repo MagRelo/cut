@@ -1,5 +1,6 @@
 import {
   buildContestFeedFactPack,
+  buildContestFeedHoleState,
   buildContestFeedItemId,
   buildPgaContestFeedPrompt,
   classifyContestFeedStories,
@@ -154,6 +155,8 @@ export async function generateContestFeed(
   const now = options.now ?? (() => new Date());
   const generatedAt = now().toISOString();
   const nowMs = Date.parse(generatedAt);
+  const contestPlayers = built.contestPlayers ?? [];
+  const previousHoleState = existing.lastHoleState ?? null;
 
   const candidates = classifyContestFeedStories(
     existing.lastContext,
@@ -161,6 +164,8 @@ export async function generateContestFeed(
     {
       existingItems: existing.items,
       nowMs,
+      contestPlayers,
+      previousHoleState,
       ...(options.maxPerPass != null ? { maxPerPass: options.maxPerPass } : {}),
     },
   );
@@ -170,12 +175,18 @@ export async function generateContestFeed(
       ? (options.generator ?? defaultGenerator(options))
       : null;
 
+  const factPackOptions = {
+    contestPlayers,
+    previousHoleState,
+  };
+
   const newItems: ContestFeedItem[] = [];
   for (const candidate of candidates) {
     const factPack = buildContestFeedFactPack(
       candidate,
       built.context,
       existing.lastContext,
+      factPackOptions,
     );
     const text = await generateStoryText(
       candidate,
@@ -201,6 +212,7 @@ export async function generateContestFeed(
   const document = mergeContestFeedItems(existing, newItems, {
     updatedAt: generatedAt,
     lastContext: built.context,
+    lastHoleState: buildContestFeedHoleState(contestPlayers),
   });
 
   return {

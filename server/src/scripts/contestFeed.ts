@@ -97,6 +97,8 @@ async function main(): Promise<void> {
       built.context,
       {
         existingItems: existing.items,
+        contestPlayers: built.contestPlayers,
+        previousHoleState: existing.lastHoleState ?? null,
         ...(maxPerPass != null ? { maxPerPass } : {}),
       },
     );

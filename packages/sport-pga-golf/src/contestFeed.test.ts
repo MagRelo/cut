@@ -2,14 +2,18 @@ import { describe, expect, it } from "vitest";
 import type { ContestCommentaryContext } from "./contestCommentary.js";
 import {
   buildContestFeedFactPack,
+  buildContestFeedHoleState,
   buildContestFeedItemId,
   classifyContestFeedStories,
+  collectScoreSwingEvents,
   computeContestFeedDelta,
   CONTEST_FEED_ITEM_CAP,
   emptyContestCommentaryFeedDocument,
   latestFeedCommentaryText,
   mergeContestFeedItems,
   parseContestCommentaryFeedDocument,
+  type ContestFeedContestPlayer,
+  type ContestFeedHoleState,
 } from "./contestFeed.js";
 
 function lineup(
@@ -83,6 +87,36 @@ function context(
   };
 }
 
+function scoreData(
+  round: number,
+  holes: Array<{ par: number; strokes: number; stableford: number }>,
+) {
+  return {
+    [`r${round}`]: {
+      holes: {
+        round,
+        par: holes.map((hole) => hole.par),
+        scores: holes.map((hole) => hole.strokes),
+        stableford: holes.map((hole) => hole.stableford),
+        total: 0,
+      },
+    },
+  };
+}
+
+function contestPlayer(
+  overrides: Partial<ContestFeedContestPlayer> = {},
+): ContestFeedContestPlayer {
+  return {
+    eventParticipantId: "g1",
+    displayName: "Scheffler",
+    scoreData: scoreData(4, [{ par: 4, strokes: 6, stableford: -3 }]),
+    ownerEntryIds: ["a"],
+    ownerNames: ["Noodles"],
+    ...overrides,
+  };
+}
+
 describe("contest feed document helpers", () => {
   it("parses empty and malformed values into an empty document", () => {
     expect(parseContestCommentaryFeedDocument(null)).toEqual({
@@ -93,6 +127,17 @@ describe("contest feed document helpers", () => {
       schemaVersion: 1,
       items: [],
     });
+  });
+
+  it("parses lastHoleState fingerprints", () => {
+    const document = parseContestCommentaryFeedDocument({
+      schemaVersion: 1,
+      items: [],
+      lastHoleState: {
+        g1: { displayName: "Scheffler", completedKeys: ["4:1"] },
+      },
+    });
+    expect(document.lastHoleState?.g1?.completedKeys).toEqual(["4:1"]);
   });
 
   it("merges new items newest-first and respects the rolling cap", () => {
@@ -106,21 +151,25 @@ describe("contest feed document helpers", () => {
       generatedAt: "2026-07-19T00:00:00.000Z",
     }));
 
+    const holeState: ContestFeedHoleState = {
+      g1: { displayName: "Scheffler", completedKeys: ["4:1"] },
+    };
     const merged = mergeContestFeedItems(
       existing,
       [
         {
           id: "new-1",
-          storyType: "race_shakeup",
+          storyType: "score_swing",
           priority: 90,
           subjects: { entryIds: ["a"] },
-          text: "shakeup",
+          text: "swing",
           generatedAt: "2026-07-19T04:00:00.000Z",
         },
       ],
       {
         updatedAt: "2026-07-19T04:00:00.000Z",
         lastContext: context(),
+        lastHoleState: holeState,
       },
     );
 
@@ -129,6 +178,7 @@ describe("contest feed document helpers", () => {
     expect(merged.items.some((item) => item.id === "old-29")).toBe(false);
     expect(merged.updatedAt).toBe("2026-07-19T04:00:00.000Z");
     expect(merged.lastContext?.period).toBe(4);
+    expect(merged.lastHoleState).toEqual(holeState);
   });
 
   it("prefers the newest stage_recap for convenience text", () => {
@@ -172,7 +222,7 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     ]);
   });
 
-  it("classifies race_shakeup and leverage_spike from material deltas", () => {
+  it("classifies leverage_spike from material deltas without race_shakeup", () => {
     const previous = context();
     const current = context({
       contentionLineups: [
@@ -204,21 +254,64 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     });
 
     expect(candidates.map((candidate) => candidate.storyType)).toEqual([
-      "race_shakeup",
       "leverage_spike",
     ]);
   });
 
-  it("builds a narrow race_shakeup fact pack", () => {
+  it("seeds hole state without emitting score_swing on first observation", () => {
+    const previous = context();
+    const current = context();
+    const players = [contestPlayer()];
+    const candidates = classifyContestFeedStories(previous, current, {
+      nowMs: Date.parse("2026-07-19T04:00:00.000Z"),
+      contestPlayers: players,
+      previousHoleState: null,
+      existingItems: [
+        {
+          id: "recent-recap",
+          storyType: "stage_recap",
+          priority: 40,
+          subjects: {},
+          text: "recent",
+          generatedAt: "2026-07-19T03:50:00.000Z",
+        },
+      ],
+      maxPerPass: 3,
+    });
+    expect(candidates.map((candidate) => candidate.storyType)).not.toContain(
+      "score_swing",
+    );
+    expect(buildContestFeedHoleState(players).g1?.completedKeys).toEqual(["4:1"]);
+  });
+
+  it("classifies score_swing from a new double bogey with race impact", () => {
     const previous = context();
     const current = context({
       contentionLineups: [
         lineup("b", "Bob", 1, 105),
-        lineup("a", "Alice", 2, 100),
+        lineup("a", "Noodles", 2, 100),
       ],
     });
-    const [candidate] = classifyContestFeedStories(previous, current, {
+    const players = [
+      contestPlayer({
+        scoreData: scoreData(4, [
+          { par: 4, strokes: 4, stableford: 0 },
+          { par: 4, strokes: 6, stableford: -3 },
+        ]),
+        ownerEntryIds: ["a"],
+        ownerNames: ["Noodles"],
+      }),
+    ];
+    const previousHoleState = buildContestFeedHoleState([
+      contestPlayer({
+        scoreData: scoreData(4, [{ par: 4, strokes: 4, stableford: 0 }]),
+      }),
+    ]);
+
+    const candidates = classifyContestFeedStories(previous, current, {
       nowMs: Date.parse("2026-07-19T04:00:00.000Z"),
+      contestPlayers: players,
+      previousHoleState,
       existingItems: [
         {
           id: "recent-recap",
@@ -231,21 +324,53 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
       ],
       maxPerPass: 1,
     });
-    expect(candidate?.storyType).toBe("race_shakeup");
-    const pack = buildContestFeedFactPack(candidate!, current, previous);
-    expect(pack.storyType).toBe("race_shakeup");
-    if (pack.storyType !== "race_shakeup") return;
-    expect(pack.changes.length).toBeGreaterThan(0);
-    expect(pack).not.toHaveProperty("lineupRoutes");
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]?.storyType).toBe("score_swing");
+    const pack = buildContestFeedFactPack(candidates[0]!, current, previous, {
+      contestPlayers: players,
+      previousHoleState,
+    });
+    expect(pack.storyType).toBe("score_swing");
+    if (pack.storyType !== "score_swing") return;
+    expect(pack.events[0]?.label).toBe("double_bogey_or_worse");
+    expect(pack.events[0]?.hole).toBe(2);
+    expect(pack.impacts.some((impact) => impact.displayName === "Noodles")).toBe(
+      true,
+    );
+  });
+
+  it("ignores plain birdies without contest race impact", () => {
+    const previous = context();
+    const current = context();
+    const players = [
+      contestPlayer({
+        scoreData: scoreData(4, [
+          { par: 4, strokes: 4, stableford: 0 },
+          { par: 4, strokes: 3, stableford: 2 },
+        ]),
+      }),
+    ];
+    const previousHoleState = buildContestFeedHoleState([
+      contestPlayer({
+        scoreData: scoreData(4, [{ par: 4, strokes: 4, stableford: 0 }]),
+      }),
+    ]);
+    const events = collectScoreSwingEvents(
+      players,
+      previousHoleState,
+      computeContestFeedDelta(previous, current).racePositionChanges,
+    );
+    expect(events).toEqual([]);
   });
 
   it("builds deterministic feed item ids", () => {
     const id = buildContestFeedItemId(
-      "race_shakeup",
-      "a,b",
+      "score_swing",
+      "g1",
       "2026-07-19T04:00:00.000Z",
       Date.parse("2026-07-19T04:02:00.000Z"),
     );
-    expect(id).toBe("race_shakeup:a,b:0");
+    expect(id).toBe("score_swing:g1:0");
   });
 });

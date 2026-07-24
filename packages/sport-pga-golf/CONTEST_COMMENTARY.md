@@ -62,7 +62,8 @@ Shared broadcast voices live in `@cut/sport-sdk`
 `packages/sport-pga-golf/src/contestCommentaryPrompt.ts` via
 `buildPgaContestCommentaryPrompt` (snapshot) and `buildPgaContestFeedPrompt`
 (feed). Story type is the primary prompt selector for feed items; stage
-instructions remain an overlay. A short output contract (no invented facts;
+instructions remain an overlay. Every feed prompt also includes the shared
+event → result narrative pattern. A short output contract (no invented facts;
 plain prose only) always appends. The server prompt helpers supply word limits
 and delegate to those builders.
 
@@ -76,15 +77,39 @@ lives in a separate `Contest.commentaryFeed` JSON document:
   schemaVersion: 1,
   items: ContestFeedItem[], // newest first, capped
   lastContext?: ContestCommentaryContext,
+  lastHoleState?: ContestFeedHoleState, // completed-hole fingerprint
   updatedAt?: string
 }
 ```
 
-`classifyContestFeedStories` compares the previous `lastContext` to the fresh
-analysis and emits rule-based candidates (`race_shakeup`, `leverage_spike`,
-`stage_recap` in the first pass). Each selected story gets a narrow fact pack
+`classifyContestFeedStories` compares the previous `lastContext` / `lastHoleState`
+to the fresh analysis and emits rule-based candidates (`score_swing`,
+`leverage_spike`, `stage_recap`). Each selected story gets a narrow fact pack
 and a story-specific prompt. New items are prepended and trimmed to a rolling
-cap (30).
+cap (30). `lastHoleState` is rewritten every successful pass so the next tick
+only sees newly completed holes.
+
+### Score swing (event → result)
+
+`score_swing` is the primary live beat. It watches contest-owned golfers for
+new outsize hole results (birdie-or-better, double-bogey-or-worse), then
+attaches owning-lineup race impacts from the context delta:
+
+- Eagle-or-better, hole-in-one, and double-bogey-or-worse always qualify when owned.
+- Plain birdies qualify only when an owning lineup also moved position/score.
+- The fact pack carries `events` (golf hole beats) and `impacts` (contest moves).
+- The first pass after deploy seeds `lastHoleState` without emitting swings.
+
+Legacy `race_shakeup` items may still appear in stored feeds but are no longer
+emitted.
+
+### Narrative pattern: event → result
+
+Live feed updates treat tournament player scoring as the **event** and contest
+movement as the **result**. Copy should read causally—golfer score change
+first, then what it does to a user's position, leverage, or paid-cut status
+(e.g. “Scheffler double-bogeys 13 and 14, which drops Noodles to 9th”). Never
+invent hole results beyond the supplied fact pack.
 
 Callable service: `server/src/services/contest/generateContestFeed.ts`.
 

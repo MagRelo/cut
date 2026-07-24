@@ -54,7 +54,7 @@ const diagnostics = {
 };
 
 function builder() {
-  return Promise.resolve({ context, diagnostics });
+  return Promise.resolve({ context, diagnostics, contestPlayers: [] });
 }
 
 class SequenceGenerator implements CommentaryTextGenerator {
@@ -88,6 +88,7 @@ describe("generateContestFeed", () => {
     expect(commentaryFeedWordCount(result.newItems[0]!.text)).toBe(125);
     expect(result.document.items[0]?.storyType).toBe("stage_recap");
     expect(result.document.lastContext?.period).toBe(4);
+    expect(result.document.lastHoleState).toEqual({});
     expect(generator.prompts[0]).toContain("Story: stage recap");
     expect(generator.prompts[0]).toContain("125-175 words");
   });
@@ -126,7 +127,7 @@ describe("generateContestFeed", () => {
     const result = await generateContestFeed("contest", {
       generator,
       contextBuilder: () =>
-        Promise.resolve({ context: next, diagnostics }),
+        Promise.resolve({ context: next, diagnostics, contestPlayers: [] }),
       existingFeed: {
         schemaVersion: 1,
         items: [

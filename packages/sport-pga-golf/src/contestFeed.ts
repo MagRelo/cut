@@ -4,6 +4,31 @@ import type {
   ContestCommentaryPlayer,
   ContestCommentaryStageId,
 } from "./contestCommentary.js";
+import {
+  holeSeverity,
+  isRareOutsizeHole,
+  listNewOutsizeHoles,
+  type ContestFeedCompletedHole,
+  type ContestFeedHoleState,
+} from "./contestFeedHoles.js";
+
+export type {
+  ContestFeedCompletedHole,
+  ContestFeedHoleLabel,
+  ContestFeedHoleState,
+  ContestFeedPlayerHoleState,
+} from "./contestFeedHoles.js";
+export {
+  buildContestFeedHoleState,
+  holeKey,
+  holeSeverity,
+  isOutsizeHole,
+  isRareOutsizeHole,
+  labelHoleOutcome,
+  listCompletedHoles,
+  listNewCompletedHoles,
+  listNewOutsizeHoles,
+} from "./contestFeedHoles.js";
 
 /** Rolling window size for the contest commentary feed document. */
 export const CONTEST_FEED_ITEM_CAP = 30;
@@ -14,8 +39,12 @@ export const CONTEST_FEED_MAX_PER_PASS = 2;
 /** Default cooldown before another stage_recap may be emitted (ms). */
 export const CONTEST_FEED_RECAP_COOLDOWN_MS = 20 * 60 * 1000;
 
+/** Max hole events bundled into one score_swing story. */
+export const CONTEST_FEED_SCORE_SWING_EVENT_CAP = 3;
+
 export type ContestFeedStoryType =
   | "race_shakeup"
+  | "score_swing"
   | "leverage_spike"
   | "shared_risk"
   | "route_narrowing"
@@ -23,9 +52,9 @@ export type ContestFeedStoryType =
   | "stage_recap"
   | "milestone";
 
-/** Story types implemented in the first classifier pass. */
+/** Story types implemented in the classifier pass. */
 export const CONTEST_FEED_ACTIVE_STORY_TYPES = [
-  "race_shakeup",
+  "score_swing",
   "leverage_spike",
   "stage_recap",
 ] as const satisfies readonly ContestFeedStoryType[];
@@ -53,8 +82,19 @@ export interface ContestCommentaryFeedDocument {
   items: ContestFeedItem[];
   /** Analysis snapshot used for next-pass deltas / cooldowns. */
   lastContext?: ContestCommentaryContext;
+  /** Completed-hole fingerprint for contest-owned golfers (score_swing deltas). */
+  lastHoleState?: ContestFeedHoleState;
   /** ISO timestamp of the last successful feed write. */
   updatedAt?: string;
+}
+
+/** Contest-owned golfer with scorecard + ownership for event-first stories. */
+export interface ContestFeedContestPlayer {
+  eventParticipantId: string;
+  displayName: string;
+  scoreData: unknown;
+  ownerEntryIds: string[];
+  ownerNames: string[];
 }
 
 export interface ContestFeedStoryCandidate {
@@ -88,6 +128,20 @@ export interface ContestFeedLeverageSpike {
   ownerNames: string[];
 }
 
+export interface ContestFeedScoreSwingEvent {
+  eventParticipantId: string;
+  displayName: string;
+  round: number;
+  hole: number;
+  par: number;
+  strokes: number;
+  strokesToPar: number;
+  stableford: number;
+  label: ContestFeedCompletedHole["label"];
+  ownerEntryIds: string[];
+  ownerNames: string[];
+}
+
 export interface ContestFeedDelta {
   racePositionChanges: ContestFeedRacePositionChange[];
   leverageSpikes: ContestFeedLeverageSpike[];
@@ -106,10 +160,20 @@ export interface ClassifyContestFeedStoriesOptions {
   recapCooldownMs?: number;
   /** Max candidates returned after ranking; default CONTEST_FEED_MAX_PER_PASS. */
   maxPerPass?: number;
-  /** Minimum absolute position move to count as a race shakeup. */
+  /** Minimum absolute position move for birdie impact gating. */
   minPositionDelta?: number;
   /** Minimum leverage delta to count as a leverage spike. */
   minLeverageDelta?: number;
+  /** Contest-owned golfers with live scorecards. */
+  contestPlayers?: readonly ContestFeedContestPlayer[];
+  /** Prior hole fingerprint from the feed document. */
+  previousHoleState?: ContestFeedHoleState | null;
+}
+
+export interface BuildContestFeedFactPackOptions {
+  contestPlayers?: readonly ContestFeedContestPlayer[];
+  previousHoleState?: ContestFeedHoleState | null;
+  minPositionDelta?: number;
 }
 
 export interface ContestFeedWordLimits {
@@ -121,20 +185,20 @@ export const CONTEST_FEED_WORD_LIMITS: Record<
   ContestFeedActiveStoryType,
   ContestFeedWordLimits
 > = {
-  race_shakeup: { minWords: 50, maxWords: 100 },
+  score_swing: { minWords: 50, maxWords: 100 },
   leverage_spike: { minWords: 40, maxWords: 80 },
   stage_recap: { minWords: 125, maxWords: 175 },
 };
 
 export type ContestFeedFactPack =
   | {
-      storyType: "race_shakeup";
+      storyType: "score_swing";
       stageId: ContestCommentaryStageId;
       period: number | null;
       paidCount: number;
       race: ContestCommentaryContext["race"];
-      changes: ContestFeedRacePositionChange[];
-      contentionLineups: ContestCommentaryLineup[];
+      events: ContestFeedScoreSwingEvent[];
+      impacts: ContestFeedRacePositionChange[];
     }
   | {
       storyType: "leverage_spike";
@@ -186,6 +250,22 @@ function parseFeedItem(value: unknown): ContestFeedItem | null {
   };
 }
 
+function parseHoleState(raw: unknown): ContestFeedHoleState | undefined {
+  if (!isRecord(raw)) return undefined;
+  const state: ContestFeedHoleState = {};
+  for (const [participantId, value] of Object.entries(raw)) {
+    if (!participantId.trim() || !isRecord(value)) continue;
+    if (typeof value.displayName !== "string") continue;
+    const keys = asStringArray(value.completedKeys);
+    if (!keys) continue;
+    state[participantId] = {
+      displayName: value.displayName,
+      completedKeys: keys,
+    };
+  }
+  return Object.keys(state).length > 0 ? state : undefined;
+}
+
 /** Empty feed document. */
 export function emptyContestCommentaryFeedDocument(
   updatedAt?: string,
@@ -215,6 +295,8 @@ export function parseContestCommentaryFeedDocument(
   if (raw.lastContext != null && isRecord(raw.lastContext)) {
     document.lastContext = raw.lastContext as unknown as ContestCommentaryContext;
   }
+  const holeState = parseHoleState(raw.lastHoleState);
+  if (holeState) document.lastHoleState = holeState;
   if (typeof raw.updatedAt === "string" && raw.updatedAt.trim()) {
     document.updatedAt = raw.updatedAt;
   }
@@ -353,6 +435,118 @@ function sortCandidates(
   });
 }
 
+function materialRaceChanges(
+  delta: ContestFeedDelta,
+  minPositionDelta: number,
+): ContestFeedRacePositionChange[] {
+  return delta.racePositionChanges.filter(
+    (change) =>
+      change.crossedPaidCut || Math.abs(change.positionDelta) >= minPositionDelta,
+  );
+}
+
+function impactByEntryId(
+  impacts: readonly ContestFeedRacePositionChange[],
+): Map<string, ContestFeedRacePositionChange> {
+  return new Map(impacts.map((impact) => [impact.entryId, impact]));
+}
+
+function ownerHasMaterialImpact(
+  ownerEntryIds: readonly string[],
+  impacts: Map<string, ContestFeedRacePositionChange>,
+): boolean {
+  return ownerEntryIds.some((entryId) => impacts.has(entryId));
+}
+
+function impactScoreForOwners(
+  ownerEntryIds: readonly string[],
+  impacts: Map<string, ContestFeedRacePositionChange>,
+): number {
+  let score = 0;
+  for (const entryId of ownerEntryIds) {
+    const impact = impacts.get(entryId);
+    if (!impact) continue;
+    score += Math.abs(impact.positionDelta) * 5;
+    if (impact.crossedPaidCut) score += 10;
+  }
+  return score;
+}
+
+interface RankedScoreSwing {
+  event: ContestFeedScoreSwingEvent;
+  severity: number;
+  impactScore: number;
+  rank: number;
+}
+
+/**
+ * Event-first score swings: new outsize holes on contest-owned golfers,
+ * gated so plain birdies require a material contest race impact.
+ */
+export function collectScoreSwingEvents(
+  contestPlayers: readonly ContestFeedContestPlayer[],
+  previousHoleState: ContestFeedHoleState | null | undefined,
+  raceImpacts: readonly ContestFeedRacePositionChange[],
+): ContestFeedScoreSwingEvent[] {
+  if (previousHoleState == null) return [];
+  const impacts = impactByEntryId(raceImpacts);
+  const ranked: RankedScoreSwing[] = [];
+
+  for (const player of contestPlayers) {
+    const prior = previousHoleState[player.eventParticipantId];
+    if (prior == null) continue;
+    const holes = listNewOutsizeHoles(player.scoreData, prior);
+    for (const hole of holes) {
+      const rare = isRareOutsizeHole(hole);
+      const hasImpact = ownerHasMaterialImpact(player.ownerEntryIds, impacts);
+      if (!rare && !hasImpact) continue;
+      const event: ContestFeedScoreSwingEvent = {
+        eventParticipantId: player.eventParticipantId,
+        displayName: player.displayName,
+        round: hole.round,
+        hole: hole.hole,
+        par: hole.par,
+        strokes: hole.strokes,
+        strokesToPar: hole.strokesToPar,
+        stableford: hole.stableford,
+        label: hole.label,
+        ownerEntryIds: [...player.ownerEntryIds],
+        ownerNames: [...player.ownerNames],
+      };
+      const severity = holeSeverity(hole);
+      const impactScore = impactScoreForOwners(player.ownerEntryIds, impacts);
+      ranked.push({
+        event,
+        severity,
+        impactScore,
+        rank: severity + impactScore,
+      });
+    }
+  }
+
+  ranked.sort((left, right) => {
+    if (right.rank !== left.rank) return right.rank - left.rank;
+    if (left.event.round !== right.event.round) {
+      return left.event.round - right.event.round;
+    }
+    if (left.event.hole !== right.event.hole) {
+      return left.event.hole - right.event.hole;
+    }
+    return left.event.eventParticipantId.localeCompare(right.event.eventParticipantId);
+  });
+
+  return ranked
+    .slice(0, CONTEST_FEED_SCORE_SWING_EVENT_CAP)
+    .map((row) => row.event);
+}
+
+function scoreSwingPriority(events: readonly ContestFeedScoreSwingEvent[]): number {
+  if (events.length === 0) return 0;
+  const top = events[0]!;
+  const severity = holeSeverity(top);
+  return 80 + Math.min(20, severity) + Math.min(10, events.length * 2);
+}
+
 /**
  * Rule-based story classifier. Does not invent facts — only ranks real deltas.
  */
@@ -368,11 +562,13 @@ export function classifyContestFeedStories(
   const minPositionDelta = options.minPositionDelta ?? 1;
   const minLeverageDelta = options.minLeverageDelta ?? 0.05;
   const existingItems = options.existingItems ?? [];
+  const contestPlayers = options.contestPlayers ?? [];
+  const previousHoleState = options.previousHoleState;
 
   const candidates: ContestFeedStoryCandidate[] = [];
-  const raceCooldown = recentStoryKeys(
+  const swingCooldown = recentStoryKeys(
     existingItems,
-    "race_shakeup",
+    "score_swing",
     recapCooldownMs,
     nowMs,
   );
@@ -389,27 +585,31 @@ export function classifyContestFeedStories(
     nowMs,
   );
 
-  const materialRaceChanges = delta.racePositionChanges.filter(
-    (change) =>
-      change.crossedPaidCut || Math.abs(change.positionDelta) >= minPositionDelta,
+  const raceImpacts = materialRaceChanges(delta, minPositionDelta);
+  const swingEvents = collectScoreSwingEvents(
+    contestPlayers,
+    previousHoleState,
+    raceImpacts,
   );
-  if (materialRaceChanges.length > 0) {
-    const entryIds = materialRaceChanges.map((change) => change.entryId).sort();
-    const subjectKey = entryIds.join(",") || "race";
-    if (!raceCooldown.has(subjectKey)) {
-      const crossed = materialRaceChanges.filter((change) => change.crossedPaidCut);
-      const maxMove = Math.max(
-        ...materialRaceChanges.map((change) => Math.abs(change.positionDelta)),
-      );
+  if (swingEvents.length > 0) {
+    const participantIds = [
+      ...new Set(swingEvents.map((event) => event.eventParticipantId)),
+    ].sort();
+    const entryIds = [
+      ...new Set(swingEvents.flatMap((event) => event.ownerEntryIds)),
+    ].sort();
+    const subjectKey = participantIds.join(",") || "swing";
+    if (!swingCooldown.has(subjectKey)) {
+      const top = swingEvents[0]!;
       candidates.push({
-        storyType: "race_shakeup",
-        priority: 80 + Math.min(20, maxMove * 5) + (crossed.length > 0 ? 10 : 0),
-        subjects: { entryIds },
+        storyType: "score_swing",
+        priority: scoreSwingPriority(swingEvents),
+        subjects: {
+          participantIds,
+          ...(entryIds.length > 0 ? { entryIds } : {}),
+        },
         subjectKey,
-        reason:
-          crossed.length > 0
-            ? `${crossed.length} lineup(s) crossed the paid cut; ${materialRaceChanges.length} position move(s).`
-            : `${materialRaceChanges.length} material contest position move(s).`,
+        reason: `${swingEvents.length} outsize hole result(s); top: ${top.displayName} ${top.label} on ${top.round}:${top.hole}.`,
       });
     }
   }
@@ -465,26 +665,34 @@ export function buildContestFeedFactPack(
   candidate: ContestFeedStoryCandidate,
   current: ContestCommentaryContext,
   previous?: ContestCommentaryContext | null,
+  options: BuildContestFeedFactPackOptions = {},
 ): ContestFeedFactPack {
   const delta = computeContestFeedDelta(previous, current);
   const stageId = current.eventProgress.stageId;
+  const minPositionDelta = options.minPositionDelta ?? 1;
 
-  if (candidate.storyType === "race_shakeup") {
-    const entryIds = new Set(candidate.subjects.entryIds ?? []);
-    const changes = delta.racePositionChanges.filter((change) =>
-      entryIds.size === 0 ? true : entryIds.has(change.entryId),
+  if (candidate.storyType === "score_swing") {
+    const participantIds = new Set(candidate.subjects.participantIds ?? []);
+    const raceImpacts = materialRaceChanges(delta, minPositionDelta);
+    const events = collectScoreSwingEvents(
+      options.contestPlayers ?? [],
+      options.previousHoleState,
+      raceImpacts,
+    ).filter((event) =>
+      participantIds.size === 0
+        ? true
+        : participantIds.has(event.eventParticipantId),
     );
-    const contentionLineups = current.contentionLineups.filter((lineup) =>
-      entryIds.size === 0 ? true : entryIds.has(lineup.entryId),
-    );
+    const ownerEntryIds = new Set(events.flatMap((event) => event.ownerEntryIds));
+    const impacts = raceImpacts.filter((change) => ownerEntryIds.has(change.entryId));
     return {
-      storyType: "race_shakeup",
+      storyType: "score_swing",
       stageId,
       period: current.period,
       paidCount: current.paidCount,
       race: current.race,
-      changes,
-      contentionLineups,
+      events,
+      impacts,
     };
   }
 
@@ -518,6 +726,7 @@ export interface MergeContestFeedItemsOptions {
   cap?: number;
   updatedAt?: string;
   lastContext?: ContestCommentaryContext;
+  lastHoleState?: ContestFeedHoleState;
 }
 
 /** Prepend new items and trim to the rolling cap. */
@@ -542,6 +751,11 @@ export function mergeContestFeedItems(
       ? { lastContext: options.lastContext }
       : existing.lastContext != null
         ? { lastContext: existing.lastContext }
+        : {}),
+    ...(options.lastHoleState != null
+      ? { lastHoleState: options.lastHoleState }
+      : existing.lastHoleState != null
+        ? { lastHoleState: existing.lastHoleState }
         : {}),
     ...(options.updatedAt
       ? { updatedAt: options.updatedAt }
