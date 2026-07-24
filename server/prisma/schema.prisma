@@ -226,8 +226,10 @@ model Contest {
   results                Json?
   pickPopularity         Json?
   pickPopularityLockedAt DateTime?
-  commentary             String?
-  commentaryGeneratedAt  DateTime?
+  commentary                String?
+  commentaryGeneratedAt     DateTime?
+  commentaryFeed            Json?
+  commentaryFeedGeneratedAt DateTime?
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 

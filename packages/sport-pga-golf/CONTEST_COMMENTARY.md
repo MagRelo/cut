@@ -60,10 +60,33 @@ commentary is not framed around leader-wave pacing.
 Shared broadcast voices live in `@cut/sport-sdk`
 (`contestCommentaryVoices`). PGA stage instructions live in
 `packages/sport-pga-golf/src/contestCommentaryPrompt.ts` via
-`buildPgaContestCommentaryPrompt`. Each stage owns its analytical framing
-(ownership/leverage early; routes and leader pace on the weekend). A short
-output contract (no invented facts; plain prose only) always appends. The
-server prompt helper only supplies word limits and delegates to that builder.
+`buildPgaContestCommentaryPrompt` (snapshot) and `buildPgaContestFeedPrompt`
+(feed). Story type is the primary prompt selector for feed items; stage
+instructions remain an overlay. A short output contract (no invented facts;
+plain prose only) always appends. The server prompt helpers supply word limits
+and delegate to those builders.
+
+## Contest commentary feed
+
+`Contest.commentary` remains a single prose snapshot. The rolling story feed
+lives in a separate `Contest.commentaryFeed` JSON document:
+
+```ts
+{
+  schemaVersion: 1,
+  items: ContestFeedItem[], // newest first, capped
+  lastContext?: ContestCommentaryContext,
+  updatedAt?: string
+}
+```
+
+`classifyContestFeedStories` compares the previous `lastContext` to the fresh
+analysis and emits rule-based candidates (`race_shakeup`, `leverage_spike`,
+`stage_recap` in the first pass). Each selected story gets a narrow fact pack
+and a story-specific prompt. New items are prepended and trimmed to a rolling
+cap (30).
+
+Callable service: `server/src/services/contest/generateContestFeed.ts`.
 
 ## Calibration
 
@@ -75,7 +98,7 @@ a bounded one-hour TTL; failed loads are evicted.
 
 ## Commands
 
-Generate only the final update:
+Generate only the final snapshot update:
 
 ```sh
 pnpm --filter server run script:contest-commentary <contestId>
@@ -87,6 +110,19 @@ Inspect fresh context and diagnostics without calling the text generator:
 pnpm --filter server run script:contest-commentary <contestId> --context
 ```
 
+Classify feed candidates without generating copy:
+
+```sh
+pnpm --filter server run script:contest-feed <contestId> --classify
+```
+
+Generate feed items (optionally persist with `--write`):
+
+```sh
+pnpm --filter server run script:contest-feed <contestId>
+pnpm --filter server run script:contest-feed <contestId> --write
+```
+
 Neither command creates a report file.
 
 ## Scheduled delivery
@@ -94,9 +130,10 @@ Neither command creates a report file.
 When `CONTEST_COMMENTARY_ENABLED=true` and `CURSOR_API_KEY` is configured, the
 server cron pipeline refreshes commentary for entered `ACTIVE` or `LOCKED` PGA
 contests while their event reports `LIVE`. The refresh runs after live scoring
-and lineup updates and replaces `Contest.commentary` when the current snapshot
-is missing or at least 20 minutes old. Generation failures leave the previous
-snapshot intact.
+and lineup updates and replaces `Contest.commentary` when the snapshot is
+missing or at least 20 minutes old. The same pass merges new story items into
+`Contest.commentaryFeed`. Generation failures leave previous values intact.
 
-The contest lobby API includes the latest commentary and generation timestamp.
-The client exposes that snapshot from the Winner Pool information panel.
+The contest lobby API includes the latest commentary snapshot, feed document,
+and generation timestamps. The client exposes the snapshot from the Winner Pool
+information panel.

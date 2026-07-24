@@ -2,6 +2,10 @@ import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 import { prisma } from "../../lib/prisma.js";
 import { requireSportModule } from "../../sports/registry.js";
 import { generateContestCommentary } from "../contest/generateContestCommentary.js";
+import {
+  generateContestFeed,
+  persistContestFeed,
+} from "../contest/generateContestFeed.js";
 import type { BatchOperationResult, OperationResult } from "../shared/types.js";
 
 export const CONTEST_COMMENTARY_REFRESH_MS = 20 * 60 * 1000;
@@ -34,7 +38,12 @@ export async function batchGenerateContestCommentary(
       contestLineups: {
         some: { entryId: { not: null } },
       },
-      OR: [{ commentaryGeneratedAt: null }, { commentaryGeneratedAt: { lte: refreshCutoff } }],
+      OR: [
+        { commentaryGeneratedAt: null },
+        { commentaryGeneratedAt: { lte: refreshCutoff } },
+        { commentaryFeedGeneratedAt: null },
+        { commentaryFeedGeneratedAt: { lte: refreshCutoff } },
+      ],
     },
     select: {
       id: true,
@@ -62,6 +71,12 @@ export async function batchGenerateContestCommentary(
           commentaryGeneratedAt: new Date(generated.generatedAt),
         },
       });
+
+      const feed = await generateContestFeed(contest.id);
+      if (feed.newItems.length > 0 || feed.document.lastContext != null) {
+        await persistContestFeed(contest.id, feed.document, feed.generatedAt);
+      }
+
       results.push({ success: true, contestId: contest.id });
     } catch (error) {
       const message = errorMessage(error);

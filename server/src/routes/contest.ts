@@ -58,6 +58,8 @@ const contestDetailSelect = {
   pickPopularityLockedAt: true,
   commentary: true,
   commentaryGeneratedAt: true,
+  commentaryFeed: true,
+  commentaryFeedGeneratedAt: true,
   createdAt: true,
   updatedAt: true,
   event: true,

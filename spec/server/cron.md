@@ -79,7 +79,7 @@ Pi cron should keep `PRISMA_SOCKET_TIMEOUT` at least `60` (home → managed Post
 | Batch                            | Typical transition                                                       |
 | -------------------------------- | ------------------------------------------------------------------------ |
 | `batchActivateContests`          | `OPEN` → `ACTIVE` when sport says event is live                          |
-| `batchGenerateContestCommentary` | Refresh latest live PGA analysis when missing or at least 20 minutes old |
+| `batchGenerateContestCommentary` | Refresh latest live PGA analysis snapshot and commentary feed when either is missing or at least 20 minutes old |
 | `batchSettleContests`            | → `SETTLED` when event complete + oracle flow                            |
 | `batchCloseContests`             | → `CLOSED` after settlement window                                       |
 
@@ -88,7 +88,8 @@ Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event statu
 Commentary generation requires `CONTEST_COMMENTARY_ENABLED=true` and
 `CURSOR_API_KEY`. It runs only for entered `ACTIVE` or `LOCKED` PGA contests
 whose event is active and reports `LIVE`. Each successful update replaces the
-latest `Contest.commentary` snapshot; failures preserve the previous update.
+latest `Contest.commentary` snapshot and merges new items into
+`Contest.commentaryFeed`; failures preserve the previous update.
 
 ### 4. Referral graph
 

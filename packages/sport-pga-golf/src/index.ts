@@ -59,8 +59,38 @@ export {
 } from "./contestCommentary.js";
 export {
   buildPgaContestCommentaryPrompt,
+  buildPgaContestFeedPrompt,
   type BuildPgaContestCommentaryPromptOptions,
+  type BuildPgaContestFeedPromptOptions,
 } from "./contestCommentaryPrompt.js";
+export {
+  CONTEST_FEED_ACTIVE_STORY_TYPES,
+  CONTEST_FEED_ITEM_CAP,
+  CONTEST_FEED_MAX_PER_PASS,
+  CONTEST_FEED_RECAP_COOLDOWN_MS,
+  CONTEST_FEED_WORD_LIMITS,
+  buildContestFeedFactPack,
+  buildContestFeedItemId,
+  classifyContestFeedStories,
+  computeContestFeedDelta,
+  emptyContestCommentaryFeedDocument,
+  latestFeedCommentaryText,
+  mergeContestFeedItems,
+  parseContestCommentaryFeedDocument,
+  type ClassifyContestFeedStoriesOptions,
+  type ContestCommentaryFeedDocument,
+  type ContestFeedActiveStoryType,
+  type ContestFeedDelta,
+  type ContestFeedFactPack,
+  type ContestFeedItem,
+  type ContestFeedItemSubjects,
+  type ContestFeedLeverageSpike,
+  type ContestFeedRacePositionChange,
+  type ContestFeedStoryCandidate,
+  type ContestFeedStoryType,
+  type ContestFeedWordLimits,
+  type MergeContestFeedItemsOptions,
+} from "./contestFeed.js";
 export { buildGolfCandidates, type EventParticipantRow } from "./candidates.js";
 export { golfCandidateSortConfig } from "./candidateSort.js";
 export {

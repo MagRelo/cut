@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   getEventStatus: vi.fn(),
   generate: vi.fn(),
+  generateFeed: vi.fn(),
+  persistFeed: vi.fn(),
 }));
 
 vi.mock("../../lib/prisma.js", () => ({
@@ -25,6 +27,11 @@ vi.mock("../../sports/registry.js", () => ({
 
 vi.mock("../contest/generateContestCommentary.js", () => ({
   generateContestCommentary: mocks.generate,
+}));
+
+vi.mock("../contest/generateContestFeed.js", () => ({
+  generateContestFeed: mocks.generateFeed,
+  persistContestFeed: mocks.persistFeed,
 }));
 
 import {
@@ -54,6 +61,16 @@ beforeEach(() => {
     commentary: "Fresh commentary",
     generatedAt: "2026-07-19T04:00:00.000Z",
   });
+  mocks.generateFeed.mockResolvedValue({
+    document: {
+      schemaVersion: 1,
+      items: [],
+      lastContext: { period: 4 },
+    },
+    newItems: [{ id: "item-1" }],
+    generatedAt: "2026-07-19T04:00:00.000Z",
+  });
+  mocks.persistFeed.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -105,6 +122,12 @@ describe("batchGenerateContestCommentary", () => {
               lte: new Date(now.getTime() - CONTEST_COMMENTARY_REFRESH_MS),
             },
           },
+          { commentaryFeedGeneratedAt: null },
+          {
+            commentaryFeedGeneratedAt: {
+              lte: new Date(now.getTime() - CONTEST_COMMENTARY_REFRESH_MS),
+            },
+          },
         ],
       },
       select: {
@@ -121,6 +144,8 @@ describe("batchGenerateContestCommentary", () => {
         commentaryGeneratedAt: new Date("2026-07-19T04:00:00.000Z"),
       },
     });
+    expect(mocks.generateFeed).toHaveBeenCalledWith("contest-1");
+    expect(mocks.persistFeed).toHaveBeenCalled();
     expect(result).toMatchObject({ total: 1, succeeded: 1, failed: 0 });
   });
 

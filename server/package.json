@@ -59,7 +59,8 @@
     "script:commodities-refresh-candidates": "tsx src/scripts/commoditiesRefreshCandidates.ts",
     "script:commodities-week-analysis": "tsx src/scripts/commoditiesWeekAnalysis.ts",
     "script:commodities-scoring-models": "tsx src/scripts/commoditiesScoringModels.ts",
-    "script:contest-commentary": "NODE_NO_WARNINGS=1 tsx src/scripts/contestCommentary.ts"
+    "script:contest-commentary": "NODE_NO_WARNINGS=1 tsx src/scripts/contestCommentary.ts",
+    "script:contest-feed": "NODE_NO_WARNINGS=1 tsx src/scripts/contestFeed.ts"
   },
   "dependencies": {
     "@cursor/sdk": "^1.0.23",

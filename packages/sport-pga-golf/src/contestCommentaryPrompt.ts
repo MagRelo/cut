@@ -4,14 +4,37 @@ import {
   type ContestCommentaryVoiceId,
 } from "@cut/sport-sdk";
 import type { ContestCommentaryContext, ContestCommentaryStageId } from "./contestCommentary.js";
+import type {
+  ContestFeedActiveStoryType,
+  ContestFeedFactPack,
+} from "./contestFeed.js";
+import { CONTEST_FEED_WORD_LIMITS } from "./contestFeed.js";
 
 /** Always-on output contract — no stage-specific analytical framing. */
 const OUTPUT_CONTRACT: readonly string[] = [
   "Do not invent scores, odds, ownership, names, injuries, tee times, or golf results.",
   'Never invent broadcast phrases such as "cut week," "cut-week," or similar. Use ordinary golf language only (the cut, cut line, made the cut).',
-  "Do not echo internal stage labels (stageId, cut_round, opening_round, etc.) in the commentary.",
+  "Do not echo internal stage labels (stageId, cut_round, opening_round, storyType, etc.) in the commentary.",
   "Return only the finished commentary as plain prose: no title, bullets, markdown, caveats, or word count.",
 ];
+
+/** Story-type framing is primary; stage instructions are an overlay. */
+const STORY_INSTRUCTIONS: Record<ContestFeedActiveStoryType, readonly string[]> = {
+  race_shakeup: [
+    "Story: race shakeup. Focus only on the contest leaderboard / paid-cut movement in STORY_FACTS_JSON.",
+    "Name the users whose positions moved and connect the move to scores when present. Do not widen into a full contest recap, routes, or ownership ladders.",
+    "One tight beat: what changed, who it helps or hurts, and why it matters for the paid places.",
+  ],
+  leverage_spike: [
+    "Story: leverage spike. Focus only on the golfer(s) whose contest leverage rose in STORY_FACTS_JSON.",
+    "Connect the golfer to owning users. Explain why this player now swings the contest—not a full race board or route analysis.",
+    "Keep it flash-length and concrete. Do not invent hole results beyond the supplied facts.",
+  ],
+  stage_recap: [
+    "Story: stage recap. Write a full contest outlook using the supplied contest context JSON.",
+    "Cover the race, ownership/leverage or routes as the stage overlay directs, and keep the finish worth watching.",
+  ],
+};
 
 const STAGE_INSTRUCTIONS: Record<ContestCommentaryStageId, readonly string[]> = {
   opening_round: [
@@ -72,24 +95,67 @@ export interface BuildPgaContestCommentaryPromptOptions {
   maxWords: number;
 }
 
+/** Legacy single-snapshot prompt (stage_recap framing). */
 export function buildPgaContestCommentaryPrompt(
   options: BuildPgaContestCommentaryPromptOptions,
 ): string {
+  return buildPgaContestFeedPrompt({
+    storyType: "stage_recap",
+    factPack: { storyType: "stage_recap", context: options.context },
+    voiceId: options.voiceId,
+    correctiveFeedback: options.correctiveFeedback,
+    minWords: options.minWords,
+    maxWords: options.maxWords,
+  });
+}
+
+export interface BuildPgaContestFeedPromptOptions {
+  storyType: ContestFeedActiveStoryType;
+  factPack: ContestFeedFactPack;
+  voiceId?: ContestCommentaryVoiceId;
+  correctiveFeedback?: string;
+  minWords?: number;
+  maxWords?: number;
+}
+
+function stageIdFromFactPack(factPack: ContestFeedFactPack): ContestCommentaryStageId {
+  if (factPack.storyType === "stage_recap") {
+    return factPack.context.eventProgress.stageId;
+  }
+  return factPack.stageId;
+}
+
+/**
+ * Feed prompt: story instructions first, stage overlay second, narrow fact JSON last.
+ */
+export function buildPgaContestFeedPrompt(
+  options: BuildPgaContestFeedPromptOptions,
+): string {
   const voiceId = options.voiceId ?? DEFAULT_CONTEST_COMMENTARY_VOICE_ID;
   const voice = contestCommentaryVoices[voiceId];
-  const stageId = options.context.eventProgress.stageId;
+  const limits = CONTEST_FEED_WORD_LIMITS[options.storyType];
+  const minWords = options.minWords ?? limits.minWords;
+  const maxWords = options.maxWords ?? limits.maxWords;
+  const stageId = stageIdFromFactPack(options.factPack);
   const stageInstructions = STAGE_INSTRUCTIONS[stageId];
+  const storyInstructions = STORY_INSTRUCTIONS[options.storyType];
+
+  const factsPayload =
+    options.factPack.storyType === "stage_recap"
+      ? `CONTEST_CONTEXT_JSON=${JSON.stringify(options.factPack.context)}`
+      : `STORY_FACTS_JSON=${JSON.stringify(options.factPack)}`;
 
   return [
-    "Write one live contest update using only the supplied JSON facts.",
-    `Length must be ${options.minWords}-${options.maxWords} words.`,
+    "Write one live contest feed update using only the supplied JSON facts.",
+    `Length must be ${minWords}-${maxWords} words.`,
     ...voice.instructions,
+    ...storyInstructions,
     ...stageInstructions,
     ...OUTPUT_CONTRACT,
     options.correctiveFeedback
       ? `Correction required after the previous attempt: ${options.correctiveFeedback}`
       : "",
-    `CONTEST_CONTEXT_JSON=${JSON.stringify(options.context)}`,
+    factsPayload,
   ]
     .filter(Boolean)
     .join("\n");

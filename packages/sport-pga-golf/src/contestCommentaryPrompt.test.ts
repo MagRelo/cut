@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { ContestCommentaryContext } from "./contestCommentary.js";
-import { buildPgaContestCommentaryPrompt } from "./contestCommentaryPrompt.js";
+import {
+  buildPgaContestCommentaryPrompt,
+  buildPgaContestFeedPrompt,
+} from "./contestCommentaryPrompt.js";
 
 const baseContext: ContestCommentaryContext = {
   period: 4,
@@ -78,5 +81,39 @@ describe("buildPgaContestCommentaryPrompt", () => {
     });
     expect(prompt).toContain("Correction required after the previous attempt");
     expect(prompt).toContain("125-175 words");
+  });
+
+  it("selects story instructions and word limits for feed prompts", () => {
+    const racePrompt = buildPgaContestFeedPrompt({
+      storyType: "race_shakeup",
+      factPack: {
+        storyType: "race_shakeup",
+        stageId: "final_round",
+        period: 4,
+        paidCount: 1,
+        race: baseContext.race,
+        changes: [],
+        contentionLineups: [],
+      },
+    });
+    expect(racePrompt).toContain("Story: race shakeup");
+    expect(racePrompt).toContain("50-100 words");
+    expect(racePrompt).toContain("STORY_FACTS_JSON=");
+    expect(racePrompt).toContain("Stage: final round");
+
+    const leveragePrompt = buildPgaContestFeedPrompt({
+      storyType: "leverage_spike",
+      factPack: {
+        storyType: "leverage_spike",
+        stageId: "opening_round",
+        period: 1,
+        spikes: [],
+        highLeveragePlayers: [],
+        race: baseContext.race,
+      },
+    });
+    expect(leveragePrompt).toContain("Story: leverage spike");
+    expect(leveragePrompt).toContain("40-80 words");
+    expect(leveragePrompt).toContain("Stage: opening round");
   });
 });

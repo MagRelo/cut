@@ -127,9 +127,12 @@ export interface Contest {
   /** Per-player popularity after lock; keyed by eventParticipantId. */
   pickPopularity?: PickPopularityMap | null;
   pickPopularityLockedAt?: string | Date | null;
-  /** Latest generated live-contest analysis. */
+  /** Latest generated live-contest analysis (single snapshot). */
   commentary?: string | null;
   commentaryGeneratedAt?: string | Date | null;
+  /** Rolling contest commentary feed document (story-typed items). */
+  commentaryFeed?: unknown | null;
+  commentaryFeedGeneratedAt?: string | Date | null;
   _count?: {
     contestLineups: number;
   };

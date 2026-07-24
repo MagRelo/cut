@@ -14,7 +14,7 @@ the configured text generator for the final update without temporary files.
 
 ## Workflow
 
-1. Obtain the contest ID. Generate the finished commentary with:
+1. Obtain the contest ID. Generate the finished commentary snapshot with:
 
    ```sh
    pnpm --filter server run script:contest-commentary <contestId>
@@ -24,6 +24,14 @@ the configured text generator for the final update without temporary files.
 
    ```sh
    pnpm --filter server run script:contest-commentary <contestId> --context
+   ```
+
+3. For the story-typed commentary feed (classify / generate / optionally write):
+
+   ```sh
+   pnpm --filter server run script:contest-feed <contestId> --classify
+   pnpm --filter server run script:contest-feed <contestId>
+   pnpm --filter server run script:contest-feed <contestId> --write
    ```
 
 Return the command output directly unless the user asks for further analysis.
