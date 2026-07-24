@@ -53,6 +53,20 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(openingPrompt).not.toContain("Stage: final round");
     expect(openingPrompt).not.toContain("prioritize routes to winning");
     expect(openingPrompt).not.toContain("Treat route metrics as analytical guidance");
+
+    const cutPrompt = buildPgaContestCommentaryPrompt({
+      context: {
+        ...baseContext,
+        period: 2,
+        eventProgress: { period: 2, stageId: "cut_round" },
+      },
+      minWords: 125,
+      maxWords: 175,
+    });
+    expect(cutPrompt).toContain("approaching the tournament cut");
+    expect(cutPrompt).toContain("Never invent broadcast phrases");
+    expect(cutPrompt).toContain("Do not echo internal stage labels");
+    expect(cutPrompt).not.toContain("Stage: cut round");
   });
 
   it("includes corrective feedback when provided", () => {

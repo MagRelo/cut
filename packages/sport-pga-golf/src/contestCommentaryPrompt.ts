@@ -3,14 +3,13 @@ import {
   DEFAULT_CONTEST_COMMENTARY_VOICE_ID,
   type ContestCommentaryVoiceId,
 } from "@cut/sport-sdk";
-import type {
-  ContestCommentaryContext,
-  ContestCommentaryStageId,
-} from "./contestCommentary.js";
+import type { ContestCommentaryContext, ContestCommentaryStageId } from "./contestCommentary.js";
 
 /** Always-on output contract — no stage-specific analytical framing. */
 const OUTPUT_CONTRACT: readonly string[] = [
-  "Do not invent scores, odds, ownership, names, injuries, tee times, or golf results. Distinguish lineup rarity from lineup quality.",
+  "Do not invent scores, odds, ownership, names, injuries, tee times, or golf results.",
+  'Never invent broadcast phrases such as "cut week," "cut-week," or similar. Use ordinary golf language only (the cut, cut line, made the cut).',
+  "Do not echo internal stage labels (stageId, cut_round, opening_round, etc.) in the commentary.",
   "Return only the finished commentary as plain prose: no title, bullets, markdown, caveats, or word count.",
 ];
 
@@ -25,11 +24,11 @@ const STAGE_INSTRUCTIONS: Record<ContestCommentaryStageId, readonly string[]> = 
     "Stay optimistic about the week ahead. Do not claim an effectively eliminated lineup is live.",
   ],
   cut_round: [
-    "Stage: cut round. Orient on the contest race and tournament cut progress—less on ownership stacks, leverage ladders, or route-to-win detail, and not tournament-leader tee-time pacing.",
+    "Stage guidance: approaching the tournament cut. Orient on the contest race and cut-line progress—less on ownership stacks, leverage ladders, or route-to-win detail, and not tournament-leader tee-time pacing.",
     "Cut-line and made-cut uncertainty still matter; use uncertaintyNotes when present. Do not invent cut outcomes.",
     "Avoid leader-pace framing (“leaders approaching the turn,” “closing stretch”) unless eventProgress.leaderProgress is present—which it is not in this stage.",
     "Exact current contest scores and the paid-cut gap may be stated once when establishing the race, but avoid turning the update into a list of numbers.",
-    "Mention ownership or shared golfers only when they clearly shape the cut-week contest picture; do not prioritize lineupRoutes or miracle/narrow path language.",
+    "Mention ownership or shared golfers only when they clearly shape the cut picture; do not prioritize lineupRoutes or miracle/narrow path language.",
     "Stay optimistic, but do not claim an effectively eliminated lineup is live.",
   ],
   weekend_move: [

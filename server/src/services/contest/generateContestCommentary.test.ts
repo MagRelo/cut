@@ -86,7 +86,7 @@ describe("contest commentary generation", () => {
     expect(prompt).toContain("eventProgress.leaderProgress");
     expect(prompt).toContain("Treat route metrics as analytical guidance");
     expect(prompt).toContain("Return only the finished commentary");
-    expect(prompt).toContain("Distinguish lineup rarity from lineup quality");
+    expect(prompt).toContain("Never invent broadcast phrases");
   });
 
   it("uses opening-round stage instructions without leader-pace framing", () => {
