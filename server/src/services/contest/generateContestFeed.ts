@@ -11,6 +11,7 @@ import {
   type ContestFeedStoryCandidate,
 } from "@cut/sport-pga-golf";
 import type { ContestCommentaryVoiceId } from "@cut/sport-sdk";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import {
   buildContestCommentaryContext,
@@ -102,15 +103,14 @@ async function generateStoryText(
   voiceId: ContestCommentaryVoiceId | undefined,
 ): Promise<string> {
   const limits = CONTEST_FEED_WORD_LIMITS[candidate.storyType];
-  let text = await generator.generate(
-    buildPgaContestFeedPrompt({
-      storyType: candidate.storyType,
-      factPack,
-      voiceId,
-      minWords: limits.minWords,
-      maxWords: limits.maxWords,
-    }),
-  );
+  const promptBase = {
+    storyType: candidate.storyType,
+    factPack,
+    minWords: limits.minWords,
+    maxWords: limits.maxWords,
+    ...(voiceId != null ? { voiceId } : {}),
+  };
+  let text = await generator.generate(buildPgaContestFeedPrompt(promptBase));
   let invalidReason = invalidFeedTextReason(
     text,
     limits.minWords,
@@ -119,12 +119,8 @@ async function generateStoryText(
   if (invalidReason) {
     text = await generator.generate(
       buildPgaContestFeedPrompt({
-        storyType: candidate.storyType,
-        factPack,
-        voiceId,
+        ...promptBase,
         correctiveFeedback: invalidReason,
-        minWords: limits.minWords,
-        maxWords: limits.maxWords,
       }),
     );
     invalidReason = invalidFeedTextReason(
@@ -226,7 +222,7 @@ export async function persistContestFeed(
   await prisma.contest.update({
     where: { id: contestId },
     data: {
-      commentaryFeed: document,
+      commentaryFeed: document as unknown as Prisma.InputJsonValue,
       commentaryFeedGeneratedAt: new Date(generatedAt),
     },
   });
