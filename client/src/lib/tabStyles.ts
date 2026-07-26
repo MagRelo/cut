@@ -1,19 +1,30 @@
+/**
+ * Equal-width boxed tabs — active state is a filled background, not an underline.
+ */
 export const tabListClassName = (...extra: string[]) =>
-  ["flex border-b border-gray-200", ...extra].filter(Boolean).join(" ");
+  ["flex gap-1 rounded-sm bg-slate-100 p-0.5", ...extra].filter(Boolean).join(" ");
 
-/** Selected tab: soft gray (lighter than legacy gray-600 / gray-800). */
-const segmentActive = "border-gray-500 text-gray-700 font-medium";
-const segmentInactive = "border-transparent text-blue-500 hover:text-blue-600";
+const tabActive = "bg-white text-slate-900 font-medium shadow-sm";
+const tabInactive = "bg-transparent text-blue-500 hover:text-blue-600 hover:bg-white/60";
+
+const segmentActive = "bg-white text-slate-900 font-medium shadow-sm";
+const segmentInactive = "bg-transparent text-blue-500 hover:text-blue-600 hover:bg-white/60";
 
 export function tabButtonClassName(selected: boolean, options?: { compact?: boolean }): string {
-  const padding = options?.compact ? "py-0.5" : "py-1";
-  const base = `w-full border-b-2 ${padding} text-sm font-display leading-tight focus:outline-none`;
-  return `${base} ${selected ? segmentActive : segmentInactive}`;
+  const padding = options?.compact ? "py-1 px-2" : "py-1.5 px-2";
+  const base = [
+    "flex-1 rounded-sm",
+    padding,
+    "text-center text-sm font-display leading-tight",
+    "transition-colors focus:outline-none",
+  ].join(" ");
+  return `${base} ${selected ? tabActive : tabInactive}`;
 }
 
-/** Underline segment control (e.g. Timeline round picker). Same colors as tabs, different layout. */
+/** Equal-width segment control (e.g. Timeline round picker). */
 export function segmentButtonClassName(selected: boolean): string {
-  const base = "flex-1 border-b-2 pb-1 pt-1 text-xs font-display leading-tight focus:outline-none";
+  const base =
+    "flex-1 rounded-sm px-1 py-1 text-xs font-display leading-tight transition-colors focus:outline-none";
   return `${base} ${selected ? segmentActive : segmentInactive}`;
 }
 

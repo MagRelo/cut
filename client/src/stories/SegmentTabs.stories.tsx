@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
-  cn,
   segmentButtonClassName,
   tabButtonClassName,
   tabListClassName,
@@ -43,7 +42,7 @@ function SegmentRowDemo() {
 
   return (
     <div className="w-full max-w-md">
-      <div className="flex" role="tablist" aria-label="Round">
+      <div className={tabListClassName()} role="tablist" aria-label="Round">
         {ROUND_OPTIONS.map((r) => (
           <button
             key={r}
@@ -68,7 +67,7 @@ function CompactTabsDemo() {
 
   return (
     <div className="w-full max-w-xs">
-      <div className={cn(tabListClassName(), "gap-0")}>
+      <div className={tabListClassName()}>
         {labels.map((label, index) => (
           <button
             key={label}
@@ -92,13 +91,14 @@ const meta = {
 } satisfies Meta;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
 
-export const FullWidthTabs: Story = {
+type Story = StoryObj;
+
+export const TabRow: Story = {
   render: () => <TabRowDemo />,
 };
 
-export const RoundSegments: Story = {
+export const SegmentRow: Story = {
   render: () => <SegmentRowDemo />,
 };
 

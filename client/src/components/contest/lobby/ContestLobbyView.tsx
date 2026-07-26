@@ -90,7 +90,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   ]);
 
   const feedTabLabel =
-    unreadCount > 0 ? `Intel (${unreadCount})` : "Intel";
+    unreadCount > 0 ? `Cutbot (${unreadCount})` : "Cutbot";
 
   const fieldSportId = contest.event?.sportId;
 
@@ -107,7 +107,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
         </div>
       ) : null}
       {eventShell && EventSummary ? <EventSummary event={eventShell} /> : null}
-      <div className="border-b border-gray-200">
+      <div>
         <div className="px-3 pb-2 pt-4">
           <ContestCard
             contest={contest}
@@ -129,24 +129,17 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
               >
-                My Lineups
+                Lineups
               </Tab>
             ) : null}
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               Contest
             </Tab>
-            {viewModel.layout.showFeedTab ? (
-              <Tab
-                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-              >
-                {feedTabLabel}
-              </Tab>
-            ) : null}
             {viewModel.layout.showPredictionsTab ? (
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
               >
-                Winner Pool
+                Pool
               </Tab>
             ) : null}
             {viewModel.layout.showResultsTab ? (
@@ -154,6 +147,13 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
               >
                 Results
+              </Tab>
+            ) : null}
+            {viewModel.layout.showFeedTab ? (
+              <Tab
+                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+              >
+                {feedTabLabel}
               </Tab>
             ) : null}
           </TabList>
@@ -183,12 +183,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
               />
             </TabPanel>
 
-            {viewModel.layout.showFeedTab ? (
-              <TabPanel className="p-4 focus:outline-none">
-                <ContestFeedPanel contest={contest} streamClient={streamClient} />
-              </TabPanel>
-            ) : null}
-
             {viewModel.layout.showPredictionsTab ? (
               <TabPanel className="p-4 focus:outline-none">
                 <ContestPredictionsPanel
@@ -202,6 +196,12 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
             {viewModel.layout.showResultsTab ? (
               <TabPanel className="p-4 focus:outline-none">
                 <ContestResultsPanel contest={contest} isLoading={isContestDataPending} />
+              </TabPanel>
+            ) : null}
+
+            {viewModel.layout.showFeedTab ? (
+              <TabPanel className="p-4 focus:outline-none">
+                <ContestFeedPanel contest={contest} streamClient={streamClient} />
               </TabPanel>
             ) : null}
           </TabPanels>

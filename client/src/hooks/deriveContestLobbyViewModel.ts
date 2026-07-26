@@ -93,14 +93,20 @@ export function deriveContestLobbyViewModel(
   let tabIndex = 0;
   const lineupsTabIndex = showLineupsTab ? tabIndex++ : -1;
   const contestTabIndex = tabIndex++;
+  // Predictions (live/locked) and Results (settled) share the slot before Cutbot.
+  const showPredictionsTab = phase === "live" || phase === "locked";
+  const showResultsTab = isSettled;
+  const tailTabIndex =
+    showPredictionsTab || showResultsTab ? tabIndex++ : -1;
   const feedTabIndex = showFeedTab ? tabIndex++ : -1;
-  const tailTabIndex = tabIndex;
 
   const defaultTabIndex =
     phase === "preRound" && showLineupsTab
       ? lineupsTabIndex
       : phase === "settled"
-        ? tailTabIndex
+        ? showResultsTab
+          ? tailTabIndex
+          : contestTabIndex
         : contestTabIndex;
 
   return {
@@ -109,8 +115,8 @@ export function deriveContestLobbyViewModel(
       showLineupsTab,
       showFeedTab,
       // Winner pool opens after activate (ACTIVE/LOCKED); hide while OPEN and after settle.
-      showPredictionsTab: phase === "live" || phase === "locked",
-      showResultsTab: isSettled,
+      showPredictionsTab,
+      showResultsTab,
       lineupsTabIndex,
       contestTabIndex,
       feedTabIndex,

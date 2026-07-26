@@ -52,7 +52,7 @@ export const SideBetPanel: React.FC<SideBetPanelProps> = ({
 
       {lineupId ? (
         <TabGroup>
-          <TabList className={tabListClassName("mt-2 space-x-1")}>
+          <TabList className={tabListClassName("mt-2")}>
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               Place
             </Tab>

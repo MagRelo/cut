@@ -157,7 +157,7 @@ export const UserGroupDetailPage = () => {
           </div>
         ) : null}
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-          <TabList className={tabListClassName("space-x-1", "px-2", "pt-2")}>
+          <TabList className={tabListClassName("px-2", "pt-2")}>
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               Contests
             </Tab>

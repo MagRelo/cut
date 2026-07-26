@@ -26,14 +26,3 @@ export const Locked: Story = {
     placeWagerTabLocked: true,
   },
 };
-
-export const WithCommentary: Story = {
-  args: {
-    contest: {
-      ...contestWithPredictions,
-      commentary:
-        "Player One owns the lead, but Player Two has the sharper route home. One strong closing stretch from the low-owned core flips the entire winner pool, while the chalk-heavy lineups need the current leaderboard to freeze. The simulations still favor the leader, though the gap is narrow enough that every remaining hole matters.",
-      commentaryGeneratedAt: "2026-07-19T04:00:00.000Z",
-    },
-  },
-};

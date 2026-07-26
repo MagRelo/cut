@@ -95,9 +95,7 @@ export const CutbotPost: React.FC<CutbotPostProps> = ({
             ) : null}
           </header>
 
-          <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-slate-700">
-            {text}
-          </p>
+          <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">{text}</p>
 
           {showReactions && reactions ? (
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
