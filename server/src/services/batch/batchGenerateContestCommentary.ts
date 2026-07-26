@@ -6,6 +6,7 @@ import {
   generateContestFeed,
   persistContestFeed,
 } from "../contest/generateContestFeed.js";
+import { publishContestFeedItemsToStream } from "../stream/publishContestFeedToStream.js";
 import type { BatchOperationResult, OperationResult } from "../shared/types.js";
 
 export const CONTEST_COMMENTARY_REFRESH_MS = 20 * 60 * 1000;
@@ -75,6 +76,12 @@ export async function batchGenerateContestCommentary(
       const feed = await generateContestFeed(contest.id);
       if (feed.newItems.length > 0 || feed.document.lastContext != null) {
         await persistContestFeed(contest.id, feed.document, feed.generatedAt);
+      }
+      if (feed.newItems.length > 0) {
+        await publishContestFeedItemsToStream({
+          contestId: contest.id,
+          items: feed.newItems,
+        });
       }
 
       results.push({ success: true, contestId: contest.id });
