@@ -4,6 +4,7 @@ import type { ActivityResponse, FeedsClient } from "@stream-io/feeds-react-sdk";
 import { type Contest } from "../../../types/contest";
 import { useContestStreamFeed } from "../../../hooks/useContestStreamFeed";
 import {
+  STREAM_REACTIONS_ENABLED,
   STREAM_REACTION_TYPES,
   type StreamReactionType,
 } from "../../../lib/stream/constants";
@@ -95,10 +96,16 @@ const StreamContestFeed: React.FC<{
             <CutbotPost
               text={activity.text ?? ""}
               generatedAt={activityGeneratedAt(activity)}
-              activityId={activity.id}
-              streamClient={client}
-              canReact
-              reactions={reactionStateFromActivity(activity)}
+              activityId={
+                STREAM_REACTIONS_ENABLED ? activity.id : undefined
+              }
+              streamClient={STREAM_REACTIONS_ENABLED ? client : undefined}
+              canReact={STREAM_REACTIONS_ENABLED}
+              reactions={
+                STREAM_REACTIONS_ENABLED
+                  ? reactionStateFromActivity(activity)
+                  : undefined
+              }
             />
           </li>
         ))}

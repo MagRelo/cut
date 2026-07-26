@@ -2,6 +2,7 @@ import React, { useCallback, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import type { FeedsClient } from "@stream-io/feeds-react-sdk";
 import {
+  STREAM_REACTION_EMOJIS,
   STREAM_REACTION_LABELS,
   STREAM_REACTION_TYPES,
   type StreamReactionType,
@@ -104,11 +105,12 @@ export const CutbotPost: React.FC<CutbotPostProps> = ({
           </p>
 
           {showReactions && reactions ? (
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
               {STREAM_REACTION_TYPES.map((type) => {
                 const count = reactions.counts[type] ?? 0;
                 const selected = reactions.ownType === type;
                 const label = STREAM_REACTION_LABELS[type];
+                const emoji = STREAM_REACTION_EMOJIS[type];
                 return (
                   <button
                     key={type}
@@ -116,21 +118,24 @@ export const CutbotPost: React.FC<CutbotPostProps> = ({
                     disabled={!canReact || pendingType != null}
                     aria-pressed={selected}
                     aria-label={label}
+                    title={label}
                     onClick={() => void onToggleReaction(type)}
                     className={[
-                      "inline-flex items-center gap-1 rounded-sm border px-2 py-1 text-xs transition-colors",
+                      "inline-flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-full px-2.5 transition-colors",
                       selected
-                        ? "border-blue-400 bg-blue-50 text-blue-800"
-                        : "border-slate-200 bg-white text-slate-600",
-                      canReact
-                        ? "hover:border-blue-300 hover:bg-blue-50/60"
-                        : "cursor-default opacity-80",
+                        ? "bg-blue-100 ring-1 ring-blue-300"
+                        : "bg-transparent hover:bg-slate-100",
+                      canReact ? "" : "cursor-default opacity-80",
                       pendingType === type ? "opacity-60" : "",
                     ].join(" ")}
                   >
-                    <span>{label}</span>
+                    <span aria-hidden="true" className="text-2xl leading-none">
+                      {emoji}
+                    </span>
                     {count > 0 ? (
-                      <span className="tabular-nums text-slate-500">{count}</span>
+                      <span className="text-sm tabular-nums text-slate-500">
+                        {count}
+                      </span>
                     ) : null}
                   </button>
                 );

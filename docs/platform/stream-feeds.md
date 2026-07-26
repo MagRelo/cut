@@ -7,7 +7,7 @@ Play The Cut dual-writes Cutbot contest stories to [GetStream Activity Feeds](ht
 | Layer | Responsibility |
 | --- | --- |
 | Postgres `Contest.commentaryFeed` | Generation state: deltas, hole fingerprints, item history for the next cron pass |
-| Stream `contest:{contestId}` | Delivery of Cutbot activities (text, story type, subjects) |
+| Stream `contest:{contestId}` | Delivery of Cutbot activities (custom flat feed group) |
 | Stream `notification:{userId}` | Mention inbox used only for contest-scoped unread counts on the Feed tab |
 
 Classifier, prompts, and Cursor generation stay in-house. Stream is not the delta baseline.
@@ -29,7 +29,21 @@ Classifier, prompts, and Cursor generation stay in-house. Stream is not the delt
 pnpm --filter server run script:stream-bootstrap
 ```
 
-Creates the `contest` feed group (`current_feed` selector, public visibility) and the `cutbot` Stream user.
+Upserts the `cutbot` Stream user and creates (or returns) the custom **`contest`** feed group via [`getOrCreateFeedGroup`](https://getstream.io/activity-feeds/docs/javascript/feed-groups/):
+
+```ts
+await client.feeds.getOrCreateFeedGroup({
+  id: "contest",
+  default_visibility: "public",
+  activity_selectors: [{ type: "current_feed" }],
+  custom: { description: "Per-contest Cutbot commentary feed" },
+});
+```
+
+- Contest posts → `contest:{contestId}`
+- Mentions → built-in `notification:{userId}`
+
+Server SDK: `@stream-io/node-sdk`. Client: `@stream-io/feeds-react-sdk`.
 
 ### Dashboard permissions
 
@@ -64,7 +78,7 @@ Stream failures are logged and do not fail the commentary batch.
 
 ## Client lobby
 
-- Connected users with Stream configured watch `contest:{contestId}` and render Cutbot posts with reactions (`like`, `fire`, `golf`; `enforce_unique`).
+- Connected users with Stream configured watch `contest:{contestId}` and render Cutbot posts. Reactions (`like`, `dislike`, `fire`; `enforce_unique`) are implemented but currently hidden via `STREAM_REACTIONS_ENABLED`.
 - Guests / Stream-unavailable paths fall back to `Contest.commentaryFeed` JSON (no reactions).
 - Feed tab label is `Feed (N)` when the user has N unread notification activities whose `custom.contestId` matches the open contest. Selecting the Feed tab marks those activities read.
 

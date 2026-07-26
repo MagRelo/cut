@@ -1,4 +1,9 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+
+// Match server startup: env-specific file, then root `.env` overrides.
+dotenv.config({ path: ".env.development" });
+dotenv.config({ path: ".env", override: true });
+
 import {
   STREAM_CONTEST_FEED_GROUP,
   STREAM_CUTBOT_USER_ID,
@@ -7,6 +12,27 @@ import {
 import { requireStreamFeedsClient } from "../services/stream/streamFeedsClient.js";
 import { upsertStreamUsers } from "../services/stream/resolveMentionedUsers.js";
 
+function streamErrorDetail(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+  const withExtra = error as Error & {
+    code?: unknown;
+    metadata?: unknown;
+  };
+  const parts = [error.message];
+  if (withExtra.code != null) parts.push(`code=${String(withExtra.code)}`);
+  if (withExtra.metadata != null) {
+    parts.push(`metadata=${JSON.stringify(withExtra.metadata)}`);
+  }
+  return parts.join(" | ");
+}
+
+/**
+ * Creates the custom `contest` feed group per Stream Feeds v3 docs.
+ * @see https://getstream.io/activity-feeds/docs/node/feed-groups/
+ *
+ * `current_feed` selects activities posted directly to each contest feed
+ * (`contest:{contestId}`). Visibility is public so authenticated users can read.
+ */
 async function main(): Promise<void> {
   const client = requireStreamFeedsClient();
 
@@ -15,6 +41,8 @@ async function main(): Promise<void> {
   ]);
   console.log(`[stream-bootstrap] Upserted user ${STREAM_CUTBOT_USER_ID}`);
 
+  // Documented create-or-return — do not get-then-create; "not found" errors
+  // use code 16 / responseCode 404 without "404" in the message text.
   const group = await client.feeds.getOrCreateFeedGroup({
     id: STREAM_CONTEST_FEED_GROUP,
     default_visibility: "public",
@@ -30,6 +58,9 @@ async function main(): Promise<void> {
         feedGroupId: group.feed_group.id,
         wasCreated: group.was_created,
         defaultVisibility: group.feed_group.default_visibility,
+        activitySelectors: group.feed_group.activity_selectors,
+        contestPostsUse: `${STREAM_CONTEST_FEED_GROUP}:{contestId}`,
+        mentionsUse: "notification:{userId}",
       },
       null,
       2,
@@ -37,17 +68,22 @@ async function main(): Promise<void> {
   );
 
   console.log(`
-[stream-bootstrap] Next: in the Stream Dashboard, configure the "${STREAM_CONTEST_FEED_GROUP}" feed group so authenticated users can:
-  - read-feed / watch
-  - add-reaction / delete-reaction (own)
-and cannot:
-  - add-activity / update-activity / delete-activity
-  - add-comment / add-comment-reaction
-Users should also be able to read/watch/mark-read their own notification:{userId} feed.
+[stream-bootstrap] OK — custom feed group "${STREAM_CONTEST_FEED_GROUP}" ready.
+  Contest Cutbot posts → ${STREAM_CONTEST_FEED_GROUP}:{contestId}
+  Mention unread badge → notification:{userId} (built-in)
+
+In the Stream Dashboard, set permissions on "${STREAM_CONTEST_FEED_GROUP}" so users can
+read/watch and react, but cannot create activities or comments.
 `);
 }
 
 main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : String(error));
+  console.error(`[stream-bootstrap] ${streamErrorDetail(error)}`);
+  console.error(`
+[stream-bootstrap] Failed to getOrCreate feed group via Feeds API.
+  Docs: https://getstream.io/activity-feeds/docs/node/feed-groups/
+  Ensure STREAM_API_KEY / STREAM_API_SECRET are from an Activity Feeds v3 app
+  and STREAM_FEEDS_ENABLED=true.
+`);
   process.exitCode = 1;
 });
