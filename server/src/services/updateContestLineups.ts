@@ -316,11 +316,20 @@ export async function updateContestLineupsForEvent(
     });
   }
 
-  console.log(
-    `[updateContestLineups] event=${eventId} scoreWrites=${scoreWrites} ` +
-      `positionWrites=${positionWrites} popularityWrites=${popularityWrites} ` +
-      `timelineRows=${changedLineupIds.size}`,
-  );
+  const timelineRows = changedLineupIds.size;
+  if (
+    scoreWrites > 0 ||
+    positionWrites > 0 ||
+    popularityWrites > 0 ||
+    timelineRows > 0
+  ) {
+    const parts: string[] = [];
+    if (scoreWrites > 0) parts.push(`${scoreWrites} scores`);
+    if (positionWrites > 0) parts.push(`${positionWrites} positions`);
+    if (popularityWrites > 0) parts.push(`${popularityWrites} popularity`);
+    if (timelineRows > 0) parts.push(`${timelineRows} timeline`);
+    console.log(`[contest-lineups] Updated ${eventId}: ${parts.join(", ")}`);
+  }
 }
 
 export async function updateContestLineups(): Promise<void> {

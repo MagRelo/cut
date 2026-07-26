@@ -282,11 +282,13 @@ export async function syncGolfParticipantField(eventId: string) {
     eventMeta.lastSyncedFieldCount = fieldData.players.length;
   }
 
-  console.log(
-    `[syncGolfParticipantField] event=${eventId} field=${fieldData.players.length} ` +
-      `participantWrites=${participantsUpserted} newEventLinks=${eventLinksCreated} ` +
-      `membershipChanged=${membershipChanged}`,
-  );
+  const fieldSize = fieldData.players.length;
+  if (participantsUpserted > 0 || eventLinksCreated > 0 || membershipChanged) {
+    const parts = [`${fieldSize} players`];
+    if (participantsUpserted > 0) parts.push(`${participantsUpserted} updates`);
+    if (eventLinksCreated > 0) parts.push(`${eventLinksCreated} new links`);
+    console.log(`[pga-golf] Synced field for ${eventId}: ${parts.join(", ")}`);
+  }
 
   await maybeRunFieldHygiene(event.id, eventMeta, membershipChanged);
 }
