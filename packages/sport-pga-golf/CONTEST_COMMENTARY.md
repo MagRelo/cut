@@ -109,8 +109,10 @@ attaches owning-lineup race impacts from the context delta:
 - Each event includes tournament board/bonus context when available:
   `previousLeaderboardPosition`, `leaderboardPosition`, `previousBonus`, `bonus`,
   and `bonusDelta` (position bonus is 10 / 5 / 3 for 1st / 2nd / 3rd).
-- Causal chain for copy: hole result → board/bonus change → lineup contest impact.
-  The first sentence must be the golfer hole event—not Sunday/leader or race framing.
+- Causal chain for copy: hole result → (board/bonus only when `bonusDelta` is
+  non-zero and impactful) → lineup contest impact. Skip flat or cosmetic board
+  moves and never narrate a zero-bonus beat. The first sentence must be the
+  golfer hole event—not Sunday/leader or race framing.
 - `lastHoleState` fingerprints completed holes plus each golfer's
   `leaderboardPosition` and `bonus` so the next pass can compute deltas.
 - The first pass after deploy seeds `lastHoleState` without emitting swings.
@@ -125,11 +127,12 @@ emitted.
 
 Live feed updates treat tournament player scoring as the **event** and contest
 movement as the **result**. Copy should read causally—golfer score change
-first, then any tournament board / position-bonus change, then what it does to
-a user's position, leverage, or paid-cut status (e.g. “Scheffler eagles 12,
-jumps to T2 for the +5 bonus, which vaults Noodles into paid places”). Never
-invent hole results, board places, or bonus points beyond the supplied fact
-pack.
+first, then (only when impactful) a tournament board / position-bonus change,
+then what it does to a user's position, leverage, or paid-cut status (e.g.
+“Scheffler eagles 12, jumps to T2 for the +5 bonus, which vaults Noodles into
+paid places”). Mention position bonus only when `bonusDelta` is non-zero;
+cosmetic place changes and zero-bonus beats stay out of the copy. Never invent
+hole results, board places, or bonus points beyond the supplied fact pack.
 
 Callable service: `server/src/services/contest/generateContestFeed.ts`.
 
@@ -184,3 +187,7 @@ intact.
 The contest lobby API includes the latest commentary snapshot, feed document,
 and generation timestamps. The client exposes the snapshot from the Winner Pool
 information panel.
+
+When `STREAM_FEEDS_ENABLED=true`, new feed items are also published to GetStream
+(`contest:{contestId}`) for realtime lobby delivery, reactions, and mention
+unread badges. See [docs/platform/stream-feeds.md](../../docs/platform/stream-feeds.md).

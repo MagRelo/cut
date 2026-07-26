@@ -98,6 +98,8 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(swingPrompt).toContain("Story: score swing");
     expect(swingPrompt).toContain("event → result");
     expect(swingPrompt).toContain("position-bonus");
+    expect(swingPrompt).toContain("only if bonusDelta is non-zero");
+    expect(swingPrompt).toContain("skip board and position-bonus entirely");
     expect(swingPrompt).toContain("first sentence must name the golfer");
     expect(swingPrompt).toContain("Do not open with Sunday framing");
     expect(swingPrompt).toContain("50-100 words");
@@ -105,6 +107,9 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(swingPrompt).not.toContain("Stage: final round");
     expect(swingPrompt).not.toContain("Open by using eventProgress.leaderProgress");
     expect(swingPrompt).not.toContain("establish the current contest race");
+    expect(swingPrompt).not.toContain(
+      "when previousLeaderboardPosition/leaderboardPosition differ or bonusDelta is non-zero",
+    );
 
     const leveragePrompt = buildPgaContestFeedPrompt({
       storyType: "leverage_spike",
