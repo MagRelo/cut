@@ -1,5 +1,7 @@
 /** Completed-hole extraction and outsize-result helpers for contest feed stories. */
 
+import { positionBonus } from "./live-scores.js";
+
 export type ContestFeedHoleLabel =
   | "hole_in_one"
   | "albatross_or_better"
@@ -24,6 +26,16 @@ export interface ContestFeedCompletedHole {
 export interface ContestFeedPlayerHoleState {
   displayName: string;
   completedKeys: string[];
+  /**
+   * Tournament leaderboard position at fingerprint time (e.g. "T2").
+   * Omitted on legacy fingerprints — treat as unknown for bonus deltas.
+   */
+  leaderboardPosition?: string | null;
+  /**
+   * Position bonus points at fingerprint time (10 / 5 / 3 / 0).
+   * Omitted on legacy fingerprints — treat as unknown for bonus deltas.
+   */
+  bonus?: number;
 }
 
 /** Fingerprint of completed holes for contest-owned golfers. */
@@ -33,6 +45,37 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
+}
+
+function scoreDataString(scoreData: unknown, key: string): string | null {
+  const value = asRecord(scoreData)?.[key];
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function scoreDataNumber(scoreData: unknown, key: string): number | null {
+  const value = asRecord(scoreData)?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Leaderboard position + position-bonus snapshot from scoreData.
+ * Falls back to computing bonus from position when `bonus` is absent.
+ */
+export function readScoreDataBoardState(scoreData: unknown): {
+  leaderboardPosition: string | null;
+  bonus: number;
+} {
+  const leaderboardPosition = scoreDataString(scoreData, "leaderboardPosition");
+  const directBonus = scoreDataNumber(scoreData, "bonus");
+  if (directBonus != null) {
+    return { leaderboardPosition, bonus: directBonus };
+  }
+  return {
+    leaderboardPosition,
+    bonus: leaderboardPosition ? positionBonus(leaderboardPosition) : 0,
+  };
 }
 
 function roundHoles(
@@ -163,9 +206,12 @@ export function buildContestFeedHoleState(
 ): ContestFeedHoleState {
   const state: ContestFeedHoleState = {};
   for (const player of players) {
+    const board = readScoreDataBoardState(player.scoreData);
     state[player.eventParticipantId] = {
       displayName: player.displayName,
       completedKeys: listCompletedHoles(player.scoreData).map((hole) => hole.key),
+      leaderboardPosition: board.leaderboardPosition,
+      bonus: board.bonus,
     };
   }
   return state;

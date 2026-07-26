@@ -86,7 +86,9 @@ describe("generateContestFeed", () => {
     expect(result.candidates[0]?.storyType).toBe("stage_recap");
     expect(result.newItems).toHaveLength(1);
     expect(commentaryFeedWordCount(result.newItems[0]!.text)).toBe(125);
+    expect(result.newItems[0]?.round).toBe(4);
     expect(result.document.items[0]?.storyType).toBe("stage_recap");
+    expect(result.document.items[0]?.round).toBe(4);
     expect(result.document.lastContext?.period).toBe(4);
     expect(result.document.lastHoleState).toEqual({});
     expect(generator.prompts[0]).toContain("Story: stage recap");

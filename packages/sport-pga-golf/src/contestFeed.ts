@@ -8,8 +8,10 @@ import {
   holeSeverity,
   isRareOutsizeHole,
   listNewOutsizeHoles,
+  readScoreDataBoardState,
   type ContestFeedCompletedHole,
   type ContestFeedHoleState,
+  type ContestFeedPlayerHoleState,
 } from "./contestFeedHoles.js";
 
 export type {
@@ -28,6 +30,7 @@ export {
   listCompletedHoles,
   listNewCompletedHoles,
   listNewOutsizeHoles,
+  readScoreDataBoardState,
 } from "./contestFeedHoles.js";
 
 /** Rolling window size for the contest commentary feed document. */
@@ -74,6 +77,8 @@ export interface ContestFeedItem {
   subjects: ContestFeedItemSubjects;
   text: string;
   generatedAt: string;
+  /** Tournament round (period) the comment applies to, when known. */
+  round?: number | null;
 }
 
 export interface ContestCommentaryFeedDocument {
@@ -140,6 +145,16 @@ export interface ContestFeedScoreSwingEvent {
   label: ContestFeedCompletedHole["label"];
   ownerEntryIds: string[];
   ownerNames: string[];
+  /** Prior tournament board position from lastHoleState; null when unknown. */
+  previousLeaderboardPosition: string | null;
+  /** Current tournament board position from scoreData. */
+  leaderboardPosition: string | null;
+  /** Prior position bonus from lastHoleState; null when unknown. */
+  previousBonus: number | null;
+  /** Current position bonus (10 / 5 / 3 / 0). */
+  bonus: number;
+  /** Current bonus minus previous; 0 when previous is unknown. */
+  bonusDelta: number;
 }
 
 export interface ContestFeedDelta {
@@ -233,7 +248,7 @@ function parseFeedItem(value: unknown): ContestFeedItem | null {
     return null;
   }
   const subjects = isRecord(value.subjects) ? value.subjects : {};
-  return {
+  const item: ContestFeedItem = {
     id: value.id,
     storyType: value.storyType as ContestFeedStoryType,
     priority: value.priority,
@@ -248,6 +263,39 @@ function parseFeedItem(value: unknown): ContestFeedItem | null {
     text: value.text,
     generatedAt: value.generatedAt,
   };
+  if (value.round === null) {
+    item.round = null;
+  } else if (typeof value.round === "number" && Number.isFinite(value.round)) {
+    item.round = value.round;
+  }
+  return item;
+}
+
+function parsePlayerHoleState(
+  value: Record<string, unknown>,
+): ContestFeedPlayerHoleState | null {
+  if (typeof value.displayName !== "string") return null;
+  const keys = asStringArray(value.completedKeys);
+  if (!keys) return null;
+  const state: ContestFeedPlayerHoleState = {
+    displayName: value.displayName,
+    completedKeys: keys,
+  };
+  if ("leaderboardPosition" in value) {
+    state.leaderboardPosition =
+      value.leaderboardPosition === null
+        ? null
+        : typeof value.leaderboardPosition === "string"
+          ? value.leaderboardPosition.trim() || null
+          : null;
+  }
+  if ("bonus" in value) {
+    state.bonus =
+      typeof value.bonus === "number" && Number.isFinite(value.bonus)
+        ? value.bonus
+        : 0;
+  }
+  return state;
 }
 
 function parseHoleState(raw: unknown): ContestFeedHoleState | undefined {
@@ -255,13 +303,9 @@ function parseHoleState(raw: unknown): ContestFeedHoleState | undefined {
   const state: ContestFeedHoleState = {};
   for (const [participantId, value] of Object.entries(raw)) {
     if (!participantId.trim() || !isRecord(value)) continue;
-    if (typeof value.displayName !== "string") continue;
-    const keys = asStringArray(value.completedKeys);
-    if (!keys) continue;
-    state[participantId] = {
-      displayName: value.displayName,
-      completedKeys: keys,
-    };
+    const playerState = parsePlayerHoleState(value);
+    if (!playerState) continue;
+    state[participantId] = playerState;
   }
   return Object.keys(state).length > 0 ? state : undefined;
 }
@@ -479,6 +523,35 @@ interface RankedScoreSwing {
   rank: number;
 }
 
+/** Bonus change weight for score_swing event ranking. */
+const SCORE_SWING_BONUS_DELTA_RANK = 15;
+
+function boardDeltaFromPrior(
+  prior: ContestFeedPlayerHoleState,
+  scoreData: unknown,
+): Pick<
+  ContestFeedScoreSwingEvent,
+  | "previousLeaderboardPosition"
+  | "leaderboardPosition"
+  | "previousBonus"
+  | "bonus"
+  | "bonusDelta"
+> {
+  const current = readScoreDataBoardState(scoreData);
+  const hasPriorBoard = typeof prior.bonus === "number";
+  const previousBonus = hasPriorBoard ? prior.bonus! : null;
+  const previousLeaderboardPosition = hasPriorBoard
+    ? (prior.leaderboardPosition ?? null)
+    : null;
+  return {
+    previousLeaderboardPosition,
+    leaderboardPosition: current.leaderboardPosition,
+    previousBonus,
+    bonus: current.bonus,
+    bonusDelta: previousBonus != null ? current.bonus - previousBonus : 0,
+  };
+}
+
 /**
  * Event-first score swings: new outsize holes on contest-owned golfers,
  * gated so plain birdies require a material contest race impact.
@@ -495,6 +568,7 @@ export function collectScoreSwingEvents(
   for (const player of contestPlayers) {
     const prior = previousHoleState[player.eventParticipantId];
     if (prior == null) continue;
+    const board = boardDeltaFromPrior(prior, player.scoreData);
     const holes = listNewOutsizeHoles(player.scoreData, prior);
     for (const hole of holes) {
       const rare = isRareOutsizeHole(hole);
@@ -512,14 +586,17 @@ export function collectScoreSwingEvents(
         label: hole.label,
         ownerEntryIds: [...player.ownerEntryIds],
         ownerNames: [...player.ownerNames],
+        ...board,
       };
       const severity = holeSeverity(hole);
       const impactScore = impactScoreForOwners(player.ownerEntryIds, impacts);
+      const bonusRank =
+        Math.abs(board.bonusDelta) > 0 ? SCORE_SWING_BONUS_DELTA_RANK : 0;
       ranked.push({
         event,
         severity,
         impactScore,
-        rank: severity + impactScore,
+        rank: severity + impactScore + bonusRank,
       });
     }
   }
@@ -544,7 +621,8 @@ function scoreSwingPriority(events: readonly ContestFeedScoreSwingEvent[]): numb
   if (events.length === 0) return 0;
   const top = events[0]!;
   const severity = holeSeverity(top);
-  return 80 + Math.min(20, severity) + Math.min(10, events.length * 2);
+  const bonusBump = Math.abs(top.bonusDelta) > 0 ? 5 : 0;
+  return 80 + Math.min(20, severity) + Math.min(10, events.length * 2) + bonusBump;
 }
 
 /**

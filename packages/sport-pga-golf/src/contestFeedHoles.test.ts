@@ -1,16 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildContestFeedHoleState,
   holeSeverity,
   isOutsizeHole,
   isRareOutsizeHole,
   labelHoleOutcome,
   listCompletedHoles,
   listNewOutsizeHoles,
+  readScoreDataBoardState,
 } from "./contestFeedHoles.js";
 
 function scoreDataWithHoles(
   round: number,
   holes: Array<{ par: number; strokes: number; stableford: number } | null>,
+  board: { leaderboardPosition?: string; bonus?: number } = {},
 ) {
   const par: number[] = [];
   const scores: Array<number | null> = [];
@@ -27,6 +30,10 @@ function scoreDataWithHoles(
     }
   }
   return {
+    ...(board.leaderboardPosition != null
+      ? { leaderboardPosition: board.leaderboardPosition }
+      : {}),
+    ...(board.bonus != null ? { bonus: board.bonus } : {}),
     [`r${round}`]: {
       holes: { round, par, scores, stableford, total: 0 },
     },
@@ -98,5 +105,33 @@ describe("contestFeedHoles", () => {
         completedKeys: ["3:1"],
       }).map((hole) => hole.key),
     ).toEqual(["3:2"]);
+  });
+
+  it("reads board state and fingerprints leaderboard position + bonus", () => {
+    expect(
+      readScoreDataBoardState({ leaderboardPosition: "T2", bonus: 5 }),
+    ).toEqual({ leaderboardPosition: "T2", bonus: 5 });
+    expect(readScoreDataBoardState({ leaderboardPosition: "T1" })).toEqual({
+      leaderboardPosition: "T1",
+      bonus: 10,
+    });
+
+    const state = buildContestFeedHoleState([
+      {
+        eventParticipantId: "g1",
+        displayName: "Scheffler",
+        scoreData: scoreDataWithHoles(
+          4,
+          [{ par: 4, strokes: 2, stableford: 5 }],
+          { leaderboardPosition: "T2", bonus: 5 },
+        ),
+      },
+    ]);
+    expect(state.g1).toEqual({
+      displayName: "Scheffler",
+      completedKeys: ["4:1"],
+      leaderboardPosition: "T2",
+      bonus: 5,
+    });
   });
 });

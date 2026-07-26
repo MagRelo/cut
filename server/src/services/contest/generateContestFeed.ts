@@ -206,6 +206,7 @@ export async function generateContestFeed(
       subjects: candidate.subjects,
       text,
       generatedAt,
+      round: built.context.period,
     });
   }
 

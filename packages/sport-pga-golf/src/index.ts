@@ -88,6 +88,7 @@ export {
   listNewOutsizeHoles,
   mergeContestFeedItems,
   parseContestCommentaryFeedDocument,
+  readScoreDataBoardState,
   type ClassifyContestFeedStoriesOptions,
   type BuildContestFeedFactPackOptions,
   type ContestCommentaryFeedDocument,

@@ -75,9 +75,9 @@ lives in a separate `Contest.commentaryFeed` JSON document:
 ```ts
 {
   schemaVersion: 1,
-  items: ContestFeedItem[], // newest first, capped
+  items: ContestFeedItem[], // newest first, capped; each item may include round
   lastContext?: ContestCommentaryContext,
-  lastHoleState?: ContestFeedHoleState, // completed-hole fingerprint
+  lastHoleState?: ContestFeedHoleState, // completed-hole + board/bonus fingerprint
   updatedAt?: string
 }
 ```
@@ -98,7 +98,16 @@ attaches owning-lineup race impacts from the context delta:
 - Eagle-or-better, hole-in-one, and double-bogey-or-worse always qualify when owned.
 - Plain birdies qualify only when an owning lineup also moved position/score.
 - The fact pack carries `events` (golf hole beats) and `impacts` (contest moves).
+- Each event includes tournament board/bonus context when available:
+  `previousLeaderboardPosition`, `leaderboardPosition`, `previousBonus`, `bonus`,
+  and `bonusDelta` (position bonus is 10 / 5 / 3 for 1st / 2nd / 3rd).
+- Causal chain for copy: hole result → board/bonus change → lineup contest impact.
+- `lastHoleState` fingerprints completed holes plus each golfer's
+  `leaderboardPosition` and `bonus` so the next pass can compute deltas.
 - The first pass after deploy seeds `lastHoleState` without emitting swings.
+
+Each feed item also carries `round` (tournament period from the analysis
+context) so clients can label which round the comment applies to.
 
 Legacy `race_shakeup` items may still appear in stored feeds but are no longer
 emitted.
@@ -107,9 +116,11 @@ emitted.
 
 Live feed updates treat tournament player scoring as the **event** and contest
 movement as the **result**. Copy should read causally—golfer score change
-first, then what it does to a user's position, leverage, or paid-cut status
-(e.g. “Scheffler double-bogeys 13 and 14, which drops Noodles to 9th”). Never
-invent hole results beyond the supplied fact pack.
+first, then any tournament board / position-bonus change, then what it does to
+a user's position, leverage, or paid-cut status (e.g. “Scheffler eagles 12,
+jumps to T2 for the +5 bonus, which vaults Noodles into paid places”). Never
+invent hole results, board places, or bonus points beyond the supplied fact
+pack.
 
 Callable service: `server/src/services/contest/generateContestFeed.ts`.
 

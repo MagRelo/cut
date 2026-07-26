@@ -16,6 +16,7 @@ import { CONTEST_FEED_WORD_LIMITS } from "./contestFeed.js";
  */
 const NARRATIVE_PATTERN: readonly string[] = [
   'Narrative pattern: event → result. The thing that changes is tournament player scoring; contest movement is the result. Prefer causal beats like "Scheffler double-bogeys 13 and 14, which drops Noodles to 9th"—golfer event first, then what it does to a user\'s position, leverage, or paid-cut status.',
+  "When a scoring event also moves the golfer on the tournament leaderboard into (or out of) position-bonus territory, include that middle beat: hole result → board/bonus change → lineup contest impact. Position bonus is only 10/5/3 for 1st/2nd/3rd.",
   "When hole-level detail is absent from the facts, still keep that order using whatever golf score movement is present, then the contest consequence. Never invent hole results or golfer outcomes.",
 ];
 
@@ -31,7 +32,8 @@ const OUTPUT_CONTRACT: readonly string[] = [
 const STORY_INSTRUCTIONS: Record<ContestFeedActiveStoryType, readonly string[]> = {
   score_swing: [
     "Story: score swing. Focus only on the hole events and contest impacts in STORY_FACTS_JSON.",
-    "Hard-require event → result: lead with the golfer hole result(s) from events (label, hole number), then what that did to owning users in impacts (position / paid-cut moves). Do not invent holes beyond events.",
+    "Hard-require the causal chain: (1) golfer hole result(s) from events (label, hole number), (2) when previousLeaderboardPosition/leaderboardPosition differ or bonusDelta is non-zero, the tournament board move and position-bonus change, (3) what that did to owning users in impacts (score / position / paid-cut moves).",
+    "Do not invent holes, board places, or bonus points beyond events. If bonusDelta is 0 and the board position did not change, skip inventing a bonus beat.",
     "Keep it one tight causal beat. Do not widen into a full contest recap, routes, or ownership ladders.",
   ],
   leverage_spike: [

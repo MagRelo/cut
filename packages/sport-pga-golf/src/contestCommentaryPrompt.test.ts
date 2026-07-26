@@ -98,6 +98,7 @@ describe("buildPgaContestCommentaryPrompt", () => {
     });
     expect(swingPrompt).toContain("Story: score swing");
     expect(swingPrompt).toContain("event → result");
+    expect(swingPrompt).toContain("position-bonus");
     expect(swingPrompt).toContain("50-100 words");
     expect(swingPrompt).toContain("STORY_FACTS_JSON=");
     expect(swingPrompt).toContain("Stage: final round");

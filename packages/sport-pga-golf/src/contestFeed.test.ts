@@ -90,8 +90,13 @@ function context(
 function scoreData(
   round: number,
   holes: Array<{ par: number; strokes: number; stableford: number }>,
+  board: { leaderboardPosition?: string; bonus?: number } = {},
 ) {
   return {
+    ...(board.leaderboardPosition != null
+      ? { leaderboardPosition: board.leaderboardPosition }
+      : {}),
+    ...(board.bonus != null ? { bonus: board.bonus } : {}),
     [`r${round}`]: {
       holes: {
         round,
@@ -134,10 +139,45 @@ describe("contest feed document helpers", () => {
       schemaVersion: 1,
       items: [],
       lastHoleState: {
+        g1: {
+          displayName: "Scheffler",
+          completedKeys: ["4:1"],
+          leaderboardPosition: "T5",
+          bonus: 0,
+        },
+      },
+    });
+    expect(document.lastHoleState?.g1).toEqual({
+      displayName: "Scheffler",
+      completedKeys: ["4:1"],
+      leaderboardPosition: "T5",
+      bonus: 0,
+    });
+  });
+
+  it("parses feed item round and legacy hole state without board fields", () => {
+    const document = parseContestCommentaryFeedDocument({
+      schemaVersion: 1,
+      items: [
+        {
+          id: "item-1",
+          storyType: "stage_recap",
+          priority: 40,
+          subjects: {},
+          text: "recap",
+          generatedAt: "2026-07-19T04:00:00.000Z",
+          round: 3,
+        },
+      ],
+      lastHoleState: {
         g1: { displayName: "Scheffler", completedKeys: ["4:1"] },
       },
     });
-    expect(document.lastHoleState?.g1?.completedKeys).toEqual(["4:1"]);
+    expect(document.items[0]?.round).toBe(3);
+    expect(document.lastHoleState?.g1).toEqual({
+      displayName: "Scheffler",
+      completedKeys: ["4:1"],
+    });
   });
 
   it("merges new items newest-first and respects the rolling cap", () => {
@@ -335,6 +375,79 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     if (pack.storyType !== "score_swing") return;
     expect(pack.events[0]?.label).toBe("double_bogey_or_worse");
     expect(pack.events[0]?.hole).toBe(2);
+    expect(pack.impacts.some((impact) => impact.displayName === "Noodles")).toBe(
+      true,
+    );
+  });
+
+  it("includes leaderboard bonus delta on score_swing events", () => {
+    const current = context({
+      contentionLineups: [
+        lineup("a", "Noodles", 1, 110),
+        lineup("b", "Bob", 2, 100),
+      ],
+    });
+    // Flip paid cut so entry "a" has a material race impact.
+    const previousRace = context({
+      contentionLineups: [
+        lineup("b", "Bob", 1, 105),
+        lineup("a", "Noodles", 2, 100),
+      ],
+    });
+    const players = [
+      contestPlayer({
+        scoreData: scoreData(
+          4,
+          [
+            { par: 4, strokes: 4, stableford: 0 },
+            { par: 4, strokes: 2, stableford: 5 },
+          ],
+          { leaderboardPosition: "T2", bonus: 5 },
+        ),
+        ownerEntryIds: ["a"],
+        ownerNames: ["Noodles"],
+      }),
+    ];
+    const previousHoleState = buildContestFeedHoleState([
+      contestPlayer({
+        scoreData: scoreData(
+          4,
+          [{ par: 4, strokes: 4, stableford: 0 }],
+          { leaderboardPosition: "T5", bonus: 0 },
+        ),
+      }),
+    ]);
+
+    const events = collectScoreSwingEvents(
+      players,
+      previousHoleState,
+      computeContestFeedDelta(previousRace, current).racePositionChanges,
+    );
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      label: "eagle",
+      previousLeaderboardPosition: "T5",
+      leaderboardPosition: "T2",
+      previousBonus: 0,
+      bonus: 5,
+      bonusDelta: 5,
+    });
+
+    const pack = buildContestFeedFactPack(
+      {
+        storyType: "score_swing",
+        priority: 90,
+        subjects: { participantIds: ["g1"], entryIds: ["a"] },
+        subjectKey: "g1",
+        reason: "eagle + bonus",
+      },
+      current,
+      previousRace,
+      { contestPlayers: players, previousHoleState },
+    );
+    expect(pack.storyType).toBe("score_swing");
+    if (pack.storyType !== "score_swing") return;
+    expect(pack.events[0]?.bonusDelta).toBe(5);
     expect(pack.impacts.some((impact) => impact.displayName === "Noodles")).toBe(
       true,
     );
