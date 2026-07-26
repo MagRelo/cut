@@ -89,14 +89,9 @@ export const CutbotPost: React.FC<CutbotPostProps> = ({
             <span className="text-sm font-bold text-slate-900">Cutbot</span>
             <span className="text-sm text-slate-500">@cutbot</span>
             {formattedGeneratedAt ? (
-              <>
-                <span className="text-sm text-slate-400" aria-hidden="true">
-                  ·
-                </span>
-                <time className="ml-auto shrink-0 text-xs text-slate-500">
-                  {formattedGeneratedAt}
-                </time>
-              </>
+              <time className="ml-auto shrink-0 text-xs text-slate-500">
+                {formattedGeneratedAt}
+              </time>
             ) : null}
           </header>
 
@@ -133,9 +128,7 @@ export const CutbotPost: React.FC<CutbotPostProps> = ({
                       {emoji}
                     </span>
                     {count > 0 ? (
-                      <span className="text-sm tabular-nums text-slate-500">
-                        {count}
-                      </span>
+                      <span className="text-sm tabular-nums text-slate-500">{count}</span>
                     ) : null}
                   </button>
                 );

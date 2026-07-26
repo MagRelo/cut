@@ -90,7 +90,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   ]);
 
   const feedTabLabel =
-    unreadCount > 0 ? `Feed (${unreadCount})` : "Feed";
+    unreadCount > 0 ? `Intel (${unreadCount})` : "Intel";
 
   const fieldSportId = contest.event?.sportId;
 

@@ -1,6 +1,6 @@
 # Stream Feeds (Cutbot contest commentary)
 
-Play The Cut dual-writes Cutbot contest stories to [GetStream Activity Feeds](https://getstream.io/activity-feeds/docs/javascript/) and reads them in the contest lobby with realtime updates, reactions, and an unread-mentions badge on the Feed tab.
+Play The Cut dual-writes Cutbot contest stories to [GetStream Activity Feeds](https://getstream.io/activity-feeds/docs/javascript/) and reads them in the contest lobby Intel tab with realtime updates, reactions, and an unread-mentions badge.
 
 ## Roles
 
@@ -8,7 +8,7 @@ Play The Cut dual-writes Cutbot contest stories to [GetStream Activity Feeds](ht
 | --- | --- |
 | Postgres `Contest.commentaryFeed` | Generation state: deltas, hole fingerprints, item history for the next cron pass |
 | Stream `contest:{contestId}` | Delivery of Cutbot activities (custom flat feed group) |
-| Stream `notification:{userId}` | Mention inbox used only for contest-scoped unread counts on the Feed tab |
+| Stream `notification:{userId}` | Mention inbox used only for contest-scoped unread counts on the Intel tab |
 
 Classifier, prompts, and Cursor generation stay in-house. Stream is not the delta baseline.
 
@@ -80,7 +80,7 @@ Stream failures are logged and do not fail the commentary batch.
 
 - Connected users with Stream configured watch `contest:{contestId}` and render Cutbot posts. Reactions (`like`, `dislike`, `fire`; `enforce_unique`) are implemented but currently hidden via `STREAM_REACTIONS_ENABLED`.
 - Guests / Stream-unavailable paths fall back to `Contest.commentaryFeed` JSON (no reactions).
-- Feed tab label is `Feed (N)` when the user has N unread notification activities whose `custom.contestId` matches the open contest. Selecting (or viewing) the Feed tab marks those aggregated notification **groups** read via `markActivity({ mark_read: groupIds })`.
+- Intel tab label is `Intel (N)` when the user has N unread notification activities whose `custom.contestId` matches the open contest. Selecting (or viewing) the Intel tab marks those aggregated notification **groups** read via `markActivity({ mark_read: groupIds })`.
 
 ## Scripts
 
