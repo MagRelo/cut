@@ -34,6 +34,9 @@ the configured text generator for the final update without temporary files.
    pnpm --filter server run script:contest-feed <contestId> --write
    ```
 
+   When Stream Feeds is enabled, `--write` also publishes new items to GetStream.
+   See `docs/platform/stream-feeds.md` for bootstrap/backfill.
+
 Return the command output directly unless the user asks for further analysis.
 The server prompt builder is authoritative for length, voice, factual rules,
 optimism, and output format; do not recreate or override those instructions in

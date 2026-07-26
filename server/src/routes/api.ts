@@ -8,6 +8,7 @@ import adminRoutes from "./admin.js";
 import cronRoutes from "./cron.js";
 import userGroupRoutes from "./userGroup.js";
 import unsubscribeRoutes from "./unsubscribe.js";
+import streamRoutes from "./stream.js";
 
 const apiRouter = new Hono();
 
@@ -29,5 +30,6 @@ apiRouter.route("/bets", betsRoutes);
 apiRouter.route("/admin", adminRoutes);
 apiRouter.route("/cron", cronRoutes);
 apiRouter.route("/unsubscribe", unsubscribeRoutes);
+apiRouter.route("/stream", streamRoutes);
 
 export default apiRouter;

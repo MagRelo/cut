@@ -5,6 +5,8 @@ import { type Contest, type TimelineData } from "../../../types/contest";
 import { type ContestLobbyViewModel } from "../../../types/contestLobby";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { useContestEvent } from "../../../hooks/useContestEvent";
+import { useContestMentionBadge } from "../../../hooks/useContestMentionBadge";
+import { useStreamFeedsSession } from "../../../hooks/useStreamFeedsSession";
 import { useSportUIPlugin } from "../../../hooks/useSportUI";
 import { tabButtonClassName, tabListClassName } from "../../../lib/tabStyles";
 import { EventLineupsPanel } from "../../platform/EventLineupsPanel";
@@ -59,6 +61,22 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
     setSelectedIndex(initialTabIndex);
   }, [viewModel.layout.layoutKey, initialTabIndex]);
 
+  const { client: streamClient } = useStreamFeedsSession();
+  const { unreadCount, markContestMentionsRead } = useContestMentionBadge(
+    streamClient,
+    contest.id,
+  );
+
+  const handleTabChange = (index: number) => {
+    setSelectedIndex(index);
+    if (viewModel.layout.showFeedTab && index === viewModel.layout.feedTabIndex) {
+      void markContestMentionsRead();
+    }
+  };
+
+  const feedTabLabel =
+    unreadCount > 0 ? `Feed (${unreadCount})` : "Feed";
+
   const fieldSportId = contest.event?.sportId;
 
   const [isPayoutsModalOpen, setIsPayoutsModalOpen] = useState(false);
@@ -88,7 +106,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
 
         <TabGroup
           selectedIndex={selectedIndex}
-          onChange={setSelectedIndex}
+          onChange={handleTabChange}
           key={viewModel.layout.layoutKey}
         >
           <TabList className={tabListClassName("px-3")}>
@@ -106,7 +124,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
               >
-                Feed
+                {feedTabLabel}
               </Tab>
             ) : null}
             {viewModel.layout.showPredictionsTab ? (
@@ -152,7 +170,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
 
             {viewModel.layout.showFeedTab ? (
               <TabPanel className="p-4 focus:outline-none">
-                <ContestFeedPanel contest={contest} />
+                <ContestFeedPanel contest={contest} streamClient={streamClient} />
               </TabPanel>
             ) : null}
 

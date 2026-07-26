@@ -17,6 +17,7 @@ import {
   generateContestFeed,
   persistContestFeed,
 } from "../services/contest/generateContestFeed.js";
+import { publishContestFeedItemsToStream } from "../services/stream/publishContestFeedToStream.js";
 
 function finiteFlag(name: string, value: string | undefined): number {
   const parsed = Number(value);
@@ -122,8 +123,15 @@ async function main(): Promise<void> {
     ...(maxPerPass != null ? { maxPerPass } : {}),
   });
 
+  let streamPublish: { published: number; failed: number } | null = null;
   if (write) {
     await persistContestFeed(contestId, result.document, result.generatedAt);
+    if (result.newItems.length > 0) {
+      streamPublish = await publishContestFeedItemsToStream({
+        contestId,
+        items: result.newItems,
+      });
+    }
   }
 
   console.log(
@@ -135,6 +143,7 @@ async function main(): Promise<void> {
         newItems: result.newItems,
         itemCount: result.document.items.length,
         diagnostics: result.diagnostics,
+        ...(streamPublish ? { streamPublish } : {}),
       },
       null,
       2,

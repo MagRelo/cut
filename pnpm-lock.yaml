@@ -56,6 +56,12 @@ importers:
       '@privy-io/wagmi':
         specifier: ^4.0.3
         version: 4.0.3(e231ebd08cdb5774229806ad21dd43b2)
+      '@stream-io/feeds-client':
+        specifier: ^2.6.0
+        version: 2.6.0(react@19.2.4)(use-sync-external-store@1.4.0(react@19.2.4))
+      '@stream-io/feeds-react-sdk':
+        specifier: ^1.0.18
+        version: 1.0.18(react@19.2.4)
       '@stream-io/stream-chat-css':
         specifier: ^5.8.0
         version: 5.16.1
@@ -288,6 +294,9 @@ importers:
       '@privy-io/node':
         specifier: ^0.11.0
         version: 0.11.0(@solana/kit@5.5.0(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10))(viem@2.47.4(bufferutil@4.1.0)(typescript@5.7.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      '@stream-io/node-sdk':
+        specifier: ^0.7.63
+        version: 0.7.63
       '@types/cookie-parser':
         specifier: ^1.4.9
         version: 1.4.10(@types/express@5.0.6)
@@ -2620,6 +2629,45 @@ packages:
       typescript:
         optional: true
 
+  '@stream-io/feeds-client@2.6.0':
+    resolution: {integrity: sha512-sLIoZzgyoyH9jmcoiERb7iGAYrMRt6/st/RICJVLAQqrgICRnvOU2sp7WmHv1Hebru0qxdna7sKPPKn0wwZlKA==}
+    peerDependencies:
+      react: ^17 || ^18 || ^19
+    peerDependenciesMeta:
+      react:
+        optional: true
+
+  '@stream-io/feeds-react-sdk@1.0.18':
+    resolution: {integrity: sha512-nkqLzspb1WGb5lzdqcOyyevcq7BJp7ZTOoWXQF5bVeYPlYT+K3lLWAL5dBylLfbN+NG0LFNxLQO/Yn6RvH0NKA==}
+    peerDependencies:
+      react: ^17 || ^18 || ^19
+
+  '@stream-io/filter@1.0.1':
+    resolution: {integrity: sha512-30niK17drfa+lb2wWe4UKmkFsJ5crpv6USJXkyfTFe3kQJchzEaVzonEeGmfAw2Ld47VL5t1s5KqMkPeszhSgw==}
+
+  '@stream-io/logger@2.0.0':
+    resolution: {integrity: sha512-cH9Gi/lAeDjLWB2J9xhPtiNOyRNNO9M46uT7507wT3MCouZNdlXDu/vgiGVhu3I/Tg7sG4ePlG5aHefJ6xjgmw==}
+
+  '@stream-io/node-sdk@0.7.63':
+    resolution: {integrity: sha512-S2jN73/AlBFzX/HlC83z6oKsTqzuFpVZaE+3Q39AA71X7R0FFrPNSWqClXyh1HutC/EZJfksMLp1RtuqibZ8JA==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      '@stream-io/openai-realtime-api': ~0.1.3 || ~0.2.0 || ~0.3.0 || ~0.4.0
+    peerDependenciesMeta:
+      '@stream-io/openai-realtime-api':
+        optional: true
+
+  '@stream-io/state-store@1.1.6':
+    resolution: {integrity: sha512-4jZ7vub9EBh+zrNsA8cyW/4U2EuiCkO3T9FgZrbgorO2iBE4k8gP9GAl6w8Ikv+ZcO5jR53CeG+AA48UG3LOVQ==}
+    peerDependencies:
+      react: ^17 || ^18 || ^19
+      use-sync-external-store: ^1.5.0
+    peerDependenciesMeta:
+      react:
+        optional: true
+      use-sync-external-store:
+        optional: true
+
   '@stream-io/stream-chat-css@5.16.1':
     resolution: {integrity: sha512-sjrg7+cHM9IPMa+18tVS+Dqxt8gteqw+IvQuSmTBRztjoJyrk9MoApVsng92X3iRh6+RG6O8Z1gBkRiBmeObTQ==}
 
@@ -2835,6 +2883,9 @@ packages:
 
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
+
+  '@types/node@18.19.130':
+    resolution: {integrity: sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg==}
 
   '@types/node@20.19.30':
     resolution: {integrity: sha512-WJtwWJu7UdlvzEAUm484QNg5eAoq5QR08KDNx7g45Usrs2NtOPiX8ugDqmKdXkyL03rBqU5dYNYVQetEpBHq2g==}
@@ -3312,6 +3363,9 @@ packages:
 
   axios@1.13.4:
     resolution: {integrity: sha512-1wVkUaAO6WyaYtCkcYCOx12ZgpGf9Zif+qXa4n+oYzK558YryKqiL6UWwd5DqiH3VRW0GYhTZQ/vlgJrCoNQlg==}
+
+  axios@1.18.1:
+    resolution: {integrity: sha512-3nTvFlvpn9Zu/RkHUqtc7/+al4UpRW5az71ap5zccp6e8RAYEzhMTecX8Dz1wWDYrPpUoB1HAQEGEAEvUr7S9g==}
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -4133,6 +4187,15 @@ packages:
 
   follow-redirects@1.15.11:
     resolution: {integrity: sha512-deG2P0JfjrTxl50XGCDyfI97ZGVCxIpfKYmfyrQ54n5FO/0gfIES8C/Psl6kWVDolizcaaxZJnTS0QSMxvnsBQ==}
+    engines: {node: '>=4.0'}
+    peerDependencies:
+      debug: '*'
+    peerDependenciesMeta:
+      debug:
+        optional: true
+
+  follow-redirects@1.16.0:
+    resolution: {integrity: sha512-y5rN/uOsadFT/JfYwhxRS5R7Qce+g3zG97+JrtFZlC9klX/W5hD7iiLzScI4nZqUS7DNUdhPgw4xI8W2LuXlUw==}
     engines: {node: '>=4.0'}
     peerDependencies:
       debug: '*'
@@ -5350,6 +5413,10 @@ packages:
   proxy-from-env@1.1.0:
     resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
 
+  proxy-from-env@2.1.0:
+    resolution: {integrity: sha512-cJ+oHTW1VAEa8cJslgmUZrc+sjRKgAKl3Zyse6+PV38hZe/V6Z14TbCuXcan9F9ghlz4QrFr2c92TNF82UkYHA==}
+    engines: {node: '>=10'}
+
   pump@3.0.3:
     resolution: {integrity: sha512-todwxLMY7/heScKmntwQG8CXVkWUOdYxIvY2s0VWAAMh/nd8SoYiRaKjlr7+iCs984f2P8zvrfWcDDYVb73NfA==}
 
@@ -5993,6 +6060,9 @@ packages:
 
   uncrypto@0.1.3:
     resolution: {integrity: sha512-Ql87qFHB3s/De2ClA9e0gsnS6zXG27SkTiSJwjCc9MebbfapQfuPzumMIUMi38ezPZVNFcHI9sUIepeQfw8J8Q==}
+
+  undici-types@5.26.5:
+    resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
 
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
@@ -9314,6 +9384,61 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@stream-io/feeds-client@2.6.0(react@19.2.4)(use-sync-external-store@1.4.0(react@19.2.4))':
+    dependencies:
+      '@stream-io/filter': 1.0.1
+      '@stream-io/logger': 2.0.0
+      '@stream-io/state-store': 1.1.6(react@19.2.4)(use-sync-external-store@1.4.0(react@19.2.4))
+      axios: 1.18.1
+    optionalDependencies:
+      react: 19.2.4
+    transitivePeerDependencies:
+      - debug
+      - supports-color
+      - use-sync-external-store
+
+  '@stream-io/feeds-client@2.6.0(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))':
+    dependencies:
+      '@stream-io/filter': 1.0.1
+      '@stream-io/logger': 2.0.0
+      '@stream-io/state-store': 1.1.6(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
+      axios: 1.18.1
+    optionalDependencies:
+      react: 19.2.4
+    transitivePeerDependencies:
+      - debug
+      - supports-color
+      - use-sync-external-store
+
+  '@stream-io/feeds-react-sdk@1.0.18(react@19.2.4)':
+    dependencies:
+      '@stream-io/feeds-client': 2.6.0(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
+      react: 19.2.4
+      use-sync-external-store: 1.6.0(react@19.2.4)
+    transitivePeerDependencies:
+      - debug
+      - supports-color
+
+  '@stream-io/filter@1.0.1': {}
+
+  '@stream-io/logger@2.0.0': {}
+
+  '@stream-io/node-sdk@0.7.63':
+    dependencies:
+      '@types/jsonwebtoken': 9.0.10
+      '@types/node': 18.19.130
+      jsonwebtoken: 9.0.3
+
+  '@stream-io/state-store@1.1.6(react@19.2.4)(use-sync-external-store@1.4.0(react@19.2.4))':
+    optionalDependencies:
+      react: 19.2.4
+      use-sync-external-store: 1.4.0(react@19.2.4)
+
+  '@stream-io/state-store@1.1.6(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))':
+    optionalDependencies:
+      react: 19.2.4
+      use-sync-external-store: 1.6.0(react@19.2.4)
+
   '@stream-io/stream-chat-css@5.16.1': {}
 
   '@swc/helpers@0.5.18':
@@ -9532,6 +9657,10 @@ snapshots:
   '@types/node-cron@3.0.11': {}
 
   '@types/node@12.20.55': {}
+
+  '@types/node@18.19.130':
+    dependencies:
+      undici-types: 5.26.5
 
   '@types/node@20.19.30':
     dependencies:
@@ -10966,6 +11095,16 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
+  axios@1.18.1:
+    dependencies:
+      follow-redirects: 1.16.0
+      form-data: 4.0.5
+      https-proxy-agent: 5.0.1
+      proxy-from-env: 2.1.0
+    transitivePeerDependencies:
+      - debug
+      - supports-color
+
   balanced-match@1.0.2: {}
 
   balanced-match@4.0.4: {}
@@ -11880,6 +12019,8 @@ snapshots:
   flatted@3.3.3: {}
 
   follow-redirects@1.15.11: {}
+
+  follow-redirects@1.16.0: {}
 
   for-each@0.3.5:
     dependencies:
@@ -13104,6 +13245,8 @@ snapshots:
 
   proxy-from-env@1.1.0: {}
 
+  proxy-from-env@2.1.0: {}
+
   pump@3.0.3:
     dependencies:
       end-of-stream: 1.4.5
@@ -13839,6 +13982,8 @@ snapshots:
       multiformats: 9.9.0
 
   uncrypto@0.1.3: {}
+
+  undici-types@5.26.5: {}
 
   undici-types@6.21.0: {}
 
