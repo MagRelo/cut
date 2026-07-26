@@ -80,7 +80,7 @@ Stream failures are logged and do not fail the commentary batch.
 
 - Connected users with Stream configured watch `contest:{contestId}` and render Cutbot posts. Reactions (`like`, `dislike`, `fire`; `enforce_unique`) are implemented but currently hidden via `STREAM_REACTIONS_ENABLED`.
 - Guests / Stream-unavailable paths fall back to `Contest.commentaryFeed` JSON (no reactions).
-- Feed tab label is `Feed (N)` when the user has N unread notification activities whose `custom.contestId` matches the open contest. Selecting the Feed tab marks those activities read.
+- Feed tab label is `Feed (N)` when the user has N unread notification activities whose `custom.contestId` matches the open contest. Selecting (or viewing) the Feed tab marks those aggregated notification **groups** read via `markActivity({ mark_read: groupIds })`.
 
 ## Scripts
 

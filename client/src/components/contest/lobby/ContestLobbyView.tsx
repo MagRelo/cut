@@ -69,10 +69,25 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
 
   const handleTabChange = (index: number) => {
     setSelectedIndex(index);
-    if (viewModel.layout.showFeedTab && index === viewModel.layout.feedTabIndex) {
-      void markContestMentionsRead();
-    }
   };
+
+  // Mark contest mentions read whenever the Feed tab is showing (including
+  // landing on it / staying on it when new unread arrives). Tab onChange alone
+  // misses re-clicks and default selection.
+  useEffect(() => {
+    if (
+      !viewModel.layout.showFeedTab ||
+      selectedIndex !== viewModel.layout.feedTabIndex
+    ) {
+      return;
+    }
+    void markContestMentionsRead();
+  }, [
+    selectedIndex,
+    viewModel.layout.showFeedTab,
+    viewModel.layout.feedTabIndex,
+    markContestMentionsRead,
+  ]);
 
   const feedTabLabel =
     unreadCount > 0 ? `Feed (${unreadCount})` : "Feed";
