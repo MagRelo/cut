@@ -11,6 +11,7 @@ import { EventLineupsPanel } from "../../platform/EventLineupsPanel";
 import { ContestCard } from "../ContestCard";
 import { ContestPayoutsModal } from "../ContestPayoutsModal";
 import { ContestResultsPanel } from "../ContestResultsPanel";
+import { ContestFeedPanel } from "./ContestFeedPanel";
 import { ContestPrimaryTab } from "./ContestPrimaryTab";
 import { ContestPredictionsPanel } from "./ContestPredictionsPanel";
 
@@ -31,6 +32,7 @@ function tabIndexFromQuery(
 ): number | null {
   if (tab === "lineups" && layout.showLineupsTab) return layout.lineupsTabIndex;
   if (tab === "contest") return layout.contestTabIndex;
+  if (tab === "feed" && layout.showFeedTab) return layout.feedTabIndex;
   if (tab === "results" && layout.showResultsTab) return layout.tailTabIndex;
   if (tab === "pool" && layout.showPredictionsTab) return layout.tailTabIndex;
   return null;
@@ -100,6 +102,13 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               Contest
             </Tab>
+            {viewModel.layout.showFeedTab ? (
+              <Tab
+                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+              >
+                Feed
+              </Tab>
+            ) : null}
             {viewModel.layout.showPredictionsTab ? (
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
@@ -140,6 +149,12 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                 isTimelineLoading={isTimelineLoading}
               />
             </TabPanel>
+
+            {viewModel.layout.showFeedTab ? (
+              <TabPanel className="p-4 focus:outline-none">
+                <ContestFeedPanel contest={contest} />
+              </TabPanel>
+            ) : null}
 
             {viewModel.layout.showPredictionsTab ? (
               <TabPanel className="p-4 focus:outline-none">

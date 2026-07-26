@@ -8,10 +8,12 @@ export interface ContestLobbyViewModel {
   phase: ContestLobbyPhase;
   layout: {
     showLineupsTab: boolean;
+    showFeedTab: boolean;
     showPredictionsTab: boolean;
     showResultsTab: boolean;
     lineupsTabIndex: number;
     contestTabIndex: number;
+    feedTabIndex: number;
     tailTabIndex: number;
     defaultTabIndex: number;
     layoutKey: string;

@@ -58,6 +58,13 @@ function derivePredictionsPanelMode(
   return "positions";
 }
 
+function contestHasCommentaryFeedItems(contest: Contest): boolean {
+  const feed = contest.commentaryFeed;
+  if (!feed || typeof feed !== "object" || Array.isArray(feed)) return false;
+  const items = (feed as { items?: unknown }).items;
+  return Array.isArray(items) && items.length > 0;
+}
+
 export function deriveContestLobbyViewModel(
   contest: Contest,
   input: DeriveContestLobbyViewModelInput = {},
@@ -79,10 +86,14 @@ export function deriveContestLobbyViewModel(
   );
 
   const showLineupsTab = Boolean(contest.event?.sportId);
+  // Live/locked contests always get Feed; settled contests keep it if history exists.
+  const showFeedTab =
+    phase === "live" || phase === "locked" || contestHasCommentaryFeedItems(contest);
 
   let tabIndex = 0;
   const lineupsTabIndex = showLineupsTab ? tabIndex++ : -1;
   const contestTabIndex = tabIndex++;
+  const feedTabIndex = showFeedTab ? tabIndex++ : -1;
   const tailTabIndex = tabIndex;
 
   const defaultTabIndex =
@@ -96,11 +107,13 @@ export function deriveContestLobbyViewModel(
     phase,
     layout: {
       showLineupsTab,
+      showFeedTab,
       // Winner pool opens after activate (ACTIVE/LOCKED); hide while OPEN and after settle.
       showPredictionsTab: phase === "live" || phase === "locked",
       showResultsTab: isSettled,
       lineupsTabIndex,
       contestTabIndex,
+      feedTabIndex,
       tailTabIndex,
       defaultTabIndex,
       layoutKey: `${contest.id}-${phase}`,

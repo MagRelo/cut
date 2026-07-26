@@ -50,7 +50,7 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest,
           >
             <span
               aria-hidden="true"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-200 text-xl shadow-sm"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-blue-400 bg-blue-200 text-xl shadow-sm"
             >
               🤖
             </span>
