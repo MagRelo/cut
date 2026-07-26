@@ -262,6 +262,68 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     ]);
   });
 
+  it("does not re-emit stage_recap after cooldown when one already exists", () => {
+    const previous = context();
+    const current = context();
+    const candidates = classifyContestFeedStories(previous, current, {
+      nowMs: Date.parse("2026-07-19T05:00:00.000Z"),
+      existingItems: [
+        {
+          id: "stage_recap:recap:0",
+          storyType: "stage_recap",
+          priority: 100,
+          subjects: {},
+          text: "opening recap",
+          generatedAt: "2026-07-19T04:00:00.000Z",
+        },
+      ],
+      maxPerPass: 3,
+    });
+    expect(candidates.map((candidate) => candidate.storyType)).not.toContain(
+      "stage_recap",
+    );
+  });
+
+  it("emits stage_recap when the tournament stage changes", () => {
+    const previous = context({
+      period: 3,
+      eventProgress: {
+        period: 3,
+        stageId: "weekend_move",
+        leaderProgress: {
+          holesRemaining: 8,
+          pace: "back_nine",
+          leaderParticipantIds: ["g1"],
+          leaderNames: ["Golfer"],
+        },
+      },
+    });
+    const current = context();
+    const delta = computeContestFeedDelta(previous, current);
+    expect(delta.stageChanged).toBe(true);
+
+    const candidates = classifyContestFeedStories(previous, current, {
+      nowMs: Date.parse("2026-07-19T05:00:00.000Z"),
+      existingItems: [
+        {
+          id: "stage_recap:recap:0",
+          storyType: "stage_recap",
+          priority: 100,
+          subjects: {},
+          text: "weekend recap",
+          generatedAt: "2026-07-19T04:50:00.000Z",
+        },
+      ],
+      maxPerPass: 3,
+    });
+    expect(candidates.map((candidate) => candidate.storyType)).toContain(
+      "stage_recap",
+    );
+    expect(candidates.find((c) => c.storyType === "stage_recap")?.reason).toContain(
+      "Stage changed",
+    );
+  });
+
   it("classifies leverage_spike from material deltas without race_shakeup", () => {
     const previous = context();
     const current = context({
@@ -447,6 +509,7 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     );
     expect(pack.storyType).toBe("score_swing");
     if (pack.storyType !== "score_swing") return;
+    expect(pack).not.toHaveProperty("race");
     expect(pack.events[0]?.bonusDelta).toBe(5);
     expect(pack.impacts.some((impact) => impact.displayName === "Noodles")).toBe(
       true,

@@ -32,7 +32,8 @@ const OUTPUT_CONTRACT: readonly string[] = [
 const STORY_INSTRUCTIONS: Record<ContestFeedActiveStoryType, readonly string[]> = {
   score_swing: [
     "Story: score swing. Focus only on the hole events and contest impacts in STORY_FACTS_JSON.",
-    "Hard-require the causal chain: (1) golfer hole result(s) from events (label, hole number), (2) when previousLeaderboardPosition/leaderboardPosition differ or bonusDelta is non-zero, the tournament board move and position-bonus change, (3) what that did to owning users in impacts (score / position / paid-cut moves).",
+    "Hard-require opening: the first sentence must name the golfer and hole result from events (label and hole number). Do not open with Sunday framing, tournament leaders, remaining golf, or the contest scoreboard/paid-cut standings.",
+    "Hard-require the causal chain after that open: (1) golfer hole result(s) from events, (2) when previousLeaderboardPosition/leaderboardPosition differ or bonusDelta is non-zero, the tournament board move and position-bonus change, (3) what that did to owning users in impacts (score / position / paid-cut moves).",
     "Do not invent holes, board places, or bonus points beyond events. If bonusDelta is 0 and the board position did not change, skip inventing a bonus beat.",
     "Keep it one tight causal beat. Do not widen into a full contest recap, routes, or ownership ladders.",
   ],
@@ -137,7 +138,10 @@ function stageIdFromFactPack(factPack: ContestFeedFactPack): ContestCommentarySt
 }
 
 /**
- * Feed prompt: story instructions first, stage overlay second, narrow fact JSON last.
+ * Feed prompt: story instructions first, stage overlay for stage_recap only,
+ * narrow fact JSON last. Flash stories (score_swing, leverage_spike) omit the
+ * stage overlay so weekend/final “open from leaderProgress / establish the race”
+ * lines cannot override event-first framing.
  */
 export function buildPgaContestFeedPrompt(
   options: BuildPgaContestFeedPromptOptions,
@@ -148,8 +152,11 @@ export function buildPgaContestFeedPrompt(
   const minWords = options.minWords ?? limits.minWords;
   const maxWords = options.maxWords ?? limits.maxWords;
   const stageId = stageIdFromFactPack(options.factPack);
-  const stageInstructions = STAGE_INSTRUCTIONS[stageId];
   const storyInstructions = STORY_INSTRUCTIONS[options.storyType];
+  const includeStageOverlay = options.storyType === "stage_recap";
+  const stageInstructions = includeStageOverlay
+    ? STAGE_INSTRUCTIONS[stageId]
+    : [];
 
   const factsPayload =
     options.factPack.storyType === "stage_recap"

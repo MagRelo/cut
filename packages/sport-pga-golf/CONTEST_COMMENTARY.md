@@ -61,11 +61,13 @@ Shared broadcast voices live in `@cut/sport-sdk`
 (`contestCommentaryVoices`). PGA stage instructions live in
 `packages/sport-pga-golf/src/contestCommentaryPrompt.ts` via
 `buildPgaContestCommentaryPrompt` (snapshot) and `buildPgaContestFeedPrompt`
-(feed). Story type is the primary prompt selector for feed items; stage
-instructions remain an overlay. Every feed prompt also includes the shared
-event → result narrative pattern. A short output contract (no invented facts;
-plain prose only) always appends. The server prompt helpers supply word limits
-and delegate to those builders.
+(feed). Story type is the primary prompt selector for feed items. Stage
+instructions overlay only `stage_recap` / snapshot prompts; flash stories
+(`score_swing`, `leverage_spike`) omit the stage overlay so weekend/final
+“open from leaderProgress” lines cannot override event-first framing. Every
+feed prompt also includes the shared event → result narrative pattern. A short
+output contract (no invented facts; plain prose only) always appends. The
+server prompt helpers supply word limits and delegate to those builders.
 
 ## Contest commentary feed
 
@@ -89,6 +91,11 @@ and a story-specific prompt. New items are prepended and trimmed to a rolling
 cap (30). `lastHoleState` is rewritten every successful pass so the next tick
 only sees newly completed holes.
 
+`stage_recap` is a single feed slot: emit when the feed has no recap yet, or
+when the tournament stage changes (replacing the prior recap via stable item
+id). It is not regenerated on a timer. The legacy `Contest.commentary`
+snapshot continues to refresh on the batch cadence below.
+
 ### Score swing (event → result)
 
 `score_swing` is the primary live beat. It watches contest-owned golfers for
@@ -97,11 +104,13 @@ attaches owning-lineup race impacts from the context delta:
 
 - Eagle-or-better, hole-in-one, and double-bogey-or-worse always qualify when owned.
 - Plain birdies qualify only when an owning lineup also moved position/score.
-- The fact pack carries `events` (golf hole beats) and `impacts` (contest moves).
+- The fact pack carries `events` (golf hole beats) and `impacts` (contest moves);
+  it does not include the full contest `race` scoreboard.
 - Each event includes tournament board/bonus context when available:
   `previousLeaderboardPosition`, `leaderboardPosition`, `previousBonus`, `bonus`,
   and `bonusDelta` (position bonus is 10 / 5 / 3 for 1st / 2nd / 3rd).
 - Causal chain for copy: hole result → board/bonus change → lineup contest impact.
+  The first sentence must be the golfer hole event—not Sunday/leader or race framing.
 - `lastHoleState` fingerprints completed holes plus each golfer's
   `leaderboardPosition` and `bonus` so the next pass can compute deltas.
 - The first pass after deploy seeds `lastHoleState` without emitting swings.
@@ -168,7 +177,9 @@ server cron pipeline refreshes commentary for entered `ACTIVE` or `LOCKED` PGA
 contests while their event reports `LIVE`. The refresh runs after live scoring
 and lineup updates and replaces `Contest.commentary` when the snapshot is
 missing or at least 20 minutes old. The same pass merges new story items into
-`Contest.commentaryFeed`. Generation failures leave previous values intact.
+`Contest.commentaryFeed` (live beats such as `score_swing`; `stage_recap` only
+when missing or the stage changed). Generation failures leave previous values
+intact.
 
 The contest lobby API includes the latest commentary snapshot, feed document,
 and generation timestamps. The client exposes the snapshot from the Winner Pool

@@ -91,7 +91,6 @@ describe("buildPgaContestCommentaryPrompt", () => {
         stageId: "final_round",
         period: 4,
         paidCount: 1,
-        race: baseContext.race,
         events: [],
         impacts: [],
       },
@@ -99,9 +98,13 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(swingPrompt).toContain("Story: score swing");
     expect(swingPrompt).toContain("event → result");
     expect(swingPrompt).toContain("position-bonus");
+    expect(swingPrompt).toContain("first sentence must name the golfer");
+    expect(swingPrompt).toContain("Do not open with Sunday framing");
     expect(swingPrompt).toContain("50-100 words");
     expect(swingPrompt).toContain("STORY_FACTS_JSON=");
-    expect(swingPrompt).toContain("Stage: final round");
+    expect(swingPrompt).not.toContain("Stage: final round");
+    expect(swingPrompt).not.toContain("Open by using eventProgress.leaderProgress");
+    expect(swingPrompt).not.toContain("establish the current contest race");
 
     const leveragePrompt = buildPgaContestFeedPrompt({
       storyType: "leverage_spike",
@@ -117,6 +120,15 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(leveragePrompt).toContain("Story: leverage spike");
     expect(leveragePrompt).toContain("event → result");
     expect(leveragePrompt).toContain("40-80 words");
-    expect(leveragePrompt).toContain("Stage: opening round");
+    expect(leveragePrompt).not.toContain("Stage: opening round");
+
+    const recapPrompt = buildPgaContestFeedPrompt({
+      storyType: "stage_recap",
+      factPack: { storyType: "stage_recap", context: baseContext },
+    });
+    expect(recapPrompt).toContain("Story: stage recap");
+    expect(recapPrompt).toContain("Stage: final round");
+    expect(recapPrompt).toContain("Open by using eventProgress.leaderProgress");
+    expect(recapPrompt).toContain("establish the current contest race");
   });
 });

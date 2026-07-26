@@ -39,7 +39,7 @@ export const CONTEST_FEED_ITEM_CAP = 30;
 /** Max stories generated in a single feed pass. */
 export const CONTEST_FEED_MAX_PER_PASS = 2;
 
-/** Default cooldown before another stage_recap may be emitted (ms). */
+/** Default subject cooldown for score_swing / leverage_spike (ms). */
 export const CONTEST_FEED_RECAP_COOLDOWN_MS = 20 * 60 * 1000;
 
 /** Max hole events bundled into one score_swing story. */
@@ -169,9 +169,9 @@ export interface ContestFeedDelta {
 export interface ClassifyContestFeedStoriesOptions {
   /** Existing feed items used for cooldown / dedupe. */
   existingItems?: readonly ContestFeedItem[];
-  /** Wall clock for recap cooldown (defaults to Date.now). */
+  /** Wall clock for subject cooldowns (defaults to Date.now). */
   nowMs?: number;
-  /** Override recap cooldown; default CONTEST_FEED_RECAP_COOLDOWN_MS. */
+  /** Override score_swing / leverage_spike subject cooldown; default CONTEST_FEED_RECAP_COOLDOWN_MS. */
   recapCooldownMs?: number;
   /** Max candidates returned after ranking; default CONTEST_FEED_MAX_PER_PASS. */
   maxPerPass?: number;
@@ -211,7 +211,6 @@ export type ContestFeedFactPack =
       stageId: ContestCommentaryStageId;
       period: number | null;
       paidCount: number;
-      race: ContestCommentaryContext["race"];
       events: ContestFeedScoreSwingEvent[];
       impacts: ContestFeedRacePositionChange[];
     }
@@ -656,12 +655,6 @@ export function classifyContestFeedStories(
     recapCooldownMs,
     nowMs,
   );
-  const recapCooldown = recentStoryKeys(
-    existingItems,
-    "stage_recap",
-    recapCooldownMs,
-    nowMs,
-  );
 
   const raceImpacts = materialRaceChanges(delta, minPositionDelta);
   const swingEvents = collectScoreSwingEvents(
@@ -712,24 +705,19 @@ export function classifyContestFeedStories(
     }
   }
 
-  const lastRecap = existingItems.find((item) => item.storyType === "stage_recap");
-  const lastRecapAt = lastRecap ? Date.parse(lastRecap.generatedAt) : NaN;
-  const recapDue =
-    !delta.hasPreviousContext ||
-    delta.stageChanged ||
-    !Number.isFinite(lastRecapAt) ||
-    nowMs - lastRecapAt >= recapCooldownMs;
-  if (recapDue && !recapCooldown.has("recap")) {
+  const hasRecap = existingItems.some((item) => item.storyType === "stage_recap");
+  const recapDue = !hasRecap || delta.stageChanged;
+  if (recapDue) {
     candidates.push({
       storyType: "stage_recap",
-      priority: delta.stageChanged ? 90 : !delta.hasPreviousContext ? 100 : 40,
+      priority: delta.stageChanged ? 90 : 100,
       subjects: {},
       subjectKey: "recap",
-      reason: !delta.hasPreviousContext
-        ? "No prior feed context; emit opening stage recap."
-        : delta.stageChanged
-          ? `Stage changed from ${delta.previousStageId} to ${delta.currentStageId}.`
-          : "Stage recap cooldown elapsed.",
+      reason: delta.stageChanged
+        ? `Stage changed from ${delta.previousStageId} to ${delta.currentStageId}.`
+        : !delta.hasPreviousContext
+          ? "No prior feed context; emit opening stage recap."
+          : "No stage_recap in feed; emit stage recap.",
     });
   }
 
@@ -768,7 +756,6 @@ export function buildContestFeedFactPack(
       stageId,
       period: current.period,
       paidCount: current.paidCount,
-      race: current.race,
       events,
       impacts,
     };
