@@ -183,7 +183,7 @@ sequenceDiagram
 | Contest lobby navigation | Lobby standings + separate timeline query (timeline gated until entry locked) |
 | After mutation | targeted `queryClient.invalidateQueries`; join/leave also optimistic-patch lobby + directory |
 
-Stale times: sports 24h, active event/candidates 5m (see `useSportData.ts`). Lobby/timeline live poll matches server cron (`SERVER_SYNC_INTERVAL_MS`).
+Stale times: sports 24h, active event/candidates/lineups 5m (see `useSportData.ts`, `useLineupQueries.ts`). Lobby/timeline live poll matches server cron (`SERVER_SYNC_INTERVAL_MS`).
 
 ---
 

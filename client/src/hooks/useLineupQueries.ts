@@ -3,6 +3,7 @@ import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import type { PlatformLineupListItem } from "../types/lineup";
 import { useAuth } from "../contexts/AuthContext";
+import { SERVER_SYNC_INTERVAL_MS } from "../lib/queryTiming";
 
 interface LineupsResponse {
   lineups: PlatformLineupListItem[];
@@ -10,6 +11,8 @@ interface LineupsResponse {
 
 /**
  * Fetches the user's lineups for an event (platform API).
+ * Polls on the same cadence as candidates/lobby so stored scores stay aligned
+ * with live pick rows. Background refetches keep prior data (no loading flash).
  */
 export function useLineupsQuery(
   eventId: string | undefined,
@@ -26,8 +29,9 @@ export function useLineupsQuery(
       return lineupsResponse.lineups;
     },
     enabled: canRun,
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
+    staleTime: SERVER_SYNC_INTERVAL_MS,
+    refetchInterval: SERVER_SYNC_INTERVAL_MS,
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -52,8 +56,9 @@ export function useLineupQuery(
       return lineupsResponse.lineups.find((row) => row.id === lineupId) ?? null;
     },
     enabled: canRun,
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
+    staleTime: SERVER_SYNC_INTERVAL_MS,
+    refetchInterval: SERVER_SYNC_INTERVAL_MS,
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
