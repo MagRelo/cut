@@ -118,7 +118,7 @@ export const FIXTURE_CANDIDATE_DETAIL_SCHEDULED = buildDetailCandidate({
   participant: {
     owgr: "1",
     fedex: "2",
-    dataGolf: { dg_rank: 1 },
+    dataGolf: { dg_rank: 1, dg_skill: 2.69839759766865 },
     performance: [
       {
         season: "2026",

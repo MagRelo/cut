@@ -88,7 +88,12 @@ describe("golfCandidateSortConfig", () => {
     displayName: "Scottie Scheffler",
     sortKeys: buildGolfSortKeys({
       displayName: "Scottie Scheffler",
-      participantMetadata: { firstName: "Scottie", lastName: "Scheffler", owgr: "1" },
+      participantMetadata: {
+        firstName: "Scottie",
+        lastName: "Scheffler",
+        owgr: "2",
+        dataGolf: { dg_rank: 1 },
+      },
       scoreData: { leaderboardTotal: "-8", leaderboardPosition: "T3" },
       total: 12,
     }),
@@ -100,14 +105,19 @@ describe("golfCandidateSortConfig", () => {
     displayName: "Rory McIlroy",
     sortKeys: buildGolfSortKeys({
       displayName: "Rory McIlroy",
-      participantMetadata: { firstName: "Rory", lastName: "McIlroy", owgr: "2" },
+      participantMetadata: {
+        firstName: "Rory",
+        lastName: "McIlroy",
+        owgr: "1",
+        dataGolf: { dg_rank: 2 },
+      },
       scoreData: { leaderboardTotal: "-6", leaderboardPosition: "T5" },
       total: 10,
     }),
     metadata: {},
   };
 
-  it("sorts picker by owgr rankings regardless of live scores", () => {
+  it("sorts picker by DataGolf rank regardless of live scores", () => {
     const sorted = sortCandidates([mcilroy, scheffler], golfCandidateSortConfig, "picker");
     expect(sorted.map((item) => item.participantId)).toEqual(["p1", "p2"]);
   });

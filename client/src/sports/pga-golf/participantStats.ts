@@ -10,6 +10,7 @@ export type ParticipantSeasonStats = {
   owgr: string;
   fedex: string;
   dgRank: number | undefined;
+  dgSkill: number | undefined;
   wins: string;
   t10: string;
   t25: string;
@@ -43,6 +44,11 @@ function dataGolfRecord(participant: Record<string, unknown>): Record<string, un
 function dgRankFromParticipant(participant: Record<string, unknown>): number | undefined {
   const rank = dataGolfRecord(participant)?.dg_rank;
   return typeof rank === "number" ? rank : undefined;
+}
+
+function dgSkillFromParticipant(participant: Record<string, unknown>): number | undefined {
+  const skill = dataGolfRecord(participant)?.dg_skill;
+  return typeof skill === "number" && Number.isFinite(skill) ? skill : undefined;
 }
 
 function performanceSeasons(participant: Record<string, unknown>): PerformanceSeason[] {
@@ -109,6 +115,7 @@ export function getParticipantSeasonStats(candidate: Candidate): ParticipantSeas
     owgr,
     fedex,
     dgRank: dgRankFromParticipant(participant),
+    dgSkill: dgSkillFromParticipant(participant),
     wins,
     t10,
     t25,
@@ -116,10 +123,10 @@ export function getParticipantSeasonStats(candidate: Candidate): ParticipantSeas
   };
 }
 
-export function formatOrdinalRank(value: string): string {
-  const t = value.trim();
+export function formatOrdinalRank(value: string | number): string {
+  const t = typeof value === "number" ? String(value) : value.trim();
   if (t === "" || t === "—") return t;
-  if (!/^\d+$/.test(t)) return value;
+  if (!/^\d+$/.test(t)) return String(value);
   const n = Number.parseInt(t, 10);
   if (n === 0) return "0";
   const j = n % 10;
@@ -127,4 +134,17 @@ export function formatOrdinalRank(value: string): string {
   const suffix =
     j === 1 && k !== 11 ? "st" : j === 2 && k !== 12 ? "nd" : j === 3 && k !== 13 ? "rd" : "th";
   return `${n}${suffix}`;
+}
+
+export function formatDgSkill(value: number): string {
+  const abs = Math.abs(value).toFixed(2);
+  if (value > 0) return `+${abs}`;
+  if (value < 0) return `-${abs}`;
+  return abs;
+}
+
+export function dgSkillColorClass(value: number): string {
+  if (value > 0) return "text-emerald-600";
+  if (value < 0) return "text-red-600";
+  return "text-slate-500";
 }

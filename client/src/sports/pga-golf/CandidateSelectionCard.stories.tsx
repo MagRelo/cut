@@ -32,7 +32,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Pre-tournament picker card with full season ranks and counting stats. */
+/** Pre-tournament picker card with DataGolf rank/skill and season counting stats. */
 export const Default: Story = {};
 
 /** Same card as shown when the candidate is already in the lineup. */
@@ -45,7 +45,7 @@ export const Selected: Story = {
   ),
 };
 
-/** Live fixture candidate — no OWGR, so no badge. */
+/** Live fixture candidate — no DataGolf rank, so no badge. */
 export const SparseStats: Story = {
   args: {
     candidate: FIXTURE_CANDIDATE_DETAIL_LIVE,

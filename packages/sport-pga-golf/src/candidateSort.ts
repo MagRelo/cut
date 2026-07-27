@@ -14,8 +14,8 @@ const leaderboardSortKeys = [
 ];
 
 const pickerSortKeys = [
-  { key: "owgr", direction: "asc" as const },
   { key: "dataGolf", direction: "asc" as const },
+  { key: "owgr", direction: "asc" as const },
   { key: "lastName", direction: "asc" as const },
   { key: "firstName", direction: "asc" as const },
 ];
