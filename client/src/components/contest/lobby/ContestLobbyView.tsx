@@ -162,7 +162,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
 
           <TabPanels>
             {viewModel.layout.showLineupsTab && fieldSportId ? (
-              <TabPanel className="p-4 focus:outline-none">
+              <TabPanel className="p-4 focus:outline-none" unmount={false}>
                 <EventLineupsPanel
                   contest={contest}
                   sportId={fieldSportId}
