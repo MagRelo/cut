@@ -33,7 +33,7 @@ export const UserGroupCard = ({ userGroup }: UserGroupCardProps) => {
   return (
     <div
       className={cn(
-        "group min-w-0 overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow] duration-200 hover:border-blue-200 hover:shadow-md",
+        "group min-w-0 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow] duration-200 hover:border-blue-200 hover:shadow-md",
       )}
     >
       <div className="px-3 pb-2 pt-4">
@@ -52,13 +52,13 @@ export const UserGroupCard = ({ userGroup }: UserGroupCardProps) => {
           </span>
         </div>
         {userGroup.description ? (
-          <p className="mt-1 line-clamp-2 font-display text-sm leading-relaxed text-gray-600">
+          <p className="mt-1 line-clamp-3 font-display text-sm leading-relaxed text-gray-600">
             {userGroup.description}
           </p>
         ) : null}
       </div>
 
-      <div className="flex items-center gap-3 px-3 py-2 pt-0">
+      <div className="flex items-center gap-3 border-t px-3 py-2 pt-2.5">
         <div className="grid min-w-0 flex-1 grid-cols-2 gap-2">
           <LeagueListStat value={userGroup.memberCount} label="Members" />
           <LeagueListStat value={userGroup.contestCount} label="Contests" />

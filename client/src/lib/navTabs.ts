@@ -26,7 +26,7 @@ export const ACCOUNT_HOME_LINK = {
 export const LEAGUES_TAB: NavTab = {
   key: "leagues",
   to: "/leagues",
-  label: "My Leagues",
+  label: "Leagues",
   match: (pathname) => leaguesMatch(pathname) || userGroupsMatch(pathname),
 };
 

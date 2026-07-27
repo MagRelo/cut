@@ -49,7 +49,7 @@ export const UserGroupJoinPage = () => {
       <>
         <ErrorMessage message="Invalid invite link" />
         <Link to="/leagues" className="text-sm text-blue-600 hover:text-blue-700 font-display">
-          Go to my leagues
+          Go to Leagues
         </Link>
       </>
     );
@@ -79,7 +79,7 @@ export const UserGroupJoinPage = () => {
         <PageHeader title="Join League" />
         <ErrorMessage message={message} />
         <Link to="/leagues" className="text-sm text-blue-600 hover:text-blue-700 font-display">
-          Go to my leagues
+          Go to Leagues
         </Link>
       </>
     );

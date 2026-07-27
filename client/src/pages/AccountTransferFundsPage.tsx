@@ -31,7 +31,7 @@ export function TransferFundsPage() {
       <div className="space-y-4">
         <div className="rounded-sm border border-gray-200">
           <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-            <TabList className={tabListClassName("px-4", "pt-2")}>
+            <TabList className={tabListClassName()}>
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
               >

@@ -16,7 +16,7 @@ export const UserGroupListPage = () => {
 
   return (
     <>
-      <PageHeader title="My Leagues" />
+      <PageHeader title="Leagues" />
       <PageSection>
         {isLoading ? (
           <div className="flex justify-center items-center py-12">

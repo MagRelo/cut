@@ -107,7 +107,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
           <li>
             Go to{" "}
             <Link to="/leagues" className="text-blue-600 hover:underline">
-              My Leagues
+              Leagues
             </Link>{" "}
             and tap <strong>Create League</strong>.
           </li>
@@ -234,7 +234,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
             to="/leagues"
             className="inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
           >
-            Go to My Leagues
+            Go to Leagues
           </Link>
         </div>
       </PageSection>

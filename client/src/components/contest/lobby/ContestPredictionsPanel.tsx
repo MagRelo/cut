@@ -30,7 +30,7 @@ export const ContestPredictionsPanel: React.FC<ContestPredictionsPanelProps> = (
 
       {mode === "wager" ? (
         <TabGroup>
-          <TabList className={tabListClassName("px-3")}>
+          <TabList className={tabListClassName()}>
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               {placeWagerTabLocked ? <span> 🔒</span> : null} Bet To Win
             </Tab>

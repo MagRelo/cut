@@ -24,9 +24,13 @@ export const UserGroupList = ({ userGroups, loading, error }: UserGroupListProps
 
   if (!userGroups || userGroups.length === 0) {
     return (
-      <div className="py-12 text-center">
-        <p className="mb-4 text-lg text-gray-500">You're not a member of any leagues yet.</p>
-        <p className="text-sm text-gray-400">Create a league or accept an invite to get started.</p>
+      <div>
+        <p className="mb-1 font-display text-base font-semibold text-gray-900">
+          No leagues yet
+        </p>
+        <p className="font-display text-sm leading-relaxed text-gray-600">
+          Create a league or accept an invite to get started.
+        </p>
       </div>
     );
   }

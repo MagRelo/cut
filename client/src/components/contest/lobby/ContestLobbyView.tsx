@@ -124,39 +124,41 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
           onChange={handleTabChange}
           key={viewModel.layout.layoutKey}
         >
-          <TabList className={tabListClassName("px-3")}>
-            {viewModel.layout.showLineupsTab ? (
-              <Tab
-                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-              >
-                Lineups
+          <div className="px-3">
+            <TabList className={tabListClassName()}>
+              {viewModel.layout.showLineupsTab ? (
+                <Tab
+                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                >
+                  Lineups
+                </Tab>
+              ) : null}
+              <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
+                Contest
               </Tab>
-            ) : null}
-            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
-              Contest
-            </Tab>
-            {viewModel.layout.showPredictionsTab ? (
-              <Tab
-                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-              >
-                Pool
-              </Tab>
-            ) : null}
-            {viewModel.layout.showResultsTab ? (
-              <Tab
-                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-              >
-                Results
-              </Tab>
-            ) : null}
-            {viewModel.layout.showFeedTab ? (
-              <Tab
-                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-              >
-                {feedTabLabel}
-              </Tab>
-            ) : null}
-          </TabList>
+              {viewModel.layout.showPredictionsTab ? (
+                <Tab
+                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                >
+                  Pool
+                </Tab>
+              ) : null}
+              {viewModel.layout.showResultsTab ? (
+                <Tab
+                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                >
+                  Results
+                </Tab>
+              ) : null}
+              {viewModel.layout.showFeedTab ? (
+                <Tab
+                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                >
+                  {feedTabLabel}
+                </Tab>
+              ) : null}
+            </TabList>
+          </div>
 
           <TabPanels>
             {viewModel.layout.showLineupsTab && fieldSportId ? (

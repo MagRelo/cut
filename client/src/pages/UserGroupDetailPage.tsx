@@ -126,7 +126,7 @@ export const UserGroupDetailPage = () => {
     <>
       <Breadcrumbs
         items={[
-          { label: "My Leagues", path: "/leagues" },
+          { label: "Leagues", path: "/leagues" },
           { label: userGroup.name, path: `/leagues/${id}` },
         ]}
       />
@@ -157,25 +157,27 @@ export const UserGroupDetailPage = () => {
           </div>
         ) : null}
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-          <TabList className={tabListClassName("px-2", "pt-2")}>
-            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
-              Contests
-            </Tab>
-            {isAdmin ? (
-              <>
-                <Tab
-                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-                >
-                  Members
-                </Tab>
-                <Tab
-                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-                >
-                  Manage
-                </Tab>
-              </>
-            ) : null}
-          </TabList>
+          <div className="px-2">
+            <TabList className={tabListClassName()}>
+              <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
+                Contests
+              </Tab>
+              {isAdmin ? (
+                <>
+                  <Tab
+                    className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                  >
+                    Members
+                  </Tab>
+                  <Tab
+                    className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                  >
+                    Manage
+                  </Tab>
+                </>
+              ) : null}
+            </TabList>
+          </div>
           <div className="px-2 py-4">
             <TabPanel className="focus:outline-none">{contestContent}</TabPanel>
             {isAdmin ? (
