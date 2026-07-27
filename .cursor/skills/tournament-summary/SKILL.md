@@ -13,7 +13,7 @@ Produce a **casual-fan tournament preview** for a PGA Tour event and save it to
 `server/src/tournamentSummaries/{pgaTourId}.json`.
 
 Content appears in the **announcement card** (Event Blurb + event header) and under
-**from the 19th hole:** (They Out Here Sayin) in both the in-app tournament preview
+**from the 19th hole:** in both the in-app tournament preview
 and the **New Tournament email**. The **CutBot quote** is the lead voice —
 evocative, engaging, and sets the tone for the week. User quotes (added manually)
 can be spikier; CutBot should feel like a welcoming column intro. Light betting
@@ -87,7 +87,7 @@ standard preview.
 
 | Section | What to find |
 |--------|----------------|
-| They Out Here Sayin | **CutBot quote** — place/vibe first, week stakes, max 2 names; user quotes added manually |
+| From the 19th Hole | **CutBot quote** — place/vibe first, week stakes, max 2 names; user quotes added manually |
 | Event Blurb | **Announcement card prose** — 2 sentences: course character + one notable beat (not a fact list) |
 | Best Players and Odds | 8–10 contenders with American odds ranges (e.g. `+850 to +1000`) |
 | Course and Format | Course name, dates, purse, format, yardage/par profile |
@@ -106,7 +106,7 @@ Follow the canonical structure in [reference.md](reference.md).
 
 Rules:
 
-- **They Out Here Sayin** section: skill writes **only the first quote** (CutBot).
+- **From the 19th Hole** section: skill writes **only the first quote** (CutBot).
   User quotes (0–3) are added manually later. Each quote item:
   - `body` — **3 short sentences** (see CutBot quote voice below)
   - `attribution` — `"CutBot"` for the skill quote
@@ -128,7 +128,7 @@ Rules:
 
 Canonical section order:
 
-1. They Out Here Sayin
+1. From the 19th Hole
 2. Event Blurb
 3. Best Players and Odds
 4. Course and Format

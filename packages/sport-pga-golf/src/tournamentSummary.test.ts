@@ -12,8 +12,8 @@ import {
 
 describe("tournamentSummary", () => {
   it("recognizes quote section titles", () => {
+    expect(isQuotesSection({ title: "From the 19th Hole", items: [{ body: "x" }] })).toBe(true);
     expect(isQuotesSection({ title: "From the 19th hole", items: [{ body: "x" }] })).toBe(true);
-    expect(isQuotesSection({ title: "They Out Here Sayin", items: [{ body: "x" }] })).toBe(true);
     expect(isQuotesSection({ title: "Summary", items: [{ body: "x" }] })).toBe(true);
     expect(isQuotesSection({ title: "Best Players and Odds", items: [{ body: "x" }] })).toBe(
       false,
@@ -64,7 +64,7 @@ describe("tournamentSummary", () => {
   it("normalizes multi-quote items with defaults", () => {
     const sections = parseSummarySections([
       {
-        title: "They Out Here Sayin",
+        title: "From the 19th Hole",
         items: [
           { body: "CutBot take." },
           {

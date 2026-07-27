@@ -32,7 +32,7 @@ export const EVENT_BLURB_SECTION_TITLE = "Event Blurb";
 export const DEFAULT_QUOTE_COLOR = "#3b82f6";
 export const DEFAULT_CUTBOT_ATTRIBUTION = "CutBot";
 
-const QUOTES_SECTION_KEYS = new Set(["from the 19th hole", "they out here sayin", "summary"]);
+const QUOTES_SECTION_KEYS = new Set(["from the 19th hole", "summary"]);
 /** Canonical + legacy titles for the announcement prose section. */
 const EVENT_BLURB_SECTION_KEYS = new Set(["event blurb", "tournament history"]);
 

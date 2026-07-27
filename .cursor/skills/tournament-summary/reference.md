@@ -14,7 +14,7 @@ Loaded by `server/src/lib/tournamentSummary.ts` and
 | JSON section | Surface |
 |--------------|---------|
 | **Event Blurb** | Announcement card (email + in-app preview): name, course · place, dates, then this prose |
-| **They Out Here Sayin** | Quote blocks under **from the 19th hole:** |
+| **From the 19th Hole** | Quote blocks under **from the 19th hole:** |
 | **Best Players and Odds** | Bullet list |
 | **Course and Format** | Bullet list |
 | **Broadcast Information** | Bullet list |
@@ -40,8 +40,8 @@ Top level: array of sections. Each section:
 - `body` is required and must be non-empty.
 - `label` is optional; used for bullet sections (Best Players and Odds, etc.).
 - **Event Blurb:** exactly **one** item, **body only** (no `label`).
-- Quote items (`They Out Here Sayin`) use `body`, `attribution`, and `color` (hex).
-- Legacy `Summary` section title is still accepted; prefer `They Out Here Sayin`.
+- Quote items (`From the 19th Hole`) use `body`, `attribution`, and `color` (hex).
+- Legacy `Summary` section title is still accepted; prefer `From the 19th Hole`.
 - Parser: `parseSummarySections()` / `getEventBlurb()` in `@cut/sport-pga-golf`.
 
 ## Canonical template
@@ -51,7 +51,7 @@ Replace `{...}` placeholders. Keep valid JSON.
 ```json
 [
   {
-    "title": "They Out Here Sayin",
+    "title": "From the 19th Hole",
     "items": [
       {
         "body": "{CutBot quote: 3 short sentences. Evocative place/atmosphere, week stakes, max 2 names, forward hook. See SKILL.md CutBot quote voice.}",
@@ -156,7 +156,7 @@ with real context, not a press release or odds terminal.
 | Course character + one notable beat | Repeat course/city/dates from the card header |
 | Tradition, defending champ, or week stakes | Dense fact stacks (purse, yardage — use Course and Format) |
 
-**CutBot quote (They Out Here Sayin):**
+**CutBot quote (From the 19th Hole):**
 
 | Do | Don't |
 |----|--------|
@@ -174,7 +174,7 @@ factual claims against this event's past results** — see SKILL.md Step 4. Pref
 course-fit opinion over unverified history.
 
 **Other sections:** factual and scannable (Course, Broadcast). Personality lives in
-They Out Here Sayin (CutBot + user quotes); context teaser lives in Event Blurb.
+From the 19th Hole (CutBot + user quotes); context teaser lives in Event Blurb.
 
 **Tense:** present tense for upcoming events.
 

@@ -11,7 +11,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 const CANONICAL_SECTIONS = [
-  "They Out Here Sayin",
+  "From the 19th Hole",
   "Event Blurb",
   "Best Players and Odds",
   "Course and Format",
@@ -62,11 +62,11 @@ function validateSummarySections(json, filePath) {
 
   const quotesSection = json.find((s) => {
     const key = s.title.trim().toLowerCase();
-    return key === "they out here sayin" || key === "summary";
+    return key === "from the 19th hole" || key === "summary";
   });
   if (quotesSection) {
     if (quotesSection.items.length < 1 || quotesSection.items.length > 4) {
-      warnings.push("They Out Here Sayin should have 1–4 quote items (CutBot + up to 3 user quotes).");
+      warnings.push("From the 19th Hole should have 1–4 quote items (CutBot + up to 3 user quotes).");
     }
     for (const [index, item] of quotesSection.items.entries()) {
       if (item.body.includes("•")) {

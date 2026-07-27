@@ -9,7 +9,7 @@ import { renderSummarySectionsEmailHtml } from "./email/blocks/summary.js";
 describe("resolveSummarySectionsForEvent", () => {
   it("prefers tournamentSummaries file over DB metadata", async () => {
     const fromDb = parseSummarySections([
-      { title: "They Out Here Sayin", items: [{ body: "Stale DB copy." }] },
+      { title: "From the 19th Hole", items: [{ body: "Stale DB copy." }] },
     ]);
     const resolved = await resolveSummarySectionsForEvent("R2026541", fromDb);
     const quotesSection = resolved?.find((section) => isQuotesSection(section));
@@ -18,7 +18,7 @@ describe("resolveSummarySectionsForEvent", () => {
 
   it("falls back to DB when no summary file exists", async () => {
     const fromDb = parseSummarySections([
-      { title: "They Out Here Sayin", items: [{ body: "DB-only summary." }] },
+      { title: "From the 19th Hole", items: [{ body: "DB-only summary." }] },
     ]);
     const resolved = await resolveSummarySectionsForEvent("R9999999", fromDb);
     expect(resolved?.[0]?.items[0]?.body).toBe("DB-only summary.");
@@ -51,7 +51,7 @@ describe("parseSummarySections", () => {
 
   it("detects quotes section", () => {
     expect(
-      isQuotesSection({ title: "They Out Here Sayin", items: [{ body: "Lead prose." }] }),
+      isQuotesSection({ title: "From the 19th Hole", items: [{ body: "Lead prose." }] }),
     ).toBe(true);
     expect(
       isQuotesSection({ title: "Key Storylines", items: [{ body: "x" }] }),
@@ -61,7 +61,7 @@ describe("parseSummarySections", () => {
   it("renders quote blocks from JSON items", () => {
     const html = renderSummarySectionsEmailHtml([
       {
-        title: "They Out Here Sayin",
+        title: "From the 19th Hole",
         items: [
           { body: "Opening paragraph text.", attribution: "CutBot", color: "#3b82f6" },
           {
