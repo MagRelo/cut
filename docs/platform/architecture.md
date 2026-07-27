@@ -209,14 +209,17 @@ sequenceDiagram
     alt shouldSyncLiveScores
       Plugin->>Plugin: syncLiveScores
       Core->>Core: updateContestLineupsForEvent
+      Plugin->>Plugin: afterLiveScoreSync optional
     end
   end
-  Core->>Core: refreshOpenSideBetQuotes
+  Core->>Core: refreshSideBetQuotes golf
   Core->>Contest: batchActivateContests
   Core->>Contest: batchSettleContests
   Core->>Contest: batchCloseContests
   Core->>Core: batchSyncReferralGraph
 ```
+
+A separate `*/20` overview pipeline refreshes golf `Contest.commentary`. An in-process feed worker drains `CommentaryFeedJob` rows for Cutbot feed copy.
 
 Core platform endpoints:
 

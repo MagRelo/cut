@@ -6,11 +6,10 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   getEventStatus: vi.fn(),
   generate: vi.fn(),
-  generateFeed: vi.fn(),
-  persistFeed: vi.fn(),
+  tryLock: vi.fn(),
 }));
 
-vi.mock("../../lib/prisma.js", () => ({
+vi.mock("../../../lib/prisma.js", () => ({
   prisma: {
     contest: {
       findMany: mocks.findMany,
@@ -19,25 +18,24 @@ vi.mock("../../lib/prisma.js", () => ({
   },
 }));
 
-vi.mock("../../sports/registry.js", () => ({
+vi.mock("../../registry.js", () => ({
   requireSportModule: () => ({
     getEventStatus: mocks.getEventStatus,
   }),
 }));
 
-vi.mock("../contest/generateContestCommentary.js", () => ({
+vi.mock("../../../services/contest/generateContestCommentary.js", () => ({
   generateContestCommentary: mocks.generate,
 }));
 
-vi.mock("../contest/generateContestFeed.js", () => ({
-  generateContestFeed: mocks.generateFeed,
-  persistContestFeed: mocks.persistFeed,
+vi.mock("./llmMutex.js", () => ({
+  tryWithCommentaryLlmLock: (task: () => Promise<unknown>) => mocks.tryLock(task),
 }));
 
 import {
-  batchGenerateContestCommentary,
-  CONTEST_COMMENTARY_REFRESH_MS,
-} from "./batchGenerateContestCommentary.js";
+  refreshContestOverviews,
+  CONTEST_COMMENTARY_OVERVIEW_REFRESH_MS,
+} from "./refreshContestOverviews.js";
 
 const originalEnabled = process.env.CONTEST_COMMENTARY_ENABLED;
 const originalApiKey = process.env.CURSOR_API_KEY;
@@ -61,16 +59,7 @@ beforeEach(() => {
     commentary: "Fresh commentary",
     generatedAt: "2026-07-19T04:00:00.000Z",
   });
-  mocks.generateFeed.mockResolvedValue({
-    document: {
-      schemaVersion: 1,
-      items: [],
-      lastContext: { period: 4 },
-    },
-    newItems: [{ id: "item-1" }],
-    generatedAt: "2026-07-19T04:00:00.000Z",
-  });
-  mocks.persistFeed.mockResolvedValue(undefined);
+  mocks.tryLock.mockImplementation(async (task: () => Promise<unknown>) => task());
 });
 
 afterEach(() => {
@@ -80,10 +69,10 @@ afterEach(() => {
   else process.env.CURSOR_API_KEY = originalApiKey;
 });
 
-describe("batchGenerateContestCommentary", () => {
+describe("refreshContestOverviews", () => {
   it("does nothing unless automatic commentary is enabled and configured", async () => {
     process.env.CONTEST_COMMENTARY_ENABLED = "false";
-    expect(await batchGenerateContestCommentary()).toEqual({
+    expect(await refreshContestOverviews()).toEqual({
       total: 0,
       succeeded: 0,
       failed: 0,
@@ -93,15 +82,15 @@ describe("batchGenerateContestCommentary", () => {
 
     process.env.CONTEST_COMMENTARY_ENABLED = "true";
     delete process.env.CURSOR_API_KEY;
-    await batchGenerateContestCommentary();
+    await refreshContestOverviews();
     expect(mocks.findMany).not.toHaveBeenCalled();
   });
 
-  it("queries entered live PGA contests using the 20-minute cutoff and persists output", async () => {
+  it("queries entered live PGA contests using the 20-minute overview cutoff", async () => {
     const now = new Date("2026-07-19T04:20:00.000Z");
     mocks.findMany.mockResolvedValue([candidate("contest-1")]);
 
-    const result = await batchGenerateContestCommentary(now);
+    const result = await refreshContestOverviews(now);
 
     expect(mocks.findMany).toHaveBeenCalledWith({
       where: {
@@ -119,13 +108,7 @@ describe("batchGenerateContestCommentary", () => {
           { commentaryGeneratedAt: null },
           {
             commentaryGeneratedAt: {
-              lte: new Date(now.getTime() - CONTEST_COMMENTARY_REFRESH_MS),
-            },
-          },
-          { commentaryFeedGeneratedAt: null },
-          {
-            commentaryFeedGeneratedAt: {
-              lte: new Date(now.getTime() - CONTEST_COMMENTARY_REFRESH_MS),
+              lte: new Date(now.getTime() - CONTEST_COMMENTARY_OVERVIEW_REFRESH_MS),
             },
           },
         ],
@@ -144,8 +127,6 @@ describe("batchGenerateContestCommentary", () => {
         commentaryGeneratedAt: new Date("2026-07-19T04:00:00.000Z"),
       },
     });
-    expect(mocks.generateFeed).toHaveBeenCalledWith("contest-1");
-    expect(mocks.persistFeed).toHaveBeenCalled();
     expect(result).toMatchObject({ total: 1, succeeded: 1, failed: 0 });
   });
 
@@ -153,11 +134,18 @@ describe("batchGenerateContestCommentary", () => {
     mocks.findMany.mockResolvedValue([candidate("contest-1")]);
     mocks.getEventStatus.mockResolvedValue("COMPLETE");
 
-    const result = await batchGenerateContestCommentary();
+    const result = await refreshContestOverviews();
 
     expect(mocks.generate).not.toHaveBeenCalled();
     expect(mocks.update).not.toHaveBeenCalled();
     expect(result.total).toBe(0);
+  });
+
+  it("skips the pass when the LLM lock is held", async () => {
+    mocks.tryLock.mockResolvedValue(null);
+    const result = await refreshContestOverviews();
+    expect(result).toEqual({ total: 0, succeeded: 0, failed: 0, results: [] });
+    expect(mocks.findMany).not.toHaveBeenCalled();
   });
 
   it("isolates failures and does not overwrite failed contests", async () => {
@@ -167,7 +155,7 @@ describe("batchGenerateContestCommentary", () => {
       generatedAt: "2026-07-19T04:00:00.000Z",
     });
 
-    const result = await batchGenerateContestCommentary();
+    const result = await refreshContestOverviews();
 
     expect(mocks.update).toHaveBeenCalledTimes(1);
     expect(mocks.update).toHaveBeenCalledWith({

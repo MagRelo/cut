@@ -3,25 +3,30 @@
 **Scheduler:** `server/src/cron/scheduler.ts`  
 **Enabled when:** `ENABLE_CRON=true` (main server or `cron-app.ts`)
 
-Schedule: **`*/5 * * * *`** (every 5 minutes) — single job `mainPipeline`.
+Schedules:
+
+| Job | Cron | Purpose |
+| --- | --- | --- |
+| `scorePipeline` | `*/5 * * * *` | Scores, side-bet quotes, contest lifecycle, referral sync |
+| `overviewPipeline` | `*/20 * * * *` | Legacy PGA `Contest.commentary` overview refresh |
+| `feedWorker` | in-process loop | Drain `CommentaryFeedJob` queue (concurrency 1) |
 
 ---
 
-## Pipeline sequence
+## Score pipeline sequence
 
 ```mermaid
 flowchart TD
-  A[Start pipeline] --> B{Already running?}
+  A[Start scorePipeline] --> B{Already running?}
   B -->|yes| Z[Skip]
   B -->|no| C[getActiveEvents]
   C --> D[For each event: runSportEventPipeline]
-  D --> E[refreshOpenSideBetQuotes]
+  D --> E[refreshSideBetQuotes]
   E --> F[batchActivateContests]
-  F --> G[batchGenerateContestCommentary]
-  G --> H[batchSettleContests]
-  H --> I[batchCloseContests]
-  I --> J[batchSyncReferralGraph]
-  J --> K[Done]
+  F --> G[batchSettleContests]
+  G --> H[batchCloseContests]
+  H --> I[batchSyncReferralGraph]
+  I --> K[Done]
 ```
 
 ### 1. Sport event pipeline
@@ -36,6 +41,7 @@ For each `CompetitionEvent` with `isActive=true`:
 4. If live (`shouldSyncLiveScores` on metadata — golf: `golfShouldSyncLiveScores`; commodities: `commoditiesShouldSyncLiveScores`):
    - `syncLiveScores` (skips `EventParticipant` rows whose total / score fingerprint is unchanged)
    - `updateContestLineupsForEvent` — aggregates lineup scores (raw pick totals + optional popularity adjustment after contest lock; see [consensus-axis.md](../../docs/platform/consensus-axis.md)), ranks entries, writes timeline snapshots **only for lineups that changed**
+   - `afterLiveScoreSync` (optional) — golf: classify contest feed stories and enqueue `CommentaryFeedJob` rows (no Cursor)
 
 **PGA field sync cadences** (`server/src/sports/pga-golf/syncField.ts`):
 
@@ -45,6 +51,7 @@ For each `CompetitionEvent` with `isActive=true`:
 | Profile enrich (`lastFieldEnrichAt`) | About every **30 minutes**, or when the field changes |
 | Tee times (`lastTeeTimeSyncAt`) | About every **30 minutes**, or when the field changes |
 | Live scores + lineup scores/positions | Every 5m while live (no-op skips when unchanged) |
+| Feed classify + enqueue | Every live score pass (golf `afterLiveScoreSync`) |
 
 Multi-minute hung `UPDATE`s on primary keys are a bug symptom (client timeout / lock pile-up), not expected load for this traffic size.
 
@@ -65,7 +72,7 @@ Pi cron should keep `PRISMA_SOCKET_TIMEOUT` at least `60` (home → managed Post
 
 ### 2. Side-bet quote refresh
 
-`refreshOpenSideBetQuotes`:
+Golf-owned entry: `server/src/sports/pga-golf/cron/refreshSideBetQuotes.ts` → `refreshOpenSideBetQuotes`:
 
 - Skips if `SIDE_BETS_ENABLED` is not true or no `DATAGOLF_API_KEY`
 - Finds 4-pick lineups on active events with ingestible market status
@@ -76,20 +83,13 @@ Pi cron should keep `PRISMA_SOCKET_TIMEOUT` at least `60` (home → managed Post
 
 ### 3. Contest batches
 
-| Batch                            | Typical transition                                                       |
-| -------------------------------- | ------------------------------------------------------------------------ |
-| `batchActivateContests`          | `OPEN` → `ACTIVE` when sport says event is live                          |
-| `batchGenerateContestCommentary` | Refresh latest live PGA analysis snapshot and commentary feed when either is missing or at least 20 minutes old |
-| `batchSettleContests`            | → `SETTLED` when event complete + oracle flow                            |
-| `batchCloseContests`             | → `CLOSED` after settlement window                                       |
+| Batch                   | Typical transition                              |
+| ----------------------- | ----------------------------------------------- |
+| `batchActivateContests` | `OPEN` → `ACTIVE` when sport says event is live |
+| `batchSettleContests`   | → `SETTLED` when event complete + oracle flow   |
+| `batchCloseContests`    | → `CLOSED` after settlement window              |
 
 Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event status.
-
-Commentary generation requires `CONTEST_COMMENTARY_ENABLED=true` and
-`CURSOR_API_KEY`. It runs only for entered `ACTIVE` or `LOCKED` PGA contests
-whose event is active and reports `LIVE`. Each successful update replaces the
-latest `Contest.commentary` snapshot and merges new items into
-`Contest.commentaryFeed`; failures preserve the previous update.
 
 ### 4. Referral graph
 
@@ -97,10 +97,33 @@ latest `Contest.commentary` snapshot and merges new items into
 
 ---
 
+## Overview pipeline (`*/20`)
+
+`refreshContestOverviews` (golf): refreshes legacy `Contest.commentary` for entered `ACTIVE`/`LOCKED` PGA contests on LIVE events when the snapshot is missing or at least 20 minutes old. Does **not** generate feed items. Shares an LLM single-flight lock with the feed worker (skips the pass if the lock is held).
+
+Requires `CONTEST_COMMENTARY_ENABLED=true` and `CURSOR_API_KEY`.
+
+---
+
+## Commentary feed worker
+
+In-process loop started with the scheduler when commentary is enabled:
+
+1. Claim next `CommentaryFeedJob` (`pending` → `running`, `FOR UPDATE SKIP LOCKED`)
+2. Generate story copy from frozen candidates + fact packs (Cursor)
+3. Merge into `Contest.commentaryFeed`, publish Stream items, mark `done`
+4. Concurrency **1**; reclaim `running` jobs older than `COMMENTARY_FEED_JOB_STALE_MS` (default 15m)
+5. Refuse enqueue when pending count ≥ `COMMENTARY_FEED_MAX_PENDING` (default 20)
+
+Detect path (`detectAndEnqueueContestFeed`) advances `lastHoleState` / `lastContext` at classify time so the next score tick does not re-fire the same swing while a job is pending.
+
+---
+
 ## Concurrency
 
-- `pipelineRunning` flag prevents overlapping pipeline runs
-- On DB connection errors (`P2037`), waits 30s before next attempt
+- `scorePipelineRunning` / `overviewPipelineRunning` prevent overlapping runs of each pipeline
+- Commentary LLM mutex prevents concurrent Cursor calls (overview vs feed worker)
+- On DB connection errors (`P2037`), waits 30s before the wrapper returns
 
 ---
 
@@ -127,7 +150,7 @@ See [docs/sports/golf/event-activation-runbook.md](../../docs/sports/golf/event-
 {
   "enabled": true,
   "status": "active",
-  "activeJobs": ["mainPipeline"],
-  "pipelineSteps": ["mainPipeline (*/5 * * * *)", "..."]
+  "activeJobs": ["scorePipeline", "overviewPipeline"],
+  "pipelineSteps": ["scorePipeline (*/5 * * * *)", "..."]
 }
 ```

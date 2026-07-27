@@ -232,7 +232,7 @@ Scripts: `pnpm --filter server run script:send-blast ...`
 | Tx succeeds, API fails | User may need support reconcile; client should retry API record |
 | API succeeds, tx fails | No `ContestLineup` created; user sees error |
 | Stale React Query cache | Refetch on focus; 5m poll on active event |
-| Cron overlap | `pipelineRunning` guard skips duplicate run |
+| Cron overlap | `scorePipelineRunning` / `overviewPipelineRunning` guards skip duplicate runs |
 | No active event | `GET .../active` → 404; client empty state |
 
 ---

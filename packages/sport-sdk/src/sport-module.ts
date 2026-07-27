@@ -38,4 +38,10 @@ export interface SportModule {
     ranked: RankedEntry[],
     entryCount: number,
   ): PayoutVector;
+
+  /**
+   * After live scores + lineup totals for this event.
+   * Optional; must stay fast (no LLM / long external waits).
+   */
+  afterLiveScoreSync?(eventId: string): Promise<void>;
 }

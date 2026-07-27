@@ -12,7 +12,7 @@ Scheduled background work for Play The Cut. The scheduler lives in `scheduler.ts
 | ---------------------------- | ---------------------- | ------------------------------------------------------------------------- |
 | `ENABLE_CRON`                | `true`                 | Scheduler runs                                                            |
 | `ENABLE_CRON`                | unset or anything else | Scheduler off                                                             |
-| `CONTEST_COMMENTARY_ENABLED` | `true`                 | Enables live PGA commentary refreshes when `CURSOR_API_KEY` is configured |
+| `CONTEST_COMMENTARY_ENABLED` | `true`                 | Enables live PGA commentary detect/enqueue, overview, and feed worker when `CURSOR_API_KEY` is configured |
 
 ### Entry points
 
@@ -23,37 +23,40 @@ Scheduled background work for Play The Cut. The scheduler lives in `scheduler.ts
 
 Production Swarm runs cron **off** on web replicas (`ENABLE_CRON=false` in `swarm/stack.yml`). Run `cron-app` on a separate host with [`swarm/env/cron.env.example`](../../../swarm/env/cron.env.example).
 
-Graceful shutdown: SIGTERM / SIGINT stop all scheduled tasks.
+Graceful shutdown: SIGTERM / SIGINT stop all scheduled tasks and request feed worker stop.
 
 ---
 
 ## Schedule
 
-One job: **`mainPipeline`** at **`*/5 * * * *`** (every 5 minutes).
+| Job | Cadence | Notes |
+| --- | --- | --- |
+| `scorePipeline` | `*/5 * * * *` | Scores, golf side-bet quotes, activate/settle/close, referral |
+| `overviewPipeline` | `*/20 * * * *` | Golf `Contest.commentary` overview only |
+| `feedWorker` | in-process | Drains `CommentaryFeedJob` (concurrency 1) |
 
-A `pipelineRunning` flag skips a tick if the previous run is still in progress.
+Separate running flags skip a tick if that pipeline is still in progress.
 
 ---
 
-## Pipeline sequence
+## Score pipeline sequence
 
 1. **`getActiveEvents`** — all `CompetitionEvent` rows with `isActive=true`
 2. **`runSportEventPipeline`** — once per active event (sport plugin):
    - `syncEventMetadata`
    - `syncParticipantField`
    - `handleWithdrawals` (if the plugin implements it)
-   - When `shouldSyncLiveScores` (golf: round In Progress / Complete / playoff):
+   - When `shouldSyncLiveScores`:
      - `syncLiveScores`
      - `updateContestLineupsForEvent`
-3. **`refreshOpenSideBetQuotes`** — no-op unless `SIDE_BETS_ENABLED` and `DATAGOLF_API_KEY`
+     - `afterLiveScoreSync` (golf: classify + enqueue feed jobs)
+3. **`refreshSideBetQuotes`** — golf-owned; no-op unless `SIDE_BETS_ENABLED` and `DATAGOLF_API_KEY`
 4. **`batchActivateContests`** — `OPEN` → `ACTIVE` when the sport says the event is live
-5. **`batchGenerateContestCommentary`** — refresh the latest analysis for entered, live PGA contests when missing or at least 20 minutes old
-6. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED` when the event is complete
-7. **`batchCloseContests`** — `SETTLED` → `CLOSED` after on-chain expiry
-8. **`batchSyncReferralGraph`** — push pending referral registrations on-chain
+5. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED` when the event is complete
+6. **`batchCloseContests`** — `SETTLED` → `CLOSED` after on-chain expiry
+7. **`batchSyncReferralGraph`** — push pending referral registrations on-chain
 
-Commentary is stored as the latest snapshot on `Contest` and returned with the
-contest lobby payload. A failed generation leaves the previous snapshot intact.
+Better Stack heartbeat reports on the **score** pipeline only.
 
 **Not in cron:** `batchLockContests` (`ACTIVE` → `LOCKED`) — admin API or CLI only. Side-bet lock / settle / close — admin only.
 

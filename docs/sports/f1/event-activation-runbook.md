@@ -228,7 +228,7 @@ Requires `ENABLE_CRON=true` on the API server or dedicated `cron-app` process. S
 
 | Cadence | What runs |
 |---------|-----------|
-| Every 5 min | `mainPipeline` in `server/src/cron/scheduler.ts` |
+| Every 5 min | `scorePipeline` in `server/src/cron/scheduler.ts` |
 
 Pipeline order (same as golf):
 

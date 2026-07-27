@@ -143,7 +143,9 @@ Requires `ENABLE_CRON=true` on the API server or a dedicated `cron-app` process 
 
 | Cadence | What runs |
 |---------|-----------|
-| Every 5 min | `mainPipeline` in `server/src/cron/scheduler.ts` |
+| Every 5 min | `scorePipeline` in `server/src/cron/scheduler.ts` |
+| Every 20 min | `overviewPipeline` (golf commentary snapshot) |
+| Continuous | `feedWorker` drains `CommentaryFeedJob` when commentary enabled |
 
 Pipeline order:
 

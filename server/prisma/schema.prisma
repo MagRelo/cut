@@ -240,12 +240,32 @@ model Contest {
   secondaryParticipants ContestSecondaryParticipant[]
   onchainPayments       OnchainPayment[]
   timelines             ContestLineupTimeline[]
+  commentaryFeedJobs    CommentaryFeedJob[]
 
   @@index([eventId])
   @@index([userGroupId])
   @@index([status])
   @@index([chainId])
   @@index([chainId, eventId])
+}
+
+model CommentaryFeedJob {
+  id         String    @id @default(cuid())
+  contestId  String
+  status     String // pending | running | done | failed
+  payload    Json
+  attempts   Int       @default(0)
+  lastError  String?
+  runAfter   DateTime  @default(now())
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+
+  @@index([status, runAfter])
+  @@index([contestId, status])
 }
 
 model ContestLineup {

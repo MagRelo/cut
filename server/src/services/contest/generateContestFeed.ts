@@ -138,6 +138,77 @@ async function generateStoryText(
   return text.trim();
 }
 
+export interface FrozenFeedStory {
+  candidate: ContestFeedStoryCandidate;
+  factPack: ReturnType<typeof buildContestFeedFactPack>;
+}
+
+/**
+ * Generate feed item copy from frozen classify-time candidates + fact packs.
+ * Merges into the current feed document (fingerprints should already be advanced).
+ */
+export async function generateFeedItemsFromFrozenStories(
+  contestId: string,
+  stories: readonly FrozenFeedStory[],
+  options: GenerateContestFeedOptions = {},
+): Promise<{
+  generatedAt: string;
+  document: ContestCommentaryFeedDocument;
+  newItems: ContestFeedItem[];
+}> {
+  if (stories.length === 0) {
+    const existing =
+      options.existingFeed !== undefined
+        ? parseContestCommentaryFeedDocument(options.existingFeed)
+        : await loadExistingFeed(contestId);
+    const generatedAt = (options.now ?? (() => new Date()))().toISOString();
+    return { generatedAt, document: existing, newItems: [] };
+  }
+
+  const existing =
+    options.existingFeed !== undefined
+      ? parseContestCommentaryFeedDocument(options.existingFeed)
+      : await loadExistingFeed(contestId);
+  const now = options.now ?? (() => new Date());
+  const generatedAt = now().toISOString();
+  const nowMs = Date.parse(generatedAt);
+  const generator = options.generator ?? defaultGenerator(options);
+  const period =
+    typeof existing.lastContext?.period === "number"
+      ? existing.lastContext.period
+      : null;
+
+  const newItems: ContestFeedItem[] = [];
+  for (const story of stories) {
+    const text = await generateStoryText(
+      story.candidate,
+      story.factPack,
+      generator,
+      options.voiceId,
+    );
+    newItems.push({
+      id: buildContestFeedItemId(
+        story.candidate.storyType,
+        story.candidate.subjectKey,
+        generatedAt,
+        nowMs,
+      ),
+      storyType: story.candidate.storyType,
+      priority: story.candidate.priority,
+      subjects: story.candidate.subjects,
+      text,
+      generatedAt,
+      round: period,
+    });
+  }
+
+  const document = mergeContestFeedItems(existing, newItems, {
+    updatedAt: generatedAt,
+  });
+
+  return { generatedAt, document, newItems };
+}
+
 /**
  * Classify + generate typed feed items and merge into a feed document.
  * Does not modify Contest.commentary (legacy single snapshot).

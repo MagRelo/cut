@@ -175,14 +175,23 @@ Neither command creates a report file.
 
 ## Scheduled delivery
 
-When `CONTEST_COMMENTARY_ENABLED=true` and `CURSOR_API_KEY` is configured, the
-server cron pipeline refreshes commentary for entered `ACTIVE` or `LOCKED` PGA
-contests while their event reports `LIVE`. The refresh runs after live scoring
-and lineup updates and replaces `Contest.commentary` when the snapshot is
-missing or at least 20 minutes old. The same pass merges new story items into
-`Contest.commentaryFeed` (live beats such as `score_swing`; `stage_recap` only
-when missing or the stage changed). Generation failures leave previous values
-intact.
+When `CONTEST_COMMENTARY_ENABLED=true` and `CURSOR_API_KEY` is configured:
+
+1. **Detect (score path):** after each live score + lineup sync, golf
+   `afterLiveScoreSync` runs `detectAndEnqueueContestFeed` — classify against
+   `lastContext` / `lastHoleState`, advance fingerprints immediately, and
+   enqueue a `CommentaryFeedJob` when candidates exist (no Cursor on this path).
+2. **Feed worker:** in-process loop (concurrency 1) claims jobs, generates story
+   copy via Cursor from frozen fact packs, merges into `Contest.commentaryFeed`,
+   and publishes Stream items.
+3. **Overview (`*/20`):** `refreshContestOverviews` refreshes the legacy
+   `Contest.commentary` snapshot when missing or at least 20 minutes old. Feed
+   items are not generated here. Overview and the feed worker share an LLM
+   single-flight lock.
+
+Generation failures leave previous values intact. Use
+`script:contest-feed <contestId> --classify` to inspect candidates without
+writing.
 
 The contest lobby API includes the latest commentary snapshot, feed document,
 and generation timestamps. The client exposes the snapshot from the Winner Pool

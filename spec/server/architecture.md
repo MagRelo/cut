@@ -94,5 +94,5 @@ graph LR
 
 ## Scalability notes
 
-- API is stateless; cron uses in-process lock (`pipelineRunning`) to prevent overlap
-- Single `mainPipeline` cron job (every 5 min) — not per-legacy-job names in old `/cron/status` copy
+- API is stateless; cron uses in-process locks (`scorePipelineRunning`, `overviewPipelineRunning`) to prevent overlap
+- `scorePipeline` every 5 min, `overviewPipeline` every 20 min, plus in-process commentary `feedWorker`

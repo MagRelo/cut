@@ -27,6 +27,8 @@ export type PgaGolfHandlers = {
     rules: import("@cut/sport-sdk").RosterRules,
   ): Promise<import("@cut/sport-sdk").ValidationResult>;
   handleWithdrawals?(eventId: string): Promise<void>;
+  /** Optional; after live scores + lineup totals. Must stay fast (no LLM). */
+  afterLiveScoreSync?(eventId: string): Promise<void>;
 };
 
 export function createPgaGolfModule(handlers: PgaGolfHandlers): SportModule {
@@ -38,6 +40,7 @@ export function createPgaGolfModule(handlers: PgaGolfHandlers): SportModule {
     syncParticipantField: handlers.syncParticipantField,
     syncLiveScores: handlers.syncLiveScores,
     handleWithdrawals: handlers.handleWithdrawals,
+    afterLiveScoreSync: handlers.afterLiveScoreSync,
 
     async shouldSyncLiveScores(eventId) {
       const metadata = await handlers.getEventMetadata(eventId);

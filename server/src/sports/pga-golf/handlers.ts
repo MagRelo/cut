@@ -1,6 +1,7 @@
 import type { PgaGolfHandlers } from "@cut/sport-pga-golf";
 import { validateGolfRoster, PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 import { prisma } from "../../lib/prisma.js";
+import { detectAndEnqueueContestFeed } from "./commentary/detectAndEnqueueContestFeed.js";
 import { initGolfEvent } from "./initEvent.js";
 import { syncGolfEventMetadata } from "./syncMetadata.js";
 import { syncGolfParticipantField } from "./syncField.js";
@@ -12,6 +13,7 @@ export function createPgaGolfHandlers(): PgaGolfHandlers {
     syncEventMetadata: syncGolfEventMetadata,
     syncParticipantField: syncGolfParticipantField,
     syncLiveScores: syncGolfLiveScores,
+    afterLiveScoreSync: detectAndEnqueueContestFeed,
 
     async getEventMetadata(eventId) {
       const event = await prisma.competitionEvent.findFirst({

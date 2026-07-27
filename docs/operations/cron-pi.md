@@ -1,6 +1,6 @@
 # Cron host — Raspberry Pi operations
 
-5-minute cron pipeline on a dedicated Pi. Web stack on the droplet runs with `ENABLE_CRON=false`.
+5-minute score pipeline (+ 20-minute commentary overview) on a dedicated Pi. Web stack on the droplet runs with `ENABLE_CRON=false`.
 
 **Spec:** [`spec/server/cron.md`](../../spec/server/cron.md) · **Env:** [`swarm/env/cron.env.example`](../../swarm/env/cron.env.example)
 

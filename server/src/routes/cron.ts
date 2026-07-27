@@ -3,14 +3,15 @@ import { Hono } from "hono";
 const cronRouter = new Hono();
 
 const PIPELINE_STEPS = [
-  "mainPipeline (*/5 * * * *)",
-  "getActiveEvents → runSportEventPipeline per active event",
-  "refreshOpenSideBetQuotes (when SIDE_BETS_ENABLED + DATAGOLF_API_KEY)",
+  "scorePipeline (*/5 * * * *)",
+  "getActiveEvents → runSportEventPipeline per active event (incl. golf afterLiveScoreSync classify/enqueue)",
+  "refreshSideBetQuotes (golf; when SIDE_BETS_ENABLED + DATAGOLF_API_KEY)",
   "batchActivateContests",
-  "batchGenerateContestCommentary (when enabled; 20-minute freshness cutoff)",
   "batchSettleContests",
   "batchCloseContests",
   "batchSyncReferralGraph",
+  "overviewPipeline (*/20 * * * *) → refreshContestOverviews",
+  "feedWorker (in-process; CommentaryFeedJob queue, concurrency 1)",
 ] as const;
 
 // Get cron status
@@ -24,7 +25,7 @@ cronRouter.get("/status", (c) => {
       ? "Cron scheduler is running. Check server logs for detailed job execution status."
       : "Cron scheduler is disabled. Set ENABLE_CRON=true to enable.",
     environment: process.env.NODE_ENV || "development",
-    activeJobs: enabled ? ["mainPipeline"] : [],
+    activeJobs: enabled ? ["scorePipeline", "overviewPipeline"] : [],
     pipelineSteps: enabled ? [...PIPELINE_STEPS] : [],
     timestamp: new Date().toISOString(),
   });

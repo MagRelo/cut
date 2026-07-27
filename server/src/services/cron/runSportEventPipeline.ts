@@ -13,5 +13,8 @@ export async function runSportEventPipeline(eventId: string, sportId: string): P
   if (await module.shouldSyncLiveScores(eventId)) {
     await module.syncLiveScores(eventId);
     await updateContestLineupsForEvent(eventId, sportId);
+    if (module.afterLiveScoreSync) {
+      await module.afterLiveScoreSync(eventId);
+    }
   }
 }
