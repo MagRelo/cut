@@ -12,7 +12,7 @@ Scheduled background work for Play The Cut. The scheduler lives in `scheduler.ts
 | ---------------------------- | ---------------------- | ------------------------------------------------------------------------- |
 | `ENABLE_CRON`                | `true`                 | Scheduler runs                                                            |
 | `ENABLE_CRON`                | unset or anything else | Scheduler off                                                             |
-| `CONTEST_COMMENTARY_ENABLED` | `true`                 | Enables live PGA commentary detect/enqueue, overview, and feed worker when `CURSOR_API_KEY` is configured |
+| `CONTEST_COMMENTARY_ENABLED` | `true`                 | Enables PGA feed detect/enqueue + overview, commodities daily overview, and feed worker when `CURSOR_API_KEY` is configured |
 
 ### Entry points
 
@@ -32,8 +32,8 @@ Graceful shutdown: SIGTERM / SIGINT stop all scheduled tasks and request feed wo
 | Job | Cadence | Notes |
 | --- | --- | --- |
 | `scorePipeline` | `*/5 * * * *` | Scores, golf side-bet quotes, activate/settle/close, referral |
-| `overviewPipeline` | `*/20 * * * *` | Golf `Contest.commentary` overview only |
-| `feedWorker` | in-process | Drains `CommentaryFeedJob` (concurrency 1) |
+| `overviewPipeline` | `*/20 * * * *` | PGA continuous + commodities day-settle `Contest.commentary` refresh |
+| `feedWorker` | in-process | Drains `CommentaryFeedJob` (concurrency 1; PGA feed stories) |
 
 Separate running flags skip a tick if that pipeline is still in progress.
 
@@ -89,4 +89,4 @@ Better Stack heartbeat reports on the **score** pipeline only.
 | Lock contests                     | `service:batch-lock-contests` or `POST /api/admin/contests/lock-eligible`                          |
 | Referral sync                     | `service:batch-sync-referral-graph`                                                                |
 
-Operator runbooks: [`docs/sports/golf/event-activation-runbook.md`](../../../docs/sports/golf/event-activation-runbook.md) (golf) · [`docs/sports/f1/event-activation-runbook.md`](../../../docs/sports/f1/event-activation-runbook.md) (F1).
+Operator runbooks: [`docs/sports/golf/event-activation-runbook.md`](../../../docs/sports/golf/event-activation-runbook.md) (golf) · [`docs/sports/f1/event-activation-runbook.md`](../../../docs/sports/f1/event-activation-runbook.md) (F1) · [`docs/sports/commodities/event-activation-runbook.md`](../../../docs/sports/commodities/event-activation-runbook.md) (commodities).

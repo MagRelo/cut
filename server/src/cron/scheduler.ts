@@ -7,6 +7,7 @@ import { batchCloseContests } from "../services/batch/batchCloseContests.js";
 import { batchSyncReferralGraph } from "../services/batch/batchSyncReferralGraph.js";
 import { refreshSideBetQuotes } from "../sports/pga-golf/cron/refreshSideBetQuotes.js";
 import { refreshContestOverviews } from "../sports/pga-golf/commentary/refreshContestOverviews.js";
+import { refreshCommoditiesContestOverviews } from "../sports/commodities/commentary/refreshCommoditiesContestOverviews.js";
 import {
   startCommentaryFeedWorker,
   stopCommentaryFeedWorker,
@@ -180,6 +181,11 @@ class CronScheduler {
       await this.executeWithErrorHandling(
         "Refresh Contest Overviews",
         refreshContestOverviews,
+        pipelineErrors,
+      );
+      await this.executeWithErrorHandling(
+        "Refresh Commodities Contest Overviews",
+        refreshCommoditiesContestOverviews,
         pipelineErrors,
       );
 

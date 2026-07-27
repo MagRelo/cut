@@ -1,6 +1,8 @@
 # Stream Feeds (Cutbot contest commentary)
 
-Play The Cut dual-writes Cutbot contest stories to [GetStream Activity Feeds](https://getstream.io/activity-feeds/docs/javascript/) and reads them in the contest lobby Cutbot tab with realtime updates, reactions, and an unread-mentions badge.
+Play The Cut dual-writes Cutbot contest **feed** stories to [GetStream Activity Feeds](https://getstream.io/activity-feeds/docs/javascript/) and reads them in the contest lobby Cutbot tab with realtime updates, reactions, and an unread-mentions badge.
+
+**Overview snapshots** (`Contest.commentary` / Live Analysis) are Postgres-only for all sports. Commodities ships overview-only today; Stream dual-write applies to the PGA rolling feed. See [`packages/sport-commodities/CONTEST_COMMENTARY.md`](../../packages/sport-commodities/CONTEST_COMMENTARY.md).
 
 ## Roles
 

@@ -85,3 +85,27 @@ export {
 } from "./live-scores.js";
 
 export { createCommoditiesModule, type CommoditiesHandlers } from "./create-module.js";
+
+export {
+  analyzeCommoditiesContestCommentary,
+  dayLabelForPeriod,
+  parseCommodityScoreData,
+  readRoundScore,
+  resolveCommoditiesCommentaryStage,
+  resolveSettledPeriodFromScoreData,
+  type AnalyzeCommoditiesContestCommentaryInput,
+  type CommoditiesCommentaryStageId,
+  type CommoditiesConsensusPick,
+  type CommoditiesContestCommentaryContext,
+  type CommoditiesContestCommentaryEntry,
+  type CommoditiesContestCommentaryEventProgress,
+  type CommoditiesContestCommentaryLineup,
+  type CommoditiesContestCommentaryParticipant,
+  type CommoditiesDayMover,
+  type CommoditiesLineupOutlookTier,
+} from "./contestCommentary.js";
+
+export {
+  buildCommoditiesContestCommentaryPrompt,
+  type BuildCommoditiesContestCommentaryPromptOptions,
+} from "./contestCommentaryPrompt.js";

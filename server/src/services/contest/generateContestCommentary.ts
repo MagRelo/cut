@@ -1,23 +1,35 @@
 import type { ContestCommentaryVoiceId } from "@cut/sport-sdk";
+import type { CommoditiesContestCommentaryContext } from "@cut/sport-commodities";
+import { COMMODITIES_SPORT_ID } from "@cut/sport-commodities";
 import type { ContestCommentaryContext } from "@cut/sport-pga-golf";
+import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
+import { prisma } from "../../lib/prisma.js";
 import {
   buildContestCommentaryContext,
   type BuildContestCommentaryContextOptions,
-  type BuiltContestCommentaryContext,
   type ContestCommentaryDiagnostics,
 } from "./buildContestCommentaryContext.js";
+import {
+  buildCommoditiesContestCommentaryContext,
+  type BuildCommoditiesContestCommentaryContextOptions,
+} from "./buildCommoditiesContestCommentaryContext.js";
 import {
   buildContestCommentaryPrompt,
   COMMENTARY_MAX_WORDS,
   COMMENTARY_MIN_WORDS,
+  type ContestCommentaryPromptContext,
 } from "./buildContestCommentaryPrompt.js";
 import {
   CursorCommentaryTextGenerator,
   type CommentaryTextGenerator,
 } from "./commentaryTextGenerator.js";
 
+export type BuildAnyContestCommentaryContextOptions =
+  BuildContestCommentaryContextOptions &
+    BuildCommoditiesContestCommentaryContextOptions;
+
 export interface GenerateContestCommentaryOptions {
-  analysis?: BuildContestCommentaryContextOptions;
+  analysis?: BuildAnyContestCommentaryContextOptions;
   voiceId?: ContestCommentaryVoiceId;
   generator?: CommentaryTextGenerator;
   cursor?: {
@@ -28,15 +40,18 @@ export interface GenerateContestCommentaryOptions {
   now?: () => Date;
   contextBuilder?: (
     contestId: string,
-    options?: BuildContestCommentaryContextOptions,
-  ) => Promise<BuiltContestCommentaryContext>;
+    options?: BuildAnyContestCommentaryContextOptions,
+  ) => Promise<{
+    context: ContestCommentaryPromptContext;
+    diagnostics: ContestCommentaryDiagnostics;
+  }>;
 }
 
 export interface GeneratedContestCommentary {
   schemaVersion: 1;
   generatedAt: string;
   commentary: string;
-  context: ContestCommentaryContext;
+  context: ContestCommentaryContext | CommoditiesContestCommentaryContext;
   diagnostics: ContestCommentaryDiagnostics;
 }
 
@@ -69,11 +84,35 @@ function defaultGenerator(
   });
 }
 
+async function defaultContextBuilder(
+  contestId: string,
+  options: BuildAnyContestCommentaryContextOptions = {},
+): Promise<{
+  context: ContestCommentaryPromptContext;
+  diagnostics: ContestCommentaryDiagnostics;
+}> {
+  const contest = await prisma.contest.findUnique({
+    where: { id: contestId },
+    select: { event: { select: { sportId: true } } },
+  });
+  if (!contest) throw new Error(`Contest not found: ${contestId}`);
+
+  if (contest.event.sportId === COMMODITIES_SPORT_ID) {
+    return buildCommoditiesContestCommentaryContext(contestId, options);
+  }
+  if (contest.event.sportId === PGA_GOLF_SPORT_ID) {
+    return buildContestCommentaryContext(contestId, options);
+  }
+  throw new Error(
+    `Contest commentary is not supported for sport ${contest.event.sportId}`,
+  );
+}
+
 export async function generateContestCommentary(
   contestId: string,
   options: GenerateContestCommentaryOptions = {},
 ): Promise<GeneratedContestCommentary> {
-  const contextBuilder = options.contextBuilder ?? buildContestCommentaryContext;
+  const contextBuilder = options.contextBuilder ?? defaultContextBuilder;
   const built = await contextBuilder(contestId, options.analysis ?? {});
   const generator = options.generator ?? defaultGenerator(options);
 

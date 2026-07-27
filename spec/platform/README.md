@@ -2,7 +2,7 @@
 
 Play The Cut is a **multi-sport competition platform**: one app, one database, one deployment. Users pick a sport, build an **event-scoped lineup**, and enter **contests** (public or within a **league**). Account, wallet, and referral graph are shared across sports.
 
-Only **PGA Golf** (`pga-golf`) is fully implemented on v4. The architecture supports additional sports without changing contests, leagues, or on-chain contracts.
+Only **PGA Golf** (`pga-golf`) is fully featured on v4 (side bets, tournament summaries, rolling Cutbot feed). **F1** (`f1`) and **Commodities** (`commodities`) are registered reference sports with scoring, contests, and (for commodities) daily contest overview commentary. The architecture supports additional sports without changing contests, leagues, or on-chain contracts.
 
 ---
 

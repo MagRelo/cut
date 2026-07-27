@@ -1,16 +1,20 @@
 ---
 name: contest-commentary
 description: >-
-  Generates a fresh Play The Cut PGA contest update from a contest ID. Use when
-  the user asks for contest commentary, Sunday leverage, volatile lineups,
-  consensus picks, or a broadcast-style contest update.
+  Generates a fresh Play The Cut contest update from a contest ID (PGA or
+  commodities). Use when the user asks for contest commentary, Sunday leverage,
+  volatile lineups, consensus picks, daily commodities recaps, or a
+  broadcast-style contest update.
 ---
 
 # Contest Commentary
 
 Use the server's direct commentary pipeline. It loads fresh contest data,
-simulates the remaining golf, builds the contention/leverage context, and asks
-the configured text generator for the final update without temporary files.
+builds sport-specific analysis context, and asks the configured text generator
+for the final update without temporary files.
+
+- **PGA Golf:** simulates remaining golf, builds contention/leverage context
+- **Commodities:** end-of-day race + day-mover context (no Monte Carlo in v1)
 
 ## Workflow
 
@@ -26,7 +30,7 @@ the configured text generator for the final update without temporary files.
    pnpm --filter server run script:contest-commentary <contestId> --context
    ```
 
-3. For the story-typed commentary feed (classify / generate / optionally write):
+3. For the PGA story-typed commentary feed (classify / generate / optionally write):
 
    ```sh
    pnpm --filter server run script:contest-feed <contestId> --classify
@@ -37,7 +41,14 @@ the configured text generator for the final update without temporary files.
    When Stream Feeds is enabled, `--write` also publishes new items to GetStream.
    See `docs/platform/stream-feeds.md` for bootstrap/backfill.
 
+   Commodities does not ship a rolling feed in v1 — overview only.
+
 Return the command output directly unless the user asks for further analysis.
 The server prompt builder is authoritative for length, voice, factual rules,
 optimism, and output format; do not recreate or override those instructions in
 this skill.
+
+## References
+
+- PGA: `packages/sport-pga-golf/CONTEST_COMMENTARY.md`
+- Commodities: `packages/sport-commodities/CONTEST_COMMENTARY.md`

@@ -35,7 +35,9 @@ Pick three commodities for the trading week; your lineup scores the sum of their
 
 **Scoring:** Five daily legs from Hyperliquid marks/candles (see [data-sources.md](./data-sources.md)).
 
-**Out of scope:** Equities, prop bets, automated weekly init cron.
+**Out of scope:** Equities, prop bets, automated weekly init cron, rolling Cutbot feed stories (Phase 2).
+
+**In scope commentary:** Daily contest overview snapshots (`Contest.commentary`) after each trading day settles — see [`packages/sport-commodities/CONTEST_COMMENTARY.md`](../../../packages/sport-commodities/CONTEST_COMMENTARY.md).
 
 ---
 
@@ -128,6 +130,15 @@ Static allowlist in `packages/sport-commodities/src/catalog.ts`. Hyperliquid res
 - Prop bets, automated weekly init cron
 - Crypto, equities, sector roster constraints
 - Sub-minute quotes
+- Rolling Cutbot feed / Stream story dual-write (Phase 2 — documented in package commentary doc)
+
+### Commentary (v1)
+
+| Surface | Behavior |
+|---------|----------|
+| Daily overview | After each Mon–Fri leg settles, refresh `Contest.commentary` (125–175 words) |
+| Env | `CONTEST_COMMENTARY_ENABLED=true` + `CURSOR_API_KEY` |
+| Manual | `pnpm --filter server run script:contest-commentary <contestId>` |
 
 ---
 

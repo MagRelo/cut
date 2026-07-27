@@ -3,12 +3,15 @@ import {
   buildContestCommentaryContext,
   type BuildContestCommentaryContextOptions,
 } from "../services/contest/buildContestCommentaryContext.js";
+import { buildCommoditiesContestCommentaryContext } from "../services/contest/buildCommoditiesContestCommentaryContext.js";
 import { generateContestCommentary } from "../services/contest/generateContestCommentary.js";
 import {
   contestCommentaryVoices,
   type ContestCommentaryVoiceId,
 } from "@cut/sport-sdk";
-import { gracefulShutdown } from "../lib/prisma.js";
+import { COMMODITIES_SPORT_ID } from "@cut/sport-commodities";
+import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
+import { prisma, gracefulShutdown } from "../lib/prisma.js";
 
 function finiteFlag(name: string, value: string | undefined): number {
   const parsed = Number(value);
@@ -62,13 +65,31 @@ export function parseContestCommentaryArgs(argv: string[]): {
   return { contestId, contextOnly, analysis, voiceId };
 }
 
+async function buildContextForContest(
+  contestId: string,
+  analysis: BuildContestCommentaryContextOptions,
+) {
+  const contest = await prisma.contest.findUnique({
+    where: { id: contestId },
+    select: { event: { select: { sportId: true } } },
+  });
+  if (!contest) throw new Error(`Contest not found: ${contestId}`);
+  if (contest.event.sportId === COMMODITIES_SPORT_ID) {
+    return buildCommoditiesContestCommentaryContext(contestId, analysis);
+  }
+  if (contest.event.sportId === PGA_GOLF_SPORT_ID) {
+    return buildContestCommentaryContext(contestId, analysis);
+  }
+  throw new Error(
+    `Contest commentary is not supported for sport ${contest.event.sportId}`,
+  );
+}
+
 async function main(): Promise<void> {
   const { contestId, contextOnly, analysis, voiceId } =
-    parseContestCommentaryArgs(
-    process.argv.slice(2),
-  );
+    parseContestCommentaryArgs(process.argv.slice(2));
   if (contextOnly) {
-    const built = await buildContestCommentaryContext(contestId, analysis);
+    const built = await buildContextForContest(contestId, analysis);
     console.log(JSON.stringify(built, null, 2));
     return;
   }

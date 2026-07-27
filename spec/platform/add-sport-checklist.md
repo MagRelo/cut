@@ -104,13 +104,15 @@ Pure logic only — no Prisma, no `fetch`, no env vars.
 - [ ] `ParticipantRow.tsx` — leaderboard / lineup slot row (live + complete)
 - [ ] `ParticipantDetail.tsx` — detail modal content
 - [ ] `PredictionField.tsx` — tie-break slider using `useSportPredictionRules(sportId)`
-- [ ] `EventSummary.tsx` (+ optional `EventDetails.tsx`, `eventMedia.ts`) — sport hub and contest hero
+- [ ] `EventSummary.tsx` (+ optional `EventDetails.tsx`, `eventMedia.ts`) — sport hub and contest hero UI (not editorial Cutbot commentary)
 - [ ] Import `*CandidateSortConfig` from the sport package; attach to the UI plugin
 - [ ] Register in `client/src/sports/registry.ts`
 - [ ] Add `@cut/sport-<id>` to `client/package.json`
 - [ ] Verify: `/sports/<sportId>` hub, leaderboard, lineup builder, and contest lobby render
 
 Platform shell components (`SportEventHeader`, `CandidatePicker`, `SportParticipantRow`, `SportPredictionField`) delegate to the plugin — do not fork platform layout.
+
+`EventSummary.tsx` is the hub/hero React component. Contest Cutbot commentary (`Contest.commentary` / `commentaryFeed`) is a separate optional track — see Phase 8.
 
 ---
 
@@ -143,19 +145,67 @@ Optional, separate track:
 
 ---
 
-## Phase 8 — Ops runbook
+## Phase 8 — Contest commentary (optional for v1)
 
-- [ ] Create `docs/sports/<id>/event-activation-runbook.md` (mirror golf/F1 structure)
+Ship when the sport should show Cutbot **Live Analysis** (and optionally rolling **Contest Updates**). Client Cutbot UI is sport-agnostic — no client plugin work unless the sport needs custom copy surfaces.
+
+**Shared storage / infra (already on platform):**
+
+| Asset | Role |
+|-------|------|
+| `Contest.commentary` + `commentaryGeneratedAt` | Overview snapshot (Live Analysis modal) |
+| `Contest.commentaryFeed` JSON | Rolling story feed document |
+| `CommentaryFeedJob` | Async LLM queue for feed items |
+| GetStream `contest:{contestId}` | Optional dual-write delivery ([stream-feeds.md](../../docs/platform/stream-feeds.md)) |
+| `CONTEST_COMMENTARY_ENABLED` + `CURSOR_API_KEY` | Env gates |
+| Shared LLM mutex | Overview vs feed worker single-flight |
+
+**Decide cadence for this sport:**
+
+| Cadence | When to use | Reference |
+|---------|-------------|-----------|
+| Continuous (~20 min) | Live play with frequent score ticks | PGA overview pipeline |
+| Period / day settle | Multi-day legs with clear session closes | Commodities daily overview |
+| Event-end only | Short single-session sports | — |
+
+Checklist:
+
+- [ ] Lock cadence and v1 surface: **overview only** vs overview + feed stories
+- [ ] Package: pure analyzer + prompt builder (reuse `@cut/sport-sdk` `contestCommentaryVoices`)
+- [ ] Package tests for context shape and settle/fingerprint helpers
+- [ ] Server context builder loads contest lineups + field scores; dispatches from `generateContestCommentary`
+- [ ] Wire refresh: overview cron and/or `afterLiveScoreSync` (feed classify should not call Cursor inline)
+- [ ] Idempotency: skip when the same period/fingerprint was already written
+- [ ] Manual script: `pnpm --filter server run script:contest-commentary <contestId>` works for this sport
+- [ ] Authoritative doc: `packages/sport-<id>/CONTEST_COMMENTARY.md` (data contract + cadence)
+- [ ] Activation runbook: env vars, when commentary runs, how to force a snapshot
+
+**Daily / period summary data contract** (overview context should include):
+
+- Contest race: scores, positions, paid-cut gap, entry display names
+- Period progress: which leg/day just settled vs still provisional
+- Owned-field movers for that period (points / % / ownership)
+- Consensus / shared picks when ownership is locked
+- Uncertainty notes (remaining periods, missing prices / DNP)
+
+**Feed Phase 2** (document in the sport commentary doc; defer code until needed): story classifier, period fingerprints, `CommentaryFeedJob` enqueue, Stream publish. Golf reference: [`packages/sport-pga-golf/CONTEST_COMMENTARY.md`](../../packages/sport-pga-golf/CONTEST_COMMENTARY.md). Commodities reference: [`packages/sport-commodities/CONTEST_COMMENTARY.md`](../../packages/sport-commodities/CONTEST_COMMENTARY.md).
+
+---
+
+## Phase 9 — Ops runbook
+
+- [ ] Create `docs/sports/<id>/event-activation-runbook.md` (mirror golf/F1/commodities structure)
 - [ ] Quick reference table: `sportId`, `externalId` pattern, lookup command, init command, spike, dry-run
 - [ ] Prerequisites: env vars, seed, `DATABASE_URL` safety check
 - [ ] Activation steps: resolve `externalId` → init → verify field → race-day cron behavior
+- [ ] Commentary section when Phase 8 shipped (env + cadence + manual script)
 - [ ] Troubleshooting table
 - [ ] Run log section for operator notes
 - [ ] Cross-link from `docs/sports/golf/event-activation-runbook.md` (golf hub) if this is a second+ sport
 
 ---
 
-## Phase 9 — Ship verification
+## Phase 10 — Ship verification
 
 Run before marking the sport done:
 
@@ -169,6 +219,8 @@ pnpm --filter server run script:<sport>-dry-run <dry-run-externalId>
 pnpm --filter client run build
 ```
 
+If Phase 8 shipped: `pnpm --filter server run script:contest-commentary <testContestId> --context`
+
 ---
 
 ## Standard platform conventions
@@ -179,8 +231,9 @@ pnpm --filter client run build
 | **Prediction range** | `Sport.predictionRules` in seed (`min`, `max`, `defaultRandomMin`, `defaultRandomMax`) |
 | **Event init** | `pnpm --filter server run service:init-event <sportId> <externalId>` |
 | **Active event** | One `isActive` event per sport; init deactivates the previous one |
-| **Cron** | `runSportEventPipeline` every 5 min — metadata → field → live scores → contest lineups |
-| **Metadata** | Sport-specific block on `CompetitionEvent.metadata` (e.g. `metadata.f1`, golf block) |
+| **Cron (scores)** | `runSportEventPipeline` every 5 min — metadata → field → live scores → contest lineups → optional `afterLiveScoreSync` |
+| **Cron (commentary)** | `overviewPipeline` every 20 min — sport-specific overview refresh (PGA continuous; commodities day-settle); optional feed worker for story jobs |
+| **Metadata** | Sport-specific block on `CompetitionEvent.metadata` (e.g. `metadata.f1`, `metadata.commodities`, golf block) |
 | **externalId** | Native ID from the sport’s data source; document per sport in the brief and runbook |
 
 ---
@@ -197,8 +250,11 @@ packages/sport-<id>/
   src/validation.ts
   src/ranking.ts
   src/live-scores.ts
+  src/contestCommentary.ts          # optional Phase 8
+  src/contestCommentaryPrompt.ts    # optional Phase 8
   src/index.ts
   src/*.test.ts
+  CONTEST_COMMENTARY.md             # optional Phase 8
 
 server/src/sports/<id>/
   handlers.ts
@@ -209,6 +265,8 @@ server/src/sports/<id>/
   metadataMerge.ts
   <apiClient>.ts
   externalId.ts
+  commentary/                       # optional Phase 8
+    refresh*Overviews.ts
 
 client/src/sports/<id>/
   index.tsx
@@ -216,7 +274,7 @@ client/src/sports/<id>/
   ParticipantRow.tsx
   ParticipantDetail.tsx
   PredictionField.tsx
-  EventSummary.tsx
+  EventSummary.tsx                  # hub/hero UI — not Cutbot copy
 
 docs/sports/<id>/
   competition-brief.md

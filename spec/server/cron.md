@@ -55,7 +55,7 @@ For each `CompetitionEvent` with `isActive=true`:
 
 Multi-minute hung `UPDATE`s on primary keys are a bug symptom (client timeout / lock pile-up), not expected load for this traffic size.
 
-**Commodities:** metadata and field sync every pass; live scores only when `sessionStarted && !sessionComplete`. No golf-style leaderboard/scorecard fetch — prices come from Hyperliquid candles/marks. Manual sync: `service:sync-commodities-metadata`, `-field`, `-scores`.
+**Commodities:** metadata and field sync every pass; live scores only when `sessionStarted && !sessionComplete`. No golf-style leaderboard/scorecard fetch — prices come from Hyperliquid candles/marks. Manual sync: `service:sync-commodities-metadata`, `-field`, `-scores`. Daily contest overview commentary runs on the overview pipeline (day-settle), not inside this score pass.
 
 ### Prisma connection params (cron host)
 
@@ -99,9 +99,14 @@ Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event statu
 
 ## Overview pipeline (`*/20`)
 
-`refreshContestOverviews` (golf): refreshes legacy `Contest.commentary` for entered `ACTIVE`/`LOCKED` PGA contests on LIVE events when the snapshot is missing or at least 20 minutes old. Does **not** generate feed items. Shares an LLM single-flight lock with the feed worker (skips the pass if the lock is held).
+Runs two sport-specific overview refreshers under the shared commentary LLM mutex (skips a pass if the lock is held). Requires `CONTEST_COMMENTARY_ENABLED=true` and `CURSOR_API_KEY`.
 
-Requires `CONTEST_COMMENTARY_ENABLED=true` and `CURSOR_API_KEY`.
+| Refresher | Sport | Behavior |
+| --- | --- | --- |
+| `refreshContestOverviews` | PGA Golf | Refresh `Contest.commentary` for entered `ACTIVE`/`LOCKED` contests on LIVE events when missing or ≥ 20 minutes old |
+| `refreshCommoditiesContestOverviews` | Commodities | Refresh `Contest.commentary` when a trading day has newly settled (idempotent vs that day’s session close) for `ACTIVE`/`LOCKED`/`SETTLED` contests on the active event |
+
+Neither refresher generates feed items.
 
 ---
 

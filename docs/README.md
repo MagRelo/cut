@@ -48,6 +48,15 @@ Product, operations, and sport-specific reference for Play The Cut. For as-built
 | [competition-brief.md](sports/f1/competition-brief.md) | v1 product spec |
 | [data-sources.md](sports/f1/data-sources.md) | OpenF1 + Jolpica mapping |
 
+### Commodities (`commodities`)
+
+| Doc | Purpose |
+|-----|---------|
+| [event-activation-runbook.md](sports/commodities/event-activation-runbook.md) | Activate an ISO-week commodity session |
+| [competition-brief.md](sports/commodities/competition-brief.md) | v1 product spec |
+| [data-sources.md](sports/commodities/data-sources.md) | Hyperliquid HIP-3 mapping |
+| [CONTEST_COMMENTARY.md](../packages/sport-commodities/CONTEST_COMMENTARY.md) | Daily contest overview commentary |
+
 ## Internal
 
 | Doc | Purpose |

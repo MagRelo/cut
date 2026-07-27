@@ -47,7 +47,9 @@ Pass script arguments **directly** — do **not** insert `--` before them. Use `
 | `COMMODITIES_SESSION_TZ` | `America/New_York` | Default session timezone when init omits `--open`/`--close` |
 | `COMMODITIES_SESSION_OPEN` | `09:30` | Default SCHEDULED → LIVE time (time-only, session TZ) |
 | `COMMODITIES_SESSION_CLOSE` | `16:30` | Default Friday close (time-only, session TZ) |
-| `ENABLE_CRON` | — | `true` on cron worker for 5-minute pipeline |
+| `ENABLE_CRON` | — | `true` on cron worker for 5-minute pipeline + overview pipeline |
+| `CONTEST_COMMENTARY_ENABLED` | — | `true` to enable daily contest overview commentary |
+| `CURSOR_API_KEY` | — | Required when commentary is enabled |
 | `DATABASE_URL` | — | Verify before every init |
 
 ---
@@ -129,6 +131,19 @@ With `ENABLE_CRON=true`, the 5-minute pipeline will:
 4. Recalculate contest lineups
 
 During **SCHEDULED**, users build lineups. When cron marks **`sessionStarted`**, the event goes **LIVE**, lineups lock, and contests activate in the same pipeline pass. After cron marks **`sessionComplete`**, contests settle.
+
+### 5b. Contest commentary (optional)
+
+With `CONTEST_COMMENTARY_ENABLED=true` and `CURSOR_API_KEY`, the overview pipeline (`*/20`) refreshes `Contest.commentary` after each trading day settles (idempotent per settled day). Cutbot **Live Analysis** in the contest lobby shows the snapshot.
+
+Force a snapshot:
+
+```bash
+pnpm --filter server run script:contest-commentary <contestId>
+pnpm --filter server run script:contest-commentary <contestId> --context
+```
+
+Authoritative contract: [`packages/sport-commodities/CONTEST_COMMENTARY.md`](../../../packages/sport-commodities/CONTEST_COMMENTARY.md).
 
 **Manual sync** (without waiting for cron):
 

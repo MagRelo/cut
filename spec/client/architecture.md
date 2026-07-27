@@ -79,7 +79,7 @@ flowchart TB
 
 `client/src/sports/registry.ts` maps `sportId` → `SportUIPlugin`. Platform components call `requireSportUIPlugin(sportId)` for sport-specific rendering (row layout, scorecard, prediction input).
 
-Only **pga-golf** is registered today. Adding a sport = new package folder + registry entry (server plugin must exist first).
+**pga-golf**, **f1**, and **commodities** are registered today. Adding a sport = new package folder + registry entry (server plugin must exist first).
 
 ---
 
