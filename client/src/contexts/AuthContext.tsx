@@ -19,6 +19,7 @@ import { getContractAddress } from "../utils/blockchainUtils";
 import { registerAuthTokenHandlers } from "../lib/authToken";
 import { getTargetChainIdFromEnv } from "../config/targetChain";
 import { clearStoredReferrerAddress, getStoredReferrerAddress } from "../lib/referralCapture";
+import { preloadLineups } from "../lib/preloadData";
 
 /** Membership + nested group as returned by GET /auth/me. */
 export type AuthUserGroupMembership = {
@@ -436,6 +437,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             queryClient.invalidateQueries({ queryKey: ["user"] });
             queryClient.invalidateQueries({ queryKey: ["balance"] });
           }
+          void preloadLineups(queryClient, response.id, targetChainId);
         }
       } catch (error) {
         console.error("GET /auth/me failed:", error);
