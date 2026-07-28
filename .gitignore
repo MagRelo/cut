@@ -24,7 +24,9 @@ vite.config.d.ts
 .env.development
 .env.test
 .env.production
+.env.staging
 !.env.example
+!.env.staging.example
 
 # Logs
 npm-debug.log*
@@ -41,6 +43,8 @@ yarn-error.log*
 docker-compose.override.yml
 docker/.last-tag
 docker/.last-launch
+docker/.last-staging-tag
+docker/.last-staging-launch
 
 # Prisma
 prisma/*.db
@@ -59,6 +63,7 @@ prisma/migrations/
 .env.test.local
 .env.production.local
 .env.production
+.env.staging
 
 # Logs
 npm-debug.log*
@@ -75,6 +80,8 @@ yarn-error.log*
 docker-compose.override.yml
 docker/.last-tag
 docker/.last-launch
+docker/.last-staging-tag
+docker/.last-staging-launch
 
 # Prisma
 prisma/*.db 

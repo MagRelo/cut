@@ -4,6 +4,12 @@
 set -e
 
 # Default: linux/amd64 only (remote prod). Pass --with-arm or set DOCKER_BUILD_ARM=1 for M1/local arm64.
+# Env overrides:
+#   DOCKER_USERNAME      (default magrelo)
+#   DOCKER_IMAGE_NAME    (default cut-v4; staging: cut-v4-staging)
+#   TAG_FILE             (default docker/.last-tag; staging: docker/.last-staging-tag)
+#   TAG_AS_LATEST        (default 1; set 0 for staging so prod :latest is never retagged)
+
 BUILD_ARM=false
 for arg in "$@"; do
   case "$arg" in
@@ -11,6 +17,7 @@ for arg in "$@"; do
     -h|--help)
       echo "Usage: docker/build.sh [--with-arm]"
       echo "  --with-arm   Also build linux/arm64 (Apple Silicon / M1)"
+      echo "Env: DOCKER_IMAGE_NAME, TAG_FILE, TAG_AS_LATEST=0|1"
       exit 0
       ;;
   esac
@@ -25,12 +32,14 @@ echo "Starting Docker build process..."
 GIT_SHA=$(git rev-parse --short HEAD)
 TAG=$GIT_SHA-$(date +%Y%m%d%H%M)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-echo "$TAG" > "$SCRIPT_DIR/.last-tag"
-echo "Building with tag: $TAG (git $GIT_SHA)"
+TAG_FILE="${TAG_FILE:-$SCRIPT_DIR/.last-tag}"
+echo "$TAG" > "$TAG_FILE"
+echo "Building with tag: $TAG (git $GIT_SHA) → $TAG_FILE"
 
-# Set your Docker Hub username
-DOCKER_USERNAME="magrelo"
-DOCKER_IMAGE_NAME="cut-v4"
+# Set your Docker Hub username / image
+DOCKER_USERNAME="${DOCKER_USERNAME:-magrelo}"
+DOCKER_IMAGE_NAME="${DOCKER_IMAGE_NAME:-cut-v4}"
+TAG_AS_LATEST="${TAG_AS_LATEST:-1}"
 CACHE_REF="$DOCKER_USERNAME/$DOCKER_IMAGE_NAME:buildcache"
 
 # Set up Docker buildx builder
@@ -42,11 +51,17 @@ if [ "$BUILD_ARM" = true ]; then
   PLATFORMS="linux/amd64,linux/arm64"
 fi
 
+TAG_ARGS=(
+  -t "$DOCKER_USERNAME/$DOCKER_IMAGE_NAME:$TAG"
+)
+if [ "$TAG_AS_LATEST" = "1" ] || [ "$TAG_AS_LATEST" = "true" ]; then
+  TAG_ARGS+=(-t "$DOCKER_USERNAME/$DOCKER_IMAGE_NAME:latest")
+fi
+
 # Build and push image
-echo "Building and pushing Docker image for: $PLATFORMS"
+echo "Building and pushing Docker image for: $PLATFORMS ($DOCKER_USERNAME/$DOCKER_IMAGE_NAME)"
 docker buildx build --platform "$PLATFORMS" \
-  -t $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:$TAG \
-  -t $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:latest \
+  "${TAG_ARGS[@]}" \
   -f docker/Dockerfile \
   --build-arg GIT_SHA=$GIT_SHA \
   --cache-from type=registry,ref=$CACHE_REF \
@@ -56,4 +71,11 @@ docker buildx build --platform "$PLATFORMS" \
 
 echo "Docker build complete!"
 echo "Tagged:  $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:$TAG"
-echo "Launch:  pnpm run launch"
+if [ "$TAG_AS_LATEST" = "1" ] || [ "$TAG_AS_LATEST" = "true" ]; then
+  echo "Also:   $DOCKER_USERNAME/$DOCKER_IMAGE_NAME:latest"
+fi
+if [ "$DOCKER_IMAGE_NAME" = "cut-v4-staging" ]; then
+  echo "Launch:  pnpm run launch:staging"
+else
+  echo "Launch:  pnpm run launch"
+fi

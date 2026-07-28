@@ -144,10 +144,10 @@ Prod users and contests remain on Sepolia. Prepare Base mainnet without switchin
 
 ### 3a. Soak checklist (prod / Sepolia)
 
-- [ ] At least one full contest lifecycle on prod Sepolia (create → enter → lock → settle → claim)
-- [ ] Referral fees + sync look healthy under real traffic
-- [ ] Cron settle / lock / close paths stable
-- [ ] No settle calls against **old** contest addresses with the new ABI (use old tooling for leftovers)
+- [x] At least one full contest lifecycle on prod Sepolia (create → enter → lock → settle → claim)
+- [x] Referral fees + sync look healthy under real traffic
+- [x] Cron settle / lock / close paths stable
+- [x] No settle calls against **old** contest addresses with the new ABI (use old tooling for leftovers)
 
 ### 3b. Deploy Base contracts
 
@@ -202,7 +202,7 @@ pnpm --filter server run script:rematerialize-referral-graph --reset-hashes
 
 ### 3e. Base smoke (pre–client flip)
 
-Use a local or staging build pointed at Base — **not** the Sepolia prod client. Test wallets must already hold Base USDC (seeded outside this plan).
+Prefer the staging host [`https://base-sepolia.playthecut.com`](https://base-sepolia.playthecut.com) (see [swarm/README.md](swarm/README.md) **Staging**) for Sepolia deploys and, when retargeted, Base smoke — **not** the Sepolia prod client at `playthecut.com`. For Base smoke, point staging’s bake (`client/.env.staging`) and `web-staging.env` at chain `8453` / USDC; test wallets must already hold Base USDC (seeded outside this plan).
 
 - [ ] Create a **small** contest on the new factory
 - [ ] Enter → activate → lock → settle → referral fees → claim/push

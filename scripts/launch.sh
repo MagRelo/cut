@@ -1,5 +1,6 @@
 #!/bin/bash
 # Deploy the last built image (or an explicit tag) to the Swarm manager and append deploy.log.
+# Preserves the current cut_web-staging image when re-deploying the stack.
 set -e
 
 SWARM_HOST="${SWARM_HOST:-157.230.6.6}"
@@ -30,6 +31,13 @@ cd /opt/cut
 echo "Pulling $IMAGE ..."
 docker pull "$IMAGE"
 export CUT_APP_IMAGE="$IMAGE"
+# Keep staging on its current image when stack deploy re-interpolates env.
+if CURRENT_STAGING=\$(docker service inspect cut_web-staging --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}' 2>/dev/null); then
+  if [[ -n "\$CURRENT_STAGING" ]]; then
+    export CUT_STAGING_APP_IMAGE="\$CURRENT_STAGING"
+    echo "Preserving staging image: \$CUT_STAGING_APP_IMAGE"
+  fi
+fi
 docker stack deploy --detach=true -c swarm/stack.yml cut
 LOG_LINE="\$(date -u +%Y-%m-%dT%H:%M:%SZ)  $IMAGE  $DEPLOYER"
 echo "\$LOG_LINE" >> /opt/cut/deploy.log
@@ -43,4 +51,4 @@ echo "Launch complete."
 echo "Image:  $IMAGE"
 echo "Local:  cat docker/.last-launch"
 echo "Remote: ssh $SWARM_USER@$SWARM_HOST 'tail /opt/cut/deploy.log'"
-echo "Verify: curl -s https://<your-domain>/health"
+echo "Verify: curl -s https://playthecut.com/health"
