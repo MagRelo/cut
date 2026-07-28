@@ -9,6 +9,7 @@ set -e
 #   DOCKER_IMAGE_NAME    (default cut-v4; staging: cut-v4-staging)
 #   TAG_FILE             (default docker/.last-tag; staging: docker/.last-staging-tag)
 #   TAG_AS_LATEST        (default 1; set 0 for staging so prod :latest is never retagged)
+#   DEPLOY_TAG           (optional; if set, used as the image tag instead of generating one)
 
 BUILD_ARM=false
 for arg in "$@"; do
@@ -17,7 +18,7 @@ for arg in "$@"; do
     -h|--help)
       echo "Usage: docker/build.sh [--with-arm]"
       echo "  --with-arm   Also build linux/arm64 (Apple Silicon / M1)"
-      echo "Env: DOCKER_IMAGE_NAME, TAG_FILE, TAG_AS_LATEST=0|1"
+      echo "Env: DOCKER_IMAGE_NAME, TAG_FILE, TAG_AS_LATEST=0|1, DEPLOY_TAG"
       exit 0
       ;;
   esac
@@ -28,9 +29,9 @@ fi
 
 echo "Starting Docker build process..."
 
-# Generate unique tag using git commit SHA and timestamp
+# Generate unique tag using git commit SHA and timestamp (or reuse DEPLOY_TAG from deploy:staging)
 GIT_SHA=$(git rev-parse --short HEAD)
-TAG=$GIT_SHA-$(date +%Y%m%d%H%M)
+TAG="${DEPLOY_TAG:-$GIT_SHA-$(date +%Y%m%d%H%M)}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TAG_FILE="${TAG_FILE:-$SCRIPT_DIR/.last-tag}"
 echo "$TAG" > "$TAG_FILE"
