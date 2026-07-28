@@ -9,3 +9,13 @@ export function getTargetChainIdFromEnv(): typeof base.id | typeof baseSepolia.i
   if (normalized === "mainnet") return base.id;
   return baseSepolia.id;
 }
+
+/** True when baked with `vite build --mode staging` (`pnpm run deploy:staging`). */
+export function isStagingDeploy(): boolean {
+  return import.meta.env.MODE === "staging";
+}
+
+/** True when the client targets Base Sepolia (testnet). */
+export function isTargetTestnet(): boolean {
+  return getTargetChainIdFromEnv() === baseSepolia.id;
+}
