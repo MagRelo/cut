@@ -13,6 +13,8 @@ interface ImportMetaEnv {
   readonly VITE_SIDE_BET_STAKE_RECIPIENT?: string;
   /** `mainnet` (Base) or `testnet` (Base Sepolia). Defaults to testnet if unset. */
   readonly VITE_TARGET_CHAIN?: string;
+  /** Deploy image tag baked by `pnpm run deploy:staging` (e.g. `abc1234-202607281120`). */
+  readonly VITE_DEPLOY_TAG?: string;
   /** Optional Base Sepolia JSON-RPC URL. Falls back to the chain default if unset. */
   readonly VITE_BASE_SEPOLIA_RPC_URL?: string;
   /** PostHog project key (client; used when Vite `PROD`). */
