@@ -1,9 +1,7 @@
 import { SideBetMarketStatus } from "@prisma/client";
+import type { PropBetIngestBatchContext } from "@cut/sport-sdk";
 import { prisma } from "../../lib/prisma.js";
-import { requirePropBetModule } from "../../sports/propBetRegistry.js";
-import { runWithGolfPropBetSnapshot } from "../../sports/pga-golf/propBetSnapshotContext.js";
-import type { SideBetDataGolfSnapshot } from "../sideBets/fetchSideBetDataGolfSnapshot.js";
-import type { DataGolfTourParam } from "../odds/dataGolfFieldUpdates.js";
+import { getPropBetModule, requirePropBetModule } from "../../sports/propBetRegistry.js";
 import { persistPropBetMarketSnapshot, type PropBetIngestResult } from "./persistMarketSnapshot.js";
 
 export type { PropBetIngestResult };
@@ -18,8 +16,7 @@ const SKIP_INGEST: SideBetMarketStatus[] = [
 
 export async function ingestPropBetQuoteForLineup(
   lineupId: string,
-  _tour?: DataGolfTourParam,
-  snapshot?: SideBetDataGolfSnapshot,
+  batchContext?: PropBetIngestBatchContext,
 ): Promise<PropBetIngestResult> {
   const lineup = await prisma.lineup.findUnique({
     where: { id: lineupId },
@@ -37,24 +34,20 @@ export async function ingestPropBetQuoteForLineup(
     return { ok: false, reason: "MARKET_NOT_INGESTABLE_STATE" };
   }
 
-  const propBetModule = getPropBetModuleSafe(lineup.event.sportId);
-  if (!propBetModule) {
+  let propBetModule;
+  try {
+    propBetModule = requirePropBetModule(lineup.event.sportId);
+  } catch {
     return { ok: false, reason: "PROP_BETS_NOT_SUPPORTED_FOR_SPORT" };
   }
 
-  return runWithGolfPropBetSnapshot(snapshot, async () => {
-    const marketSnapshot = await propBetModule.ingestQuotes(lineupId);
-    return persistPropBetMarketSnapshot(lineupId, lineup.eventId, marketSnapshot);
-  });
-}
-
-function getPropBetModuleSafe(sportId: string) {
-  try {
-    return requirePropBetModule(sportId);
-  } catch {
-    return undefined;
-  }
+  const marketSnapshot = await propBetModule.ingestQuotes(lineupId, batchContext);
+  return persistPropBetMarketSnapshot(lineupId, lineup.eventId, marketSnapshot);
 }
 
 /** @deprecated Use ingestPropBetQuoteForLineup */
 export const ingestSideBetQuoteForLineup = ingestPropBetQuoteForLineup;
+
+export function sportSupportsPropBets(sportId: string): boolean {
+  return getPropBetModule(sportId) !== undefined;
+}

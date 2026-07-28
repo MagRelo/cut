@@ -2,11 +2,11 @@ import {
   fetchDataGolfFieldUpdates,
   type DataGolfFieldUpdatesPayload,
   type DataGolfTourParam,
-} from "../odds/dataGolfFieldUpdates.js";
+} from "./fieldUpdates.js";
 import {
   fetchDataGolfOutrights,
   type DataGolfOutrightsPayload,
-} from "../odds/dataGolfOutrightsClient.js";
+} from "./outrightsClient.js";
 
 /** Shared DataGolf payloads for one refresh pass (one lineup or many). */
 export interface SideBetDataGolfSnapshot {

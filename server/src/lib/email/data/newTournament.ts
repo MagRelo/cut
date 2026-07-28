@@ -1,9 +1,6 @@
-import { resolveSummarySectionsForEvent } from "../../tournamentSummary.js";
-import {
-  formatEventCourseLine,
-  formatEventDateRange,
-  loadEventForEmail,
-} from "./event.js";
+import type { EmailAnnouncementContent } from "@cut/sport-sdk";
+import { requireSportEmailContent } from "../../../sports/emailContentRegistry.js";
+import { loadEventForEmail } from "./event.js";
 import type { NewTournamentEmailData } from "../emails/newTournament.js";
 
 export async function loadNewEventEmailData(
@@ -12,16 +9,22 @@ export async function loadNewEventEmailData(
   const event = await loadEventForEmail(eventId);
   if (!event) return null;
 
-  const summarySections = await resolveSummarySectionsForEvent(
-    event.externalId,
-    event.summarySections,
-  );
+  const adapter = requireSportEmailContent(event.sportId);
+  const announcement: EmailAnnouncementContent = await adapter.loadAnnouncementContent({
+    externalId: event.externalId,
+    name: event.name,
+    course: event.course,
+    city: event.city,
+    state: event.state,
+    startDate: event.startDate,
+    endDate: event.endDate,
+    summarySections: event.summarySections,
+  });
 
   return {
     tournamentName: event.name,
-    courseLine: formatEventCourseLine(event),
-    dateLine: formatEventDateRange(event),
-    summarySections,
+    sportId: event.sportId,
+    announcement,
   };
 }
 

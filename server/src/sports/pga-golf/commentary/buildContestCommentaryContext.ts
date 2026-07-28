@@ -14,32 +14,17 @@ import {
   type PopularityRules,
   type ScoringRules,
 } from "@cut/sport-sdk";
-import { prisma } from "../../lib/prisma.js";
-import { loadGenericGolfScoringModel } from "../../sports/pga-golf/loadGenericScoringModel.js";
-import { lineupPicksInclude } from "../../utils/prismaIncludes.js";
+import { prisma } from "../../../lib/prisma.js";
+import { loadGenericGolfScoringModel } from "../loadGenericScoringModel.js";
+import { lineupPicksInclude } from "../../../utils/prismaIncludes.js";
+import type { ContestCommentaryDiagnostics } from "../../../services/contest/commentaryDiagnostics.js";
+
+export type { ContestCommentaryDiagnostics };
 
 export interface BuildContestCommentaryContextOptions {
   simulations?: number;
   seed?: number;
   popularityWeight?: number;
-}
-
-export interface ContestCommentaryDiagnostics {
-  eventExternalId: string;
-  contestStatus: string;
-  entryCount: number;
-  fieldCount: number;
-  pickRatesLocked: boolean;
-  calibration: {
-    eventParticipantCount: number;
-    holeSampleCount: number;
-  };
-  warnings: string[];
-  scoreDrift: Array<{
-    entryId: string;
-    persisted: number;
-    recomputed: number;
-  }>;
 }
 
 export interface BuiltContestCommentaryContext {

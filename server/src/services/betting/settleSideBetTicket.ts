@@ -1,12 +1,7 @@
 import { SideBetTicketStatus, type Prisma } from "@prisma/client";
 import type { PropBetResultsShell, PropBetTicketShell } from "@cut/sport-sdk";
-import type { GolfPropBetResultsMetadata, GolfPropBetTicketMetadata } from "@cut/sport-pga-golf";
-import { isGolfFinishInTopN } from "@cut/sport-pga-golf";
 import { getPropBetModule } from "../../sports/propBetRegistry.js";
 import { eventParticipantLeaderboardPosition } from "../sideBets/lineupSideBetUtils.js";
-
-/** @deprecated Use isGolfFinishInTopN from @cut/sport-pga-golf */
-export const isFinishInTopN = isGolfFinishInTopN;
 
 function propBetGradeToTicketStatus(grade: "WON" | "LOST" | "VOID"): SideBetTicketStatus {
   switch (grade) {
@@ -38,7 +33,7 @@ export async function settleOpenTicketIfPossible(
   }
 
   const eventParticipantIds = ticket.eventParticipantIds;
-  if (!eventParticipantIds || eventParticipantIds.length !== 4) {
+  if (!eventParticipantIds || eventParticipantIds.length === 0) {
     await tx.sideBetTicket.update({
       where: { id: ticketId },
       data: {
@@ -67,14 +62,14 @@ export async function settleOpenTicketIfPossible(
     where: { eventId, id: { in: eventParticipantIds } },
   });
 
-  if (eventParticipants.length !== 4) {
+  if (eventParticipants.length !== eventParticipantIds.length) {
     await tx.sideBetTicket.update({
       where: { id: ticketId },
       data: {
         status: SideBetTicketStatus.VOID,
         settlementNotes: {
           reason: "PLACEMENT_PLAYERS_NOT_FOUND",
-          expected: 4,
+          expected: eventParticipantIds.length,
           found: eventParticipants.length,
         },
       },
@@ -96,25 +91,19 @@ export async function settleOpenTicketIfPossible(
       hitsRequired: ticket.hitsRequired,
       topN: ticket.topN,
       eventParticipantIds: sortedIds,
-    } satisfies GolfPropBetTicketMetadata,
+    },
   };
 
   const resultsShell: PropBetResultsShell = {
     eventId,
     metadata: {
       leaderboardPositions,
-    } satisfies GolfPropBetResultsMetadata,
+    },
   };
 
   const grade = propBetModule.gradeTicket(ticketShell, resultsShell);
   const status = propBetGradeToTicketStatus(grade);
-  const hits = leaderboardPositions
-    .map((position, index) => ({
-      position,
-      topN: ticket.topN,
-      id: sortedIds[index],
-    }))
-    .filter((row) => isGolfFinishInTopN(row.position, row.topN) === true).length;
+  const described = propBetModule.describeGrade?.(ticketShell, resultsShell) ?? null;
 
   await tx.sideBetTicket.update({
     where: { id: ticketId },
@@ -122,8 +111,11 @@ export async function settleOpenTicketIfPossible(
       status,
       settlementNotes:
         status === SideBetTicketStatus.VOID
-          ? { reason: "INDETERMINATE_POSITION" }
-          : { hits, hitsRequired: ticket.hitsRequired, topN: ticket.topN },
+          ? ({ reason: "INDETERMINATE_POSITION" } satisfies Prisma.InputJsonObject)
+          : ((described ?? {
+              hitsRequired: ticket.hitsRequired,
+              topN: ticket.topN,
+            }) as Prisma.InputJsonValue),
     },
   });
 

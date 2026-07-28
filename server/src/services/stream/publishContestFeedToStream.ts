@@ -1,4 +1,18 @@
-import type { ContestFeedItem } from "@cut/sport-pga-golf";
+/** Opaque feed item for Stream (sport packages own the full shape). */
+export type ContestFeedStreamItem = {
+  id: string;
+  text: string;
+  storyType: string;
+  priority?: number;
+  round?: number | null;
+  generatedAt?: string;
+  subjects: {
+    entryIds?: string[];
+  };
+};
+
+type ContestFeedItem = ContestFeedStreamItem;
+
 import {
   STREAM_CONTEST_FEED_GROUP,
   STREAM_CUTBOT_USER_ID,

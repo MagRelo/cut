@@ -8,6 +8,9 @@ import type { RenderedEmail } from "../types.js";
 
 export type WelcomeEmailData = {
   tournamentName?: string;
+  sportId?: string;
+  /** Sport-specific welcome copy from SportEmailContent.welcomeProductBlurb */
+  productBlurb?: string;
 };
 
 export function welcomeSubject(): string {
@@ -22,20 +25,22 @@ ${blocks.join("\n")}
 }
 
 export function buildWelcomeHtml(data: WelcomeEmailData): string {
-  const tournamentBlock = data.tournamentName
-    ? renderSection(
-        "This week",
-        renderProseHtml(
-          `<span style="font-weight:600;color:#18181b;">${escapeHtml(data.tournamentName)}</span> is the active tournament on Play The Cut. The field is set, lineups are open, and contests are filling up. Build your four-player team, then browse open contests when you are ready to compete.`,
-        ),
-      )
-    : renderProseBlock(
-        "When a new tournament week opens, you will see previews, the field, and open contests right on the home page. Your first move is always the same: build a four-player lineup for the week.",
-      );
+  const tournamentBlock = data.productBlurb
+    ? renderSection("This week", renderProseBlock(data.productBlurb))
+    : data.tournamentName
+      ? renderSection(
+          "This week",
+          renderProseHtml(
+            `<span style="font-weight:600;color:#18181b;">${escapeHtml(data.tournamentName)}</span> is live on Play The Cut. Build your lineup, then browse open contests when you are ready to compete.`,
+          ),
+        )
+      : renderProseBlock(
+          "When a new event week opens, you will see previews, the field, and open contests right on the home page. Your first move is always the same: build a lineup for the week.",
+        );
 
   const bodyHtml = `<h1 style="${BODY_TITLE_H1_STYLE};margin:0 0 20px;">Welcome to Play The Cut!</h1>
 ${renderProseBlock(
-  "Getting started is simple. Choose your four-player lineup, and you're in—your lineup powers every contest and game format.",
+  "Getting started is simple. Choose your lineup, and you're in—your lineup powers every contest and game format.",
 )}
 ${renderSection(
   "Three ways to Play",
@@ -46,17 +51,17 @@ ${renderSection(
     {
       title: "Fantasy Contests",
       description:
-        "Fantasy contests are the heart of the game. Enter an open contest with your four-player lineup, pay the buy-in, and climb the leaderboard as your players score points.",
+        "Fantasy contests are the heart of the game. Enter an open contest with your lineup, pay the buy-in, and climb the leaderboard as your picks score points.",
     },
     {
       title: "Winner Pool",
       description:
-        "Every contest also runs a Winner Pool—a live market on which lineup wins the field. Back the entry you like, watch prices move as money flows in, and track projected odds as the tournament unfolds. When the contest settles, wagers on the winner share the pool.",
+        "Every contest also runs a Winner Pool—a live market on which lineup wins the field. Back the entry you like, watch prices move as money flows in, and track projected odds as the event unfolds. When the contest settles, wagers on the winner share the pool.",
     },
     {
       title: "Parlays",
       description:
-        "Turn your lineup into fixed-odds tickets. Combine finish predictions across your four golfers—how many will land Top 5, Top 10, or Top 20—and lock in a price before the tournament runs its course. A focused way to back your card without entering a full fantasy contest.",
+        "Turn your lineup into fixed-odds tickets where the sport supports them. Lock in a price before the event runs its course—a focused way to back your card without entering a full fantasy contest.",
     },
   ]),
 )}

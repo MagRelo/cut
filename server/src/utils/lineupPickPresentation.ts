@@ -1,5 +1,3 @@
-import type { GolfParticipantMetadata } from "@cut/sport-pga-golf";
-
 type PickWithParticipant = {
   eventParticipant: {
     total: number | null;
@@ -13,7 +11,7 @@ function parseParticipantLastName(metadata: unknown): string | null {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     return null;
   }
-  const record = metadata as GolfParticipantMetadata;
+  const record = metadata as Record<string, unknown>;
   return typeof record.lastName === "string" && record.lastName.length > 0
     ? record.lastName
     : null;

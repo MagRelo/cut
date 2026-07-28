@@ -1,5 +1,6 @@
 import { prisma } from "../../prisma.js";
-import { getActiveEventId, loadEventForEmail } from "./event.js";
+import { getAnyActiveEvent, loadEventForEmail } from "./event.js";
+import { getSportEmailContent } from "../../../sports/emailContentRegistry.js";
 import type { WelcomeEmailData } from "../emails/welcome.js";
 
 export async function loadWelcomeEmailData(userId: string): Promise<WelcomeEmailData | null> {
@@ -9,14 +10,18 @@ export async function loadWelcomeEmailData(userId: string): Promise<WelcomeEmail
   });
   if (!user?.email?.trim()) return null;
 
-  let tournamentName: string | undefined;
-  const activeId = await getActiveEventId();
-  if (activeId) {
-    const event = await loadEventForEmail(activeId);
-    tournamentName = event?.name;
+  const data: WelcomeEmailData = {};
+  const active = await getAnyActiveEvent();
+  if (active) {
+    const event = await loadEventForEmail(active.id);
+    if (event?.name) {
+      data.tournamentName = event.name;
+      data.sportId = event.sportId;
+      const adapter = getSportEmailContent(event.sportId);
+      const blurb = adapter?.welcomeProductBlurb?.({ eventName: event.name });
+      if (blurb) data.productBlurb = blurb;
+    }
   }
 
-  const data: WelcomeEmailData = {};
-  if (tournamentName) data.tournamentName = tournamentName;
   return data;
 }

@@ -1,18 +1,21 @@
+import type { EmailAnnouncementContent } from "@cut/sport-sdk";
 import { appPath } from "../appUrl.js";
 import { renderCtaBlock } from "../blocks/cta.js";
-import { renderEventAnnouncementHtml } from "../blocks/eventAnnouncement.js";
-import { renderLeadSummarySectionHtml, renderSummarySectionByKeyHtml } from "../blocks/summary.js";
+import {
+  announcementDataFromContent,
+  renderEventAnnouncementHtml,
+} from "../blocks/eventAnnouncement.js";
+import {
+  renderBodySummarySectionsHtml,
+  renderLeadSummarySectionsHtml,
+} from "../blocks/summary.js";
 import { wrapEmailHtml } from "../templates.js";
 import type { RenderedEmail } from "../types.js";
-import type { TournamentSummarySections } from "../../tournamentSummary.js";
 
 export type NewTournamentEmailData = {
   tournamentName: string;
-  /** "TPC Twin Cities · Blaine, Minnesota" */
-  courseLine: string;
-  /** "Jul 23–Jul 26, 2026" */
-  dateLine: string;
-  summarySections: TournamentSummarySections | null;
+  sportId: string;
+  announcement: EmailAnnouncementContent;
 };
 
 export function newTournamentSubject(data: NewTournamentEmailData): string {
@@ -20,24 +23,13 @@ export function newTournamentSubject(data: NewTournamentEmailData): string {
 }
 
 export function buildNewTournamentBodyHtml(data: NewTournamentEmailData): string {
-  const announcementHtml = renderEventAnnouncementHtml({
-    tournamentName: data.tournamentName,
-    courseLine: data.courseLine,
-    dateLine: data.dateLine,
-    summarySections: data.summarySections,
-  });
-  const leadHtml = renderLeadSummarySectionHtml(data.summarySections);
-  // Event Blurb is shown in the announcement card (not as its own bullet section).
-  const sectionKeyOrder = [
-    "Best Players and Odds",
-    "Course and Format",
-    "Broadcast Information",
-  ] as const;
-  const renderedSections = sectionKeyOrder
-    .map((key) => renderSummarySectionByKeyHtml(data.summarySections, key))
-    .filter((html) => html.length > 0);
-  const topSectionsHtml = renderedSections.slice(0, 1).join("");
-  const bottomSectionsHtml = renderedSections.slice(1).join("");
+  const announcementHtml = renderEventAnnouncementHtml(
+    announcementDataFromContent(data.tournamentName, data.announcement),
+  );
+  const leadHtml = renderLeadSummarySectionsHtml(data.announcement.leadSections);
+  const bodySections = data.announcement.bodySections;
+  const topSectionsHtml = renderBodySummarySectionsHtml(bodySections.slice(0, 1));
+  const bottomSectionsHtml = renderBodySummarySectionsHtml(bodySections.slice(1));
 
   return `${announcementHtml}
 ${leadHtml}

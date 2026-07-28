@@ -14,9 +14,9 @@ import {
   type PopularityRules,
   type ScoringRules,
 } from "@cut/sport-sdk";
-import { prisma } from "../../lib/prisma.js";
-import { lineupPicksInclude } from "../../utils/prismaIncludes.js";
-import type { ContestCommentaryDiagnostics } from "./buildContestCommentaryContext.js";
+import { prisma } from "../../../lib/prisma.js";
+import { lineupPicksInclude } from "../../../utils/prismaIncludes.js";
+import type { ContestCommentaryDiagnostics } from "../../../services/contest/commentaryDiagnostics.js";
 
 export interface BuildCommoditiesContestCommentaryContextOptions {
   popularityWeight?: number;

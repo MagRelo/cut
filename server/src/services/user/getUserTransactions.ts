@@ -121,7 +121,6 @@ export async function getUserTransactions(userId: string): Promise<UserTransacti
         topN: true,
         sideBetMarket: {
           select: {
-            dgEventName: true,
             event: {
               select: {
                 metadata: true,
@@ -195,9 +194,7 @@ export async function getUserTransactions(userId: string): Promise<UserTransacti
 
   for (const ticket of tickets) {
     const eventName =
-      ticket.sideBetMarket.dgEventName ??
-      eventDisplayName(ticket.sideBetMarket.event.metadata) ??
-      "Side bet";
+      eventDisplayName(ticket.sideBetMarket.event.metadata) ?? "Side bet";
     const oddsDetail = `${ticket.hitsRequired}/${ticket.topN} · ${ticket.americanDisplayAtPlacement}`;
 
     rows.push({

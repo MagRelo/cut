@@ -1,17 +1,16 @@
 import type { EventStatus } from "@cut/sport-sdk";
 import {
-  commoditiesEventStatusFromMetadata,
-  parseCommoditiesEventMetadata,
-} from "@cut/sport-commodities";
-import { f1EventStatusFromMetadata, parseF1EventMetadata } from "@cut/sport-f1";
-import { golfEventStatusFromMetadata } from "@cut/sport-pga-golf";
+  eventStatusFromMetadataForSport,
+  eventStatusFromMetadataGuess,
+} from "../sports/eventStatusRegistry.js";
 
-export function eventStatusFromMetadata(metadata: unknown): EventStatus {
-  if (parseCommoditiesEventMetadata(metadata)) {
-    return commoditiesEventStatusFromMetadata(metadata);
+/**
+ * Derive EventStatus from CompetitionEvent.metadata.
+ * Pass sportId whenever available — guessing from metadata shape is a fallback only.
+ */
+export function eventStatusFromMetadata(metadata: unknown, sportId?: string): EventStatus {
+  if (sportId) {
+    return eventStatusFromMetadataForSport(sportId, metadata);
   }
-  if (parseF1EventMetadata(metadata)) {
-    return f1EventStatusFromMetadata(metadata);
-  }
-  return golfEventStatusFromMetadata(metadata);
+  return eventStatusFromMetadataGuess(metadata);
 }

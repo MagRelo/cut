@@ -1,4 +1,4 @@
-import type { DataGolfTourParam } from "./dataGolfFieldUpdates.js";
+import type { DataGolfTourParam } from "./fieldUpdates.js";
 
 export type DataGolfFinishMarket = "top_5" | "top_10" | "top_20";
 

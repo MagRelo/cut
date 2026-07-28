@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { ContestCommentaryContext } from "@cut/sport-pga-golf";
 import {
   commentaryFeedWordCount,
   generateContestFeed,
 } from "./generateContestFeed.js";
-import type { CommentaryTextGenerator } from "./commentaryTextGenerator.js";
+import type { CommentaryTextGenerator } from "../../../services/contest/commentaryTextGenerator.js";
 
-const context: ContestCommentaryContext = {
+const context = {
   period: 4,
   paidCount: 3,
   eventProgress: {

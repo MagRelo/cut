@@ -6,6 +6,5 @@ export {
   getManualActiveTournamentId,
   loadEventForEmail,
   loadTournamentForEmail,
-  summarySectionsFromEvent as summarySectionsFromTournament,
   type EmailEventRecord,
 } from "./event.js";

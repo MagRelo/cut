@@ -1,6 +1,5 @@
 import { SideBetMarketStatus } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
-import { dataGolfTourFromEnv } from "../odds/dataGolfFieldUpdates.js";
 import { sideBetsEnabled } from "./featureFlag.js";
 
 const SKIP_MARK_STALE: SideBetMarketStatus[] = [
@@ -12,7 +11,7 @@ const SKIP_MARK_STALE: SideBetMarketStatus[] = [
 ];
 
 /**
- * Marks side-bet quotes stale after a roster save (no DataGolf call).
+ * Marks side-bet quotes stale after a roster save (no provider call).
  * Cron `refreshOpenSideBetQuotes` will repopulate OPEN markets.
  */
 export async function markSideBetMarketStaleAfterRosterChange(
@@ -39,8 +38,6 @@ export async function markSideBetMarketStaleAfterRosterChange(
     return;
   }
 
-  const tour = dataGolfTourFromEnv();
-
   await prisma.$transaction(async (tx) => {
     const market = await tx.sideBetMarket.upsert({
       where: { lineupId },
@@ -50,7 +47,6 @@ export async function markSideBetMarketStaleAfterRosterChange(
         status: SideBetMarketStatus.UNAVAILABLE,
         unavailableReason: "ROSTER_CHANGED",
         quoteVersion: 0,
-        datagolfTour: tour,
       },
       update: {
         status: SideBetMarketStatus.UNAVAILABLE,
@@ -58,8 +54,6 @@ export async function markSideBetMarketStaleAfterRosterChange(
       },
     });
 
-    await tx.sideBetSelection.deleteMany({
-      where: { sideBetMarketId: market.id },
-    });
+    await tx.sideBetSelection.deleteMany({ where: { sideBetMarketId: market.id } });
   });
 }

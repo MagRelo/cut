@@ -1,4 +1,4 @@
-import { getEventBlurb, type TournamentSummarySections } from "@cut/sport-pga-golf";
+import type { EmailAnnouncementContent } from "@cut/sport-sdk";
 import { escapeHtml } from "../escape.js";
 import {
   ANNOUNCEMENT_DESCRIPTION_STYLE,
@@ -17,10 +17,22 @@ export type EventAnnouncementData = {
   tournamentName: string;
   courseLine: string;
   dateLine: string;
-  summarySections: TournamentSummarySections | null;
+  blurb: string | null;
 };
 
-/** Announcement card: event header + Event Blurb prose (email). */
+export function announcementDataFromContent(
+  eventName: string,
+  content: EmailAnnouncementContent,
+): EventAnnouncementData {
+  return {
+    tournamentName: eventName,
+    courseLine: content.courseLine,
+    dateLine: content.dateLine,
+    blurb: content.blurb,
+  };
+}
+
+/** Announcement card: event header + blurb prose (email). */
 export function renderEventAnnouncementHtml(data: EventAnnouncementData): string {
   const courseHtml = data.courseLine.trim()
     ? `<p style="${BODY_META_LINE_STYLE}">${escapeHtml(data.courseLine.trim())}</p>`
@@ -28,9 +40,8 @@ export function renderEventAnnouncementHtml(data: EventAnnouncementData): string
   const dateHtml = data.dateLine.trim()
     ? `<p style="${BODY_DATE_LINE_TIGHT_STYLE}">${escapeHtml(data.dateLine.trim())}</p>`
     : "";
-  const blurb = getEventBlurb(data.summarySections);
-  const descriptionHtml = blurb
-    ? `<p style="${ANNOUNCEMENT_DESCRIPTION_STYLE}">${escapeHtml(blurb)}</p>`
+  const descriptionHtml = data.blurb
+    ? `<p style="${ANNOUNCEMENT_DESCRIPTION_STYLE}">${escapeHtml(data.blurb)}</p>`
     : "";
 
   return `<div style="margin:0 0 28px;">

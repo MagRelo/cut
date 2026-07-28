@@ -142,7 +142,7 @@ export async function listContestDirectory(
     });
 
     for (const event of activeRows) {
-      const status = eventStatusFromMetadata(event.metadata);
+      const status = eventStatusFromMetadata(event.metadata, event.sportId);
       if (status === "LIVE") {
         liveEvents.push(event);
       } else if (status === "COMPLETE") {

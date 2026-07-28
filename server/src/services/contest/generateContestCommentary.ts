@@ -1,18 +1,16 @@
 import type { ContestCommentaryVoiceId } from "@cut/sport-sdk";
-import type { CommoditiesContestCommentaryContext } from "@cut/sport-commodities";
-import { COMMODITIES_SPORT_ID } from "@cut/sport-commodities";
-import type { ContestCommentaryContext } from "@cut/sport-pga-golf";
-import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 import { prisma } from "../../lib/prisma.js";
 import {
   buildContestCommentaryContext,
   type BuildContestCommentaryContextOptions,
-  type ContestCommentaryDiagnostics,
-} from "./buildContestCommentaryContext.js";
+} from "../../sports/pga-golf/commentary/buildContestCommentaryContext.js";
 import {
   buildCommoditiesContestCommentaryContext,
   type BuildCommoditiesContestCommentaryContextOptions,
-} from "./buildCommoditiesContestCommentaryContext.js";
+} from "../../sports/commodities/commentary/buildCommoditiesContestCommentaryContext.js";
+import { COMMODITIES_SPORT_ID } from "../../sports/commodities/sportId.js";
+import { PGA_GOLF_SPORT_ID } from "../../sports/pga-golf/sportId.js";
+import type { ContestCommentaryDiagnostics } from "./commentaryDiagnostics.js";
 import {
   buildContestCommentaryPrompt,
   COMMENTARY_MAX_WORDS,
@@ -51,7 +49,7 @@ export interface GeneratedContestCommentary {
   schemaVersion: 1;
   generatedAt: string;
   commentary: string;
-  context: ContestCommentaryContext | CommoditiesContestCommentaryContext;
+  context: ContestCommentaryPromptContext;
   diagnostics: ContestCommentaryDiagnostics;
 }
 

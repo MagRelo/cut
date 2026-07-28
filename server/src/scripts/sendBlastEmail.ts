@@ -13,6 +13,7 @@
 import "dotenv/config";
 import {
   getActiveEventId,
+  getAnyActiveEvent,
   isEmailConfigured,
   sendBehindTheScenesBlast,
   sendNewTournamentBlast,
@@ -20,6 +21,7 @@ import {
   sendTournamentRecapBlast,
   sendWelcomeBlast,
 } from "../lib/email/index.js";
+import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 
 type BlastType = "welcome" | "new-tournament" | "reminder" | "recap" | "behind-the-scenes";
 
@@ -33,8 +35,13 @@ function usage(): never {
 async function resolveEventId(): Promise<string> {
   const fromEnv = process.env.EVENT_ID?.trim() || process.env.TOURNAMENT_ID?.trim();
   if (fromEnv) return fromEnv;
-  const id = await getActiveEventId();
-  if (!id) throw new Error("No active event; set EVENT_ID");
+  const sportId = process.env.SPORT_ID?.trim() || PGA_GOLF_SPORT_ID;
+  const id = await getActiveEventId(sportId);
+  if (!id) {
+    const any = await getAnyActiveEvent();
+    if (any) return any.id;
+    throw new Error("No active event; set EVENT_ID");
+  }
   return id;
 }
 

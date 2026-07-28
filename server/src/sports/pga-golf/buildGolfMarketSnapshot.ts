@@ -1,21 +1,20 @@
 import type { MarketSnapshot } from "@cut/sport-sdk";
 import type { GolfPropBetMarketMetadata, GolfPropBetSelection } from "@cut/sport-pga-golf";
 import { prisma } from "../../lib/prisma.js";
-import { calculateRoundRobinOdds, type PlayerFinishDecimals } from "../../services/odds/calculateRoundRobinOdds.js";
+import { calculateRoundRobinOdds, type PlayerFinishDecimals } from "./propBet/calculateRoundRobinOdds.js";
 import {
   buildPgaTourIdToDgIdMap,
   fetchDataGolfFieldUpdates,
   type DataGolfTourParam,
-} from "../../services/odds/dataGolfFieldUpdates.js";
+} from "./datagolf/fieldUpdates.js";
 import {
   fetchDataGolfOutrights,
   oddsRowsByDgId,
   pickIngestDecimal,
-} from "../../services/odds/dataGolfOutrightsClient.js";
-import { eventsAlign } from "../../services/sideBets/eventAlignment.js";
-import type { SideBetDataGolfSnapshot } from "../../services/sideBets/fetchSideBetDataGolfSnapshot.js";
+} from "./datagolf/outrightsClient.js";
+import { eventsAlign } from "./datagolf/eventAlignment.js";
+import type { SideBetDataGolfSnapshot } from "./datagolf/fetchSideBetSnapshot.js";
 import { eventDisplayName, participantPgaTourId } from "../../services/sideBets/lineupSideBetUtils.js";
-import { getSharedGolfPropBetSnapshot } from "./propBetSnapshotContext.js";
 
 function rowLabelToHits(row: string): number {
   if (row === "2 of 4") return 2;
@@ -64,7 +63,7 @@ export async function buildGolfMarketSnapshot(
   }
 
   const eventName = eventDisplayName(lineup.event);
-  const sharedSnapshot = snapshotOverride ?? getSharedGolfPropBetSnapshot();
+  const sharedSnapshot = snapshotOverride;
 
   try {
     const field = sharedSnapshot?.field ?? (await fetchDataGolfFieldUpdates(tour));

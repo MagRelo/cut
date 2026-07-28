@@ -3,7 +3,7 @@ import {
   decimalToAmerican,
   decimalToEnglishFractional,
 } from "./decimalAmerican.js";
-import { sideBetPricingMargin } from "../sideBets/sideBetPricingConfig.js";
+import { sideBetPricingMargin } from "../../../services/sideBets/sideBetPricingConfig.js";
 
 export type SideBetRowLabel = "2 of 4" | "3 of 4" | "4 of 4";
 export type SideBetColLabel = "Top 5" | "Top 10" | "Top 20";

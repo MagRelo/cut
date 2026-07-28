@@ -38,6 +38,7 @@ export type { PlayerWithdrawalEmailData } from "./emails/playerWithdrawal.js";
 
 export {
   getActiveEventId,
+  getAnyActiveEvent,
   getManualActiveTournamentId,
   loadEventForEmail,
   loadTournamentForEmail,

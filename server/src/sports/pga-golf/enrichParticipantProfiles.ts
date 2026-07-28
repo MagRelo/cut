@@ -9,7 +9,7 @@ import {
   buildPgaTourIdToDgIdMap,
   dataGolfTourFromEnv,
   fetchDataGolfFieldUpdates,
-} from "../../services/odds/dataGolfFieldUpdates.js";
+} from "./datagolf/fieldUpdates.js";
 import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 
 /** Parallel HTTP fetches only; DB writes are sequential to avoid pool/lock pile-ups. */

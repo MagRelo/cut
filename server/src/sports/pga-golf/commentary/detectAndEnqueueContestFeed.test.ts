@@ -29,7 +29,7 @@ vi.mock("../../registry.js", () => ({
   }),
 }));
 
-vi.mock("../../../services/contest/buildContestCommentaryContext.js", () => ({
+vi.mock("./buildContestCommentaryContext.js", () => ({
   buildContestCommentaryContext: mocks.buildContext,
 }));
 

@@ -24,13 +24,13 @@ export async function batchSettleSideBets(params?: {
       status: { in: SETTLEABLE_MARKET_STATUSES },
       ...(eventId ? { eventId } : {}),
     },
-    select: { id: true, event: { select: { metadata: true } } },
+    select: { id: true, event: { select: { metadata: true, sportId: true } } },
   });
 
   const results: SideBetBatchOperationResult[] = [];
 
   for (const market of markets) {
-    if (!isEventCompleteForSettlement(market.event.metadata)) {
+    if (!isEventCompleteForSettlement(market.event.metadata, market.event.sportId)) {
       continue;
     }
 

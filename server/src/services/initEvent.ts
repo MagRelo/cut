@@ -1,5 +1,5 @@
 import { getSportModule } from "../sports/registry.js";
-import { COMMODITIES_SPORT_ID } from "@cut/sport-commodities";
+import { COMMODITIES_SPORT_ID } from "../sports/commodities/sportId.js";
 import { initCommoditiesEvent } from "../sports/commodities/initEvent.js";
 import { parseCommoditiesInitCliArgs } from "../sports/commodities/sessionConfig.js";
 

@@ -4,6 +4,23 @@ Shared contracts live in `packages/sport-sdk`. Server and client each maintain a
 
 ---
 
+## Import boundary (server)
+
+Platform paths must not import sport packages (`@cut/sport-pga-golf`, `@cut/sport-f1`, `@cut/sport-commodities`). They may import `@cut/sport-sdk` and call registries.
+
+| Allowed | Forbidden |
+|---------|-----------|
+| `server/src/sports/**` (IO + boot registries) | `server/src/services/**` |
+| `packages/sport-*` | `server/src/lib/**` |
+| `client/src/sports/**` | `server/src/utils/**` |
+| `server/src/scripts/**` (ops scripts) | `server/src/routes/**`, `server/src/cron/**` |
+
+Guard: `pnpm run check:sport-boundary`
+
+Platform code dispatches via `requireSportModule` / `getPropBetModule` / `getSportEmailContent` / `eventStatusFromMetadata(metadata, sportId)`.
+
+---
+
 ## SportModule (server)
 
 **Interface:** `packages/sport-sdk/src/sport-module.ts`  
@@ -124,12 +141,15 @@ Contest lobby renders plugin `EventSummary` in `ContestLobbyView` (not in `AppLa
 ```typescript
 interface PropBetModule {
   readonly sportId: string;
-  ingestQuotes(lineupId: string): Promise<MarketSnapshot | null>;
+  beginIngestBatch?(): Promise<unknown | undefined>;
+  ingestQuotes(lineupId: string, batchContext?: unknown): Promise<MarketSnapshot | null>;
   gradeTicket(ticket: PropBetTicketShell, results: PropBetResultsShell): "WON" | "LOST" | "VOID";
+  describeGrade?(ticket, results): Record<string, unknown> | null;
+  isEventCompleteForSettlement?(metadata: unknown): boolean;
 }
 ```
 
-Prop bets are **not** part of `SportModule`. The platform owns market/ticket persistence; the plugin owns quote math and grading rules.
+Prop bets are **not** part of `SportModule`. The platform owns market/ticket persistence and cron orchestration; the plugin owns quote fetch, math, and grading rules. Snapshot `metadata` is opaque to the platform (duck-typed on persist).
 
 ### Golf implementation
 
@@ -137,10 +157,11 @@ Prop bets are **not** part of `SportModule`. The platform owns market/ticket per
 |---------|----------|
 | Grading pure logic | `packages/sport-pga-golf/src/prop-bet.ts` |
 | Module factory | `createPgaGolfPropBetModule` |
-| DataGolf ingest | `server/src/sports/pga-golf/buildGolfMarketSnapshot.ts` |
+| DataGolf clients + round-robin | `server/src/sports/pga-golf/datagolf/`, `propBet/` |
+| Snapshot builder | `server/src/sports/pga-golf/buildGolfMarketSnapshot.ts` |
 | DB persistence | `server/src/services/propBets/persistMarketSnapshot.ts` |
 | Orchestration | `server/src/services/propBets/ingestPropBetQuoteForLineup.ts` |
-| Settlement | `server/src/services/betting/settleSideBetTicket.ts` → `gradeTicket` |
+| Settlement | `server/src/services/betting/settleSideBetTicket.ts` → `gradeTicket` / `describeGrade` |
 
 ### Platform side-bet flow
 
@@ -151,8 +172,10 @@ sequenceDiagram
   participant Prop as PropBetModule
   participant DB as SideBetMarket
 
+  Cron->>Prop: beginIngestBatch
+  Prop-->>Cron: batchContext
   Cron->>Platform: ingestPropBetQuoteForLineup
-  Platform->>Prop: ingestQuotes(lineupId)
+  Platform->>Prop: ingestQuotes(lineupId, batchContext)
   Prop-->>Platform: MarketSnapshot
   Platform->>DB: persist selections / OPEN
 
@@ -162,10 +185,28 @@ sequenceDiagram
   Platform->>DB: update SideBetTicket
 ```
 
-- **Quote refresh:** cron `refreshOpenSideBetQuotes` (not lock/settle/close)
+- **Quote refresh:** cron `refreshOpenSideBetQuotes` iterates `listPropBetModules()` (not lock/settle/close)
 - **Lock / settle / close:** admin panel batch ops (`/api/admin/bets/side/*`)
 - **Feature flag:** `SIDE_BETS_ENABLED=true`
 - **Roster change:** `markSideBetMarketStaleAfterRosterChange` → cron re-ingests
+
+---
+
+## SportEmailContent (server, optional per sport)
+
+**Interface:** `packages/sport-sdk/src/sport-email-content.ts`  
+**Registry:** `server/src/sports/emailContentRegistry.ts`
+
+```typescript
+interface SportEmailContent {
+  readonly sportId: string;
+  formatEventSubtitle(input): string;
+  loadAnnouncementContent(event): Promise<EmailAnnouncementContent>;
+  welcomeProductBlurb?(ctx: { eventName?: string }): string | null;
+}
+```
+
+Platform owns MailerSend transport, unsubscribe, audience, and blast scripts. Sports own announcement sections, event subtitle formatting, and welcome product copy. `getActiveEventId(sportId)` requires an explicit sport — no PGA default.
 
 ---
 
@@ -183,6 +224,17 @@ Key exports from `packages/sport-sdk/src/types.ts`:
 | `PropBetTicketShell` / `PropBetResultsShell` | Grading inputs |
 
 Client re-exports types from `client/src/sports/types.ts`.
+
+---
+
+## Drop a sport
+
+1. Disable or remove the `Sport` seed row.
+2. Unregister from `server/src/sports/registry.ts`, `propBetRegistry.ts`, `emailContentRegistry.ts`, `eventStatusRegistry.ts`, and `client/src/sports/registry.ts`.
+3. Delete `packages/sport-<id>/` and `server/src/sports/<id>/` (and `client/src/sports/<id>/`).
+4. Contests, wallets, side-bet **tables**, and email **transport** stay unchanged.
+
+Confirm with `pnpm run check:sport-boundary` after removal.
 
 ---
 

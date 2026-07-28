@@ -8,7 +8,7 @@ import {
 } from "@cut/sport-pga-golf";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../../lib/prisma.js";
-import { buildContestCommentaryContext } from "../../../services/contest/buildContestCommentaryContext.js";
+import { buildContestCommentaryContext } from "./buildContestCommentaryContext.js";
 import { requireSportModule } from "../../registry.js";
 import { enqueueCommentaryFeedJob } from "./commentaryFeedJobs.js";
 

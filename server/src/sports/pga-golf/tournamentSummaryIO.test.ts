@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   isQuotesSection,
   parseSummarySections,
-  resolveSummarySectionsForEvent,
-} from "./tournamentSummary.js";
-import { renderSummarySectionsEmailHtml } from "./email/blocks/summary.js";
+} from "@cut/sport-pga-golf";
+import { resolveSummarySectionsForEvent } from "./tournamentSummaryIO.js";
+import { createPgaGolfEmailContent } from "./emailContent.js";
+import { renderSummarySectionsEmailHtml } from "../../lib/email/blocks/summary.js";
 
 describe("resolveSummarySectionsForEvent", () => {
   it("prefers tournamentSummaries file over DB metadata", async () => {
@@ -57,24 +58,41 @@ describe("parseSummarySections", () => {
       isQuotesSection({ title: "Key Storylines", items: [{ body: "x" }] }),
     ).toBe(false);
   });
+});
 
-  it("renders quote blocks from JSON items", () => {
+describe("golf email announcement → summary HTML", () => {
+  it("renders quote blocks from announcement sections", async () => {
+    const adapter = createPgaGolfEmailContent();
+    const content = await adapter.loadAnnouncementContent({
+      externalId: "R9999999",
+      name: "Test",
+      course: "TPC",
+      city: "Blaine",
+      state: "MN",
+      startDate: new Date("2026-05-22"),
+      endDate: new Date("2026-05-25"),
+      summarySections: [
+        {
+          title: "From the 19th Hole",
+          items: [
+            { body: "Opening paragraph text.", attribution: "CutBot", color: "#3b82f6" },
+            {
+              body: "Second hot take.",
+              attribution: "Anthony Kim's Nose",
+              color: "#00abb8",
+            },
+          ],
+        },
+        {
+          title: "Best Players and Odds",
+          items: [{ label: "Player:", body: "Odds note." }],
+        },
+      ],
+    });
+
     const html = renderSummarySectionsEmailHtml([
-      {
-        title: "From the 19th Hole",
-        items: [
-          { body: "Opening paragraph text.", attribution: "CutBot", color: "#3b82f6" },
-          {
-            body: "Second hot take.",
-            attribution: "Anthony Kim's Nose",
-            color: "#00abb8",
-          },
-        ],
-      },
-      {
-        title: "Best Players and Odds",
-        items: [{ label: "Player:", body: "Odds note." }],
-      },
+      ...content.leadSections,
+      ...content.bodySections,
     ]);
     expect(html).toContain("Opening paragraph text.");
     expect(html).toContain("Second hot take.");

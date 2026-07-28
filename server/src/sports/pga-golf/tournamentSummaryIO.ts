@@ -33,7 +33,7 @@ export {
 
 const summariesDir = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
-  "../tournamentSummaries",
+  "../../tournamentSummaries",
 );
 
 /** Load and parse `server/src/tournamentSummaries/{pgaTourId}.json`. */

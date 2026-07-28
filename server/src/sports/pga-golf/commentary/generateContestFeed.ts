@@ -13,7 +13,7 @@ import {
 } from "@cut/sport-pga-golf";
 import type { ContestCommentaryVoiceId } from "@cut/sport-sdk";
 import { Prisma } from "@prisma/client";
-import { prisma } from "../../lib/prisma.js";
+import { prisma } from "../../../lib/prisma.js";
 import {
   buildContestCommentaryContext,
   type BuildContestCommentaryContextOptions,
@@ -23,7 +23,7 @@ import {
 import {
   CursorCommentaryTextGenerator,
   type CommentaryTextGenerator,
-} from "./commentaryTextGenerator.js";
+} from "../../../services/contest/commentaryTextGenerator.js";
 
 export interface GenerateContestFeedOptions {
   analysis?: BuildContestCommentaryContextOptions;

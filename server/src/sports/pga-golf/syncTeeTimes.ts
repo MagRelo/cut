@@ -5,7 +5,7 @@ import {
   buildStoredTeeTimes,
   dataGolfTourFromEnv,
   fetchDataGolfFieldUpdates,
-} from "../../services/odds/dataGolfFieldUpdates.js";
+} from "./datagolf/fieldUpdates.js";
 import { parseGolfEventMetadata, PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 
 function asScoreDataRecord(scoreData: unknown): Record<string, unknown> {

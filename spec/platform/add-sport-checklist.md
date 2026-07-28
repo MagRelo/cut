@@ -90,8 +90,10 @@ Pure logic only — no Prisma, no `fetch`, no env vars.
 - [ ] `metadataMerge.ts` — merge API refreshes into existing metadata without dropping fields
 - [ ] Optional CLI runners: `runSyncMetadata.ts`, `runSyncField.ts`, `runSyncScores.ts`
 - [ ] Register module in `server/src/sports/registry.ts`
+- [ ] Register event-status adapter in `server/src/sports/eventStatusRegistry.ts`
 - [ ] Add `@cut/sport-<id>` to `server/package.json`; update Dockerfile/deploy build if needed
 - [ ] Verify: `pnpm --filter server run service:init-event <sportId> <externalId>`
+- [ ] Run `pnpm run check:sport-boundary` — platform paths must not import the new sport package
 
 `initEvent` syncs the field; scores populate on the first cron pass or manual score sync (same pattern as golf).
 
@@ -130,6 +132,7 @@ Verify the new sport works through shared platform paths (pass `sportId` from `E
 Optional, separate track:
 
 - [ ] `PropBetModule` in `packages/sport-<id>/` + register in `server/src/sports/propBetRegistry.ts`
+- [ ] `SportEmailContent` in `server/src/sports/<id>/emailContent.ts` + register in `server/src/sports/emailContentRegistry.ts`
 
 ---
 
@@ -223,6 +226,17 @@ If Phase 8 shipped: `pnpm --filter server run script:contest-commentary <testCon
 
 ---
 
+## Drop a sport
+
+Reverse of add — no platform schema or contest/wallet changes required:
+
+1. Set `Sport.isEnabled = false` (or remove seed row)
+2. Unregister from server registries (`registry.ts`, `propBetRegistry.ts`, `emailContentRegistry.ts`, `eventStatusRegistry.ts`) and `client/src/sports/registry.ts`
+3. Delete `packages/sport-<id>/`, `server/src/sports/<id>/`, `client/src/sports/<id>/`, and sport-specific scripts/docs
+4. Run `pnpm run check:sport-boundary`
+
+---
+
 ## Standard platform conventions
 
 | Concern | Convention |
@@ -234,8 +248,8 @@ If Phase 8 shipped: `pnpm --filter server run script:contest-commentary <testCon
 | **Cron (scores)** | `runSportEventPipeline` every 5 min — metadata → field → live scores → contest lineups → optional `afterLiveScoreSync` |
 | **Cron (commentary)** | `overviewPipeline` every 20 min — sport-specific overview refresh (PGA continuous; commodities day-settle); optional feed worker for story jobs |
 | **Metadata** | Sport-specific block on `CompetitionEvent.metadata` (e.g. `metadata.f1`, `metadata.commodities`, golf block) |
-| **externalId** | Native ID from the sport’s data source; document per sport in the brief and runbook |
-
+| **Shared LLM mutex** | `server/src/lib/commentaryLlmMutex.ts` (platform; not under a sport folder) |
+| **Import boundary** | No `@cut/sport-*` (except sdk) in `services/`, `lib/`, `utils/`, `routes/`, `cron/` — `pnpm run check:sport-boundary` |
 ---
 
 ## Typical file layout

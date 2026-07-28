@@ -1,18 +1,18 @@
 import { prisma } from "../../lib/prisma.js";
 import { SideBetMarketStatus } from "@prisma/client";
-import { fetchSideBetDataGolfSnapshot } from "./fetchSideBetDataGolfSnapshot.js";
 import { ingestPropBetQuoteForLineup } from "../propBets/ingestPropBetQuoteForLineup.js";
-import { dataGolfTourFromEnv } from "../odds/dataGolfFieldUpdates.js";
 import { sideBetsEnabled } from "./featureFlag.js";
 import { getActiveEvents } from "../events/getActiveEvents.js";
 import {
   isPropBetIngestFailure,
   isPropBetUnavailableDataReason,
 } from "./propBetIngestReasons.js";
+import { listPropBetModules } from "../../sports/propBetRegistry.js";
 
 /**
- * Minute cron: refresh side-bet quotes for 4-player lineups on active events
+ * Minute cron: refresh side-bet quotes for eligible lineups on active events
  * where the market is OPEN or UNAVAILABLE (retry). Skips LOCKED+.
+ * Delegates provider fetch to each registered PropBetModule.beginIngestBatch.
  */
 export async function refreshOpenSideBetQuotes(): Promise<{
   total: number;
@@ -24,8 +24,9 @@ export async function refreshOpenSideBetQuotes(): Promise<{
   if (!sideBetsEnabled()) {
     return { total: 0, succeeded: 0, failed: 0, tournaments: 0, lineupsAttempted: 0 };
   }
-  if (!process.env.DATAGOLF_API_KEY?.trim()) {
-    console.warn("[refreshOpenSideBetQuotes] DATAGOLF_API_KEY not set; skipping");
+
+  const modules = listPropBetModules();
+  if (modules.length === 0) {
     return { total: 0, succeeded: 0, failed: 0, tournaments: 0, lineupsAttempted: 0 };
   }
 
@@ -34,100 +35,99 @@ export async function refreshOpenSideBetQuotes(): Promise<{
     return { total: 0, succeeded: 0, failed: 0, tournaments: 0, lineupsAttempted: 0 };
   }
 
-  const tour = dataGolfTourFromEnv();
-  const eventIds = activeEvents.map((event) => event.id);
-
-  const lineups = await prisma.lineup.findMany({
-    where: {
-      eventId: { in: eventIds },
-      picks: { some: {} },
-    },
-    include: {
-      picks: true,
-      sideBetMarket: true,
-    },
-  });
-
-  const eligible = lineups.filter((lineup) => {
-    if (lineup.picks.length !== 4) return false;
-    const status = lineup.sideBetMarket?.status;
-    if (
-      status === SideBetMarketStatus.LOCKED ||
-      status === SideBetMarketStatus.SETTLING ||
-      status === SideBetMarketStatus.SETTLED ||
-      status === SideBetMarketStatus.VOID ||
-      status === SideBetMarketStatus.CLOSED
-    ) {
-      return false;
-    }
-    return true;
-  });
-
-  const lineupsAttempted = eligible.length;
-  if (lineupsAttempted === 0) {
-    return {
-      total: 0,
-      succeeded: 0,
-      failed: 0,
-      tournaments: activeEvents.length,
-      lineupsAttempted: 0,
-    };
+  const sportIdsWithPropBets = new Set(modules.map((m) => m.sportId));
+  const eventsWithPropBets = activeEvents.filter((event) => sportIdsWithPropBets.has(event.sportId));
+  if (eventsWithPropBets.length === 0) {
+    return { total: 0, succeeded: 0, failed: 0, tournaments: 0, lineupsAttempted: 0 };
   }
 
-  let snapshot;
-  try {
-    snapshot = await fetchSideBetDataGolfSnapshot(tour);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error("[refreshOpenSideBetQuotes] DataGolf snapshot failed:", msg);
-    return {
-      total: lineupsAttempted,
-      succeeded: 0,
-      failed: lineupsAttempted,
-      tournaments: activeEvents.length,
-      lineupsAttempted,
-    };
-  }
+  let totalSucceeded = 0;
+  let totalFailed = 0;
+  let totalAttempted = 0;
 
-  let succeeded = 0;
-  let failed = 0;
-  let unavailable = 0;
+  for (const module of modules) {
+    const sportEventIds = eventsWithPropBets
+      .filter((event) => event.sportId === module.sportId)
+      .map((event) => event.id);
+    if (sportEventIds.length === 0) continue;
 
-  for (const lineup of eligible) {
-    const result = await ingestPropBetQuoteForLineup(lineup.id, tour, snapshot);
-    if (result.ok) {
-      succeeded++;
-      continue;
+    const lineups = await prisma.lineup.findMany({
+      where: {
+        eventId: { in: sportEventIds },
+        picks: { some: {} },
+      },
+      include: {
+        picks: true,
+        sideBetMarket: true,
+      },
+    });
+
+    const eligible = lineups.filter((lineup) => {
+      if (lineup.picks.length !== 4) return false;
+      const status = lineup.sideBetMarket?.status;
+      if (
+        status === SideBetMarketStatus.LOCKED ||
+        status === SideBetMarketStatus.SETTLING ||
+        status === SideBetMarketStatus.SETTLED ||
+        status === SideBetMarketStatus.VOID ||
+        status === SideBetMarketStatus.CLOSED
+      ) {
+        return false;
+      }
+      return true;
+    });
+
+    if (eligible.length === 0) continue;
+
+    let batchContext: unknown | undefined;
+    if (module.beginIngestBatch) {
+      batchContext = await module.beginIngestBatch();
+      if (batchContext === undefined) {
+        totalFailed += eligible.length;
+        totalAttempted += eligible.length;
+        continue;
+      }
     }
 
-    if (isPropBetUnavailableDataReason(result.reason)) {
-      unavailable++;
+    totalAttempted += eligible.length;
+    let unavailable = 0;
+
+    for (const lineup of eligible) {
+      const result = await ingestPropBetQuoteForLineup(lineup.id, batchContext);
+      if (result.ok) {
+        totalSucceeded++;
+        continue;
+      }
+
+      if (isPropBetUnavailableDataReason(result.reason)) {
+        unavailable++;
+        console.log(
+          `[refreshOpenSideBetQuotes] lineup ${lineup.id} unavailable: ${result.reason}`,
+        );
+        continue;
+      }
+
+      if (isPropBetIngestFailure(result.reason)) {
+        totalFailed++;
+        console.error(
+          `[refreshOpenSideBetQuotes] lineup ${lineup.id} failed: ${result.reason}`,
+        );
+      }
+    }
+
+    if (unavailable > 0) {
       console.log(
-        `[refreshOpenSideBetQuotes] lineup ${lineup.id} unavailable: ${result.reason}`,
-      );
-      continue;
-    }
-
-    if (isPropBetIngestFailure(result.reason)) {
-      failed++;
-      console.error(
-        `[refreshOpenSideBetQuotes] lineup ${lineup.id} failed: ${result.reason}`,
+        `[refreshOpenSideBetQuotes] ${module.sportId}: ${unavailable} lineup(s) unavailable (data gap, not counted as failure)`,
       );
     }
-  }
-
-  if (unavailable > 0) {
-    console.log(
-      `[refreshOpenSideBetQuotes] ${unavailable} lineup(s) unavailable (data gap, not counted as failure)`,
-    );
   }
 
   return {
-    total: lineupsAttempted,
-    succeeded,
-    failed,
-    tournaments: activeEvents.length,
-    lineupsAttempted,
+    total: totalAttempted,
+    succeeded: totalSucceeded,
+    failed: totalFailed,
+    tournaments: eventsWithPropBets.length,
+    lineupsAttempted: totalAttempted,
   };
 }
 
@@ -135,13 +135,24 @@ export async function refreshOpenSideBetQuotes(): Promise<{
 export async function refreshSideBetQuoteForLineupAfterRosterChange(
   lineupId: string,
 ): Promise<void> {
-  if (!sideBetsEnabled() || !process.env.DATAGOLF_API_KEY?.trim()) {
+  if (!sideBetsEnabled()) {
     return;
   }
-  const tour = dataGolfTourFromEnv();
   try {
-    const snapshot = await fetchSideBetDataGolfSnapshot(tour);
-    await ingestPropBetQuoteForLineup(lineupId, tour, snapshot);
+    const lineup = await prisma.lineup.findUnique({
+      where: { id: lineupId },
+      select: { event: { select: { sportId: true } } },
+    });
+    if (!lineup) return;
+    const module = listPropBetModules().find((m) => m.sportId === lineup.event.sportId);
+    if (!module) return;
+
+    let batchContext: unknown | undefined;
+    if (module.beginIngestBatch) {
+      batchContext = await module.beginIngestBatch();
+      if (batchContext === undefined) return;
+    }
+    await ingestPropBetQuoteForLineup(lineupId, batchContext);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[refreshSideBetQuoteForLineupAfterRosterChange]", lineupId, msg);

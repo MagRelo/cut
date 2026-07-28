@@ -6,7 +6,7 @@ import type {
   OperationResult,
 } from "../../../services/shared/types.js";
 import { requireSportModule } from "../../registry.js";
-import { tryWithCommentaryLlmLock } from "./llmMutex.js";
+import { tryWithCommentaryLlmLock } from "../../../lib/commentaryLlmMutex.js";
 
 export const CONTEST_COMMENTARY_OVERVIEW_REFRESH_MS = 20 * 60 * 1000;
 

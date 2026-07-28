@@ -51,7 +51,15 @@ export {
 } from "./lineupPrediction.js";
 
 export type { SportModule } from "./sport-module.js";
-export type { PropBetModule } from "./prop-bet-module.js";
+export type { PropBetIngestBatchContext, PropBetModule } from "./prop-bet-module.js";
+export type {
+  EmailAnnouncementContent,
+  EmailAnnouncementSection,
+  EmailAnnouncementSectionItem,
+  EmailEventShell,
+  EmailEventSubtitleInput,
+  SportEmailContent,
+} from "./sport-email-content.js";
 
 export { defaultPayoutVector } from "./payout.js";
 

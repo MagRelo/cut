@@ -4,7 +4,7 @@ import {
   pickBovadaDecimal,
   pickIngestDecimal,
   type DataGolfOutrightsOddsRow,
-} from "./dataGolfOutrightsClient.js";
+} from "./outrightsClient.js";
 
 const row = (overrides: Partial<DataGolfOutrightsOddsRow> = {}): DataGolfOutrightsOddsRow => ({
   dg_id: 1,

@@ -206,7 +206,7 @@ export async function getAdminDashboard(eventIdOverride?: string) {
   const lockedSideBetMarkets = marketsByStatus.LOCKED ?? 0;
   const openSideBetTickets = ticketsByStatus.OPEN ?? 0;
   const eventIsComplete = eventRows.every((event) =>
-    isEventCompleteForSettlement(event.metadata),
+    isEventCompleteForSettlement(event.metadata, event.sportId),
   );
   const enabled = sideBetsEnabled();
 

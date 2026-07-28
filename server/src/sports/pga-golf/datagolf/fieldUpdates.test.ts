@@ -3,7 +3,7 @@ import {
   buildPgaTourIdToTeeTimesMap,
   buildStoredTeeTimes,
   formatDataGolfTeeTimeLabel,
-} from "./dataGolfFieldUpdates.js";
+} from "./fieldUpdates.js";
 
 describe("formatDataGolfTeeTimeLabel", () => {
   it("formats afternoon tee time in America/New_York", () => {

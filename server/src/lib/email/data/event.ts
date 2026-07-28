@@ -1,17 +1,11 @@
 import { formatInTimeZone } from "date-fns-tz";
-import {
-  formatEventCourseLine as formatCourseLineShared,
-  formatEventPlace as formatPlaceShared,
-  PGA_GOLF_SPORT_ID,
-} from "@cut/sport-pga-golf";
 import { prisma } from "../../prisma.js";
-import { parseSummarySections } from "../../tournamentSummary.js";
+import { getSportEmailContent } from "../../../sports/emailContentRegistry.js";
 
 const ET = "America/New_York";
 
 type EventMetadata = {
   name?: string;
-  pgaTourId?: string;
   course?: string;
   city?: string;
   state?: string;
@@ -76,21 +70,7 @@ export function mapEventForEmail(event: {
   };
 }
 
-/** "Blaine, Minnesota" — city and state only (matches in-app event header). */
-export function formatEventPlace(event: { city: string; state: string }): string {
-  return formatPlaceShared(event.city, event.state);
-}
-
-/** "TPC Twin Cities · Blaine, Minnesota" */
-export function formatEventCourseLine(event: {
-  course: string;
-  city: string;
-  state: string;
-}): string {
-  return formatCourseLineShared(event.course, event.city, event.state);
-}
-
-/** "Jul 23–Jul 26, 2026" (ET) */
+/** Platform date range: "Jul 23–Jul 26, 2026" (ET) */
 export function formatEventDateRange(event: {
   startDate: Date;
   endDate: Date;
@@ -100,26 +80,69 @@ export function formatEventDateRange(event: {
   return `${start}–${end}`;
 }
 
-/** Single-line subtitle for emails that still use one meta row. */
+/**
+ * Single-line subtitle via sport email adapter when registered;
+ * otherwise course/city/state + dates.
+ */
 export function formatEventSubtitle(event: {
+  sportId?: string;
   course: string;
   city: string;
   state: string;
   startDate: Date;
   endDate: Date;
 }): string {
-  const courseLine = formatEventCourseLine(event);
+  if (event.sportId) {
+    const adapter = getSportEmailContent(event.sportId);
+    if (adapter) {
+      return adapter.formatEventSubtitle({
+        course: event.course,
+        city: event.city,
+        state: event.state,
+        startDate: event.startDate,
+        endDate: event.endDate,
+      });
+    }
+  }
+  const place = [event.city, event.state].filter(Boolean).join(", ");
+  const courseLine = [event.course, place].filter(Boolean).join(" · ");
   const dates = formatEventDateRange(event);
   return [courseLine, dates].filter(Boolean).join(" — ");
+}
+
+/** @deprecated Prefer sport email adapter courseLine via loadAnnouncementContent */
+export function formatEventCourseLine(event: {
+  sportId?: string;
+  course: string;
+  city: string;
+  state: string;
+}): string {
+  if (event.sportId) {
+    const adapter = getSportEmailContent(event.sportId);
+    if (adapter) {
+      return adapter.formatEventSubtitle({
+        course: event.course,
+        city: event.city,
+        state: event.state,
+        startDate: new Date(0),
+        endDate: new Date(0),
+      }).split(" — ")[0] ?? "";
+    }
+  }
+  const place = [event.city, event.state].filter(Boolean).join(", ");
+  return [event.course, place].filter(Boolean).join(" · ");
+}
+
+export function formatEventPlace(event: { city: string; state: string }): string {
+  return [event.city, event.state].filter(Boolean).join(", ");
 }
 
 export function formatLockLabel(endTime: Date): string {
   return formatInTimeZone(endTime, ET, "EEEE, MMM d 'at' h:mm a zzz");
 }
 
-export async function getActiveEventId(
-  sportId: string = PGA_GOLF_SPORT_ID,
-): Promise<string | null> {
+/** Requires explicit sportId — no PGA default. */
+export async function getActiveEventId(sportId: string): Promise<string | null> {
   const event = await prisma.competitionEvent.findFirst({
     where: { isActive: true, sportId },
     select: { id: true },
@@ -128,9 +151,23 @@ export async function getActiveEventId(
   return event?.id ?? null;
 }
 
-/** @deprecated Use getActiveEventId */
+/** Any active event (multi-sport welcome / preview). */
+export async function getAnyActiveEvent(): Promise<{
+  id: string;
+  sportId: string;
+} | null> {
+  const event = await prisma.competitionEvent.findFirst({
+    where: { isActive: true },
+    select: { id: true, sportId: true },
+    orderBy: { createdAt: "desc" },
+  });
+  return event;
+}
+
+/** @deprecated Use getActiveEventId(sportId) or getAnyActiveEvent() */
 export async function getManualActiveTournamentId(): Promise<string | null> {
-  return getActiveEventId();
+  const event = await getAnyActiveEvent();
+  return event?.id ?? null;
 }
 
 export async function loadEventForEmail(eventId: string): Promise<EmailEventRecord | null> {
@@ -153,15 +190,6 @@ export async function loadTournamentForEmail(
   eventId: string,
 ): Promise<EmailEventRecord | null> {
   return loadEventForEmail(eventId);
-}
-
-export function summarySectionsFromEvent(event: { summarySections: unknown }) {
-  return parseSummarySections(event.summarySections);
-}
-
-/** @deprecated Use summarySectionsFromEvent */
-export function summarySectionsFromTournament(event: { summarySections: unknown }) {
-  return summarySectionsFromEvent(event);
 }
 
 export async function previousEventIdsForSport(

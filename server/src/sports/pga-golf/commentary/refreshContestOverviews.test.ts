@@ -28,7 +28,7 @@ vi.mock("../../../services/contest/generateContestCommentary.js", () => ({
   generateContestCommentary: mocks.generate,
 }));
 
-vi.mock("./llmMutex.js", () => ({
+vi.mock("../../../lib/commentaryLlmMutex.js", () => ({
   tryWithCommentaryLlmLock: (task: () => Promise<unknown>) => mocks.tryLock(task),
 }));
 

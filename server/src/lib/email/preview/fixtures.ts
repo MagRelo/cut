@@ -1,24 +1,24 @@
-import type { BehindTheScenesEmailData } from "../emails/behindTheScenes.js";
-import { DEFAULT_BTS_PARAGRAPHS } from "../emails/behindTheScenes.js";
+import { getAnyActiveEvent } from "../data/event.js";
 import { loadNewEventEmailData } from "../data/newTournament.js";
-import { getActiveEventId } from "../data/event.js";
 import type { NewTournamentEmailData } from "../emails/newTournament.js";
 import type { ReminderNoContestEmailData } from "../emails/reminderNoContest.js";
 import type { TournamentRecapEmailData } from "../emails/tournamentRecap.js";
 import type { PlayerWithdrawalEmailData } from "../emails/playerWithdrawal.js";
 import type { WelcomeEmailData } from "../emails/welcome.js";
+import type { BehindTheScenesEmailData } from "../emails/behindTheScenes.js";
+import { DEFAULT_BTS_PARAGRAPHS } from "../emails/behindTheScenes.js";
 
 export async function fixtureNewTournament(): Promise<NewTournamentEmailData> {
-  const eventId = await getActiveEventId();
-  if (!eventId) {
+  const active = await getAnyActiveEvent();
+  if (!active) {
     throw new Error(
       "No active event; activate one in the DB or run: pnpm run service:init-event pga-golf R{pgaTourId}",
     );
   }
 
-  const data = await loadNewEventEmailData(eventId);
+  const data = await loadNewEventEmailData(active.id);
   if (!data) {
-    throw new Error(`Event not found: ${eventId}`);
+    throw new Error(`Event not found: ${active.id}`);
   }
 
   return data;

@@ -1,12 +1,13 @@
 import type { CompetitionEvent, Sport } from "@prisma/client";
 import { readCurrentPeriod, readPeriodDisplay, readPeriodStatusDisplay } from "@cut/sport-sdk";
-import { isGolfEventCompleteRaw, isGolfEventLiveRaw } from "@cut/sport-pga-golf";
 import { prisma } from "../../lib/prisma.js";
 import { getActiveEvents } from "../events/getActiveEvents.js";
+import { getPropBetModule } from "../../sports/propBetRegistry.js";
+import { eventStatusFromMetadata } from "../../utils/eventStatus.js";
 
 export type AdminEventRow = CompetitionEvent & { sport: Sport };
 
-type GolfEventMetadata = {
+type EventMetadataView = {
   name?: string;
   status?: string;
   currentPeriod?: number | null;
@@ -17,7 +18,7 @@ type GolfEventMetadata = {
   endDate?: string;
 };
 
-export function parseEventMetadata(metadata: unknown): GolfEventMetadata {
+export function parseEventMetadata(metadata: unknown): EventMetadataView {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     return {};
   }
@@ -34,18 +35,30 @@ export function parseEventMetadata(metadata: unknown): GolfEventMetadata {
   };
 }
 
-export function eventStatusForDashboard(metadata: unknown): string {
+export function eventStatusForDashboard(metadata: unknown, sportId?: string): string {
+  if (sportId) {
+    const status = eventStatusFromMetadata(metadata, sportId);
+    if (status === "COMPLETE") return "COMPLETED";
+    if (status === "LIVE") return "IN_PROGRESS";
+    if (status === "SCHEDULED") return "NOT_STARTED";
+  }
   const raw = parseEventMetadata(metadata).status ?? "";
-  if (isGolfEventCompleteRaw(raw)) return "COMPLETED";
-  if (isGolfEventLiveRaw(raw)) return "IN_PROGRESS";
   const status = raw.toUpperCase();
   if (status === "CANCELLED") return "CANCELLED";
+  if (status === "COMPLETE" || status === "COMPLETED" || status === "OFFICIAL") return "COMPLETED";
+  if (status === "LIVE" || status === "IN_PROGRESS" || status === "IN PROGRESS") return "IN_PROGRESS";
   return "NOT_STARTED";
 }
 
-export function isEventCompleteForSettlement(metadata: unknown): boolean {
-  const raw = parseEventMetadata(metadata).status ?? "";
-  return isGolfEventCompleteRaw(raw);
+export function isEventCompleteForSettlement(metadata: unknown, sportId?: string): boolean {
+  if (sportId) {
+    const prop = getPropBetModule(sportId);
+    if (prop?.isEventCompleteForSettlement) {
+      return prop.isEventCompleteForSettlement(metadata);
+    }
+    return eventStatusFromMetadata(metadata, sportId) === "COMPLETE";
+  }
+  return eventStatusFromMetadata(metadata) === "COMPLETE";
 }
 
 export async function resolveAdminEvents(eventIdOverride?: string): Promise<AdminEventRow[]> {
@@ -76,7 +89,7 @@ export function eventToDashboardEvent(event: AdminEventRow | CompetitionEvent) {
   return {
     id: event.id,
     name: meta.name ?? event.externalId,
-    status: eventStatusForDashboard(event.metadata),
+    status: eventStatusForDashboard(event.metadata, event.sportId),
     currentPeriod: meta.currentPeriod ?? null,
     periodDisplay: meta.periodDisplay ?? null,
     periodStatusDisplay: meta.periodStatusDisplay ?? null,

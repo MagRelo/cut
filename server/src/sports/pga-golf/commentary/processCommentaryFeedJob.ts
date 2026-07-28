@@ -1,14 +1,14 @@
 import {
   generateFeedItemsFromFrozenStories,
   persistContestFeed,
-} from "../../../services/contest/generateContestFeed.js";
+} from "./generateContestFeed.js";
 import { publishContestFeedItemsToStream } from "../../../services/stream/publishContestFeedToStream.js";
 import {
   markCommentaryFeedJobDone,
   markCommentaryFeedJobFailed,
   type ClaimedCommentaryFeedJob,
 } from "./commentaryFeedJobs.js";
-import { withCommentaryLlmLock } from "./llmMutex.js";
+import { withCommentaryLlmLock } from "../../../lib/commentaryLlmMutex.js";
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -36,7 +36,9 @@ export async function processCommentaryFeedJob(
       if (result.newItems.length > 0) {
         await publishContestFeedItemsToStream({
           contestId: job.contestId,
-          items: result.newItems,
+          items: result.newItems as unknown as Parameters<
+            typeof publishContestFeedItemsToStream
+          >[0]["items"],
         });
       }
     });

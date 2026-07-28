@@ -4,6 +4,10 @@ import { createServerPgaGolfPropBetModule } from "./pga-golf/propBetModule.js";
 const modules: PropBetModule[] = [createServerPgaGolfPropBetModule()];
 const modulesBySportId = new Map(modules.map((module) => [module.sportId, module]));
 
+export function listPropBetModules(): PropBetModule[] {
+  return [...modules];
+}
+
 export function getPropBetModule(sportId: string): PropBetModule | undefined {
   return modulesBySportId.get(sportId);
 }

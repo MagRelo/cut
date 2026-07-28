@@ -12,7 +12,7 @@ import type {
   OperationResult,
 } from "../../../services/shared/types.js";
 import { requireSportModule } from "../../registry.js";
-import { tryWithCommentaryLlmLock } from "../../pga-golf/commentary/llmMutex.js";
+import { tryWithCommentaryLlmLock } from "../../../lib/commentaryLlmMutex.js";
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);

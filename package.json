@@ -30,6 +30,7 @@
     "test:ui": "pnpm --filter server run test:ui",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "check:sport-boundary": "node scripts/check-sport-boundary.mjs",
     "dev": "concurrently \"pnpm run server:dev\" \"pnpm run client:dev\"",
     "mint-tokens": "node scripts/sepolia/mintPaymentToken.js",
     "push-primary-payouts": "node scripts/sepolia/pushPayouts.js primary",
