@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+// import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { Receive } from "../components/user/Receive.tsx";
 import { Send } from "../components/user/Send.tsx";
@@ -70,7 +70,8 @@ export function TransferFundsPage() {
           </TabGroup>
         </div>
 
-        <div
+        {/* Testnet only warning */}
+        {/* <div
           className="overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-tl from-amber-100 via-amber-50 to-white shadow-sm"
           role="note"
         >
@@ -88,7 +89,7 @@ export function TransferFundsPage() {
               <strong>Base mainnet</strong> soon—stay tuned for updates.
             </p>
           </div>
-        </div>
+        </div> */}
       </div>
     </>
   );
