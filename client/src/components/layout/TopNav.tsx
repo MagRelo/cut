@@ -6,6 +6,7 @@ import { signInReturnFrom } from "../../lib/navRoutes";
 import { BRAND_WORDMARK } from "../../lib/brand";
 import { LEFT_TABS } from "../../lib/navTabs";
 import { MobileNavMenu } from "./MobileNavMenu";
+import { StagingBadge } from "./StagingBadge";
 import { UserMenu } from "./UserMenu";
 
 const tabLinkBase =
@@ -52,6 +53,7 @@ export const TopNav: React.FC = () => {
           <span className="mt-1 font-display text-lg uppercase leading-snug tracking-widest text-slate-900">
             {BRAND_WORDMARK}
           </span>
+          <StagingBadge className="mt-0.5" />
         </Link>
 
         <nav

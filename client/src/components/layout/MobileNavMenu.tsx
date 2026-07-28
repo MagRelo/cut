@@ -14,6 +14,7 @@ import {
   LEFT_TABS,
   leagueNavItemsFromAuth,
 } from "../../lib/navTabs";
+import { StagingBadge } from "./StagingBadge";
 
 const mobileNavItemBase =
   "block w-full rounded-md px-3 py-2.5 text-left text-sm font-medium font-display uppercase tracking-wider transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
@@ -108,6 +109,7 @@ export const MobileNavMenu: React.FC = () => {
                         <span className="font-display text-lg uppercase tracking-widest text-slate-900">
                           {BRAND_WORDMARK}
                         </span>
+                        <StagingBadge />
                       </Link>
                       <button
                         type="button"
