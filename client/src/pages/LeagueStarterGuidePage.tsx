@@ -2,11 +2,14 @@ import React, { useEffect } from "react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router-dom";
 import { PageSection } from "../components/layout/PageSection";
+import { isTargetTestnet } from "../config/targetChain";
 
 export const LEAGUE_STARTER_GUIDE_PATH = "/guides/start-a-league";
 
 export const LeagueStarterGuidePage: React.FC = () => {
   const location = useLocation();
+  const onTestnet = isTargetTestnet();
+  const paymentTokenLabel = onTestnet ? "xUSDC" : "USDC";
 
   useEffect(() => {
     const id = location.hash.replace(/^#/, "");
@@ -206,7 +209,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
               </li>
               <li>
                 <strong>Send funds</strong> — opens Manage funds with the member&apos;s wallet
-                pre-filled so you can transfer testnet xUSDC from your connected wallet.
+                pre-filled so you can transfer {paymentTokenLabel} from your connected wallet.
               </li>
               <li>
                 <strong>Remove member</strong> — removes them from the league. You cannot remove the
@@ -243,25 +246,26 @@ export const LeagueStarterGuidePage: React.FC = () => {
         <h2 className="mb-4 font-display text-2xl font-bold text-gray-900">Funding accounts</h2>
 
         <div className="space-y-4 text-gray-700">
-          <div
-            className="overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-tl from-amber-100 via-amber-50 to-white shadow-sm"
-            role="note"
-          >
-            <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50/80 px-3 py-2">
-              <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />
-              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-800">
-                Testnet only
+          {onTestnet ? (
+            <div
+              className="overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-tl from-amber-100 via-amber-50 to-white shadow-sm"
+              role="note"
+            >
+              <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50/80 px-3 py-2">
+                <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-800">
+                  Testnet only
+                </div>
+              </div>
+              <div className="p-3">
+                <p className="text-sm leading-relaxed text-amber-950/90">
+                  Play The Cut is currently on <strong>Base Sepolia testnet</strong>. Contests use
+                  testnet <strong>xUSDC</strong>—not real USDC. Do not send mainnet funds or real
+                  USDC to your wallet; deposits will not land and may be lost.
+                </p>
               </div>
             </div>
-            <div className="p-3">
-              <p className="text-sm leading-relaxed text-amber-950/90">
-                Play The Cut is currently on <strong>Base Sepolia testnet</strong>. Contests use
-                testnet <strong>xUSDC</strong>—not real USDC. Do not send mainnet funds or real USDC
-                to your wallet; deposits will not land and may be lost. We&apos;re transitioning to{" "}
-                <strong>Base mainnet</strong> soon—stay tuned for updates.
-              </p>
-            </div>
-          </div>
+          ) : null}
 
           <div>
             <h3 className="mb-2 text-lg font-semibold text-gray-900">Account ID &amp; fund links</h3>
@@ -270,9 +274,8 @@ export const LeagueStarterGuidePage: React.FC = () => {
               <Link to="/account" className="text-blue-600 hover:underline">
                 Account
               </Link>{" "}
-              page. Each player also has a <strong>Share fund link</strong> there—send that link to
-              anyone who should fund their account; it opens Manage funds with their wallet
-              pre-filled.
+              page. Each player also has a <strong>funding link</strong>—send that link to anyone
+              who should fund their account; it opens Manage funds with their wallet pre-filled.
             </p>
           </div>
 
@@ -286,14 +289,22 @@ export const LeagueStarterGuidePage: React.FC = () => {
               (sign-in required):
             </p>
             <ul className="list-disc space-y-1 pl-6">
+              {!onTestnet ? (
+                <li>
+                  <strong>Add Funds</strong> — deposit {paymentTokenLabel} on{" "}
+                  <strong>Base</strong> to your Account ID, or share a funding link so another
+                  player can send you {paymentTokenLabel}.
+                </li>
+              ) : (
+                <li>
+                  <strong>Add Funds</strong> — share a funding link with someone who has{" "}
+                  {paymentTokenLabel} so they can transfer to your account.
+                </li>
+              )}
               <li>
-                <strong>Request Funds</strong> — share a link with someone who has funds so they can
-                transfer to your account.
-              </li>
-              <li>
-                <strong>Send</strong> — peer-to-peer transfer: enter a recipient&apos;s wallet
-                address and amount, or use a fund link / league Manage tab <strong>Send funds</strong>{" "}
-                link to pre-fill the recipient.
+                <strong>Send</strong> — transfer {paymentTokenLabel} to a recipient wallet address,
+                or use a fund link / league Manage tab <strong>Send funds</strong> link to pre-fill
+                the recipient.
               </li>
             </ul>
           </div>
@@ -309,8 +320,18 @@ export const LeagueStarterGuidePage: React.FC = () => {
                     join your league, and you become their referrer automatically.
                   </li>
                   <li>
-                    Use <strong>Send funds</strong> on the Manage tab member list (or Manage funds)
-                    to transfer starter xUSDC from your wallet.
+                    {!onTestnet ? (
+                      <>
+                        Have them deposit {paymentTokenLabel} on Base via Manage funds, or use{" "}
+                        <strong>Send funds</strong> on the Manage tab member list to transfer
+                        starter {paymentTokenLabel} from your wallet.
+                      </>
+                    ) : (
+                      <>
+                        Use <strong>Send funds</strong> on the Manage tab member list (or Manage
+                        funds) to transfer starter {paymentTokenLabel} from your wallet.
+                      </>
+                    )}
                   </li>
                 </ol>
               </li>
@@ -318,7 +339,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
           </div>
 
           <p>
-            For wallet security and what xUSDC is, see{" "}
+            For wallet security and what {paymentTokenLabel} is, see{" "}
             <Link to="/faq#account" className="text-blue-600 hover:underline">
               FAQ → Account &amp; Wallet
             </Link>

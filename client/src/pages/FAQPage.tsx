@@ -2,9 +2,13 @@ import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { PageHeader } from "../components/common/PageHeader";
 import { PageSection } from "../components/layout/PageSection";
+import { isTargetTestnet } from "../config/targetChain";
 
 export const FAQPage: React.FC = () => {
   const location = useLocation();
+  const onTestnet = isTargetTestnet();
+  const paymentTokenLabel = onTestnet ? "xUSDC" : "USDC";
+  const networkLabel = onTestnet ? "Base Sepolia" : "Base";
 
   // React Router client navigations do not scroll to hash targets like a full page load.
   useEffect(() => {
@@ -161,8 +165,8 @@ export const FAQPage: React.FC = () => {
             <h3 className="mb-2 text-lg font-semibold text-gray-900">How do contests work?</h3>
             <ul className="list-disc space-y-1 pl-6 text-gray-700">
               <li>
-                Each contest is tied to one PGA Tour tournament and has its own entry fee (paid in
-                xUSDC)
+                Each contest is tied to one PGA Tour tournament and has its own entry fee (paid in{" "}
+                {paymentTokenLabel})
               </li>
               <li>Entry fees fund the contest prize pool paid to top finishers</li>
               <li>
@@ -608,19 +612,19 @@ export const FAQPage: React.FC = () => {
               same address on any device brings everything back.
             </p>
             <p className="mb-2 text-gray-700">
-              When you sign in, we create a smart wallet for you to hold xUSDC and handle on-chain
-              actions like contest entries, sends, and claims. Your funds stay in your wallet, not a
-              platform-operated account, and nothing moves without your approval.
+              When you sign in, we create a smart wallet for you to hold {paymentTokenLabel} and
+              handle on-chain actions like contest entries, sends, and claims. Your funds stay in
+              your wallet, not a platform-operated account, and nothing moves without your approval.
             </p>
             <ul className="list-disc space-y-1 pl-6 text-gray-700">
               <li>
-                View your wallet address on{" "}
+                View your Account ID (wallet address) on{" "}
                 <Link to="/account" className="text-blue-600 hover:underline">
                   Account
                 </Link>
               </li>
               <li>
-                Request funds or send xUSDC from{" "}
+                Deposit, request, or send {paymentTokenLabel} from{" "}
                 <Link to="/account/funds" className="text-blue-600 hover:underline">
                   Account → Manage funds
                 </Link>
@@ -628,29 +632,104 @@ export const FAQPage: React.FC = () => {
             </ul>
           </div>
 
-          <div>
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">What is xUSDC?</h3>
-            <p className="mb-2 text-gray-700">
-              <span className="font-medium">xUSDC is a testing-only token.</span> It is used on Base
-              Sepolia to simulate contest entry fees, prizes, and transfers. It is{" "}
-              <span className="font-medium">not real money</span> and has no cash value—you cannot
-              buy goods with it or redeem it for USD.
-            </p>
-            <p className="mb-2 text-gray-700">
-              The name and decimals mirror USDC so flows feel realistic during development and
-              testing, but xUSDC is separate from Circle USDC on mainnet.
-            </p>
-            <ul className="list-disc space-y-1 pl-6 text-gray-700">
-              <li>Used for contest entry fees, payouts, and peer transfers in the app</li>
-              <li>6 decimals; treated as $1 per token only for display and test math on testnet</li>
-              <li>
-                Get or move xUSDC from{" "}
-                <Link to="/account/funds" className="text-blue-600 hover:underline">
-                  Account → Manage funds
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {onTestnet ? (
+            <div>
+              <h3 className="mb-2 text-lg font-semibold text-gray-900">What is xUSDC?</h3>
+              <p className="mb-2 text-gray-700">
+                <span className="font-medium">xUSDC is a testing-only token.</span> It is used on
+                Base Sepolia to simulate contest entry fees, prizes, and transfers. It is{" "}
+                <span className="font-medium">not real money</span> and has no cash value—you cannot
+                buy goods with it or redeem it for USD.
+              </p>
+              <p className="mb-2 text-gray-700">
+                The name and decimals mirror USDC so flows feel realistic during development and
+                testing, but xUSDC is separate from Circle USDC on mainnet.
+              </p>
+              <ul className="list-disc space-y-1 pl-6 text-gray-700">
+                <li>Used for contest entry fees, payouts, and peer transfers in the app</li>
+                <li>
+                  6 decimals; treated as $1 per token only for display and test math on testnet
+                </li>
+                <li>
+                  Get or move xUSDC from{" "}
+                  <Link to="/account/funds" className="text-blue-600 hover:underline">
+                    Account → Manage funds
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          ) : (
+            <div>
+              <h3 className="mb-2 text-lg font-semibold text-gray-900">What is USDC?</h3>
+              <p className="mb-2 text-gray-700">
+                Contests on Play The Cut use <span className="font-medium">USDC</span> on the{" "}
+                <span className="font-medium">Base</span> network—the same Circle-issued dollar
+                stablecoin used across Base. Entry fees, prizes, and transfers are denominated in
+                USDC.
+              </p>
+              <ul className="list-disc space-y-1 pl-6 text-gray-700">
+                <li>Used for contest entry fees, payouts, and peer transfers in the app</li>
+                <li>Held in your smart wallet on Base</li>
+                <li>
+                  Deposit or send USDC from{" "}
+                  <Link to="/account/funds" className="text-blue-600 hover:underline">
+                    Account → Manage funds
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
+
+          {!onTestnet ? (
+            <>
+              <div>
+                <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                  How do I deposit funds?
+                </h3>
+                <p className="mb-2 text-gray-700">
+                  Open{" "}
+                  <Link to="/account/funds" className="text-blue-600 hover:underline">
+                    Account → Manage funds
+                  </Link>
+                  , copy your <span className="font-medium">Account ID</span>, and send{" "}
+                  <span className="font-medium">USDC</span> on the{" "}
+                  <span className="font-medium">Base</span> network to that address. You can also
+                  share a funding link so another player can send you USDC from within the app.
+                </p>
+                <ul className="list-disc space-y-1 pl-6 text-gray-700">
+                  <li>Network must be Base</li>
+                  <li>Token must be USDC (the contract listed on Manage funds / Contracts)</li>
+                  <li>Wrong network or wrong token deposits may not appear and can be lost</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                  How do I send or withdraw funds?
+                </h3>
+                <p className="mb-2 text-gray-700">
+                  Use the <span className="font-medium">Send</span> tab on{" "}
+                  <Link to="/account/funds" className="text-blue-600 hover:underline">
+                    Account → Manage funds
+                  </Link>
+                  . Enter a recipient wallet address and amount to transfer USDC out of your Play
+                  The Cut account—to another player, an exchange, or any address you control.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                  What if I send the wrong token or use the wrong network?
+                </h3>
+                <p className="mb-2 text-gray-700">
+                  Only <span className="font-medium">USDC on Base</span> will credit your Play The
+                  Cut balance. Tokens sent on Ethereum, other L2s, or as a different asset to your
+                  Account ID generally will not appear in the app and may be unrecoverable. Always
+                  double-check network and token before confirming a transfer.
+                </p>
+              </div>
+            </>
+          ) : null}
         </div>
       </PageSection>
 
@@ -728,9 +807,12 @@ export const FAQPage: React.FC = () => {
                 </Link>{" "}
                 for all contract addresses
               </li>
-              <li>View contracts on BaseScan (Base network block explorer)</li>
+              <li>View contracts on the Base block explorer</li>
               <li>Verify contract code and transactions independently</li>
-              <li>Deployed contracts are listed for Base Sepolia testnet</li>
+              <li>
+                Deployed contracts are listed for {networkLabel}
+                {onTestnet ? " testnet" : ""}
+              </li>
             </ul>
           </div>
         </div>

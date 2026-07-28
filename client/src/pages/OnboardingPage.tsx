@@ -1,11 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { useLocation, useNavigate, type Location } from "react-router-dom";
+import { Link, useLocation, useNavigate, type Location } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
 import { useFirstEnabledSportId } from "../hooks/useSportData";
 import { BRAND_PROSE, BRAND_WORDMARK } from "../lib/brand";
 import { ONBOARDING_DISMISSED_KEY } from "../lib/onboardingSettings";
 import { getPendingLeagueInviteCode } from "../lib/leagueInviteCapture";
+import { isTargetTestnet } from "../config/targetChain";
 
 const ACCENT_COLORS = [
   "#0a73eb",
@@ -406,35 +407,33 @@ export function OnboardingPage() {
             <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
               Add funds to your account
             </h1>
-            <p className="text-gray-700 leading-relaxed font-display mb-6">
-              You&apos;ll need funds in your account to compete in contests. Most people get funds
-              from other players—share your Account ID with whoever referred you to receive a
-              transfer.
-            </p>
-            {/*
-            <p className="text-gray-700 leading-relaxed font-display mb-3">
-              You&apos;ll need funds in your account to compete in contests. There are two ways to
-              get them:
-            </p>
-            <ol className="mb-6 list-decimal list-outside space-y-3 pl-6 font-display text-gray-700 leading-relaxed marker:font-semibold marker:text-gray-900 sm:pl-8">
-              <li className="pl-1">
-                <strong>Player-to-player.</strong> Most people receive funds from other players:{" "}
-                <strong>anyone</strong> can send you funds <strong>any time</strong>. Share your
-                Account ID with whoever referred you to receive a transfer.
-              </li>
-              <li className="pl-1">
-                <strong>Crypto.</strong> You can also add funds by depositing <strong>USDC</strong>{" "}
-                on <strong>Base</strong>.
-              </li>
-            </ol>
-            */}
+            {isTargetTestnet() ? (
+              <p className="text-gray-700 leading-relaxed font-display mb-6">
+                You&apos;ll need testnet <strong>xUSDC</strong> on{" "}
+                <strong>Base Sepolia</strong> to compete in contests. You&apos;ll find deposit and
+                transfer instructions under{" "}
+                <Link to="/account/funds" className="text-blue-600 hover:underline">
+                  Account → Manage funds
+                </Link>
+                .
+              </p>
+            ) : (
+              <p className="text-gray-700 leading-relaxed font-display mb-6">
+                You&apos;ll need funds to compete. Deposit <strong>USDC</strong> on the{" "}
+                <strong>Base</strong> network to your account. Full deposit steps are under{" "}
+                <Link to="/account/funds" className="text-blue-600 hover:underline">
+                  Account → Manage funds
+                </Link>
+                .
+              </p>
+            )}
 
             <StepActions>
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
               <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
-                lame
+                Continue
               </button>
             </StepActions>
           </>

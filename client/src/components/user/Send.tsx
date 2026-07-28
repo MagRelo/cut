@@ -26,7 +26,7 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
 
   const resolvedDecimals = paymentTokenDecimals ?? PAYMENT_TOKEN_DECIMALS;
   const paymentBalance = paymentTokenBalance ?? 0n;
-  const targetSymbol = paymentTokenSymbol ?? "xUSDC";
+  const targetSymbol = paymentTokenSymbol;
 
   const [recipientAddress, setRecipientAddress] = useState(initialRecipientAddress ?? "");
   const [amount, setAmount] = useState("");
@@ -110,13 +110,25 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
   const formattedBalance = (balance: bigint) =>
     Number(formatUnits(balance, resolvedDecimals)).toFixed(2);
 
+  const symbolLabel = targetSymbol ?? "funds";
+
   return (
     <div className="space-y-4 font-display">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900">Send</h3>
+        <p className="mb-3 text-sm text-gray-600">
+          Transfer{targetSymbol ? ` ${targetSymbol}` : ""} from your account to another wallet
+          address—another player, an exchange, or any address you control.
+        </p>
+      </div>
+
       <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">Available</span>
           <span className="font-semibold text-gray-900 tabular-nums">
-            {balancesUnavailable ? "—" : `$${formattedBalance(paymentBalance)} ${targetSymbol}`}
+            {balancesUnavailable
+              ? "—"
+              : `$${formattedBalance(paymentBalance)}${targetSymbol ? ` ${targetSymbol}` : ""}`}
           </span>
         </div>
       </div>
@@ -138,7 +150,7 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
 
       <div>
         <label htmlFor="send-amount" className="block text-sm font-medium text-gray-700 mb-1">
-          Amount ({targetSymbol})
+          Amount{targetSymbol ? ` (${targetSymbol})` : ""}
         </label>
         <div className="flex gap-2">
           <input
@@ -184,7 +196,7 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
         className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {(isSending || isProcessing) && <LoadingSpinnerSmall />}
-        {isConfirmed ? "Sent!" : isFailed ? "Failed — try again" : `Send ${targetSymbol}`}
+        {isConfirmed ? "Sent!" : isFailed ? "Failed — try again" : `Send ${symbolLabel}`}
       </button>
     </div>
   );

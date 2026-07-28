@@ -1,7 +1,9 @@
 import React from "react";
 import { useChainId } from "wagmi";
-import { getExplorerUrl } from "../utils/blockchainUtils";
+import { getExplorerUrl, useTokenSymbol } from "../utils/blockchainUtils";
+import { getTargetChainIdFromEnv, isTargetTestnet } from "../config/targetChain";
 import sepoliaConfig from "../utils/contracts/sepolia.json";
+import baseConfig from "../utils/contracts/base.json";
 
 interface Contract {
   name: string;
@@ -10,61 +12,78 @@ interface Contract {
   blockExplorerUrl?: string;
 }
 
+type DeployConfig = {
+  paymentTokenAddress: string;
+  contestFactoryAddress: string;
+  referralGraphAddress?: string;
+  rewardCalculatorAddress?: string;
+};
+
 /** Blockscout contract page with read/write tab (same explorer used for `forge verify` in deploy scripts). */
 const CONTRACT_EXPLORER_TAB = { tab: "read_write_contract" as const };
 
 const ContractsPage: React.FC = () => {
   const chainId = useChainId();
+  const targetChainId = getTargetChainIdFromEnv();
+  const onTestnet = isTargetTestnet();
+  const config: DeployConfig = onTestnet ? sepoliaConfig : baseConfig;
+  const { data: paymentSymbol } = useTokenSymbol(config.paymentTokenAddress);
+  const tokenLabel = paymentSymbol ?? "payment token";
 
-  // Helper function to build contract list from deploy-generated JSON (sepolia.json)
-  const buildContractList = (config: typeof sepoliaConfig, networkChainId: number): Contract[] => {
+  const buildContractList = (deployConfig: DeployConfig, networkChainId: number): Contract[] => {
     const explorer = (address: string) =>
       getExplorerUrl(address, networkChainId, CONTRACT_EXPLORER_TAB) ?? undefined;
 
     const contracts: Contract[] = [
       {
-        name: "Payment Token (xUSDC)",
-        address: config.paymentTokenAddress,
-        description: "ERC-20 used for contest entry fees, prizes, and transfers",
-        blockExplorerUrl: explorer(config.paymentTokenAddress),
+        name: paymentSymbol ? `Payment Token (${paymentSymbol})` : "Payment Token",
+        address: deployConfig.paymentTokenAddress,
+        description: `ERC-20 (${tokenLabel}) used for contest entry fees, prizes, and transfers`,
+        blockExplorerUrl: explorer(deployConfig.paymentTokenAddress),
       },
       {
         name: "Contest Factory",
-        address: config.contestFactoryAddress,
+        address: deployConfig.contestFactoryAddress,
         description: "Factory contract for creating contest contracts",
-        blockExplorerUrl: explorer(config.contestFactoryAddress),
+        blockExplorerUrl: explorer(deployConfig.contestFactoryAddress),
       },
     ];
 
-    const extra = config as Record<string, string | undefined>;
-    if (extra.referralGraphAddress) {
+    if (deployConfig.referralGraphAddress) {
       contracts.push({
         name: "Referral Graph",
-        address: extra.referralGraphAddress,
+        address: deployConfig.referralGraphAddress,
         description: "Referral tree contract",
-        blockExplorerUrl: explorer(extra.referralGraphAddress),
+        blockExplorerUrl: explorer(deployConfig.referralGraphAddress),
       });
     }
-    if (extra.rewardCalculatorAddress) {
+    if (deployConfig.rewardCalculatorAddress) {
       contracts.push({
         name: "Reward Calculator",
-        address: extra.rewardCalculatorAddress,
+        address: deployConfig.rewardCalculatorAddress,
         description: "Referral reward split math",
-        blockExplorerUrl: explorer(extra.rewardCalculatorAddress),
+        blockExplorerUrl: explorer(deployConfig.rewardCalculatorAddress),
       });
     }
 
     return contracts;
   };
 
-  const baseSepoliaContracts = buildContractList(sepoliaConfig, 84532);
+  const contracts = buildContractList(config, targetChainId);
+  const explorerBaseUrl = onTestnet
+    ? "https://base-sepolia.blockscout.com"
+    : "https://base.blockscout.com";
+  const sectionTitle = onTestnet ? "Base Sepolia Testnet" : "Base Mainnet";
+  const sectionSubtitle = onTestnet
+    ? "Deployed contracts on Base Sepolia"
+    : "Deployed contracts on Base";
 
   const renderContractSection = (
     title: string,
     subtitle: string,
-    contracts: Contract[],
-    explorerBaseUrl: string,
-    isConnected: boolean
+    contractList: Contract[],
+    explorerUrl: string,
+    isConnected: boolean,
   ) => (
     <div className="mb-8 last:mb-0">
       <div className="flex items-center justify-between mb-4">
@@ -80,7 +99,7 @@ const ContractsPage: React.FC = () => {
       </div>
 
       <div className="space-y-3 sm:space-y-4">
-        {contracts.map((contract, index) => (
+        {contractList.map((contract, index) => (
           <div
             key={index}
             className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors"
@@ -107,8 +126,8 @@ const ContractsPage: React.FC = () => {
                   <svg
                     className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2"
                     fill="none"
-                    stroke="currentColor"
                     viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
                     <path
                       strokeLinecap="round"
@@ -143,12 +162,12 @@ const ContractsPage: React.FC = () => {
             <p className="text-xs sm:text-sm text-blue-600 break-all">
               Blockscout:{" "}
               <a
-                href={explorerBaseUrl}
+                href={explorerUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline hover:text-blue-800 font-medium"
               >
-                {explorerBaseUrl.replace("https://", "")}
+                {explorerUrl.replace("https://", "")}
               </a>
             </p>
           </div>
@@ -164,11 +183,11 @@ const ContractsPage: React.FC = () => {
       </div>
 
       {renderContractSection(
-        "Base Sepolia Testnet",
-        "Deployed contracts on Base Sepolia",
-        baseSepoliaContracts,
-        "https://base-sepolia.blockscout.com",
-        chainId === 84532
+        sectionTitle,
+        sectionSubtitle,
+        contracts,
+        explorerBaseUrl,
+        chainId === targetChainId,
       )}
     </>
   );
