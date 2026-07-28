@@ -60,6 +60,16 @@ pnpm run db:pull-prod
 
 This dumps hosted prod, recreates the local `playthecut` database in Docker, restores the snapshot, and runs `prisma migrate deploy`. Use `--dry-run` to preview steps or `--yes` to skip the confirmation prompt.
 
+### Push production data to staging
+
+Requires `pg_dump` / `pg_restore` / `psql` on your PATH. Create `playthecut_staging` once on the managed Postgres instance, then set `PROD_DATABASE_URL` and `STAGING_DATABASE_URL` in `server/.env`:
+
+```bash
+pnpm run db:push-staging
+```
+
+This dumps hosted prod, DROP/CREATE’s the staging database (via `defaultdb` or `STAGING_MAINTENANCE_DATABASE_URL`), restores the snapshot, and runs `prisma migrate deploy`. The staging DB name **must** contain `staging`. Use `--dry-run` / `--yes` like the local pull.
+
 ## Docker Image
 
 The Docker image is built with:

@@ -27,6 +27,8 @@ scp ./swarm/env/web.env ./swarm/env/nginx.env \
 ssh root@157.230.6.6 "chmod 600 /opt/cut/swarm/env/*.env"
 ```
 
+For staging, also create **`swarm/env/web-staging.env`** from [`env/web-staging.env.example`](env/web-staging.env.example) and `scp` it the same way (see **Staging** below).
+
 On the server, **`git clone`** the full repo into **`/opt/cut`** if you prefer a normal checkout there; then you can skip broad **`rsync`** of **`swarm/`** and use **`scp`** for env files only, or **`rsync`** to refresh **`swarm/`** after you change **`stack.yml`** / nginx templates on your laptop.
 
 ## 1. One-time on the manager (after step 0)
@@ -144,21 +146,93 @@ pnpm --filter server exec prisma migrate deploy
 
 ## 6. Logs and backups
 
-- **App logs:** services use the **`json-file`** log driver with rotation (`max-size` / `max-file` in `stack.yml`). Inspect with `docker service logs cut_web`, `docker service logs cut_nginx`.
+- **App logs:** services use the **`json-file`** log driver with rotation (`max-size` / `max-file` in `stack.yml`). Inspect with `docker service logs cut_web`, `docker service logs cut_web-staging`, `docker service logs cut_nginx`.
 - **Postgres:** rely on the **managed provider** for backups, PITR, and HA; document their restore drill in your own runbook.
 
-## 7. Operations cheatsheet
+## 7. Staging (`base-sepolia.playthecut.com`)
+
+Same droplet and Swarm stack as prod. Nginx routes by `Host`; staging is **web-only** (no cron) on image `magrelo/cut-v4-staging`.
+
+```text
+playthecut.com                 → cut_web          (magrelo/cut-v4)
+base-sepolia.playthecut.com    → cut_web-staging  (magrelo/cut-v4-staging)
+```
+
+### One-time setup
+
+1. **DNS** — A/AAAA for `base-sepolia.playthecut.com` → this droplet (`157.230.6.6`).
+2. **Postgres** — on the same managed instance as prod:
+
+   ```sql
+   CREATE DATABASE playthecut_staging;
+   ```
+
+   Grant the app role access. Point `swarm/env/web-staging.env` `DATABASE_URL` at it (DB name must contain `staging`).
+
+3. **Env on manager** — copy [`env/web-staging.env.example`](env/web-staging.env.example) → `swarm/env/web-staging.env`, fill secrets (`ALLOWED_ORIGINS=https://base-sepolia.playthecut.com`, `APP_PUBLIC_URL`, Sepolia chain ids, etc.), `chmod 600`.
+
+   ```bash
+   scp ./swarm/env/web-staging.env root@157.230.6.6:/opt/cut/swarm/env/
+   ```
+
+4. **TLS** — expand the existing `cut` cert with the staging SAN (DNS must already resolve):
+
+   ```bash
+   ssh root@157.230.6.6
+   cd /opt/cut
+   ./swarm/scripts/expand-tls-staging.sh
+   docker service update --force cut_nginx
+   ```
+
+5. **Privy** — allow origin `https://base-sepolia.playthecut.com`.
+
+6. **Create the staging service** — rsync updated `swarm/` (stack + nginx), then from `/opt/cut` (or via a prod `pnpm run launch` which preserves staging once it exists):
+
+   ```bash
+   # After first staging image exists, or use :latest placeholder then launch:staging
+   export CUT_STAGING_APP_IMAGE=magrelo/cut-v4-staging:<tag>
+   docker stack deploy -c swarm/stack.yml cut
+   ```
+
+7. **Seed DB** (from laptop):
+
+   ```bash
+   pnpm run db:push-staging
+   ```
+
+   Or migrate an empty DB: `DATABASE_URL=…playthecut_staging… pnpm run prisma:migrate`.
+
+### Deploy / launch (laptop)
+
+Bake Vite with [`client/.env.staging`](../client/.env.staging.example) (`VITE_API_URL=https://base-sepolia.playthecut.com/api`, `VITE_TARGET_CHAIN=testnet`):
+
+```bash
+pnpm run deploy:staging   # pushes magrelo/cut-v4-staging:<tag> (does not touch cut-v4:latest)
+pnpm run launch:staging   # docker service update cut_web-staging only
+```
+
+Verify: `curl -s https://base-sepolia.playthecut.com/health`
+
+Staging deploy history: `ssh root@157.230.6.6 'tail /opt/cut/deploy-staging.log'`
+
+Prod `pnpm run launch` re-deploys the stack but **preserves** the current `cut_web-staging` image.
+
+## 8. Operations cheatsheet
 
 | Action | Command / note |
 |--------|------------------|
-| Deploy / update stack | `pnpm run launch` (after `pnpm run deploy`), or `export CUT_APP_IMAGE=…` then `docker stack deploy -c swarm/stack.yml cut` from **repo root** |
-| Deploy history | `ssh root@157.230.6.6 'cat /opt/cut/deploy.log'` |
-| Running version | `curl -s https://<domain>/health` → `gitSha` |
+| Deploy / update prod | `pnpm run launch` (after `pnpm run deploy`), or `export CUT_APP_IMAGE=…` then `docker stack deploy -c swarm/stack.yml cut` from **repo root** |
+| Deploy / update staging | `pnpm run deploy:staging` then `pnpm run launch:staging` |
+| Push prod DB → staging | `pnpm run db:push-staging` |
+| Deploy history (prod) | `ssh root@157.230.6.6 'cat /opt/cut/deploy.log'` |
+| Deploy history (staging) | `ssh root@157.230.6.6 'cat /opt/cut/deploy-staging.log'` |
+| Running version (prod) | `curl -s https://playthecut.com/health` → `gitSha` |
+| Running version (staging) | `curl -s https://base-sepolia.playthecut.com/health` → `gitSha` |
 | Scale web (default 2) | Edit `stack.yml` `deploy.replicas` under `web`, redeploy |
-| Logs | `docker service logs -f cut_web` (etc.) |
+| Logs | `docker service logs -f cut_web` / `cut_web-staging` / `cut_nginx` |
 | Remove stack | `docker stack rm cut` (does not delete named volumes `cut_certbot-www`, `cut_letsencrypt` unless you prune) |
 
-## 8. Relationship to `docker/`
+## 9. Relationship to `docker/`
 
 - [`docker/docker-compose.yml`](../docker/docker-compose.yml) remains for **local Postgres** during development.
-- [`docker/Dockerfile`](../docker/Dockerfile) is the **source** for the production image referenced by this stack.
+- [`docker/Dockerfile`](../docker/Dockerfile) is the **source** for prod (`cut-v4`) and staging (`cut-v4-staging`) images referenced by this stack.

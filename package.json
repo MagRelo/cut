@@ -8,6 +8,7 @@
     "start": "cd server/dist && node src/index.js",
     "client:dev": "pnpm --filter client run dev",
     "client:build": "pnpm --filter client run build",
+    "client:build:staging": "pnpm --filter client run build:staging",
     "client:lint": "pnpm --filter client run lint",
     "client:preview": "pnpm --filter client run preview",
     "client:storybook": "pnpm --filter client run storybook",
@@ -21,6 +22,7 @@
     "db:logs": "docker compose -f docker/docker-compose.yml logs -f",
     "db:reset": "docker compose -f docker/docker-compose.yml down -v && docker compose -f docker/docker-compose.yml up -d && sleep 5 && pnpm run prisma:migrate && pnpm --filter server run prisma:seed",
     "db:pull-prod": "bash scripts/db-pull-prod.sh",
+    "db:push-staging": "bash scripts/db-push-staging.sh",
     "prisma:generate": "pnpm --filter server run prisma:generate",
     "prisma:migrate": "pnpm --filter server run prisma:migrate",
     "prisma:studio": "pnpm --filter server run prisma:studio",
@@ -36,6 +38,7 @@
     "push-primary-payouts": "node scripts/sepolia/pushPayouts.js primary",
     "push-secondary-payouts": "node scripts/sepolia/pushPayouts.js secondary",
     "deploy": "pnpm --filter @cut/sport-sdk run build && pnpm --filter @cut/sport-commodities run build && pnpm --filter @cut/sport-pga-golf run build && pnpm --filter @cut/sport-f1 run build && pnpm --filter @cut/secondary-pricing run build && pnpm run client:build && pnpm run server:build && pnpm run docker:build",
+    "deploy:staging": "pnpm --filter @cut/sport-sdk run build && pnpm --filter @cut/sport-commodities run build && pnpm --filter @cut/sport-pga-golf run build && pnpm --filter @cut/sport-f1 run build && pnpm --filter @cut/secondary-pricing run build && pnpm run client:build:staging && pnpm run server:build && DOCKER_IMAGE_NAME=cut-v4-staging TAG_FILE=docker/.last-staging-tag TAG_AS_LATEST=0 pnpm run docker:build",
     "release": "pnpm run deploy",
     "deploy:contracts": "node scripts/deploy.js",
     "deploy:contracts:sepolia": "node scripts/deploy.js sepolia",
@@ -49,6 +52,7 @@
     "verify:contracts:base": "node scripts/verify.js base",
     "ssh": "ssh root@157.230.6.6",
     "launch": "bash scripts/launch.sh",
+    "launch:staging": "bash scripts/launch-staging.sh",
     "launch:status": "bash -c 'if [ -f docker/.last-launch ]; then cat docker/.last-launch; else echo \"No launch recorded yet (run pnpm run launch)\"; fi'"
   },
   "devDependencies": {

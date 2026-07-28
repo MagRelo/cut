@@ -1,8 +1,10 @@
 # Docker Swarm stack — deploy from repo root:
 #   docker stack deploy -c swarm/stack.yml cut
 #
-# Prerequisites: swarm/env/web.env and nginx.env on the manager (cron is not deployed here).
-# Nginx uses https.conf (TLS). For first-time bootstrap before certs exist, mount http-only.conf instead.
+# Prerequisites: swarm/env/web.env, web-staging.env, and nginx.env on the manager
+# (cron is not deployed here). Nginx uses https.conf (TLS) with host-based routing:
+# playthecut.com → web, base-sepolia.playthecut.com → web-staging.
+# For first-time bootstrap before certs exist, mount http-only.conf instead.
 
 services:
   nginx:
@@ -58,6 +60,45 @@ services:
       - internal
     deploy:
       replicas: 2
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      resources:
+        limits:
+          cpus: "1"
+          memory: 768M
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "const p=process.env.PORT||3000;fetch(\"http://127.0.0.1:\"+p+\"/health\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  web-staging:
+    image: ${CUT_STAGING_APP_IMAGE:-magrelo/cut-v4-staging:latest}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    env_file:
+      - ./env/web-staging.env
+    environment:
+      NODE_ENV: production
+      ENABLE_CRON: "false"
+    networks:
+      - internal
+    deploy:
+      replicas: 1
       restart_policy:
         condition: on-failure
         delay: 5s
