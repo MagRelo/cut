@@ -1,6 +1,13 @@
 # Docker Swarm deployment (dedicated droplet)
 
-Single-node Swarm layout: **nginx** (80/443) → **web** (Hono + static, **2 replicas**). The **`cron-app`** pipeline is **not** run on this stack for now (run it elsewhere, e.g. a Pi or another host — see [`env/cron.env.example`](env/cron.env.example)). **PostgreSQL is hosted outside** the stack; only the **web** tasks connect via `DATABASE_URL`.
+Single-node Swarm: **nginx** (80/443) host-routes to **prod** and **staging** on the same stack.
+
+```text
+playthecut.com                 → cut_web          (magrelo/cut-v4, 2 replicas)
+base-sepolia.playthecut.com    → cut_web-staging  (magrelo/cut-v4-staging, 1 replica)
+```
+
+The **`cron-app`** pipeline is **not** run on this stack (run it elsewhere, e.g. a Pi — see [`env/cron.env.example`](env/cron.env.example)). **PostgreSQL is hosted outside**; each web service has its own `DATABASE_URL` (`web.env` vs `web-staging.env`).
 
 Paths in `stack.yml` are relative to the **`swarm/`** directory. **Always run `docker stack deploy` from the directory that contains `swarm/` as a subdirectory** (after step 0 that is **`/opt/cut`** on the droplet, or your local repo root on a laptop):
 
@@ -19,21 +26,27 @@ ssh root@157.230.6.6 "mkdir -p /opt/cut/swarm/env"
 rsync -avz ./swarm/ root@157.230.6.6:/opt/cut/swarm/
 ```
 
-After you create **`swarm/env/web.env`** and **`nginx.env`** locally (from the `*.example` files), push only those files:
+Create the three manager env files locally from the matching `*.example` files (never commit the real files):
+
+| File | Service |
+|------|---------|
+| [`env/web.env.example`](env/web.env.example) → `web.env` | `cut_web` (prod) |
+| [`env/web-staging.env.example`](env/web-staging.env.example) → `web-staging.env` | `cut_web-staging` |
+| [`env/nginx.env.example`](env/nginx.env.example) → `nginx.env` | TLS scripts + nginx |
+
+Push all three:
 
 ```bash
-scp ./swarm/env/web.env ./swarm/env/nginx.env \
+scp ./swarm/env/web.env ./swarm/env/web-staging.env ./swarm/env/nginx.env \
   root@157.230.6.6:/opt/cut/swarm/env/
 ssh root@157.230.6.6 "chmod 600 /opt/cut/swarm/env/*.env"
 ```
-
-For staging, also create **`swarm/env/web-staging.env`** from [`env/web-staging.env.example`](env/web-staging.env.example) and `scp` it the same way (see **Staging** below).
 
 On the server, **`git clone`** the full repo into **`/opt/cut`** if you prefer a normal checkout there; then you can skip broad **`rsync`** of **`swarm/`** and use **`scp`** for env files only, or **`rsync`** to refresh **`swarm/`** after you change **`stack.yml`** / nginx templates on your laptop.
 
 ## 1. One-time on the manager (after step 0)
 
-Step **0** already **`rsync`**’d **`swarm/`** (stack, nginx, scripts, `*.example` files) and **`scp`**’d **`web.env`** / **`nginx.env`** to **`/opt/cut/swarm/env/`** on **157.230.6.6**. SSH in and finish setup there.
+Step **0** already **`rsync`**’d **`swarm/`** (stack, nginx, scripts, `*.example` files) and **`scp`**’d **`web.env`**, **`web-staging.env`**, and **`nginx.env`** to **`/opt/cut/swarm/env/`** on **157.230.6.6**. SSH in and finish setup there.
 
 ```bash
 ssh root@157.230.6.6
@@ -63,55 +76,57 @@ Use your droplet’s **actual** VPC IP if it differs. **Alternative:** `docker s
 
 If Swarm is already initialized, skip this block. To reset: `docker swarm leave --force` (destroys the local swarm state).
 
-1. **Env files** — They should already exist at **`swarm/env/web.env`** and **`swarm/env/nginx.env`**. Open them and confirm values (especially **`PRIMARY_HOSTNAME`**, **`LETSENCRYPT_EMAIL`**, **`STACK_NAME`** in `nginx.env`, and **`ALLOWED_ORIGINS`** / **`DATABASE_URL`** / **`OPS_ORACLE_PK`** / **`PRIVY_*`** / **`REFERRAL_GROUP_ID`** in `web.env`). The **`*.env.example`** files are **full inventories** for that host (required uncommented; defaults and optionals commented) — copy from the matching example, then fill secrets. Mirror anything else from [`server/.env.example`](../server/.env.example). **`ENABLE_CRON=false`** in `web.env` is expected (the stack also forces it). Ensure permissions: **`chmod 600 swarm/env/*.env`**. If a file is missing, copy from the matching **`*.example`** in the same directory.
+1. **Env files** — Confirm **`swarm/env/web.env`**, **`web-staging.env`**, and **`nginx.env`**. In `nginx.env`: **`PRIMARY_HOSTNAME`**, **`STAGING_HOSTNAME`**, **`LETSENCRYPT_EMAIL`**, **`STACK_NAME`**. In each web env: **`ALLOWED_ORIGINS`**, **`DATABASE_URL`**, **`OPS_ORACLE_PK`**, **`PRIVY_*`**, **`REFERRAL_GROUP_ID`** (staging uses Sepolia / `base-sepolia.playthecut.com` values). The **`*.env.example`** files are **full inventories** (required uncommented; defaults and optionals commented). Mirror anything else from [`server/.env.example`](../server/.env.example). **`ENABLE_CRON=false`** in both web envs is expected (the stack also forces it). **`chmod 600 swarm/env/*.env`**.
 
 2. **Cron (off Swarm)**  
    Swarm does **not** run `cron-app`. For another machine, copy [`env/cron.env.example`](env/cron.env.example) → `cron.env` there and run `node dist/src/cron-app.js` (or `pnpm --filter server run start:cron`) with that env — not required on this droplet.
 
-3. **App image and first deploy**  
-   Build and push the image from your dev machine (see root `pnpm deploy` / [`docker/build.sh`](../docker/build.sh)). Then launch from your dev machine:
+3. **App images and first deploy**  
+   Build and push from your laptop (`pnpm run deploy` for prod, `pnpm run deploy:staging` for staging — see [`docker/build.sh`](../docker/build.sh)). Then:
 
    ```bash
-   pnpm run launch
+   pnpm run launch            # stack deploy; sets CUT_APP_IMAGE, preserves staging image once present
+   pnpm run launch:staging    # updates cut_web-staging only
    ```
-
-   This pulls the tagged image from `docker/.last-tag`, deploys with `CUT_APP_IMAGE`, and appends a line to `/opt/cut/deploy.log` on the manager.
 
    Manual deploy on the droplet (from **`/opt/cut`**):
 
    ```bash
-   export CUT_APP_IMAGE=your-registry/cut-v4:yourtag
+   export CUT_APP_IMAGE=magrelo/cut-v4:yourtag
+   export CUT_STAGING_APP_IMAGE=magrelo/cut-v4-staging:yourtag
    docker stack deploy -c swarm/stack.yml cut
    ```
 
 ## 2. Hosted PostgreSQL
 
-- Put the full connection string in **`web.env`**. If you run **`cron-app`** on another host, give that host its own **`DATABASE_URL`** (often the same string as in [`env/cron.env.example`](env/cron.env.example)). Use the provider’s TLS query flags if required (e.g. `?sslmode=require`).
-- **Allowlist** each client’s **outbound** IP (droplet for Swarm web; Pi/other host for cron if applicable) on the managed DB firewall if the product supports it.
-- **Connection limits:** Swarm runs **two web tasks**; size the provider’s `max_connections` and Prisma pool defaults accordingly (add headroom if a separate cron host also connects).
+- Prod and staging each need a **`DATABASE_URL`**: `web.env` and `web-staging.env` (separate databases on the same managed instance; staging DB name must contain `staging`). Prefer a **dedicated PgBouncer pool per database** — see [database connections](../docs/operations/database-connections.md). If you run **`cron-app`** elsewhere, give that host its own URL ([`env/cron.env.example`](env/cron.env.example)).
+- **Allowlist** each client’s **outbound** IP (this droplet for both web services; Pi/other for cron) on the managed DB firewall if the product supports it.
+- **Connection limits:** Swarm runs **two prod web tasks** plus **one staging** task; size pools accordingly (add headroom for cron / local).
 
-## 3. Build the client for production (CI or build host)
+## 3. Build the client (bake-time `VITE_*`)
 
-The app image bakes in Vite output. **`VITE_*` are bake-time only** (not Swarm `web.env`). Before `docker build`, set them in **`client/.env.production`** (see full list in [`client/.env.example`](../client/.env.example)), at least:
+App images bake Vite output. **`VITE_*` are not** set in Swarm env files.
 
-- `VITE_API_URL` — public API base, e.g. `https://your-domain.com/api`
-- `VITE_PRIVY_APP_ID`, `VITE_ORACLE_ADDRESS`, `VITE_REFERRAL_GROUP_ID`, `VITE_SIDE_BET_STAKE_RECIPIENT`
-- `VITE_TARGET_CHAIN` (default testnet if unset), paymaster / PostHog as needed
+| Target | Client env | Deploy |
+|--------|------------|--------|
+| Prod (`cut-v4`) | [`client/.env.production`](../client/.env.example) — e.g. `VITE_API_URL=https://playthecut.com/api` | `pnpm run deploy` |
+| Staging (`cut-v4-staging`) | [`client/.env.staging`](../client/.env.staging.example) — e.g. `VITE_API_URL=https://base-sepolia.playthecut.com/api`, `VITE_TARGET_CHAIN=testnet` | `pnpm run deploy:staging` |
 
-Then run root `pnpm deploy` (or `pnpm client:build && pnpm server:build && docker build …`) so `client/dist` is copied into the image per [`docker/Dockerfile`](../docker/Dockerfile).
+Also set `VITE_PRIVY_APP_ID`, `VITE_ORACLE_ADDRESS`, `VITE_REFERRAL_GROUP_ID`, `VITE_SIDE_BET_STAKE_RECIPIENT`, paymaster / PostHog as needed for that environment.
 
 ## 4. Database migrations (critical with 2 web replicas)
 
-Run **`prisma migrate deploy` exactly once** per release **before or after** rolling out a new image, from **CI or the manager** using the same schema as the new image — **not** from each web container’s entrypoint (two replicas would race).
-
-Example on a machine with the repo and Node/pnpm:
+Run **`prisma migrate deploy` exactly once** per release **per database** **before or after** rolling out a new image, from **CI or the manager** — **not** from each web container’s entrypoint (replicas would race).
 
 ```bash
-export DATABASE_URL='postgresql://...'
+# Prod
+export DATABASE_URL='postgresql://...'   # from web.env (direct URL for migrate, not pgbouncer)
+pnpm --filter server exec prisma migrate deploy
+
+# Staging (separate DB)
+export DATABASE_URL='postgresql://...'   # from web-staging.env
 pnpm --filter server exec prisma migrate deploy
 ```
-
-(Use the hosted URL and credentials from `web.env`.)
 
 ## 5. TLS (Let’s Encrypt, HTTP-01)
 
@@ -149,33 +164,20 @@ pnpm --filter server exec prisma migrate deploy
 - **App logs:** services use the **`json-file`** log driver with rotation (`max-size` / `max-file` in `stack.yml`). Inspect with `docker service logs cut_web`, `docker service logs cut_web-staging`, `docker service logs cut_nginx`.
 - **Postgres:** rely on the **managed provider** for backups, PITR, and HA; document their restore drill in your own runbook.
 
-## 7. Staging (`base-sepolia.playthecut.com`)
+## 7. Staging extras (same stack)
 
-Same droplet and Swarm stack as prod. Nginx routes by `Host`; staging is **web-only** (no cron) on image `magrelo/cut-v4-staging`.
+Prod and staging share this droplet, stack, nginx, and cert. Steps **0–1** already place `web-staging.env` on the manager. Staging-specific one-time work:
 
-```text
-playthecut.com                 → cut_web          (magrelo/cut-v4)
-base-sepolia.playthecut.com    → cut_web-staging  (magrelo/cut-v4-staging)
-```
-
-### One-time setup
-
-1. **DNS** — A/AAAA for `base-sepolia.playthecut.com` → this droplet (`157.230.6.6`).
+1. **DNS** — A/AAAA for `base-sepolia.playthecut.com` → `157.230.6.6`.
 2. **Postgres** — on the same managed instance as prod:
 
    ```sql
    CREATE DATABASE playthecut_staging;
    ```
 
-   Grant the app role access. Point `swarm/env/web-staging.env` `DATABASE_URL` at it (DB name must contain `staging`).
+   Grant the app role; create a **staging PgBouncer pool** targeting that DB. Point `web-staging.env` `DATABASE_URL` at the pool (DB/pool name must contain `staging`).
 
-3. **Env on manager** — copy [`env/web-staging.env.example`](env/web-staging.env.example) → `swarm/env/web-staging.env`, fill secrets (`ALLOWED_ORIGINS=https://base-sepolia.playthecut.com`, `APP_PUBLIC_URL`, Sepolia chain ids, etc.), `chmod 600`.
-
-   ```bash
-   scp ./swarm/env/web-staging.env root@157.230.6.6:/opt/cut/swarm/env/
-   ```
-
-4. **TLS** — expand the existing `cut` cert with the staging SAN (DNS must already resolve):
+3. **TLS SAN** — after primary cert exists (§5) and DNS resolves:
 
    ```bash
    ssh root@157.230.6.6
@@ -184,38 +186,25 @@ base-sepolia.playthecut.com    → cut_web-staging  (magrelo/cut-v4-staging)
    docker service update --force cut_nginx
    ```
 
-5. **Privy** — allow origin `https://base-sepolia.playthecut.com`.
+4. **Privy** — allow origin `https://base-sepolia.playthecut.com`.
 
-6. **Create the staging service** — rsync updated `swarm/` (stack + nginx), then from `/opt/cut` (or via a prod `pnpm run launch` which preserves staging once it exists):
-
-   ```bash
-   # After first staging image exists, or use :latest placeholder then launch:staging
-   export CUT_STAGING_APP_IMAGE=magrelo/cut-v4-staging:<tag>
-   docker stack deploy -c swarm/stack.yml cut
-   ```
-
-7. **Seed DB** (from laptop):
+5. **Seed / migrate** (laptop):
 
    ```bash
    pnpm run db:push-staging
+   # or migrate empty: DATABASE_URL=…playthecut_staging… pnpm run prisma:migrate
    ```
 
-   Or migrate an empty DB: `DATABASE_URL=…playthecut_staging… pnpm run prisma:migrate`.
-
-### Deploy / launch (laptop)
-
-Bake Vite with [`client/.env.staging`](../client/.env.staging.example) (`VITE_API_URL=https://base-sepolia.playthecut.com/api`, `VITE_TARGET_CHAIN=testnet`):
+Ongoing deploys (does not touch `cut-v4:latest`):
 
 ```bash
-pnpm run deploy:staging   # pushes magrelo/cut-v4-staging:<tag> (does not touch cut-v4:latest)
-pnpm run launch:staging   # docker service update cut_web-staging only
+pnpm run deploy:staging
+pnpm run launch:staging
 ```
 
-Verify: `curl -s https://base-sepolia.playthecut.com/health`
+Verify: `curl -s https://base-sepolia.playthecut.com/health` · history: `ssh root@157.230.6.6 'tail /opt/cut/deploy-staging.log'`
 
-Staging deploy history: `ssh root@157.230.6.6 'tail /opt/cut/deploy-staging.log'`
-
-Prod `pnpm run launch` re-deploys the stack but **preserves** the current `cut_web-staging` image.
+`pnpm run launch` (prod) re-deploys the stack but **preserves** the current `cut_web-staging` image.
 
 ## 8. Operations cheatsheet
 

@@ -1,4 +1,5 @@
 # Real env files (create on the manager; never commit)
 web.env
+web-staging.env
 cron.env
 nginx.env

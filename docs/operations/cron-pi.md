@@ -34,7 +34,7 @@ ssh magrelo@100.114.121.5 "chmod 600 ~/node/cut-v2/server/.env"
 Minimum:
 
 - `NODE_ENV=production`, `ENABLE_CRON=true`
-- `DATABASE_URL` (allowlist Pi outbound IP on DB firewall; prefer **direct** DB URL, not pgBouncer)
+- `DATABASE_URL` (allowlist Pi outbound IP on DB firewall; use the **direct** DB URL on port 25060, not the pgBouncer pool — see [database-connections.md](database-connections.md))
 - `PRISMA_SOCKET_TIMEOUT=60` (or higher) — required for Pi → managed Postgres RTT; default in code is 60
 - `OPS_ORACLE_PK` (contest + referral oracle; address derived from the key)
 - `BETTERSTACK_HEARTBEAT_URL` (recommended)
@@ -60,8 +60,10 @@ pm2 logs cut-cron --lines 30
 If the release has DB migrations, run **before** `pm2 restart`:
 
 ```bash
-cd ~/node/cut-v2/server && set -a && source .env && set +a && pnpm exec prisma migrate deploy
+cd ~/node/cut-v2/server && pnpm exec prisma migrate deploy
 ```
+
+Prisma CLI loads `server/.env` itself. Do not `source` the file in the shell — `.env` is for dotenv/Node, not bash. Use a **direct** `DATABASE_URL` (port 25060) for migrate — not the web pooler URL.
 
 ---
 
@@ -91,11 +93,10 @@ Expect `CRON-ONLY APPLICATION`, `Cron Enabled: true`, and `[CRON]` lines every ~
 ## One-off CLI
 
 ```bash
-cd ~/node/cut-v2 && set -a && source server/.env && set +a
-pnpm run service:init-event pga-golf R2026033
+cd ~/node/cut-v2/server && pnpm run service:init-event pga-golf R2026033
 ```
 
-No `--` after `pnpm run`. Full list: [`spec/server/cron.md`](../../spec/server/cron.md).
+Scripts load `server/.env` via `dotenv`. No `--` after `pnpm run`. Full list: [`spec/server/cron.md`](../../spec/server/cron.md).
 
 ---
 
