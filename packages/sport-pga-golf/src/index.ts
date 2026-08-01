@@ -106,6 +106,7 @@ export {
   type ContestFeedItemSubjects,
   type ContestFeedPlayerHoleState,
   type ContestFeedRacePositionChange,
+  type ContestFeedScoreSwingCause,
   type ContestFeedScoreSwingEvent,
   type ContestFeedStoryCandidate,
   type ContestFeedStoryIntensity,

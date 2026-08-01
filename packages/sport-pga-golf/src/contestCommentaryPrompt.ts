@@ -12,20 +12,22 @@ import type {
 import { resolveContestFeedWordLimits } from "./contestFeed.js";
 
 /**
- * Causal beat for live updates: tournament golf moves first; contest standings
- * follow. Applies to every feed story type.
+ * Causal beat for live updates: tournament golf / board moves first; contest
+ * standings follow. Applies to every feed story type.
  */
 const NARRATIVE_PATTERN: readonly string[] = [
-  'Narrative pattern: event → result. Tournament player scoring is the cause; contest movement is the effect. Prefer causal beats like "Scheffler double-bogeys 13 and 14, which drops Noodles to 9th"—but the consequence may land first when the sentence still reads causally.',
-  "Mention tournament board / position-bonus only when it is impactful to the story—typically when bonusDelta is non-zero (entering, leaving, or swapping 1st/2nd/3rd bonus of 10/5/3). Do not narrate board ties, flat leaderboard labels (e.g. 61→T61), or zero-bonus beats.",
-  "When hole-level detail is absent from the facts, still keep cause and effect using whatever golf score movement is present, then the contest consequence. Never invent hole results or golfer outcomes.",
+  "Dual storyline: the actual tournament's TV drama is leaderboard position / who wins the event. This feed's job is contest commentary—do not treat tournament place as the contest's primary storyline by default.",
+  "Stay aware of that larger context: when tournament board position moves for contest-owned golfers, the contest often feels it through position bonuses (10 / 5 / 3 for 1st / 2nd / 3rd), which then affect contest scores and paid-cut races. Path: tournament board context → bonus (when impactful) → contest consequence.",
+  'Narrative pattern: event → result. Prefer causal beats like "Scheffler birdies the 14th, which drops Noodles to 9th"—but the consequence may land first when the sentence still reads causally.',
+  "Mention tournament board / position-bonus only when bonusDelta is non-zero (entering, leaving, or swapping 1st/2nd/3rd). Do not narrate board ties, flat leaderboard labels (e.g. 61→T61), or zero-bonus beats.",
+  "When hole-level detail is absent from the facts (kind bonus_only / cause field), narrate the board/bonus reshuffle spilling into the contest—never invent a hole result.",
 ];
 
 /** Always-on output contract — no stage-specific analytical framing. */
 const OUTPUT_CONTRACT: readonly string[] = [
   "Do not invent scores, odds, ownership, names, injuries, tee times, or golf results.",
   'Never invent broadcast phrases such as "cut week," "cut-week," or similar. Use ordinary golf language only (the cut, cut line, made the cut).',
-  "Do not echo internal stage labels (stageId, cut_round, opening_round, storyType, etc.) in the commentary.",
+  "Do not echo internal stage labels (stageId, cut_round, opening_round, storyType, kind, cause, etc.) in the commentary.",
   "Return only the finished commentary as plain prose: no title, bullets, markdown, caveats, or word count.",
 ];
 
@@ -36,7 +38,7 @@ const OUTPUT_CONTRACT: readonly string[] = [
 const METRIC_DISCIPLINE: readonly string[] = [
   'Never write the word "leverage." It is an internal term, not broadcast language.',
   "Never quote ownershipShare, rarityScore, payoutSwing, consensusStrength, winProbability, or payoutProbability as numbers. Translate ownership conversationally (only one lineup has him, the popular pick, nobody else took that swing).",
-  "At most one numeric contest-score pair (previousScore to currentScore) per item; otherwise describe place or paid-cut moves in words. Stableford or position-bonus point counts are fine when they are the hole/board result itself.",
+  "At most one numeric contest-score pair (previousScore to currentScore) per item; prefer place or paid-cut language otherwise. Do not pepper multiple totals and place crawls.",
 ];
 
 const INTENSITY_INSTRUCTIONS: Record<ContestFeedStoryIntensity, string> = {
@@ -49,24 +51,29 @@ const INTENSITY_INSTRUCTIONS: Record<ContestFeedStoryIntensity, string> = {
 };
 
 const STYLE_DIRECTIVES: readonly string[] = [
-  "Style: open cold on the hole result—no wind-up.",
+  "Style: open cold on the main event—no wind-up.",
   "Style: open on the owner's reaction, then reveal what caused it.",
   "Style: two sentences only. No closing line after the consequence.",
   "Style: let the final sentence land flat and factual—no zinger.",
-  "Style: lead with the standings consequence, then name the shot that caused it.",
+  "Style: lead with the standings consequence, then name what caused it.",
 ];
 
 /** Story-type framing is primary; stage instructions are an overlay. */
 const STORY_INSTRUCTIONS: Record<ContestFeedActiveStoryType, readonly string[]> = {
   score_swing: [
-    "Story: score swing. Focus only on the hole events and contest impacts in STORY_FACTS_JSON.",
-    "Keep event → result causality: the golf hole result is the cause; the owning users' score / position / paid-cut moves are the effect. Do not open with Sunday framing, tournament leaders, remaining golf, or a full contest scoreboard.",
-    "Include a brief tournament board / position-bonus beat only if bonusDelta is non-zero. If bonusDelta is 0, skip board and position-bonus entirely—do not say there was no bonus, list 10/5/3, or narrate cosmetic place changes.",
-    "Do not invent holes, board places, or bonus points beyond events. Keep it tight. Do not widen into a full contest recap, routes, or ownership ladders.",
+    "Story: score swing. Focus only on the events and contest impacts in STORY_FACTS_JSON.",
+    "If any event has kind bonus_only or cause field: open on the tournament board / position-bonus reshuffle and the owning-lineup contest impact. Do not invent a hole result.",
+    'If an event has cause self (hole plus non-zero bonusDelta): hole first, then the board/bonus as the tournament-position consequence of that hole, then contest impact—e.g. climbed into first and banked the bonus.',
+    "If events are mixed, lead with the highest-ranked event's cause. Prefer plain language: field = board reshuffled; self = this golfer's hole moved the board.",
+    "For ordinary hole events without a bonus move: keep event → result (hole → owning users' score / position / paid-cut). Do not open with Sunday framing, tournament leaders, remaining golf, or a full contest scoreboard.",
+    "Copy density: do not explain what a birdie/eagle/double is. Prefer “birdies the 8th” or “eagles the par-5”—never restate strokes or Stableford as a definition. Prefer ordinal holes (the 7th, the 8th).",
+    "Copy density: avoid number laundry lists and place-by-place crawls for every owner. One impactful contest beat is enough; for shared ownership cluster who is helped or hurt without restating the same point swing for each team.",
+    "Do not invent holes, board places, or bonus points beyond events. If bonusDelta is 0, skip board and position-bonus entirely. Keep it tight—no full contest recap, routes, or ownership ladders.",
   ],
   stage_recap: [
     "Story: stage recap. Write a full contest outlook using the supplied contest context JSON.",
-    "When citing live movement, keep event → result order (tournament scoring → contest consequence). Cover the race, ownership edge or routes as the stage overlay directs, and keep the finish worth watching.",
+    "When citing live movement, keep event → result order (tournament scoring / board → contest consequence). Cover the race, ownership edge or routes as the stage overlay directs, and keep the finish worth watching.",
+    "Stay aware that TV drama is tournament position; this recap is about the contest—bring board/bonus in only when it clearly shapes contest routes or separation.",
   ],
 };
 

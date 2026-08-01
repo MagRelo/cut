@@ -104,20 +104,31 @@ snapshot continues to refresh on the batch cadence below.
 ### Score swing (event → result)
 
 `score_swing` is the primary live beat. It watches contest-owned golfers for
-new outsize hole results (birdie-or-better, double-bogey-or-worse), then
-attaches owning-lineup race impacts from the context delta:
+new outsize hole results (birdie-or-better, double-bogey-or-worse) **and** for
+position-bonus moves that happen without a new outsize hole from that golfer
+(field reshuffles the tournament board—including after the golfer has finished):
 
 - Eagle-or-better, hole-in-one, and double-bogey-or-worse always qualify when owned.
 - Plain birdies qualify only when an owning lineup also moved position/score.
-- The fact pack carries `events` (golf hole beats) and `impacts` (contest moves);
-  it does not include the full contest `race` scoreboard.
+- **Bonus-only:** prior fingerprint exists, `|bonusDelta| > 0`, and no new
+  outsize hole this tick → `kind: "bonus_only"`, `cause: "field"`.
+- Hole events with a non-zero `bonusDelta` set `cause: "self"` (this golfer’s
+  hole moved the board). Hole events with `bonusDelta === 0` omit cause.
+- The fact pack carries `events` and `impacts` (contest moves); it does not
+  include the full contest `race` scoreboard.
 - Each event includes tournament board/bonus context when available:
   `previousLeaderboardPosition`, `leaderboardPosition`, `previousBonus`, `bonus`,
   and `bonusDelta` (position bonus is 10 / 5 / 3 for 1st / 2nd / 3rd).
-- Causal chain for copy: hole result → (board/bonus only when `bonusDelta` is
-  non-zero and impactful) → lineup contest impact. Skip flat or cosmetic board
-  moves and never narrate a zero-bonus beat. The first sentence must be the
-  golfer hole event—not Sunday/leader or race framing.
+- Dual storyline for copy: TV/tournament drama is leaderboard position; this
+  feed is contest commentary. Board moves matter here when they hit position
+  bonuses, which then move contest scores. Path: tournament board context →
+  bonus (when impactful) → contest consequence.
+- Causal chain: self = hole → board/bonus → contest impact; field = board/bonus
+  reshuffle → contest impact (never invent a hole). Skip flat or cosmetic board
+  moves and never narrate a zero-bonus beat.
+- Copy density: ordinal holes (“the 8th”); do not explain birdie/eagle/double;
+  avoid contest-total and place-by-place laundry lists; name the golf/bonus
+  result once, then the contest consequence once for shared owners.
 - `lastHoleState` fingerprints completed holes plus each golfer's
   `leaderboardPosition` and `bonus` so the next pass can compute deltas.
 - The first pass after deploy seeds `lastHoleState` without emitting swings.
@@ -131,17 +142,15 @@ deltas are not a live feed signal.
 
 ### Narrative pattern: event → result
 
-Live feed updates treat tournament player scoring as the **event** and contest
-movement as the **result**. Copy should read causally—golfer score change
-first, then (only when impactful) a tournament board / position-bonus change,
-then what it does to a user's position, ownership edge, or paid-cut status
-(e.g. “Scheffler eagles 12, jumps to T2 for the +5 bonus, which vaults Noodles
-into paid places”). Consequence-first openings are allowed when the sentence
-still reads causally. Mention position bonus only when `bonusDelta` is
-non-zero; cosmetic place changes and zero-bonus beats stay out of the copy.
-Never invent hole results, board places, or bonus points beyond the supplied
-fact pack. Never write “leverage” or quote internal ownership analytics as
-numbers; at most one numeric contest-score pair per item.
+Live feed updates treat tournament player scoring or board movement as the
+**event** and contest movement as the **result**. Copy should read
+causally—golfer score or board/bonus change first, then what it does to a
+user's position, ownership edge, or paid-cut status. Consequence-first openings
+are allowed when the sentence still reads causally. Mention position bonus only
+when `bonusDelta` is non-zero; cosmetic place changes and zero-bonus beats stay
+out of the copy. Never invent hole results, board places, or bonus points beyond
+the supplied fact pack. Never write “leverage” or quote internal ownership
+analytics as numbers; at most one numeric contest-score pair per item.
 
 Callable service: `server/src/services/contest/generateContestFeed.ts`.
 

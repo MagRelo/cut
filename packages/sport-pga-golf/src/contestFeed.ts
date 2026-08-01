@@ -125,29 +125,44 @@ export interface ContestFeedRacePositionChange {
   positionDelta: number;
 }
 
-export interface ContestFeedScoreSwingEvent {
-  eventParticipantId: string;
-  displayName: string;
-  round: number;
-  hole: number;
-  par: number;
-  strokes: number;
-  strokesToPar: number;
-  stableford: number;
-  label: ContestFeedCompletedHole["label"];
-  ownerEntryIds: string[];
-  ownerNames: string[];
-  /** Prior tournament board position from lastHoleState; null when unknown. */
-  previousLeaderboardPosition: string | null;
-  /** Current tournament board position from scoreData. */
-  leaderboardPosition: string | null;
-  /** Prior position bonus from lastHoleState; null when unknown. */
-  previousBonus: number | null;
-  /** Current position bonus (10 / 5 / 3 / 0). */
-  bonus: number;
-  /** Current bonus minus previous; 0 when previous is unknown. */
-  bonusDelta: number;
-}
+export type ContestFeedScoreSwingCause = "self" | "field";
+
+export type ContestFeedScoreSwingEvent =
+  | {
+      kind: "hole";
+      /** Set when bonusDelta is non-zero: the golfer's own hole moved the board. */
+      cause?: ContestFeedScoreSwingCause;
+      eventParticipantId: string;
+      displayName: string;
+      round: number;
+      hole: number;
+      par: number;
+      strokes: number;
+      strokesToPar: number;
+      stableford: number;
+      label: ContestFeedCompletedHole["label"];
+      ownerEntryIds: string[];
+      ownerNames: string[];
+      previousLeaderboardPosition: string | null;
+      leaderboardPosition: string | null;
+      previousBonus: number | null;
+      bonus: number;
+      bonusDelta: number;
+    }
+  | {
+      kind: "bonus_only";
+      /** Field reshuffled the board with no new outsize hole from this golfer. */
+      cause: "field";
+      eventParticipantId: string;
+      displayName: string;
+      ownerEntryIds: string[];
+      ownerNames: string[];
+      previousLeaderboardPosition: string | null;
+      leaderboardPosition: string | null;
+      previousBonus: number | null;
+      bonus: number;
+      bonusDelta: number;
+    };
 
 export interface ContestFeedDelta {
   racePositionChanges: ContestFeedRacePositionChange[];
@@ -537,9 +552,28 @@ function boardDeltaFromPrior(
   };
 }
 
+function bonusOnlySeverity(bonusDelta: number): number {
+  return Math.min(20, Math.abs(bonusDelta) * 2);
+}
+
+function compareScoreSwingEvents(
+  left: ContestFeedScoreSwingEvent,
+  right: ContestFeedScoreSwingEvent,
+): number {
+  if (left.kind === "hole" && right.kind === "hole") {
+    if (left.round !== right.round) return left.round - right.round;
+    if (left.hole !== right.hole) return left.hole - right.hole;
+  } else if (left.kind !== right.kind) {
+    return left.kind === "hole" ? -1 : 1;
+  }
+  return left.eventParticipantId.localeCompare(right.eventParticipantId);
+}
+
 /**
  * Event-first score swings: new outsize holes on contest-owned golfers,
- * gated so plain birdies require a material contest race impact.
+ * gated so plain birdies require a material contest race impact; plus
+ * bonus-only board moves when the field reshuffles podium place without a
+ * new outsize hole from that golfer.
  */
 export function collectScoreSwingEvents(
   contestPlayers: readonly ContestFeedContestPlayer[],
@@ -549,6 +583,7 @@ export function collectScoreSwingEvents(
   if (previousHoleState == null) return [];
   const impacts = impactByEntryId(raceImpacts);
   const ranked: RankedScoreSwing[] = [];
+  const holeParticipantIds = new Set<string>();
 
   for (const player of contestPlayers) {
     const prior = previousHoleState[player.eventParticipantId];
@@ -559,7 +594,10 @@ export function collectScoreSwingEvents(
       const rare = isRareOutsizeHole(hole);
       const hasImpact = ownerHasMaterialImpact(player.ownerEntryIds, impacts);
       if (!rare && !hasImpact) continue;
+      holeParticipantIds.add(player.eventParticipantId);
       const event: ContestFeedScoreSwingEvent = {
+        kind: "hole",
+        ...(Math.abs(board.bonusDelta) > 0 ? { cause: "self" as const } : {}),
         eventParticipantId: player.eventParticipantId,
         displayName: player.displayName,
         round: hole.round,
@@ -586,15 +624,34 @@ export function collectScoreSwingEvents(
     }
   }
 
+  for (const player of contestPlayers) {
+    if (holeParticipantIds.has(player.eventParticipantId)) continue;
+    const prior = previousHoleState[player.eventParticipantId];
+    if (prior == null) continue;
+    const board = boardDeltaFromPrior(prior, player.scoreData);
+    if (Math.abs(board.bonusDelta) === 0) continue;
+    const event: ContestFeedScoreSwingEvent = {
+      kind: "bonus_only",
+      cause: "field",
+      eventParticipantId: player.eventParticipantId,
+      displayName: player.displayName,
+      ownerEntryIds: [...player.ownerEntryIds],
+      ownerNames: [...player.ownerNames],
+      ...board,
+    };
+    const severity = bonusOnlySeverity(board.bonusDelta);
+    const impactScore = impactScoreForOwners(player.ownerEntryIds, impacts);
+    ranked.push({
+      event,
+      severity,
+      impactScore,
+      rank: severity + impactScore + SCORE_SWING_BONUS_DELTA_RANK,
+    });
+  }
+
   ranked.sort((left, right) => {
     if (right.rank !== left.rank) return right.rank - left.rank;
-    if (left.event.round !== right.event.round) {
-      return left.event.round - right.event.round;
-    }
-    if (left.event.hole !== right.event.hole) {
-      return left.event.hole - right.event.hole;
-    }
-    return left.event.eventParticipantId.localeCompare(right.event.eventParticipantId);
+    return compareScoreSwingEvents(left.event, right.event);
   });
 
   return ranked
@@ -605,9 +662,25 @@ export function collectScoreSwingEvents(
 function scoreSwingPriority(events: readonly ContestFeedScoreSwingEvent[]): number {
   if (events.length === 0) return 0;
   const top = events[0]!;
+  const eventCountBump = Math.min(10, events.length * 2);
+  if (top.kind === "bonus_only") {
+    const abs = Math.abs(top.bonusDelta);
+    const severity = bonusOnlySeverity(top.bonusDelta);
+    const bonusBump = abs >= 5 ? 15 : 8;
+    return 80 + severity + eventCountBump + bonusBump;
+  }
   const severity = holeSeverity(top);
-  const bonusBump = Math.abs(top.bonusDelta) > 0 ? 5 : 0;
-  return 80 + Math.min(20, severity) + Math.min(10, events.length * 2) + bonusBump;
+  const absBonus = Math.abs(top.bonusDelta);
+  const bonusBump = absBonus >= 5 ? 10 : absBonus > 0 ? 5 : 0;
+  return 80 + Math.min(20, severity) + eventCountBump + bonusBump;
+}
+
+function scoreSwingReason(events: readonly ContestFeedScoreSwingEvent[]): string {
+  const top = events[0]!;
+  if (top.kind === "bonus_only") {
+    return `${events.length} board/bonus swing(s); top: ${top.displayName} bonus ${top.previousBonus}→${top.bonus}.`;
+  }
+  return `${events.length} outsize hole result(s); top: ${top.displayName} ${top.label} on ${top.round}:${top.hole}.`;
 }
 
 /**
@@ -650,7 +723,6 @@ export function classifyContestFeedStories(
     ].sort();
     const subjectKey = participantIds.join(",") || "swing";
     if (!swingCooldown.has(subjectKey)) {
-      const top = swingEvents[0]!;
       const priority = scoreSwingPriority(swingEvents);
       candidates.push({
         storyType: "score_swing",
@@ -661,7 +733,7 @@ export function classifyContestFeedStories(
           ...(entryIds.length > 0 ? { entryIds } : {}),
         },
         subjectKey,
-        reason: `${swingEvents.length} outsize hole result(s); top: ${top.displayName} ${top.label} on ${top.round}:${top.hole}.`,
+        reason: scoreSwingReason(swingEvents),
       });
     }
   }

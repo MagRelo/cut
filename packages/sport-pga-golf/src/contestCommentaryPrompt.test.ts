@@ -103,7 +103,11 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(swingPrompt).toContain("Story: score swing");
     expect(swingPrompt).toContain("event → result");
     expect(swingPrompt).toContain("position-bonus");
-    expect(swingPrompt).toContain("only if bonusDelta is non-zero");
+    expect(swingPrompt).toContain("bonus_only");
+    expect(swingPrompt).toContain("cause field");
+    expect(swingPrompt).toContain("Dual storyline");
+    expect(swingPrompt).toContain("ordinal holes");
+    expect(swingPrompt).toContain("do not explain what a birdie/eagle/double is");
     expect(swingPrompt).toContain("Intensity: routine");
     expect(swingPrompt).toContain("25-45 words");
     expect(swingPrompt).toContain("At most one numeric contest-score pair");

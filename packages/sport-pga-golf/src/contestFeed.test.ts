@@ -434,8 +434,11 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     });
     expect(pack.storyType).toBe("score_swing");
     if (pack.storyType !== "score_swing") return;
-    expect(pack.events[0]?.label).toBe("double_bogey_or_worse");
-    expect(pack.events[0]?.hole).toBe(2);
+    expect(pack.events[0]).toMatchObject({
+      kind: "hole",
+      label: "double_bogey_or_worse",
+      hole: 2,
+    });
     expect(pack.impacts.some((impact) => impact.displayName === "Noodles")).toBe(
       true,
     );
@@ -486,6 +489,8 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     );
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
+      kind: "hole",
+      cause: "self",
       label: "eagle",
       previousLeaderboardPosition: "T5",
       leaderboardPosition: "T2",
@@ -514,6 +519,83 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     expect(pack.impacts.some((impact) => impact.displayName === "Noodles")).toBe(
       true,
     );
+  });
+
+  it("emits bonus_only field events when bonus moves without a new outsize hole", () => {
+    const players = [
+      contestPlayer({
+        scoreData: scoreData(
+          4,
+          [{ par: 4, strokes: 4, stableford: 0 }],
+          { leaderboardPosition: "T2", bonus: 5 },
+        ),
+        ownerEntryIds: ["a"],
+        ownerNames: ["Noodles"],
+      }),
+    ];
+    const previousHoleState = buildContestFeedHoleState([
+      contestPlayer({
+        scoreData: scoreData(
+          4,
+          [{ par: 4, strokes: 4, stableford: 0 }],
+          { leaderboardPosition: "1", bonus: 10 },
+        ),
+      }),
+    ]);
+
+    const events = collectScoreSwingEvents(players, previousHoleState, []);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      kind: "bonus_only",
+      cause: "field",
+      previousBonus: 10,
+      bonus: 5,
+      bonusDelta: -5,
+      previousLeaderboardPosition: "1",
+      leaderboardPosition: "T2",
+    });
+
+    const candidates = classifyContestFeedStories(context(), context(), {
+      nowMs: Date.parse("2026-07-19T04:00:00.000Z"),
+      contestPlayers: players,
+      previousHoleState,
+      existingItems: [
+        {
+          id: "recent-recap",
+          storyType: "stage_recap",
+          priority: 40,
+          subjects: {},
+          text: "recent",
+          generatedAt: "2026-07-19T03:50:00.000Z",
+        },
+      ],
+      maxPerPass: 1,
+    });
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]?.storyType).toBe("score_swing");
+    expect(candidates[0]?.reason).toContain("board/bonus");
+  });
+
+  it("ignores cosmetic place changes with zero bonus delta", () => {
+    const players = [
+      contestPlayer({
+        scoreData: scoreData(
+          4,
+          [{ par: 4, strokes: 4, stableford: 0 }],
+          { leaderboardPosition: "T61", bonus: 0 },
+        ),
+      }),
+    ];
+    const previousHoleState = buildContestFeedHoleState([
+      contestPlayer({
+        scoreData: scoreData(
+          4,
+          [{ par: 4, strokes: 4, stableford: 0 }],
+          { leaderboardPosition: "61", bonus: 0 },
+        ),
+      }),
+    ]);
+    expect(collectScoreSwingEvents(players, previousHoleState, [])).toEqual([]);
   });
 
   it("ignores plain birdies without contest race impact", () => {
