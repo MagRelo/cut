@@ -6,7 +6,7 @@ import {
   classifyContestFeedStories,
   mergeContestFeedItems,
   parseContestCommentaryFeedDocument,
-  CONTEST_FEED_WORD_LIMITS,
+  resolveContestFeedWordLimits,
   type ContestCommentaryFeedDocument,
   type ContestFeedItem,
   type ContestFeedStoryCandidate,
@@ -42,6 +42,11 @@ export interface GenerateContestFeedOptions {
     options?: BuildContestCommentaryContextOptions,
   ) => Promise<BuiltContestCommentaryContext>;
   maxPerPass?: number;
+  /**
+   * Tournament period for item.round on the frozen path.
+   * Prefer job payload period over lastContext.
+   */
+  period?: number | null;
 }
 
 export interface GeneratedContestFeed {
@@ -97,18 +102,35 @@ async function loadExistingFeed(
   return parseContestCommentaryFeedDocument(contest?.commentaryFeed);
 }
 
+function recentTextsFromFeed(
+  document: ContestCommentaryFeedDocument,
+): string[] {
+  return document.items
+    .map((item) => item.text)
+    .filter((text) => typeof text === "string" && text.trim().length > 0)
+    .slice(0, 5);
+}
+
 async function generateStoryText(
   candidate: ContestFeedStoryCandidate,
   factPack: ReturnType<typeof buildContestFeedFactPack>,
   generator: CommentaryTextGenerator,
   voiceId: ContestCommentaryVoiceId | undefined,
+  recentTexts: readonly string[],
+  generatedAt: string,
 ): Promise<string> {
-  const limits = CONTEST_FEED_WORD_LIMITS[candidate.storyType];
+  const limits = resolveContestFeedWordLimits(
+    candidate.storyType,
+    candidate.intensity,
+  );
   const promptBase = {
     storyType: candidate.storyType,
     factPack,
     minWords: limits.minWords,
     maxWords: limits.maxWords,
+    intensity: candidate.intensity,
+    recentTexts,
+    styleSeed: `${candidate.subjectKey}:${generatedAt}`,
     ...(voiceId != null ? { voiceId } : {}),
   };
   let text = await generator.generate(buildPgaContestFeedPrompt(promptBase));
@@ -174,9 +196,12 @@ export async function generateFeedItemsFromFrozenStories(
   const nowMs = Date.parse(generatedAt);
   const generator = options.generator ?? defaultGenerator(options);
   const period =
-    typeof existing.lastContext?.period === "number"
-      ? existing.lastContext.period
-      : null;
+    options.period !== undefined
+      ? options.period
+      : typeof existing.lastContext?.period === "number"
+        ? existing.lastContext.period
+        : null;
+  const recentTexts = recentTextsFromFeed(existing);
 
   const newItems: ContestFeedItem[] = [];
   for (const story of stories) {
@@ -185,6 +210,8 @@ export async function generateFeedItemsFromFrozenStories(
       story.factPack,
       generator,
       options.voiceId,
+      recentTexts,
+      generatedAt,
     );
     newItems.push({
       id: buildContestFeedItemId(
@@ -228,6 +255,7 @@ export async function generateContestFeed(
   const nowMs = Date.parse(generatedAt);
   const contestPlayers = built.contestPlayers ?? [];
   const previousHoleState = existing.lastHoleState ?? null;
+  const recentTexts = recentTextsFromFeed(existing);
 
   const candidates = classifyContestFeedStories(
     existing.lastContext,
@@ -264,6 +292,8 @@ export async function generateContestFeed(
       factPack,
       generator!,
       options.voiceId,
+      recentTexts,
+      generatedAt,
     );
     newItems.push({
       id: buildContestFeedItemId(

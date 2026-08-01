@@ -3,6 +3,7 @@ import type { ContestCommentaryContext } from "./contestCommentary.js";
 import {
   buildPgaContestCommentaryPrompt,
   buildPgaContestFeedPrompt,
+  selectContestFeedStyleDirective,
 } from "./contestCommentaryPrompt.js";
 
 const baseContext: ContestCommentaryContext = {
@@ -40,6 +41,8 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(finalPrompt).toContain("Stage: final round");
     expect(finalPrompt).toContain("eventProgress.leaderProgress");
     expect(finalPrompt).toContain("Treat route metrics as analytical guidance");
+    expect(finalPrompt).toContain('Never write the word "leverage."');
+    expect(finalPrompt).not.toMatch(/position, leverage, or paid-cut/);
 
     const openingPrompt = buildPgaContestCommentaryPrompt({
       context: {
@@ -53,6 +56,7 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(openingPrompt).toContain("Stage: opening round");
     expect(openingPrompt).toContain("Wave tee times");
     expect(openingPrompt).toContain("highLeveragePlayers");
+    expect(openingPrompt).toContain("ownership edge");
     expect(openingPrompt).not.toContain("Stage: final round");
     expect(openingPrompt).not.toContain("prioritize routes to winning");
     expect(openingPrompt).not.toContain("Treat route metrics as analytical guidance");
@@ -83,9 +87,10 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(prompt).toContain("125-175 words");
   });
 
-  it("selects story instructions and word limits for feed prompts", () => {
+  it("selects story instructions and intensity word limits for feed prompts", () => {
     const swingPrompt = buildPgaContestFeedPrompt({
       storyType: "score_swing",
+      intensity: "routine",
       factPack: {
         storyType: "score_swing",
         stageId: "final_round",
@@ -99,33 +104,35 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(swingPrompt).toContain("event → result");
     expect(swingPrompt).toContain("position-bonus");
     expect(swingPrompt).toContain("only if bonusDelta is non-zero");
-    expect(swingPrompt).toContain("skip board and position-bonus entirely");
-    expect(swingPrompt).toContain("first sentence must name the golfer");
-    expect(swingPrompt).toContain("Do not open with Sunday framing");
-    expect(swingPrompt).toContain("50-100 words");
+    expect(swingPrompt).toContain("Intensity: routine");
+    expect(swingPrompt).toContain("25-45 words");
+    expect(swingPrompt).toContain("At most one numeric contest-score pair");
     expect(swingPrompt).toContain("STORY_FACTS_JSON=");
+    expect(swingPrompt).not.toContain("Hard-require opening");
     expect(swingPrompt).not.toContain("Stage: final round");
     expect(swingPrompt).not.toContain("Open by using eventProgress.leaderProgress");
     expect(swingPrompt).not.toContain("establish the current contest race");
-    expect(swingPrompt).not.toContain(
-      "when previousLeaderboardPosition/leaderboardPosition differ or bonusDelta is non-zero",
-    );
+    expect(swingPrompt).not.toContain("RECENTLY_PUBLISHED");
 
-    const leveragePrompt = buildPgaContestFeedPrompt({
-      storyType: "leverage_spike",
+    const majorPrompt = buildPgaContestFeedPrompt({
+      storyType: "score_swing",
+      intensity: "major",
+      styleSeed: "g1:2026-07-19T04:00:00.000Z",
+      recentTexts: ["Old flash about chaos vaulting loud surge."],
       factPack: {
-        storyType: "leverage_spike",
-        stageId: "opening_round",
-        period: 1,
-        spikes: [],
-        highLeveragePlayers: [],
-        race: baseContext.race,
+        storyType: "score_swing",
+        stageId: "final_round",
+        period: 4,
+        paidCount: 1,
+        events: [],
+        impacts: [],
       },
     });
-    expect(leveragePrompt).toContain("Story: leverage spike");
-    expect(leveragePrompt).toContain("event → result");
-    expect(leveragePrompt).toContain("40-80 words");
-    expect(leveragePrompt).not.toContain("Stage: opening round");
+    expect(majorPrompt).toContain("Intensity: major");
+    expect(majorPrompt).toContain("70-110 words");
+    expect(majorPrompt).toContain("Style:");
+    expect(majorPrompt).toContain("RECENTLY_PUBLISHED");
+    expect(majorPrompt).toContain("Old flash about chaos");
 
     const recapPrompt = buildPgaContestFeedPrompt({
       storyType: "stage_recap",
@@ -135,5 +142,15 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(recapPrompt).toContain("Stage: final round");
     expect(recapPrompt).toContain("Open by using eventProgress.leaderProgress");
     expect(recapPrompt).toContain("establish the current contest race");
+    expect(recapPrompt).toContain("125-175 words");
+  });
+
+  it("selects a stable style directive for a seed", () => {
+    const a = selectContestFeedStyleDirective("g1:t1");
+    const b = selectContestFeedStyleDirective("g1:t1");
+    const c = selectContestFeedStyleDirective("g2:t1");
+    expect(a).toBe(b);
+    expect(a).toContain("Style:");
+    expect(a === c || a !== c).toBe(true);
   });
 });

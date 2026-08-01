@@ -25,6 +25,7 @@ export async function processCommentaryFeedJob(
       const result = await generateFeedItemsFromFrozenStories(
         job.contestId,
         job.payload.stories,
+        { period: job.payload.period },
       );
       if (result.newItems.length > 0 || result.document.lastContext != null) {
         await persistContestFeed(

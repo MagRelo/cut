@@ -1,7 +1,6 @@
 import type {
   ContestCommentaryContext,
   ContestCommentaryLineup,
-  ContestCommentaryPlayer,
   ContestCommentaryStageId,
 } from "./contestCommentary.js";
 import {
@@ -39,7 +38,7 @@ export const CONTEST_FEED_ITEM_CAP = 30;
 /** Max stories generated in a single feed pass. */
 export const CONTEST_FEED_MAX_PER_PASS = 2;
 
-/** Default subject cooldown for score_swing / leverage_spike (ms). */
+/** Default subject cooldown for score_swing (ms). */
 export const CONTEST_FEED_RECAP_COOLDOWN_MS = 20 * 60 * 1000;
 
 /** Max hole events bundled into one score_swing story. */
@@ -58,12 +57,14 @@ export type ContestFeedStoryType =
 /** Story types implemented in the classifier pass. */
 export const CONTEST_FEED_ACTIVE_STORY_TYPES = [
   "score_swing",
-  "leverage_spike",
   "stage_recap",
 ] as const satisfies readonly ContestFeedStoryType[];
 
 export type ContestFeedActiveStoryType =
   (typeof CONTEST_FEED_ACTIVE_STORY_TYPES)[number];
+
+/** Copy length/tone tier for a classified story. */
+export type ContestFeedStoryIntensity = "routine" | "notable" | "major";
 
 export interface ContestFeedItemSubjects {
   entryIds?: string[];
@@ -105,6 +106,7 @@ export interface ContestFeedContestPlayer {
 export interface ContestFeedStoryCandidate {
   storyType: ContestFeedActiveStoryType;
   priority: number;
+  intensity: ContestFeedStoryIntensity;
   subjects: ContestFeedItemSubjects;
   /** Stable key for cooldown / dedupe within a story type. */
   subjectKey: string;
@@ -121,16 +123,6 @@ export interface ContestFeedRacePositionChange {
   /** True when the entry crossed into or out of paid places. */
   crossedPaidCut: boolean;
   positionDelta: number;
-}
-
-export interface ContestFeedLeverageSpike {
-  eventParticipantId: string;
-  displayName: string;
-  previousLeverage: number;
-  currentLeverage: number;
-  leverageDelta: number;
-  ownerEntryIds: string[];
-  ownerNames: string[];
 }
 
 export interface ContestFeedScoreSwingEvent {
@@ -159,7 +151,6 @@ export interface ContestFeedScoreSwingEvent {
 
 export interface ContestFeedDelta {
   racePositionChanges: ContestFeedRacePositionChange[];
-  leverageSpikes: ContestFeedLeverageSpike[];
   stageChanged: boolean;
   previousStageId: ContestCommentaryStageId | null;
   currentStageId: ContestCommentaryStageId;
@@ -171,14 +162,12 @@ export interface ClassifyContestFeedStoriesOptions {
   existingItems?: readonly ContestFeedItem[];
   /** Wall clock for subject cooldowns (defaults to Date.now). */
   nowMs?: number;
-  /** Override score_swing / leverage_spike subject cooldown; default CONTEST_FEED_RECAP_COOLDOWN_MS. */
+  /** Override score_swing subject cooldown; default CONTEST_FEED_RECAP_COOLDOWN_MS. */
   recapCooldownMs?: number;
   /** Max candidates returned after ranking; default CONTEST_FEED_MAX_PER_PASS. */
   maxPerPass?: number;
   /** Minimum absolute position move for birdie impact gating. */
   minPositionDelta?: number;
-  /** Minimum leverage delta to count as a leverage spike. */
-  minLeverageDelta?: number;
   /** Contest-owned golfers with live scorecards. */
   contestPlayers?: readonly ContestFeedContestPlayer[];
   /** Prior hole fingerprint from the feed document. */
@@ -196,14 +185,47 @@ export interface ContestFeedWordLimits {
   maxWords: number;
 }
 
+/** Notable-tier limits (default / backward-compatible export). */
 export const CONTEST_FEED_WORD_LIMITS: Record<
   ContestFeedActiveStoryType,
   ContestFeedWordLimits
 > = {
-  score_swing: { minWords: 50, maxWords: 100 },
-  leverage_spike: { minWords: 40, maxWords: 80 },
+  score_swing: { minWords: 45, maxWords: 75 },
   stage_recap: { minWords: 125, maxWords: 175 },
 };
+
+const CONTEST_FEED_WORD_LIMITS_BY_INTENSITY: Record<
+  ContestFeedActiveStoryType,
+  Record<ContestFeedStoryIntensity, ContestFeedWordLimits>
+> = {
+  score_swing: {
+    routine: { minWords: 25, maxWords: 45 },
+    notable: { minWords: 45, maxWords: 75 },
+    major: { minWords: 70, maxWords: 110 },
+  },
+  stage_recap: {
+    routine: { minWords: 110, maxWords: 150 },
+    notable: { minWords: 125, maxWords: 175 },
+    major: { minWords: 150, maxWords: 200 },
+  },
+};
+
+/** Resolve word band from story type + intensity. */
+export function resolveContestFeedWordLimits(
+  storyType: ContestFeedActiveStoryType,
+  intensity: ContestFeedStoryIntensity = "notable",
+): ContestFeedWordLimits {
+  return CONTEST_FEED_WORD_LIMITS_BY_INTENSITY[storyType][intensity];
+}
+
+/** Map score_swing priority to intensity. */
+export function scoreSwingIntensityFromPriority(
+  priority: number,
+): ContestFeedStoryIntensity {
+  if (priority < 95) return "routine";
+  if (priority < 105) return "notable";
+  return "major";
+}
 
 export type ContestFeedFactPack =
   | {
@@ -213,14 +235,6 @@ export type ContestFeedFactPack =
       paidCount: number;
       events: ContestFeedScoreSwingEvent[];
       impacts: ContestFeedRacePositionChange[];
-    }
-  | {
-      storyType: "leverage_spike";
-      stageId: ContestCommentaryStageId;
-      period: number | null;
-      spikes: ContestFeedLeverageSpike[];
-      highLeveragePlayers: ContestCommentaryPlayer[];
-      race: ContestCommentaryContext["race"];
     }
   | {
       storyType: "stage_recap";
@@ -352,14 +366,6 @@ function lineupByEntryId(
   return new Map(context.contentionLineups.map((lineup) => [lineup.entryId, lineup]));
 }
 
-function playerById(
-  context: ContestCommentaryContext,
-): Map<string, ContestCommentaryPlayer> {
-  return new Map(
-    context.highLeveragePlayers.map((player) => [player.eventParticipantId, player]),
-  );
-}
-
 /**
  * Deterministic deltas between consecutive commentary analysis snapshots.
  */
@@ -371,7 +377,6 @@ export function computeContestFeedDelta(
   if (previous == null) {
     return {
       racePositionChanges: [],
-      leverageSpikes: [],
       stageChanged: false,
       previousStageId: null,
       currentStageId,
@@ -401,27 +406,8 @@ export function computeContestFeedDelta(
     });
   }
 
-  const prevPlayers = playerById(previous);
-  const leverageSpikes: ContestFeedLeverageSpike[] = [];
-  for (const player of current.highLeveragePlayers) {
-    const prior = prevPlayers.get(player.eventParticipantId);
-    const previousLeverage = prior?.leverage ?? 0;
-    const leverageDelta = player.leverage - previousLeverage;
-    if (leverageDelta === 0 && prior != null) continue;
-    leverageSpikes.push({
-      eventParticipantId: player.eventParticipantId,
-      displayName: player.displayName,
-      previousLeverage,
-      currentLeverage: player.leverage,
-      leverageDelta,
-      ownerEntryIds: [...player.ownerEntryIds],
-      ownerNames: [...player.ownerNames],
-    });
-  }
-
   return {
     racePositionChanges,
-    leverageSpikes,
     stageChanged: previous.eventProgress.stageId !== currentStageId,
     previousStageId: previous.eventProgress.stageId,
     currentStageId,
@@ -637,7 +623,6 @@ export function classifyContestFeedStories(
   const recapCooldownMs = options.recapCooldownMs ?? CONTEST_FEED_RECAP_COOLDOWN_MS;
   const maxPerPass = options.maxPerPass ?? CONTEST_FEED_MAX_PER_PASS;
   const minPositionDelta = options.minPositionDelta ?? 1;
-  const minLeverageDelta = options.minLeverageDelta ?? 0.05;
   const existingItems = options.existingItems ?? [];
   const contestPlayers = options.contestPlayers ?? [];
   const previousHoleState = options.previousHoleState;
@@ -646,12 +631,6 @@ export function classifyContestFeedStories(
   const swingCooldown = recentStoryKeys(
     existingItems,
     "score_swing",
-    recapCooldownMs,
-    nowMs,
-  );
-  const leverageCooldown = recentStoryKeys(
-    existingItems,
-    "leverage_spike",
     recapCooldownMs,
     nowMs,
   );
@@ -672,9 +651,11 @@ export function classifyContestFeedStories(
     const subjectKey = participantIds.join(",") || "swing";
     if (!swingCooldown.has(subjectKey)) {
       const top = swingEvents[0]!;
+      const priority = scoreSwingPriority(swingEvents);
       candidates.push({
         storyType: "score_swing",
-        priority: scoreSwingPriority(swingEvents),
+        priority,
+        intensity: scoreSwingIntensityFromPriority(priority),
         subjects: {
           participantIds,
           ...(entryIds.length > 0 ? { entryIds } : {}),
@@ -685,32 +666,14 @@ export function classifyContestFeedStories(
     }
   }
 
-  const materialSpikes = delta.leverageSpikes
-    .filter((spike) => spike.leverageDelta >= minLeverageDelta)
-    .sort((left, right) => right.leverageDelta - left.leverageDelta);
-  if (materialSpikes.length > 0) {
-    const top = materialSpikes[0]!;
-    const subjectKey = top.eventParticipantId;
-    if (!leverageCooldown.has(subjectKey)) {
-      candidates.push({
-        storyType: "leverage_spike",
-        priority: 70 + Math.min(25, Math.round(top.leverageDelta * 100)),
-        subjects: {
-          participantIds: [top.eventParticipantId],
-          entryIds: [...top.ownerEntryIds],
-        },
-        subjectKey,
-        reason: `${top.displayName} leverage rose by ${top.leverageDelta.toFixed(3)}.`,
-      });
-    }
-  }
-
   const hasRecap = existingItems.some((item) => item.storyType === "stage_recap");
   const recapDue = !hasRecap || delta.stageChanged;
   if (recapDue) {
+    const priority = delta.stageChanged ? 90 : 100;
     candidates.push({
       storyType: "stage_recap",
-      priority: delta.stageChanged ? 90 : 100,
+      priority,
+      intensity: delta.stageChanged ? "notable" : "major",
       subjects: {},
       subjectKey: "recap",
       reason: delta.stageChanged
@@ -758,26 +721,6 @@ export function buildContestFeedFactPack(
       paidCount: current.paidCount,
       events,
       impacts,
-    };
-  }
-
-  if (candidate.storyType === "leverage_spike") {
-    const participantIds = new Set(candidate.subjects.participantIds ?? []);
-    const spikes = delta.leverageSpikes.filter((spike) =>
-      participantIds.size === 0 ? true : participantIds.has(spike.eventParticipantId),
-    );
-    const highLeveragePlayers = current.highLeveragePlayers.filter((player) =>
-      participantIds.size === 0
-        ? true
-        : participantIds.has(player.eventParticipantId),
-    );
-    return {
-      storyType: "leverage_spike",
-      stageId,
-      period: current.period,
-      spikes,
-      highLeveragePlayers,
-      race: current.race,
     };
   }
 

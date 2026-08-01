@@ -114,6 +114,7 @@ describe("detectAndEnqueueContestFeed", () => {
       {
         storyType: "score_swing",
         priority: 90,
+        intensity: "notable",
         subjects: {},
         subjectKey: "p1",
         reason: "eagle",
@@ -156,11 +157,12 @@ describe("detectAndEnqueueContestFeed", () => {
     ]);
     mocks.classify.mockReturnValue([
       {
-        storyType: "leverage_spike",
-        priority: 70,
-        subjects: {},
+        storyType: "score_swing",
+        priority: 90,
+        intensity: "notable",
+        subjects: { participantIds: ["p1"] },
         subjectKey: "p1",
-        reason: "spike",
+        reason: "swing",
       },
     ]);
     mocks.enqueue.mockResolvedValue(null);

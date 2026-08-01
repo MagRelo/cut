@@ -75,7 +75,6 @@ Reuse golf’s `CommentaryFeedJob` + Stream path with commodities classifiers:
 | --- | --- |
 | `stage_recap` | Settled period advances |
 | Day mover flash | Large owned ticker swing (final or provisional) |
-| `leverage_spike` | Rare ownership of a big day mover |
 
 Fingerprints: period + round totals / prices (not golf holes). Document story
 prompts in this file when implemented.

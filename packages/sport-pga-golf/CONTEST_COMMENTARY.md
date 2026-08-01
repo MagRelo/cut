@@ -63,11 +63,14 @@ Shared broadcast voices live in `@cut/sport-sdk`
 `buildPgaContestCommentaryPrompt` (snapshot) and `buildPgaContestFeedPrompt`
 (feed). Story type is the primary prompt selector for feed items. Stage
 instructions overlay only `stage_recap` / snapshot prompts; flash stories
-(`score_swing`, `leverage_spike`) omit the stage overlay so weekend/final
+(`score_swing`) omit the stage overlay so weekend/final
 “open from leaderProgress” lines cannot override event-first framing. Every
-feed prompt also includes the shared event → result narrative pattern. A short
-output contract (no invented facts; plain prose only) always appends. The
-server prompt helpers supply word limits and delegate to those builders.
+feed prompt also includes the shared event → result narrative pattern, metric
+discipline (no “leverage” or quoted ownership analytics in copy; at most one
+contest-score pair), intensity tone, a deterministic style directive, and an
+optional `RECENTLY_PUBLISHED` anti-repetition block. Word limits resolve from
+story type + intensity via `resolveContestFeedWordLimits`. A short output
+contract (no invented facts; plain prose only) always appends.
 
 ## Contest commentary feed
 
@@ -86,10 +89,12 @@ lives in a separate `Contest.commentaryFeed` JSON document:
 
 `classifyContestFeedStories` compares the previous `lastContext` / `lastHoleState`
 to the fresh analysis and emits rule-based candidates (`score_swing`,
-`leverage_spike`, `stage_recap`). Each selected story gets a narrow fact pack
-and a story-specific prompt. New items are prepended and trimmed to a rolling
-cap (30). `lastHoleState` is rewritten every successful pass so the next tick
-only sees newly completed holes.
+`stage_recap`) with a `priority` and `intensity` (`routine` | `notable` |
+`major`). Each selected story gets a narrow fact pack and a story-specific
+prompt. New items are prepended and trimmed to a rolling cap (30).
+`lastHoleState` is rewritten every successful pass so the next tick only sees
+newly completed holes. Feed job payloads carry `period` so frozen generation
+can set `item.round` even when `lastContext` is missing.
 
 `stage_recap` is a single feed slot: emit when the feed has no recap yet, or
 when the tournament stage changes (replacing the prior recap via stable item
@@ -120,19 +125,23 @@ attaches owning-lineup race impacts from the context delta:
 Each feed item also carries `round` (tournament period from the analysis
 context) so clients can label which round the comment applies to.
 
-Legacy `race_shakeup` items may still appear in stored feeds but are no longer
-emitted.
+Legacy `race_shakeup` and `leverage_spike` items may still appear in stored
+feeds but are no longer emitted. Ownership is fixed after lock, so leverage
+deltas are not a live feed signal.
 
 ### Narrative pattern: event → result
 
 Live feed updates treat tournament player scoring as the **event** and contest
 movement as the **result**. Copy should read causally—golfer score change
 first, then (only when impactful) a tournament board / position-bonus change,
-then what it does to a user's position, leverage, or paid-cut status (e.g.
-“Scheffler eagles 12, jumps to T2 for the +5 bonus, which vaults Noodles into
-paid places”). Mention position bonus only when `bonusDelta` is non-zero;
-cosmetic place changes and zero-bonus beats stay out of the copy. Never invent
-hole results, board places, or bonus points beyond the supplied fact pack.
+then what it does to a user's position, ownership edge, or paid-cut status
+(e.g. “Scheffler eagles 12, jumps to T2 for the +5 bonus, which vaults Noodles
+into paid places”). Consequence-first openings are allowed when the sentence
+still reads causally. Mention position bonus only when `bonusDelta` is
+non-zero; cosmetic place changes and zero-bonus beats stay out of the copy.
+Never invent hole results, board places, or bonus points beyond the supplied
+fact pack. Never write “leverage” or quote internal ownership analytics as
+numbers; at most one numeric contest-score pair per item.
 
 Callable service: `server/src/services/contest/generateContestFeed.ts`.
 

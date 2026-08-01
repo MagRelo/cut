@@ -12,6 +12,8 @@ import {
   latestFeedCommentaryText,
   mergeContestFeedItems,
   parseContestCommentaryFeedDocument,
+  resolveContestFeedWordLimits,
+  scoreSwingIntensityFromPriority,
   type ContestFeedContestPlayer,
   type ContestFeedHoleState,
 } from "./contestFeed.js";
@@ -227,7 +229,7 @@ describe("contest feed document helpers", () => {
       items: [
         {
           id: "flash",
-          storyType: "leverage_spike",
+          storyType: "score_swing",
           priority: 70,
           subjects: {},
           text: "flash text",
@@ -324,7 +326,7 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     );
   });
 
-  it("classifies leverage_spike from material deltas without race_shakeup", () => {
+  it("classifies race position deltas without emitting leverage_spike", () => {
     const previous = context();
     const current = context({
       contentionLineups: [
@@ -338,7 +340,6 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     expect(delta.racePositionChanges.some((change) => change.crossedPaidCut)).toBe(
       true,
     );
-    expect(delta.leverageSpikes[0]?.leverageDelta).toBeCloseTo(0.15);
 
     const candidates = classifyContestFeedStories(previous, current, {
       nowMs: Date.parse("2026-07-19T04:00:00.000Z"),
@@ -355,9 +356,7 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
       maxPerPass: 3,
     });
 
-    expect(candidates.map((candidate) => candidate.storyType)).toEqual([
-      "leverage_spike",
-    ]);
+    expect(candidates.map((candidate) => candidate.storyType)).toEqual([]);
   });
 
   it("seeds hole state without emitting score_swing on first observation", () => {
@@ -499,6 +498,7 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
       {
         storyType: "score_swing",
         priority: 90,
+        intensity: "notable",
         subjects: { participantIds: ["g1"], entryIds: ["a"] },
         subjectKey: "g1",
         reason: "eagle + bonus",
@@ -548,5 +548,71 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
       Date.parse("2026-07-19T04:02:00.000Z"),
     );
     expect(id).toBe("score_swing:g1:0");
+  });
+
+  it("maps score_swing priority to intensity tiers", () => {
+    expect(scoreSwingIntensityFromPriority(92)).toBe("routine");
+    expect(scoreSwingIntensityFromPriority(94)).toBe("routine");
+    expect(scoreSwingIntensityFromPriority(95)).toBe("notable");
+    expect(scoreSwingIntensityFromPriority(104)).toBe("notable");
+    expect(scoreSwingIntensityFromPriority(105)).toBe("major");
+    expect(resolveContestFeedWordLimits("score_swing", "routine")).toEqual({
+      minWords: 25,
+      maxWords: 45,
+    });
+    expect(resolveContestFeedWordLimits("stage_recap", "major")).toEqual({
+      minWords: 150,
+      maxWords: 200,
+    });
+  });
+
+  it("assigns intensity on classified score_swing and stage_recap", () => {
+    const previous = context();
+    const current = context({
+      contentionLineups: [
+        lineup("b", "Bob", 1, 105),
+        lineup("a", "Noodles", 2, 100),
+      ],
+    });
+    const players = [
+      contestPlayer({
+        scoreData: scoreData(4, [
+          { par: 4, strokes: 4, stableford: 0 },
+          { par: 4, strokes: 6, stableford: -3 },
+        ]),
+        ownerEntryIds: ["a"],
+        ownerNames: ["Noodles"],
+      }),
+    ];
+    const previousHoleState = buildContestFeedHoleState([
+      contestPlayer({
+        scoreData: scoreData(4, [{ par: 4, strokes: 4, stableford: 0 }]),
+      }),
+    ]);
+    const swing = classifyContestFeedStories(previous, current, {
+      nowMs: Date.parse("2026-07-19T04:00:00.000Z"),
+      contestPlayers: players,
+      previousHoleState,
+      existingItems: [
+        {
+          id: "recent-recap",
+          storyType: "stage_recap",
+          priority: 40,
+          subjects: {},
+          text: "recent",
+          generatedAt: "2026-07-19T03:50:00.000Z",
+        },
+      ],
+      maxPerPass: 1,
+    });
+    expect(swing[0]?.intensity).toBeDefined();
+    expect(["routine", "notable", "major"]).toContain(swing[0]?.intensity);
+
+    const opening = classifyContestFeedStories(null, context(), {
+      nowMs: Date.parse("2026-07-19T04:00:00.000Z"),
+      maxPerPass: 1,
+    });
+    expect(opening[0]?.storyType).toBe("stage_recap");
+    expect(opening[0]?.intensity).toBe("major");
   });
 });

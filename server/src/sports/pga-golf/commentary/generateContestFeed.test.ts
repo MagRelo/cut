@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   commentaryFeedWordCount,
   generateContestFeed,
+  generateFeedItemsFromFrozenStories,
 } from "./generateContestFeed.js";
 import type { CommentaryTextGenerator } from "../../../services/contest/commentaryTextGenerator.js";
 
@@ -71,7 +72,7 @@ class SequenceGenerator implements CommentaryTextGenerator {
 
 describe("generateContestFeed", () => {
   it("emits a stage_recap into a new feed document when no prior context exists", async () => {
-    const valid = Array(125).fill("word").join(" ");
+    const valid = Array(150).fill("word").join(" ");
     const generator = new SequenceGenerator([valid]);
 
     const result = await generateContestFeed("contest", {
@@ -83,52 +84,42 @@ describe("generateContestFeed", () => {
 
     expect(result.candidates).toHaveLength(1);
     expect(result.candidates[0]?.storyType).toBe("stage_recap");
+    expect(result.candidates[0]?.intensity).toBe("major");
     expect(result.newItems).toHaveLength(1);
-    expect(commentaryFeedWordCount(result.newItems[0]!.text)).toBe(125);
+    expect(commentaryFeedWordCount(result.newItems[0]!.text)).toBe(150);
     expect(result.newItems[0]?.round).toBe(4);
     expect(result.document.items[0]?.storyType).toBe("stage_recap");
     expect(result.document.items[0]?.round).toBe(4);
     expect(result.document.lastContext?.period).toBe(4);
     expect(result.document.lastHoleState).toEqual({});
     expect(generator.prompts[0]).toContain("Story: stage recap");
-    expect(generator.prompts[0]).toContain("125-175 words");
+    expect(generator.prompts[0]).toContain("150-200 words");
+    expect(generator.prompts[0]).toContain("Intensity: major");
+    expect(generator.prompts[0]).toContain('Never write the word "leverage."');
   });
 
-  it("retries invalid flash-length output for leverage stories", async () => {
+  it("retries invalid output for stage_recap stories", async () => {
     const previous = {
       ...context,
-      highLeveragePlayers: [
-        {
-          eventParticipantId: "golfer",
-          displayName: "Golfer",
-          ownership: "50%",
-          ownersCount: 1,
-          cohortSize: 2,
-          ownershipShare: 0.5,
-          leverage: 0.1,
-          payoutSwing: 0.2,
-          holesLeft: 9,
-          ownerEntryIds: ["one"],
-          ownerNames: ["Alice"],
+      period: 3,
+      eventProgress: {
+        period: 3,
+        stageId: "weekend_move" as const,
+        leaderProgress: {
+          holesRemaining: 10,
+          pace: "front_nine" as const,
+          leaderParticipantIds: ["golfer"],
+          leaderNames: ["Golfer"],
         },
-      ],
+      },
     };
-    const next = {
-      ...previous,
-      highLeveragePlayers: [
-        {
-          ...previous.highLeveragePlayers[0]!,
-          leverage: 0.3,
-        },
-      ],
-    };
-    const valid = Array(50).fill("word").join(" ");
+    const valid = Array(125).fill("word").join(" ");
     const generator = new SequenceGenerator(["too short", valid]);
 
     const result = await generateContestFeed("contest", {
       generator,
       contextBuilder: () =>
-        Promise.resolve({ context: next, diagnostics, contestPlayers: [] }),
+        Promise.resolve({ context, diagnostics, contestPlayers: [] }),
       existingFeed: {
         schemaVersion: 1,
         items: [
@@ -137,7 +128,7 @@ describe("generateContestFeed", () => {
             storyType: "stage_recap",
             priority: 40,
             subjects: {},
-            text: "recent",
+            text: "recent chaos vault surge",
             generatedAt: "2026-07-18T11:50:00.000Z",
           },
         ],
@@ -147,8 +138,54 @@ describe("generateContestFeed", () => {
       maxPerPass: 1,
     });
 
-    expect(result.newItems[0]?.storyType).toBe("leverage_spike");
+    expect(result.newItems[0]?.storyType).toBe("stage_recap");
+    expect(result.candidates[0]?.intensity).toBe("notable");
     expect(generator.prompts).toHaveLength(2);
+    expect(generator.prompts[0]).toContain("125-175 words");
+    expect(generator.prompts[0]).toContain("RECENTLY_PUBLISHED");
     expect(generator.prompts[1]).toContain("previous attempt");
+  });
+
+  it("uses job period for round on the frozen path", async () => {
+    const valid = Array(50).fill("word").join(" ");
+    const generator = new SequenceGenerator([valid]);
+    const result = await generateFeedItemsFromFrozenStories(
+      "contest",
+      [
+        {
+          candidate: {
+            storyType: "score_swing",
+            priority: 100,
+            intensity: "notable",
+            subjects: { participantIds: ["g1"] },
+            subjectKey: "g1",
+            reason: "birdie",
+          },
+          factPack: {
+            storyType: "score_swing",
+            stageId: "final_round",
+            period: 4,
+            paidCount: 3,
+            events: [],
+            impacts: [],
+          },
+        },
+      ],
+      {
+        generator,
+        existingFeed: {
+          schemaVersion: 1,
+          items: [],
+          // Intentionally missing lastContext so period must come from options.
+        },
+        period: 3,
+        now: () => new Date("2026-07-18T12:00:00.000Z"),
+      },
+    );
+
+    expect(result.newItems[0]?.round).toBe(3);
+    expect(generator.prompts[0]).toContain("45-75 words");
+    expect(generator.prompts[0]).toContain("Intensity: notable");
+    expect(generator.prompts[0]).toContain("Style:");
   });
 });
