@@ -193,7 +193,6 @@ export async function generateFeedItemsFromFrozenStories(
       : await loadExistingFeed(contestId);
   const now = options.now ?? (() => new Date());
   const generatedAt = now().toISOString();
-  const nowMs = Date.parse(generatedAt);
   const generator = options.generator ?? defaultGenerator(options);
   const period =
     options.period !== undefined
@@ -218,7 +217,6 @@ export async function generateFeedItemsFromFrozenStories(
         story.candidate.storyType,
         story.candidate.subjectKey,
         generatedAt,
-        nowMs,
       ),
       storyType: story.candidate.storyType,
       priority: story.candidate.priority,
@@ -300,7 +298,6 @@ export async function generateContestFeed(
         candidate.storyType,
         candidate.subjectKey,
         generatedAt,
-        nowMs,
       ),
       storyType: candidate.storyType,
       priority: candidate.priority,

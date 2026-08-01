@@ -80,7 +80,7 @@ Stream failures are logged and do not fail the commentary batch.
 
 ## Client lobby
 
-- Connected users with Stream configured watch `contest:{contestId}` and render Cutbot posts. Reactions (`like`, `dislike`, `fire`; `enforce_unique`) are implemented but currently hidden via `STREAM_REACTIONS_ENABLED`.
+- Connected users with Stream configured watch `contest:{contestId}` and render Cutbot posts. Reactions (`fire`, `like`, `money`, `laugh`, `dislike`; `enforce_unique`) are enabled via `STREAM_REACTIONS_ENABLED`. Each post includes a closed-by-default accordion listing reactors as `emoji - display name` (from `latest_reactions`, with a full `queryActivityReactions` fetch when opened and counts exceed that preview).
 - Guests / Stream-unavailable paths fall back to `Contest.commentaryFeed` JSON (no reactions).
 - Cutbot tab label is `Cutbot (N)` when the user has N unread notification activities whose `custom.contestId` matches the open contest. Selecting (or viewing) the Cutbot tab marks those aggregated notification **groups** read via `markActivity({ mark_read: groupIds })`.
 

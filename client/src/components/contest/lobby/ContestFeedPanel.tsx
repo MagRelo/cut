@@ -9,12 +9,38 @@ import {
   type StreamReactionType,
 } from "../../../lib/stream/constants";
 import { ContestCommentaryModal } from "./ContestCommentaryModal";
-import { CutbotPost, type CutbotPostReactionState } from "./CutbotPost";
+import {
+  CutbotPost,
+  type CutbotPostReactionState,
+  type CutbotPostReactor,
+} from "./CutbotPost";
 
 export interface ContestFeedPanelProps {
   contest: Contest;
   /** Connected Stream client from lobby; omit/null falls back to JSON feed. */
   streamClient?: FeedsClient | null;
+}
+
+function reactorsFromActivity(activity: ActivityResponse): CutbotPostReactor[] {
+  const typeRank = (type: string) => {
+    const index = (STREAM_REACTION_TYPES as readonly string[]).indexOf(type);
+    return index === -1 ? STREAM_REACTION_TYPES.length : index;
+  };
+
+  return (activity.latest_reactions ?? [])
+    .filter((reaction) =>
+      (STREAM_REACTION_TYPES as readonly string[]).includes(reaction.type),
+    )
+    .map((reaction) => ({
+      type: reaction.type as StreamReactionType,
+      displayName: reaction.user?.name?.trim() || "Someone",
+      userId: reaction.user?.id ?? reaction.type,
+    }))
+    .sort((left, right) => {
+      const typeDelta = typeRank(left.type) - typeRank(right.type);
+      if (typeDelta !== 0) return typeDelta;
+      return left.displayName.localeCompare(right.displayName);
+    });
 }
 
 function reactionStateFromActivity(
@@ -31,6 +57,7 @@ function reactionStateFromActivity(
   return {
     counts,
     ownType: (own?.type as StreamReactionType | undefined) ?? null,
+    reactors: reactorsFromActivity(activity),
   };
 }
 
@@ -38,6 +65,13 @@ function activityGeneratedAt(activity: ActivityResponse): string | Date {
   const custom = activity.custom?.generatedAt;
   if (typeof custom === "string") return custom;
   return activity.created_at;
+}
+
+function activityGeneratedAtMs(activity: ActivityResponse): number {
+  const value = activityGeneratedAt(activity);
+  const parsed =
+    typeof value === "string" ? Date.parse(value) : value.getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 const ContestBreakdownButton: React.FC<{ contest: Contest }> = ({ contest }) => {
@@ -112,6 +146,15 @@ const StreamContestFeed: React.FC<{
   client: FeedsClient;
 }> = ({ contest, client }) => {
   const { activities, isLoading, error } = useContestStreamFeed(client, contest.id);
+  // Stream orders by created_at; legacy posts were updated in place, so their
+  // created_at no longer matches when the update was written.
+  const ordered = useMemo(
+    () =>
+      [...activities].sort(
+        (left, right) => activityGeneratedAtMs(right) - activityGeneratedAtMs(left),
+      ),
+    [activities],
+  );
 
   if (error) {
     return <JsonFallbackFeed contest={contest} />;
@@ -132,7 +175,7 @@ const StreamContestFeed: React.FC<{
   return (
     <div className="overflow-hidden rounded-sm border border-slate-200 bg-white font-display">
       <ul className="divide-y divide-slate-200">
-        {activities.map((activity) => (
+        {ordered.map((activity) => (
           <li key={activity.id}>
             <CutbotPost
               text={activity.text ?? ""}

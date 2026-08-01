@@ -91,15 +91,21 @@ lives in a separate `Contest.commentaryFeed` JSON document:
 to the fresh analysis and emits rule-based candidates (`score_swing`,
 `stage_recap`) with a `priority` and `intensity` (`routine` | `notable` |
 `major`). Each selected story gets a narrow fact pack and a story-specific
-prompt. New items are prepended and trimmed to a rolling cap (30).
-`lastHoleState` is rewritten every successful pass so the next tick only sees
-newly completed holes. Feed job payloads carry `period` so frozen generation
-can set `item.round` even when `lastContext` is missing.
+prompt. Merged items are ordered newest-first by `generatedAt` and trimmed to a
+rolling cap (30). `lastHoleState` is rewritten every successful pass so the next
+tick only sees newly completed holes. Feed job payloads carry `period` so frozen
+generation can set `item.round` even when `lastContext` is missing.
 
-`stage_recap` is a single feed slot: emit when the feed has no recap yet, or
-when the tournament stage changes (replacing the prior recap via stable item
-id). It is not regenerated on a timer. The legacy `Contest.commentary`
-snapshot continues to refresh on the batch cadence below.
+Item ids are `storyType:subjectKey:<generatedAt epoch ms>` via
+`buildContestFeedItemId`. The timestamp component makes each pass a new post
+while keeping a retry of the same pass idempotent. Ids must stay unique per
+post: the Stream mirror treats a repeated id as an update to the existing
+activity, which keeps that activity's original `created_at` and pushes the
+feed out of chronological order.
+
+`stage_recap` is emitted when the feed has no recap yet or when the tournament
+stage changes — one post per stage, not regenerated on a timer. The legacy
+`Contest.commentary` snapshot continues to refresh on the batch cadence below.
 
 ### Score swing (event → result)
 

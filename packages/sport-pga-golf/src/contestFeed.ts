@@ -430,21 +430,19 @@ export function computeContestFeedDelta(
   };
 }
 
-function minutesBucket(iso: string, nowMs: number): string {
-  const generated = Date.parse(iso);
-  if (!Number.isFinite(generated)) return "unknown";
-  const ageMs = Math.max(0, nowMs - generated);
-  return String(Math.floor(ageMs / (5 * 60 * 1000)));
-}
-
-/** Stable feed item id for dedupe within a pass / cooldown window. */
+/**
+ * Feed item id: unique per generation timestamp so each pass appends a new
+ * post instead of overwriting an earlier one for the same subject. Stable for
+ * a given (story, subject, generatedAt) so retries of one pass stay idempotent.
+ */
 export function buildContestFeedItemId(
   storyType: ContestFeedStoryType,
   subjectKey: string,
   generatedAt: string,
-  nowMs: number = Date.now(),
 ): string {
-  return `${storyType}:${subjectKey}:${minutesBucket(generatedAt, nowMs)}`;
+  const generated = Date.parse(generatedAt);
+  const stamp = Number.isFinite(generated) ? String(generated) : "unknown";
+  return `${storyType}:${subjectKey}:${stamp}`;
 }
 
 function recentStoryKeys(
@@ -809,7 +807,12 @@ export interface MergeContestFeedItemsOptions {
   lastHoleState?: ContestFeedHoleState;
 }
 
-/** Prepend new items and trim to the rolling cap. */
+function generatedAtMs(item: ContestFeedItem): number {
+  const parsed = Date.parse(item.generatedAt);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/** Merge new items, order newest-first, and trim to the rolling cap. */
 export function mergeContestFeedItems(
   existing: ContestCommentaryFeedDocument,
   newItems: readonly ContestFeedItem[],
@@ -817,13 +820,15 @@ export function mergeContestFeedItems(
 ): ContestCommentaryFeedDocument {
   const cap = options.cap ?? CONTEST_FEED_ITEM_CAP;
   const seen = new Set<string>();
-  const merged: ContestFeedItem[] = [];
+  const deduped: ContestFeedItem[] = [];
   for (const item of [...newItems, ...existing.items]) {
     if (seen.has(item.id)) continue;
     seen.add(item.id);
-    merged.push(item);
-    if (merged.length >= cap) break;
+    deduped.push(item);
   }
+  const merged = deduped
+    .sort((left, right) => generatedAtMs(right) - generatedAtMs(left))
+    .slice(0, cap);
   return {
     schemaVersion: 1,
     items: merged,

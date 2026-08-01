@@ -622,14 +622,86 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     expect(events).toEqual([]);
   });
 
-  it("builds deterministic feed item ids", () => {
-    const id = buildContestFeedItemId(
+  it("builds feed item ids that are stable per generation but unique across passes", () => {
+    const first = buildContestFeedItemId(
       "score_swing",
       "g1",
       "2026-07-19T04:00:00.000Z",
-      Date.parse("2026-07-19T04:02:00.000Z"),
     );
-    expect(id).toBe("score_swing:g1:0");
+    expect(first).toBe(
+      `score_swing:g1:${Date.parse("2026-07-19T04:00:00.000Z")}`,
+    );
+    expect(
+      buildContestFeedItemId("score_swing", "g1", "2026-07-19T04:00:00.000Z"),
+    ).toBe(first);
+    expect(
+      buildContestFeedItemId("score_swing", "g1", "2026-07-19T04:25:00.000Z"),
+    ).not.toBe(first);
+  });
+
+  it("keeps both posts when the same subject swings twice", () => {
+    const existing = emptyContestCommentaryFeedDocument();
+    existing.items = [
+      {
+        id: buildContestFeedItemId(
+          "score_swing",
+          "g1",
+          "2026-07-19T04:00:00.000Z",
+        ),
+        storyType: "score_swing",
+        priority: 90,
+        subjects: { participantIds: ["g1"] },
+        text: "earlier swing",
+        generatedAt: "2026-07-19T04:00:00.000Z",
+      },
+    ];
+
+    const merged = mergeContestFeedItems(existing, [
+      {
+        id: buildContestFeedItemId(
+          "score_swing",
+          "g1",
+          "2026-07-19T05:00:00.000Z",
+        ),
+        storyType: "score_swing",
+        priority: 90,
+        subjects: { participantIds: ["g1"] },
+        text: "later swing",
+        generatedAt: "2026-07-19T05:00:00.000Z",
+      },
+    ]);
+
+    expect(merged.items.map((item) => item.text)).toEqual([
+      "later swing",
+      "earlier swing",
+    ]);
+  });
+
+  it("orders merged items newest-first regardless of write order", () => {
+    const existing = emptyContestCommentaryFeedDocument();
+    existing.items = [
+      {
+        id: "newer",
+        storyType: "score_swing",
+        priority: 90,
+        subjects: {},
+        text: "newer",
+        generatedAt: "2026-07-19T06:00:00.000Z",
+      },
+    ];
+
+    const merged = mergeContestFeedItems(existing, [
+      {
+        id: "late-write",
+        storyType: "score_swing",
+        priority: 90,
+        subjects: {},
+        text: "late write",
+        generatedAt: "2026-07-19T05:00:00.000Z",
+      },
+    ]);
+
+    expect(merged.items.map((item) => item.id)).toEqual(["newer", "late-write"]);
   });
 
   it("maps score_swing priority to intensity tiers", () => {

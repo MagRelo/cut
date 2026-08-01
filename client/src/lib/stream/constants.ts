@@ -5,23 +5,33 @@
  */
 export const STREAM_CONTEST_FEED_GROUP = "contest";
 
-/** When false, Cutbot posts hide the reaction bar (Stream still supports reactions). */
-export const STREAM_REACTIONS_ENABLED = false;
+/** Cutbot posts expose Stream's reaction bar to connected users. */
+export const STREAM_REACTIONS_ENABLED = true;
 
-export const STREAM_REACTION_TYPES = ["like", "dislike", "fire"] as const;
+export const STREAM_REACTION_TYPES = [
+  "fire",
+  "like",
+  "money",
+  "laugh",
+  "dislike",
+] as const;
 export type StreamReactionType = (typeof STREAM_REACTION_TYPES)[number];
 
 /** Accessible name for each reaction (aria-label). */
 export const STREAM_REACTION_LABELS: Record<StreamReactionType, string> = {
-  like: "Like",
-  dislike: "Disappointed",
   fire: "Fire",
+  like: "Like",
+  money: "Money",
+  laugh: "Laugh",
+  dislike: "Bummer",
 };
 
 export const STREAM_REACTION_EMOJIS: Record<StreamReactionType, string> = {
-  like: "👍",
-  dislike: "😑",
   fire: "🔥",
+  like: "👍",
+  money: "💸",
+  laugh: "😂",
+  dislike: "😑",
 };
 
 export function isStreamClientConfigured(): boolean {
