@@ -4,11 +4,10 @@
  * packages/sport-pga-golf (parseSummarySections / getEventBlurb).
  *
  * Usage:
- *   node .cursor/skills/tournament-summary/scripts/validate-summary.mjs path/to/R2026023.json
+ *   node .cursor/skills/tournament-summary/scripts/validate-summary.mjs path/to/summary.json
  */
 
 import { readFile } from "node:fs/promises";
-import path from "node:path";
 
 const CANONICAL_SECTIONS = [
   "From the 19th Hole",
@@ -34,7 +33,7 @@ function isSummarySection(value) {
   return value.items.every(isSummaryItem);
 }
 
-function validateSummarySections(json, filePath) {
+function validateSummarySections(json) {
   const errors = [];
   const warnings = [];
 
@@ -105,9 +104,21 @@ function validateSummarySections(json, filePath) {
     if (oddsSection.items.length < 8) {
       warnings.push(`Best Players and Odds has ${oddsSection.items.length} items; aim for 8–10.`);
     }
+    const withOdds = oddsSection.items.filter((item) => /\+\d/.test(item.label ?? ""));
+    const withoutOdds = oddsSection.items.filter((item) => !/\+\d/.test(item.label ?? ""));
+    if (withOdds.length > 0 && withoutOdds.length > 0) {
+      warnings.push(
+        "Best Players and Odds mixes labels with and without odds — use all sourced odds or omit odds entirely until books post.",
+      );
+    }
+    if (withoutOdds.length === oddsSection.items.length) {
+      warnings.push(
+        "No American odds in labels — OK only if 2+ sportsbooks have not posted this week's board yet. Never invent odds.",
+      );
+    }
     for (const item of oddsSection.items) {
-      if (!item.label || !item.label.includes("+")) {
-        warnings.push(`Odds item missing American odds in label: "${item.label ?? ""}"`);
+      if (!item.label?.trim()) {
+        warnings.push("Odds item missing label (use \"Player Name:\" or \"Player Name (+low to +high):\").");
       }
       const body = item.body ?? "";
       const riskyPhrases = [
@@ -131,10 +142,6 @@ function validateSummarySections(json, filePath) {
     warnings.push("Found smart quotes; use straight ASCII quotes in JSON.");
   }
 
-  if (filePath && !path.basename(filePath).match(/^R\d+\.json$/)) {
-    warnings.push(`Filename should match R{pgaTourId}.json (got ${path.basename(filePath)}).`);
-  }
-
   return { errors, warnings };
 }
 
@@ -154,7 +161,7 @@ async function main() {
     process.exit(1);
   }
 
-  const { errors, warnings } = validateSummarySections(parsed, filePath);
+  const { errors, warnings } = validateSummarySections(parsed);
 
   for (const w of warnings) {
     console.warn(`WARN: ${w}`);

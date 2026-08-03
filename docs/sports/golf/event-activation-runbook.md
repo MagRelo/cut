@@ -16,7 +16,7 @@ Pass script arguments **directly** — do **not** insert `--` before them. In th
 |------|--------|
 | **Sport** | `pga-golf` (first plugin) |
 | **externalId** | PGA Tour id — e.g. `R2026033` (`R{year}{event#}`) |
-| **Summary file** | `server/src/tournamentSummaries/{externalId}.json` |
+| **Summary** | `CompetitionEvent.metadata.summarySections` (via tournament-summary skill) |
 | **Init command** | `pnpm run service:init-event pga-golf R2026033` |
 | **Active flag** | `CompetitionEvent.isActive = true` (set by init) |
 | **Admin dashboard** | `GET /api/admin/dashboard` (accepts `eventId` or `tournamentId` alias) |
@@ -37,31 +37,7 @@ Pass script arguments **directly** — do **not** insert `--` before them. In th
 
 ## Activation steps
 
-### 1. Generate event summary (golf)
-
-Use the Cursor **tournament-summary** skill with the PGA external id:
-
-```
-Generate a tournament summary for R__________
-```
-
-Writes `server/src/tournamentSummaries/{externalId}.json`.
-
-- [ ] Summary JSON written and manually reviewed
-- [ ] Validator passes (`node .cursor/skills/tournament-summary/scripts/validate-summary.mjs …`)
-
----
-
-### 2. Commit summary (if deploying)
-
-Init reads summary JSON from disk on the machine where the command runs.
-
-- [ ] Summary committed
-- [ ] Deployed to target environment (if not local)
-
----
-
-### 3. Run `service:init-event`
+### 1. Run `service:init-event`
 
 ```bash
 pnpm run service:init-event pga-golf R__________
@@ -73,13 +49,37 @@ pnpm run service:init-event pga-golf R__________
 |--------|--------|
 | Event row | Upserts `CompetitionEvent` for `sportId` + `externalId` |
 | Metadata | Name, dates, course, status via PGA APIs |
-| Summary | Loads `{externalId}.json` → event metadata |
 | Field | `EventParticipant` rows + participant profiles |
 | Rankings | DataGolf rankings where configured |
 | **isActive** | Clears other active events for the sport; sets this event active |
 
 - [ ] Init completed without errors
 - [ ] Log shows expected field size
+
+---
+
+### 2. Generate event summary (golf, optional)
+
+Use the Cursor **tournament-summary** skill with the PGA external id (after init):
+
+```
+Generate a tournament summary for R__________
+```
+
+Writes `summarySections` onto the event's DB metadata (announcement card + in-app
+preview + new-tournament email). Not required for field/scoring.
+
+- [ ] Summary validated and written via `script:write-tournament-summary`
+- [ ] In-app preview / email preview reviewed
+
+---
+
+### 3. Deploy target environment
+
+Init and summary writes use the `DATABASE_URL` of the machine where commands run.
+
+- [ ] Init (and optional summary) run against the intended environment
+- [ ] Sport hub shows correct event name and dates
 
 **Sync helpers (after withdrawals / tee-time changes):**
 
@@ -97,7 +97,7 @@ Optional: `pnpm run service:sync-event-metadata <eventId>` or `pnpm run service:
 ### 4. Verify in app
 
 - [ ] Sport hub (`/sports/pga-golf`) shows correct event name and dates
-- [ ] Event summary modal matches reviewed JSON
+- [ ] Event summary modal matches reviewed copy (if summary was written)
 - [ ] Player field looks complete (spot-check favorites, WDs)
 - [ ] Admin dashboard shows active event and ops hints
 - [ ] Lineups can be created (`POST /api/lineups/:eventId`)

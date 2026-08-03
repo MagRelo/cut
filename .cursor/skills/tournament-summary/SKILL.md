@@ -1,16 +1,20 @@
 ---
 name: tournament-summary
 description: >-
-  Research and write PGA Tour tournament preview JSON for Play The Cut.
-  Use when the user provides a pgaTourId (e.g. R2026023), asks for a
-  tournament summary, Perplexity-style preview, or updates
-  server/src/tournamentSummaries/*.json.
+  Research and write PGA Tour tournament preview copy for Play The Cut into
+  CompetitionEvent.metadata.summarySections. Use when the user provides a
+  pgaTourId (e.g. R2026023), asks for a tournament summary, Perplexity-style
+  preview, or updates event summary / announcement card content.
 ---
 
 # Tournament Summary Generator
 
-Produce a **casual-fan tournament preview** for a PGA Tour event and save it to
-`server/src/tournamentSummaries/{pgaTourId}.json`.
+Produce a **casual-fan tournament preview** for a PGA Tour event and write it to
+`CompetitionEvent.metadata.summarySections` for that event's `externalId`
+(`pgaTourId`).
+
+**Prerequisite:** the event must already exist — run
+`pnpm run service:init-event pga-golf {pgaTourId}` first (from `server/`).
 
 Content appears in the **announcement card** (Event Blurb + event header) and under
 **from the 19th hole:** in both the in-app tournament preview
@@ -27,10 +31,10 @@ Generate a tournament summary for R2026023
 
 Replace the ID with any `pgaTourId`. Optional flags:
 
-- `write file` — save JSON (default)
+- `write db` — validate and write to DB (default)
 - `preview only` — show JSON in chat, do not write
 - `quote only` — rewrite the CutBot quote item only; keep other quotes and sections unchanged
-- `quote variants` — output **three** labeled Summary bodies in chat (no file
+- `quote variants` — output **three** labeled Summary bodies in chat (no DB
   write); use to calibrate tone before committing
 - `recap` — post-tournament results instead of pre-event preview
 
@@ -44,18 +48,21 @@ Copy this checklist and track progress:
 - [ ] Step 3: Draft JSON in canonical format
 - [ ] Step 4: Fact-check pass (see below — required before validate)
 - [ ] Step 5: Validate JSON
-- [ ] Step 6: Write file (unless preview only)
+- [ ] Step 6: Write to DB (unless preview only)
 ```
 
 ### Step 1: Resolve tournament
 
 1. Confirm ID format: `R` + year + event number (e.g. `R2026023`).
-2. Open PGA Tour overview:
+2. Confirm the event row exists (init already run). If unsure, dump:
+   `pnpm run script:write-tournament-summary R2026023 --dump` (from `server/`).
+   Missing event → tell the user to run `service:init-event` first.
+3. Open PGA Tour overview:
    `https://www.pgatour.com/tournaments/2026/overview/{pgaTourId}`
    or search: `PGA Tour {pgaTourId} overview`.
-3. Note: official name, venue, city/state, dates, purse, FedExCup points,
+4. Note: official name, venue, city/state, dates, purse, FedExCup points,
    field size, par, yardage, event type (Signature, major, etc.).
-4. Check whether the event is **upcoming** or **already finished** (compare
+5. Check whether the event is **upcoming** or **already finished** (compare
    dates to today). Default output is a **pre-tournament preview** unless
    the user asked for a recap.
 
@@ -89,12 +96,19 @@ standard preview.
 |--------|----------------|
 | From the 19th Hole | **CutBot quote** — place/vibe first, week stakes, max 2 names; user quotes added manually |
 | Event Blurb | **Announcement card prose** — 2 sentences: course character + one notable beat (not a fact list) |
-| Best Players and Odds | 8–10 contenders with American odds ranges (e.g. `+850 to +1000`) |
+| Best Players and Odds | 8–10 contenders; include American odds **only** when sourced from books |
 | Course and Format | Course name, dates, purse, format, yardage/par profile |
 | Broadcast Information | TV/streaming windows (Golf Channel, CBS, ESPN, etc.) |
 
-**Odds sources:** Golf Channel, CBS Sports, DraftKings, Yahoo Sports, Action
-Network — report a **range** when books disagree.
+**Odds — hard rule: never invent.**
+
+- Pull American odds from **2+ sportsbooks** for **this event this week**
+  (DraftKings, FanDuel, Golf Channel, CBS, Action Network, etc.).
+- Report a **range** when books disagree (e.g. `+850 to +1000`).
+- If books have **not posted** this week's board yet — **omit odds from labels**.
+  Use `"Player Name:"` only. Do **not** estimate from OWGR, FedExCup rank,
+  last week's event, implied probability, or “what a favorite usually is.”
+- Never copy odds from a different tournament into this week's labels.
 
 **Do not invent** withdrawals, tee times, odds, win counts, past champions, or
 major titles. If a fact cannot be verified from **this week's event** sources,
@@ -115,10 +129,12 @@ Rules:
   sentences** for the announcement card — course character + one notable beat
   (tradition, defending champ, FedExCup context). Do **not** repeat course/city/dates
   already shown in the card header from event metadata.
-- **Best Players and Odds**: 8–10 players; label format
-  `"Player Name (+low to +high):"`; body is **one plain sentence** — why fans
-  should care this week. **Verify every factual claim** (see Step 4); prefer
-  course fit over unverified history.
+- **Best Players and Odds**: 8–10 players; body is **one plain sentence** — why
+  fans should care this week. Label format:
+  - With sourced odds: `"Player Name (+low to +high):"`
+  - Without posted odds: `"Player Name:"` (no `+` numbers — never invent)
+  **Verify every factual claim** (see Step 4); prefer course fit over
+  unverified history.
 - **CutBot voice:** evocative and week-setting — place and atmosphere first,
   what's at stake this week, **at most 2 player names**. Warm and inviting, not
   oppositional or contrarian. A light betting read (“tops the board,” “defends”)
@@ -155,9 +171,10 @@ Open at Renaissance, not The Open Championship at Royal Birkdale.
 
 #### Odds blurbs — verify each player
 
-1. **Odds range** — pull from **2+ sportsbooks** the week of the event (DraftKings,
-   Golf Channel, CBS, Action Network). Widen the range if books disagree; do not
-   guess a tight band.
+1. **Odds range** — **only** from **2+ sportsbooks** posting **this event this
+   week**. Widen the range if books disagree. If the board is not up yet, leave
+   odds out of the label entirely. **Never invent, interpolate, or carry over
+   odds from another event.**
 2. **Season wins** — check PGA Tour results for 2026 before writing "first win,"
    "second win," or "X wins this season."
 3. **Major champion** — only use if the player has actually won a major. When in
@@ -177,6 +194,8 @@ Open at Renaissance, not The Open Championship at Royal Birkdale.
 
 #### Red flags — stop and re-research
 
+- **Any American odds not copied from this week's posted sportsbook board**
+  (including estimates from rank, form, or last week's prices)
 - "Still hunting his first win of [year]" without checking season results
 - "Major winner" for a player without a major
 - "Won here" when the win was a different tournament or major
@@ -186,27 +205,32 @@ Open at Renaissance, not The Open Championship at Royal Birkdale.
 
 ### Step 5: Validate
 
-From repo root:
+Write the draft to a temp file, then from repo root:
 
 ```bash
-node .cursor/skills/tournament-summary/scripts/validate-summary.mjs server/src/tournamentSummaries/R2026023.json
+node .cursor/skills/tournament-summary/scripts/validate-summary.mjs /tmp/R2026023-summary.json
 ```
 
-Fix any reported errors before writing or handing off.
+Fix any reported errors before writing to the DB.
 
-### Step 6: Write file
+### Step 6: Write to DB
 
-Save to:
-
-```
-server/src/tournamentSummaries/{pgaTourId}.json
-```
-
-`service:init-event` (PGA golf plugin) loads this file on event init and stores sections on the
-event metadata. After updating a summary for the active event, re-run init:
+From `server/` (uses `server/.env` / `DATABASE_URL`):
 
 ```bash
-pnpm run service:init-event pga-golf R2026023
+pnpm run script:write-tournament-summary R2026023 /tmp/R2026023-summary.json
+```
+
+Do **not** write `server/src/tournamentSummaries/*.json` — that path is legacy.
+In-app and email read `summarySections` from event metadata.
+
+For **quote only**: dump existing copy, replace only the first CutBot quote item,
+validate, write back:
+
+```bash
+pnpm run script:write-tournament-summary R2026023 --dump > /tmp/R2026023-summary.json
+# edit CutBot quote item, then:
+pnpm run script:write-tournament-summary R2026023 /tmp/R2026023-summary.json
 ```
 
 ## CutBot quote voice
@@ -258,7 +282,7 @@ Genesis Scottish Open (R2026541) — evocative, tight, week-setting:
 ### Calibrating tone (`quote variants`)
 
 When the user asks for **quote variants**, output three labeled options in chat
-only (no file write):
+only (no DB write):
 
 - **A — Evocative host** — place and atmosphere, week stakes, max 2 names
   **(CutBot default)**
@@ -268,7 +292,7 @@ only (no file write):
 After the user picks a direction, apply it to the full summary or run
 `quote only` to update just the CutBot quote item.
 
-Preview in email chrome after choosing:
+Preview in email chrome after writing to DB:
 
 ```bash
 pnpm --filter server run script:email-preview new-tournament open
@@ -278,6 +302,7 @@ pnpm --filter server run script:email-preview new-tournament open
 
 Keep **one sentence**, fan-readable. **Every factual claim must be verified for
 this week's event** (Step 4) — wrong history is worse than vague course fit.
+**Never invent odds** — missing numbers beat made-up `+` prices.
 
 | Verified fact type | OK to use |
 |--------------------|-----------|
@@ -292,7 +317,7 @@ or with major wins. **Do not** invent win counts or venue lore.
 
 ## Style reference
 
-Gold-standard examples in the repo:
+Gold-standard examples (legacy JSON still in repo for tone/format only):
 
 - `server/src/tournamentSummaries/R2026525.json` — Event Blurb + announcement card layout
 - `server/src/tournamentSummaries/R2026541.json` — CutBot quote tone + multi-quote layout

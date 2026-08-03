@@ -8,21 +8,23 @@ import { createPgaGolfEmailContent } from "./emailContent.js";
 import { renderSummarySectionsEmailHtml } from "../../lib/email/blocks/summary.js";
 
 describe("resolveSummarySectionsForEvent", () => {
-  it("prefers tournamentSummaries file over DB metadata", async () => {
+  it("prefers DB metadata over tournamentSummaries file", async () => {
     const fromDb = parseSummarySections([
-      { title: "From the 19th Hole", items: [{ body: "Stale DB copy." }] },
+      { title: "From the 19th Hole", items: [{ body: "DB copy wins." }] },
     ]);
     const resolved = await resolveSummarySectionsForEvent("R2026541", fromDb);
-    const quotesSection = resolved?.find((section) => isQuotesSection(section));
-    expect(quotesSection?.items[0]?.body).not.toBe("Stale DB copy.");
+    expect(resolved?.[0]?.items[0]?.body).toBe("DB copy wins.");
   });
 
-  it("falls back to DB when no summary file exists", async () => {
-    const fromDb = parseSummarySections([
-      { title: "From the 19th Hole", items: [{ body: "DB-only summary." }] },
-    ]);
-    const resolved = await resolveSummarySectionsForEvent("R9999999", fromDb);
-    expect(resolved?.[0]?.items[0]?.body).toBe("DB-only summary.");
+  it("falls back to file when DB has no summary", async () => {
+    const resolved = await resolveSummarySectionsForEvent("R2026541", null);
+    const quotesSection = resolved?.find((section) => isQuotesSection(section));
+    expect(quotesSection?.items[0]?.body).toBeTruthy();
+  });
+
+  it("returns null when neither DB nor file has summary", async () => {
+    const resolved = await resolveSummarySectionsForEvent("R9999999", null);
+    expect(resolved).toBeNull();
   });
 });
 

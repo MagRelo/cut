@@ -19,7 +19,7 @@ Common behavior:
 - Sync participant field and profiles
 - Set `isActive=true` on this event (clears other active events for the sport)
 
-Golf-only: loads `server/src/tournamentSummaries/{externalId}.json` when present; DataGolf rankings.
+Golf-only: optional legacy `tournamentSummaries/{externalId}.json` seed into metadata; DataGolf rankings.
 
 ### Admin / CLI contest ops
 

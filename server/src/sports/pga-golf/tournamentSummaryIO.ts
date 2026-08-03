@@ -51,14 +51,14 @@ export async function loadSummarySectionsFromFile(
 }
 
 /**
- * Summary sections for emails and previews: prefer `tournamentSummaries/{id}.json`
- * so copy can be finalized before `service:init-event` syncs metadata to the DB.
+ * Summary sections for emails and previews: prefer CompetitionEvent.metadata,
+ * then fall back to a legacy `tournamentSummaries/{id}.json` file if present.
  */
 export async function resolveSummarySectionsForEvent(
   externalId: string,
   dbSummarySections: unknown,
 ): Promise<TournamentSummarySections | null> {
-  const fromFile = await loadSummarySectionsFromFile(externalId);
-  if (fromFile) return fromFile;
-  return parseSummarySections(dbSummarySections);
+  const fromDb = parseSummarySections(dbSummarySections);
+  if (fromDb) return fromDb;
+  return loadSummarySectionsFromFile(externalId);
 }

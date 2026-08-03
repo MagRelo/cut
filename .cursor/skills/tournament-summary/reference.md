@@ -1,13 +1,19 @@
 # Tournament Summary Reference
 
-## Output path
+## Output target
 
-```
-server/src/tournamentSummaries/{pgaTourId}.json
+Write to **`CompetitionEvent.metadata.summarySections`** for sport `pga-golf`
+and `externalId` = `{pgaTourId}`.
+
+```bash
+# from server/
+pnpm run script:write-tournament-summary R2026023 /tmp/R2026023-summary.json
+pnpm run script:write-tournament-summary R2026023 --dump
 ```
 
-Loaded by `server/src/lib/tournamentSummary.ts` and
-`server/src/sports/pga-golf/initEvent.ts` (via `loadSummarySections`).
+Event must exist (`service:init-event`) before write. In-app and email read
+metadata from the DB. Legacy `server/src/tournamentSummaries/*.json` files are
+optional seed/fallback only — do not create new ones.
 
 ## How content is presented
 
@@ -73,7 +79,7 @@ Replace `{...}` placeholders. Keep valid JSON.
     "items": [
       {
         "label": "{Player} (+{low} to +{high}):",
-        "body": "{One plain sentence: why fans should watch this player this week.}"
+        "body": "{One plain sentence: why fans should watch this player this week. Include (+low to +high) only from 2+ sportsbooks for this event; otherwise use '{Player}:' with no odds.}"
       }
     ]
   },
@@ -137,11 +143,14 @@ Check **5–10 sources** per event for storylines, odds, and course context.
 
 ### Odds guidance
 
-- List **8–10** players, ordered roughly by market rank.
-- Use American odds with `+` prefix.
-- Pull ranges from **2+ sportsbooks** the week of the event; widen when books disagree.
+- List **8–10** players, ordered roughly by market rank (or OWGR / form if the
+  board is not posted yet).
+- **Never invent American odds.** Only include `+low to +high` in the label when
+  you have quotes from **2+ sportsbooks for this event this week**.
+- If books have not posted yet, use `"Player Name:"` with no odds numbers.
+- Widen the range when books disagree; do not invent a tight band.
 - Tie each pick to **verified** event history, recent form, or plain course-fit opinion.
-- When unsure of a fact, **use course fit** — never guess history.
+- When unsure of a fact, **use course fit** — never guess history or odds.
 
 ### Writing style
 
@@ -181,7 +190,7 @@ From the 19th Hole (CutBot + user quotes); context teaser lives in Event Blurb.
 **Format:** no bullet characters inside `body` strings; no markdown.
 
 **Tone calibration:** use `quote variants` in the skill prompt to generate three
-CutBot options before writing the file.
+CutBot options before writing to the DB.
 
 ## Post-tournament recap (optional)
 
@@ -192,7 +201,7 @@ If the user requests `recap` or the event is complete:
   only if user wants pre-event content preserved elsewhere.
 
 For finished events, prefer generating the **next** week's preview unless the
-user explicitly wants a results write-up in the same file.
+user explicitly wants a results write-up for this event.
 
 ## Example prompts
 
