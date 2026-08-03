@@ -8,11 +8,13 @@ Related: [referral-network.md](../platform/referral-network.md) · [economics-sk
 
 **User wallets** (Privy smart wallets) are not platform roles; they are listed only where cashflows touch them. User gas sponsorship (e.g. paymaster) is a **USD opex** line — not a wallet role here.
 
-There are exactly **two platform keys**:
+Platform signing keys and the cold recovery address:
 
 ```text
-DEPLOYER_PK      Infra / Deployer  — one-time ETH spend; then cold
-OPS_ORACLE_PK    Cron-Ops OPS_ORACLE — contest + referral oracle in one EOA; leaks ETH, accrues paymentToken
+DEPLOYER_PK                    Infra / Deployer — one-time ETH spend; then cold
+OPS_ORACLE_PK                  Hot oracle — contest lifecycle + referral register/batchRegister; leaks ETH; may accrue paymentToken dust
+EMERGENCY_RECOVERY_ADDRESS     Cold address-only — referral tree root; receives referral share; calls emergencyRecoverFunds after expiry
+                               (no private key in web, cron, or server env)
 ```
 
 (Marketing_test side-bet wallets are a paymentToken ledger, not a signing key held by the app.)
@@ -55,6 +57,7 @@ From `Deploy_base.s.sol` as written today (`initialOwner = deployer`; the Referr
 | **Authorized referral oracle** (`REFERRAL_GROUP_ID`) | `ReferralGraph` | **No** if `OPS_ORACLE_PK` is set (its address is authed instead) | `register` / `batchRegister` / skiplist (oracle paths) | **No** — this belongs to OPS_ORACLE, not the cold deployer |
 | **ContestFactory owner** | `ContestFactory` | **No** | Factory is not Ownable; anyone can `createContest` | N/A |
 | **ContestController oracle / host** | Per contest | **No** (not set by deploy script) | Lifecycle / settle | Set at `createContest` → **OPS_ORACLE** (`VITE_ORACLE_ADDRESS`) |
+| **ContestController emergencyRecovery** | Per contest | **No** | Residual recovery after expiry | Set at `createContest` → **EMERGENCY_RECOVERY_ADDRESS** |
 | **MockUSDC owner** (Sepolia only) | `MockUSDC` | **Yes** on `Deploy_sepolia` | `mint` / `burn` | Sepolia faucet-style; not a mainnet role |
 
 **Implication:** Deployer **will** be Ownable admin of `ReferralGraph` unless you transfer afterward. As long as `OPS_ORACLE_PK` is set at deploy, the deployer is **not** the referral oracle. Contests never assign the deploy key as contest oracle by default.
@@ -75,20 +78,22 @@ Post-deploy options:
 
 ## 2. Cron-Ops — OPS_ORACLE (`OPS_ORACLE_PK`)
 
-**Shape:** One hot key on web + cron hosts ([cron-pi.md](cron-pi.md)) that is **both the contest oracle and the referral oracle**. Compromising it = full contest and referral control.
+**Shape:** One hot key on web + cron hosts ([cron-pi.md](cron-pi.md)) for contest lifecycle and referral registration. Compromising it = full contest and referral registration control. It is **not** the referral tree root and does **not** hold the emergency recovery key.
 
 | Role | Purpose | Holds keys? | Env / config | Known address |
 |------|---------|-------------|--------------|---------------|
-| **OPS_ORACLE** | Contest: create / activate / lock / settle / close; push primary/secondary payouts. Referral: authorized on `ReferralGraph` for `REFERRAL_GROUP_ID`, `register` / `batchRegister`, and tree root under `REFERRAL_ROOT` | Yes — server + cron | `OPS_ORACLE_PK` (address derived, or pin `OPS_ORACLE_ADDRESS`); client `VITE_ORACLE_ADDRESS` | TBD |
+| **OPS_ORACLE** | Contest: create / activate / lock / settle / push primary/secondary payouts. Referral: authorized on `ReferralGraph` for `REFERRAL_GROUP_ID`, `register` / `batchRegister` | Yes — server + cron | `OPS_ORACLE_PK` (address derived, or pin `OPS_ORACLE_ADDRESS`); client `VITE_ORACLE_ADDRESS` | TBD |
 
-The OPS_ORACLE address must match `OPS_ORACLE_PK`, the on-chain contest `oracle`, the authorized `ReferralGraph` oracle, the referral tree root, and client `VITE_ORACLE_ADDRESS`.
+The OPS_ORACLE address must match `OPS_ORACLE_PK`, the on-chain contest `oracle`, the authorized `ReferralGraph` oracle, and client `VITE_ORACLE_ADDRESS`. It must **differ** from `EMERGENCY_RECOVERY_ADDRESS`.
 
 ### Balance model
 
 | Asset | Direction | Why |
 |-------|-----------|-----|
 | **ETH** | **Leaks** (ongoing out) | Gas for contest lifecycle txs and referral `register` / `batchRegister` |
-| **Payment token** | **Accumulates** (ongoing in) | Ancestor slice of referral-network fees when the oracle is on the winner’s payout chain (indexed `OnchainPayment` kind `REFERRAL` to the oracle) |
+| **Payment token** | **May accumulate** (small in) | `UnallocatedBalanceCleared` dust after push batches — accounting cleanup, not referral fees |
+
+Referral-network fee shares go to referrers in the payout chain, including the cold emergency-recovery root when it appears as an ancestor. The hot oracle is **not** an ancestor in the current tree model.
 
 ```text
                     ETH ──spend──► settle / register / push txs
@@ -96,18 +101,20 @@ User ──deposit──► ContestController
                       │
                       ├─ settleContest → prizes (claim/push to users)
                       └─ referralNetworkBps → RewardCalculator split
-                                              ├─ user referrers
-                                              └─ oracle ancestor ──paymentToken──► OPS_ORACLE wallet
+                                              └─ referrers + cold recovery root
+                                                      (ReferralNetworkFeeDistributed)
+
+After push batches: UnallocatedBalanceCleared dust ──paymentToken──► OPS_ORACLE (optional)
 ```
 
-Contest escrow itself is **not** OPS_ORACLE balance — users move payment token in/out of controllers. OPS_ORACLE only needs **ETH float** for gas and will **accrue paymentToken** from referral ancestor fees over time (platform income core; see [economics-sketch.md](../internal/economics-sketch.md) and [referral-network.md](../platform/referral-network.md)).
+Contest escrow itself is **not** OPS_ORACLE balance — users move payment token in/out of controllers. OPS_ORACLE only needs **ETH float** for gas.
 
 ### Ops funding
 
 | Need | Practice |
 |------|----------|
 | ETH | Keep warm enough for a busy settle week + referral sync batch; top up when low |
-| Payment token | No pre-fund required; optionally sweep accrued fees to cold / operating accounts on a schedule |
+| Payment token | No pre-fund required; optionally sweep accrued dust to cold / operating accounts on a schedule |
 
 Env: `server/.env` / cron / swarm → `OPS_ORACLE_PK` (optional `OPS_ORACLE_ADDRESS`), RPC; client → `VITE_ORACLE_ADDRESS`, `VITE_REFERRAL_GROUP_ID`.
 
@@ -115,7 +122,34 @@ Env: `server/.env` / cron / swarm → `OPS_ORACLE_PK` (optional `OPS_ORACLE_ADDR
 
 ---
 
-## 3. Marketing_test — Side-bet in / out
+## 3. Emergency recovery (`EMERGENCY_RECOVERY_ADDRESS`)
+
+**Shape:** Cold address-only role — multisig or hardware wallet held outside web and cron. Registered under `REFERRAL_ROOT` as the referral tree root. Embedded in every new contest at `createContest` as the immutable `emergencyRecovery` address.
+
+| Role | Purpose | Holds keys? | Env / config | Known address |
+|------|---------|-------------|--------------|---------------|
+| **Emergency recovery** | Referral root; receives its referral-network fee share; calls `emergencyRecoverFunds()` after contest expiry | **No** in app env — ops custody only | `EMERGENCY_RECOVERY_ADDRESS` (server/contracts/swarm); `VITE_EMERGENCY_RECOVERY_ADDRESS` (client, public) | TBD |
+
+### Balance model
+
+| Asset | Direction | Why |
+|-------|-----------|-----|
+| **ETH** | Out (rare) | Gas when ops calls `emergencyRecoverFunds()` after expiry |
+| **Payment token** | In (ongoing) | Referral-network fee share when on the winner's payout chain |
+| **Payment token** | In (after expiry) | Residual contest balance from `emergencyRecoverFunds()` — unclaimed prizes, un-refunded deposits |
+
+```text
+settleContest → ReferralNetworkFeeDistributed → cold recovery root (when ancestor)
+After expiry (SETTLED or CANCELLED):
+  cold wallet ──emergencyRecoverFunds()──► remaining ContestController balance
+App/cron observe CLOSED state; they never sign recovery txs.
+```
+
+Legacy contests on old factory/ABI are out of scope for automated recovery.
+
+---
+
+## 4. Marketing_test — Side-bet in / out
 
 **Shape:** A **paymentToken ledger** only — no meaningful ETH role beyond optional outbound-tx gas if ops sends payouts from `out`. Separate from contest escrow and the OPS_ORACLE key.
 
@@ -155,7 +189,8 @@ Env: client `VITE_SIDE_BET_STAKE_RECIPIENT`; server `SIDE_BETS_ENABLED` (+ DataG
 | Bucket | Role | Env key | Base Sepolia | Base mainnet |
 |--------|------|---------|--------------|--------------|
 | Infra | Deployer | `DEPLOYER_PK` | | |
-| Cron-Ops | OPS_ORACLE (contest + referral + root) | `OPS_ORACLE_PK` | | |
+| Cron-Ops | OPS_ORACLE (contest lifecycle + referral signer) | `OPS_ORACLE_PK` | | |
+| Recovery | Emergency recovery (referral root + post-expiry recovery) | `EMERGENCY_RECOVERY_ADDRESS` | | |
 | Marketing_test | Side-bet in | `VITE_SIDE_BET_STAKE_RECIPIENT` | | `0x6569E9BA175fA46FFf13bc649E0D92813E507a06` |
 | Marketing_test | Side-bet out | — | | |
 

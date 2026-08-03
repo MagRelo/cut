@@ -108,7 +108,7 @@ graph TB
 - `activateContest()`: Start contest (oracle only)
 - `lockContest()`: Lock secondary positions (oracle only; required before settle)
 - `settleContest(winningEntries, payoutBps)`: Settle contest (oracle only; LOCKED)
-- `closeContest()`: Force distribution after expiry (oracle only)
+- `emergencyRecoverFunds()`: Recover residual balance after expiry (`emergencyRecovery` only)
 
 ### Secondary Market
 - `addSecondaryPosition(entryId, amount)`: Add prediction (ACTIVE only)

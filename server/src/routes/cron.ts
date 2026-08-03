@@ -8,7 +8,6 @@ const PIPELINE_STEPS = [
   "refreshSideBetQuotes (golf; when SIDE_BETS_ENABLED + DATAGOLF_API_KEY)",
   "batchActivateContests",
   "batchSettleContests",
-  "batchCloseContests",
   "batchSyncReferralGraph",
   "overviewPipeline (*/20 * * * *) → refreshContestOverviews + refreshCommoditiesContestOverviews",
   "feedWorker (in-process; CommentaryFeedJob queue, concurrency 1)",

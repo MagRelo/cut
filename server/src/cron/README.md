@@ -31,7 +31,7 @@ Graceful shutdown: SIGTERM / SIGINT stop all scheduled tasks and request feed wo
 
 | Job | Cadence | Notes |
 | --- | --- | --- |
-| `scorePipeline` | `*/5 * * * *` | Scores, golf side-bet quotes, activate/settle/close, referral |
+| `scorePipeline` | `*/5 * * * *` | Scores, golf side-bet quotes, activate/settle, referral |
 | `overviewPipeline` | `*/20 * * * *` | PGA continuous + commodities day-settle `Contest.commentary` refresh |
 | `feedWorker` | in-process | Drains `CommentaryFeedJob` (concurrency 1; PGA feed stories) |
 
@@ -53,8 +53,9 @@ Separate running flags skip a tick if that pipeline is still in progress.
 3. **`refreshSideBetQuotes`** — golf-owned; no-op unless `SIDE_BETS_ENABLED` and `DATAGOLF_API_KEY`
 4. **`batchActivateContests`** — `OPEN` → `ACTIVE` when the sport says the event is live
 5. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED` when the event is complete
-6. **`batchCloseContests`** — `SETTLED` → `CLOSED` after on-chain expiry
-7. **`batchSyncReferralGraph`** — push pending referral registrations on-chain
+6. **`batchSyncReferralGraph`** — push pending referral registrations on-chain
+
+`CLOSED` is observed after ops calls `emergencyRecoverFunds()` from the cold emergency-recovery wallet post-expiry — not via cron.
 
 Better Stack heartbeat reports on the **score** pipeline only.
 
@@ -85,7 +86,7 @@ Better Stack heartbeat reports on the **score** pipeline only.
 | Sync field                        | `pnpm run service:sync-event-field`                                                                |
 | Sync scores                       | `pnpm run service:sync-event-scores`                                                               |
 | Update lineups                    | `pnpm run service:update-contest-lineups`                                                          |
-| Activate / settle / close (batch) | `service:batch-activate-contests`, `service:batch-settle-contests`, `service:batch-close-contests` |
+| Activate / settle (batch) | `service:batch-activate-contests`, `service:batch-settle-contests` |
 | Lock contests                     | `service:batch-lock-contests` or `POST /api/admin/contests/lock-eligible`                          |
 | Referral sync                     | `service:batch-sync-referral-graph`                                                                |
 

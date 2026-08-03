@@ -3,7 +3,6 @@ import { getActiveEvents } from "../services/events/getActiveEvents.js";
 import { runSportEventPipeline } from "../services/cron/runSportEventPipeline.js";
 import { batchActivateContests } from "../services/batch/batchActivateContests.js";
 import { batchSettleContests } from "../services/batch/batchSettleContests.js";
-import { batchCloseContests } from "../services/batch/batchCloseContests.js";
 import { batchSyncReferralGraph } from "../services/batch/batchSyncReferralGraph.js";
 import { refreshOpenSideBetQuotes } from "../services/sideBets/refreshOpenSideBetQuotes.js";
 import { refreshContestOverviews } from "../sports/pga-golf/commentary/refreshContestOverviews.js";
@@ -124,7 +123,6 @@ class CronScheduler {
         pipelineErrors,
       );
       await this.executeWithErrorHandling("Settle Contests", batchSettleContests, pipelineErrors);
-      await this.executeWithErrorHandling("Close Contests", batchCloseContests, pipelineErrors);
       await this.executeWithErrorHandling(
         "Sync Referral Graph",
         batchSyncReferralGraph,

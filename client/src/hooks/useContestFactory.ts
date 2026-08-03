@@ -24,6 +24,7 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
     referralGraph: string,
     rewardCalculator: string,
     referralGroupId: Hex,
+    emergencyRecovery: string,
   ) => {
     return [
       {
@@ -38,6 +39,7 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
           referralGraph as `0x${string}`,
           rewardCalculator as `0x${string}`,
           referralGroupId,
+          emergencyRecovery as `0x${string}`,
         ],
         functionName: "createContest",
         to: contestFactoryAddress as `0x${string}`,

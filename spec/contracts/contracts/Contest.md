@@ -111,13 +111,14 @@ The Contest contract is the core smart contract that implements a combined conte
   - Updates state to SETTLED
   - Stores payout amounts in `primaryPrizePoolPayouts`
 
-#### `closeContest()`
-- **Purpose**: Force distribution after expiry
-- **Access**: Oracle only
-- **State**: SETTLED
+#### `emergencyRecoverFunds()`
+- **Purpose**: Recover residual balance after expiry
+- **Access**: `emergencyRecovery` address only (cold wallet; must differ from oracle)
+- **State**: `SETTLED` or `CANCELLED`, after `expiryTimestamp`
 - **Effects**:
-  - Sweeps unclaimed funds to oracle
-  - Updates state to CLOSED
+  - Sweeps remaining contract balance to `emergencyRecovery`
+  - Updates state to `CLOSED`
+- **Note**: App and cron observe `CLOSED` but never hold the recovery key. Legacy contests on old factory/ABI are out of scope.
 
 #### `cancelContest()`
 - **Purpose**: Cancel contest and enable refunds

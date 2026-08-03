@@ -1,15 +1,15 @@
 /**
- * Register contest oracle under REFERRAL_ROOT on ReferralGraph (Option B step 1).
+ * Register cold emergency-recovery address under REFERRAL_ROOT on ReferralGraph.
  *
- *   pnpm --filter server run script:bootstrap-referral-oracle-root
- *   pnpm --filter server run script:bootstrap-referral-oracle-root -- --dry-run
+ *   pnpm --filter server run script:bootstrap-referral-root
+ *   pnpm --filter server run script:bootstrap-referral-root --dry-run
  */
 
 import "dotenv/config";
 import { getReferralSyncChainIdFromEnv } from "../lib/referralConfig.js";
 import {
-  bootstrapReferralOracleRoot,
-  isOracleRootRegistered,
+  bootstrapReferralRoot,
+  isReferralRootRegistered,
   resolveReferralGraphSetup,
 } from "../services/referral/referralGraphSetup.js";
 
@@ -22,13 +22,13 @@ async function main() {
   const dryRun = hasDryRunFlag();
   const setup = resolveReferralGraphSetup(chainId);
 
-  const already = await isOracleRootRegistered(setup);
+  const already = await isReferralRootRegistered(setup);
   if (already) {
     console.log(
       JSON.stringify(
         {
           chainId,
-          oracleRoot: setup.oracleRoot,
+          referralRoot: setup.referralRoot,
           graphAddress: setup.graphAddress,
           status: "already_registered",
         },
@@ -39,13 +39,13 @@ async function main() {
     return;
   }
 
-  const result = await bootstrapReferralOracleRoot(setup, { dryRun });
+  const result = await bootstrapReferralRoot(setup, { dryRun });
   console.log(
     JSON.stringify(
       {
         chainId,
         dryRun,
-        oracleRoot: setup.oracleRoot,
+        referralRoot: setup.referralRoot,
         graphAddress: setup.graphAddress,
         ...result,
       },

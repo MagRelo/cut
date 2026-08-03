@@ -49,7 +49,7 @@ The contracts layer implements the core blockchain functionality for Play The Cu
   - `activateContest()` - Start contest
   - `lockContest()` - Lock secondary positions
   - `settleContest()` - Settle and distribute prizes
-  - `closeContest()` - Force distribution after expiry
+  - `emergencyRecoverFunds()` - Recover residual balance after expiry (cold `emergencyRecovery` address)
 
 ### With Client
 
@@ -78,7 +78,7 @@ Contests progress through states: OPEN → ACTIVE → LOCKED → SETTLED → CLO
 - **ACTIVE**: Competition running, primary locked, secondary add only
 - **LOCKED**: Secondary closed; settle required here
 - **SETTLED**: Results in, users claim payouts
-- **CLOSED**: Force distributed, all funds moved
+- **CLOSED**: Residual balance recovered via `emergencyRecoverFunds()` after expiry
 
 ## Quick Links
 

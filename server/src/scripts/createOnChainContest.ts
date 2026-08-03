@@ -19,6 +19,7 @@ import { baseSepolia } from "viem/chains";
 import ContestFactory from "../contracts/ContestFactory.json" with { type: "json" };
 import sepoliaContracts from "../contracts/sepolia.json" with { type: "json" };
 import { getChainConfig } from "../lib/chainConfig.js";
+import { requireEmergencyRecoveryAddress } from "../lib/emergencyRecovery.js";
 import { getOpsOracleAddress, getOpsOraclePrivateKey } from "../lib/opsOracle.js";
 import { parseReferralGroupIdFromEnv } from "../lib/referralConfig.js";
 import { prisma } from "../lib/prisma.js";
@@ -47,6 +48,7 @@ async function main(): Promise<void> {
 
   const privateKey = getOpsOraclePrivateKey();
   const oracle = getOpsOracleAddress();
+  const emergencyRecovery = requireEmergencyRecoveryAddress();
 
   const referralGroupId = parseReferralGroupIdFromEnv();
   if (!referralGroupId) {
@@ -105,6 +107,7 @@ async function main(): Promise<void> {
 
   console.log(`[chain] Creating contest on ${chainConfig.name} via ${factoryAddress}`);
   console.log(`[chain] Oracle: ${oracle}`);
+  console.log(`[chain] Emergency recovery: ${emergencyRecovery}`);
   console.log(`[chain] Expiry: ${endTime.toISOString()} (${expiryTimestamp})`);
 
   const hash = await walletClient.writeContract({
@@ -121,6 +124,7 @@ async function main(): Promise<void> {
       referralGraph,
       rewardCalculator,
       referralGroupId,
+      emergencyRecovery,
     ],
   });
 
@@ -160,6 +164,7 @@ async function main(): Promise<void> {
         paymentTokenAddress: paymentToken,
         paymentTokenSymbol: "xUSDC",
         oracle,
+        emergencyRecovery,
         expiryTimestamp: Number(expiryTimestamp),
         primaryDeposit: DEFAULT_PRIMARY_DEPOSIT,
         referralNetworkBps: DEFAULT_REFERRAL_NETWORK_BPS,

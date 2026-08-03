@@ -116,7 +116,7 @@ Every **5 minutes** when `ENABLE_CRON=true`:
 1. For each `CompetitionEvent` where `isActive=true`:
    - `runSportEventPipeline` → sync metadata, field, scores, update contest lineups
 2. `refreshOpenSideBetQuotes` (if `SIDE_BETS_ENABLED` + DataGolf key)
-3. `batchActivateContests` / `batchSettleContests` / `batchCloseContests`
+3. `batchActivateContests` / `batchSettleContests`
 4. `batchSyncReferralGraph`
 
 Details: [server/cron.md](../server/cron.md)

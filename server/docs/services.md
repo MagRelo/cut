@@ -28,7 +28,7 @@ Golf-only: loads `server/src/tournamentSummaries/{externalId}.json` when present
 | `OPEN` → `ACTIVE` | `activateContest` / `batchActivateContests` |
 | `ACTIVE` → `LOCKED` | `lockContest` / `batchLockContests` (admin); also auto-locked by `settleContest` when still ACTIVE |
 | `LOCKED` → `SETTLED` | `settleContest` / `batchSettleContests` (locks first if contract is still ACTIVE) |
-| `SETTLED` / `CANCELLED` → `CLOSED` | `closeContest` / `batchCloseContests` (after expiry) |
+| `SETTLED` / `CANCELLED` → `CLOSED` | External `emergencyRecoverFunds()` from cold `emergencyRecovery` address after expiry |
 
 ---
 
@@ -38,7 +38,7 @@ Every 5 minutes — single pipeline in `src/cron/scheduler.ts`:
 
 1. Per active event: metadata, field, withdrawals, live scores (when live), contest lineup updates
 2. Side-bet quote refresh (feature-flagged)
-3. Batch activate / settle / close contests
+3. Batch activate / settle contests
 4. Referral graph sync
 
 See [`spec/server/cron.md`](../../spec/server/cron.md) for the full sequence.

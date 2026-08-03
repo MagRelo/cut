@@ -105,7 +105,7 @@ stateDiagram-v2
     LOCKED --> SETTLED: settleContest()
     LOCKED --> CANCELLED: cancelContest()
     
-    SETTLED --> CLOSED: closeContest() after expiry
+    SETTLED --> CLOSED: emergencyRecoverFunds() after expiry (cold emergencyRecovery)
     
     CLOSED --> [*]
     CANCELLED --> [*]
@@ -158,5 +158,5 @@ Primary Payout:
 
 Secondary Payout:
 ├─ Winner-take-all pro-rata on secondaryWinningEntry liquidity share
-└─ Dust remains for closeContest sweep
+└─ Residual dust may be cleared to hot oracle (UnallocatedBalanceCleared) or recovered via emergencyRecoverFunds after expiry
 ```

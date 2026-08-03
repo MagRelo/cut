@@ -236,8 +236,9 @@ Pipeline order (same as golf):
 2. **`refreshOpenSideBetQuotes`** — golf only (`SIDE_BETS_ENABLED`)
 3. **`batchActivateContests`** — `OPEN` → `ACTIVE` when event is `LIVE`
 4. **`batchSettleContests`** — when event is `COMPLETE`
-5. **`batchCloseContests`**
-6. **`batchSyncReferralGraph`**
+5. **`batchSyncReferralGraph`**
+
+**Post-expiry recovery (ops, not cron):** After on-chain expiry, the cold emergency-recovery wallet calls `emergencyRecoverFunds()` on the contest controller to reach `CLOSED` and sweep residual balance. See [wallet-roles-cashflows.md](../../operations/wallet-roles-cashflows.md).
 
 **F1 scoring notes during LIVE:**
 

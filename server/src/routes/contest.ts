@@ -469,6 +469,10 @@ contestRouter.post("/", requireAuth, async (c) => {
       const referralGroupIdRaw =
         (settings as { referralGroupId?: string }).referralGroupId ?? parseReferralGroupIdFromEnv();
       const referralGroupId = referralGroupIdRaw as `0x${string}` | null;
+      const emergencyRecovery =
+        typeof (settings as { emergencyRecovery?: string }).emergencyRecovery === "string"
+          ? (settings as { emergencyRecovery: string }).emergencyRecovery
+          : undefined;
 
       if (
         typeof settings.primaryDeposit === "number" &&
@@ -477,7 +481,8 @@ contestRouter.post("/", requireAuth, async (c) => {
         typeof bps === "number" &&
         referralGraphAddress &&
         rewardCalculatorAddress &&
-        referralGroupId
+        referralGroupId &&
+        emergencyRecovery
       ) {
         const primaryDepositAmountWei = primaryDepositWeiFromSettings(
           settings.primaryDeposit,
@@ -495,6 +500,7 @@ contestRouter.post("/", requireAuth, async (c) => {
           referralGraphAddress,
           rewardCalculatorAddress,
           referralGroupId,
+          emergencyRecovery,
         }).catch((err) => {
           console.error("Failed to queue contest contract verification:", err);
         });

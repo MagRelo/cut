@@ -1,12 +1,16 @@
 /**
  * Index referral-network payouts from the settleContest transaction receipt.
  * Referral fees are distributed at settlement (not on pushPrimary/Secondary).
+ *
+ * Indexes `ReferralNetworkFeeDistributed` recipients (including cold emergency recovery
+ * when it appears in the payout chain). `ReferralNetworkFeeToPrimary` spills unallocated
+ * referral fee back into primary — not a wallet payment. `UnallocatedBalanceCleared` dust
+ * to the hot oracle is ignored for ledger rows.
  */
 
 import type { Abi, TransactionReceipt } from "viem";
 import { getAddress, parseEventLogs } from "viem";
 import ContestController from "../../contracts/ContestController.json" with { type: "json" };
-import { getContestContract } from "../shared/contractClient.js";
 import { parseReferralGroupIdFromEnv } from "../../lib/referralConfig.js";
 import { insertOnchainPaymentRow, resolveUserIdForWallet } from "./onchainPayment.js";
 
@@ -82,41 +86,8 @@ export async function recordSettlementReferralPayments(
     }
   }
 
-  const oracleFeeLogs = parseEventLogs({
-    abi: contestAbi,
-    eventName: "ReferralNetworkFeeToOracle",
-    logs: settleReceipt.logs,
-  });
-
-  if (oracleFeeLogs.length > 0) {
-    const contract = getContestContract(contestAddress, chainId);
-    const oracle = (await contract.read.oracle!()) as `0x${string}`;
-
-    for (const log of oracleFeeLogs) {
-      if (getAddress(log.address) !== contestAddr) continue;
-      const args = log.args as { winner: `0x${string}`; amount: bigint };
-      const amount = args.amount;
-      if (amount === 0n) continue;
-      const userId = await resolveUserIdForWallet(chainId, oracle);
-      await insertOnchainPaymentRow({
-        kind: "REFERRAL",
-        walletAddress: oracle,
-        userId,
-        contestId,
-        chainId,
-        tokenAddress: paymentTokenAddress,
-        amountWei: amount.toString(),
-        transactionHash: settleReceipt.transactionHash,
-        logIndex: Number(log.logIndex),
-        metadata: {
-          payoutAnchorWinner: args.winner,
-          path: "oracle",
-          ...(groupIdFromEnv ? { groupId: groupIdFromEnv } : {}),
-        },
-      });
-      referralRowCount += 1;
-    }
-  }
+  // ReferralNetworkFeeToPrimary: fee spilled to primary pool (not a wallet transfer).
+  // UnallocatedBalanceCleared: dust to hot oracle — intentionally not ledgered as REFERRAL.
 
   return { referralRowCount };
 }

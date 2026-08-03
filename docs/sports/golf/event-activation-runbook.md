@@ -153,8 +153,9 @@ Pipeline order:
 2. **`refreshOpenSideBetQuotes`** — when `SIDE_BETS_ENABLED` and `DATAGOLF_API_KEY` are set
 3. **`batchActivateContests`** — `OPEN` → `ACTIVE`
 4. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED`
-5. **`batchCloseContests`** — `SETTLED` → `CLOSED` after expiry
-6. **`batchSyncReferralGraph`**
+5. **`batchSyncReferralGraph`**
+
+**Post-expiry recovery (ops, not cron):** After on-chain expiry, the cold emergency-recovery wallet calls `emergencyRecoverFunds()` on the contest controller to reach `CLOSED` and sweep residual balance. See [wallet-roles-cashflows.md](../../operations/wallet-roles-cashflows.md).
 
 **Admin only (not cron):** `batchLockContests` (`ACTIVE` → `LOCKED`), side-bet lock / settle / close.
 

@@ -6,9 +6,8 @@ The ContestFactory contract provides a centralized way to create and manage Cont
 
 ## Responsibilities
 
-- Create new Contest contract instances
+- Create new ContestController instances
 - Track all created contests
-- Calculate default liquidity parameters
 - Emit events for contest creation
 - Store contest host information
 
@@ -18,48 +17,34 @@ The ContestFactory contract provides a centralized way to create and manage Cont
 - `contests[]`: Array of all created contest addresses
 - `contestHost`: Mapping of contest address to creator address
 
-### Constants
-- `LIQUIDITY_MULTIPLIER`: Multiplier for calculating liquidity parameter (100)
-
 ## Key Functions
 
 ### `createContest(...)`
-- **Purpose**: Create a new Contest contract
+- **Purpose**: Create a new ContestController contract
 - **Parameters**:
   - `paymentToken`: ERC20 token address (USDC on Base, MockUSDC on Sepolia)
-  - `oracle`: Oracle address for state control
-  - `contestantDepositAmount`: Required deposit for contestants
-  - `oracleFee`: Oracle fee in basis points (max 1000 = 10%)
+  - `oracle`: Hot oracle address for lifecycle control (activate, lock, settle, push)
+  - `contestantDepositAmount`: Required primary deposit
+  - `referralNetworkBps`: Referral network fee in basis points (e.g. 500 = 5%)
   - `expiry`: Expiration timestamp
-  - `liquidityParameterOverride`: Custom LMSR parameter (0 = auto-calculate)
-  - `demandSensitivity`: LMSR demand sensitivity in basis points
-  - `positionBonusShareBps`: Position bonus share (basis points)
-  - `targetPrimaryShareBps`: Target primary share (basis points)
-  - `maxCrossSubsidyBps`: Maximum cross-subsidy (basis points)
-- **Returns**: Address of newly created Contest contract
+  - `primaryDepositSecondarySubsidyBps`: Share of primary deposit routed to secondary subsidy
+  - `referralGraph`: ReferralGraph contract address
+  - `rewardCalculator`: RewardCalculator contract address
+  - `referralGroupId`: `bytes32` group id on ReferralGraph
+  - `emergencyRecovery`: Cold address-only recovery role (must differ from `oracle`); referral tree root and post-expiry residual recovery
+- **Returns**: Address of newly created ContestController
 - **Effects**:
   - Validates parameters
-  - Calculates liquidity parameter if override is 0
-  - Deploys new Contest contract
+  - Deploys new ContestController
   - Adds to `contests[]`
   - Sets `contestHost[contest] = msg.sender`
   - Emits `ContestCreated` event
-
-## Liquidity Parameter Calculation
-
-If `liquidityParameterOverride` is 0, the factory calculates:
-```
-liquidityParameter = contestantDepositAmount × LIQUIDITY_MULTIPLIER
-```
-
-This creates:
-- **Steeper curves** for small contests (higher prices, less volume expected)
-- **Flatter curves** for large contests (lower prices, more volume expected)
 
 ## Dependencies
 
 - **ContestController**: Creates instances of this contract
 - **Payment token**: ERC20 used for deposits and payouts
+- **ReferralGraph** / **RewardCalculator**: Referral network at settlement
 
 ## Events
 
@@ -73,7 +58,7 @@ This creates:
 ## Usage Pattern
 
 1. User calls `createContest()` with desired parameters
-2. Factory validates and creates Contest contract
+2. Factory validates and creates ContestController
 3. Factory tracks the new contest
 4. User can now interact with the Contest directly
 
@@ -84,10 +69,3 @@ This creates:
 - Enables tracking of all contests
 - Simplifies discovery and management
 - Allows future upgrades to creation logic
-
-### Why Auto-Calculate Liquidity?
-- Reduces configuration complexity
-- Adapts to contest size automatically
-- Provides sensible defaults
-- Still allows override for custom needs
-

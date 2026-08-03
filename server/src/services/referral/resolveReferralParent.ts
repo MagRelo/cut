@@ -1,6 +1,6 @@
 /**
  * Resolve expected on-chain parent from durable DB invite fields.
- * Organics → oracle; invitees → inviter primary wallet on the target chain.
+ * Organics → emergency recovery (referral root); invitees → inviter primary wallet on the target chain.
  */
 
 import { getAddress, isAddress } from "viem";
@@ -28,15 +28,15 @@ export function isOrganicReferralUser(u: {
 
 /**
  * Expected parent wallet for graph registration / audit.
- * Never returns oracle for invited users.
+ * Never returns the referral root for invited users.
  */
 export async function resolveExpectedReferralParent(
   user: ReferralParentUser,
   chainId: number,
-  oracleRoot: `0x${string}`,
+  referralRoot: `0x${string}`,
 ): Promise<ResolveReferralParentResult> {
   if (isOrganicReferralUser(user)) {
-    return { kind: "organic", parent: oracleRoot };
+    return { kind: "organic", parent: referralRoot };
   }
 
   if (user.referredByUserId) {

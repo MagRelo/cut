@@ -4,13 +4,28 @@ Advance ContestCatalyst from `b2acd8d` to upstream `4dd88f6`, wire a cold addres
 
 ## Tasks
 
-- [ ] Bump ContestCatalyst and regenerate contract artifacts
-- [ ] Add emergencyRecovery to createContest call sites, settings, and Blockscout verify encoding
-- [ ] Make emergency recovery the referral root in config and signup/sync paths
-- [ ] Rebuild referral graph under emergency recovery (fresh group + rematerialize)
-- [ ] Remove automated legacy close flow and document cold recovery
-- [ ] Adapt settlement event indexing, tests, env catalogs, and authoritative specs
-- [ ] Run contract, server, and client verification
+- [x] Bump ContestCatalyst and regenerate contract artifacts
+- [x] Add emergencyRecovery to createContest call sites, settings, and Blockscout verify encoding
+- [x] Make emergency recovery the referral root in config and signup/sync paths
+- [x] Rebuild referral graph under emergency recovery (fresh group + rematerialize)
+- [x] Remove automated legacy close flow and document cold recovery
+- [x] Adapt settlement event indexing, tests, env catalogs, and authoritative specs
+- [x] Run contract, server, and client verification
+
+## Sepolia deploy (2026-08-02)
+
+| Contract | Address |
+|----------|---------|
+| MockUSDC (unchanged) | `0x6662473494b64c6aec18E703E839AF26d371f570` |
+| ContestFactory | `0xBFe12841571288119Cc2d5553161A7Ad865720dD` |
+| ReferralGraph | `0x820bDEe2FB655eFCfaF82971F7e827a5141417bB` |
+| RewardCalculator | `0xE2E7184C7Fc5A35Be22c23A87Ca2d7f6E2d6B72c` |
+
+- OPS_ORACLE (hot): `0x3f76535570b1Bb18D454bC7A8B76f2dEE1726AA5`
+- Emergency recovery (cold root): `0x15c3DC71f1f7Fd975e6c82Ff84e8bcaC0E4b2acb`
+- Fresh `REFERRAL_GROUP_ID` in server/contracts/client/swarm env
+- Emergency recovery registered under `REFERRAL_ROOT` (bootstrap tx on Sepolia)
+- Open: live rematerialize (`script:rematerialize-referral-graph`, then `--reset-hashes` if needed); fund OPS as needed for ongoing register gas
 
 ## Contract integration
 

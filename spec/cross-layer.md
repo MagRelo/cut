@@ -155,7 +155,7 @@ Every 5 minutes (`ENABLE_CRON=true`):
 
 1. For each active event → `runSportEventPipeline` (plugin sync + lineup scores)
 2. `refreshOpenSideBetQuotes` (DataGolf → `PropBetModule`)
-3. `batchActivateContests` / `batchSettleContests` / `batchCloseContests`
+3. `batchActivateContests` / `batchSettleContests`
 4. `batchSyncReferralGraph`
 
 Client does **not** trigger cron; it benefits from fresher scores and contest status on next query/refetch.

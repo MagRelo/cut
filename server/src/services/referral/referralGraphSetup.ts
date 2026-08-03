@@ -1,11 +1,12 @@
 /**
- * Option B graph setup: oracle under REFERRAL_ROOT; organic users under oracle.
+ * Referral graph setup: emergency recovery under REFERRAL_ROOT; organics under that cold root.
+ * Hot OPS_ORACLE signs register/batchRegister but is not a graph ancestor.
  */
 
 import { getAddress, type Hex } from "viem";
 import {
   getReferralGraphAddress,
-  getReferralOracleRootAddress,
+  getReferralRootAddress,
   REFERRAL_ROOT,
   requireReferralGroupId,
 } from "../../lib/referralConfig.js";
@@ -19,7 +20,8 @@ export type ReferralGraphSetup = {
   chainId: number;
   graphAddress: `0x${string}`;
   groupId: Hex;
-  oracleRoot: `0x${string}`;
+  /** Cold emergency-recovery address (tree root under REFERRAL_ROOT). */
+  referralRoot: `0x${string}`;
 };
 
 export function resolveReferralGraphSetup(chainId: number): ReferralGraphSetup {
@@ -31,26 +33,26 @@ export function resolveReferralGraphSetup(chainId: number): ReferralGraphSetup {
     chainId,
     graphAddress,
     groupId: requireReferralGroupId(),
-    oracleRoot: getReferralOracleRootAddress(chainId),
+    referralRoot: getReferralRootAddress(chainId),
   };
 }
 
-export async function isOracleRootRegistered(setup: ReferralGraphSetup): Promise<boolean> {
+export async function isReferralRootRegistered(setup: ReferralGraphSetup): Promise<boolean> {
   return referralGraphIsRegistered(
     setup.chainId,
     setup.graphAddress,
-    setup.oracleRoot,
+    setup.referralRoot,
     setup.groupId,
   );
 }
 
-/** Register contest oracle wallet under REFERRAL_ROOT (idempotent). */
-export async function bootstrapReferralOracleRoot(
+/** Register cold emergency-recovery wallet under REFERRAL_ROOT (idempotent). */
+export async function bootstrapReferralRoot(
   setup: ReferralGraphSetup,
   options?: { dryRun?: boolean },
 ): Promise<{ registered: boolean; txHash: Hex | null }> {
   const dryRun = options?.dryRun ?? false;
-  if (await isOracleRootRegistered(setup)) {
+  if (await isReferralRootRegistered(setup)) {
     return { registered: false, txHash: null };
   }
   if (dryRun) {
@@ -59,7 +61,7 @@ export async function bootstrapReferralOracleRoot(
   const txHash = await referralGraphRegister(
     setup.chainId,
     setup.graphAddress,
-    setup.oracleRoot,
+    setup.referralRoot,
     REFERRAL_ROOT,
     setup.groupId,
   );
@@ -74,7 +76,7 @@ export async function isWalletRegisteredOnGraph(
   return referralGraphIsRegistered(setup.chainId, setup.graphAddress, addr, setup.groupId);
 }
 
-/** Register one user wallet with a referrer (oracle or inviter). */
+/** Register one user wallet with a referrer (emergency recovery or inviter). */
 export async function registerWalletOnReferralGraph(
   setup: ReferralGraphSetup,
   userWallet: string,

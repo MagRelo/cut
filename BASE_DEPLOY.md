@@ -84,9 +84,9 @@ pnpm --filter server run script:rematerialize-referral-graph --dry-run
 pnpm --filter server run script:rematerialize-referral-graph --reset-hashes
 ```
 
-Uses `REFERRAL_SYNC_CHAIN_ID` (84532). Maps DB organics/invites onto the graph: oracle → organics under oracle → invitees under inviter **primary** smart wallet. Never registers invitees under oracle. Exits non-zero on parent audit mismatch.
+Uses `REFERRAL_SYNC_CHAIN_ID` (84532). Maps DB organics/invites onto the graph: emergency recovery → organics under recovery → invitees under inviter **primary** smart wallet. Never registers invitees under the referral root. Exits non-zero on parent audit mismatch.
 
-- [x] Oracle registered under `REFERRAL_ROOT`
+- [x] Referral root registered under `REFERRAL_ROOT` (historical soak used hot oracle; cutover uses `EMERGENCY_RECOVERY_ADDRESS`)
 - [x] Organics under oracle (34)
 - [x] Invite chains match DB (`referredByUserId` → inviter primary); audit clean (11/11)
 - [x] Spot-check DipChutney → One Direction; User 0x16ca → DipChutney; User 0x4151 → User 0x16ca
@@ -103,8 +103,7 @@ New graph (after rematerialize redeploy):
 - [x] Lock → settle — **2-arg** `settleContest` (`0x88e08db7…51b8`)
 - [x] Referral fee transfers + `OnchainPayment` `REFERRAL` rows (**3**): DipChutney 0.357 / One Direction 0.214 / oracle 0.129 xUSDC
 - [x] Push primary (`0x62f9d517…458a5`)
-- [x] Close after expiry (incl. CANCELLED if needed)
-- [x] **Gate:** rematerialize + invite-chain fee smoke green (close optional)
+- [x] **Gate:** rematerialize + invite-chain fee smoke green
 
 Verified: entrant → DipChutney → One Direction → oracle (not oracle-only).
 
@@ -146,7 +145,7 @@ Prod users and contests remain on Sepolia. Prepare Base mainnet without switchin
 
 - [x] At least one full contest lifecycle on prod Sepolia (create → enter → lock → settle → claim)
 - [x] Referral fees + sync look healthy under real traffic
-- [x] Cron settle / lock / close paths stable
+- [x] Cron settle / lock paths stable
 - [x] No settle calls against **old** contest addresses with the new ABI (use old tooling for leftovers)
 
 ### 3b. Deploy Base contracts
@@ -196,8 +195,8 @@ pnpm --filter server run script:rematerialize-referral-graph --dry-run
 pnpm --filter server run script:rematerialize-referral-graph --reset-hashes
 ```
 
-- [ ] Oracle → `REFERRAL_ROOT`
-- [ ] Organics under oracle; invitees under inviter primary on `8453`
+- [ ] Emergency recovery registered under `REFERRAL_ROOT`
+- [ ] Organics under emergency recovery; invitees under inviter primary on `8453`
 - [ ] Audit clean (zero parent mismatches / deferred)
 
 ### 3e. Base smoke (pre–client flip)
@@ -253,8 +252,8 @@ After ~1 week on Sepolia and Base smoke is green, point production wallets at Ba
 | Base deploy                 | `pnpm run deploy:contracts:base`                                              |
 | Copy ABIs                   | `pnpm run deploy:copy-artifacts`                                              |
 | Rematerialize graph         | `pnpm --filter server run script:rematerialize-referral-graph --reset-hashes` |
-| Bootstrap oracle root       | `pnpm --filter server run script:bootstrap-referral-oracle-root`              |
-| Register organics only      | `pnpm --filter server run script:register-users-under-oracle-root`            |
+| Bootstrap referral root     | `pnpm --filter server run script:bootstrap-referral-root`              |
+| Register organics only      | `pnpm --filter server run script:register-users-under-referral-root`            |
 | Sync invites (cron)         | `pnpm --filter server run service:batch-sync-referral-graph`                  |
 | Sepolia mint xUSDC          | `pnpm run mint-tokens`                                                        |
 | Merge (after Sepolia smoke) | `git checkout main && git merge newSettle`                                    |

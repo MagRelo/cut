@@ -78,6 +78,9 @@ export interface ContestSettings {
   /** `_oracle` */
   oracle: string;
 
+  /** `_emergencyRecovery` — cold address-only residual recovery after expiry (required on new contests). */
+  emergencyRecovery?: string;
+
   /**
    * `_primaryDepositAmount` in human token units (18 decimals on chain).
    * Same value used when calling `ContestFactory.createContest`.

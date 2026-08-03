@@ -5,17 +5,10 @@ import { recordSettlementReferralPayments } from "./recordSettlementReferralPaym
 
 const insertMock = vi.fn().mockResolvedValue(undefined);
 const resolveUserMock = vi.fn().mockResolvedValue("user-1");
-const oracleReadMock = vi.fn().mockResolvedValue("0x1111111111111111111111111111111111111111");
 
 vi.mock("./onchainPayment.js", () => ({
   insertOnchainPaymentRow: (...args: unknown[]) => insertMock(...args),
   resolveUserIdForWallet: (...args: unknown[]) => resolveUserMock(...args),
-}));
-
-vi.mock("../shared/contractClient.js", () => ({
-  getContestContract: () => ({
-    read: { oracle: oracleReadMock },
-  }),
 }));
 
 vi.mock("../../lib/referralConfig.js", () => ({
@@ -118,20 +111,20 @@ describe("recordSettlementReferralPayments", () => {
     });
   });
 
-  it("records oracle fallback from ReferralNetworkFeeToOracle", async () => {
+  it("does not index ReferralNetworkFeeToPrimary as a wallet payment", async () => {
     const contest = "0x6666666666666666666666666666666666666666";
     const topics = encodeEventTopics({
       abi: [
         {
           type: "event",
-          name: "ReferralNetworkFeeToOracle",
+          name: "ReferralNetworkFeeToPrimary",
           inputs: [
             { name: "winner", type: "address", indexed: true },
             { name: "amount", type: "uint256", indexed: false },
           ],
         },
       ],
-      eventName: "ReferralNetworkFeeToOracle",
+      eventName: "ReferralNetworkFeeToPrimary",
       args: { winner: "0x8888888888888888888888888888888888888888" },
     });
 
@@ -159,13 +152,7 @@ describe("recordSettlementReferralPayments", () => {
       settleReceipt: receipt,
     });
 
-    expect(result.referralRowCount).toBe(1);
-    expect(insertMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: "REFERRAL",
-        amountWei: "500",
-        metadata: expect.objectContaining({ path: "oracle" }),
-      }),
-    );
+    expect(result.referralRowCount).toBe(0);
+    expect(insertMock).not.toHaveBeenCalled();
   });
 });

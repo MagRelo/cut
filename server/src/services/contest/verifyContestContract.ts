@@ -21,6 +21,7 @@ export interface VerifyContestContractParams {
   referralGraphAddress: string;
   rewardCalculatorAddress: string;
   referralGroupId: Hex;
+  emergencyRecovery: string;
 }
 
 /**
@@ -74,6 +75,7 @@ export async function queueVerifyContestContract(params: VerifyContestContractPa
       { type: "address" },
       { type: "address" },
       { type: "bytes32" },
+      { type: "address" },
     ],
     [
       params.paymentTokenAddress as `0x${string}`,
@@ -85,6 +87,7 @@ export async function queueVerifyContestContract(params: VerifyContestContractPa
       params.referralGraphAddress as `0x${string}`,
       params.rewardCalculatorAddress as `0x${string}`,
       params.referralGroupId,
+      params.emergencyRecovery as `0x${string}`,
     ],
   );
 

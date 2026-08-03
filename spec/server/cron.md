@@ -24,9 +24,8 @@ flowchart TD
   D --> E[refreshSideBetQuotes]
   E --> F[batchActivateContests]
   F --> G[batchSettleContests]
-  G --> H[batchCloseContests]
-  H --> I[batchSyncReferralGraph]
-  I --> K[Done]
+  G --> H[batchSyncReferralGraph]
+  H --> K[Done]
 ```
 
 ### 1. Sport event pipeline
@@ -87,7 +86,8 @@ Golf-owned entry: `server/src/sports/pga-golf/cron/refreshSideBetQuotes.ts` → 
 | ----------------------- | ----------------------------------------------- |
 | `batchActivateContests` | `OPEN` → `ACTIVE` when sport says event is live |
 | `batchSettleContests`   | → `SETTLED` when event complete + oracle flow   |
-| `batchCloseContests`    | → `CLOSED` after settlement window              |
+
+`CLOSED` is reached when ops calls `emergencyRecoverFunds()` from the cold emergency-recovery wallet after on-chain expiry. The score pipeline does not automate this step.
 
 Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event status.
 

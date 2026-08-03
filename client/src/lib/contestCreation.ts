@@ -1,4 +1,4 @@
-import { isAddress, type Hex } from "viem";
+import { getAddress, isAddress, zeroAddress, type Hex } from "viem";
 import { type ContestSettings, type CreateContestInput } from "../types/contest";
 import { getContractAddress } from "../utils/blockchainUtils.tsx";
 import { primaryDepositWeiFromHuman } from "./paymentTokenSpend";
@@ -18,6 +18,7 @@ export function buildContestSettings(
     paymentTokenAddress,
     paymentTokenSymbol,
     oracle: import.meta.env.VITE_ORACLE_ADDRESS || "",
+    emergencyRecovery: import.meta.env.VITE_EMERGENCY_RECOVERY_ADDRESS || "",
     primaryDeposit: 10,
     referralNetworkBps: Number(import.meta.env.VITE_REFERRAL_NETWORK_BPS) || 500,
     referralGroupId: import.meta.env.VITE_REFERRAL_GROUP_ID || "",
@@ -63,6 +64,18 @@ export function validateContestSettings(
     return "Enter a valid oracle address.";
   }
 
+  const emergencyRecovery = (settings.emergencyRecovery ?? "").trim();
+  if (
+    !emergencyRecovery ||
+    !isAddress(emergencyRecovery) ||
+    getAddress(emergencyRecovery) === zeroAddress
+  ) {
+    return "Enter a valid nonzero emergency recovery address.";
+  }
+  if (getAddress(emergencyRecovery).toLowerCase() === getAddress(oracle).toLowerCase()) {
+    return "Emergency recovery address must differ from the oracle.";
+  }
+
   const maxReferralBps = options?.maxReferralNetworkBps ?? 1000;
   const referralBps = settings.referralNetworkBps ?? settings.oracleFeeBps ?? 0;
   if (referralBps < 0 || referralBps > maxReferralBps) {
@@ -94,6 +107,7 @@ export type CreateContestFactoryCallParams = {
   referralGraph: string;
   rewardCalculator: string;
   referralGroupId: Hex;
+  emergencyRecovery: string;
 };
 
 export function buildCreateContestFactoryCallParams(
@@ -138,6 +152,7 @@ export function buildCreateContestFactoryCallParams(
       referralGraph,
       rewardCalculator,
       referralGroupId,
+      emergencyRecovery: getAddress(s.emergencyRecovery.trim()),
     },
   };
 }

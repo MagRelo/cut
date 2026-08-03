@@ -16,7 +16,7 @@ import {
   resolveExpectedReferralParent,
 } from "./resolveReferralParent.js";
 
-const ORACLE = "0xbe18962d9c9da9681b6ef29df03055a3f329f352" as const;
+const REFERRAL_ROOT_ADDR = "0xbe18962d9c9da9681b6ef29df03055a3f329f352" as const;
 
 describe("resolveReferralParent", () => {
   beforeEach(() => {
@@ -33,7 +33,7 @@ describe("resolveReferralParent", () => {
     ).toBe(false);
   });
 
-  it("resolves organic to oracle", async () => {
+  it("resolves organic to emergency recovery referral root", async () => {
     const result = await resolveExpectedReferralParent(
       {
         id: "u1",
@@ -42,9 +42,9 @@ describe("resolveReferralParent", () => {
         wallets: [],
       },
       84532,
-      ORACLE,
+      REFERRAL_ROOT_ADDR,
     );
-    expect(result).toEqual({ kind: "organic", parent: ORACLE });
+    expect(result).toEqual({ kind: "organic", parent: REFERRAL_ROOT_ADDR });
   });
 
   it("resolves invitee via referredByUserId primary wallet", async () => {
@@ -63,7 +63,7 @@ describe("resolveReferralParent", () => {
         wallets: [],
       },
       84532,
-      ORACLE,
+      REFERRAL_ROOT_ADDR,
     );
 
     expect(result).toEqual({

@@ -1,6 +1,6 @@
 /**
  * Push pending users to ReferralGraph (one register tx per user).
- * Organic users → oracle root; invited users → inviter primary wallet when on-chain.
+ * Organic users → emergency recovery referral root; invited users → inviter primary when on-chain.
  */
 
 import { getAddress, type Hex } from "viem";
@@ -11,8 +11,8 @@ import {
   referralGraphIsRegistered,
 } from "../referral/referralGraph.js";
 import {
-  bootstrapReferralOracleRoot,
-  isOracleRootRegistered,
+  bootstrapReferralRoot,
+  isReferralRootRegistered,
   registerWalletOnReferralGraph,
   resolveReferralGraphSetup,
   type ReferralGraphSetup,
@@ -50,21 +50,21 @@ async function resolveReferrerForSync(
   u: PendingUser,
   setup: ReferralGraphSetup,
 ): Promise<{ ready: boolean; referrer: `0x${string}` | null; error?: string }> {
-  const resolved = await resolveExpectedReferralParent(u, setup.chainId, setup.oracleRoot);
+  const resolved = await resolveExpectedReferralParent(u, setup.chainId, setup.referralRoot);
 
   if (resolved.kind === "error") {
     return { ready: false, referrer: null, error: resolved.error };
   }
 
   if (resolved.kind === "organic") {
-    if (!(await isOracleRootRegistered(setup))) {
-      await bootstrapReferralOracleRoot(setup);
+    if (!(await isReferralRootRegistered(setup))) {
+      await bootstrapReferralRoot(setup);
     }
-    const ready = await isOracleRootRegistered(setup);
-    return { ready, referrer: ready ? setup.oracleRoot : null };
+    const ready = await isReferralRootRegistered(setup);
+    return { ready, referrer: ready ? setup.referralRoot : null };
   }
 
-  // Invited: never use oracle; wait until parent is on-chain
+  // Invited: never use referral root; wait until parent is on-chain
   const onChain = await referralGraphIsRegistered(
     setup.chainId,
     setup.graphAddress,
@@ -112,7 +112,7 @@ export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
       );
 
       if (registered) {
-        const expected = await resolveExpectedReferralParent(u, chainId, setup.oracleRoot);
+        const expected = await resolveExpectedReferralParent(u, chainId, setup.referralRoot);
         if (expected.kind === "error") {
           failed += 1;
           results.push({
@@ -193,8 +193,8 @@ export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
 
       // Refuse to register invitees under oracle if resolution somehow yields organic incorrectly
       if (!isOrganicReferralUser(u)) {
-        const expected = await resolveExpectedReferralParent(u, chainId, setup.oracleRoot);
-        if (expected.kind === "invited" && expected.parent === setup.oracleRoot.toLowerCase()) {
+        const expected = await resolveExpectedReferralParent(u, chainId, setup.referralRoot);
+        if (expected.kind === "invited" && expected.parent === setup.referralRoot.toLowerCase()) {
           failed += 1;
           results.push({
             success: false,
@@ -294,7 +294,7 @@ export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
       error:
         u.referrerAddress || u.referredByUserId
           ? "deferred: referrer not registered on chain yet"
-          : "deferred: oracle root not registered on chain yet",
+          : "deferred: referral root not registered on chain yet",
     });
   }
 

@@ -12,8 +12,8 @@ import {
   referralGraphIsRegistered,
 } from "./referralGraph.js";
 import {
-  bootstrapReferralOracleRoot,
-  isOracleRootRegistered,
+  bootstrapReferralRoot,
+  isReferralRootRegistered,
   isWalletRegisteredOnGraph,
   registerWalletOnReferralGraph,
   resolveReferralGraphSetup,
@@ -141,8 +141,8 @@ export async function rematerializeReferralGraph(
   }
 
   // Phase 1
-  if (!(await isOracleRootRegistered(setup))) {
-    const boot = await bootstrapReferralOracleRoot(setup, { dryRun });
+  if (!(await isReferralRootRegistered(setup))) {
+    const boot = await bootstrapReferralRoot(setup, { dryRun });
     result.oracleBootstrapped = boot.registered || boot.txHash != null;
     console.log(
       dryRun
@@ -161,7 +161,7 @@ export async function rematerializeReferralGraph(
   for (const u of organics) {
     const wallet = pickWalletPublicKeyForChain(u.wallets, chainId);
     if (!wallet) continue;
-    if (getAddress(wallet).toLowerCase() === setup.oracleRoot.toLowerCase()) {
+    if (getAddress(wallet).toLowerCase() === setup.referralRoot.toLowerCase()) {
       result.organicsSkipped += 1;
       continue;
     }
@@ -174,7 +174,7 @@ export async function rematerializeReferralGraph(
           getAddress(wallet).toLowerCase() as `0x${string}`,
           setup.groupId,
         );
-        if (onChainParent !== setup.oracleRoot.toLowerCase()) {
+        if (onChainParent !== setup.referralRoot.toLowerCase()) {
           result.failed.push({
             userId: u.id,
             name: u.name,
@@ -190,7 +190,7 @@ export async function rematerializeReferralGraph(
       const { txHash, skipped } = await registerWalletOnReferralGraph(
         setup,
         wallet,
-        setup.oracleRoot,
+        setup.referralRoot,
         { dryRun },
       );
       if (skipped) {
@@ -230,7 +230,7 @@ export async function rematerializeReferralGraph(
         continue;
       }
 
-      const resolved = await resolveExpectedReferralParent(u, chainId, setup.oracleRoot);
+      const resolved = await resolveExpectedReferralParent(u, chainId, setup.referralRoot);
       if (resolved.kind === "error") {
         result.deferred.push({ userId: u.id, name: u.name, reason: resolved.error });
         continue;
@@ -245,7 +245,7 @@ export async function rematerializeReferralGraph(
       }
 
       const parent = resolved.parent;
-      if (parent === setup.oracleRoot.toLowerCase()) {
+      if (parent === setup.referralRoot.toLowerCase()) {
         result.failed.push({
           userId: u.id,
           name: u.name,
@@ -349,7 +349,7 @@ export async function rematerializeReferralGraph(
       const wallet = pickWalletPublicKeyForChain(u.wallets, chainId);
       if (!wallet) continue;
 
-      const resolved = await resolveExpectedReferralParent(u, chainId, setup.oracleRoot);
+      const resolved = await resolveExpectedReferralParent(u, chainId, setup.referralRoot);
       if (resolved.kind !== "invited") continue;
 
       const userAddr = getAddress(wallet).toLowerCase() as `0x${string}`;

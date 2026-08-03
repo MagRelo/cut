@@ -147,6 +147,7 @@ export function useCreateContestSubmission(options?: UseCreateContestSubmissionO
       params.referralGraph,
       params.rewardCalculator,
       params.referralGroupId,
+      params.emergencyRecovery,
     );
 
     await execute(calls);
