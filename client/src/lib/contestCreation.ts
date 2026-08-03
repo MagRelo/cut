@@ -141,6 +141,11 @@ export function buildCreateContestFactoryCallParams(
   }
 
   const s = pending.settings;
+  const emergencyRecovery = s.emergencyRecovery?.trim();
+  if (!emergencyRecovery) {
+    return { error: "Emergency recovery address is not configured (VITE_EMERGENCY_RECOVERY_ADDRESS)." };
+  }
+
   return {
     params: {
       paymentToken: paymentTokenAddress,
@@ -152,7 +157,7 @@ export function buildCreateContestFactoryCallParams(
       referralGraph,
       rewardCalculator,
       referralGroupId,
-      emergencyRecovery: getAddress(s.emergencyRecovery.trim()),
+      emergencyRecovery: getAddress(emergencyRecovery),
     },
   };
 }
