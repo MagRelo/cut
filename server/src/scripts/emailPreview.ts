@@ -5,11 +5,13 @@
  *   pnpm --filter server run script:email-preview open
  *   pnpm --filter server run script:email-preview new-tournament
  *
- * new-tournament uses the DB tournament with manualActive=true (same as production blasts).
+ * new-tournament uses the active pga-golf event (same as production blasts).
+ * Override with EVENT_ID or SPORT_ID.
  *
  * Kinds: welcome | new-tournament | reminder | recap | behind-the-scenes | player-withdrawal | minimal
  */
 
+import "dotenv/config";
 import { mkdir, writeFile } from "fs/promises";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";

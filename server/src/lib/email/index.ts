@@ -42,6 +42,7 @@ export {
   getManualActiveTournamentId,
   loadEventForEmail,
   loadTournamentForEmail,
+  resolveEventIdForEmail,
 } from "./data/event.js";
 
 export { sendWelcomeBlast } from "./send/welcome.js";

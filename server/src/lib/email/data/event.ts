@@ -170,6 +170,26 @@ export async function getManualActiveTournamentId(): Promise<string | null> {
   return event?.id ?? null;
 }
 
+/**
+ * Resolve event for email preview / blasts.
+ * Prefer EVENT_ID or TOURNAMENT_ID; else active event for SPORT_ID (default pga-golf);
+ * else any active event.
+ */
+export async function resolveEventIdForEmail(
+  defaultSportId: string,
+): Promise<string> {
+  const fromEnv = process.env.EVENT_ID?.trim() || process.env.TOURNAMENT_ID?.trim();
+  if (fromEnv) return fromEnv;
+  const sportId = process.env.SPORT_ID?.trim() || defaultSportId;
+  const id = await getActiveEventId(sportId);
+  if (id) return id;
+  const any = await getAnyActiveEvent();
+  if (any) return any.id;
+  throw new Error(
+    "No active event; set EVENT_ID or run: pnpm run service:init-event pga-golf R{pgaTourId}",
+  );
+}
+
 export async function loadEventForEmail(eventId: string): Promise<EmailEventRecord | null> {
   const event = await prisma.competitionEvent.findUnique({
     where: { id: eventId },
