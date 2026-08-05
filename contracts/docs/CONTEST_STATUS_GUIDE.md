@@ -8,6 +8,19 @@ OPEN → ACTIVE → LOCKED → SETTLED → CLOSED
               CANCELLED (from any pre-SETTLED state)
 ```
 
+### API / UI gates vs event status
+
+**Primary join/leave and contest-scoped lineup edits follow `ContestController.state()`** (DB `Contest.status` only as RPC fallback). Event status (`SCHEDULED` / `LIVE` / `COMPLETE`) drives cron activate/settle only — it must not gate join, leave, or contest lineup APIs directly.
+
+| Action | Allowed on-chain states | Helper |
+|--------|-------------------------|--------|
+| Join / `addPrimaryPosition` | `OPEN` | `canAddPrimaryPosition` |
+| Leave / `removePrimaryPosition` | `OPEN` or `CANCELLED` | `canRemovePrimaryPosition` |
+| Contest lineup create/edit | `OPEN` (same as join window) | `canAddPrimaryPosition` |
+| Event-only lineup create/edit | Event not `LIVE`/`COMPLETE` | — |
+
+Leaving a contest deletes the `ContestLineup` row; related `ContestLineupTimeline` snapshots cascade-delete so leave still works after live scoring has written timeline rows.
+
 ### Weekly Timeline
 
 | Day/Time             | Event                   | Status Transition | What Happens                                                                |

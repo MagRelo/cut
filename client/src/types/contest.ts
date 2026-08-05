@@ -47,13 +47,20 @@ export interface ContestDirectoryResponse {
 export type ContestStatus = "OPEN" | "ACTIVE" | "LOCKED" | "SETTLED" | "CANCELLED" | "CLOSED";
 export type ContestType = "PUBLIC" | "PRIVATE" | "INVITE_ONLY";
 
-// Action locking helpers based on contest status
-// Check if primary actions (join/leave contest) are locked
-export function arePrimaryActionsLocked(contestStatus: ContestStatus): boolean {
-  return contestStatus !== "OPEN";
+// Contract-aligned primary gates (ContestController.state → ContestStatus).
+// Prefer on-chain state when available; event status does not gate these.
+
+/** `addPrimaryPosition` — OPEN only. */
+export function canAddPrimaryPosition(contestStatus: ContestStatus): boolean {
+  return contestStatus === "OPEN";
 }
 
-// Check if secondary actions (predictions/betting) are locked
+/** `removePrimaryPosition` — OPEN or CANCELLED (full refund). */
+export function canRemovePrimaryPosition(contestStatus: ContestStatus): boolean {
+  return contestStatus === "OPEN" || contestStatus === "CANCELLED";
+}
+
+/** Secondary buys — OPEN or ACTIVE. */
 export function areSecondaryActionsLocked(contestStatus: ContestStatus): boolean {
   return contestStatus !== "OPEN" && contestStatus !== "ACTIVE";
 }

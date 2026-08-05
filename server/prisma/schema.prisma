@@ -305,7 +305,7 @@ model ContestLineupTimeline {
   sharePrice      Float?
   createdAt       DateTime @default(now())
 
-  contestLineup ContestLineup @relation(fields: [contestLineupId], references: [id])
+  contestLineup ContestLineup @relation(fields: [contestLineupId], references: [id], onDelete: Cascade)
   contest       Contest       @relation(fields: [contestId], references: [id])
 
   @@index([contestId, timestamp])

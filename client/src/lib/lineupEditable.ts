@@ -1,5 +1,5 @@
 import {
-  arePrimaryActionsLocked,
+  canAddPrimaryPosition,
   type ContestStatus,
 } from "../types/contest";
 
@@ -21,15 +21,20 @@ export function contestStatusFromOnChainState(
   return ON_CHAIN_TO_STATUS[state];
 }
 
+/** Effective contest status: on-chain when available, else DB. */
+export function effectiveContestStatus(
+  contestStatus: ContestStatus,
+  contestStateOnChain?: number,
+): ContestStatus {
+  return contestStatusFromOnChainState(contestStateOnChain) ?? contestStatus;
+}
+
 /**
- * Contest-scoped lineup create/edit uses the same gate as primary join/leave:
- * only while the contest is OPEN. Prefer on-chain `state` when available.
+ * Contest-scoped lineup create/edit tracks the join window (`addPrimaryPosition` / OPEN).
  */
 export function canEditLineupForContest(
   contestStatus: ContestStatus,
   contestStateOnChain?: number,
 ): boolean {
-  const effective =
-    contestStatusFromOnChainState(contestStateOnChain) ?? contestStatus;
-  return !arePrimaryActionsLocked(effective);
+  return canAddPrimaryPosition(effectiveContestStatus(contestStatus, contestStateOnChain));
 }

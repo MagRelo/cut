@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import {
-  arePrimaryActionsLocked,
+  canAddPrimaryPosition,
   type Contest,
   type TimelineData,
 } from "../types/contest";
@@ -22,7 +22,7 @@ export function useContestTimelineQuery(
   const routeKey = contestAddress ? normalizeContestAddress(contestAddress) : "";
   const queryClient = useQueryClient();
   const timelineEnabled =
-    !!routeKey && !!contest && arePrimaryActionsLocked(contest.status);
+    !!routeKey && !!contest && !canAddPrimaryPosition(contest.status);
 
   return useQuery({
     queryKey: queryKeys.contests.timeline(routeKey),

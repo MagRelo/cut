@@ -1,7 +1,8 @@
 import React, { Fragment } from "react";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import type { Contest } from "../../types/contest";
-import { arePrimaryActionsLocked } from "../../types/contest";
+import { canAddPrimaryPosition, canRemovePrimaryPosition } from "../../types/contest";
+import { effectiveContestStatus } from "../../lib/lineupEditable";
 import type { useContestLineupEntry } from "../../hooks/useContestLineupEntry";
 import { CheckIcon } from "@heroicons/react/20/solid";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
@@ -21,31 +22,30 @@ interface ContestLineupJoinActionsProps {
   contest: Contest;
   lineupId: string;
   entry: ContestLineupEntry;
+  /** ContestController.state(); preferred over DB status. */
+  contestStateOnChain?: number;
 }
 
 export const ContestLineupJoinActions: React.FC<ContestLineupJoinActionsProps> = ({
   contest,
   lineupId,
   entry,
+  contestStateOnChain,
 }) => {
   const isEntered = entry.enteredLineupsMap.has(lineupId);
   const isProcessing = entry.isLineupProcessing(lineupId);
-  const canEnter = !arePrimaryActionsLocked(contest.status);
+  const status = effectiveContestStatus(contest.status, contestStateOnChain);
+  const canJoin = canAddPrimaryPosition(status);
+  const canLeave = canRemovePrimaryPosition(status);
 
-  if (!canEnter) {
-    return isEntered ? (
-      <div className={joinActionsFooterClassName}>
-        <EnteredInContestLabel />
-      </div>
-    ) : null;
-  }
+  let footer: React.ReactNode = null;
 
-  return (
-    <>
+  if (isEntered) {
+    footer = (
       <div className={joinActionsFooterClassName}>
-        {isEntered ? (
-          <div className="space-y-2.5">
-            <EnteredInContestLabel />
+        <div className="space-y-2.5">
+          <EnteredInContestLabel />
+          {canLeave ? (
             <button
               type="button"
               onClick={() => void entry.handleLeaveContest(lineupId)}
@@ -61,25 +61,39 @@ export const ContestLineupJoinActions: React.FC<ContestLineupJoinActionsProps> =
                 "Leave Contest"
               )}
             </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => void entry.handleJoinContest(lineupId)}
-            disabled={!entry.hasPlayers(lineupId) || isProcessing || entry.isPrimaryDepositLoading}
-            className="w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 font-display text-sm font-semibold text-white shadow-md transition-colors hover:border-blue-600 hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isProcessing ? (
-              <span className="flex items-center justify-center gap-2">
-                <LoadingSpinnerSmall />
-                Confirming...
-              </span>
-            ) : (
-              `Enter Contest - ${entry.joinPrimaryDepositLabel}`
-            )}
-          </button>
-        )}
+          ) : null}
+        </div>
       </div>
+    );
+  } else if (canJoin) {
+    footer = (
+      <div className={joinActionsFooterClassName}>
+        <button
+          type="button"
+          onClick={() => void entry.handleJoinContest(lineupId)}
+          disabled={!entry.hasPlayers(lineupId) || isProcessing || entry.isPrimaryDepositLoading}
+          className="w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 font-display text-sm font-semibold text-white shadow-md transition-colors hover:border-blue-600 hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isProcessing ? (
+            <span className="flex items-center justify-center gap-2">
+              <LoadingSpinnerSmall />
+              Confirming...
+            </span>
+          ) : (
+            `Enter Contest - ${entry.joinPrimaryDepositLabel}`
+          )}
+        </button>
+      </div>
+    );
+  }
+
+  if (!footer) {
+    return null;
+  }
+
+  return (
+    <>
+      {footer}
 
       <Transition appear show={Boolean(entry.warningMessage)} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={entry.clearWarningMessage}>

@@ -32,7 +32,7 @@ import {
 import { ContestState } from "../services/shared/types.js";
 
 describe("contestAllowsLineupEdits", () => {
-  it("allows OPEN only (same as primary join/leave)", () => {
+  it("allows OPEN only (same as addPrimaryPosition)", () => {
     expect(contestAllowsLineupEdits("OPEN")).toBe(true);
     expect(contestAllowsLineupEdits("ACTIVE")).toBe(false);
   });

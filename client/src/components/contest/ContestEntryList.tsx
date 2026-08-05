@@ -2,7 +2,7 @@ import { UserGroupIcon } from "@heroicons/react/24/outline";
 import { useMemo, useRef, useState } from "react";
 import { type ContestLineup, type PickPopularityMap } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
-import { arePrimaryActionsLocked, type ContestStatus } from "../../types/contest";
+import { canAddPrimaryPosition, type ContestStatus } from "../../types/contest";
 import { useEventScope } from "../../contexts/EventScopeContext";
 import {
   candidatesByEventParticipantIdMap,
@@ -37,7 +37,7 @@ export const ContestEntryList = ({
     [candidates],
   );
 
-  const primaryActionsLocked = entryListOpensModal ?? arePrimaryActionsLocked(contestStatus);
+  const primaryActionsLocked = entryListOpensModal ?? !canAddPrimaryPosition(contestStatus);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLineup, setSelectedLineup] = useState<ContestLineup | null>(null);

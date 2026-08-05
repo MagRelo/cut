@@ -674,14 +674,20 @@ contestRouter.delete(
         },
       });
 
+      // Idempotent: chain leave may succeed before API sync; retry should not 404.
       if (!lineup) {
-        return c.json({ error: "Lineup not found in this contest" }, 404);
+        const formattedContest = await loadFormattedContestById(contestId);
+        if (!formattedContest) {
+          return c.json({ error: "Contest not found" }, 404);
+        }
+        return c.json(formattedContest);
       }
 
       if (lineup.userId !== user.userId) {
         return c.json({ error: "Lineup does not belong to this user" }, 401);
       }
 
+      // Timeline rows cascade via schema; delete lineup row (snapshots removed with it).
       await prisma.contestLineup.delete({
         where: {
           id: contestLineupId,

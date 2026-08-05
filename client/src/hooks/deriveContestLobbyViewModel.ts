@@ -1,4 +1,5 @@
-import { arePrimaryActionsLocked, areSecondaryActionsLocked, type Contest } from "../types/contest";
+import { canAddPrimaryPosition, areSecondaryActionsLocked, type Contest } from "../types/contest";
+import { effectiveContestStatus } from "../lib/lineupEditable";
 import {
   type ContestLobbyPhase,
   type ContestLobbyViewModel,
@@ -71,7 +72,10 @@ export function deriveContestLobbyViewModel(
 ): ContestLobbyViewModel {
   const { contestStateOnChain, hasWallet = true } = input;
   const phase = deriveContestLobbyPhase(contest);
-  const primaryActionsLocked = arePrimaryActionsLocked(contest.status);
+  // Join window closed ⇒ live timeline / entry modal (leave still gated in JoinActions).
+  const primaryActionsLocked = !canAddPrimaryPosition(
+    effectiveContestStatus(contest.status, contestStateOnChain),
+  );
   const isSettled = phase === "settled";
 
   const canPredictOnChain = contestStateOnChain === ContestState.ACTIVE;

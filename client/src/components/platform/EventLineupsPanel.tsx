@@ -267,7 +267,14 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
                 pickPopularity={contest.pickPopularity}
                 contestStatus={contest.status}
               />
-              <ContestLineupJoinActions contest={contest} lineupId={row.id} entry={contestEntry} />
+              <ContestLineupJoinActions
+                contest={contest}
+                lineupId={row.id}
+                entry={contestEntry}
+                contestStateOnChain={
+                  contestStateOnChain !== undefined ? Number(contestStateOnChain) : undefined
+                }
+              />
             </div>
           ))}
           {createLineupPanel}

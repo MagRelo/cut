@@ -1,12 +1,11 @@
 import type { EventStatus } from "@cut/sport-sdk";
 import { prisma } from "../lib/prisma.js";
 import { requireSportModule } from "../sports/registry.js";
-import { readContestState } from "../services/shared/contractClient.js";
 import {
-  arePrimaryActionsLocked,
-  contractStateToStatus,
+  canAddPrimaryPosition,
   type ContestStatus,
 } from "../services/shared/types.js";
+import { resolveContestStatus } from "./resolveContestStatus.js";
 
 export type LineupEditBlock =
   | { code: "not_found" }
@@ -14,10 +13,10 @@ export type LineupEditBlock =
   | { code: "contest_not_editable"; contestId: string; contestStatus: string };
 
 /**
- * Contest-scoped lineup create/edit matches primary join/leave: only while OPEN.
+ * Contest-scoped lineup create/edit tracks the join window (OPEN only).
  */
 export function contestAllowsLineupEdits(status: string): boolean {
-  return !arePrimaryActionsLocked(status as ContestStatus);
+  return canAddPrimaryPosition(status as ContestStatus);
 }
 
 export async function getEventEditBlock(
@@ -32,24 +31,6 @@ export async function getEventEditBlock(
   }
 
   return null;
-}
-
-async function resolveContestStatusForEdit(contest: {
-  id: string;
-  status: string;
-  address: string;
-  chainId: number;
-}): Promise<string> {
-  try {
-    const onChain = await readContestState(contest.address, contest.chainId);
-    return contractStateToStatus(onChain);
-  } catch (error) {
-    console.warn(
-      `[lineupEditable] Falling back to DB status for contest ${contest.id}:`,
-      error instanceof Error ? error.message : error,
-    );
-    return contest.status;
-  }
 }
 
 /** Contest-scoped edits: contest OPEN only (prefer on-chain state). No event gate. */
@@ -70,7 +51,7 @@ export async function getContestEditBlock(
     return { code: "not_found" };
   }
 
-  const status = await resolveContestStatusForEdit(contest);
+  const status = await resolveContestStatus(contest);
   if (!contestAllowsLineupEdits(status)) {
     return {
       code: "contest_not_editable",
@@ -113,7 +94,7 @@ export async function getLineupEditBlock(
   // Contest-scoped lineups follow contest OPEN (on-chain preferred), not event status.
   if (contestScoped) {
     for (const entry of lineup.contestLineups) {
-      const status = await resolveContestStatusForEdit(entry.contest);
+      const status = await resolveContestStatus(entry.contest);
       if (!contestAllowsLineupEdits(status)) {
         return {
           code: "contest_not_editable",
@@ -129,7 +110,7 @@ export async function getLineupEditBlock(
         select: { id: true, status: true, address: true, chainId: true },
       });
       if (contest) {
-        const status = await resolveContestStatusForEdit(contest);
+        const status = await resolveContestStatus(contest);
         if (!contestAllowsLineupEdits(status)) {
           return {
             code: "contest_not_editable",
