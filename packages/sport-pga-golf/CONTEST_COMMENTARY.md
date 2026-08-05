@@ -63,13 +63,15 @@ Shared broadcast voices live in `@cut/sport-sdk`
 `buildPgaContestCommentaryPrompt` (snapshot) and `buildPgaContestFeedPrompt`
 (feed). Story type is the primary prompt selector for feed items. Stage
 instructions overlay only `stage_recap` / snapshot prompts; flash stories
-(`score_swing`) omit the stage overlay so weekend/final
-“open from leaderProgress” lines cannot override event-first framing. Every
-feed prompt also includes the shared event → result narrative pattern, metric
-discipline (no “leverage” or quoted ownership analytics in copy; at most one
-contest-score pair), intensity tone, a deterministic style directive, and an
-optional `RECENTLY_PUBLISHED` anti-repetition block. Word limits resolve from
-story type + intensity via `resolveContestFeedWordLimits`. A short output
+(`score_swing`, `tournament_pulse`) omit the stage overlay so weekend/final
+“open from leaderProgress” lines cannot override story-type framing. Contest
+stories (`score_swing`, `stage_recap`) include the shared event → result
+narrative pattern and metric discipline (no “leverage” or quoted ownership
+analytics in copy; at most one contest-score pair). `tournament_pulse` uses a
+tournament-only narrative instead and skips contest metric discipline.
+Intensity tone, a deterministic style directive, and an optional
+`RECENTLY_PUBLISHED` anti-repetition block always apply. Word limits resolve
+from story type + intensity via `resolveContestFeedWordLimits`. A short output
 contract (no invented facts; plain prose only) always appends.
 
 ## Contest commentary feed
@@ -89,12 +91,13 @@ lives in a separate `Contest.commentaryFeed` JSON document:
 
 `classifyContestFeedStories` compares the previous `lastContext` / `lastHoleState`
 to the fresh analysis and emits rule-based candidates (`score_swing`,
-`stage_recap`) with a `priority` and `intensity` (`routine` | `notable` |
-`major`). Each selected story gets a narrow fact pack and a story-specific
-prompt. Merged items are ordered newest-first by `generatedAt` and trimmed to a
-rolling cap (30). `lastHoleState` is rewritten every successful pass so the next
-tick only sees newly completed holes. Feed job payloads carry `period` so frozen
-generation can set `item.round` even when `lastContext` is missing.
+`stage_recap`, `tournament_pulse`) with a `priority` and `intensity`
+(`routine` | `notable` | `major`). Each selected story gets a narrow fact pack
+and a story-specific prompt. Merged items are ordered newest-first by
+`generatedAt` and trimmed to a rolling cap (30). `lastHoleState` is rewritten
+every successful pass so the next tick only sees newly completed holes. Feed
+job payloads carry `period` so frozen generation can set `item.round` even when
+`lastContext` is missing.
 
 Item ids are `storyType:subjectKey:<generatedAt epoch ms>` via
 `buildContestFeedItemId`. The timestamp component makes each pass a new post
@@ -106,6 +109,32 @@ feed out of chronological order.
 `stage_recap` is emitted when the feed has no recap yet or when the tournament
 stage changes — one post per stage, not regenerated on a timer. The legacy
 `Contest.commentary` snapshot continues to refresh on the batch cadence below.
+
+### Tournament pulse (gap filler)
+
+`tournament_pulse` fills quiet on-course stretches with short PGA tournament
+color when nothing else fires. It rides the live score pipeline
+(`shouldSyncLiveScores` → `afterLiveScoreSync` / detect) and does not use a
+separate timer.
+
+Emit only when all of the following hold:
+
+1. The classifier has **no other candidates** this pass (`score_swing` /
+   `stage_recap` win first).
+2. The golf period is actively on course: `periodStatusDisplay === "In Progress"`
+   or a playoff (`golfPeriodInProgress`). Score sync may still run when the
+   period is `Complete` between rounds; pulse must not.
+3. Silence since the newest feed item is at least **15 minutes**
+   (`CONTEST_FEED_PULSE_GAP_MS`). Any story type resets the silence clock.
+
+Copy is **tournament-only**: leaders, board shape, round/cut progress,
+remaining golf when `leaderProgress` is present. Do not narrate contest
+standings, owners, fantasy scores, or paid-cut races. The fact pack carries
+`eventProgress` plus a top-board snapshot from contest-owned golfers'
+`scoreData` (`tournamentBoard`); it omits race, lineups, and `paidCount`.
+Subjects are empty (no Stream @mentions). Prompt assembly skips the shared
+contest event→result narrative pattern and the stage overlay. Intensity is
+`routine` (~40–70 words); priority is low (~40).
 
 ### Score swing (event → result)
 

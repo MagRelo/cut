@@ -4,6 +4,7 @@ import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 const mocks = vi.hoisted(() => ({
   findMany: vi.fn(),
   update: vi.fn(),
+  findEvent: vi.fn(),
   getEventStatus: vi.fn(),
   buildContext: vi.fn(),
   enqueue: vi.fn(),
@@ -19,6 +20,9 @@ vi.mock("../../../lib/prisma.js", () => ({
     contest: {
       findMany: mocks.findMany,
       update: mocks.update,
+    },
+    competitionEvent: {
+      findUnique: mocks.findEvent,
     },
   },
 }));
@@ -62,6 +66,14 @@ beforeEach(() => {
   process.env.CURSOR_API_KEY = "test-key";
   mocks.findMany.mockResolvedValue([]);
   mocks.update.mockResolvedValue({});
+  mocks.findEvent.mockResolvedValue({
+    metadata: {
+      name: "Test",
+      pgaTourId: "R1",
+      status: "IN_PROGRESS",
+      periodStatusDisplay: "In Progress",
+    },
+  });
   mocks.getEventStatus.mockResolvedValue("LIVE");
   mocks.parseFeed.mockReturnValue({ schemaVersion: 1, items: [] });
   mocks.merge.mockReturnValue({
@@ -136,6 +148,11 @@ describe("detectAndEnqueueContestFeed", () => {
         ],
       },
     });
+    expect(mocks.classify).toHaveBeenCalledWith(
+      undefined,
+      { period: 4 },
+      expect.objectContaining({ periodInProgress: true }),
+    );
     expect(mocks.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -148,6 +165,29 @@ describe("detectAndEnqueueContestFeed", () => {
           },
         }),
       }),
+    );
+  });
+
+  it("passes periodInProgress false when the golf period is Complete", async () => {
+    mocks.findEvent.mockResolvedValue({
+      metadata: {
+        name: "Test",
+        pgaTourId: "R1",
+        status: "IN_PROGRESS",
+        periodStatusDisplay: "Complete",
+      },
+    });
+    mocks.findMany.mockResolvedValue([
+      { id: "contest-1", commentaryFeed: null },
+    ]);
+    mocks.classify.mockReturnValue([]);
+
+    await detectAndEnqueueContestFeed("event-1");
+
+    expect(mocks.classify).toHaveBeenCalledWith(
+      undefined,
+      { period: 4 },
+      expect.objectContaining({ periodInProgress: false }),
     );
   });
 

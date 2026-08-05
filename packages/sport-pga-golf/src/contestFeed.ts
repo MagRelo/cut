@@ -41,6 +41,15 @@ export const CONTEST_FEED_MAX_PER_PASS = 2;
 /** Default subject cooldown for score_swing (ms). */
 export const CONTEST_FEED_RECAP_COOLDOWN_MS = 20 * 60 * 1000;
 
+/** Silence before emitting tournament_pulse when nothing else fires (ms). */
+export const CONTEST_FEED_PULSE_GAP_MS = 15 * 60 * 1000;
+
+/** Ranking priority for tournament_pulse (below swings / stage_recap). */
+export const CONTEST_FEED_PULSE_PRIORITY = 40;
+
+/** Max rows in a tournament_pulse board snapshot. */
+export const CONTEST_FEED_TOURNAMENT_BOARD_CAP = 8;
+
 /** Max hole events bundled into one score_swing story. */
 export const CONTEST_FEED_SCORE_SWING_EVENT_CAP = 3;
 
@@ -52,12 +61,14 @@ export type ContestFeedStoryType =
   | "route_narrowing"
   | "cut_tension"
   | "stage_recap"
+  | "tournament_pulse"
   | "milestone";
 
 /** Story types implemented in the classifier pass. */
 export const CONTEST_FEED_ACTIVE_STORY_TYPES = [
   "score_swing",
   "stage_recap",
+  "tournament_pulse",
 ] as const satisfies readonly ContestFeedStoryType[];
 
 export type ContestFeedActiveStoryType =
@@ -179,6 +190,13 @@ export interface ClassifyContestFeedStoriesOptions {
   nowMs?: number;
   /** Override score_swing subject cooldown; default CONTEST_FEED_RECAP_COOLDOWN_MS. */
   recapCooldownMs?: number;
+  /** Override tournament_pulse silence gap; default CONTEST_FEED_PULSE_GAP_MS. */
+  pulseGapMs?: number;
+  /**
+   * Golf period actively in progress (or playoff). Required for tournament_pulse.
+   * Detect passes this from event metadata; default false.
+   */
+  periodInProgress?: boolean;
   /** Max candidates returned after ranking; default CONTEST_FEED_MAX_PER_PASS. */
   maxPerPass?: number;
   /** Minimum absolute position move for birdie impact gating. */
@@ -207,6 +225,7 @@ export const CONTEST_FEED_WORD_LIMITS: Record<
 > = {
   score_swing: { minWords: 45, maxWords: 75 },
   stage_recap: { minWords: 125, maxWords: 175 },
+  tournament_pulse: { minWords: 40, maxWords: 70 },
 };
 
 const CONTEST_FEED_WORD_LIMITS_BY_INTENSITY: Record<
@@ -222,6 +241,11 @@ const CONTEST_FEED_WORD_LIMITS_BY_INTENSITY: Record<
     routine: { minWords: 110, maxWords: 150 },
     notable: { minWords: 125, maxWords: 175 },
     major: { minWords: 150, maxWords: 200 },
+  },
+  tournament_pulse: {
+    routine: { minWords: 40, maxWords: 70 },
+    notable: { minWords: 40, maxWords: 70 },
+    major: { minWords: 50, maxWords: 90 },
   },
 };
 
@@ -242,6 +266,14 @@ export function scoreSwingIntensityFromPriority(
   return "major";
 }
 
+export interface ContestFeedTournamentBoardRow {
+  eventParticipantId: string;
+  displayName: string;
+  leaderboardPosition: string | null;
+  /** Strokes to par display from scoreData (e.g. "-8", "E"). */
+  leaderboardTotal: string | null;
+}
+
 export type ContestFeedFactPack =
   | {
       storyType: "score_swing";
@@ -254,6 +286,13 @@ export type ContestFeedFactPack =
   | {
       storyType: "stage_recap";
       context: ContestCommentaryContext;
+    }
+  | {
+      storyType: "tournament_pulse";
+      stageId: ContestCommentaryStageId;
+      period: number | null;
+      eventProgress: ContestCommentaryContext["eventProgress"];
+      tournamentBoard: ContestFeedTournamentBoardRow[];
     };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -681,6 +720,56 @@ function scoreSwingReason(events: readonly ContestFeedScoreSwingEvent[]): string
   return `${events.length} outsize hole result(s); top: ${top.displayName} ${top.label} on ${top.round}:${top.hole}.`;
 }
 
+function scoreDataLeaderboardTotal(scoreData: unknown): string | null {
+  if (!isRecord(scoreData)) return null;
+  const value = scoreData.leaderboardTotal;
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function leaderboardPositionRank(position: string | null): number {
+  if (!position) return Number.POSITIVE_INFINITY;
+  const parsed = Number(position.replace(/^T/i, "").trim());
+  return Number.isFinite(parsed) ? parsed : Number.POSITIVE_INFINITY;
+}
+
+/** Top tournament board rows from contest-owned golfers' live scoreData. */
+export function buildTournamentBoard(
+  contestPlayers: readonly ContestFeedContestPlayer[],
+  cap: number = CONTEST_FEED_TOURNAMENT_BOARD_CAP,
+): ContestFeedTournamentBoardRow[] {
+  const rows: ContestFeedTournamentBoardRow[] = contestPlayers.map((player) => {
+    const board = readScoreDataBoardState(player.scoreData);
+    return {
+      eventParticipantId: player.eventParticipantId,
+      displayName: player.displayName,
+      leaderboardPosition: board.leaderboardPosition,
+      leaderboardTotal: scoreDataLeaderboardTotal(player.scoreData),
+    };
+  });
+  rows.sort((left, right) => {
+    const rankDelta =
+      leaderboardPositionRank(left.leaderboardPosition) -
+      leaderboardPositionRank(right.leaderboardPosition);
+    if (rankDelta !== 0) return rankDelta;
+    return left.displayName.localeCompare(right.displayName);
+  });
+  return rows.slice(0, Math.max(0, cap));
+}
+
+function newestItemGeneratedAtMs(
+  items: readonly ContestFeedItem[],
+): number | null {
+  let newest: number | null = null;
+  for (const item of items) {
+    const generated = Date.parse(item.generatedAt);
+    if (!Number.isFinite(generated)) continue;
+    if (newest == null || generated > newest) newest = generated;
+  }
+  return newest;
+}
+
 /**
  * Rule-based story classifier. Does not invent facts — only ranks real deltas.
  */
@@ -692,11 +781,13 @@ export function classifyContestFeedStories(
   const delta = computeContestFeedDelta(previous, current);
   const nowMs = options.nowMs ?? Date.now();
   const recapCooldownMs = options.recapCooldownMs ?? CONTEST_FEED_RECAP_COOLDOWN_MS;
+  const pulseGapMs = options.pulseGapMs ?? CONTEST_FEED_PULSE_GAP_MS;
   const maxPerPass = options.maxPerPass ?? CONTEST_FEED_MAX_PER_PASS;
   const minPositionDelta = options.minPositionDelta ?? 1;
   const existingItems = options.existingItems ?? [];
   const contestPlayers = options.contestPlayers ?? [];
   const previousHoleState = options.previousHoleState;
+  const periodInProgress = options.periodInProgress === true;
 
   const candidates: ContestFeedStoryCandidate[] = [];
   const swingCooldown = recentStoryKeys(
@@ -754,6 +845,25 @@ export function classifyContestFeedStories(
     });
   }
 
+  if (candidates.length === 0 && periodInProgress) {
+    const newestMs = newestItemGeneratedAtMs(existingItems);
+    const silenceMs =
+      newestMs == null ? Number.POSITIVE_INFINITY : nowMs - newestMs;
+    if (silenceMs >= pulseGapMs) {
+      candidates.push({
+        storyType: "tournament_pulse",
+        priority: CONTEST_FEED_PULSE_PRIORITY,
+        intensity: "routine",
+        subjects: {},
+        subjectKey: "pulse",
+        reason:
+          newestMs == null
+            ? "On-course silence with empty feed; emit tournament pulse."
+            : `On-course silence of ${Math.round(silenceMs / 60000)} min; emit tournament pulse.`,
+      });
+    }
+  }
+
   return sortCandidates(candidates).slice(0, Math.max(0, maxPerPass));
 }
 
@@ -791,6 +901,16 @@ export function buildContestFeedFactPack(
       paidCount: current.paidCount,
       events,
       impacts,
+    };
+  }
+
+  if (candidate.storyType === "tournament_pulse") {
+    return {
+      storyType: "tournament_pulse",
+      stageId,
+      period: current.period,
+      eventProgress: current.eventProgress,
+      tournamentBoard: buildTournamentBoard(options.contestPlayers ?? []),
     };
   }
 

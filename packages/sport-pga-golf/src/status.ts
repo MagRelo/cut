@@ -44,19 +44,35 @@ export function golfShouldSettleContest(metadata: unknown): boolean {
   return isGolfEventCompleteRaw(golf.status);
 }
 
+function isGolfPlayoffRound(golf: GolfEventMetadata): boolean {
+  return golf.periodDisplay === "Playoff" || (golf.currentPeriod ?? 0) >= 401;
+}
+
+/**
+ * True when golfers are actively on course (or in a playoff).
+ * Stricter than {@link golfShouldSyncLiveScores}: excludes period Complete
+ * between rounds while the event is still IN_PROGRESS.
+ */
+export function golfPeriodInProgress(metadata: unknown): boolean {
+  const golf = parseGolfEventMetadata(metadata);
+  if (!golf) {
+    return false;
+  }
+  return (
+    golf.periodStatusDisplay === "In Progress" || isGolfPlayoffRound(golf)
+  );
+}
+
 export function golfShouldSyncLiveScores(metadata: unknown): boolean {
   const golf = parseGolfEventMetadata(metadata);
   if (!golf) {
     return false;
   }
 
-  const isPlayoffRound =
-    golf.periodDisplay === "Playoff" || (golf.currentPeriod ?? 0) >= 401;
-
   return (
     isGolfEventLiveRaw(golf.status) &&
     (golf.periodStatusDisplay === "In Progress" ||
       golf.periodStatusDisplay === "Complete" ||
-      isPlayoffRound)
+      isGolfPlayoffRound(golf))
   );
 }

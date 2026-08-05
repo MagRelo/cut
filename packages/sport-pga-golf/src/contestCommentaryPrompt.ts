@@ -11,16 +11,37 @@ import type {
 } from "./contestFeed.js";
 import { resolveContestFeedWordLimits } from "./contestFeed.js";
 
-/**
- * Causal beat for live updates: tournament golf / board moves first; contest
- * standings follow. Applies to every feed story type.
- */
+const STYLE_DIRECTIVES: readonly string[] = [
+  "Style: open cold on the main event—no wind-up.",
+  "Style: open on the owner's reaction, then reveal what caused it.",
+  "Style: two sentences only. No closing line after the consequence.",
+  "Style: let the final sentence land flat and factual—no zinger.",
+  "Style: lead with the standings consequence, then name what caused it.",
+];
+
+/** Tournament-only style seeds for tournament_pulse (no contest-owner framing). */
+const TOURNAMENT_PULSE_STYLE_DIRECTIVES: readonly string[] = [
+  "Style: open cold on the tournament board—no wind-up.",
+  "Style: open on leader pace, then the board shape.",
+  "Style: two sentences only. No closing flourish.",
+  "Style: let the final sentence land flat and factual—no zinger.",
+  "Style: lead with who is ahead, then how much golf remains.",
+];
+
+/** Contest-consequence framing for score_swing / stage_recap. */
 const NARRATIVE_PATTERN: readonly string[] = [
   "Dual storyline: the actual tournament's TV drama is leaderboard position / who wins the event. This feed's job is contest commentary—do not treat tournament place as the contest's primary storyline by default.",
   "Stay aware of that larger context: when tournament board position moves for contest-owned golfers, the contest often feels it through position bonuses (10 / 5 / 3 for 1st / 2nd / 3rd), which then affect contest scores and paid-cut races. Path: tournament board context → bonus (when impactful) → contest consequence.",
   'Narrative pattern: event → result. Prefer causal beats like "Scheffler birdies the 14th, which drops Noodles to 9th"—but the consequence may land first when the sentence still reads causally.',
   "Mention tournament board / position-bonus only when bonusDelta is non-zero (entering, leaving, or swapping 1st/2nd/3rd). Do not narrate board ties, flat leaderboard labels (e.g. 61→T61), or zero-bonus beats.",
   "When hole-level detail is absent from the facts (kind bonus_only / cause field), narrate the board/bonus reshuffle spilling into the contest—never invent a hole result.",
+];
+
+/** Tournament broadcast framing for tournament_pulse only. */
+const TOURNAMENT_PULSE_NARRATIVE: readonly string[] = [
+  "This update is tournament color only—PGA Tour board, leaders, and round progress.",
+  "Do not mention the fantasy contest, lineup owners, contest scores, paid cut, ownership, or routes.",
+  "Write as a short broadcast beat about the golf tournament itself.",
 ];
 
 /** Always-on output contract — no stage-specific analytical framing. */
@@ -50,14 +71,6 @@ const INTENSITY_INSTRUCTIONS: Record<ContestFeedStoryIntensity, string> = {
     "Intensity: major. Full call. Earn the volume—this one actually changed the contest. Personality is welcome when grounded in the facts.",
 };
 
-const STYLE_DIRECTIVES: readonly string[] = [
-  "Style: open cold on the main event—no wind-up.",
-  "Style: open on the owner's reaction, then reveal what caused it.",
-  "Style: two sentences only. No closing line after the consequence.",
-  "Style: let the final sentence land flat and factual—no zinger.",
-  "Style: lead with the standings consequence, then name what caused it.",
-];
-
 /** Story-type framing is primary; stage instructions are an overlay. */
 const STORY_INSTRUCTIONS: Record<ContestFeedActiveStoryType, readonly string[]> = {
   score_swing: [
@@ -74,6 +87,13 @@ const STORY_INSTRUCTIONS: Record<ContestFeedActiveStoryType, readonly string[]> 
     "Story: stage recap. Write a full contest outlook using the supplied contest context JSON.",
     "When citing live movement, keep event → result order (tournament scoring / board → contest consequence). Cover the race, ownership edge or routes as the stage overlay directs, and keep the finish worth watching.",
     "Stay aware that TV drama is tournament position; this recap is about the contest—bring board/bonus in only when it clearly shapes contest routes or separation.",
+  ],
+  tournament_pulse: [
+    "Story: tournament pulse. Use only STORY_FACTS_JSON (eventProgress + tournamentBoard).",
+    "Cover tournament leaders, board shape, round/cut progress, and remaining golf when leaderProgress is present.",
+    "Translate pace naturally (yet to tee off, approaching the turn, back nine, closing stretch). Do not quote holesRemaining unless an exact hole count is genuinely useful.",
+    "Keep it short—interesting PGA Tour color, not a full leaderboard crawl or hole-by-hole laundry list.",
+    "Never mention contest standings, users, ownership, fantasy scores, or paid-cut races.",
   ],
 };
 
@@ -181,9 +201,16 @@ function hashString(value: string): number {
 }
 
 /** Deterministic style directive from a seed string. */
-export function selectContestFeedStyleDirective(seed: string): string {
-  const index = hashString(seed) % STYLE_DIRECTIVES.length;
-  return STYLE_DIRECTIVES[index]!;
+export function selectContestFeedStyleDirective(
+  seed: string,
+  storyType?: ContestFeedActiveStoryType,
+): string {
+  const directives =
+    storyType === "tournament_pulse"
+      ? TOURNAMENT_PULSE_STYLE_DIRECTIVES
+      : STYLE_DIRECTIVES;
+  const index = hashString(seed) % directives.length;
+  return directives[index]!;
 }
 
 function recentPublishedBlock(recentTexts: readonly string[] | undefined): string {
@@ -201,9 +228,9 @@ function recentPublishedBlock(recentTexts: readonly string[] | undefined): strin
 
 /**
  * Feed prompt: story instructions first, stage overlay for stage_recap only,
- * narrow fact JSON last. Flash stories (score_swing) omit the
+ * narrow fact JSON last. Flash stories (score_swing, tournament_pulse) omit the
  * stage overlay so weekend/final “open from leaderProgress / establish the race”
- * lines cannot override event-first framing.
+ * lines cannot override story-type framing.
  */
 export function buildPgaContestFeedPrompt(
   options: BuildPgaContestFeedPromptOptions,
@@ -216,14 +243,19 @@ export function buildPgaContestFeedPrompt(
   const maxWords = options.maxWords ?? limits.maxWords;
   const stageId = stageIdFromFactPack(options.factPack);
   const storyInstructions = STORY_INSTRUCTIONS[options.storyType];
+  const isTournamentPulse = options.storyType === "tournament_pulse";
   const includeStageOverlay = options.storyType === "stage_recap";
   const stageInstructions = includeStageOverlay
     ? STAGE_INSTRUCTIONS[stageId]
     : [];
   const styleDirective =
     options.styleSeed != null && options.styleSeed.trim()
-      ? selectContestFeedStyleDirective(options.styleSeed)
+      ? selectContestFeedStyleDirective(options.styleSeed, options.storyType)
       : "";
+  const narrative = isTournamentPulse
+    ? TOURNAMENT_PULSE_NARRATIVE
+    : NARRATIVE_PATTERN;
+  const metricDiscipline = isTournamentPulse ? [] : METRIC_DISCIPLINE;
 
   const factsPayload =
     options.factPack.storyType === "stage_recap"
@@ -231,15 +263,17 @@ export function buildPgaContestFeedPrompt(
       : `STORY_FACTS_JSON=${JSON.stringify(options.factPack)}`;
 
   return [
-    "Write one live contest feed update using only the supplied JSON facts.",
+    isTournamentPulse
+      ? "Write one live tournament feed update using only the supplied JSON facts."
+      : "Write one live contest feed update using only the supplied JSON facts.",
     `Length must be ${minWords}-${maxWords} words.`,
     ...voice.instructions,
     INTENSITY_INSTRUCTIONS[intensity],
     styleDirective,
-    ...NARRATIVE_PATTERN,
+    ...narrative,
     ...storyInstructions,
     ...stageInstructions,
-    ...METRIC_DISCIPLINE,
+    ...metricDiscipline,
     ...OUTPUT_CONTRACT,
     recentPublishedBlock(options.recentTexts),
     options.correctiveFeedback

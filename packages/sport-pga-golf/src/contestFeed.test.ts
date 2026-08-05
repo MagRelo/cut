@@ -359,6 +359,161 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     expect(candidates.map((candidate) => candidate.storyType)).toEqual([]);
   });
 
+  it("emits tournament_pulse after silence when period is in progress", () => {
+    const previous = context();
+    const current = context();
+    const candidates = classifyContestFeedStories(previous, current, {
+      nowMs: Date.parse("2026-07-19T04:20:00.000Z"),
+      periodInProgress: true,
+      existingItems: [
+        {
+          id: "stage_recap:recap:0",
+          storyType: "stage_recap",
+          priority: 100,
+          subjects: {},
+          text: "opening recap",
+          generatedAt: "2026-07-19T04:00:00.000Z",
+        },
+      ],
+      maxPerPass: 3,
+    });
+    expect(candidates.map((c) => c.storyType)).toEqual(["tournament_pulse"]);
+    expect(candidates[0]?.intensity).toBe("routine");
+    expect(candidates[0]?.subjects).toEqual({});
+  });
+
+  it("does not emit tournament_pulse when silence is under the gap", () => {
+    const previous = context();
+    const current = context();
+    const candidates = classifyContestFeedStories(previous, current, {
+      nowMs: Date.parse("2026-07-19T04:10:00.000Z"),
+      periodInProgress: true,
+      existingItems: [
+        {
+          id: "stage_recap:recap:0",
+          storyType: "stage_recap",
+          priority: 100,
+          subjects: {},
+          text: "opening recap",
+          generatedAt: "2026-07-19T04:00:00.000Z",
+        },
+      ],
+      maxPerPass: 3,
+    });
+    expect(candidates.map((c) => c.storyType)).not.toContain("tournament_pulse");
+  });
+
+  it("does not emit tournament_pulse when the period is not in progress", () => {
+    const previous = context();
+    const current = context();
+    const candidates = classifyContestFeedStories(previous, current, {
+      nowMs: Date.parse("2026-07-19T04:20:00.000Z"),
+      periodInProgress: false,
+      existingItems: [
+        {
+          id: "stage_recap:recap:0",
+          storyType: "stage_recap",
+          priority: 100,
+          subjects: {},
+          text: "opening recap",
+          generatedAt: "2026-07-19T04:00:00.000Z",
+        },
+      ],
+      maxPerPass: 3,
+    });
+    expect(candidates.map((c) => c.storyType)).not.toContain("tournament_pulse");
+  });
+
+  it("suppresses tournament_pulse when score_swing is present", () => {
+    const previous = context();
+    const current = context({
+      contentionLineups: [
+        lineup("b", "Bob", 1, 105),
+        lineup("a", "Noodles", 2, 100),
+      ],
+    });
+    const players = [
+      contestPlayer({
+        scoreData: scoreData(4, [
+          { par: 4, strokes: 4, stableford: 0 },
+          { par: 4, strokes: 6, stableford: -3 },
+        ]),
+        ownerEntryIds: ["a"],
+        ownerNames: ["Noodles"],
+      }),
+    ];
+    const previousHoleState = buildContestFeedHoleState([
+      contestPlayer({
+        scoreData: scoreData(4, [{ par: 4, strokes: 4, stableford: 0 }]),
+      }),
+    ]);
+    const candidates = classifyContestFeedStories(previous, current, {
+      nowMs: Date.parse("2026-07-19T04:20:00.000Z"),
+      periodInProgress: true,
+      contestPlayers: players,
+      previousHoleState,
+      existingItems: [
+        {
+          id: "stage_recap:recap:0",
+          storyType: "stage_recap",
+          priority: 100,
+          subjects: {},
+          text: "opening recap",
+          generatedAt: "2026-07-19T04:00:00.000Z",
+        },
+      ],
+      maxPerPass: 3,
+    });
+    expect(candidates.map((c) => c.storyType)).toContain("score_swing");
+    expect(candidates.map((c) => c.storyType)).not.toContain("tournament_pulse");
+  });
+
+  it("builds a tournament-only fact pack for tournament_pulse", () => {
+    const current = context();
+    const players = [
+      contestPlayer({
+        eventParticipantId: "g2",
+        displayName: "Second",
+        scoreData: {
+          leaderboardPosition: "T5",
+          leaderboardTotal: "-4",
+          bonus: 0,
+        },
+      }),
+      contestPlayer({
+        eventParticipantId: "g1",
+        displayName: "Leader",
+        scoreData: {
+          leaderboardPosition: "1",
+          leaderboardTotal: "-8",
+          bonus: 10,
+        },
+      }),
+    ];
+    const pack = buildContestFeedFactPack(
+      {
+        storyType: "tournament_pulse",
+        priority: 40,
+        intensity: "routine",
+        subjects: {},
+        subjectKey: "pulse",
+        reason: "silence",
+      },
+      current,
+      current,
+      { contestPlayers: players },
+    );
+    expect(pack.storyType).toBe("tournament_pulse");
+    if (pack.storyType !== "tournament_pulse") return;
+    expect(pack.tournamentBoard.map((row) => row.displayName)).toEqual([
+      "Leader",
+      "Second",
+    ]);
+    expect(pack).not.toHaveProperty("paidCount");
+    expect(pack).not.toHaveProperty("race");
+    expect(pack).not.toHaveProperty("context");
+  });
+
   it("seeds hole state without emitting score_swing on first observation", () => {
     const previous = context();
     const current = context();

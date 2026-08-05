@@ -149,6 +149,43 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(recapPrompt).toContain("125-175 words");
   });
 
+  it("builds a tournament-only pulse prompt without contest narrative", () => {
+    const pulsePrompt = buildPgaContestFeedPrompt({
+      storyType: "tournament_pulse",
+      intensity: "routine",
+      styleSeed: "pulse:2026-07-19T04:00:00.000Z",
+      recentTexts: ["Old tournament color about leaders on the back."],
+      factPack: {
+        storyType: "tournament_pulse",
+        stageId: "final_round",
+        period: 4,
+        eventProgress: baseContext.eventProgress,
+        tournamentBoard: [
+          {
+            eventParticipantId: "g1",
+            displayName: "Golfer One",
+            leaderboardPosition: "1",
+            leaderboardTotal: "-8",
+          },
+        ],
+      },
+    });
+    expect(pulsePrompt).toContain("Write one live tournament feed update");
+    expect(pulsePrompt).toContain("Story: tournament pulse");
+    expect(pulsePrompt).toContain("tournament color only");
+    expect(pulsePrompt).toContain("Never mention contest standings");
+    expect(pulsePrompt).toContain("40-70 words");
+    expect(pulsePrompt).toContain("Intensity: routine");
+    expect(pulsePrompt).toContain("RECENTLY_PUBLISHED");
+    expect(pulsePrompt).toContain("STORY_FACTS_JSON=");
+    expect(pulsePrompt).not.toContain("Dual storyline");
+    expect(pulsePrompt).not.toContain("event → result");
+    expect(pulsePrompt).not.toContain("At most one numeric contest-score pair");
+    expect(pulsePrompt).not.toContain("Stage: final round");
+    expect(pulsePrompt).not.toContain("establish the current contest race");
+    expect(pulsePrompt).not.toContain("open on the owner's reaction");
+  });
+
   it("selects a stable style directive for a seed", () => {
     const a = selectContestFeedStyleDirective("g1:t1");
     const b = selectContestFeedStyleDirective("g1:t1");

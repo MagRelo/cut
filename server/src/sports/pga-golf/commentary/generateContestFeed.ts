@@ -4,6 +4,7 @@ import {
   buildContestFeedItemId,
   buildPgaContestFeedPrompt,
   classifyContestFeedStories,
+  golfPeriodInProgress,
   mergeContestFeedItems,
   parseContestCommentaryFeedDocument,
   resolveContestFeedWordLimits,
@@ -42,6 +43,8 @@ export interface GenerateContestFeedOptions {
     options?: BuildContestCommentaryContextOptions,
   ) => Promise<BuiltContestCommentaryContext>;
   maxPerPass?: number;
+  /** Override on-course gate for tournament_pulse (defaults from event metadata). */
+  periodInProgress?: boolean;
   /**
    * Tournament period for item.round on the frozen path.
    * Prefer job payload period over lastContext.
@@ -255,6 +258,15 @@ export async function generateContestFeed(
   const previousHoleState = existing.lastHoleState ?? null;
   const recentTexts = recentTextsFromFeed(existing);
 
+  let periodInProgress = options.periodInProgress;
+  if (periodInProgress == null) {
+    const contest = await prisma.contest.findUnique({
+      where: { id: contestId },
+      select: { event: { select: { metadata: true } } },
+    });
+    periodInProgress = golfPeriodInProgress(contest?.event?.metadata);
+  }
+
   const candidates = classifyContestFeedStories(
     existing.lastContext,
     built.context,
@@ -263,6 +275,7 @@ export async function generateContestFeed(
       nowMs,
       contestPlayers,
       previousHoleState,
+      periodInProgress,
       ...(options.maxPerPass != null ? { maxPerPass: options.maxPerPass } : {}),
     },
   );

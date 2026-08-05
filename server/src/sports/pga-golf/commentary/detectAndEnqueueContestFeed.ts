@@ -2,6 +2,7 @@ import {
   buildContestFeedFactPack,
   buildContestFeedHoleState,
   classifyContestFeedStories,
+  golfPeriodInProgress,
   mergeContestFeedItems,
   parseContestCommentaryFeedDocument,
   PGA_GOLF_SPORT_ID,
@@ -58,6 +59,12 @@ export async function detectAndEnqueueContestFeed(eventId: string): Promise<void
     return;
   }
 
+  const event = await prisma.competitionEvent.findUnique({
+    where: { id: eventId },
+    select: { metadata: true },
+  });
+  const periodInProgress = golfPeriodInProgress(event?.metadata);
+
   for (const contest of contests) {
     try {
       const built = await buildContestCommentaryContext(contest.id);
@@ -76,6 +83,7 @@ export async function detectAndEnqueueContestFeed(eventId: string): Promise<void
           nowMs,
           contestPlayers,
           previousHoleState,
+          periodInProgress,
         },
       );
 

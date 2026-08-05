@@ -80,6 +80,7 @@ describe("generateContestFeed", () => {
       contextBuilder: builder,
       existingFeed: { schemaVersion: 1, items: [] },
       now: () => new Date("2026-07-18T12:00:00.000Z"),
+      periodInProgress: false,
     });
 
     expect(result.candidates).toHaveLength(1);
@@ -136,6 +137,7 @@ describe("generateContestFeed", () => {
       },
       now: () => new Date("2026-07-18T12:00:00.000Z"),
       maxPerPass: 1,
+      periodInProgress: false,
     });
 
     expect(result.newItems[0]?.storyType).toBe("stage_recap");
