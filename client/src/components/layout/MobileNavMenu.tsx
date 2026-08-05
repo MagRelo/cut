@@ -47,7 +47,7 @@ const mobileAccountHeaderClass = [
 export const MobileNavMenu: React.FC = () => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const { user, logout, paymentTokenBalance, balancesUnavailable, isAdmin } = useAuth();
+  const { user, paymentTokenBalance, balancesUnavailable, isAdmin } = useAuth();
   const showAdminNav = Boolean(user) && isAdmin();
   const leagues = leagueNavItemsFromAuth(user?.userGroups);
 
@@ -256,14 +256,6 @@ export const MobileNavMenu: React.FC = () => {
                                 aria-hidden
                               />
                             </a>
-
-                            <button
-                              type="button"
-                              className={mobileNavItemClass(false)}
-                              onClick={() => void logout()}
-                            >
-                              Sign Out
-                            </button>
                           </>
                         ) : (
                           <>

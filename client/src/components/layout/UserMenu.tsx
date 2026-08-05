@@ -25,7 +25,7 @@ const menuSubItemActiveClass =
   "block w-full px-4 py-1.5 pl-7 text-left text-sm font-display font-semibold text-slate-950 data-[focus]:bg-slate-50";
 
 export const UserMenu: React.FC = () => {
-  const { user, logout, paymentTokenBalance, balancesUnavailable, isAdmin } = useAuth();
+  const { user, paymentTokenBalance, balancesUnavailable, isAdmin } = useAuth();
   const showAdminNav = isAdmin();
   const location = useLocation();
   const isAccountActive = accountMatch(location.pathname);
@@ -181,12 +181,6 @@ export const UserMenu: React.FC = () => {
               <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
             </a>
           )}
-        </MenuItem>
-
-        <MenuItem>
-          <button type="button" className={menuItemClass} onClick={() => void logout()}>
-            Sign Out
-          </button>
         </MenuItem>
       </MenuItems>
     </Menu>
