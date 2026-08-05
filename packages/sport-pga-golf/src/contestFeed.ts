@@ -32,9 +32,6 @@ export {
   readScoreDataBoardState,
 } from "./contestFeedHoles.js";
 
-/** Rolling window size for the contest commentary feed document. */
-export const CONTEST_FEED_ITEM_CAP = 30;
-
 /** Max stories generated in a single feed pass. */
 export const CONTEST_FEED_MAX_PER_PASS = 2;
 
@@ -95,7 +92,7 @@ export interface ContestFeedItem {
 
 export interface ContestCommentaryFeedDocument {
   schemaVersion: 1;
-  /** Newest items first; rolling window. */
+  /** Newest items first; full tournament history. */
   items: ContestFeedItem[];
   /** Analysis snapshot used for next-pass deltas / cooldowns. */
   lastContext?: ContestCommentaryContext;
@@ -921,6 +918,7 @@ export function buildContestFeedFactPack(
 }
 
 export interface MergeContestFeedItemsOptions {
+  /** Optional trim after merge; omit to keep full history. */
   cap?: number;
   updatedAt?: string;
   lastContext?: ContestCommentaryContext;
@@ -932,13 +930,12 @@ function generatedAtMs(item: ContestFeedItem): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-/** Merge new items, order newest-first, and trim to the rolling cap. */
+/** Merge new items and order newest-first. Keeps full history unless `cap` is set. */
 export function mergeContestFeedItems(
   existing: ContestCommentaryFeedDocument,
   newItems: readonly ContestFeedItem[],
   options: MergeContestFeedItemsOptions = {},
 ): ContestCommentaryFeedDocument {
-  const cap = options.cap ?? CONTEST_FEED_ITEM_CAP;
   const seen = new Set<string>();
   const deduped: ContestFeedItem[] = [];
   for (const item of [...newItems, ...existing.items]) {
@@ -946,9 +943,16 @@ export function mergeContestFeedItems(
     seen.add(item.id);
     deduped.push(item);
   }
-  const merged = deduped
-    .sort((left, right) => generatedAtMs(right) - generatedAtMs(left))
-    .slice(0, cap);
+  let merged = deduped.sort(
+    (left, right) => generatedAtMs(right) - generatedAtMs(left),
+  );
+  if (
+    typeof options.cap === "number" &&
+    Number.isFinite(options.cap) &&
+    options.cap >= 0
+  ) {
+    merged = merged.slice(0, options.cap);
+  }
   return {
     schemaVersion: 1,
     items: merged,

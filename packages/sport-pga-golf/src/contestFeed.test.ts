@@ -7,7 +7,6 @@ import {
   classifyContestFeedStories,
   collectScoreSwingEvents,
   computeContestFeedDelta,
-  CONTEST_FEED_ITEM_CAP,
   emptyContestCommentaryFeedDocument,
   latestFeedCommentaryText,
   mergeContestFeedItems,
@@ -182,9 +181,9 @@ describe("contest feed document helpers", () => {
     });
   });
 
-  it("merges new items newest-first and respects the rolling cap", () => {
+  it("merges new items newest-first and keeps full history", () => {
     const existing = emptyContestCommentaryFeedDocument();
-    existing.items = Array.from({ length: CONTEST_FEED_ITEM_CAP }, (_, index) => ({
+    existing.items = Array.from({ length: 30 }, (_, index) => ({
       id: `old-${index}`,
       storyType: "stage_recap" as const,
       priority: 1,
@@ -215,9 +214,9 @@ describe("contest feed document helpers", () => {
       },
     );
 
-    expect(merged.items).toHaveLength(CONTEST_FEED_ITEM_CAP);
+    expect(merged.items).toHaveLength(31);
     expect(merged.items[0]?.id).toBe("new-1");
-    expect(merged.items.some((item) => item.id === "old-29")).toBe(false);
+    expect(merged.items.some((item) => item.id === "old-29")).toBe(true);
     expect(merged.updatedAt).toBe("2026-07-19T04:00:00.000Z");
     expect(merged.lastContext?.period).toBe(4);
     expect(merged.lastHoleState).toEqual(holeState);

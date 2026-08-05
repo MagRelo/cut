@@ -94,7 +94,7 @@ to the fresh analysis and emits rule-based candidates (`score_swing`,
 `stage_recap`, `tournament_pulse`) with a `priority` and `intensity`
 (`routine` | `notable` | `major`). Each selected story gets a narrow fact pack
 and a story-specific prompt. Merged items are ordered newest-first by
-`generatedAt` and trimmed to a rolling cap (30). `lastHoleState` is rewritten
+`generatedAt` with no rolling trim (full tournament history). `lastHoleState` is rewritten
 every successful pass so the next tick only sees newly completed holes. Feed
 job payloads carry `period` so frozen generation can set `item.round` even when
 `lastContext` is missing.
