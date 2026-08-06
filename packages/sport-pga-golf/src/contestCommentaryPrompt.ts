@@ -32,7 +32,7 @@ const TOURNAMENT_PULSE_STYLE_DIRECTIVES: readonly string[] = [
 const NARRATIVE_PATTERN: readonly string[] = [
   "Dual storyline: the actual tournament's TV drama is leaderboard position / who wins the event. This feed's job is contest commentary—do not treat tournament place as the contest's primary storyline by default.",
   "Stay aware of that larger context: when tournament board position moves for contest-owned golfers, the contest often feels it through position bonuses (10 / 5 / 3 for 1st / 2nd / 3rd), which then affect contest scores and paid-cut races. Path: tournament board context → bonus (when impactful) → contest consequence.",
-  'Narrative pattern: event → result. Prefer causal beats like "Scheffler birdies the 14th, which drops Noodles to 9th"—but the consequence may land first when the sentence still reads causally.',
+  "Narrative pattern: event → result. Keep the beat causal (hole or board/bonus change → contest consequence). Vary how you open—consequence-first is fine when the sentence still reads causally. Do not lock into one formula every post.",
   "Mention tournament board / position-bonus only when bonusDelta is non-zero (entering, leaving, or swapping 1st/2nd/3rd). Do not narrate board ties, flat leaderboard labels (e.g. 61→T61), or zero-bonus beats.",
   "When hole-level detail is absent from the facts (kind bonus_only / cause field), narrate the board/bonus reshuffle spilling into the contest—never invent a hole result.",
 ];
@@ -60,6 +60,7 @@ const METRIC_DISCIPLINE: readonly string[] = [
   'Never write the word "leverage." It is an internal term, not broadcast language.',
   "Never quote ownershipShare, rarityScore, payoutSwing, consensusStrength, winProbability, or payoutProbability as numbers. Translate ownership conversationally (only one lineup has him, the popular pick, nobody else took that swing).",
   "At most one numeric contest-score pair (previousScore to currentScore) per item; prefer place or paid-cut language otherwise. Do not pepper multiple totals and place crawls.",
+  'Never pad with filler like "gains/grabs/pockets/takes/picks up a contest spot" for a plain place move. Say the concrete place change or paid-cut result from the facts—or omit that beat.',
 ];
 
 const INTENSITY_INSTRUCTIONS: Record<ContestFeedStoryIntensity, string> = {
@@ -82,6 +83,7 @@ const STORY_INSTRUCTIONS: Record<ContestFeedActiveStoryType, readonly string[]> 
     "Copy density: do not explain what a birdie/eagle/double is. Prefer “birdies the 8th” or “eagles the par-5”—never restate strokes or Stableford as a definition. Prefer ordinal holes (the 7th, the 8th).",
     "Copy density: avoid number laundry lists and place-by-place crawls for every owner. One impactful contest beat is enough; for shared ownership cluster who is helped or hurt without restating the same point swing for each team.",
     "Do not invent holes, board places, or bonus points beyond events. If bonusDelta is 0, skip board and position-bonus entirely. Keep it tight—no full contest recap, routes, or ownership ladders.",
+    "Vary sentence structure across posts. Do not fall into a fixed skeleton such as “X birdies the Nth, lifting Y from A into B. That roster goes from C to D and gains a contest spot.”",
   ],
   stage_recap: [
     "Story: stage recap. Write a full contest outlook using the supplied contest context JSON.",
@@ -221,7 +223,7 @@ function recentPublishedBlock(recentTexts: readonly string[] | undefined): strin
     .filter((line) => line.length > 3);
   if (clipped.length === 0) return "";
   return [
-    "RECENTLY_PUBLISHED (do not reuse openings, closings, metaphors, or distinctive verbs from these):",
+    "RECENTLY_PUBLISHED (do not reuse openings, closings, metaphors, distinctive verbs, OR the same sentence skeleton from these—synonym swaps of the same formula still count as reuse):",
     ...clipped,
   ].join("\n");
 }

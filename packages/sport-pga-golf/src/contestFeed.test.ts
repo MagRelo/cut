@@ -776,6 +776,172 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     expect(events).toEqual([]);
   });
 
+  it("ignores plain birdies with a sub-threshold contest place move", () => {
+    const previous = context({
+      paidCount: 3,
+      contentionLineups: [
+        lineup("a", "Noodles", 9, 94),
+        lineup("b", "Bob", 1, 110),
+      ],
+    });
+    const current = context({
+      paidCount: 3,
+      contentionLineups: [
+        lineup("a", "Noodles", 6, 100),
+        lineup("b", "Bob", 1, 110),
+      ],
+    });
+    const players = [
+      contestPlayer({
+        scoreData: scoreData(4, [
+          { par: 4, strokes: 4, stableford: 0 },
+          { par: 4, strokes: 3, stableford: 2 },
+        ]),
+        ownerEntryIds: ["a"],
+        ownerNames: ["Noodles"],
+      }),
+    ];
+    const previousHoleState = buildContestFeedHoleState([
+      contestPlayer({
+        scoreData: scoreData(4, [{ par: 4, strokes: 4, stableford: 0 }]),
+      }),
+    ]);
+    const raceImpacts = computeContestFeedDelta(previous, current)
+      .racePositionChanges;
+    expect(
+      raceImpacts.some(
+        (change) =>
+          Math.abs(change.positionDelta) === 3 && !change.crossedPaidCut,
+      ),
+    ).toBe(true);
+    expect(
+      collectScoreSwingEvents(players, previousHoleState, raceImpacts),
+    ).toEqual([]);
+  });
+
+  it("emits plain birdies when an owning lineup moves four or more places", () => {
+    const previous = context({
+      paidCount: 3,
+      contentionLineups: [
+        lineup("a", "Noodles", 10, 92),
+        lineup("b", "Bob", 1, 110),
+      ],
+    });
+    const current = context({
+      paidCount: 3,
+      contentionLineups: [
+        lineup("a", "Noodles", 6, 100),
+        lineup("b", "Bob", 1, 110),
+      ],
+    });
+    const players = [
+      contestPlayer({
+        scoreData: scoreData(4, [
+          { par: 4, strokes: 4, stableford: 0 },
+          { par: 4, strokes: 3, stableford: 2 },
+        ]),
+        ownerEntryIds: ["a"],
+        ownerNames: ["Noodles"],
+      }),
+    ];
+    const previousHoleState = buildContestFeedHoleState([
+      contestPlayer({
+        scoreData: scoreData(4, [{ par: 4, strokes: 4, stableford: 0 }]),
+      }),
+    ]);
+    const candidates = classifyContestFeedStories(previous, current, {
+      nowMs: Date.parse("2026-07-19T04:00:00.000Z"),
+      contestPlayers: players,
+      previousHoleState,
+      existingItems: [
+        {
+          id: "recent-recap",
+          storyType: "stage_recap",
+          priority: 40,
+          subjects: {},
+          text: "recent",
+          generatedAt: "2026-07-19T03:50:00.000Z",
+        },
+      ],
+      maxPerPass: 1,
+    });
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]?.storyType).toBe("score_swing");
+    // 4-place impact bump (capped) pushes priority into major.
+    expect(candidates[0]?.intensity).toBe("major");
+    expect(candidates[0]!.priority).toBeGreaterThanOrEqual(105);
+  });
+
+  it("emits plain birdies when an owning lineup crosses the paid cut", () => {
+    const previous = context({
+      paidCount: 1,
+      contentionLineups: [
+        lineup("b", "Bob", 1, 105),
+        lineup("a", "Noodles", 2, 100),
+      ],
+    });
+    const current = context({
+      paidCount: 1,
+      contentionLineups: [
+        lineup("a", "Noodles", 1, 102),
+        lineup("b", "Bob", 2, 105),
+      ],
+    });
+    const players = [
+      contestPlayer({
+        scoreData: scoreData(4, [
+          { par: 4, strokes: 4, stableford: 0 },
+          { par: 4, strokes: 3, stableford: 2 },
+        ]),
+        ownerEntryIds: ["a"],
+        ownerNames: ["Noodles"],
+      }),
+    ];
+    const previousHoleState = buildContestFeedHoleState([
+      contestPlayer({
+        scoreData: scoreData(4, [{ par: 4, strokes: 4, stableford: 0 }]),
+      }),
+    ]);
+    const events = collectScoreSwingEvents(
+      players,
+      previousHoleState,
+      computeContestFeedDelta(previous, current).racePositionChanges,
+    );
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      kind: "hole",
+      label: "birdie",
+    });
+  });
+
+  it("still emits rare holes without a material plain-birdie race gate", () => {
+    const previous = context();
+    const current = context();
+    const players = [
+      contestPlayer({
+        scoreData: scoreData(4, [
+          { par: 4, strokes: 4, stableford: 0 },
+          { par: 4, strokes: 6, stableford: -3 },
+        ]),
+      }),
+    ];
+    const previousHoleState = buildContestFeedHoleState([
+      contestPlayer({
+        scoreData: scoreData(4, [{ par: 4, strokes: 4, stableford: 0 }]),
+      }),
+    ]);
+    const events = collectScoreSwingEvents(
+      players,
+      previousHoleState,
+      computeContestFeedDelta(previous, current).racePositionChanges,
+    );
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      kind: "hole",
+      label: "double_bogey_or_worse",
+    });
+  });
+
   it("builds feed item ids that are stable per generation but unique across passes", () => {
     const first = buildContestFeedItemId(
       "score_swing",

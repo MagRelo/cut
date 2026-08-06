@@ -50,6 +50,15 @@ export const CONTEST_FEED_TOURNAMENT_BOARD_CAP = 8;
 /** Max hole events bundled into one score_swing story. */
 export const CONTEST_FEED_SCORE_SWING_EVENT_CAP = 3;
 
+/**
+ * Plain birdies (non-rare outsize holes) only emit when an owning lineup
+ * moves at least this many contest places, or crosses the paid cut.
+ */
+export const CONTEST_FEED_PLAIN_BIRDIE_MIN_POSITION_DELTA = 4;
+
+/** Cap for race-impact contribution to score_swing priority. */
+const SCORE_SWING_IMPACT_PRIORITY_CAP = 15;
+
 export type ContestFeedStoryType =
   | "race_shakeup"
   | "score_swing"
@@ -68,8 +77,7 @@ export const CONTEST_FEED_ACTIVE_STORY_TYPES = [
   "tournament_pulse",
 ] as const satisfies readonly ContestFeedStoryType[];
 
-export type ContestFeedActiveStoryType =
-  (typeof CONTEST_FEED_ACTIVE_STORY_TYPES)[number];
+export type ContestFeedActiveStoryType = (typeof CONTEST_FEED_ACTIVE_STORY_TYPES)[number];
 
 /** Copy length/tone tier for a classified story. */
 export type ContestFeedStoryIntensity = "routine" | "notable" | "major";
@@ -216,10 +224,7 @@ export interface ContestFeedWordLimits {
 }
 
 /** Notable-tier limits (default / backward-compatible export). */
-export const CONTEST_FEED_WORD_LIMITS: Record<
-  ContestFeedActiveStoryType,
-  ContestFeedWordLimits
-> = {
+export const CONTEST_FEED_WORD_LIMITS: Record<ContestFeedActiveStoryType, ContestFeedWordLimits> = {
   score_swing: { minWords: 45, maxWords: 75 },
   stage_recap: { minWords: 125, maxWords: 175 },
   tournament_pulse: { minWords: 40, maxWords: 70 },
@@ -255,9 +260,7 @@ export function resolveContestFeedWordLimits(
 }
 
 /** Map score_swing priority to intensity. */
-export function scoreSwingIntensityFromPriority(
-  priority: number,
-): ContestFeedStoryIntensity {
+export function scoreSwingIntensityFromPriority(priority: number): ContestFeedStoryIntensity {
   if (priority < 95) return "routine";
   if (priority < 105) return "notable";
   return "major";
@@ -317,9 +320,7 @@ function parseFeedItem(value: unknown): ContestFeedItem | null {
     storyType: value.storyType as ContestFeedStoryType,
     priority: value.priority,
     subjects: {
-      ...(asStringArray(subjects.entryIds)
-        ? { entryIds: asStringArray(subjects.entryIds) }
-        : {}),
+      ...(asStringArray(subjects.entryIds) ? { entryIds: asStringArray(subjects.entryIds) } : {}),
       ...(asStringArray(subjects.participantIds)
         ? { participantIds: asStringArray(subjects.participantIds) }
         : {}),
@@ -335,9 +336,7 @@ function parseFeedItem(value: unknown): ContestFeedItem | null {
   return item;
 }
 
-function parsePlayerHoleState(
-  value: Record<string, unknown>,
-): ContestFeedPlayerHoleState | null {
+function parsePlayerHoleState(value: Record<string, unknown>): ContestFeedPlayerHoleState | null {
   if (typeof value.displayName !== "string") return null;
   const keys = asStringArray(value.completedKeys);
   if (!keys) return null;
@@ -354,10 +353,7 @@ function parsePlayerHoleState(
           : null;
   }
   if ("bonus" in value) {
-    state.bonus =
-      typeof value.bonus === "number" && Number.isFinite(value.bonus)
-        ? value.bonus
-        : 0;
+    state.bonus = typeof value.bonus === "number" && Number.isFinite(value.bonus) ? value.bonus : 0;
   }
   return state;
 }
@@ -389,9 +385,7 @@ export function emptyContestCommentaryFeedDocument(
  * Normalize unknown DB / API JSON into a feed document.
  * Plain strings are ignored (legacy lives on Contest.commentary).
  */
-export function parseContestCommentaryFeedDocument(
-  raw: unknown,
-): ContestCommentaryFeedDocument {
+export function parseContestCommentaryFeedDocument(raw: unknown): ContestCommentaryFeedDocument {
   if (!isRecord(raw)) return emptyContestCommentaryFeedDocument();
   const items = Array.isArray(raw.items)
     ? raw.items.map(parseFeedItem).filter((item): item is ContestFeedItem => item != null)
@@ -411,9 +405,7 @@ export function parseContestCommentaryFeedDocument(
   return document;
 }
 
-function lineupByEntryId(
-  context: ContestCommentaryContext,
-): Map<string, ContestCommentaryLineup> {
+function lineupByEntryId(context: ContestCommentaryContext): Map<string, ContestCommentaryLineup> {
   return new Map(context.contentionLineups.map((lineup) => [lineup.entryId, lineup]));
 }
 
@@ -493,10 +485,10 @@ function recentStoryKeys(
     const generated = Date.parse(item.generatedAt);
     if (!Number.isFinite(generated)) continue;
     if (nowMs - generated > cooldownMs) continue;
-    const subjectKey = [
-      ...(item.subjects.entryIds ?? []),
-      ...(item.subjects.participantIds ?? []),
-    ].sort().join(",") || "all";
+    const subjectKey =
+      [...(item.subjects.entryIds ?? []), ...(item.subjects.participantIds ?? [])]
+        .sort()
+        .join(",") || "all";
     keys.add(subjectKey);
     // Also treat whole-story cooldown for stage_recap.
     if (storyType === "stage_recap") keys.add("recap");
@@ -504,9 +496,7 @@ function recentStoryKeys(
   return keys;
 }
 
-function sortCandidates(
-  candidates: ContestFeedStoryCandidate[],
-): ContestFeedStoryCandidate[] {
+function sortCandidates(candidates: ContestFeedStoryCandidate[]): ContestFeedStoryCandidate[] {
   return [...candidates].sort((left, right) => {
     if (right.priority !== left.priority) return right.priority - left.priority;
     return left.storyType.localeCompare(right.storyType);
@@ -518,8 +508,7 @@ function materialRaceChanges(
   minPositionDelta: number,
 ): ContestFeedRacePositionChange[] {
   return delta.racePositionChanges.filter(
-    (change) =>
-      change.crossedPaidCut || Math.abs(change.positionDelta) >= minPositionDelta,
+    (change) => change.crossedPaidCut || Math.abs(change.positionDelta) >= minPositionDelta,
   );
 }
 
@@ -529,11 +518,17 @@ function impactByEntryId(
   return new Map(impacts.map((impact) => [impact.entryId, impact]));
 }
 
-function ownerHasMaterialImpact(
+/** Plain birdies need a 4+ place move or paid-cut cross — not a cosmetic tick. */
+function ownerHasPlainBirdieImpact(
   ownerEntryIds: readonly string[],
   impacts: Map<string, ContestFeedRacePositionChange>,
+  minPositionDelta: number = CONTEST_FEED_PLAIN_BIRDIE_MIN_POSITION_DELTA,
 ): boolean {
-  return ownerEntryIds.some((entryId) => impacts.has(entryId));
+  return ownerEntryIds.some((entryId) => {
+    const impact = impacts.get(entryId);
+    if (!impact) return false;
+    return impact.crossedPaidCut || Math.abs(impact.positionDelta) >= minPositionDelta;
+  });
 }
 
 function impactScoreForOwners(
@@ -565,18 +560,12 @@ function boardDeltaFromPrior(
   scoreData: unknown,
 ): Pick<
   ContestFeedScoreSwingEvent,
-  | "previousLeaderboardPosition"
-  | "leaderboardPosition"
-  | "previousBonus"
-  | "bonus"
-  | "bonusDelta"
+  "previousLeaderboardPosition" | "leaderboardPosition" | "previousBonus" | "bonus" | "bonusDelta"
 > {
   const current = readScoreDataBoardState(scoreData);
   const hasPriorBoard = typeof prior.bonus === "number";
   const previousBonus = hasPriorBoard ? prior.bonus! : null;
-  const previousLeaderboardPosition = hasPriorBoard
-    ? (prior.leaderboardPosition ?? null)
-    : null;
+  const previousLeaderboardPosition = hasPriorBoard ? (prior.leaderboardPosition ?? null) : null;
   return {
     previousLeaderboardPosition,
     leaderboardPosition: current.leaderboardPosition,
@@ -605,9 +594,9 @@ function compareScoreSwingEvents(
 
 /**
  * Event-first score swings: new outsize holes on contest-owned golfers,
- * gated so plain birdies require a material contest race impact; plus
- * bonus-only board moves when the field reshuffles podium place without a
- * new outsize hole from that golfer.
+ * gated so plain birdies require a material contest race impact (4+ places
+ * or paid-cut cross); plus bonus-only board moves when the field reshuffles
+ * podium place without a new outsize hole from that golfer.
  */
 export function collectScoreSwingEvents(
   contestPlayers: readonly ContestFeedContestPlayer[],
@@ -626,8 +615,10 @@ export function collectScoreSwingEvents(
     const holes = listNewOutsizeHoles(player.scoreData, prior);
     for (const hole of holes) {
       const rare = isRareOutsizeHole(hole);
-      const hasImpact = ownerHasMaterialImpact(player.ownerEntryIds, impacts);
-      if (!rare && !hasImpact) continue;
+      // Rare holes always qualify when owned; plain birdies need a material race move.
+      if (!rare && !ownerHasPlainBirdieImpact(player.ownerEntryIds, impacts)) {
+        continue;
+      }
       holeParticipantIds.add(player.eventParticipantId);
       const event: ContestFeedScoreSwingEvent = {
         kind: "hole",
@@ -647,8 +638,7 @@ export function collectScoreSwingEvents(
       };
       const severity = holeSeverity(hole);
       const impactScore = impactScoreForOwners(player.ownerEntryIds, impacts);
-      const bonusRank =
-        Math.abs(board.bonusDelta) > 0 ? SCORE_SWING_BONUS_DELTA_RANK : 0;
+      const bonusRank = Math.abs(board.bonusDelta) > 0 ? SCORE_SWING_BONUS_DELTA_RANK : 0;
       ranked.push({
         event,
         severity,
@@ -688,25 +678,31 @@ export function collectScoreSwingEvents(
     return compareScoreSwingEvents(left.event, right.event);
   });
 
-  return ranked
-    .slice(0, CONTEST_FEED_SCORE_SWING_EVENT_CAP)
-    .map((row) => row.event);
+  return ranked.slice(0, CONTEST_FEED_SCORE_SWING_EVENT_CAP).map((row) => row.event);
 }
 
-function scoreSwingPriority(events: readonly ContestFeedScoreSwingEvent[]): number {
+function scoreSwingPriority(
+  events: readonly ContestFeedScoreSwingEvent[],
+  raceImpacts: readonly ContestFeedRacePositionChange[] = [],
+): number {
   if (events.length === 0) return 0;
   const top = events[0]!;
   const eventCountBump = Math.min(10, events.length * 2);
+  const impacts = impactByEntryId(raceImpacts);
+  const impactBump = Math.min(
+    SCORE_SWING_IMPACT_PRIORITY_CAP,
+    impactScoreForOwners(top.ownerEntryIds, impacts),
+  );
   if (top.kind === "bonus_only") {
     const abs = Math.abs(top.bonusDelta);
     const severity = bonusOnlySeverity(top.bonusDelta);
     const bonusBump = abs >= 5 ? 15 : 8;
-    return 80 + severity + eventCountBump + bonusBump;
+    return 80 + severity + eventCountBump + bonusBump + impactBump;
   }
   const severity = holeSeverity(top);
   const absBonus = Math.abs(top.bonusDelta);
   const bonusBump = absBonus >= 5 ? 10 : absBonus > 0 ? 5 : 0;
-  return 80 + Math.min(20, severity) + eventCountBump + bonusBump;
+  return 80 + Math.min(20, severity) + eventCountBump + bonusBump + impactBump;
 }
 
 function scoreSwingReason(events: readonly ContestFeedScoreSwingEvent[]): string {
@@ -755,9 +751,7 @@ export function buildTournamentBoard(
   return rows.slice(0, Math.max(0, cap));
 }
 
-function newestItemGeneratedAtMs(
-  items: readonly ContestFeedItem[],
-): number | null {
+function newestItemGeneratedAtMs(items: readonly ContestFeedItem[]): number | null {
   let newest: number | null = null;
   for (const item of items) {
     const generated = Date.parse(item.generatedAt);
@@ -787,29 +781,18 @@ export function classifyContestFeedStories(
   const periodInProgress = options.periodInProgress === true;
 
   const candidates: ContestFeedStoryCandidate[] = [];
-  const swingCooldown = recentStoryKeys(
-    existingItems,
-    "score_swing",
-    recapCooldownMs,
-    nowMs,
-  );
+  const swingCooldown = recentStoryKeys(existingItems, "score_swing", recapCooldownMs, nowMs);
 
   const raceImpacts = materialRaceChanges(delta, minPositionDelta);
-  const swingEvents = collectScoreSwingEvents(
-    contestPlayers,
-    previousHoleState,
-    raceImpacts,
-  );
+  const swingEvents = collectScoreSwingEvents(contestPlayers, previousHoleState, raceImpacts);
   if (swingEvents.length > 0) {
     const participantIds = [
       ...new Set(swingEvents.map((event) => event.eventParticipantId)),
     ].sort();
-    const entryIds = [
-      ...new Set(swingEvents.flatMap((event) => event.ownerEntryIds)),
-    ].sort();
+    const entryIds = [...new Set(swingEvents.flatMap((event) => event.ownerEntryIds))].sort();
     const subjectKey = participantIds.join(",") || "swing";
     if (!swingCooldown.has(subjectKey)) {
-      const priority = scoreSwingPriority(swingEvents);
+      const priority = scoreSwingPriority(swingEvents, raceImpacts);
       candidates.push({
         storyType: "score_swing",
         priority,
@@ -844,8 +827,7 @@ export function classifyContestFeedStories(
 
   if (candidates.length === 0 && periodInProgress) {
     const newestMs = newestItemGeneratedAtMs(existingItems);
-    const silenceMs =
-      newestMs == null ? Number.POSITIVE_INFINITY : nowMs - newestMs;
+    const silenceMs = newestMs == null ? Number.POSITIVE_INFINITY : nowMs - newestMs;
     if (silenceMs >= pulseGapMs) {
       candidates.push({
         storyType: "tournament_pulse",
@@ -885,9 +867,7 @@ export function buildContestFeedFactPack(
       options.previousHoleState,
       raceImpacts,
     ).filter((event) =>
-      participantIds.size === 0
-        ? true
-        : participantIds.has(event.eventParticipantId),
+      participantIds.size === 0 ? true : participantIds.has(event.eventParticipantId),
     );
     const ownerEntryIds = new Set(events.flatMap((event) => event.ownerEntryIds));
     const impacts = raceImpacts.filter((change) => ownerEntryIds.has(change.entryId));
@@ -943,14 +923,8 @@ export function mergeContestFeedItems(
     seen.add(item.id);
     deduped.push(item);
   }
-  let merged = deduped.sort(
-    (left, right) => generatedAtMs(right) - generatedAtMs(left),
-  );
-  if (
-    typeof options.cap === "number" &&
-    Number.isFinite(options.cap) &&
-    options.cap >= 0
-  ) {
+  let merged = deduped.sort((left, right) => generatedAtMs(right) - generatedAtMs(left));
+  if (typeof options.cap === "number" && Number.isFinite(options.cap) && options.cap >= 0) {
     merged = merged.slice(0, options.cap);
   }
   return {
@@ -975,9 +949,7 @@ export function mergeContestFeedItems(
 }
 
 /** Newest stage_recap text, else newest item text — for convenience displays. */
-export function latestFeedCommentaryText(
-  document: ContestCommentaryFeedDocument,
-): string | null {
+export function latestFeedCommentaryText(document: ContestCommentaryFeedDocument): string | null {
   const recap = document.items.find((item) => item.storyType === "stage_recap");
   if (recap?.text.trim()) return recap.text;
   const newest = document.items[0];

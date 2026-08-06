@@ -144,7 +144,9 @@ position-bonus moves that happen without a new outsize hole from that golfer
 (field reshuffles the tournament board—including after the golfer has finished):
 
 - Eagle-or-better, hole-in-one, and double-bogey-or-worse always qualify when owned.
-- Plain birdies qualify only when an owning lineup also moved position/score.
+- Plain birdies qualify only when an owning lineup moves **four or more contest
+  places** (`CONTEST_FEED_PLAIN_BIRDIE_MIN_POSITION_DELTA`) or **crosses the
+  paid cut** (a cosmetic +1–3 place / +2 score tick is not enough).
 - **Bonus-only:** prior fingerprint exists, `|bonusDelta| > 0`, and no new
   outsize hole this tick → `kind: "bonus_only"`, `cause: "field"`.
 - Hole events with a non-zero `bonusDelta` set `cause: "self"` (this golfer’s
@@ -163,7 +165,12 @@ position-bonus moves that happen without a new outsize hole from that golfer
   moves and never narrate a zero-bonus beat.
 - Copy density: ordinal holes (“the 8th”); do not explain birdie/eagle/double;
   avoid contest-total and place-by-place laundry lists; name the golf/bonus
-  result once, then the contest consequence once for shared owners.
+  result once, then the contest consequence once for shared owners. Do not pad
+  with “gains a contest spot” filler for a plain place move; vary sentence
+  structure across posts (synonym swaps of the same skeleton still count as
+  repetition against `RECENTLY_PUBLISHED`).
+- Score-swing priority includes a capped race-impact bump so material birdies
+  (multi-place / paid-cut) more often land in `notable` or `major` intensity.
 - `lastHoleState` fingerprints completed holes plus each golfer's
   `leaderboardPosition` and `bonus` so the next pass can compute deltas.
 - The first pass after deploy seeds `lastHoleState` without emitting swings.

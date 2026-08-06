@@ -108,6 +108,8 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(swingPrompt).toContain("Dual storyline");
     expect(swingPrompt).toContain("ordinal holes");
     expect(swingPrompt).toContain("do not explain what a birdie/eagle/double is");
+    expect(swingPrompt).toContain("Vary sentence structure across posts");
+    expect(swingPrompt).toContain("gains/grabs/pockets/takes/picks up a contest spot");
     expect(swingPrompt).toContain("Intensity: routine");
     expect(swingPrompt).toContain("25-45 words");
     expect(swingPrompt).toContain("At most one numeric contest-score pair");
@@ -136,6 +138,7 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(majorPrompt).toContain("70-110 words");
     expect(majorPrompt).toContain("Style:");
     expect(majorPrompt).toContain("RECENTLY_PUBLISHED");
+    expect(majorPrompt).toContain("same sentence skeleton");
     expect(majorPrompt).toContain("Old flash about chaos");
 
     const recapPrompt = buildPgaContestFeedPrompt({
