@@ -113,6 +113,8 @@ describe("buildPgaContestCommentaryPrompt", () => {
     expect(swingPrompt).toContain("Intensity: routine");
     expect(swingPrompt).toContain("25-45 words");
     expect(swingPrompt).toContain("At most one numeric contest-score pair");
+    expect(swingPrompt).toContain("Noodles #2");
+    expect(swingPrompt).toContain("multiple paid spots");
     expect(swingPrompt).toContain("STORY_FACTS_JSON=");
     expect(swingPrompt).not.toContain("Hard-require opening");
     expect(swingPrompt).not.toContain("Stage: final round");

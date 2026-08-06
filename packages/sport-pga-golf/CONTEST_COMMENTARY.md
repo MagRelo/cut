@@ -35,7 +35,10 @@ affect lists remain private simulation details.
 
 Ownership, leverage, rarity, payout impact, and consensus all use the same
 contention cohort. Participant and entry IDs establish identity; display names
-are labels only. Rarity is normalized by each lineup's actual roster size.
+are labels only. When a user has multiple contest entries, display names include
+the lineup number from the lineup name (e.g. `Noodles #2`), matching the lobby
+UI. A single user can occupy multiple paid spots via multiple lineups—call that
+out when it appears in the race. Rarity is normalized by each lineup's actual roster size.
 Rarity measures differentiation, not lineup quality. Exactly one tied lineup is
 chosen as the favorite, and paid-place count is passed explicitly to analysis.
 

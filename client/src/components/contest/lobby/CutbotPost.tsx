@@ -26,11 +26,37 @@ export interface CutbotPostProps {
   text: string;
   generatedAt?: string | Date | null;
   className?: string;
+  /** Feed story type (e.g. score_swing); shows a label pill when set. */
+  storyType?: string | null;
+  /** When true, the story-type pill uses a green mention highlight. */
+  isMentioned?: boolean;
   /** When set with activityId, shows the Stream reaction bar. */
   reactions?: CutbotPostReactionState | null;
   activityId?: string | null;
   streamClient?: FeedsClient | null;
   canReact?: boolean;
+}
+
+const STORY_TYPE_LABELS: Record<string, string> = {
+  score_swing: "Score swing",
+  stage_recap: "Stage recap",
+  tournament_pulse: "Tournament",
+  race_shakeup: "Race shakeup",
+  leverage_spike: "Leverage",
+  shared_risk: "Shared risk",
+  route_narrowing: "Route",
+  cut_tension: "Cut tension",
+  milestone: "Milestone",
+};
+
+function storyTypeLabel(storyType: string): string {
+  const known = STORY_TYPE_LABELS[storyType];
+  if (known) return known;
+  return storyType
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function formatGeneratedAt(value?: string | Date | null): string | null {
@@ -79,12 +105,18 @@ export const CutbotPost: React.FC<CutbotPostProps> = ({
   text,
   generatedAt,
   className,
+  storyType,
+  isMentioned = false,
   reactions,
   activityId,
   streamClient,
   canReact = false,
 }) => {
   const formattedGeneratedAt = formatGeneratedAt(generatedAt);
+  const storyLabel =
+    typeof storyType === "string" && storyType.trim()
+      ? storyTypeLabel(storyType.trim())
+      : null;
   const [pendingType, setPendingType] = useState<StreamReactionType | null>(null);
   const [expandedReactors, setExpandedReactors] = useState<CutbotPostReactor[] | null>(
     null,
@@ -178,6 +210,21 @@ export const CutbotPost: React.FC<CutbotPostProps> = ({
               </time>
             ) : null}
           </header>
+
+          {storyLabel ? (
+            <p className="mb-1.5">
+              <span
+                className={[
+                  "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase leading-tight tracking-wide",
+                  isMentioned
+                    ? "border-emerald-300 bg-emerald-100 text-emerald-800"
+                    : "border-slate-200 bg-slate-50 text-slate-600",
+                ].join(" ")}
+              >
+                {storyLabel}
+              </span>
+            </p>
+          ) : null}
 
           <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">{text}</p>
 

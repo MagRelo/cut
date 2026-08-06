@@ -61,6 +61,8 @@ const METRIC_DISCIPLINE: readonly string[] = [
   "Never quote ownershipShare, rarityScore, payoutSwing, consensusStrength, winProbability, or payoutProbability as numbers. Translate ownership conversationally (only one lineup has him, the popular pick, nobody else took that swing).",
   "At most one numeric contest-score pair (previousScore to currentScore) per item; prefer place or paid-cut language otherwise. Do not pepper multiple totals and place crawls.",
   'Never pad with filler like "gains/grabs/pockets/takes/picks up a contest spot" for a plain place move. Say the concrete place change or paid-cut result from the facts—or omit that beat.',
+  'Owner displayNames may include a lineup number (e.g. "Noodles #2") when that user has multiple entries—use those labels as written so the correct ticket is clear.',
+  "One user can hold multiple paid spots with multiple lineups. When that shows up in the race facts, call it out—it is notable.",
 ];
 
 const INTENSITY_INSTRUCTIONS: Record<ContestFeedStoryIntensity, string> = {

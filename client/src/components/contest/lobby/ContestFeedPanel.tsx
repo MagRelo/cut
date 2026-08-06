@@ -19,6 +19,8 @@ export interface ContestFeedPanelProps {
   contest: Contest;
   /** Connected Stream client from lobby; omit/null falls back to JSON feed. */
   streamClient?: FeedsClient | null;
+  /** Current app user — used to highlight posts that mention them. */
+  currentUserId?: string;
 }
 
 function reactorsFromActivity(activity: ActivityResponse): CutbotPostReactor[] {
@@ -74,6 +76,56 @@ function activityGeneratedAtMs(activity: ActivityResponse): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function activityStoryType(activity: ActivityResponse): string | null {
+  const custom = activity.custom?.storyType;
+  if (typeof custom === "string" && custom.trim()) return custom.trim();
+  if (typeof activity.type === "string" && activity.type.trim()) {
+    return activity.type.trim();
+  }
+  return null;
+}
+
+function activityMentionsUser(
+  activity: ActivityResponse,
+  userId: string | undefined,
+  userEntryIds: ReadonlySet<string>,
+): boolean {
+  if (!userId) return false;
+  if ((activity.mentioned_users ?? []).some((user) => user.id === userId)) {
+    return true;
+  }
+  const subjects = activity.custom?.subjects;
+  if (!subjects || typeof subjects !== "object") return false;
+  const entryIds = (subjects as { entryIds?: unknown }).entryIds;
+  if (!Array.isArray(entryIds)) return false;
+  return entryIds.some(
+    (entryId) => typeof entryId === "string" && userEntryIds.has(entryId),
+  );
+}
+
+function currentUserEntryIds(
+  contest: Contest,
+  userId: string | undefined,
+): Set<string> {
+  const entryIds = new Set<string>();
+  if (!userId) return entryIds;
+  for (const row of contest.contestLineups ?? []) {
+    if (row.userId !== userId) continue;
+    if (typeof row.entryId === "string" && row.entryId.trim()) {
+      entryIds.add(row.entryId);
+    }
+  }
+  return entryIds;
+}
+
+function jsonItemMentionsUser(
+  entryIds: readonly string[] | undefined,
+  userEntryIds: ReadonlySet<string>,
+): boolean {
+  if (userEntryIds.size === 0 || !entryIds?.length) return false;
+  return entryIds.some((entryId) => userEntryIds.has(entryId));
+}
+
 const ContestBreakdownButton: React.FC<{ contest: Contest }> = ({ contest }) => {
   const [isOpen, setIsOpen] = useState(false);
   if (!contest.commentary) return null;
@@ -114,10 +166,17 @@ const ContestBreakdownButton: React.FC<{ contest: Contest }> = ({ contest }) => 
   );
 };
 
-const JsonFallbackFeed: React.FC<{ contest: Contest }> = ({ contest }) => {
+const JsonFallbackFeed: React.FC<{
+  contest: Contest;
+  currentUserId?: string;
+}> = ({ contest, currentUserId }) => {
   const items = useMemo(
     () => parseContestCommentaryFeedDocument(contest.commentaryFeed).items,
     [contest.commentaryFeed],
+  );
+  const userEntryIds = useMemo(
+    () => currentUserEntryIds(contest, currentUserId),
+    [contest, currentUserId],
   );
 
   if (items.length === 0) {
@@ -133,7 +192,15 @@ const JsonFallbackFeed: React.FC<{ contest: Contest }> = ({ contest }) => {
       <ul className="divide-y divide-slate-200">
         {items.map((item) => (
           <li key={item.id}>
-            <CutbotPost text={item.text} generatedAt={item.generatedAt} />
+            <CutbotPost
+              text={item.text}
+              generatedAt={item.generatedAt}
+              storyType={item.storyType}
+              isMentioned={jsonItemMentionsUser(
+                item.subjects.entryIds,
+                userEntryIds,
+              )}
+            />
           </li>
         ))}
       </ul>
@@ -144,8 +211,13 @@ const JsonFallbackFeed: React.FC<{ contest: Contest }> = ({ contest }) => {
 const StreamContestFeed: React.FC<{
   contest: Contest;
   client: FeedsClient;
-}> = ({ contest, client }) => {
+  currentUserId?: string;
+}> = ({ contest, client, currentUserId }) => {
   const { activities, isLoading, error } = useContestStreamFeed(client, contest.id);
+  const userEntryIds = useMemo(
+    () => currentUserEntryIds(contest, currentUserId),
+    [contest, currentUserId],
+  );
   // Stream orders by created_at; legacy posts were updated in place, so their
   // created_at no longer matches when the update was written.
   const ordered = useMemo(
@@ -157,7 +229,9 @@ const StreamContestFeed: React.FC<{
   );
 
   if (error) {
-    return <JsonFallbackFeed contest={contest} />;
+    return (
+      <JsonFallbackFeed contest={contest} currentUserId={currentUserId} />
+    );
   }
 
   if (isLoading && activities.length === 0) {
@@ -169,7 +243,9 @@ const StreamContestFeed: React.FC<{
   }
 
   if (activities.length === 0) {
-    return <JsonFallbackFeed contest={contest} />;
+    return (
+      <JsonFallbackFeed contest={contest} currentUserId={currentUserId} />
+    );
   }
 
   return (
@@ -180,6 +256,12 @@ const StreamContestFeed: React.FC<{
             <CutbotPost
               text={activity.text ?? ""}
               generatedAt={activityGeneratedAt(activity)}
+              storyType={activityStoryType(activity)}
+              isMentioned={activityMentionsUser(
+                activity,
+                currentUserId,
+                userEntryIds,
+              )}
               activityId={
                 STREAM_REACTIONS_ENABLED ? activity.id : undefined
               }
@@ -201,6 +283,7 @@ const StreamContestFeed: React.FC<{
 export const ContestFeedPanel: React.FC<ContestFeedPanelProps> = ({
   contest,
   streamClient = null,
+  currentUserId,
 }) => {
   return (
     <div className="space-y-3 font-display">
@@ -217,9 +300,13 @@ export const ContestFeedPanel: React.FC<ContestFeedPanelProps> = ({
           Contest Updates
         </h2>
         {streamClient ? (
-          <StreamContestFeed contest={contest} client={streamClient} />
+          <StreamContestFeed
+            contest={contest}
+            client={streamClient}
+            currentUserId={currentUserId}
+          />
         ) : (
-          <JsonFallbackFeed contest={contest} />
+          <JsonFallbackFeed contest={contest} currentUserId={currentUserId} />
         )}
       </div>
     </div>

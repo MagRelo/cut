@@ -203,7 +203,11 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
 
             {viewModel.layout.showFeedTab ? (
               <TabPanel className="p-4 focus:outline-none">
-                <ContestFeedPanel contest={contest} streamClient={streamClient} />
+                <ContestFeedPanel
+                  contest={contest}
+                  streamClient={streamClient}
+                  currentUserId={currentUserId}
+                />
               </TabPanel>
             ) : null}
           </TabPanels>

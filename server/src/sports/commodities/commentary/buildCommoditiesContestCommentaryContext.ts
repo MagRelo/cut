@@ -16,6 +16,7 @@ import {
 } from "@cut/sport-sdk";
 import { prisma } from "../../../lib/prisma.js";
 import { lineupPicksInclude } from "../../../utils/prismaIncludes.js";
+import { commentaryOwnerDisplayName } from "../../../services/contest/commentaryOwnerDisplayName.js";
 import type { ContestCommentaryDiagnostics } from "../../../services/contest/commentaryDiagnostics.js";
 
 export interface BuildCommoditiesContestCommentaryContextOptions {
@@ -113,17 +114,32 @@ export async function buildCommoditiesContestCommentaryContext(
     };
   }
 
-  const entries: CommoditiesContestCommentaryEntry[] = contest.contestLineups
-    .filter((lineup) => Boolean(lineup.entryId))
-    .map((lineup) => ({
+  const enteredLineups = contest.contestLineups.filter((lineup) =>
+    Boolean(lineup.entryId),
+  );
+  const entryCountByUserId = new Map<string, number>();
+  for (const lineup of enteredLineups) {
+    entryCountByUserId.set(
+      lineup.userId,
+      (entryCountByUserId.get(lineup.userId) ?? 0) + 1,
+    );
+  }
+
+  const entries: CommoditiesContestCommentaryEntry[] = enteredLineups.map(
+    (lineup) => ({
       entryId: lineup.entryId!,
-      displayName: lineup.user.name,
+      displayName: commentaryOwnerDisplayName({
+        userName: lineup.user.name,
+        lineupName: lineup.lineup.name,
+        userEntryCount: entryCountByUserId.get(lineup.userId) ?? 1,
+      }),
       prediction: lineup.lineup.prediction,
       createdAt: lineup.createdAt,
       eventParticipantIds: lineup.lineup.picks.map(
         (pick) => pick.eventParticipantId,
       ),
-    }));
+    }),
+  );
   if (entries.length === 0) {
     throw new Error(`Contest ${contestId} has no entered lineups`);
   }
