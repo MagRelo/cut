@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { parseContestCommentaryFeedDocument } from "@cut/sport-pga-golf";
 import type { ActivityResponse, FeedsClient } from "@stream-io/feeds-react-sdk";
 import { type Contest } from "../../../types/contest";
@@ -8,7 +8,6 @@ import {
   STREAM_REACTION_TYPES,
   type StreamReactionType,
 } from "../../../lib/stream/constants";
-import { ContestCommentaryModal } from "./ContestCommentaryModal";
 import {
   CutbotPost,
   type CutbotPostReactionState,
@@ -125,46 +124,6 @@ function jsonItemMentionsUser(
   if (userEntryIds.size === 0 || !entryIds?.length) return false;
   return entryIds.some((entryId) => userEntryIds.has(entryId));
 }
-
-const ContestBreakdownButton: React.FC<{ contest: Contest }> = ({ contest }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  if (!contest.commentary) return null;
-
-  return (
-    <>
-      <button
-        type="button"
-        className="group flex w-full items-center gap-3 rounded-sm border border-blue-200 bg-blue-50 p-3 text-left transition-colors hover:border-blue-400 hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-        onClick={() => setIsOpen(true)}
-      >
-        <span
-          aria-hidden="true"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-blue-400 bg-blue-200 text-xl shadow-sm"
-        >
-          🤖
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold text-blue-950">Contest Breakdown</span>
-          <span className="block text-xs leading-relaxed text-blue-600">
-            See each lineup&apos;s path to victory.
-          </span>
-        </span>
-        <span
-          aria-hidden="true"
-          className="text-lg text-blue-600 transition-transform group-hover:translate-x-0.5"
-        >
-          →
-        </span>
-      </button>
-      <ContestCommentaryModal
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        commentary={contest.commentary}
-        generatedAt={contest.commentaryGeneratedAt}
-      />
-    </>
-  );
-};
 
 const JsonFallbackFeed: React.FC<{
   contest: Contest;
@@ -287,14 +246,6 @@ export const ContestFeedPanel: React.FC<ContestFeedPanelProps> = ({
 }) => {
   return (
     <div className="space-y-3 font-display">
-      {contest.commentary ? (
-        <div className="space-y-2">
-          <h2 className="m-0 font-display text-xl font-bold uppercase tracking-[0.1em] text-slate-400 sm:text-2xl">
-            Live Analysis
-          </h2>
-          <ContestBreakdownButton contest={contest} />
-        </div>
-      ) : null}
       <div className="space-y-2">
         <h2 className="m-0 font-display text-xl font-bold uppercase tracking-[0.1em] text-slate-400 sm:text-2xl">
           Contest Updates

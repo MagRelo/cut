@@ -20,6 +20,17 @@ type Story = StoryObj<typeof meta>;
 
 export const WithoutCommentary: Story = {};
 
+export const WithCommentary: Story = {
+  args: {
+    contest: {
+      ...contestWithPredictions,
+      commentary:
+        "Cutbot likes the chalk stack early, but the long-shot lineup still has a live path if the favorite fades.",
+      commentaryGeneratedAt: "2026-07-19T12:00:00.000Z",
+    },
+  },
+};
+
 export const Locked: Story = {
   args: {
     mode: "locked",

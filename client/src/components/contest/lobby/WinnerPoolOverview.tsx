@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { type Contest } from "../../../types/contest";
 import { type PredictionsPanelMode } from "../../../types/contestLobby";
+import { ContestCommentaryModal } from "./ContestCommentaryModal";
 
 export interface WinnerPoolOverviewProps {
   contest: Contest;
@@ -9,8 +10,10 @@ export interface WinnerPoolOverviewProps {
   placeWagerTabLocked: boolean;
 }
 
-export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ mode }) => {
+export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest, mode }) => {
+  const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
   const isLocked = mode === "locked";
+  const hasCommentary = Boolean(contest.commentary);
 
   return (
     <div className="space-y-3 overflow-hidden rounded-sm border border-slate-200 bg-slate-50 p-3 font-display">
@@ -36,7 +39,30 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ mode }) 
             </Link>
           </>
         )}
+        {hasCommentary ? (
+          <div className="">
+            <button
+              type="button"
+              className={
+                isLocked
+                  ? "text-sm font-medium text-blue-700 hover:underline"
+                  : "text-sm font-medium text-blue-500"
+              }
+              onClick={() => setIsBreakdownOpen(true)}
+            >
+              See what cutbot thinks →
+            </button>
+          </div>
+        ) : null}
       </div>
+      {contest.commentary ? (
+        <ContestCommentaryModal
+          isOpen={isBreakdownOpen}
+          onClose={() => setIsBreakdownOpen(false)}
+          commentary={contest.commentary}
+          generatedAt={contest.commentaryGeneratedAt}
+        />
+      ) : null}
     </div>
   );
 };

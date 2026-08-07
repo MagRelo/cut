@@ -89,8 +89,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
     markContestMentionsRead,
   ]);
 
-  const feedTabLabel =
-    unreadCount > 0 ? `Cutbot (${unreadCount})` : "Cutbot";
+  const hasUnreadMentions = unreadCount > 0;
 
   const fieldSportId = contest.event?.sportId;
 
@@ -154,7 +153,18 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                 <Tab
                   className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
                 >
-                  {feedTabLabel}
+                  <span className="inline-flex items-center justify-center gap-1.5">
+                    {hasUnreadMentions ? (
+                      <span
+                        aria-hidden="true"
+                        className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500"
+                      />
+                    ) : null}
+                    Cutbot
+                    {hasUnreadMentions ? (
+                      <span className="sr-only">, unread mentions</span>
+                    ) : null}
+                  </span>
                 </Tab>
               ) : null}
             </TabList>
