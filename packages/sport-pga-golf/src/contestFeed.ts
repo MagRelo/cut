@@ -39,7 +39,7 @@ export const CONTEST_FEED_MAX_PER_PASS = 2;
 export const CONTEST_FEED_RECAP_COOLDOWN_MS = 20 * 60 * 1000;
 
 /** Silence before emitting tournament_pulse when nothing else fires (ms). */
-export const CONTEST_FEED_PULSE_GAP_MS = 15 * 60 * 1000;
+export const CONTEST_FEED_PULSE_GAP_MS = 60 * 60 * 1000;
 
 /** Ranking priority for tournament_pulse (below swings / stage_recap). */
 export const CONTEST_FEED_PULSE_PRIORITY = 40;

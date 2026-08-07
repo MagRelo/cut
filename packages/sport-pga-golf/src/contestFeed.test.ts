@@ -362,7 +362,7 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     const previous = context();
     const current = context();
     const candidates = classifyContestFeedStories(previous, current, {
-      nowMs: Date.parse("2026-07-19T04:20:00.000Z"),
+      nowMs: Date.parse("2026-07-19T05:05:00.000Z"),
       periodInProgress: true,
       existingItems: [
         {
@@ -385,7 +385,7 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     const previous = context();
     const current = context();
     const candidates = classifyContestFeedStories(previous, current, {
-      nowMs: Date.parse("2026-07-19T04:10:00.000Z"),
+      nowMs: Date.parse("2026-07-19T04:45:00.000Z"),
       periodInProgress: true,
       existingItems: [
         {
@@ -406,7 +406,7 @@ describe("computeContestFeedDelta + classifyContestFeedStories", () => {
     const previous = context();
     const current = context();
     const candidates = classifyContestFeedStories(previous, current, {
-      nowMs: Date.parse("2026-07-19T04:20:00.000Z"),
+      nowMs: Date.parse("2026-07-19T05:05:00.000Z"),
       periodInProgress: false,
       existingItems: [
         {

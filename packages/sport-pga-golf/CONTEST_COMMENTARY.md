@@ -127,7 +127,7 @@ Emit only when all of the following hold:
 2. The golf period is actively on course: `periodStatusDisplay === "In Progress"`
    or a playoff (`golfPeriodInProgress`). Score sync may still run when the
    period is `Complete` between rounds; pulse must not.
-3. Silence since the newest feed item is at least **15 minutes**
+3. Silence since the newest feed item is at least **60 minutes**
    (`CONTEST_FEED_PULSE_GAP_MS`). Any story type resets the silence clock.
 
 Copy is **tournament-only**: leaders, board shape, round/cut progress,
