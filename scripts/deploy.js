@@ -261,7 +261,17 @@ function buildVerifyCommand(network, contractName, address, addresses) {
   if (contractName === "MockUSDC") {
     return `forge verify-contract ${address} ${contractPath}:MockUSDC --verifier blockscout --verifier-url ${network.blockscoutApiUrl}`;
   }
-  if (contractName === "ReferralGraph" && deployer) {
+  if (contractName === "ContestFactory") {
+    const paymentToken =
+      addresses.MockUSDC ||
+      (network.name === "base" ? BASE_MAINNET_USDC : null) ||
+      addresses.paymentTokenAddress;
+    const referralGraph = addresses.ReferralGraph;
+    const rewardCalculator = addresses.RewardCalculator;
+    if (paymentToken && referralOracle && referralGraph && rewardCalculator) {
+      constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address,address,bytes32)" ${paymentToken} ${referralOracle} ${referralGraph} ${rewardCalculator} ${referralGroupId})`;
+    }
+  } else if (contractName === "ReferralGraph" && deployer) {
     constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,bytes32)" ${deployer} ${referralOracle} ${referralGroupId})`;
   } else if (contractName === "RewardCalculator") {
     // no constructor args

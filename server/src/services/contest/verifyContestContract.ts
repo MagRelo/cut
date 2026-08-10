@@ -10,9 +10,10 @@ export interface VerifyContestContractParams {
   contestAddress: string;
 
   paymentTokenAddress: string;
-  oracle: string;
+  /** ContestController `operator` (factory immutable; stored as settings.oracle). */
+  operator: string;
 
-  /** `_primaryDepositAmount` as uint256 decimal string (token base units, 18 decimals). */
+  /** `_primaryDepositAmount` as uint256 decimal string (token base units). */
   primaryDepositAmountWei: string;
 
   referralNetworkBps: number;
@@ -21,7 +22,6 @@ export interface VerifyContestContractParams {
   referralGraphAddress: string;
   rewardCalculatorAddress: string;
   referralGroupId: Hex;
-  emergencyRecovery: string;
 }
 
 /**
@@ -75,11 +75,10 @@ export async function queueVerifyContestContract(params: VerifyContestContractPa
       { type: "address" },
       { type: "address" },
       { type: "bytes32" },
-      { type: "address" },
     ],
     [
       params.paymentTokenAddress as `0x${string}`,
-      params.oracle as `0x${string}`,
+      params.operator as `0x${string}`,
       BigInt(params.primaryDepositAmountWei),
       BigInt(params.referralNetworkBps),
       BigInt(params.expiryTimestamp),
@@ -87,7 +86,6 @@ export async function queueVerifyContestContract(params: VerifyContestContractPa
       params.referralGraphAddress as `0x${string}`,
       params.rewardCalculatorAddress as `0x${string}`,
       params.referralGroupId,
-      params.emergencyRecovery as `0x${string}`,
     ],
   );
 

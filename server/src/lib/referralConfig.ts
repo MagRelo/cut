@@ -1,7 +1,7 @@
 import { getAddress, isAddress, type Hex } from "viem";
 import baseContracts from "../contracts/base.json" with { type: "json" };
 import sepoliaContracts from "../contracts/sepolia.json" with { type: "json" };
-import { requireEmergencyRecoveryAddress } from "./emergencyRecovery.js";
+import { requireReferralPlatformRootAddress } from "./referralPlatformRoot.js";
 
 type ChainContractJson = {
   referralGraphAddress?: string;
@@ -81,14 +81,14 @@ export function getReferralSyncChainIdFromEnv(): number {
 }
 
 /**
- * Cold emergency-recovery wallet registered under REFERRAL_ROOT; organics descend from it.
+ * Cold referral platform root registered under REFERRAL_ROOT; organics descend from it.
  * Hot OPS_ORACLE signs register/batchRegister but is not a graph ancestor.
  */
 export function getReferralRootAddress(chainId: number): `0x${string}` {
   if (chainId !== 8453 && chainId !== 84532) {
     throw new Error(`Unsupported referral chain id: ${chainId}`);
   }
-  return requireEmergencyRecoveryAddress().toLowerCase() as `0x${string}`;
+  return requireReferralPlatformRootAddress().toLowerCase() as `0x${string}`;
 }
 
 export function requireReferralGroupId(): Hex {

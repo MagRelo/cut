@@ -224,7 +224,8 @@ export const CreateContestForm = () => {
           </label>
           <p className="text-xs text-gray-600">
             <span className="font-mono">_referralNetworkBps</span>: share of contest TVL
-            distributed to the referral network at settlement (or to the oracle if no chain).
+            distributed to the referral network at settlement (restored to prize pools if no
+            payable referrer chain).
           </p>
           <input
             type="number"
@@ -313,11 +314,12 @@ export const CreateContestForm = () => {
 
         <div className="space-y-2">
           <label htmlFor="oracle" className="block font-medium">
-            Oracle
+            Operator
           </label>
           <p className="text-xs text-gray-600">
-            <span className="font-mono">_oracle</span>: sole address allowed to
-            advance/cancel/settle the contest (<span className="font-mono">onlyOracle</span>).
+            Factory <span className="font-mono">operator</span>: trusted escrow agent allowed to
+            advance/cancel/settle the contest (<span className="font-mono">onlyOperator</span>).
+            Must match the address fixed on ContestFactory at deploy.
           </p>
           <input
             type="text"

@@ -66,7 +66,8 @@ export function areSecondaryActionsLocked(contestStatus: ContestStatus): boolean
 }
 
 /**
- * Mirrors immutable `ContestController` constructor parameters (see on-chain `paymentToken()`, `oracle()`, etc.).
+ * Contest settings persisted at create time. Payment token, operator, and referral stack are
+ * factory immutables; settings store the expected operator as `oracle` for display/verify.
  * The DB `endTime` column should match `new Date(expiryTimestamp * 1000)`.
  */
 export interface ContestSettings {
@@ -77,19 +78,16 @@ export interface ContestSettings {
   /** `_expiryTimestamp` (Unix seconds, uint256 on-chain) */
   expiryTimestamp: number;
 
-  /** `_paymentToken` */
+  /** Factory `paymentToken` (display + verify encoding). */
   paymentTokenAddress: string;
   /** ERC-20 symbol at creation (display; token metadata is not in the contest contract). */
   paymentTokenSymbol: string;
 
-  /** `_oracle` */
+  /** Factory `operator` address (settings key kept as `oracle` for existing rows). */
   oracle: string;
 
-  /** `_emergencyRecovery` — cold address-only residual recovery after expiry (required on new contests). */
-  emergencyRecovery?: string;
-
   /**
-   * `_primaryDepositAmount` in human token units (18 decimals on chain).
+   * `_primaryDepositAmount` in human token units.
    * Same value used when calling `ContestFactory.createContest`.
    * Use `0` for a free Layer 1 (no primary stake; matches on-chain zero deposit).
    */

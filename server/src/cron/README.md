@@ -55,7 +55,7 @@ Separate running flags skip a tick if that pipeline is still in progress.
 5. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED` when the event is complete
 6. **`batchSyncReferralGraph`** — push pending referral registrations on-chain
 
-`CLOSED` is observed after ops calls `emergencyRecoverFunds()` from the cold emergency-recovery wallet post-expiry — not via cron.
+Terminal on-chain states are `SETTLED` and `CANCELLED`. Permissionless `cancelExpired()` unlocks after `expiryTimestamp + SETTLEMENT_GRACE_PERIOD` (1 day) if the operator never settles.
 
 Better Stack heartbeat reports on the **score** pipeline only.
 

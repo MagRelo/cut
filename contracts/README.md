@@ -93,34 +93,7 @@ Create a contest on top of any stream of events where:
 | **Secondary Participants** | Winners get payout, losers get 0                | Same function                      |
 | **Oracle/Admin**           | Push payouts to winners                         | `pushPrimaryPayouts()` / `pushSecondaryPayouts()` |
 
-**State transition:** Users claim or oracle pushes payouts while `SETTLED`. After expiry, cold `emergencyRecovery` may call `emergencyRecoverFunds()` → `CLOSED`.
-
----
-
-### Phase 5: CLOSED - Emergency Recovery (After Expiry)
-
-**State:** `ContestState.CLOSED`  
-**Trigger:** Cold `emergencyRecovery` address calls `emergencyRecoverFunds()` after contest expiry from a terminal state (`SETTLED` or `CANCELLED`)
-
-| Actor            | Can Do                          | Function |
-| ---------------- | ------------------------------- | -------- |
-| **All Users**    | Already received payouts or forfeited unclaimed amounts | -        |
-| **Emergency recovery** | ❌ No more actions (already swept) | -        |
-
-**Purpose:** Prevent funds from being locked forever if users forget to claim or refund.
-
-**How it works:**
-
-- After expiry timestamp, `emergencyRecovery` calls `emergencyRecoverFunds()` from `SETTLED` or `CANCELLED`
-- Sweeps remaining contract balance to the cold recovery address, including unclaimed payouts or un-refunded deposits
-- Primary participants who didn't claim lose their prizes
-- Winning secondary participants who didn't claim lose their winnings
-- Cancelled depositors who didn't withdraw lose residual refunds
-- App and cron observe `CLOSED` but never hold the recovery key
-
-**Terminal state:** Contest fully closed, all funds distributed or recovered.
-
-**Scope:** Legacy contests on old factory/ABI are out of scope for automated recovery.
+**State transition:** Users claim or operator pushes payouts while `SETTLED`. Push batches credit unallocated dust into winner pools (`UnallocatedBalanceAllocated`). Terminal states are `SETTLED` and `CANCELLED` — there is no on-chain `CLOSED`.
 
 ---
 
@@ -132,14 +105,13 @@ Create a contest on top of any stream of events where:
 | -------------------------- | ------------------------------------------- | ------------------------------------------ |
 | **Primary Participants**   | Get full refund of deposit                  | `removePrimaryPosition(entryId)`           |
 | **Secondary Participants** | Refund tracked principal                    | `removeSecondaryPosition(entryId, tokens)` |
-| **Emergency recovery**     | Recover residuals after expiry                | `emergencyRecoverFunds()`                  |
 
-**Terminal state:** Contest cancelled; secondary withdraws refund `secondaryDepositedPerEntry` principal (not open-market pro-rata). After expiry, cold `emergencyRecovery` may call `emergencyRecoverFunds()` and sweep leftovers.
+**Terminal state:** Contest cancelled; secondary withdraws refund `secondaryDepositedPerEntry` principal (not open-market pro-rata).
 
 **How to get to CANCELLED:**
 
-- Oracle calls `cancelContest()` (anytime before SETTLED — settlement is final)
-- Anyone calls `cancelExpired()` (after expiry timestamp, if not settled)
+- Operator calls `cancelContest()` (anytime before SETTLED — settlement is final)
+- Anyone calls `cancelExpired()` after `expiryTimestamp + SETTLEMENT_GRACE_PERIOD` (1 day), if not settled
 
 **Refund guarantee:**
 
@@ -174,41 +146,30 @@ Secondary Participants (OPEN sell-back): Pro-rata share of entry liquidity
                      │ Competition finishing
                      │ No more secondary positions
                      │
-                     │ Oracle: settleContest(...)
+                     │ Operator: settleContest(..., secondaryWinner)
                      │ Calculates Layer 1 (Primary) prize payouts
                      │ Sets Layer 2 (Secondary) winner
                      ▼
                   SETTLED
                      │
-                     │ Users claim payouts
-                     │ whenever ready
-                     │
-                     │ (After expiry)
-                     │ emergencyRecovery: emergencyRecoverFunds()
-                     │ (SETTLED or CANCELLED only)
-                     │ Sweeps residual balance
-                     ▼
-                  CLOSED
-                     │
-                     │ All funds distributed or swept
+                     │ Users claim / operator push payouts
+                     │ Dust → winner pools (UnallocatedBalanceAllocated)
                      ▼
                   (done)
 
         (Alternative path from OPEN/ACTIVE/LOCKED)
                      │
-                     │ Oracle: cancelContest()
+                     │ Operator: cancelContest()
                      │ OR
-                     │ Anyone: cancelExpired() after expiry
-                     │ (Cannot cancel after SETTLED/CLOSED)
+                     │ Anyone: cancelExpired() after expiry + grace
+                     │ (Cannot cancel after SETTLED)
                      ▼
                  CANCELLED
                      │
                      │ Refunds via remove primary/secondary
                      │ (secondary = tracked principal)
-                     │
-                     │ (After expiry) emergencyRecovery: emergencyRecoverFunds()
                      ▼
-                  CLOSED
+                  (done)
 ```
 
 ## 💰 Economic Model

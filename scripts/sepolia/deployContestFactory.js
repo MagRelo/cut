@@ -3,7 +3,9 @@
  * Deploy only ContestFactory on Base Sepolia (84532).
  * Uses `contracts/script/Deploy_sepolia_contest_factory.s.sol`. Does not modify app config JSON.
  *
- * Prerequisites: `contracts/.env` with DEPLOYER_PK and BASE_SEPOLIA_RPC_URL; Foundry (`forge`).
+ * Prerequisites: `contracts/.env` with DEPLOYER_PK, BASE_SEPOLIA_RPC_URL,
+ * PAYMENT_TOKEN_ADDRESS, REFERRAL_GRAPH_ADDRESS, REWARD_CALCULATOR_ADDRESS,
+ * REFERRAL_GROUP_ID, and OPS_ORACLE_PK (operator); Foundry (`forge`).
  *
  * Usage (from repo root):
  *   node scripts/sepolia/deployContestFactory.js

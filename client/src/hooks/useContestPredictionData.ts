@@ -6,14 +6,13 @@ import ContestContract from "../utils/contracts/ContestController.json";
 import { contestPaymentDecimals } from "../lib/paymentTokenSpend";
 import { useEffectiveWalletAddress } from "./useEffectiveWalletAddress";
 
-// Contract state enum matching Contest.sol
+// On-chain ContestController.state enum
 export enum ContestState {
   OPEN = 0,
   ACTIVE = 1,
   LOCKED = 2,
   SETTLED = 3,
   CANCELLED = 4,
-  CLOSED = 5,
 }
 
 // Supported chain IDs

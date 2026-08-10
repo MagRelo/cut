@@ -84,10 +84,10 @@ pnpm --filter server run script:rematerialize-referral-graph --dry-run
 pnpm --filter server run script:rematerialize-referral-graph --reset-hashes
 ```
 
-Uses `REFERRAL_SYNC_CHAIN_ID` (84532). Maps DB organics/invites onto the graph: emergency recovery → organics under recovery → invitees under inviter **primary** smart wallet. Never registers invitees under the referral root. Exits non-zero on parent audit mismatch.
+Uses `REFERRAL_SYNC_CHAIN_ID` (84532). Maps DB organics/invites onto the graph: platform root → organics under root → invitees under inviter **primary** smart wallet. Never registers invitees under the referral root. Exits non-zero on parent audit mismatch.
 
-- [x] Referral root registered under `REFERRAL_ROOT` (historical soak used hot oracle; cutover uses `EMERGENCY_RECOVERY_ADDRESS`)
-- [x] Organics under oracle (34)
+- [x] Referral root registered under `REFERRAL_ROOT` (`REFERRAL_PLATFORM_ROOT_ADDRESS`)
+- [x] Organics under platform root
 - [x] Invite chains match DB (`referredByUserId` → inviter primary); audit clean (11/11)
 - [x] Spot-check DipChutney → One Direction; User 0x16ca → DipChutney; User 0x4151 → User 0x16ca
 
@@ -196,7 +196,7 @@ pnpm --filter server run script:rematerialize-referral-graph --reset-hashes
 ```
 
 - [ ] Emergency recovery registered under `REFERRAL_ROOT`
-- [ ] Organics under emergency recovery; invitees under inviter primary on `8453`
+- [ ] Organics under referral platform root; invitees under inviter primary on `8453`
 - [ ] Audit clean (zero parent mismatches / deferred)
 
 ### 3e. Base smoke (pre–client flip)

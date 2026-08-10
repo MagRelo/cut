@@ -2,12 +2,12 @@ import { getAddress, isAddress, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
 /**
- * OPS_ORACLE — the single operational oracle role.
+ * OPS_ORACLE — the hot operational operator role.
  *
- * One EOA acts as both the **contest oracle** (create / activate / lock / settle / close /
- * push payouts) and the **referral oracle** (register / batchRegister and tree root under
- * REFERRAL_ROOT). Configure it once via `OPS_ORACLE_PK`; the address is derived from the key
- * unless `OPS_ORACLE_ADDRESS` is set explicitly.
+ * One EOA acts as the contest **operator** (activate / lock / settle / cancel / push payouts)
+ * and the ReferralGraph **authorized oracle** (register / batchRegister). It is not a referral
+ * tree ancestor — organics hang under `REFERRAL_PLATFORM_ROOT_ADDRESS`. Configure via
+ * `OPS_ORACLE_PK`; the address is derived from the key unless `OPS_ORACLE_ADDRESS` is set.
  */
 
 function readEnv(name: string): string | undefined {

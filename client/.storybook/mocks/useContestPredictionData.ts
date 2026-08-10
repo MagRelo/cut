@@ -10,7 +10,6 @@ export enum ContestState {
   LOCKED = 2,
   SETTLED = 3,
   CANCELLED = 4,
-  CLOSED = 5,
 }
 
 interface StorybookPredictionOptions {

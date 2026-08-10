@@ -85,9 +85,9 @@ Golf-owned entry: `server/src/sports/pga-golf/cron/refreshSideBetQuotes.ts` → 
 | Batch                   | Typical transition                              |
 | ----------------------- | ----------------------------------------------- |
 | `batchActivateContests` | `OPEN` → `ACTIVE` when sport says event is live |
-| `batchSettleContests`   | → `SETTLED` when event complete + oracle flow   |
+| `batchSettleContests`   | → `SETTLED` when event complete + operator settle |
 
-`CLOSED` is reached when ops calls `emergencyRecoverFunds()` from the cold emergency-recovery wallet after on-chain expiry. The score pipeline does not automate this step.
+Terminal on-chain states are `SETTLED` / `CANCELLED`. Permissionless `cancelExpired` applies after expiry + grace if unsettled.
 
 Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event status.
 

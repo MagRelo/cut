@@ -2,10 +2,10 @@
  * Index referral-network payouts from the settleContest transaction receipt.
  * Referral fees are distributed at settlement (not on pushPrimary/Secondary).
  *
- * Indexes `ReferralNetworkFeeDistributed` recipients (including cold emergency recovery
- * when it appears in the payout chain). `ReferralNetworkFeeToPrimary` spills unallocated
- * referral fee back into primary — not a wallet payment. `UnallocatedBalanceCleared` dust
- * to the hot oracle is ignored for ledger rows.
+ * Indexes `ReferralNetworkFeeDistributed` recipients (including the cold referral platform
+ * root when it appears in the payout chain). `ReferralNetworkFeeToPrimary` spills unallocated
+ * referral fee back into prize pools — not a wallet payment. Push-batch dust is credited via
+ * `UnallocatedBalanceAllocated` into winner pools and is not ledgered here.
  */
 
 import type { Abi, TransactionReceipt } from "viem";
@@ -86,8 +86,7 @@ export async function recordSettlementReferralPayments(
     }
   }
 
-  // ReferralNetworkFeeToPrimary: fee spilled to primary pool (not a wallet transfer).
-  // UnallocatedBalanceCleared: dust to hot oracle — intentionally not ledgered as REFERRAL.
+  // ReferralNetworkFeeToPrimary / UnallocatedBalanceAllocated: pool credits, not wallet transfers.
 
   return { referralRowCount };
 }

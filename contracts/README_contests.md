@@ -204,7 +204,7 @@ Settlement does **NO transfers**, only calculations:
 - **Oracle fees (5%)** → Oracle (via `accumulatedOracleFee`)
 - **Cross-subsidy transfers** → Only rebalance between `primaryPrizePool`, `primaryPrizePoolSubsidy`, and `secondaryPrizePool`; no value is created or destroyed.
 
-If users don't claim, oracle can use `closeContest()` after expiry to recover unclaimed funds.
+Unclaimed funds remain claimable while `SETTLED`. Push batches credit residual dust into winner pools.
 
 ### Claims (Pull-Based)
 
@@ -266,41 +266,42 @@ function claimSecondaryPayout(uint256 entryId) external
 // Only pays if entryId == secondaryWinningEntry
 ```
 
-#### For Oracle
+#### For Operator
 
 ```solidity
 // Activate contest (locks entry registration)
-function activateContest() external onlyOracle
+function activateContest() external onlyOperator
 
 // Lock contest (closes secondary positions)
-function lockContest() external onlyOracle
+function lockContest() external onlyOperator
 
 // Settle contest (pure accounting, NO transfers)
 function settleContest(
     uint256[] calldata winningEntries,
-    uint256[] calldata payoutBps
-) external onlyOracle
-// Stores all payouts, first entry is secondary winner
+    uint256[] calldata payoutBps,
+    uint256 secondaryWinner
+) external onlyOperator
+// Stores all payouts; secondaryWinner must be in winningEntries
 // payoutBps must sum to 10000 (100%)
 
 // Cancel contest (enables full refunds)
-function cancelContest() external onlyOracle
+function cancelContest() external onlyOperator
+
+// Permissionless after expiry + SETTLEMENT_GRACE_PERIOD
+function cancelExpired() external
 ```
 
 ### Optional Push Functions (Convenience)
 
-These are optional helpers for the oracle to push payouts instead of waiting for claims:
+These are optional helpers for the operator to push payouts instead of waiting for claims:
 
 ```solidity
-// Push prizes + bonuses to specific entries
-function pushPrimaryPayouts(uint256[] calldata entryIds) external onlyOracle
+// Push prizes to specific entries
+function pushPrimaryPayouts(uint256[] calldata entryIds) external onlyOperator
 
 // Push winnings to specific secondary participants
-function pushSecondaryPayouts(address[] calldata participants, uint256 entryId) external onlyOracle
-
-// Close contest and sweep all unclaimed funds after expiry
-function closeContest() external onlyOracle
-// Requirements: block.timestamp >= expiryTimestamp
+function pushSecondaryPayouts(address[] calldata participants, uint256 entryId) external onlyOperator
+// After push batches: UnallocatedBalanceAllocated credits dust into winner pools
 ```
 
 ## State Machine
@@ -309,22 +310,22 @@ function closeContest() external onlyOracle
 ┌─────────────────────────────────────────────────────────────────┐
 │ OPEN                                                            │
 │  • Primary: addPrimaryPosition() / removePrimaryPosition()     │
-│  • Secondary: addSecondaryPosition() / removeSecondaryPosition()│
-│  • Oracle: activateContest()                                    │
+│  • Secondary: closed                                            │
+│  • Operator: activateContest()                                  │
 └─────────────────┬───────────────────────────────────────────────┘
                   │
                   ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │ ACTIVE                                                           │
 │  • Secondary: addSecondaryPosition() only (no withdrawals)      │
-│  • Oracle: lockContest() [optional]                             │
+│  • Operator: lockContest()                                      │
 └─────────────────┬───────────────────────────────────────────────┘
                   │
                   ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ LOCKED [optional]                                               │
+│ LOCKED                                                          │
 │  • No deposits or withdrawals                                   │
-│  • Oracle: settleContest()                                      │
+│  • Operator: settleContest(..., secondaryWinner)                │
 └─────────────────┬───────────────────────────────────────────────┘
                   │
                   ▼
@@ -332,17 +333,10 @@ function closeContest() external onlyOracle
 │ SETTLED                                                          │
 │  • Primary: claimPrimaryPayout()                                │
 │  • Secondary: claimSecondaryPayout()                            │
-│  • Oracle: pushPrimaryPayouts() / pushSecondaryPayouts()        │
-│  • Oracle: closeContest() [after expiry]                        │
-└─────────────────┬───────────────────────────────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ CLOSED                                                           │
-│  • All funds distributed or swept                               │
+│  • Operator: pushPrimaryPayouts() / pushSecondaryPayouts()      │
 └─────────────────────────────────────────────────────────────────┘
 
-CANCELLATION PATH (from OPEN or ACTIVE only):
+CANCELLATION PATH (from OPEN / ACTIVE / LOCKED):
 ┌─────────────────────────────────────────────────────────────────┐
 │ CANCELLED                                                        │
 │  • Full refunds available via removePrimaryPosition() and       │

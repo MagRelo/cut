@@ -33,7 +33,7 @@ export function getWalletClient(chainId: number): {
 }
 
 /**
- * Read-only client for receipts and simulation (matches oracle RPC chain).
+ * Read-only client for receipts and simulation (matches operator RPC chain).
  */
 export function getPublicClient(chainId: number) {
   const chainConfig = getChainConfig(chainId);
@@ -57,16 +57,19 @@ export function getContestContract(contestAddress: string, chainId: number) {
 }
 
 /**
- * Verify oracle address matches expected oracle
+ * Verify on-chain `operator` matches OPS_ORACLE address.
  */
-export async function verifyOracle(contestAddress: string, chainId: number): Promise<boolean> {
-  const expectedOracle = getOpsOracleAddress();
+export async function verifyOperator(contestAddress: string, chainId: number): Promise<boolean> {
+  const expectedOperator = getOpsOracleAddress();
 
   const contract = getContestContract(contestAddress, chainId);
-  const actualOracle = (await contract.read.oracle!()) as string;
+  const actualOperator = (await contract.read.operator!()) as string;
 
-  return actualOracle.toLowerCase() === expectedOracle.toLowerCase();
+  return actualOperator.toLowerCase() === expectedOperator.toLowerCase();
 }
+
+/** @deprecated Use {@link verifyOperator}. */
+export const verifyOracle = verifyOperator;
 
 /**
  * Read contest state from blockchain, optionally pinned to a block (avoids RPC lag after writes).

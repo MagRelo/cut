@@ -19,7 +19,6 @@ import { baseSepolia } from "viem/chains";
 import ContestFactory from "../contracts/ContestFactory.json" with { type: "json" };
 import sepoliaContracts from "../contracts/sepolia.json" with { type: "json" };
 import { getChainConfig } from "../lib/chainConfig.js";
-import { requireEmergencyRecoveryAddress } from "../lib/emergencyRecovery.js";
 import { getOpsOracleAddress, getOpsOraclePrivateKey } from "../lib/opsOracle.js";
 import { parseReferralGroupIdFromEnv } from "../lib/referralConfig.js";
 import { prisma } from "../lib/prisma.js";
@@ -47,8 +46,7 @@ async function main(): Promise<void> {
   const { eventId, name } = parseArgs();
 
   const privateKey = getOpsOraclePrivateKey();
-  const oracle = getOpsOracleAddress();
-  const emergencyRecovery = requireEmergencyRecoveryAddress();
+  const operator = getOpsOracleAddress();
 
   const referralGroupId = parseReferralGroupIdFromEnv();
   if (!referralGroupId) {
@@ -101,13 +99,10 @@ async function main(): Promise<void> {
 
   const factoryAddress = sepoliaContracts.contestFactoryAddress as Hex;
   const paymentToken = sepoliaContracts.paymentTokenAddress as Hex;
-  const referralGraph = sepoliaContracts.referralGraphAddress as Hex;
-  const rewardCalculator = sepoliaContracts.rewardCalculatorAddress as Hex;
   const primaryDepositAmount = BigInt(DEFAULT_PRIMARY_DEPOSIT * 1_000_000);
 
   console.log(`[chain] Creating contest on ${chainConfig.name} via ${factoryAddress}`);
-  console.log(`[chain] Oracle: ${oracle}`);
-  console.log(`[chain] Emergency recovery: ${emergencyRecovery}`);
+  console.log(`[chain] Operator: ${operator}`);
   console.log(`[chain] Expiry: ${endTime.toISOString()} (${expiryTimestamp})`);
 
   const hash = await walletClient.writeContract({
@@ -115,16 +110,10 @@ async function main(): Promise<void> {
     abi: ContestFactory.abi,
     functionName: "createContest",
     args: [
-      paymentToken,
-      oracle as Hex,
       primaryDepositAmount,
       BigInt(DEFAULT_REFERRAL_NETWORK_BPS),
       expiryTimestamp,
       0n,
-      referralGraph,
-      rewardCalculator,
-      referralGroupId,
-      emergencyRecovery,
     ],
   });
 
@@ -163,8 +152,7 @@ async function main(): Promise<void> {
         chainId: BASE_SEPOLIA_CHAIN_ID,
         paymentTokenAddress: paymentToken,
         paymentTokenSymbol: "xUSDC",
-        oracle,
-        emergencyRecovery,
+        oracle: operator,
         expiryTimestamp: Number(expiryTimestamp),
         primaryDeposit: DEFAULT_PRIMARY_DEPOSIT,
         referralNetworkBps: DEFAULT_REFERRAL_NETWORK_BPS,

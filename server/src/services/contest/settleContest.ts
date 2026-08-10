@@ -16,7 +16,7 @@ import ContestController from "../../contracts/ContestController.json" with { ty
 import {
   getContestContract,
   getPublicClient,
-  verifyOracle,
+  verifyOperator,
   readContestState,
 } from "../shared/contractClient.js";
 import { executeContestPayoutPushes } from "./pushContestPayouts.js";
@@ -164,7 +164,7 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       };
     }
 
-    const isValidOracle = await verifyOracle(contest.address, contest.chainId);
+    const isValidOracle = await verifyOperator(contest.address, contest.chainId);
     if (!isValidOracle) {
       return {
         success: false,
@@ -315,9 +315,11 @@ export async function settleContest(contestId: string): Promise<OperationResult>
         `[settleContest] Recovering off-chain settlement from existing tx: ${hash}`,
       );
     } else {
+      const secondaryWinner = winningEntriesBigInt[0]!;
       hash = (await contract.write.settleContest!([
         winningEntriesBigInt,
         payoutBpsBigInt,
+        secondaryWinner,
       ])) as `0x${string}`;
 
       console.log(`[settleContest] Transaction submitted: ${hash}`);

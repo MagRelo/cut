@@ -6,7 +6,7 @@
  */
 
 import { prisma } from '../../lib/prisma.js';
-import { getContestContract, verifyOracle, readContestState } from '../shared/contractClient.js';
+import { getContestContract, verifyOperator, readContestState } from '../shared/contractClient.js';
 import { ContestState, type OperationResult } from '../shared/types.js';
 
 export async function lockContest(contestId: string): Promise<OperationResult> {
@@ -36,7 +36,7 @@ export async function lockContest(contestId: string): Promise<OperationResult> {
     }
 
     // Verify oracle
-    const isValidOracle = await verifyOracle(contest.address, contest.chainId);
+    const isValidOracle = await verifyOperator(contest.address, contest.chainId);
     if (!isValidOracle) {
       return {
         success: false,

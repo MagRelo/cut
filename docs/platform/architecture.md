@@ -215,7 +215,7 @@ sequenceDiagram
   Core->>Core: refreshSideBetQuotes golf
   Core->>Contest: batchActivateContests
   Core->>Contest: batchSettleContests
-  Note over Core,Contest: CLOSED via external emergencyRecoverFunds after expiry
+  Note over Core,Contest: Terminal states SETTLED / CANCELLED
   Core->>Core: batchSyncReferralGraph
 ```
 

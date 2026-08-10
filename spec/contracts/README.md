@@ -45,11 +45,11 @@ The contracts layer implements the core blockchain functionality for Play The Cu
 ### With Server
 
 - Server reads contract state via RPC calls
-- Server writes to contracts via oracle/admin functions (OPS_ORACLE):
+- Server writes to contracts via operator functions (OPS_ORACLE key → factory `operator`):
   - `activateContest()` - Start contest
   - `lockContest()` - Lock secondary positions
-  - `settleContest()` - Settle and distribute prizes
-  - `emergencyRecoverFunds()` - Recover residual balance after expiry (cold `emergencyRecovery` address)
+  - `settleContest(winningEntries, payoutBps, secondaryWinner)` - Settle and distribute prizes
+  - `pushPrimaryPayouts` / `pushSecondaryPayouts` - Optional batch claims
 
 ### With Client
 
@@ -72,13 +72,13 @@ The contracts layer implements the core blockchain functionality for Play The Cu
 
 ### State Machine
 
-Contests progress through states: OPEN → ACTIVE → LOCKED → SETTLED → CLOSED
+Contests progress through states: OPEN → ACTIVE → LOCKED → SETTLED (or CANCELLED)
 
 - **OPEN**: Registration, early positions, withdrawals allowed
-- **ACTIVE**: Competition running, primary locked, secondary add only
-- **LOCKED**: Secondary closed; settle required here
+- **ACTIVE**: Competition running, primary locked, secondary buys open
+- **LOCKED**: Secondary closed; operator may settle
 - **SETTLED**: Results in, users claim payouts
-- **CLOSED**: Residual balance recovered via `emergencyRecoverFunds()` after expiry
+- **CANCELLED**: Refunds via remove paths; permissionless after expiry + grace if unsettled
 
 ## Quick Links
 

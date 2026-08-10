@@ -17,7 +17,7 @@ import { executeContestPayoutPushes } from "../services/contest/pushContestPayou
 import {
   getContestContract,
   readContestState,
-  verifyOracle,
+  verifyOperator,
 } from "../services/shared/contractClient.js";
 import { ContestState, type ContestResults } from "../services/shared/types.js";
 
@@ -60,7 +60,7 @@ async function main() {
     process.exit(1);
   }
 
-  const isValidOracle = await verifyOracle(contest.address, contest.chainId);
+  const isValidOracle = await verifyOperator(contest.address, contest.chainId);
   if (!isValidOracle) {
     console.error("Oracle address mismatch (OPS_ORACLE_PK vs contract oracle).");
     process.exit(1);

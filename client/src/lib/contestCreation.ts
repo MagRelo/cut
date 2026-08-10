@@ -1,11 +1,11 @@
-import { getAddress, isAddress, zeroAddress, type Hex } from "viem";
+import { isAddress, type Hex } from "viem";
 import { type ContestSettings, type CreateContestInput } from "../types/contest";
 import { getContractAddress } from "../utils/blockchainUtils.tsx";
 import { primaryDepositWeiFromHuman } from "./paymentTokenSpend";
 
 export const DEFAULT_EXPIRY_DAYS_AFTER_TOURNAMENT = 7;
 
-/** Defaults aligned with `ContestController` / `ContestFactory.createContest` constructor args. */
+/** Defaults aligned with contest settings + factory immutables (operator / referral stack). */
 export function buildContestSettings(
   chainId: number,
   paymentTokenAddress: string,
@@ -18,7 +18,6 @@ export function buildContestSettings(
     paymentTokenAddress,
     paymentTokenSymbol,
     oracle: import.meta.env.VITE_ORACLE_ADDRESS || "",
-    emergencyRecovery: import.meta.env.VITE_EMERGENCY_RECOVERY_ADDRESS || "",
     primaryDeposit: 10,
     referralNetworkBps: Number(import.meta.env.VITE_REFERRAL_NETWORK_BPS) || 500,
     referralGroupId: import.meta.env.VITE_REFERRAL_GROUP_ID || "",
@@ -61,19 +60,7 @@ export function validateContestSettings(
 ): string | null {
   const oracle = settings.oracle.trim();
   if (!oracle || !isAddress(oracle)) {
-    return "Enter a valid oracle address.";
-  }
-
-  const emergencyRecovery = (settings.emergencyRecovery ?? "").trim();
-  if (
-    !emergencyRecovery ||
-    !isAddress(emergencyRecovery) ||
-    getAddress(emergencyRecovery) === zeroAddress
-  ) {
-    return "Enter a valid nonzero emergency recovery address.";
-  }
-  if (getAddress(emergencyRecovery).toLowerCase() === getAddress(oracle).toLowerCase()) {
-    return "Emergency recovery address must differ from the oracle.";
+    return "Enter a valid operator address.";
   }
 
   const maxReferralBps = options?.maxReferralNetworkBps ?? 1000;
@@ -98,16 +85,10 @@ export function validateContestSettings(
 }
 
 export type CreateContestFactoryCallParams = {
-  paymentToken: string;
-  oracle: string;
   primaryDepositAmount: bigint;
   referralNetworkBps: number;
   expiryTimestamp: bigint;
   primaryDepositSecondarySubsidyBps: number;
-  referralGraph: string;
-  rewardCalculator: string;
-  referralGroupId: Hex;
-  emergencyRecovery: string;
 };
 
 export function buildCreateContestFactoryCallParams(
@@ -141,23 +122,13 @@ export function buildCreateContestFactoryCallParams(
   }
 
   const s = pending.settings;
-  const emergencyRecovery = s.emergencyRecovery?.trim();
-  if (!emergencyRecovery) {
-    return { error: "Emergency recovery address is not configured (VITE_EMERGENCY_RECOVERY_ADDRESS)." };
-  }
 
   return {
     params: {
-      paymentToken: paymentTokenAddress,
-      oracle: s.oracle.trim(),
       primaryDepositAmount: primaryDepositWeiFromHuman(s.primaryDeposit),
       referralNetworkBps: s.referralNetworkBps ?? s.oracleFeeBps ?? 0,
       expiryTimestamp: BigInt(s.expiryTimestamp),
       primaryDepositSecondarySubsidyBps: s.primaryDepositSecondarySubsidyBps,
-      referralGraph,
-      rewardCalculator,
-      referralGroupId,
-      emergencyRecovery: getAddress(emergencyRecovery),
     },
   };
 }

@@ -105,10 +105,10 @@ graph TB
 ### Contest Lifecycle
 - `addPrimaryPosition(entryId)`: Join contest as primary participant
 - `removePrimaryPosition(entryId)`: Leave contest (OPEN state only)
-- `activateContest()`: Start contest (oracle only)
-- `lockContest()`: Lock secondary positions (oracle only; required before settle)
-- `settleContest(winningEntries, payoutBps)`: Settle contest (oracle only; LOCKED)
-- `emergencyRecoverFunds()`: Recover residual balance after expiry (`emergencyRecovery` only)
+- `activateContest()`: Start contest (operator only)
+- `lockContest()`: Lock secondary positions (operator only; required before settle)
+- `settleContest(winningEntries, payoutBps, secondaryWinner)`: Settle contest (operator only; LOCKED)
+- `cancelExpired()`: Permissionless cancel after expiry + settlement grace period
 
 ### Secondary Market
 - `addSecondaryPosition(entryId, amount)`: Add prediction (ACTIVE only)

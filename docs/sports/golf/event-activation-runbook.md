@@ -155,7 +155,7 @@ Pipeline order:
 4. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED`
 5. **`batchSyncReferralGraph`**
 
-**Post-expiry recovery (ops, not cron):** After on-chain expiry, the cold emergency-recovery wallet calls `emergencyRecoverFunds()` on the contest controller to reach `CLOSED` and sweep residual balance. See [wallet-roles-cashflows.md](../../operations/wallet-roles-cashflows.md).
+**Post-expiry escape hatch:** If the operator never settles, permissionless `cancelExpired()` unlocks after `expiryTimestamp + SETTLEMENT_GRACE_PERIOD` (1 day). See [wallet-roles-cashflows.md](../../operations/wallet-roles-cashflows.md).
 
 **Admin only (not cron):** `batchLockContests` (`ACTIVE` → `LOCKED`), side-bet lock / settle / close.
 

@@ -238,7 +238,7 @@ Pipeline order (same as golf):
 4. **`batchSettleContests`** — when event is `COMPLETE`
 5. **`batchSyncReferralGraph`**
 
-**Post-expiry recovery (ops, not cron):** After on-chain expiry, the cold emergency-recovery wallet calls `emergencyRecoverFunds()` on the contest controller to reach `CLOSED` and sweep residual balance. See [wallet-roles-cashflows.md](../../operations/wallet-roles-cashflows.md).
+**Post-expiry escape hatch:** If the operator never settles, permissionless `cancelExpired()` unlocks after `expiryTimestamp + SETTLEMENT_GRACE_PERIOD` (1 day). See [wallet-roles-cashflows.md](../../operations/wallet-roles-cashflows.md).
 
 **F1 scoring notes during LIVE:**
 

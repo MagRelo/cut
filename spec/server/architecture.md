@@ -66,8 +66,8 @@ graph LR
 ### Contests
 
 - HTTP: `routes/contest.ts`
-- Lifecycle batches: `services/batch/batchActivateContests.ts`, `batchSettleContests.ts` (`CLOSED` via external `emergencyRecoverFunds`, not cron)
-- Settlement: `services/contest/settleContest.ts` → plugin ranking + on-chain oracle
+- Lifecycle batches: `services/batch/batchActivateContests.ts`, `batchSettleContests.ts`
+- Settlement: `services/contest/settleContest.ts` → plugin ranking + on-chain operator `settleContest(..., secondaryWinner)`
 
 ### Side bets
 

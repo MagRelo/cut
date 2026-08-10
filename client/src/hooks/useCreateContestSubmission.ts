@@ -138,16 +138,10 @@ export function useCreateContestSubmission(options?: UseCreateContestSubmissionO
     pendingContestForApiRef.current = pending;
     const { params } = built;
     const calls = createContestCalls(
-      params.paymentToken,
-      params.oracle,
       params.primaryDepositAmount,
       params.referralNetworkBps,
       params.expiryTimestamp,
       params.primaryDepositSecondarySubsidyBps,
-      params.referralGraph,
-      params.rewardCalculator,
-      params.referralGroupId,
-      params.emergencyRecovery,
     );
 
     await execute(calls);

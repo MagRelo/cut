@@ -28,7 +28,7 @@ Golf-only: optional legacy `tournamentSummaries/{externalId}.json` seed into met
 | `OPEN` → `ACTIVE` | `activateContest` / `batchActivateContests` |
 | `ACTIVE` → `LOCKED` | `lockContest` / `batchLockContests` (admin); also auto-locked by `settleContest` when still ACTIVE |
 | `LOCKED` → `SETTLED` | `settleContest` / `batchSettleContests` (locks first if contract is still ACTIVE) |
-| `SETTLED` / `CANCELLED` → `CLOSED` | External `emergencyRecoverFunds()` from cold `emergencyRecovery` address after expiry |
+| Any non-SETTLED → `CANCELLED` | `cancelContest` (operator) or permissionless `cancelExpired` after expiry + grace period |
 
 ---
 

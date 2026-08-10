@@ -2,70 +2,63 @@
 
 ## Purpose
 
-The ContestFactory contract provides a centralized way to create and manage Contest contracts. It implements the factory pattern to standardize contest creation and enable tracking of all created contests.
+Factory for `ContestController` instances. Trust-critical parameters are factory immutables so permissionless `createContest` callers cannot choose the payment asset, operator, or referral stack.
 
 ## Responsibilities
 
-- Create new ContestController instances
-- Track all created contests
-- Emit events for contest creation
-- Store contest host information
+- Hold immutable `paymentToken`, `operator`, `referralGraph`, `rewardCalculator`, `referralGroupId`
+- Deploy new ContestController instances with those immutables
+- Track created contests and contest hosts
+- Emit `ContestCreated`
 
 ## Key State Variables
 
+### Immutables (set at factory deploy)
+
+- `paymentToken`
+- `operator` — trusted escrow/ops agent for lifecycle, settle, push
+- `referralGraph`
+- `rewardCalculator`
+- `referralGroupId`
+
 ### Public State
-- `contests[]`: Array of all created contest addresses
-- `contestHost`: Mapping of contest address to creator address
+
+- `contests[]`: all created contest addresses
+- `contestHost`: contest address → creator
+
+## Constructor
+
+```solidity
+constructor(
+  address _paymentToken,
+  address _operator,
+  address _referralGraph,
+  address _rewardCalculator,
+  bytes32 _referralGroupId
+)
+```
 
 ## Key Functions
 
 ### `createContest(...)`
-- **Purpose**: Create a new ContestController contract
+
+- **Purpose**: Deploy a new ContestController
 - **Parameters**:
-  - `paymentToken`: ERC20 token address (USDC on Base, MockUSDC on Sepolia)
-  - `oracle`: Hot oracle address for lifecycle control (activate, lock, settle, push)
-  - `contestantDepositAmount`: Required primary deposit
-  - `referralNetworkBps`: Referral network fee in basis points (e.g. 500 = 5%)
-  - `expiry`: Expiration timestamp
-  - `primaryDepositSecondarySubsidyBps`: Share of primary deposit routed to secondary subsidy
-  - `referralGraph`: ReferralGraph contract address
-  - `rewardCalculator`: RewardCalculator contract address
-  - `referralGroupId`: `bytes32` group id on ReferralGraph
-  - `emergencyRecovery`: Cold address-only recovery role (must differ from `oracle`); referral tree root and post-expiry residual recovery
-- **Returns**: Address of newly created ContestController
-- **Effects**:
-  - Validates parameters
-  - Deploys new ContestController
-  - Adds to `contests[]`
-  - Sets `contestHost[contest] = msg.sender`
-  - Emits `ContestCreated` event
-
-## Dependencies
-
-- **ContestController**: Creates instances of this contract
-- **Payment token**: ERC20 used for deposits and payouts
-- **ReferralGraph** / **RewardCalculator**: Referral network at settlement
+  - `contestantDepositAmount`: primary deposit amount
+  - `referralNetworkBps`: referral fee at settlement (≤ 1000)
+  - `expiry`: expiration timestamp (unix seconds)
+  - `primaryDepositSecondarySubsidyBps`: BPS of each primary deposit credited to secondary subsidy
+- **Returns**: address of the new ContestController
+- **Effects**: deploys controller with factory immutables, appends to `contests[]`, sets host, emits `ContestCreated`
 
 ## Events
 
 ### `ContestCreated`
-- Emitted when a new contest is created
-- Parameters:
-  - `contest`: Address of new contest
-  - `host`: Address of creator
-  - `contestantDepositAmount`: Deposit amount required
+
+Parameters include contest address, host, deposit amount, and the factory immutables (`paymentToken`, `operator`, referral stack).
 
 ## Usage Pattern
 
-1. User calls `createContest()` with desired parameters
-2. Factory validates and creates ContestController
-3. Factory tracks the new contest
-4. User can now interact with the Contest directly
-
-## Design Decisions
-
-### Why Factory Pattern?
-- Centralized creation ensures consistent initialization
-- Enables tracking of all contests
-- Simplifies discovery and management
-- Allows future upgrades to creation logic
+1. Deploy factory with payment token, operator (OPS), and referral stack addresses
+2. Anyone calls `createContest` with the four uint parameters
+3. Interact with the returned ContestController; operator is fixed by the factory

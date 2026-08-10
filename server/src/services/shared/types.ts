@@ -2,17 +2,16 @@
  * Shared types for contest management services
  */
 
-// Contract state enum matching Contest.sol
+// On-chain ContestController.state enum (no CLOSED — terminal states are SETTLED / CANCELLED)
 export enum ContestState {
   OPEN = 0,
   ACTIVE = 1,
   LOCKED = 2,
   SETTLED = 3,
   CANCELLED = 4,
-  CLOSED = 5,
 }
 
-// Database status strings
+// Database status strings (CLOSED retained for legacy rows only)
 export type ContestStatus = "OPEN" | "ACTIVE" | "LOCKED" | "SETTLED" | "CANCELLED" | "CLOSED";
 
 // Convert contract state to database status string
@@ -23,7 +22,6 @@ export function contractStateToStatus(state: ContestState): ContestStatus {
     [ContestState.LOCKED]: "LOCKED",
     [ContestState.SETTLED]: "SETTLED",
     [ContestState.CANCELLED]: "CANCELLED",
-    [ContestState.CLOSED]: "CLOSED",
   };
   return mapping[state];
 }

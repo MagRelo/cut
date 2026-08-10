@@ -3,9 +3,9 @@
 ## Contest Status Lifecycle
 
 ```
-OPEN → ACTIVE → LOCKED → SETTLED → CLOSED
-                   ↓
-              CANCELLED (from any pre-SETTLED state)
+OPEN → ACTIVE → LOCKED → SETTLED
+  ↓      ↓        ↓
+CANCELLED (from any pre-SETTLED state; or permissionless cancelExpired after expiry + grace)
 ```
 
 ### API / UI gates vs event status
@@ -29,4 +29,4 @@ Leaving a contest deletes the `ContestLineup` row; related `ContestLineupTimelin
 | **Thursday Morning** | Tournament Starts       | → **ACTIVE**      | Entries locked (no join/leave). Prediction market stays open (buy only).    |
 | **Sunday Morning**   | Final Round (R4) Starts | → **LOCKED**      | All positions frozen. Prediction market closed. Awaiting final results.     |
 | **Sunday Evening**   | Tournament Complete     | → **SETTLED**     | Results finalized. Winners can claim primary and secondary payouts.         |
-| **Following Sunday** | Expiry Reached          | → **CLOSED**      | Contest archived. All claims processed or forfeited.                        |
+| **After expiry + 1d** | Unsettled escape hatch | → **CANCELLED**   | Permissionless `cancelExpired` if operator never settled.                   |

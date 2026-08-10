@@ -1,5 +1,4 @@
 import { useChainId } from "wagmi";
-import type { Hex } from "viem";
 import { useBlockchainTransaction, type UseBlockchainTransactionOptions } from "./useBlockchainTransaction";
 import { getContractAddress } from "../utils/blockchainUtils";
 import ContestFactoryContract from "../utils/contracts/ContestFactory.json";
@@ -15,31 +14,19 @@ export function useCreateContest(options?: UseBlockchainTransactionOptions) {
 
   /** Matches `ContestFactory.createContest` (ContestCatalyst). */
   const createContestCalls = (
-    paymentToken: string,
-    oracle: string,
     primaryDepositAmount: bigint,
     referralNetworkBps: number,
     expiryTimestamp: bigint,
     primaryDepositSecondarySubsidyBps: number,
-    referralGraph: string,
-    rewardCalculator: string,
-    referralGroupId: Hex,
-    emergencyRecovery: string,
   ) => {
     return [
       {
         abi: ContestFactoryContract.abi,
         args: [
-          paymentToken as `0x${string}`,
-          oracle as `0x${string}`,
           primaryDepositAmount,
           BigInt(referralNetworkBps),
           expiryTimestamp,
           BigInt(primaryDepositSecondarySubsidyBps),
-          referralGraph as `0x${string}`,
-          rewardCalculator as `0x${string}`,
-          referralGroupId,
-          emergencyRecovery as `0x${string}`,
         ],
         functionName: "createContest",
         to: contestFactoryAddress as `0x${string}`,
