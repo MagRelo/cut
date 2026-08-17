@@ -8,13 +8,13 @@ import { cn } from "../../lib/tabStyles";
 import { ContestCard } from "./ContestCard";
 
 const viewButtonBaseClassName =
-  "inline-flex min-w-[88px] items-center justify-center gap-1 rounded border px-4 py-1.5 font-display text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
+  "inline-flex min-w-[88px] items-center justify-center gap-1 rounded border px-4 py-1.5 font-display text-sm transition-colors";
 
 const viewButtonActiveClassName =
-  "border-blue-500 bg-blue-500 text-white hover:bg-blue-600 focus-visible:outline-blue-500";
+  "border-blue-500 bg-blue-500 text-white group-hover/footer:bg-blue-600";
 
 const viewLinkPastClassName =
-  "inline-flex min-w-[88px] items-center justify-center gap-1 rounded border border-slate-300 bg-slate-200 px-4 py-1.5 font-display text-sm text-slate-800 transition-colors hover:border-slate-500 hover:bg-slate-300 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500";
+  "inline-flex min-w-[88px] items-center justify-center gap-1 rounded border border-slate-300 bg-slate-200 px-4 py-1.5 font-display text-sm text-slate-800 transition-colors group-hover/footer:border-slate-500 group-hover/footer:bg-slate-300 group-hover/footer:text-slate-950";
 
 function isPastContestStatus(status: Contest["status"]): boolean {
   return status === "SETTLED" || status === "CLOSED";
@@ -97,10 +97,16 @@ export const ContestListItem = ({
         <ContestCard contest={contest} />
       </div>
 
-      <div
+      <Link
+        to={to}
+        state={eventShell ? contestLobbyLinkState(eventShell, contest) : undefined}
+        aria-label={`${actionLabel} ${contest.name} contest`}
         className={cn(
-          "flex items-center gap-3 border-t p-2 pt-2.5",
+          "group/footer flex items-center gap-3 border-t p-2 pt-2.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]",
           contestListFooterClass(contest.status),
+          isPastViewButton(contest, variant)
+            ? "hover:bg-slate-200 focus-visible:outline-slate-500"
+            : "hover:bg-blue-100 focus-visible:outline-blue-500",
         )}
       >
         <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
@@ -112,10 +118,7 @@ export const ContestListItem = ({
             valueClassName={contestStatusValueClass(contest.status)}
           />
         </div>
-        <Link
-          to={to}
-          state={eventShell ? contestLobbyLinkState(eventShell, contest) : undefined}
-          aria-label={`${actionLabel} ${contest.name} contest`}
+        <span
           className={
             isPastViewButton(contest, variant)
               ? viewLinkPastClassName
@@ -124,8 +127,8 @@ export const ContestListItem = ({
         >
           {actionLabel}
           <ChevronRightIcon className="h-4 w-4 shrink-0" aria-hidden />
-        </Link>
-      </div>
+        </span>
+      </Link>
     </div>
   );
 };
