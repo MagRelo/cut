@@ -1,11 +1,17 @@
+import fs from "node:fs";
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { serveStatic } from "hono/serve-static";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import apiRoutes from "./routes/api.js";
 import { cacheControlForStaticPath } from "./lib/staticCacheControl.js";
 import { resolvePageMetadata, type PageMetadata } from "./lib/pageMetadata.js";
+import {
+  REJECTED_STATIC_PATH,
+  resolvePublicStaticFile,
+  rewritePublicStaticRequestPath,
+} from "./lib/resolvePublicStaticFile.js";
 
 // Create Hono app instance
 const app = new Hono();
@@ -60,9 +66,10 @@ async function serveSpaHtmlWithMetadata(c: Context) {
   c.header("Expires", "0");
 
   try {
-    const fs = await import("fs");
-    const path = await import("path");
-    const indexPath = path.join(process.cwd(), "public/index.html");
+    const indexPath = resolvePublicStaticFile("/index.html");
+    if (!indexPath) {
+      return c.notFound();
+    }
     const indexContent = fs.readFileSync(indexPath, "utf-8");
     const requestUrl = new URL(c.req.url);
     const baseUrl = getBaseUrl(c);
@@ -147,37 +154,17 @@ app.get("/health", (c) => {
 // API routes (should come before static file serving)
 app.route("/api", apiRoutes);
 
-// Serve static files from the public directory
+// Serve files from public/ only. rewritePublicStaticRequestPath realpath-contains
+// the target and rejects dotfiles / traversal so join() never reads cwd siblings.
 app.use(
   "/*",
   serveStatic({
-    root: "public",
-    getContent: async (path: string, c) => {
-      try {
-        const fs = await import("fs");
-        const pathModule = await import("path");
-
-        // Remove leading slash from path
-        const cleanPath = path.startsWith("/") ? path.slice(1) : path;
-        const fullPath = pathModule.join(process.cwd(), cleanPath);
-
-        // Check if file exists
-        if (!fs.existsSync(fullPath)) {
-          return null;
-        }
-
-        const stats = fs.statSync(fullPath);
-        if (stats.isDirectory()) {
-          return null;
-        }
-        const content = fs.readFileSync(fullPath);
-        c.header("Cache-Control", cacheControlForStaticPath(cleanPath));
-
-        // Return the content - Hono will handle MIME types automatically
-        return content;
-      } catch (error) {
-        return null;
-      }
+    root: "./public",
+    // Directories must fall through to the SPA handler, not auto-serve index.html.
+    index: REJECTED_STATIC_PATH,
+    rewriteRequestPath: (requestPath) => rewritePublicStaticRequestPath(requestPath),
+    onFound: (filePath, c) => {
+      c.header("Cache-Control", cacheControlForStaticPath(filePath));
     },
   })
 );

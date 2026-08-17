@@ -77,7 +77,7 @@ graph LR
 
 ### SPA HTML / Open Graph
 
-`app.ts` serves `index.html` for non-API routes and rewrites title + OG/Twitter tags per path (`lib/pageMetadata.ts`).
+`app.ts` serves `index.html` for non-API routes and rewrites title + OG/Twitter tags per path (`lib/pageMetadata.ts`). Static assets use `@hono/node-server` `serveStatic` with `root: ./public`. Request paths are mapped through `rewritePublicStaticRequestPath`: the file is `realpath`'d, must stay inside `public/`, and dotfiles / `..` / directories are not served.
 
 | Path | Title |
 |------|-------|
