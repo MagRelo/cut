@@ -77,9 +77,25 @@ export const createContestSchema = z.object({
       message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
     }),
   address: ethAddress,
+  /** Factory `createContest` tx. Client may send this as `transactionId`. */
+  transactionHash: z.string().regex(TX_HASH_REGEX, "Invalid transaction hash").optional(),
+  transactionId: z.string().regex(TX_HASH_REGEX, "Invalid transaction hash").optional(),
   status: z.enum(["OPEN", "ACTIVE", "LOCKED", "SETTLED", "CANCELLED", "CLOSED"]).default("OPEN"),
   settings: contestSettingsSchema,
-});
+})
+  .superRefine((data, ctx) => {
+    if (!data.transactionHash && !data.transactionId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "transactionHash is required",
+        path: ["transactionHash"],
+      });
+    }
+  })
+  .transform((data) => ({
+    ...data,
+    transactionHash: (data.transactionHash ?? data.transactionId) as string,
+  }));
 
 // Schema for updating a contest
 export const updateContestSchema = z.object({

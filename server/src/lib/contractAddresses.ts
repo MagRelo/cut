@@ -1,8 +1,8 @@
-import { isAddress, type Address } from "viem";
+import { getAddress, isAddress, type Address } from "viem";
 import baseContracts from "../contracts/base.json" with { type: "json" };
 import sepoliaContracts from "../contracts/sepolia.json" with { type: "json" };
 
-type ContractsJson = { paymentTokenAddress?: string };
+type ContractsJson = { paymentTokenAddress?: string; contestFactoryAddress?: string };
 
 function contractsForChain(chainId: number): ContractsJson | null {
   switch (chainId) {
@@ -15,12 +15,20 @@ function contractsForChain(chainId: number): ContractsJson | null {
   }
 }
 
+function checksumAddress(raw: string | undefined): Address | null {
+  const trimmed = raw?.trim();
+  if (!trimmed || !isAddress(trimmed)) return null;
+  return getAddress(trimmed);
+}
+
 /** Payment token (xUSDC) address from deployed config, or null if unknown chain or unset. */
 export function getPaymentTokenAddress(chainId: number): Address | null {
-  const cfg = contractsForChain(chainId);
-  const raw = cfg?.paymentTokenAddress?.trim();
-  if (!raw || !isAddress(raw)) return null;
-  return raw;
+  return checksumAddress(contractsForChain(chainId)?.paymentTokenAddress);
+}
+
+/** ContestFactory address from deployed config, or null if unknown chain or unset. */
+export function getContestFactoryAddress(chainId: number): Address | null {
+  return checksumAddress(contractsForChain(chainId)?.contestFactoryAddress);
 }
 
 /** Primary contest deposit in token wei (6 decimals on Sepolia xUSDC). */

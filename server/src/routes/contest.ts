@@ -1,4 +1,5 @@
 import { Context, Hono } from "hono";
+import type { Prisma } from "@prisma/client";
 import { predictionNumericValue } from "../utils/sportPrediction.js";
 import { prisma } from "../lib/prisma.js";
 import {
@@ -21,6 +22,7 @@ import {
 import { canAccessLeagueContest, isUserGroupAdmin } from "../utils/userGroup.js";
 import { getContestTimelineData } from "../utils/contestTimeline.js";
 import { queueVerifyContestContract } from "../services/contest/verifyContestContract.js";
+import { verifyFactoryContestCreation } from "../services/contest/verifyFactoryContestCreation.js";
 import { resolveContestDbId } from "../utils/contestRouteParam.js";
 import { formatOnchainPaymentsForContest } from "../utils/formatOnchainPayments.js";
 import { cloneLineup } from "../services/lineups/cloneLineup.js";
@@ -422,8 +424,17 @@ contestRouter.post("/", requireAuth, async (c) => {
       );
     }
 
-    const { name, description, eventId, userGroupId, endDate, address, chainId, settings } =
-      validation.data;
+    const {
+      name,
+      description,
+      eventId,
+      userGroupId,
+      endDate,
+      address,
+      chainId,
+      settings,
+      transactionHash,
+    } = validation.data;
 
     const user = c.get("user");
 
@@ -447,86 +458,95 @@ contestRouter.post("/", requireAuth, async (c) => {
       return c.json({ error: "Event not found" }, 404);
     }
 
-    const endTime = new Date(endDate);
-
-    const contestData: {
-      name: string;
-      description: string | null;
-      eventId: string;
-      userGroupId: string | null;
-      endTime: Date;
-      address: string;
-      chainId: number;
-      status: string;
-      settings?: object;
-    } = {
-      name,
-      description: description || null,
-      eventId,
-      userGroupId: userGroupId || null,
-      endTime,
-      address,
+    const factoryCheck = await verifyFactoryContestCreation({
       chainId,
-      status: "OPEN",
-    };
-
-    if (settings) {
-      contestData.settings = settings;
+      transactionHash: transactionHash as `0x${string}`,
+      claimedAddress: address,
+    });
+    if (!factoryCheck.ok) {
+      const messageByError = {
+        receipt_not_found: "Transaction receipt not found",
+        receipt_failed: "Transaction did not succeed",
+        not_factory_contest: "Transaction did not create a contest from the configured factory",
+        address_mismatch: "Contest address does not match the factory ContestCreated event",
+        operator_mismatch: "Contest operator does not match the configured operator",
+        token_mismatch: "Contest payment token does not match the configured token",
+        rpc_error: "Failed to verify contest creation",
+      } as const;
+      const status = factoryCheck.error === "rpc_error" ? 502 : 400;
+      return c.json({ error: messageByError[factoryCheck.error] }, status);
     }
 
+    const contestAddress = factoryCheck.contestAddress;
+    const pinnedSettings = {
+      ...(settings ?? {}),
+      oracle: factoryCheck.operator,
+      paymentTokenAddress: factoryCheck.paymentToken,
+    };
+
+    const endTime = new Date(endDate);
+
     const contest = await prisma.contest.create({
-      data: contestData,
+      data: {
+        name,
+        description: description || null,
+        eventId,
+        userGroupId: userGroupId || null,
+        endTime,
+        address: contestAddress,
+        chainId,
+        status: "OPEN",
+        settings: pinnedSettings as Prisma.InputJsonValue,
+      },
       include: {
         event: true,
         userGroup: true,
       },
     });
 
-    if (settings?.paymentTokenAddress && settings?.oracle) {
-      const bps =
-        settings.primaryDepositSecondarySubsidyBps ??
-        (settings as { primaryEntryInvestmentShareBps?: number }).primaryEntryInvestmentShareBps;
+    const bps =
+      pinnedSettings.primaryDepositSecondarySubsidyBps ??
+      (pinnedSettings as { primaryEntryInvestmentShareBps?: number }).primaryEntryInvestmentShareBps;
 
-      const referralNetworkBps =
-        typeof (settings as { referralNetworkBps?: number }).referralNetworkBps === "number"
-          ? (settings as { referralNetworkBps: number }).referralNetworkBps
-          : typeof settings.oracleFeeBps === "number"
-            ? settings.oracleFeeBps
-            : undefined;
-      const referralGraphAddress = getReferralGraphAddress(chainId);
-      const rewardCalculatorAddress = getRewardCalculatorAddress(chainId);
-      const referralGroupIdRaw =
-        (settings as { referralGroupId?: string }).referralGroupId ?? parseReferralGroupIdFromEnv();
-      const referralGroupId = referralGroupIdRaw as `0x${string}` | null;
-      if (
-        typeof settings.primaryDeposit === "number" &&
-        typeof referralNetworkBps === "number" &&
-        typeof settings.expiryTimestamp === "number" &&
-        typeof bps === "number" &&
-        referralGraphAddress &&
-        rewardCalculatorAddress &&
-        referralGroupId
-      ) {
-        const primaryDepositAmountWei = primaryDepositWeiFromSettings(
-          settings.primaryDeposit,
-          chainId,
-        ).toString();
-        void queueVerifyContestContract({
-          chainId,
-          contestAddress: contest.address,
-          paymentTokenAddress: settings.paymentTokenAddress,
-          operator: settings.oracle,
-          primaryDepositAmountWei,
-          referralNetworkBps,
-          expiryTimestamp: settings.expiryTimestamp,
-          primaryDepositSecondarySubsidyBps: bps,
-          referralGraphAddress,
-          rewardCalculatorAddress,
-          referralGroupId,
-        }).catch((err) => {
-          console.error("Failed to queue contest contract verification:", err);
-        });
-      }
+    const referralNetworkBps =
+      typeof (pinnedSettings as { referralNetworkBps?: number }).referralNetworkBps === "number"
+        ? (pinnedSettings as { referralNetworkBps: number }).referralNetworkBps
+        : typeof pinnedSettings.oracleFeeBps === "number"
+          ? pinnedSettings.oracleFeeBps
+          : undefined;
+    const referralGraphAddress = getReferralGraphAddress(chainId);
+    const rewardCalculatorAddress = getRewardCalculatorAddress(chainId);
+    const referralGroupIdRaw =
+      (pinnedSettings as { referralGroupId?: string }).referralGroupId ?? parseReferralGroupIdFromEnv();
+    const referralGroupId = referralGroupIdRaw as `0x${string}` | null;
+    if (
+      typeof pinnedSettings.primaryDeposit === "number" &&
+      typeof referralNetworkBps === "number" &&
+      typeof pinnedSettings.expiryTimestamp === "number" &&
+      typeof bps === "number" &&
+      referralGraphAddress &&
+      rewardCalculatorAddress &&
+      referralGroupId
+    ) {
+      const primaryDepositAmountWei = primaryDepositWeiFromSettings(
+        pinnedSettings.primaryDeposit,
+        chainId,
+      ).toString();
+      void queueVerifyContestContract({
+        chainId,
+        contestAddress: contest.address,
+        paymentTokenAddress: pinnedSettings.paymentTokenAddress,
+        operator: pinnedSettings.oracle,
+        primaryDepositAmountWei,
+        referralNetworkBps,
+        expiryTimestamp: pinnedSettings.expiryTimestamp,
+        primaryDepositSecondarySubsidyBps: bps,
+        referralGraphAddress,
+        rewardCalculatorAddress,
+        referralGroupId,
+      }).catch((err) => {
+        console.error("Failed to queue contest contract verification:", err);
+      });
     }
 
     return c.json(contest, 201);

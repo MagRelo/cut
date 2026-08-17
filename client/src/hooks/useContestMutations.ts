@@ -85,9 +85,10 @@ export function useCreateContest() {
 
   return useMutation({
     mutationFn: async (params: CreateContestInput) => {
-      const { settings, ...rest } = params;
+      const { settings, transactionId, ...rest } = params;
       return await apiClient.post<Contest>("/contests", {
         ...rest,
+        transactionHash: transactionId,
         endDate: settings.expiryTimestamp * 1000,
         settings,
       });
