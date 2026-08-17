@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** Public API base URL (include `/api`). Defaults to `http://localhost:3000/api`. */
+  /** Public API base URL (include `/api`). Defaults to `/api` (same-origin; Vite proxies in dev). */
   readonly VITE_API_URL?: string;
   /** Privy app ID (Dashboard → App settings). */
   readonly VITE_PRIVY_APP_ID?: string;

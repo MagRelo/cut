@@ -1,6 +1,26 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 
+/** Origin for dev/preview `/api` proxy (strip path when VITE_API_URL is absolute). */
+function apiProxyTarget(env: Record<string, string>): string {
+  const raw = env.VITE_API_URL?.trim();
+  if (!raw || raw.startsWith("/")) {
+    return "http://localhost:3000";
+  }
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return "http://localhost:3000";
+  }
+}
+
+const apiProxy = (env: Record<string, string>) => ({
+  "/api": {
+    target: apiProxyTarget(env),
+    changeOrigin: true,
+  },
+});
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
@@ -11,13 +31,11 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 5173,
-      proxy: {
-        "/api": {
-          target: env.VITE_API_URL || "http://localhost:3000",
-          changeOrigin: true,
-          secure: mode === "production",
-        },
-      },
+      proxy: apiProxy(env),
+    },
+    preview: {
+      port: 4173,
+      proxy: apiProxy(env),
     },
     build: {
       rollupOptions: {

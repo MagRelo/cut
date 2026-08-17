@@ -224,7 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const config = useMemo(
     () => ({
-      baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
+      baseURL: import.meta.env.VITE_API_URL || "/api",
       headers: {
         "Content-Type": "application/json",
       },
@@ -481,7 +481,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             queryClient.invalidateQueries({ queryKey: ["user"] });
             queryClient.invalidateQueries({ queryKey: ["balance"] });
           }
-          void preloadLineups(queryClient, response.id, targetChainId);
+          void preloadLineups(queryClient, response.id);
         }
       } catch (error) {
         console.error("Auth profile bootstrap failed:", error);

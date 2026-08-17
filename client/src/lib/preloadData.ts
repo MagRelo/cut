@@ -3,6 +3,11 @@ import type { ContestDirectoryResponse } from "../types/contest";
 import type { PlatformLineupListItem } from "../types/lineup";
 import apiClient from "../utils/apiClient";
 import { queryKeys } from "../utils/queryKeys";
+import {
+  contestDirectoryQueryKey,
+  contestDirectoryStaleMs,
+  fetchContestDirectory,
+} from "./contestDirectoryQuery";
 import { SERVER_SYNC_INTERVAL_MS } from "./queryTiming";
 
 interface LineupsResponse {
@@ -29,35 +34,16 @@ function extractEventIdsFromDirectory(directory: ContestDirectoryResponse): stri
 /**
  * Preloads lineup data for active events.
  * Called after user authentication to warm the cache before users navigate to contests.
+ * Reuses the same directory query key as `useContestDirectory` (dedupes in-flight fetches).
  */
-export async function preloadLineups(
-  queryClient: QueryClient,
-  userId: string,
-  chainId?: number,
-): Promise<void> {
+export async function preloadLineups(queryClient: QueryClient, userId: string): Promise<void> {
   try {
-    const params = new URLSearchParams({ scope: "all" });
-    if (chainId) {
-      params.set("chainId", String(chainId));
-    }
-
-    const directoryKey = queryKeys.contests.directory(
-      "all",
-      userId,
-      chainId ?? "all",
-    );
-    let directory = queryClient.getQueryData<ContestDirectoryResponse>(directoryKey);
-
-    if (!directory) {
-      directory = await queryClient.fetchQuery({
-        queryKey: directoryKey,
-        queryFn: () =>
-          apiClient.get<ContestDirectoryResponse>(
-            `/contests/directory?${params.toString()}`,
-          ),
-        staleTime: 15 * 60 * 1000,
-      });
-    }
+    const directoryKey = contestDirectoryQueryKey("all", userId);
+    const directory = await queryClient.fetchQuery({
+      queryKey: directoryKey,
+      queryFn: () => fetchContestDirectory("all"),
+      staleTime: contestDirectoryStaleMs,
+    });
 
     if (!directory) return;
 

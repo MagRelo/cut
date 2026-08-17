@@ -17,7 +17,7 @@ export class ApiClient {
 
   constructor(config: ApiConfig) {
     this.config = {
-      baseURL: config.baseURL || "http://localhost:3000/api",
+      baseURL: config.baseURL || "/api",
       headers: {
         "Content-Type": "application/json",
         ...config.headers,
@@ -93,7 +93,7 @@ export class ApiClient {
 }
 
 const apiClient = new ApiClient({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
+  baseURL: import.meta.env.VITE_API_URL || "/api",
 });
 
 export default apiClient;
