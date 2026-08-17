@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
+import { clipName } from "../../schemas/limits.js";
 import { formatLineupResponse, lineupDetailInclude } from "./formatLineup.js";
 import { writeLineupPicks } from "./validateLineupPicks.js";
 import { markSideBetMarketStaleAfterRosterChange } from "../sideBets/markSideBetMarketStaleAfterRosterChange.js";
@@ -50,9 +51,10 @@ export async function cloneLineup(input: CloneLineupInput) {
   }
 
   const suffix = input.nameSuffix ?? " (copy)";
-  const name =
+  const rawName =
     input.name ??
     (source.name.endsWith(suffix) ? source.name : `${source.name}${suffix}`);
+  const name = clipName(rawName);
   const picks = source.picks.map((pick) => pick.eventParticipantId);
 
   const lineup = await prisma.lineup.create({

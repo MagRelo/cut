@@ -1,6 +1,9 @@
 import { prisma } from "../../lib/prisma.js";
 import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/lineupPrediction.js";
-import { predictionValueForSport } from "../../utils/sportPrediction.js";
+import {
+  predictionValueForSport,
+  resolveLineupPredictionForWrite,
+} from "../../utils/sportPrediction.js";
 import { isDuplicateLineup } from "../../utils/lineupValidation.js";
 import {
   formatLineupResponse,
@@ -50,8 +53,20 @@ export async function updateLineupById(input: UpdateLineupInput) {
     return { error: "validation" as const, messages: validated.messages };
   }
 
-  const prediction =
-    input.prediction !== undefined ? (input.prediction as object) : existing.prediction;
+  let prediction = existing.prediction;
+  if (input.prediction !== undefined) {
+    const resolvedPrediction = await resolveLineupPredictionForWrite(
+      existing.event.sportId,
+      input.prediction,
+    );
+    if (!resolvedPrediction.ok) {
+      return {
+        error: "validation" as const,
+        messages: ["Prediction is outside the allowed range for this sport"],
+      };
+    }
+    prediction = resolvedPrediction.prediction;
+  }
   const predictionValue = predictionValueForSport(existing.event.sportId, prediction);
 
   const isDuplicate = await isDuplicateLineup(
@@ -73,7 +88,7 @@ export async function updateLineupById(input: UpdateLineupInput) {
     where: { id: input.lineupId },
     data: {
       ...(input.name !== undefined ? { name: input.name } : {}),
-      ...(input.prediction !== undefined ? { prediction: input.prediction as object } : {}),
+      ...(input.prediction !== undefined ? { prediction: prediction as object } : {}),
     },
   });
 

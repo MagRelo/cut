@@ -5,6 +5,7 @@ import {
   contestQuerySchema,
   contestDirectoryQuerySchema,
   createContestSchema,
+  joinContestSchema,
   recordContestSecondaryParticipantSchema,
 } from "../schemas/contest.js";
 import { requireAuth, optionalAuth, getOptionalUserId } from "../middleware/auth.js";
@@ -23,6 +24,12 @@ import { queueVerifyContestContract } from "../services/contest/verifyContestCon
 import { resolveContestDbId } from "../utils/contestRouteParam.js";
 import { formatOnchainPaymentsForContest } from "../utils/formatOnchainPayments.js";
 import { cloneLineup } from "../services/lineups/cloneLineup.js";
+import { verifyPrimaryEntryOwner } from "../services/contest/verifyPrimaryEntryOwner.js";
+import {
+  isReplaySecondaryBuy,
+  verifySecondaryBuyReceipt,
+} from "../services/contest/verifySecondaryBuyReceipt.js";
+import { generateContestEntryId } from "../utils/contestEntryId.js";
 import type { DetailedResult } from "../services/shared/types.js";
 import { getReferralGraphAddress, getRewardCalculatorAddress, parseReferralGroupIdFromEnv } from "../lib/referralConfig.js";
 import { primaryDepositWeiFromSettings } from "../lib/contractAddresses.js";
@@ -223,7 +230,7 @@ contestRouter.post("/:id/secondary-participants", requireAuth, async (c) => {
 
     const contest = await prisma.contest.findUnique({
       where: { id: contestId },
-      select: { id: true, chainId: true, status: true, userGroupId: true },
+      select: { id: true, chainId: true, status: true, userGroupId: true, address: true },
     });
     if (!contest) {
       return c.json({ error: "Contest not found" }, 404);
@@ -242,6 +249,7 @@ contestRouter.post("/:id/secondary-participants", requireAuth, async (c) => {
     }
 
     const walletAddress = user.address.toLowerCase();
+    const txHash = transactionHash.toLowerCase() as `0x${string}`;
 
     const existing = await prisma.contestSecondaryParticipant.findUnique({
       where: {
@@ -251,15 +259,36 @@ contestRouter.post("/:id/secondary-participants", requireAuth, async (c) => {
           walletAddress,
         },
       },
-      select: { amountWei: true },
+      select: { amountWei: true, lastTransactionHash: true },
     });
 
-    let nextAmountWei: string | undefined;
-    if (amountWei != null) {
-      const incoming = BigInt(amountWei);
-      const prior = existing?.amountWei != null ? BigInt(existing.amountWei) : 0n;
-      nextAmountWei = (prior + incoming).toString();
+    if (isReplaySecondaryBuy(existing?.lastTransactionHash, txHash)) {
+      return c.json({ ok: true }, 200);
     }
+
+    const verified = await verifySecondaryBuyReceipt({
+      chainId,
+      contestAddress: contest.address,
+      transactionHash: txHash,
+      walletAddress,
+      entryId,
+      ...(amountWei !== undefined ? { claimedAmountWei: amountWei } : {}),
+    });
+    if (!verified.ok) {
+      const messageByError = {
+        receipt_not_found: "Transaction receipt not found",
+        receipt_failed: "Transaction did not succeed",
+        no_matching_buy: "Transaction does not contain a matching secondary buy",
+        amount_mismatch: "amountWei does not match the on-chain buy",
+        rpc_error: "Failed to verify transaction",
+      } as const;
+      const status = verified.error === "rpc_error" ? 502 : 400;
+      return c.json({ error: messageByError[verified.error] }, status);
+    }
+
+    const incoming = BigInt(verified.amountWei);
+    const prior = existing?.amountWei != null ? BigInt(existing.amountWei) : 0n;
+    const nextAmountWei = (prior + incoming).toString();
 
     await prisma.contestSecondaryParticipant.upsert({
       where: {
@@ -275,13 +304,13 @@ contestRouter.post("/:id/secondary-participants", requireAuth, async (c) => {
         walletAddress,
         userId: user.userId,
         chainId,
-        amountWei: amountWei ?? null,
-        lastTransactionHash: transactionHash,
+        amountWei: nextAmountWei,
+        lastTransactionHash: txHash,
       },
       update: {
-        lastTransactionHash: transactionHash,
+        lastTransactionHash: txHash,
         userId: user.userId,
-        ...(nextAmountWei != null ? { amountWei: nextAmountWei } : {}),
+        amountWei: nextAmountWei,
       },
     });
 
@@ -509,16 +538,17 @@ contestRouter.post("/", requireAuth, async (c) => {
 
 contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, requireAuth, async (c) => {
   try {
-    const { lineupId, entryId } = await c.req.json();
+    const body = await c.req.json();
+    const validation = joinContestSchema.safeParse(body);
+    if (!validation.success) {
+      return c.json(
+        { error: "Invalid request body", details: validation.error.errors },
+        400,
+      );
+    }
+    const { lineupId } = validation.data;
     const user = c.get("user");
     const contestId = c.req.param("id");
-
-    if (!entryId) {
-      return c.json({ error: "Entry ID is required" }, 400);
-    }
-    if (!lineupId) {
-      return c.json({ error: "Lineup ID is required" }, 400);
-    }
 
     const contestCheck = await prisma.contest.findUnique({
       where: { id: contestId },
@@ -526,6 +556,8 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
         id: true,
         eventId: true,
         userGroupId: true,
+        address: true,
+        chainId: true,
       },
     });
 
@@ -538,6 +570,24 @@ contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, require
       if (accessDenied) {
         return accessDenied;
       }
+    }
+
+    const entryId = String(generateContestEntryId(contestCheck.address, lineupId));
+
+    const ownerCheck = await verifyPrimaryEntryOwner({
+      contestAddress: contestCheck.address,
+      chainId: contestCheck.chainId,
+      entryId,
+      walletAddress: user.address,
+    });
+    if (!ownerCheck.ok) {
+      if (ownerCheck.error === "rpc_error") {
+        return c.json({ error: "Failed to verify on-chain entry owner" }, 502);
+      }
+      if (ownerCheck.error === "unowned") {
+        return c.json({ error: "Entry is not owned on-chain" }, 400);
+      }
+      return c.json({ error: "Entry is not owned by this wallet" }, 403);
     }
 
     const lineup = await prisma.lineup.findUnique({

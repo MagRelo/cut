@@ -1,8 +1,8 @@
 import { prisma } from "../../lib/prisma.js";
 import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/lineupPrediction.js";
 import {
-  defaultPredictionForSport,
   predictionValueForSport,
+  resolveLineupPredictionForWrite,
 } from "../../utils/sportPrediction.js";
 import { isDuplicateLineup } from "../../utils/lineupValidation.js";
 import {
@@ -22,13 +22,6 @@ export type CreateLineupInput = {
   prediction?: unknown;
   contestId?: string;
 };
-
-async function resolvePrediction(sportId: string, prediction: unknown | undefined) {
-  if (prediction !== undefined && prediction !== null) {
-    return prediction as object;
-  }
-  return defaultPredictionForSport(sportId);
-}
 
 export async function createLineupForEvent(input: CreateLineupInput) {
   const event = await prisma.competitionEvent.findUnique({
@@ -80,7 +73,17 @@ export async function createLineupForEvent(input: CreateLineupInput) {
     return { error: "validation" as const, messages: validated.messages };
   }
 
-  const prediction = await resolvePrediction(event.sportId, input.prediction);
+  const resolvedPrediction = await resolveLineupPredictionForWrite(
+    event.sportId,
+    input.prediction,
+  );
+  if (!resolvedPrediction.ok) {
+    return {
+      error: "validation" as const,
+      messages: ["Prediction is outside the allowed range for this sport"],
+    };
+  }
+  const prediction = resolvedPrediction.prediction;
   const predictionValue = predictionValueForSport(event.sportId, prediction);
 
   const isDuplicate = await isDuplicateLineup(

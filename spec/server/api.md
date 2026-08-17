@@ -11,6 +11,8 @@ Authorization: Bearer <privy_access_token>
 X-Cut-Chain-Id: <optional chain id for wallet resolution>
 ```
 
+JSON bodies are capped at 128 KiB.
+
 ---
 
 ## Route index
@@ -45,8 +47,8 @@ No auth. `{ status, service, timestamp }`
 |--------|------|------|-------------|
 | GET | `/me` | ✅ | User profile, `lineups` for active event, `userGroups` |
 | GET | `/referrals/summary` | ✅ | Referral tree summary |
-| PUT | `/update` | ✅ | Update display name |
-| PUT | `/settings` | ✅ | Update settings JSON |
+| PUT | `/update` | ✅ | Update display name (1–80 chars) |
+| PUT | `/settings` | ✅ | Merge allowlisted settings (`color`, `oddsFormat`). Does not change `marketingUnsubscribed`. |
 | GET | `/contests` | ✅ | User's contest history |
 | GET | `/transactions` | ✅ | Synthetic activity feed (entries, predictions, side bets, payouts) |
 
@@ -86,6 +88,8 @@ No auth. `{ status, service, timestamp }`
 - `POST` always creates a new row; rejects duplicate roster + prediction **within the same contest** when `contestId` is set
 - `PUT` updates picks/name/prediction for the given `lineupId`
 - Validates via `SportModule.validateRoster`
+- `prediction` must be `{ "type": "winningLineupTotal", "value": <int> }` inside the sport's `predictionRules` min/max. Extra keys are rejected. Omit on create to store a sport default.
+- `name` is optional, max 80 characters
 - `requireEventEditable` / `requireLineupEditable` — blocked after event is live/complete
 - Marks side-bet market stale on save
 
@@ -102,14 +106,18 @@ No auth. `{ status, service, timestamp }`
 | POST | `/` | ✅ | Create contest (staff or league admin) |
 | POST | `/:id/lineups` | ✅ | Join contest with lineup |
 | DELETE | `/:id/lineups` | ✅ | Leave contest |
-| POST | `/:id/secondary-participants` | ✅ | Record secondary market participant (`amountWei` optional; accumulated on upsert) |
+| POST | `/:id/secondary-participants` | ✅ | Index a secondary (winner-pool) buy from a confirmed tx |
 
 **GET `/` query:**
 - `eventId` (required) — was `tournamentId` in legacy
 - `chainId` (optional)
 - `userGroupId` (optional) — league scope; member required
 
-**POST `/` body:** `eventId`, `name`, `address`, `chainId`, `settings`, optional `userGroupId`, `description`, `endDate`
+**POST `/:id/lineups` body:** `lineupId` (optional `entryId` is ignored). The server sets `entryId` to `generateContestEntryId(contest.address, lineupId)` — the same hash the client uses in `addPrimaryPosition`. On-chain `entryOwner(entryId)` must be the authenticated wallet.
+
+**POST `/:id/secondary-participants` body:** `entryId`, `transactionHash`, `chainId`, optional `amountWei`. The server loads the receipt once (no polling), requires a `SecondaryPositionAdded` log on this contest for the caller and `entryId`, and stores that log's `amount`. If `amountWei` is sent it must match. Replays of the same `transactionHash` are idempotent (no second RPC, no double-count).
+
+**POST `/` body:** `eventId`, `name`, `address` (0x), `chainId`, `settings`, optional `userGroupId`, `description`, `endDate`. Settings addresses and bps (0–10000) are validated.
 
 League contests return **404** to non-members.
 
@@ -159,7 +167,7 @@ Staff only (`requireAdmin`).
 |--------|------|-------------|
 | GET | `/dashboard` | Ops dashboard. Query: `eventId` or `tournamentId` alias |
 | POST | `/contests/lock-eligible` | Batch lock contests |
-| GET | `/users` | User list + on-chain balances |
+| GET | `/users` | User list + on-chain balances. Query `userType`: `USER` (default), `TEST`, `ADMIN`, `SUPER_ADMIN`, `PUBLIC` |
 | GET | `/users/:id` | User detail |
 | GET | `/bets/side/tournament-report` | Side-bet exposure report |
 | POST | `/bets/side/lock` | Lock side-bet markets |

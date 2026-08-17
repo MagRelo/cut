@@ -6,6 +6,7 @@ import { getLineupsForEvent } from "../services/lineups/getLineupsForEvent.js";
 import { createLineupForEvent } from "../services/lineups/createLineupForEvent.js";
 import { updateLineupById } from "../services/lineups/updateLineupById.js";
 import { cloneLineup } from "../services/lineups/cloneLineup.js";
+import { cloneLineupBodySchema, lineupWriteBodySchema } from "../schemas/lineup.js";
 
 const lineupsRouter = new Hono();
 
@@ -30,18 +31,20 @@ lineupsRouter.post(
       const sourceLineupId = c.req.param("lineupId");
       const user = c.get("user");
       const body = await c.req.json().catch(() => ({}));
-      const name = typeof body.name === "string" ? body.name : undefined;
-      const contestId = typeof body.contestId === "string" ? body.contestId : null;
-
-      if (!contestId) {
-        return c.json({ error: "contestId is required" }, 400);
+      const validation = cloneLineupBodySchema.safeParse(body);
+      if (!validation.success) {
+        return c.json(
+          { error: "Invalid request body", details: validation.error.errors },
+          400,
+        );
       }
+      const { name, contestId } = validation.data;
 
       const result = await cloneLineup({
         sourceLineupId,
         userId: user.userId,
         targetContestId: contestId,
-        name,
+        ...(name !== undefined ? { name } : {}),
       });
 
       if ("error" in result) {
@@ -84,20 +87,22 @@ lineupsRouter.post(
       const eventId = c.req.param("eventId");
       const user = c.get("user");
       const body = await c.req.json();
-      const picks = Array.isArray(body.picks) ? body.picks.map(String) : null;
-      const contestId = typeof body.contestId === "string" ? body.contestId : undefined;
-
-      if (!picks) {
-        return c.json({ error: "picks must be an array of eventParticipant IDs" }, 400);
+      const validation = lineupWriteBodySchema.safeParse(body);
+      if (!validation.success) {
+        return c.json(
+          { error: "Invalid request body", details: validation.error.errors },
+          400,
+        );
       }
+      const { picks, name, contestId, prediction } = validation.data;
 
       const result = await createLineupForEvent({
         userId: user.userId,
         eventId,
         picks,
-        name: typeof body.name === "string" ? body.name : undefined,
-        prediction: body.prediction,
-        contestId,
+        ...(name !== undefined ? { name } : {}),
+        ...(prediction != null ? { prediction } : {}),
+        ...(contestId !== undefined ? { contestId } : {}),
       });
 
       if (result.error === "not_found") {
@@ -142,18 +147,21 @@ lineupsRouter.put(
       const lineupId = c.req.param("lineupId");
       const user = c.get("user");
       const body = await c.req.json();
-      const picks = Array.isArray(body.picks) ? body.picks.map(String) : null;
-
-      if (!picks) {
-        return c.json({ error: "picks must be an array of eventParticipant IDs" }, 400);
+      const validation = lineupWriteBodySchema.safeParse(body);
+      if (!validation.success) {
+        return c.json(
+          { error: "Invalid request body", details: validation.error.errors },
+          400,
+        );
       }
+      const { picks, name, prediction } = validation.data;
 
       const result = await updateLineupById({
         userId: user.userId,
         lineupId,
         picks,
-        name: typeof body.name === "string" ? body.name : undefined,
-        prediction: body.prediction,
+        ...(name !== undefined ? { name } : {}),
+        ...(prediction != null ? { prediction } : {}),
       });
 
       if (result.error === "not_found") {

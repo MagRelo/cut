@@ -297,8 +297,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateUserSettings = useCallback(
     async (settings: Record<string, unknown>) => {
       try {
-        await request<{ settings: Record<string, unknown> }>("PUT", "/auth/settings", settings);
-        setUser((prev) => (prev ? { ...prev, settings } : null));
+        const response = await request<{ settings: Record<string, unknown> }>(
+          "PUT",
+          "/auth/settings",
+          settings,
+        );
+        setUser((prev) => (prev ? { ...prev, settings: response.settings } : null));
       } catch (error) {
         if (error instanceof ApiError) {
           throw error;

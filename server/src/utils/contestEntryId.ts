@@ -2,11 +2,12 @@ import { keccak256, encodePacked } from "viem";
 
 /**
  * Same deterministic entryId as the client (`client/src/utils/entryIdUtils.ts`).
- * Used for contest primary positions and DB `ContestLineup.entryId`.
+ * Hashes contest contract address + lineup id. The join API generates this
+ * from the posted lineupId (the id used in addPrimaryPosition).
  */
 export function generateContestEntryId(contestAddress: string, lineupId: string): number {
   const hash = keccak256(
-    encodePacked(["address", "string"], [contestAddress as `0x${string}`, lineupId])
+    encodePacked(["address", "string"], [contestAddress as `0x${string}`, lineupId]),
   );
   const entryIdBigInt = BigInt(hash);
   const maxSafeInteger = BigInt(2n ** 53n - 1n);

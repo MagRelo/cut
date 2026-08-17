@@ -1,15 +1,51 @@
 import { z } from "zod";
+import {
+  BPS_MAX,
+  BPS_MIN,
+  CONTEST_TYPE_MAX_LENGTH,
+  DECIMAL_ID_REGEX,
+  DESCRIPTION_MAX_LENGTH,
+  ETH_ADDRESS_REGEX,
+  NAME_MAX_LENGTH,
+  PAYMENT_TOKEN_SYMBOL_MAX_LENGTH,
+  TX_HASH_REGEX,
+} from "./limits.js";
+
+const ethAddress = z.string().regex(ETH_ADDRESS_REGEX, "Invalid address");
+const bps = z.number().int().min(BPS_MIN).max(BPS_MAX);
+
+const contestSettingsSchema = z
+  .object({
+    contestType: z.string().max(CONTEST_TYPE_MAX_LENGTH).optional(),
+    chainId: z.number().optional(),
+    paymentTokenAddress: ethAddress.optional(),
+    paymentTokenSymbol: z.string().max(PAYMENT_TOKEN_SYMBOL_MAX_LENGTH).optional(),
+    oracle: ethAddress.optional(),
+    expiryTimestamp: z.number().optional(),
+    primaryDeposit: z.number().min(0).optional(),
+    referralNetworkBps: bps.optional(),
+    oracleFeeBps: bps.optional(),
+    referralGroupId: z.string().optional(),
+    primaryDepositSecondarySubsidyBps: bps.optional(),
+    primaryEntryInvestmentShareBps: bps.optional(),
+    positionBonusShareBps: bps.optional(),
+    targetPrimaryShareBps: bps.optional(),
+    maxCrossSubsidyBps: bps.optional(),
+    maxPlayers: z.number().int().positive().optional(),
+    scoringType: z.enum(["STABLEFORD", "STROKE_PLAY"]).optional(),
+  })
+  .optional();
 
 // Schema for creating a user group
 export const createUserGroupSchema = z.object({
-  name: z.string().min(1, "Group name is required"),
-  description: z.string().optional(),
+  name: z.string().trim().min(1, "Group name is required").max(NAME_MAX_LENGTH),
+  description: z.string().max(DESCRIPTION_MAX_LENGTH).optional(),
 });
 
 // Schema for updating a user group
 export const updateUserGroupSchema = z.object({
-  name: z.string().min(1, "Group name is required").optional(),
-  description: z.string().optional(),
+  name: z.string().trim().min(1, "Group name is required").max(NAME_MAX_LENGTH).optional(),
+  description: z.string().max(DESCRIPTION_MAX_LENGTH).optional(),
 });
 
 // Schema for user group member operations
@@ -27,8 +63,8 @@ export const joinUserGroupSchema = z.object({
 
 // Schema for creating a contest
 export const createContestSchema = z.object({
-  name: z.string().min(1, "Contest name is required"),
-  description: z.string().optional(),
+  name: z.string().trim().min(1, "Contest name is required").max(NAME_MAX_LENGTH),
+  description: z.string().max(DESCRIPTION_MAX_LENGTH).optional(),
   eventId: z.string().cuid("Invalid event ID"),
   userGroupId: z.string().cuid("Invalid user group ID").optional(),
   startDate: z.string().datetime("Invalid start date").optional(),
@@ -40,35 +76,15 @@ export const createContestSchema = z.object({
     .refine((val) => [8453, 84532].includes(val), {
       message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
     }),
-  address: z.string().min(1, "Contract address is required"),
+  address: ethAddress,
   status: z.enum(["OPEN", "ACTIVE", "LOCKED", "SETTLED", "CANCELLED", "CLOSED"]).default("OPEN"),
-  settings: z
-    .object({
-      contestType: z.string().optional(),
-      chainId: z.number().optional(),
-      paymentTokenAddress: z.string().optional(),
-      paymentTokenSymbol: z.string().optional(),
-      oracle: z.string().optional(),
-      expiryTimestamp: z.number().optional(),
-      primaryDeposit: z.number().min(0).optional(),
-      referralNetworkBps: z.number().optional(),
-      oracleFeeBps: z.number().optional(),
-      referralGroupId: z.string().optional(),
-      primaryDepositSecondarySubsidyBps: z.number().optional(),
-      primaryEntryInvestmentShareBps: z.number().optional(),
-      positionBonusShareBps: z.number().optional(),
-      targetPrimaryShareBps: z.number().optional(),
-      maxCrossSubsidyBps: z.number().optional(),
-      maxPlayers: z.number().int().positive().optional(),
-      scoringType: z.enum(["STABLEFORD", "STROKE_PLAY"]).optional(),
-    })
-    .optional(),
+  settings: contestSettingsSchema,
 });
 
 // Schema for updating a contest
 export const updateContestSchema = z.object({
-  name: z.string().min(1, "Contest name is required").optional(),
-  description: z.string().optional(),
+  name: z.string().trim().min(1, "Contest name is required").max(NAME_MAX_LENGTH).optional(),
+  description: z.string().max(DESCRIPTION_MAX_LENGTH).optional(),
   startDate: z.string().datetime("Invalid start date").optional(),
   endDate: z.string().datetime("Invalid end date").optional(),
   chainId: z
@@ -78,29 +94,9 @@ export const updateContestSchema = z.object({
       message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
     })
     .optional(),
-  address: z.string().min(1, "Contract address is required").optional(),
+  address: ethAddress.optional(),
   status: z.enum(["OPEN", "ACTIVE", "LOCKED", "SETTLED", "CANCELLED", "CLOSED"]).optional(),
-  settings: z
-    .object({
-      contestType: z.string().optional(),
-      chainId: z.number().optional(),
-      paymentTokenAddress: z.string().optional(),
-      paymentTokenSymbol: z.string().optional(),
-      oracle: z.string().optional(),
-      expiryTimestamp: z.number().optional(),
-      primaryDeposit: z.number().min(0).optional(),
-      referralNetworkBps: z.number().optional(),
-      oracleFeeBps: z.number().optional(),
-      referralGroupId: z.string().optional(),
-      primaryDepositSecondarySubsidyBps: z.number().optional(),
-      primaryEntryInvestmentShareBps: z.number().optional(),
-      positionBonusShareBps: z.number().optional(),
-      targetPrimaryShareBps: z.number().optional(),
-      maxCrossSubsidyBps: z.number().optional(),
-      maxPlayers: z.number().int().positive().optional(),
-      scoringType: z.enum(["STABLEFORD", "STROKE_PLAY"]).optional(),
-    })
-    .optional(),
+  settings: contestSettingsSchema,
 });
 
 // Schema for contest ID parameter
@@ -108,20 +104,26 @@ export const contestIdSchema = z.object({
   id: z.string().cuid("Invalid contest ID"),
 });
 
+export const joinContestSchema = z.object({
+  lineupId: z.string().min(1, "Lineup ID is required"),
+  /** Ignored if sent; the server hashes contest address + lineupId. */
+  entryId: z.string().regex(DECIMAL_ID_REGEX, "entryId must be a decimal string").optional(),
+});
+
 /** Record a wallet that added secondary (prediction) liquidity on an entry (for push payouts). */
 export const recordContestSecondaryParticipantSchema = z.object({
-  entryId: z.string().regex(/^\d+$/, "entryId must be a decimal string"),
-  transactionHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/, "Invalid transaction hash"),
+  entryId: z.string().regex(DECIMAL_ID_REGEX, "entryId must be a decimal string"),
+  transactionHash: z.string().regex(TX_HASH_REGEX, "Invalid transaction hash"),
   chainId: z
     .number()
     .int()
     .refine((val) => [8453, 84532].includes(val), {
       message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
     }),
-  /** Payment-token wei for this buy (decimal string). Accumulated on upsert. */
+  /** Payment-token wei for this buy (decimal string). Must match the on-chain receipt. */
   amountWei: z
     .string()
-    .regex(/^\d+$/, "amountWei must be a non-negative decimal integer string")
+    .regex(DECIMAL_ID_REGEX, "amountWei must be a non-negative decimal integer string")
     .optional(),
 });
 
@@ -159,6 +161,7 @@ export type UpdateContestBody = z.infer<typeof updateContestSchema>;
 export type ContestIdParam = z.infer<typeof contestIdSchema>;
 export type ContestQueryParams = z.infer<typeof contestQuerySchema>;
 export type ContestDirectoryQueryParams = z.infer<typeof contestDirectoryQuerySchema>;
+export type JoinContestBody = z.infer<typeof joinContestSchema>;
 export type RecordContestSecondaryParticipantBody = z.infer<
   typeof recordContestSecondaryParticipantSchema
 >;

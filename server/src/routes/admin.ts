@@ -25,6 +25,7 @@ import {
 import { placementPlayersMapForTickets, type PlacementPlayerDto } from "../services/sideBets/lineupSideBetUtils.js";
 import { pickWalletForChain } from "../utils/pickWalletForChain.js";
 import { getRequestChainId } from "../utils/requestChainId.js";
+import { ADMIN_LIST_USER_TYPES } from "../schemas/limits.js";
 
 const adminRouter = new Hono();
 
@@ -67,7 +68,14 @@ adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {
 
     const limitRaw = c.req.query("limit");
     const offsetRaw = c.req.query("offset");
-    const userType = c.req.query("userType")?.trim() || "USER";
+    const userTypeRaw = c.req.query("userType")?.trim() || "USER";
+    if (!(ADMIN_LIST_USER_TYPES as readonly string[]).includes(userTypeRaw)) {
+      return c.json(
+        { error: `Invalid userType; use: ${ADMIN_LIST_USER_TYPES.join(", ")}` },
+        400,
+      );
+    }
+    const userType = userTypeRaw;
     const limit = Math.min(
       MAX_LIMIT,
       Math.max(1, limitRaw ? parseInt(limitRaw, 10) || DEFAULT_LIMIT : DEFAULT_LIMIT),

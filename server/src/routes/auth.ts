@@ -1,8 +1,10 @@
 import { Hono } from "hono";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { formatLineupResponse, lineupDetailInclude } from "../services/lineups/formatLineup.js";
 import { getUserTransactions } from "../services/user/getUserTransactions.js";
+import { mergeUserSettings, updateUserNameSchema, updateUserSettingsSchema } from "../schemas/user.js";
 
 const authRouter = new Hono();
 const MAX_REFERRAL_SUMMARY_DEPTH = 10;
@@ -169,12 +171,12 @@ authRouter.get("/referrals/summary", requireAuth, async (c) => {
 // Update user route
 authRouter.put("/update", requireAuth, async (c) => {
   try {
-    const { name } = await c.req.json();
-    const user = c.get("user");
-
-    if (!name) {
-      return c.json({ error: "Name is required" }, 400);
+    const validation = updateUserNameSchema.safeParse(await c.req.json().catch(() => null));
+    if (!validation.success) {
+      return c.json({ error: "Invalid request body", details: validation.error.errors }, 400);
     }
+    const { name } = validation.data;
+    const user = c.get("user");
 
     const updatedUser = await prisma.user.update({
       where: { id: user.userId },
@@ -199,12 +201,25 @@ authRouter.put("/update", requireAuth, async (c) => {
 authRouter.put("/settings", requireAuth, async (c) => {
   try {
     const user = c.get("user");
-    const settings = await c.req.json();
+    const validation = updateUserSettingsSchema.safeParse(await c.req.json().catch(() => null));
+    if (!validation.success) {
+      return c.json({ error: "Invalid request body", details: validation.error.errors }, 400);
+    }
+
+    const existing = await prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { settings: true },
+    });
+    if (!existing) {
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    const settings = mergeUserSettings(existing.settings, validation.data);
 
     const updatedUser = await prisma.user.update({
       where: { id: user.userId },
       data: {
-        settings,
+        settings: settings as Prisma.InputJsonValue,
       },
     });
 

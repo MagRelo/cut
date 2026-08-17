@@ -34,6 +34,34 @@ export async function defaultPredictionForSport(sportId: string): Promise<object
   return prediction;
 }
 
+export type ResolveLineupPredictionResult =
+  | { ok: true; prediction: object }
+  | { ok: false; error: "invalid_prediction" };
+
+/**
+ * Canonical `{ type, value }` prediction for writes. Extra JSON keys are dropped.
+ * When `prediction` is omitted/null, a sport default is used.
+ */
+export async function resolveLineupPredictionForWrite(
+  sportId: string,
+  prediction: unknown | undefined,
+): Promise<ResolveLineupPredictionResult> {
+  if (prediction === undefined || prediction === null) {
+    return { ok: true, prediction: await defaultPredictionForSport(sportId) };
+  }
+
+  const value = parseLineupPrediction(prediction);
+  const rules = await getPredictionRulesForSport(sportId);
+  if (!isValidLineupPrediction(value, rules)) {
+    return { ok: false, error: "invalid_prediction" };
+  }
+  const canonical = toLineupPrediction(value);
+  if (!canonical) {
+    return { ok: false, error: "invalid_prediction" };
+  }
+  return { ok: true, prediction: canonical };
+}
+
 export function toLineupPredictionValue(value: number | null | undefined) {
   return toLineupPrediction(value);
 }
