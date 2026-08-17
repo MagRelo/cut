@@ -49,7 +49,9 @@ graph LR
 
 | Middleware | File | Usage |
 |------------|------|-------|
-| `requireAuth` | `middleware/auth.ts` | Privy token → Cut user; provisions wallet |
+| `requireAuth` | `middleware/auth.ts` | Privy JWT verify + DB session (read-only) |
+| `requireWalletChain` | `middleware/auth.ts` | Requires `X-Cut-Chain-Id` + primary `UserWallet` for on-chain routes |
+| `verifyPrivyJwt` | `middleware/auth.ts` | JWT only — used by `POST /auth/session` |
 | `requireAdmin` | `middleware/admin.ts` | Staff user types |
 | `requireEventEditable` | `middleware/eventEditable.ts` | Blocks lineup writes after event starts |
 | `requireUserGroupMember` | `middleware/userGroup.ts` | League access |

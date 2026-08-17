@@ -54,21 +54,26 @@ sequenceDiagram
   participant User
   participant Client
   participant Privy
-  participant API as POST/GET /api/auth
+  participant API as /api/auth
   participant DB
 
   User->>Client: Sign in
   Client->>Privy: OAuth / wallet
   Privy-->>Client: access token
-  Client->>API: Bearer token
-  API->>Privy: verify
-  API->>DB: provision User + UserWallet
-  API-->>Client: profile, lineups, leagues
+  Client->>API: GET /auth/me
+  API->>DB: JWT verify + load User + UserWallet
+  alt No Cut user yet
+    Client->>API: POST /auth/session + referrer
+    API->>Privy: users()._get
+    API->>DB: create/sync User + UserWallet
+  end
+  API-->>Client: profile + userGroups
+  Client->>API: GET /lineups/:eventId
 ```
 
 - **Authoritative user record:** Postgres (`User`, `UserWallet`)
-- **Authoritative wallet for txs:** Privy-connected address on chosen chain
-- **Staff:** `role` on user → `AdminRoute` / `/api/admin`
+- **Session wallet:** DB `UserWallet.isPrimary` for `X-Cut-Chain-Id` (not Privy pick on every request)
+- **Staff:** `userType` on user → `AdminRoute` / `/api/admin`
 
 ---
 

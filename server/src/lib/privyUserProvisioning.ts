@@ -9,6 +9,33 @@ import {
   requireReferralGroupIdForSignup,
 } from "./referralConfig.js";
 
+/** JWT valid but no Cut user row — client should POST /auth/session. */
+export class AuthNeedsProvisioningError extends Error {
+  readonly code = "NEEDS_PROVISIONING" as const;
+  constructor(message = "Account not provisioned") {
+    super(message);
+    this.name = "AuthNeedsProvisioningError";
+  }
+}
+
+/** User exists but has no primary wallet for the requested chain. */
+export class WalletNotProvisionedError extends Error {
+  readonly code = "WALLET_NOT_PROVISIONED_FOR_CHAIN" as const;
+  constructor(message = "No wallet provisioned for this chain") {
+    super(message);
+    this.name = "WalletNotProvisionedError";
+  }
+}
+
+/** Privy-linked address already belongs to another Cut user. */
+export class WalletConflictError extends Error {
+  readonly code = "WALLET_OWNED_BY_OTHER_ACCOUNT" as const;
+  constructor(message = "Wallet is linked to another account") {
+    super(message);
+    this.name = "WalletConflictError";
+  }
+}
+
 /** Wallet already bound to a different Privy user — respond with 403, not a generic 401. */
 export class PrivyWalletIdentityConflictError extends Error {
   constructor(message: string) {
@@ -47,7 +74,15 @@ export type ProvisioningOptions = {
   referrerAddress?: string;
 };
 
-const DEFAULT_SMART_CHAIN = 84532;
+export const DEFAULT_SMART_CHAIN = 84532;
+const BASE_CHAIN_IDS = [8453, 84532] as const;
+
+export function resolveChainId(preferredChainId?: number): number {
+  if (preferredChainId && BASE_CHAIN_IDS.includes(preferredChainId as (typeof BASE_CHAIN_IDS)[number])) {
+    return preferredChainId;
+  }
+  return DEFAULT_SMART_CHAIN;
+}
 
 /**
  * Prefer smart wallet, then EOA. Uses `preferredChainId` when it is Base / Base Sepolia so
@@ -57,10 +92,7 @@ export function pickEvmWallet(
   privyUser: PrivyApiUser,
   preferredChainId?: number,
 ): { address: string; chainId: number } | null {
-  const chain =
-    preferredChainId && [8453, 84532].includes(preferredChainId)
-      ? preferredChainId
-      : DEFAULT_SMART_CHAIN;
+  const chain = resolveChainId(preferredChainId);
 
   const accounts = privyUser.linked_accounts;
   const smart = accounts.find((a) => a.type === "smart_wallet");
@@ -73,26 +105,22 @@ export function pickEvmWallet(
   if (eth && "address" in eth && typeof eth.address === "string") {
     const raw = "chain_id" in eth && eth.chain_id != null ? String(eth.chain_id) : "";
     const parsed = raw ? parseInt(raw, 10) : chain;
-    const chainId = Number.isFinite(parsed) && [8453, 84532].includes(parsed) ? parsed : chain;
+    const chainId = Number.isFinite(parsed) && BASE_CHAIN_IDS.includes(parsed as (typeof BASE_CHAIN_IDS)[number])
+      ? parsed
+      : chain;
     return { address: eth.address.toLowerCase(), chainId };
   }
   return null;
 }
 
-const BASE_CHAIN_IDS = [8453, 84532] as const;
-
 /**
  * All Cut-relevant (Base / Base Sepolia) wallet rows implied by Privy's linked accounts.
- * Smart wallet addresses are stored for both chains; EOAs use chain_id when present, else preferred/default.
  */
 export function collectCutEvmWalletLinks(
   privyUser: PrivyApiUser,
   preferredChainId?: number,
 ): { chainId: number; publicKey: string }[] {
-  const defaultChain =
-    preferredChainId && BASE_CHAIN_IDS.includes(preferredChainId as (typeof BASE_CHAIN_IDS)[number])
-      ? preferredChainId
-      : DEFAULT_SMART_CHAIN;
+  const defaultChain = resolveChainId(preferredChainId);
 
   const out: { chainId: number; publicKey: string }[] = [];
   const seen = new Set<string>();
@@ -133,9 +161,48 @@ export function collectCutEvmWalletLinks(
 }
 
 /**
- * Create missing `UserWallet` rows for every Base / Base Sepolia address Privy reports for this user,
- * and set `isPrimary` on the row that matches {@link pickEvmWallet} (smart wallet preferred).
- * Idempotent; skips addresses already bound to another user.
+ * Load session identity from Postgres. Returns null when the Cut user does not exist.
+ * When `requireWallet` is true, throws if no primary wallet exists for `chainId`.
+ */
+export async function resolveSessionUser(
+  privyUserId: string,
+  chainId: number,
+  options?: { requireWallet?: boolean },
+): Promise<CutAuthUser | null> {
+  const user = await prisma.user.findUnique({
+    where: { privyUserId },
+    select: { id: true, userType: true },
+  });
+  if (!user) {
+    return null;
+  }
+
+  const wallet = await prisma.userWallet.findFirst({
+    where: { userId: user.id, chainId, isPrimary: true },
+  });
+
+  if (!wallet) {
+    if (options?.requireWallet) {
+      throw new WalletNotProvisionedError();
+    }
+    return {
+      userId: user.id,
+      address: "",
+      chainId,
+      userType: user.userType,
+    };
+  }
+
+  return {
+    userId: user.id,
+    address: wallet.publicKey,
+    chainId,
+    userType: user.userType,
+  };
+}
+
+/**
+ * Create missing `UserWallet` rows and set primary for the Privy-picked wallet on the active chain.
  */
 export async function syncUserWalletsForPrivyUser(
   userId: string,
@@ -153,8 +220,8 @@ export async function syncUserWalletsForPrivyUser(
     });
     if (existing) {
       if (existing.userId !== userId) {
-        console.warn(
-          `[privy] Wallet ${publicKey} on chain ${chainId} is linked to a different user; skipping`,
+        throw new WalletConflictError(
+          `Wallet ${publicKey} on chain ${chainId} is linked to another account`,
         );
       }
       continue;
@@ -296,11 +363,47 @@ async function maybeMintTestnetUsdc(address: string, chainId: number): Promise<v
   }
 }
 
+async function sessionUserAfterProvision(
+  privyUserId: string,
+  chainId: number,
+): Promise<CutAuthUser> {
+  const session = await resolveSessionUser(privyUserId, chainId, { requireWallet: true });
+  if (!session) {
+    throw new Error("User missing after provision");
+  }
+  return session;
+}
+
+/** Sync email and wallets for an existing Cut user from Privy (no signup side effects). */
+export async function syncExistingUserFromPrivy(
+  privyUser: PrivyApiUser,
+  preferredChainId?: number,
+): Promise<CutAuthUser> {
+  const chainId = resolveChainId(preferredChainId);
+  const privyId = privyUser.id;
+
+  const byPrivy = await prisma.user.findUnique({
+    where: { privyUserId: privyId },
+    select: { id: true },
+  });
+  if (!byPrivy) {
+    throw new AuthNeedsProvisioningError();
+  }
+
+  const email = pickEmailFromPrivyUser(privyUser);
+  if (email) {
+    await syncEmailFromPrivy(byPrivy.id, email);
+  }
+
+  await syncUserWalletsForPrivyUser(byPrivy.id, privyUser, preferredChainId);
+  return sessionUserAfterProvision(privyId, chainId);
+}
+
 /**
- * Resolve or create Cut user + wallet from Privy API user payload.
- * @param preferredChainId - From client (e.g. X-Cut-Chain-Id) so new wallets match selected network.
+ * Create or sync Cut user + wallets from Privy API user payload.
+ * Only call from POST /auth/session (or explicit sync), not middleware.
  */
-export async function ensureCutUserFromPrivy(
+export async function provisionUserFromPrivy(
   privyUser: PrivyApiUser,
   preferredChainId?: number,
   options?: ProvisioningOptions,
@@ -310,10 +413,7 @@ export async function ensureCutUserFromPrivy(
     throw new Error("No EVM wallet linked to Privy user");
   }
 
-  const chainId =
-    preferredChainId && [8453, 84532].includes(preferredChainId)
-      ? preferredChainId
-      : picked.chainId;
+  const chainId = resolveChainId(preferredChainId);
   const { address } = picked;
   const privyId = privyUser.id;
 
@@ -340,12 +440,7 @@ export async function ensureCutUserFromPrivy(
     }
 
     await syncUserWalletsForPrivyUser(byPrivy.id, privyUser, preferredChainId);
-    return {
-      userId: byPrivy.id,
-      address,
-      chainId,
-      userType: byPrivy.userType,
-    };
+    return sessionUserAfterProvision(privyId, chainId);
   }
 
   const existingWallet = await prisma.userWallet.findFirst({
@@ -371,13 +466,7 @@ export async function ensureCutUserFromPrivy(
     }
 
     await syncUserWalletsForPrivyUser(existingWallet.userId, privyUser, preferredChainId);
-
-    return {
-      userId: existingWallet.userId,
-      address,
-      chainId,
-      userType: existingWallet.user.userType,
-    };
+    return sessionUserAfterProvision(privyId, chainId);
   }
 
   const referralRequired = isReferralRequiredForSignup();
@@ -417,7 +506,7 @@ export async function ensureCutUserFromPrivy(
     }
   }
 
-  const user = await prisma.user.create({
+  await prisma.user.create({
     data: {
       privyUserId: privyId,
       name: `User ${address.slice(0, 6)}`,
@@ -441,12 +530,25 @@ export async function ensureCutUserFromPrivy(
     },
   });
 
-  await syncUserWalletsForPrivyUser(user.id, privyUser, preferredChainId);
+  await syncUserWalletsForPrivyUser(
+    (
+      await prisma.user.findUniqueOrThrow({
+        where: { privyUserId: privyId },
+        select: { id: true },
+      })
+    ).id,
+    privyUser,
+    preferredChainId,
+  );
 
-  return {
-    userId: user.id,
-    address,
-    chainId,
-    userType: user.userType,
-  };
+  return sessionUserAfterProvision(privyId, chainId);
+}
+
+/** @deprecated Use provisionUserFromPrivy — kept for sync script compatibility during migration. */
+export async function ensureCutUserFromPrivy(
+  privyUser: PrivyApiUser,
+  preferredChainId?: number,
+  options?: ProvisioningOptions,
+): Promise<CutAuthUser> {
+  return provisionUserFromPrivy(privyUser, preferredChainId, options);
 }

@@ -1,8 +1,19 @@
 import { Hono } from "hono";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
-import { requireAuth } from "../middleware/auth.js";
-import { formatLineupResponse, lineupDetailInclude } from "../services/lineups/formatLineup.js";
+import { buildAuthProfile } from "../lib/authProfile.js";
+import { getPrivyClient } from "../lib/privyClient.js";
+import {
+  authErrorResponse,
+  parsePreferredChainId,
+  requireAuth,
+  verifyPrivyJwt,
+} from "../middleware/auth.js";
+import {
+  provisionUserFromPrivy,
+  resolveChainId,
+  syncExistingUserFromPrivy,
+} from "../lib/privyUserProvisioning.js";
 import { getUserTransactions } from "../services/user/getUserTransactions.js";
 import { mergeUserSettings, updateUserNameSchema, updateUserSettingsSchema } from "../schemas/user.js";
 
@@ -99,57 +110,70 @@ async function getReferralSummary(userId: string) {
   };
 }
 
+// Provision or sync Cut identity (signup entry point)
+authRouter.post("/session", verifyPrivyJwt, async (c) => {
+  try {
+    const privyUserId = c.get("privyUserId");
+    if (!privyUserId) {
+      return c.json({ error: "No token provided" }, 401);
+    }
+
+    const preferredChainId = parsePreferredChainId(c);
+    const referrerRaw = c.req.header("x-cut-referrer-address")?.trim();
+
+    const privy = getPrivyClient();
+    const privyUser = await privy.users()._get(privyUserId);
+    const session = await provisionUserFromPrivy(
+      privyUser,
+      preferredChainId,
+      referrerRaw ? { referrerAddress: referrerRaw } : undefined,
+    );
+
+    const profile = await buildAuthProfile(session.userId, session.chainId, session.address);
+    if (!profile) {
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    return c.json(profile, 201);
+  } catch (error) {
+    return authErrorResponse(c, error);
+  }
+});
+
+// Re-sync wallets from Privy after linking accounts
+authRouter.post("/sync-wallets", requireAuth, async (c) => {
+  try {
+    const privyUserId = c.get("privyUserId");
+    if (!privyUserId) {
+      return c.json({ error: "No token provided" }, 401);
+    }
+
+    const preferredChainId = parsePreferredChainId(c);
+    const privy = getPrivyClient();
+    const privyUser = await privy.users()._get(privyUserId);
+    const session = await syncExistingUserFromPrivy(privyUser, preferredChainId);
+
+    return c.json({
+      walletAddress: session.address,
+      chainId: session.chainId,
+    });
+  } catch (error) {
+    return authErrorResponse(c, error);
+  }
+});
+
 // Get current user information
 authRouter.get("/me", requireAuth, async (c) => {
   try {
     const user = c.get("user");
+    const chainId = resolveChainId(parsePreferredChainId(c) ?? user.chainId);
 
-    const activeEvent = await prisma.competitionEvent.findFirst({
-      where: { isActive: true },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const userData = await prisma.user.findUnique({
-      where: { id: user.userId },
-      include: {
-        userGroups: {
-          include: {
-            userGroup: true,
-          },
-        },
-      },
-    });
-
-    if (!userData) {
+    const profile = await buildAuthProfile(user.userId, chainId, user.address);
+    if (!profile) {
       return c.json({ error: "User not found" }, 404);
     }
 
-    const activeLineups = activeEvent?.id
-      ? await prisma.lineup.findMany({
-          where: { userId: user.userId, eventId: activeEvent.id },
-          include: lineupDetailInclude,
-        })
-      : [];
-
-    const { userGroups, ...userInfo } = userData;
-    const formattedLineups = activeLineups.map((lineup) => formatLineupResponse(lineup));
-
-    const response = {
-      id: userInfo.id,
-      name: userInfo.name,
-      userType: userInfo.userType,
-      settings: userInfo.settings,
-      phone: userInfo.phone,
-      email: userInfo.email,
-      isVerified: userInfo.isVerified,
-      createdAt: userInfo.createdAt,
-      lineups: formattedLineups,
-      userGroups,
-      walletAddress: user.address,
-      chainId: user.chainId,
-    };
-
-    return c.json(response);
+    return c.json(profile);
   } catch (error) {
     console.error("Error fetching user:", error);
     return c.json({ error: "Failed to fetch user information" }, 500);

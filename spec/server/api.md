@@ -8,8 +8,18 @@ Protected routes:
 
 ```
 Authorization: Bearer <privy_access_token>
-X-Cut-Chain-Id: <optional chain id for wallet resolution>
+X-Cut-Chain-Id: <8453 or 84532; required on on-chain routes via requireWalletChain>
 ```
+
+Middleware verifies the Privy JWT and loads the Cut user from Postgres (`User` + primary `UserWallet`). It does **not** call Privy `users()._get` or write identity rows. Signup and wallet sync happen only on `POST /auth/session` and `POST /auth/sync-wallets`.
+
+**Auth error codes**
+
+| Code | HTTP | Meaning |
+|------|------|---------|
+| `NEEDS_PROVISIONING` | 401 | Valid JWT, no Cut user — client should `POST /auth/session` |
+| `WALLET_NOT_PROVISIONED_FOR_CHAIN` | 409 | User exists, no primary wallet for `X-Cut-Chain-Id` |
+| `WALLET_OWNED_BY_OTHER_ACCOUNT` | 409 | Privy-linked address belongs to another user |
 
 JSON bodies are capped at 128 KiB.
 
@@ -45,7 +55,9 @@ No auth. `{ status, service, timestamp }`
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/me` | ✅ | User profile, `lineups` for active event, `userGroups` |
+| GET | `/me` | ✅ | User profile + `userGroups` (read-only; no Privy fetch) |
+| POST | `/session` | JWT | Signup / sync from Privy; accepts optional `X-Cut-Referrer-Address` |
+| POST | `/sync-wallets` | ✅ | Re-sync `UserWallet` rows from Privy linked accounts |
 | GET | `/referrals/summary` | ✅ | Referral tree summary |
 | PUT | `/update` | ✅ | Update display name (1–80 chars) |
 | PUT | `/settings` | ✅ | Merge allowlisted settings (`color`, `oddsFormat`). Does not change `marketingUnsubscribed`. |
@@ -216,5 +228,5 @@ Staff only (`requireAdmin`).
 | `useContestsQuery` | `GET /contests?eventId=` |
 | `useUserGroupContestsQuery` | `GET /userGroups/:id/contests` |
 | Lineup save | `POST /lineups/:eventId` (create) or `PUT /lineups/:lineupId` (update) |
-| `useAuth` / `/me` | `GET /auth/me` |
+| `useAuth` bootstrap | `GET /auth/me`, then `POST /auth/session` if `NEEDS_PROVISIONING` |
 | `useUserTransactions` / Manage Funds → Activity | `GET /auth/transactions` |

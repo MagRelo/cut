@@ -9,7 +9,7 @@ import {
   joinContestSchema,
   recordContestSecondaryParticipantSchema,
 } from "../schemas/contest.js";
-import { requireAuth, optionalAuth, getOptionalUserId } from "../middleware/auth.js";
+import { requireAuth, optionalAuth, getOptionalUserId, requireWalletChain } from "../middleware/auth.js";
 import { isStaffUserType } from "../middleware/admin.js";
 import { requireContestPrimaryActionsUnlocked } from "../middleware/contestStatus.js";
 import { contestLineupsIncludeWithoutPlayers } from "../utils/prismaIncludes.js";
@@ -219,7 +219,7 @@ contestRouter.get("/", optionalAuth, async (c) => {
   }
 });
 
-contestRouter.post("/:id/secondary-participants", requireAuth, async (c) => {
+contestRouter.post("/:id/secondary-participants", requireAuth, requireWalletChain, async (c) => {
   try {
     const contestId = c.req.param("id");
     const body = await c.req.json();
@@ -556,7 +556,7 @@ contestRouter.post("/", requireAuth, async (c) => {
   }
 });
 
-contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, requireAuth, async (c) => {
+contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, requireAuth, requireWalletChain, async (c) => {
   try {
     const body = await c.req.json();
     const validation = joinContestSchema.safeParse(body);

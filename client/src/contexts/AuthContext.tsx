@@ -238,6 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       endpoint: string,
       data?: unknown,
       chainOverride?: number,
+      extraHeaders?: Record<string, string>,
     ): Promise<T> => {
       const token = await getAccessToken();
       if (!token) {
@@ -246,14 +247,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const headers: Record<string, string> = {
         ...config.headers,
         Authorization: `Bearer ${token}`,
+        ...extraHeaders,
       };
       const cid = chainOverride ?? currentChainId;
       if (typeof cid === "number") {
         headers["X-Cut-Chain-Id"] = String(cid);
-      }
-      const referrer = getStoredReferrerAddress();
-      if (referrer) {
-        headers["X-Cut-Referrer-Address"] = referrer;
       }
 
       const response = await fetch(`${config.baseURL}${endpoint}`, {
@@ -266,13 +264,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         return await handleApiResponse<T>(response);
       } catch (error) {
-        if (error instanceof ApiError && error.statusCode === 401) {
+        if (
+          error instanceof ApiError &&
+          error.statusCode === 401 &&
+          error.code !== "NEEDS_PROVISIONING"
+        ) {
           setUser(null);
         }
         throw error;
       }
     },
     [config, getAccessToken, currentChainId],
+  );
+
+  const bootstrapAuthProfile = useCallback(
+    async (targetChainId: number): Promise<AuthUser> => {
+      const loadProfile = async (): Promise<AuthUser> => {
+        const profile = await request<AuthUser>("GET", "/auth/me", undefined, targetChainId);
+        if (!profile.walletAddress) {
+          await request("POST", "/auth/sync-wallets", undefined, targetChainId);
+          return await request<AuthUser>("GET", "/auth/me", undefined, targetChainId);
+        }
+        return profile;
+      };
+
+      try {
+        return await loadProfile();
+      } catch (error) {
+        if (isApiError(error) && error.statusCode === 401 && error.code === "NEEDS_PROVISIONING") {
+          const referrer = getStoredReferrerAddress();
+          const profile = await request<AuthUser>(
+            "POST",
+            "/auth/session",
+            undefined,
+            targetChainId,
+            referrer ? { "X-Cut-Referrer-Address": referrer } : undefined,
+          );
+          clearStoredReferrerAddress();
+          return profile;
+        }
+        if (
+          isApiError(error) &&
+          error.statusCode === 409 &&
+          error.code === "WALLET_NOT_PROVISIONED_FOR_CHAIN"
+        ) {
+          await request("POST", "/auth/sync-wallets", undefined, targetChainId);
+          return await loadProfile();
+        }
+        throw error;
+      }
+    },
+    [request],
   );
 
   const updateUser = useCallback(
@@ -315,9 +357,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     const targetChainId = getTargetChainIdFromEnv();
-    const response = await request<AuthUser>("GET", "/auth/me", undefined, targetChainId);
+    const response = await bootstrapAuthProfile(targetChainId);
     setUser(response);
-  }, [request]);
+  }, [bootstrapAuthProfile]);
 
   const getCurrentUser = useCallback((): AuthUser | null => {
     return user;
@@ -402,8 +444,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
-  // Core: load Cut `user` from GET /auth/me whenever Privy is ready, the user is authenticated, and we have a wallet address.
-  // Refetches when `address` changes (new wallet) or `request` identity changes (e.g. chain). Safe to drop only if you move this to React Query / router loader.
+  // Core: bootstrap Cut user via GET /auth/me, POST /auth/session when unprovisioned.
   useEffect(() => {
     if (!ready) return;
 
@@ -430,10 +471,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     void (async () => {
       try {
-        const response = await request<AuthUser>("GET", "/auth/me", undefined, targetChainId);
+        const response = await bootstrapAuthProfile(targetChainId);
         if (!cancelled) {
           setServerSessionError(null);
-          clearStoredReferrerAddress();
           setUser(response);
           const userIdentityChanged = previousUserId !== null && previousUserId !== response.id;
           if (isInitialUserLoad || userIdentityChanged) {
@@ -444,11 +484,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           void preloadLineups(queryClient, response.id, targetChainId);
         }
       } catch (error) {
-        console.error("GET /auth/me failed:", error);
+        console.error("Auth profile bootstrap failed:", error);
         if (!cancelled) {
           setUser(null);
           if (isApiError(error)) {
-            if (error.statusCode === 401) {
+            if (error.statusCode === 401 && error.code !== "NEEDS_PROVISIONING") {
               setServerSessionError(null);
             } else {
               let msg = error.message;
@@ -474,7 +514,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
       setUserSyncLoading(false);
     };
-  }, [ready, authenticated, address, request, queryClient, endPrivyAndWagmiSession]);
+  }, [ready, authenticated, address, bootstrapAuthProfile, queryClient, endPrivyAndWagmiSession]);
 
   // Wagmi can disconnect (e.g. wallet revoke) while React still holds `user`; clear local server user + RQ caches so UI matches wallet.
   // Could be merged into the effect above if you prefer a single “auth state” effect, but keep if you want an explicit wallet-disconnect edge.

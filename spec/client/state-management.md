@@ -126,7 +126,7 @@ Prefer server cache over duplicating API data in local state.
 
 | Mutation | Invalidate / patch |
 |----------|--------------------|
-| Save lineup | `lineups.byEvent`, `sideBet.market`, sometimes `auth/me` lineups |
+| Save lineup | `lineups.byEvent`, `sideBet.market` |
 | Join/leave contest | Optimistic patch `contests.byLobbyRoute` + directory caches; then invalidate `contests.all`, `lineups.all`, `user.contests` |
 | Update profile | `auth` user query |
 | Place side bet | `sideBet.tickets`, `sideBet.market` |

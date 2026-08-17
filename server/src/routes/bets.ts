@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireWalletChain } from "../middleware/auth.js";
 import { SideBetMarketStatus, SideBetTicketStatus } from "@prisma/client";
 import { sideBetsEnabled } from "../services/sideBets/featureFlag.js";
 import {
@@ -224,7 +224,7 @@ function topNToColLabel(topN: number): string {
 }
 
 /** POST /api/bets/side/tickets */
-betsRouter.post("/side/tickets", requireAuth, async (c) => {
+betsRouter.post("/side/tickets", requireAuth, requireWalletChain, async (c) => {
   if (!sideBetsEnabled()) {
     return c.json({ error: "Side bets disabled" }, 403);
   }
