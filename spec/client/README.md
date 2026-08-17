@@ -62,7 +62,8 @@ client/src/
 | `/` | redirect | → `/contests` |
 | `/contests` | `ContestListPage` (`Contests`) | Multi-sport live contests (public + league merge per event) |
 | `/sports/:sportId` | `SportHubPage` | Single-sport contest list (deep links) |
-| `/sports/:sportId/leaderboard` | `LeaderboardPage` | Sport-scoped field leaderboard (share links) |
+| `/sports/:sportId/events/:eventId/leaderboard` | `LeaderboardPage` | Event field leaderboard; `?playerId=` opens that participant and is the canonical player share URL |
+| `/sports/:sportId/leaderboard` | `LeaderboardPage` | Active-event field leaderboard (share fallback when event id is unknown) |
 | `/contest/:address` | `ContestLobbyPage` | On-chain address in URL; local event header; Lineups, Field, Contest, Winner Pool / Results tabs |
 | `/contests/create` | `ContestCreatePage` | Staff / league admin |
 | `/leagues/*` | User group pages | Canonical league URLs |

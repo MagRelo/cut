@@ -4,6 +4,7 @@ import type { Candidate, EventStatus } from "@cut/sport-sdk";
 import { useOptionalEventScope } from "../../contexts/EventScopeContext";
 import { useRequiredSportUIPlugin } from "../../hooks/useSportUI";
 import { leaderboardPath } from "../../lib/contestNavigation";
+import { eventDisplayNameFromMetadata } from "../../lib/eventMetadata";
 
 export interface SportParticipantDetailModalProps {
   isOpen: boolean;
@@ -48,12 +49,14 @@ export const SportParticipantDetailModal: React.FC<SportParticipantDetailModalPr
     shareUrl.searchParams.set("playerId", String(targetCandidate.participantId));
     shareUrl.searchParams.delete("pgaTourId");
 
-    const titleName = targetCandidate.displayName?.trim() || "Player";
+    const playerName = targetCandidate.displayName?.trim() || "Player";
+    const tournamentName = eventDisplayNameFromMetadata(resolvedMetadata, "");
+    const shareTitle = tournamentName ? `${playerName} | ${tournamentName}` : playerName;
 
     try {
       if (typeof navigator.share === "function") {
         await navigator.share({
-          title: titleName ? `${titleName} - Leaderboard` : "Leaderboard",
+          title: shareTitle,
           url: shareUrl.toString(),
         });
         return;

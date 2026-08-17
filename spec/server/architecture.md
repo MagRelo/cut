@@ -75,6 +75,21 @@ graph LR
 - Ingest: `services/propBets/` + `PropBetModule`
 - Admin: `routes/admin.ts` lock/settle/close batches
 
+### SPA HTML / Open Graph
+
+`app.ts` serves `index.html` for non-API routes and rewrites title + OG/Twitter tags per path (`lib/pageMetadata.ts`).
+
+| Path | Title |
+|------|-------|
+| `/contest/:id` | `$entry Contest Name \| Play The Cut` (contest description when present) |
+| `/sports/:sportId/events/:eventId/leaderboard?playerId=` | `Player Name \| Event Name` (`playerId` is `Participant.id`) |
+| `/sports/:sportId/leaderboard?playerId=` | Same, resolved against the sport's active event |
+| `/sports/:sportId/events/:eventId/leaderboard` | `Event Name \| Play The Cut` |
+| `/sports/:sportId/leaderboard` | Same, resolved against the sport's active event |
+| All other HTML routes | `Play The Cut` |
+
+HTML is never cached so crawlers and share unfurls pick up the rewrite on the next request.
+
 ### Email
 
 - `lib/email/` — templates keyed by `eventId` in `EmailSendLog`

@@ -4,46 +4,11 @@ import { logger } from "hono/logger";
 import { serveStatic } from "hono/serve-static";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import apiRoutes from "./routes/api.js";
-import { BRAND_PROSE } from "./lib/brand.js";
-import { prisma } from "./lib/prisma.js";
 import { cacheControlForStaticPath } from "./lib/staticCacheControl.js";
+import { resolvePageMetadata, type PageMetadata } from "./lib/pageMetadata.js";
 
 // Create Hono app instance
 const app = new Hono();
-
-type PageMetadata = {
-  title: string;
-  description: string;
-  image: string;
-  url: string;
-  type: "website";
-};
-
-const DEFAULT_OG_IMAGE = "https://playthecut.com/cut-logo2-og.png";
-const DEFAULT_DESCRIPTION = "Create your team, join a league, and compete with other players.";
-const TITLE_SUFFIX = ` | ${BRAND_PROSE}`;
-
-function getContestEntryLabel(settings: unknown): string | null {
-  if (!settings || typeof settings !== "object") {
-    return null;
-  }
-
-  const primaryDeposit = (settings as { primaryDeposit?: unknown }).primaryDeposit;
-  if (primaryDeposit == null) {
-    return null;
-  }
-
-  const entryFee = Number(primaryDeposit);
-  if (!Number.isFinite(entryFee)) {
-    return null;
-  }
-
-  if (entryFee === 0) {
-    return "Free";
-  }
-
-  return `$${entryFee}`;
-}
 
 function getBaseUrl(c: Context): string {
   const configured = process.env.PUBLIC_WEB_URL?.trim();
@@ -89,64 +54,6 @@ function injectMetadata(indexHtml: string, metadata: PageMetadata): string {
   return html;
 }
 
-async function resolveMetadataForPath(
-  requestUrl: URL,
-  baseUrl: string
-): Promise<PageMetadata> {
-  const path = requestUrl.pathname;
-  const requestPathWithQuery = `${requestUrl.pathname}${requestUrl.search}`;
-  const defaults: PageMetadata = {
-    title: BRAND_PROSE,
-    description: DEFAULT_DESCRIPTION,
-    image: DEFAULT_OG_IMAGE,
-    url: `${baseUrl}${requestPathWithQuery}`,
-    type: "website",
-  };
-
-  if (/^\/sports\/[^/]+\/leaderboard$/.test(path)) {
-    return defaults;
-  }
-
-  const contestMatch = path.match(/^\/contest\/([^/]+)$/);
-  if (contestMatch) {
-    const routeParam = contestMatch[1];
-    if (!routeParam) {
-      return defaults;
-    }
-    try {
-      const { resolveContestDbId } = await import("./utils/contestRouteParam.js");
-      const contestId = await resolveContestDbId(routeParam);
-      if (!contestId) {
-        return defaults;
-      }
-      const contest = await prisma.contest.findUnique({
-        where: { id: contestId },
-        select: {
-          name: true,
-          description: true,
-          settings: true,
-        },
-      });
-
-      if (contest?.name) {
-        const entryLabel = getContestEntryLabel(contest.settings);
-        const titleParts = [entryLabel, contest.name].filter(Boolean).join(" ").trim();
-        const title = `${titleParts}${TITLE_SUFFIX}`;
-
-        return {
-          ...defaults,
-          title,
-          description: contest.description?.trim() || `Join this contest on ${BRAND_PROSE}.`,
-        };
-      }
-    } catch (error) {
-      console.error("Error resolving contest metadata:", error);
-    }
-  }
-
-  return defaults;
-}
-
 async function serveSpaHtmlWithMetadata(c: Context) {
   c.header("Cache-Control", "no-cache, no-store, must-revalidate");
   c.header("Pragma", "no-cache");
@@ -159,7 +66,7 @@ async function serveSpaHtmlWithMetadata(c: Context) {
     const indexContent = fs.readFileSync(indexPath, "utf-8");
     const requestUrl = new URL(c.req.url);
     const baseUrl = getBaseUrl(c);
-    const metadata = await resolveMetadataForPath(requestUrl, baseUrl);
+    const metadata = await resolvePageMetadata(requestUrl, baseUrl);
     const htmlWithMetadata = injectMetadata(indexContent, metadata);
     return c.html(htmlWithMetadata);
   } catch (error) {
