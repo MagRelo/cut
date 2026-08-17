@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import apiRoutes from "./routes/api.js";
 import { BRAND_PROSE } from "./lib/brand.js";
 import { prisma } from "./lib/prisma.js";
+import { cacheControlForStaticPath } from "./lib/staticCacheControl.js";
 
 // Create Hono app instance
 const app = new Hono();
@@ -263,11 +264,7 @@ app.use(
           return null;
         }
         const content = fs.readFileSync(fullPath);
-
-        // Set caching headers for static assets (except HTML)
-        if (!cleanPath.endsWith(".html")) {
-          c.header("Cache-Control", "public, max-age=3600"); // 1 hour
-        }
+        c.header("Cache-Control", cacheControlForStaticPath(cleanPath));
 
         // Return the content - Hono will handle MIME types automatically
         return content;
