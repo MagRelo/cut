@@ -9,6 +9,7 @@ import { cacheControlForStaticPath } from "./lib/staticCacheControl.js";
 import { resolvePageMetadata, type PageMetadata } from "./lib/pageMetadata.js";
 import {
   REJECTED_STATIC_PATH,
+  resolvePublicRoot,
   resolvePublicStaticFile,
   rewritePublicStaticRequestPath,
 } from "./lib/resolvePublicStaticFile.js";
@@ -156,18 +157,26 @@ app.route("/api", apiRoutes);
 
 // Serve files from public/ only. rewritePublicStaticRequestPath realpath-contains
 // the target and rejects dotfiles / traversal so join() never reads cwd siblings.
-app.use(
-  "/*",
-  serveStatic({
-    root: "./public",
-    // Directories must fall through to the SPA handler, not auto-serve index.html.
-    index: REJECTED_STATIC_PATH,
-    rewriteRequestPath: (requestPath) => rewritePublicStaticRequestPath(requestPath),
-    onFound: (filePath, c) => {
-      c.header("Cache-Control", cacheControlForStaticPath(filePath));
-    },
-  })
-);
+// In dev, Vite serves the client; skip middleware (and Hono's missing-root warning) when public/ is absent.
+const publicRoot = resolvePublicRoot();
+if (publicRoot) {
+  app.use(
+    "/*",
+    serveStatic({
+      root: "./public",
+      // Directories must fall through to the SPA handler, not auto-serve index.html.
+      index: REJECTED_STATIC_PATH,
+      rewriteRequestPath: (requestPath) => rewritePublicStaticRequestPath(requestPath),
+      onFound: (filePath, c) => {
+        c.header("Cache-Control", cacheControlForStaticPath(filePath));
+      },
+    }),
+  );
+} else if (process.env.NODE_ENV === "production") {
+  console.error(
+    "serveStatic: root path './public' is not found, are you sure it's correct?",
+  );
+}
 
 // Serve index.html for root route
 app.get("/", async (c) => {
