@@ -1,7 +1,7 @@
 import { prisma } from "../../lib/prisma.js";
 import { formatContestResponse } from "../../utils/formatContestResponse.js";
 import {
-  contestListSelect,
+  contestDirectorySelect,
   contestVisibilityWhere,
 } from "../../utils/contestListQuery.js";
 import {
@@ -13,7 +13,7 @@ import {
 import { eventStatusFromMetadata } from "../../utils/eventStatus.js";
 
 /** Max past events shown across all sports (single timeline, not per-sport). */
-export const RECENT_PAST_EVENTS = 9;
+export const RECENT_PAST_EVENTS = 20;
 
 export type ContestDirectoryScope = "live" | "past" | "all";
 
@@ -82,9 +82,12 @@ async function recentPastEvents(
   sportIds: string[],
   limit = RECENT_PAST_EVENTS,
 ): Promise<EventWithSport[]> {
+  const fetchLimit = Math.max(limit * 2, 40);
   const events = await prisma.competitionEvent.findMany({
     where: { sportId: { in: sportIds }, isActive: false },
     select: eventSelect,
+    orderBy: { updatedAt: "desc" },
+    take: fetchLimit,
   });
 
   return sortEventsByEndDateDesc(events).slice(0, limit);
@@ -174,7 +177,7 @@ export async function listContestDirectory(
       eventId: { in: eventIds },
       ...visibility,
     },
-    select: contestListSelect,
+    select: contestDirectorySelect,
   });
 
   const contestsByEventId = new Map<string, ReturnType<typeof formatContestResponse>[]>();

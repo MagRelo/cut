@@ -82,7 +82,8 @@ export const ContestListItem = ({
   eventShell,
   variant = "default",
 }: ContestListItemProps) => {
-  const entryCount = contest.contestLineups?.length ?? 0;
+  const entryCount =
+    contest._count?.contestLineups ?? contest.contestLineups?.length ?? 0;
   const buyInValue = formatBuyInValue(contest.settings?.primaryDeposit);
   const actionLabel = contestListActionLabel(variant);
 

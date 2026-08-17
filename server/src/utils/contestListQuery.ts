@@ -55,6 +55,36 @@ export const contestListSelect = {
   },
 } as const;
 
+/** Directory list: same contest fields as `contestListSelect` but lineup entry count only. */
+export const contestDirectorySelect = {
+  id: true,
+  name: true,
+  description: true,
+  eventId: true,
+  userGroupId: true,
+  endTime: true,
+  address: true,
+  chainId: true,
+  status: true,
+  settings: true,
+  results: true,
+  pickPopularity: true,
+  pickPopularityLockedAt: true,
+  createdAt: true,
+  updatedAt: true,
+  userGroup: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+  _count: {
+    select: {
+      contestLineups: true,
+    },
+  },
+} as const;
+
 export async function contestVisibilityWhere(
   userId: string | null,
   options: { chainId?: number | undefined; userGroupId?: string | undefined } = {},
