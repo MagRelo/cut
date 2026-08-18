@@ -38,6 +38,7 @@ function patchDirectoryContestLineups(
   queryClient: QueryClient,
   contestAddress: string,
   updateLineups: (lineups: ContestLineup[] | undefined) => ContestLineup[] | undefined,
+  countDelta: number,
 ): void {
   const normalized = normalizeContestAddress(contestAddress);
   const sections = ["upcoming", "live", "past"] as const;
@@ -60,9 +61,11 @@ function patchDirectoryContestLineups(
         changed = true;
         const contests = [...group.contests];
         const contest = contests[contestIndex]!;
+        const previousCount = contest._count?.contestLineups ?? contest.contestLineups?.length ?? 0;
         contests[contestIndex] = {
           ...contest,
           contestLineups: updateLineups(contest.contestLineups),
+          _count: { contestLineups: Math.max(0, previousCount + countDelta) },
         };
         return { ...group, contests };
       });
@@ -147,10 +150,12 @@ export function useJoinContest() {
         });
       }
 
-      patchDirectoryContestLineups(queryClient, contestAddress, (lineups) => [
-        ...(lineups || []),
-        optimisticLineup,
-      ]);
+      patchDirectoryContestLineups(
+        queryClient,
+        contestAddress,
+        (lineups) => [...(lineups || []), optimisticLineup],
+        1,
+      );
 
       return { previousLobby, previousDirectories, lobbyKey };
     },
@@ -200,8 +205,11 @@ export function useLeaveContest() {
         });
       }
 
-      patchDirectoryContestLineups(queryClient, contestAddress, (lineups) =>
-        (lineups || []).filter((lineup) => lineup.id !== contestLineupId),
+      patchDirectoryContestLineups(
+        queryClient,
+        contestAddress,
+        (lineups) => (lineups || []).filter((lineup) => lineup.id !== contestLineupId),
+        -1,
       );
 
       return { previousLobby, previousDirectories, lobbyKey };

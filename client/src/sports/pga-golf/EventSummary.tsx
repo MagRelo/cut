@@ -21,11 +21,11 @@ export const GolfEventSummary: React.FC<EventSummaryProps> = ({ event, surface =
     <GolfEventDetails
       event={event}
       hasSummary={hasSummary}
-      onOpenSummary={() => setIsSummaryOpen(true)}
+      onOpenSummary={hasSummary ? () => setIsSummaryOpen(true) : undefined}
     />
   );
 
-  const summaryModal = (
+  const summaryModal = hasSummary ? (
     <TournamentSummaryModal
       isOpen={isSummaryOpen}
       onClose={() => setIsSummaryOpen(false)}
@@ -37,7 +37,7 @@ export const GolfEventSummary: React.FC<EventSummaryProps> = ({ event, surface =
       endDate={meta?.endDate}
       summarySections={meta?.summarySections}
     />
-  );
+  ) : null;
 
   if (surface === "content") {
     return (

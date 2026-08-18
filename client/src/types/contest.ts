@@ -144,6 +144,8 @@ export interface Contest {
   _count?: {
     contestLineups: number;
   };
+  /** Directory-only settled pot in payment-token units (from results.snapshot). */
+  settledPot?: number | null;
   /** Ledger rows for settled contests (amounts from chain events). */
   onchainPayments?: OnchainPaymentView[];
   results?: {

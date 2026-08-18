@@ -9,7 +9,14 @@ import {
   joinContestSchema,
   recordContestSecondaryParticipantSchema,
 } from "../schemas/contest.js";
-import { requireAuth, optionalAuth, getOptionalUserId, requireWalletChain } from "../middleware/auth.js";
+import {
+  requireAuth,
+  optionalAuth,
+  optionalPrivyJwt,
+  getOptionalUserId,
+  getOptionalPrivyUserId,
+  requireWalletChain,
+} from "../middleware/auth.js";
 import { isStaffUserType } from "../middleware/admin.js";
 import { requireContestPrimaryActionsUnlocked } from "../middleware/contestStatus.js";
 import { contestLineupsIncludeWithoutPlayers } from "../utils/prismaIncludes.js";
@@ -33,10 +40,17 @@ import {
 } from "../services/contest/verifySecondaryBuyReceipt.js";
 import { generateContestEntryId } from "../utils/contestEntryId.js";
 import type { DetailedResult } from "../services/shared/types.js";
-import { getReferralGraphAddress, getRewardCalculatorAddress, parseReferralGroupIdFromEnv } from "../lib/referralConfig.js";
+import {
+  getReferralGraphAddress,
+  getRewardCalculatorAddress,
+  parseReferralGroupIdFromEnv,
+} from "../lib/referralConfig.js";
 import { primaryDepositWeiFromSettings } from "../lib/contractAddresses.js";
 import { contestListSelect, contestVisibilityWhere } from "../utils/contestListQuery.js";
-import { listContestDirectory } from "../services/contests/listContestDirectory.js";
+import {
+  getContestDirectory,
+  invalidateContestDirectory,
+} from "../services/contests/listContestDirectory.js";
 
 const contestRouter = new Hono();
 
@@ -126,7 +140,7 @@ async function loadFormattedContestById(contestId: string) {
   return { ...formatted, onchainPayments };
 }
 
-contestRouter.get("/directory", optionalAuth, async (c) => {
+contestRouter.get("/directory", optionalPrivyJwt, async (c) => {
   try {
     const scopeParam = c.req.query("scope");
     const chainIdParam = c.req.query("chainId");
@@ -147,10 +161,10 @@ contestRouter.get("/directory", optionalAuth, async (c) => {
     }
 
     const { scope, chainId } = validation.data;
-    const userId = getOptionalUserId(c);
-    const directory = await listContestDirectory(userId, scope, chainId);
+    const privyUserId = getOptionalPrivyUserId(c);
+    const directory = await getContestDirectory(privyUserId, scope, chainId);
 
-    c.header("Cache-Control", "private, no-cache, must-revalidate");
+    c.header("Cache-Control", "private, max-age=15, stale-while-revalidate=45");
 
     return c.json(directory);
   } catch (error) {
@@ -503,10 +517,12 @@ contestRouter.post("/", requireAuth, async (c) => {
         userGroup: true,
       },
     });
+    invalidateContestDirectory();
 
     const bps =
       pinnedSettings.primaryDepositSecondarySubsidyBps ??
-      (pinnedSettings as { primaryEntryInvestmentShareBps?: number }).primaryEntryInvestmentShareBps;
+      (pinnedSettings as { primaryEntryInvestmentShareBps?: number })
+        .primaryEntryInvestmentShareBps;
 
     const referralNetworkBps =
       typeof (pinnedSettings as { referralNetworkBps?: number }).referralNetworkBps === "number"
@@ -517,7 +533,8 @@ contestRouter.post("/", requireAuth, async (c) => {
     const referralGraphAddress = getReferralGraphAddress(chainId);
     const rewardCalculatorAddress = getRewardCalculatorAddress(chainId);
     const referralGroupIdRaw =
-      (pinnedSettings as { referralGroupId?: string }).referralGroupId ?? parseReferralGroupIdFromEnv();
+      (pinnedSettings as { referralGroupId?: string }).referralGroupId ??
+      parseReferralGroupIdFromEnv();
     const referralGroupId = referralGroupIdRaw as `0x${string}` | null;
     if (
       typeof pinnedSettings.primaryDeposit === "number" &&
@@ -556,169 +573,172 @@ contestRouter.post("/", requireAuth, async (c) => {
   }
 });
 
-contestRouter.post("/:id/lineups", requireContestPrimaryActionsUnlocked, requireAuth, requireWalletChain, async (c) => {
-  try {
-    const body = await c.req.json();
-    const validation = joinContestSchema.safeParse(body);
-    if (!validation.success) {
-      return c.json(
-        { error: "Invalid request body", details: validation.error.errors },
-        400,
-      );
-    }
-    const { lineupId } = validation.data;
-    const user = c.get("user");
-    const contestId = c.req.param("id");
-
-    const contestCheck = await prisma.contest.findUnique({
-      where: { id: contestId },
-      select: {
-        id: true,
-        eventId: true,
-        userGroupId: true,
-        address: true,
-        chainId: true,
-      },
-    });
-
-    if (!contestCheck) {
-      return c.json({ error: "Contest not found" }, 404);
-    }
-
-    if (contestCheck.userGroupId) {
-      const accessDenied = await leagueContestAccessDenied(c, contestCheck.userGroupId);
-      if (accessDenied) {
-        return accessDenied;
+contestRouter.post(
+  "/:id/lineups",
+  requireContestPrimaryActionsUnlocked,
+  requireAuth,
+  requireWalletChain,
+  async (c) => {
+    try {
+      const body = await c.req.json();
+      const validation = joinContestSchema.safeParse(body);
+      if (!validation.success) {
+        return c.json({ error: "Invalid request body", details: validation.error.errors }, 400);
       }
-    }
+      const { lineupId } = validation.data;
+      const user = c.get("user");
+      const contestId = c.req.param("id");
 
-    const entryId = String(generateContestEntryId(contestCheck.address, lineupId));
-
-    const ownerCheck = await verifyPrimaryEntryOwner({
-      contestAddress: contestCheck.address,
-      chainId: contestCheck.chainId,
-      entryId,
-      walletAddress: user.address,
-    });
-    if (!ownerCheck.ok) {
-      if (ownerCheck.error === "rpc_error") {
-        return c.json({ error: "Failed to verify on-chain entry owner" }, 502);
-      }
-      if (ownerCheck.error === "unowned") {
-        return c.json({ error: "Entry is not owned on-chain" }, 400);
-      }
-      return c.json({ error: "Entry is not owned by this wallet" }, 403);
-    }
-
-    const lineup = await prisma.lineup.findUnique({
-      where: { id: lineupId },
-      select: {
-        id: true,
-        eventId: true,
-        userId: true,
-        contestId: true,
-        prediction: true,
-      },
-    });
-
-    if (!lineup || lineup.eventId !== contestCheck.eventId) {
-      return c.json({ error: "Lineup not found" }, 404);
-    }
-
-    if (lineup.userId !== user.userId) {
-      return c.json({ error: "Lineup does not belong to this user" }, 401);
-    }
-
-    let resolvedLineupId = lineupId;
-    if (lineup.contestId != null && lineup.contestId !== contestId) {
-      const cloned = await cloneLineup({
-        sourceLineupId: lineupId,
-        userId: user.userId,
-        targetContestId: contestId,
+      const contestCheck = await prisma.contest.findUnique({
+        where: { id: contestId },
+        select: {
+          id: true,
+          eventId: true,
+          userGroupId: true,
+          address: true,
+          chainId: true,
+        },
       });
-      if ("error" in cloned) {
-        if (cloned.error === "not_found") {
-          return c.json({ error: "Lineup not found" }, 404);
-        }
+
+      if (!contestCheck) {
         return c.json({ error: "Contest not found" }, 404);
       }
-      resolvedLineupId = cloned.lineupId;
-    }
 
-    const resolvedLineup = await prisma.lineup.findUnique({
-      where: { id: resolvedLineupId },
-      select: { prediction: true },
-    });
+      if (contestCheck.userGroupId) {
+        const accessDenied = await leagueContestAccessDenied(c, contestCheck.userGroupId);
+        if (accessDenied) {
+          return accessDenied;
+        }
+      }
 
-    const participantIds = await getParticipantIdsFromLineup(resolvedLineupId);
+      const entryId = String(generateContestEntryId(contestCheck.address, lineupId));
 
-    if (!hasMinimumPlayers(participantIds)) {
-      return c.json({ error: "Lineup must have at least 1 player" }, 400);
-    }
+      const ownerCheck = await verifyPrimaryEntryOwner({
+        contestAddress: contestCheck.address,
+        chainId: contestCheck.chainId,
+        entryId,
+        walletAddress: user.address,
+      });
+      if (!ownerCheck.ok) {
+        if (ownerCheck.error === "rpc_error") {
+          return c.json({ error: "Failed to verify on-chain entry owner" }, 502);
+        }
+        if (ownerCheck.error === "unowned") {
+          return c.json({ error: "Entry is not owned on-chain" }, 400);
+        }
+        return c.json({ error: "Entry is not owned by this wallet" }, 403);
+      }
 
-    const prediction = predictionNumericValue(resolvedLineup?.prediction ?? lineup.prediction);
-    const isDuplicate = await isDuplicateInContest(
-      user.userId,
-      contestId,
-      participantIds,
-      prediction,
-    );
-    if (isDuplicate) {
-      return c.json(
-        {
-          error:
-            "You already have a lineup with these players and winning score prediction in this contest",
+      const lineup = await prisma.lineup.findUnique({
+        where: { id: lineupId },
+        select: {
+          id: true,
+          eventId: true,
+          userId: true,
+          contestId: true,
+          prediction: true,
         },
-        400,
+      });
+
+      if (!lineup || lineup.eventId !== contestCheck.eventId) {
+        return c.json({ error: "Lineup not found" }, 404);
+      }
+
+      if (lineup.userId !== user.userId) {
+        return c.json({ error: "Lineup does not belong to this user" }, 401);
+      }
+
+      let resolvedLineupId = lineupId;
+      if (lineup.contestId != null && lineup.contestId !== contestId) {
+        const cloned = await cloneLineup({
+          sourceLineupId: lineupId,
+          userId: user.userId,
+          targetContestId: contestId,
+        });
+        if ("error" in cloned) {
+          if (cloned.error === "not_found") {
+            return c.json({ error: "Lineup not found" }, 404);
+          }
+          return c.json({ error: "Contest not found" }, 404);
+        }
+        resolvedLineupId = cloned.lineupId;
+      }
+
+      const resolvedLineup = await prisma.lineup.findUnique({
+        where: { id: resolvedLineupId },
+        select: { prediction: true },
+      });
+
+      const participantIds = await getParticipantIdsFromLineup(resolvedLineupId);
+
+      if (!hasMinimumPlayers(participantIds)) {
+        return c.json({ error: "Lineup must have at least 1 player" }, 400);
+      }
+
+      const prediction = predictionNumericValue(resolvedLineup?.prediction ?? lineup.prediction);
+      const isDuplicate = await isDuplicateInContest(
+        user.userId,
+        contestId,
+        participantIds,
+        prediction,
       );
+      if (isDuplicate) {
+        return c.json(
+          {
+            error:
+              "You already have a lineup with these players and winning score prediction in this contest",
+          },
+          400,
+        );
+      }
+
+      const existingLineup = await prisma.contestLineup.findFirst({
+        where: {
+          contestId,
+          lineupId: resolvedLineupId,
+        },
+      });
+
+      if (existingLineup) {
+        return c.json({ error: "This lineup has already been added to this contest" }, 400);
+      }
+
+      const existingEntry = await prisma.contestLineup.findFirst({
+        where: {
+          contestId,
+          entryId,
+        },
+      });
+
+      if (existingEntry) {
+        return c.json(
+          { error: "An entry with this player composition already exists in this contest" },
+          400,
+        );
+      }
+
+      await prisma.contestLineup.create({
+        data: {
+          contestId,
+          lineupId: resolvedLineupId,
+          userId: user.userId,
+          entryId,
+          status: "ACTIVE",
+        },
+      });
+
+      const formattedContest = await loadFormattedContestById(contestId);
+      if (!formattedContest) {
+        return c.json({ error: "Contest not found" }, 404);
+      }
+
+      return c.json(formattedContest, 201);
+    } catch (error) {
+      console.error("Error adding lineup to contest:", error);
+      return c.json({ error: "Failed to add lineup to contest" }, 500);
     }
-
-    const existingLineup = await prisma.contestLineup.findFirst({
-      where: {
-        contestId,
-        lineupId: resolvedLineupId,
-      },
-    });
-
-    if (existingLineup) {
-      return c.json({ error: "This lineup has already been added to this contest" }, 400);
-    }
-
-    const existingEntry = await prisma.contestLineup.findFirst({
-      where: {
-        contestId,
-        entryId,
-      },
-    });
-
-    if (existingEntry) {
-      return c.json(
-        { error: "An entry with this player composition already exists in this contest" },
-        400,
-      );
-    }
-
-    await prisma.contestLineup.create({
-      data: {
-        contestId,
-        lineupId: resolvedLineupId,
-        userId: user.userId,
-        entryId,
-        status: "ACTIVE",
-      },
-    });
-
-    const formattedContest = await loadFormattedContestById(contestId);
-    if (!formattedContest) {
-      return c.json({ error: "Contest not found" }, 404);
-    }
-
-    return c.json(formattedContest, 201);
-  } catch (error) {
-    console.error("Error adding lineup to contest:", error);
-    return c.json({ error: "Failed to add lineup to contest" }, 500);
-  }
-});
+  },
+);
 
 contestRouter.delete(
   "/:id/lineups/:lineupId",

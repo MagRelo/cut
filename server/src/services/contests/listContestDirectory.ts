@@ -1,9 +1,7 @@
+import { formatUnits } from "viem";
 import { prisma } from "../../lib/prisma.js";
-import { formatContestResponse } from "../../utils/formatContestResponse.js";
-import {
-  contestDirectorySelect,
-  contestVisibilityWhere,
-} from "../../utils/contestListQuery.js";
+import { createTtlCache } from "../../lib/ttlCache.js";
+import { CONTEST_LIST_CHAIN_IDS, contestDirectorySelect } from "../../utils/contestListQuery.js";
 import {
   directoryEventFromRecord,
   eventEndDate,
@@ -15,11 +13,31 @@ import { eventStatusFromMetadata } from "../../utils/eventStatus.js";
 /** Max past events shown across all sports (single timeline, not per-sport). */
 export const RECENT_PAST_EVENTS = 20;
 
+/** Inactive events older than this are omitted from the directory query window. */
+export const PAST_EVENT_LOOKBACK_DAYS = 120;
+
+export const DIRECTORY_CACHE_TTL_MS = 30_000;
+
 export type ContestDirectoryScope = "live" | "past" | "all";
+
+type DirectoryContest = {
+  id: string;
+  name: string;
+  eventId: string;
+  userGroupId: string | null;
+  endTime: Date;
+  address: string;
+  chainId: number;
+  status: string;
+  settings: Record<string, unknown> | null;
+  userGroup: { id: string; name: string } | null;
+  _count: { contestLineups: number };
+  settledPot: number | null;
+};
 
 export type EventContestGroup = {
   event: ContestDirectoryEvent;
-  contests: ReturnType<typeof formatContestResponse>[];
+  contests: DirectoryContest[];
 };
 
 export type ContestDirectoryResponse = {
@@ -39,18 +57,31 @@ type EventWithSport = {
   sport: { id: string; name: string };
 };
 
-const eventSelect = {
-  id: true,
-  sportId: true,
-  externalId: true,
-  isActive: true,
-  metadata: true,
-  createdAt: true,
-  updatedAt: true,
-  sport: { select: { id: true, name: true } },
-} as const;
-
 type GroupSortKey = "start" | "end";
+
+const directoryCache = createTtlCache<ContestDirectoryResponse>(DIRECTORY_CACHE_TTL_MS);
+
+export function contestDirectoryCacheKey(
+  privyUserId: string | null,
+  scope: ContestDirectoryScope,
+  chainId?: number,
+): string {
+  return `${chainId ?? "all"}:${scope}:${privyUserId ?? "anon"}`;
+}
+
+export function invalidateContestDirectory(): void {
+  directoryCache.invalidateAll();
+}
+
+export async function getContestDirectory(
+  privyUserId: string | null,
+  scope: ContestDirectoryScope = "all",
+  chainId?: number,
+): Promise<ContestDirectoryResponse> {
+  return directoryCache.getOrLoad(contestDirectoryCacheKey(privyUserId, scope, chainId), () =>
+    listContestDirectory(privyUserId, scope, chainId),
+  );
+}
 
 function groupEventSortTime(event: ContestDirectoryEvent, sortKey: GroupSortKey): number {
   const primary = sortKey === "end" ? event.endDate : event.startDate;
@@ -67,35 +98,77 @@ function sortEventsByStartDateDesc(events: EventWithSport[]): EventWithSport[] {
   return [...events].sort((a, b) => eventStartDate(b).getTime() - eventStartDate(a).getTime());
 }
 
-function dedupeEvents(events: EventWithSport[]): EventWithSport[] {
-  const seen = new Set<string>();
-  const out: EventWithSport[] = [];
-  for (const event of events) {
-    if (seen.has(event.id)) continue;
-    seen.add(event.id);
-    out.push(event);
+function slimDirectorySettings(settings: unknown): Record<string, unknown> | null {
+  if (!settings || typeof settings !== "object" || Array.isArray(settings)) return null;
+  const source = settings as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const key of [
+    "contestType",
+    "chainId",
+    "maxEntry",
+    "expiryTimestamp",
+    "paymentTokenAddress",
+    "paymentTokenSymbol",
+    "oracle",
+    "primaryDeposit",
+    "referralNetworkBps",
+    "oracleFeeBps",
+    "referralGroupId",
+    "primaryDepositSecondarySubsidyBps",
+  ]) {
+    if (source[key] !== undefined) out[key] = source[key];
   }
   return out;
 }
 
-async function recentPastEvents(
-  sportIds: string[],
-  limit = RECENT_PAST_EVENTS,
-): Promise<EventWithSport[]> {
-  const fetchLimit = Math.max(limit * 2, 40);
-  const events = await prisma.competitionEvent.findMany({
-    where: { sportId: { in: sportIds }, isActive: false },
-    select: eventSelect,
-    orderBy: { updatedAt: "desc" },
-    take: fetchLimit,
-  });
+function settledPotFromResults(results: unknown, decimals = 6): number | null {
+  if (!results || typeof results !== "object" || Array.isArray(results)) return null;
+  const snapshot = (
+    results as { snapshot?: { primarySideBalance?: unknown; secondarySideBalance?: unknown } }
+  ).snapshot;
+  if (!snapshot) return null;
+  try {
+    const primary = BigInt(String(snapshot.primarySideBalance ?? "0"));
+    const secondary = BigInt(String(snapshot.secondarySideBalance ?? "0"));
+    return Math.round(Number(formatUnits(primary + secondary, decimals)));
+  } catch {
+    return null;
+  }
+}
 
-  return sortEventsByEndDateDesc(events).slice(0, limit);
+function formatDirectoryContest(row: {
+  id: string;
+  name: string;
+  eventId: string;
+  userGroupId: string | null;
+  endTime: Date;
+  address: string;
+  chainId: number;
+  status: string;
+  settings: unknown;
+  results: unknown;
+  userGroup: { id: string; name: string } | null;
+  _count: { contestLineups: number };
+}): DirectoryContest {
+  return {
+    id: row.id,
+    name: row.name,
+    eventId: row.eventId,
+    userGroupId: row.userGroupId,
+    endTime: row.endTime,
+    address: row.address,
+    chainId: row.chainId,
+    status: row.status,
+    settings: slimDirectorySettings(row.settings),
+    userGroup: row.userGroup,
+    _count: row._count,
+    settledPot: settledPotFromResults(row.results),
+  };
 }
 
 function buildGroups(
   events: EventWithSport[],
-  contestsByEventId: Map<string, ReturnType<typeof formatContestResponse>[]>,
+  contestsByEventId: Map<string, DirectoryContest[]>,
   sortKey: GroupSortKey = "start",
 ): EventContestGroup[] {
   const groups: EventContestGroup[] = [];
@@ -104,9 +177,7 @@ function buildGroups(
     const contests = contestsByEventId.get(event.id) ?? [];
     if (contests.length === 0) continue;
     const sortedContests = [...contests].sort((a, b) => {
-      const rowA = a as { settings?: { primaryDeposit?: number } | null };
-      const rowB = b as { settings?: { primaryDeposit?: number } | null };
-      return (rowB.settings?.primaryDeposit ?? 0) - (rowA.settings?.primaryDeposit ?? 0);
+      return (Number(b.settings?.primaryDeposit) || 0) - (Number(a.settings?.primaryDeposit) || 0);
     });
     groups.push({
       event: directoryEventFromRecord(event),
@@ -120,77 +191,89 @@ function buildGroups(
 }
 
 export async function listContestDirectory(
-  userId: string | null,
+  privyUserId: string | null,
   scope: ContestDirectoryScope = "all",
   chainId?: number,
 ): Promise<ContestDirectoryResponse> {
-  const sports = await prisma.sport.findMany({
-    where: { isEnabled: true },
-    select: { id: true },
-    orderBy: { name: "asc" },
-  });
-  const sportIds = sports.map((sport) => sport.id);
+  const lookbackDate = new Date();
+  lookbackDate.setUTCDate(lookbackDate.getUTCDate() - PAST_EVENT_LOOKBACK_DAYS);
 
-  const upcomingEvents: EventWithSport[] = [];
-  const liveEvents: EventWithSport[] = [];
-  let pastEvents: EventWithSport[] = [];
+  const eventWindow =
+    scope === "live"
+      ? { isActive: true as const }
+      : {
+          OR: [{ isActive: true }, { isActive: false, updatedAt: { gte: lookbackDate } }],
+        };
 
-  if (scope === "live" || scope === "all") {
-    const activeRows = await prisma.competitionEvent.findMany({
-      where: {
-        isActive: true,
-        sportId: { in: sportIds },
-      },
-      select: eventSelect,
-    });
-
-    for (const event of activeRows) {
-      const status = eventStatusFromMetadata(event.metadata, event.sportId);
-      if (status === "LIVE") {
-        liveEvents.push(event);
-      } else if (status === "COMPLETE") {
-        pastEvents.push(event);
-      } else {
-        upcomingEvents.push(event);
-      }
-    }
-  }
-
-  if (scope === "past" || scope === "all") {
-    const recent = await recentPastEvents(sportIds);
-    pastEvents = sortEventsByEndDateDesc(dedupeEvents([...pastEvents, ...recent])).slice(
-      0,
-      RECENT_PAST_EVENTS,
-    );
-  } else {
-    pastEvents = sortEventsByEndDateDesc(dedupeEvents(pastEvents)).slice(0, RECENT_PAST_EVENTS);
-  }
-
-  const eventIds = [...upcomingEvents, ...liveEvents, ...pastEvents].map((event) => event.id);
-  if (eventIds.length === 0) {
-    return { upcoming: [], live: [], past: [] };
-  }
-
-  const visibility = await contestVisibilityWhere(userId, chainId !== undefined ? { chainId } : {});
-  const contests = await prisma.contest.findMany({
+  const rows = await prisma.contest.findMany({
     where: {
-      eventId: { in: eventIds },
-      ...visibility,
+      chainId: chainId !== undefined ? chainId : { in: [...CONTEST_LIST_CHAIN_IDS] },
+      OR: [
+        { userGroupId: null },
+        ...(privyUserId
+          ? [
+              {
+                userGroup: {
+                  members: {
+                    some: {
+                      user: { privyUserId },
+                    },
+                  },
+                },
+              },
+            ]
+          : []),
+      ],
+      event: {
+        sport: { isEnabled: true },
+        ...eventWindow,
+      },
     },
     select: contestDirectorySelect,
   });
 
-  const contestsByEventId = new Map<string, ReturnType<typeof formatContestResponse>[]>();
-  for (const contest of contests) {
-    const formatted = formatContestResponse(contest, undefined, contest.eventId);
-    const existing = contestsByEventId.get(contest.eventId) ?? [];
+  const upcomingEvents: EventWithSport[] = [];
+  const liveEvents: EventWithSport[] = [];
+  const pastEvents: EventWithSport[] = [];
+  const seenEvents = new Set<string>();
+  const contestsByEventId = new Map<string, DirectoryContest[]>();
+
+  for (const row of rows) {
+    const formatted = formatDirectoryContest(row);
+    const existing = contestsByEventId.get(row.eventId) ?? [];
     existing.push(formatted);
-    contestsByEventId.set(contest.eventId, existing);
+    contestsByEventId.set(row.eventId, existing);
+
+    if (seenEvents.has(row.event.id)) continue;
+    seenEvents.add(row.event.id);
+
+    const status = eventStatusFromMetadata(row.event.metadata, row.event.sportId);
+    if (status === "LIVE") {
+      liveEvents.push(row.event);
+    } else if (status === "COMPLETE") {
+      pastEvents.push(row.event);
+    } else {
+      upcomingEvents.push(row.event);
+    }
+  }
+
+  const pastCapped = sortEventsByEndDateDesc(pastEvents).slice(0, RECENT_PAST_EVENTS);
+
+  const empty: ContestDirectoryResponse = { upcoming: [], live: [], past: [] };
+  if (scope === "past") {
+    return { ...empty, past: buildGroups(pastCapped, contestsByEventId, "end") };
+  }
+  if (scope === "live") {
+    return {
+      upcoming: buildGroups(sortEventsByStartDateDesc(upcomingEvents), contestsByEventId),
+      live: buildGroups(sortEventsByStartDateDesc(liveEvents), contestsByEventId),
+      past: [],
+    };
   }
 
   return {
     upcoming: buildGroups(sortEventsByStartDateDesc(upcomingEvents), contestsByEventId),
     live: buildGroups(sortEventsByStartDateDesc(liveEvents), contestsByEventId),
-    past: buildGroups(pastEvents, contestsByEventId, "end"),
+    past: buildGroups(pastCapped, contestsByEventId, "end"),
   };
 }

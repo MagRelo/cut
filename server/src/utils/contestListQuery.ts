@@ -55,11 +55,10 @@ export const contestListSelect = {
   },
 } as const;
 
-/** Directory list: same contest fields as `contestListSelect` but lineup entry count only. */
+/** Directory list: slim contest row plus event header fields. */
 export const contestDirectorySelect = {
   id: true,
   name: true,
-  description: true,
   eventId: true,
   userGroupId: true,
   endTime: true,
@@ -68,10 +67,6 @@ export const contestDirectorySelect = {
   status: true,
   settings: true,
   results: true,
-  pickPopularity: true,
-  pickPopularityLockedAt: true,
-  createdAt: true,
-  updatedAt: true,
   userGroup: {
     select: {
       id: true,
@@ -81,6 +76,18 @@ export const contestDirectorySelect = {
   _count: {
     select: {
       contestLineups: true,
+    },
+  },
+  event: {
+    select: {
+      id: true,
+      sportId: true,
+      externalId: true,
+      isActive: true,
+      metadata: true,
+      createdAt: true,
+      updatedAt: true,
+      sport: { select: { id: true, name: true } },
     },
   },
 } as const;

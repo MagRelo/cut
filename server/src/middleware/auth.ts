@@ -75,7 +75,10 @@ export async function verifyPrivyJwt(c: Context, next: Next): Promise<Response |
 
 type AuthResult = "ok" | "missing" | "unprovisioned";
 
-async function authenticateRequest(c: Context, options?: { requireUser?: boolean }): Promise<AuthResult> {
+async function authenticateRequest(
+  c: Context,
+  options?: { requireUser?: boolean },
+): Promise<AuthResult> {
   const token = parseBearerToken(c);
   if (!token) {
     return "missing";
@@ -108,6 +111,15 @@ export function getOptionalUserId(c: Context): string | null {
   }
 }
 
+/** Privy user id when `optionalPrivyJwt` verified a Bearer token. */
+export function getOptionalPrivyUserId(c: Context): string | null {
+  try {
+    return c.get("privyUserId") ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export const requireAuth = async (c: Context, next: Next): Promise<Response | void> => {
   try {
     const result = await authenticateRequest(c);
@@ -128,6 +140,23 @@ export const optionalAuth = async (c: Context, next: Next): Promise<Response | v
       await next();
       return;
     }
+    await next();
+  } catch (error) {
+    return authErrorResponse(c, error);
+  }
+};
+
+/** Verify Privy JWT when present; no Cut user or wallet lookup. Invalid tokens 401. */
+export const optionalPrivyJwt = async (c: Context, next: Next): Promise<Response | void> => {
+  try {
+    const token = parseBearerToken(c);
+    if (!token) {
+      await next();
+      return;
+    }
+    const privy = getPrivyClient();
+    const access = await privy.utils().auth().verifyAccessToken(token);
+    c.set("privyUserId", access.user_id);
     await next();
   } catch (error) {
     return authErrorResponse(c, error);

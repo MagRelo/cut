@@ -47,6 +47,7 @@ export function useContestPotDisplay(contest: Contest) {
   const isFinalizedContest = contest.status === "SETTLED" || contest.status === "CLOSED";
 
   const settledTotalPot = (() => {
+    if (contest.settledPot != null) return contest.settledPot;
     const snapshot = contest.results?.snapshot;
     if (!snapshot) return null;
 
@@ -64,8 +65,7 @@ export function useContestPotDisplay(contest: Contest) {
 
   const primaryReadFailed =
     !!contest?.address && !isLoadingPrimaryPrizePool && isErrorPrimaryPrizePool;
-  const showLoading =
-    !isFinalizedContest && (isPredictionDataLoading || isLoadingPrimaryPrizePool);
+  const showLoading = !isFinalizedContest && (isPredictionDataLoading || isLoadingPrimaryPrizePool);
   const showPotUnavailable =
     !isFinalizedContest && !showLoading && (primaryReadFailed || contestChainReadsUnavailable);
 
