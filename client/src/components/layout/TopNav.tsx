@@ -58,40 +58,36 @@ export const TopNav: React.FC = () => {
 
         <nav
           aria-label="Main"
-          className="hidden min-w-0 flex-1 items-center justify-between md:flex"
+          className="hidden min-w-0 flex-1 items-center justify-end gap-2 md:flex"
         >
-          <div className="flex items-center gap-0.5">
-            {LEFT_TABS.map((tab) => (
-              <NavTabLink key={tab.key} tab={tab} pathname={location.pathname} />
-            ))}
-          </div>
+          {LEFT_TABS.map((tab) => (
+            <NavTabLink key={tab.key} tab={tab} pathname={location.pathname} />
+          ))}
 
-          <div className="flex items-center gap-2">
-            {user ? (
-              <UserMenu />
-            ) : (
-              <>
-                <a
-                  href="https://playthecut.printful.me/?sort=price"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`${tabLinkClass(false)} inline-flex items-center gap-1`}
-                  aria-label="Cut Store"
-                >
-                  <img src="/logo-transparent.png" alt="" className="h-5 w-auto shrink-0" />
-                  STORE
-                  <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                </a>
-                <Link
-                  to="/connect"
-                  state={{ from: signInReturnFrom }}
-                  className={tabLinkClass(location.pathname === "/connect")}
-                >
-                  Sign In
-                </Link>
-              </>
-            )}
-          </div>
+          {user ? (
+            <UserMenu />
+          ) : (
+            <>
+              <a
+                href="https://playthecut.printful.me/?sort=price"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${tabLinkClass(false)} inline-flex items-center gap-1`}
+                aria-label="Cut Store"
+              >
+                <img src="/logo-transparent.png" alt="" className="h-5 w-auto shrink-0" />
+                STORE
+                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              </a>
+              <Link
+                to="/connect"
+                state={{ from: signInReturnFrom }}
+                className={tabLinkClass(location.pathname === "/connect")}
+              >
+                Sign In
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="ml-auto md:hidden">
