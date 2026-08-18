@@ -87,7 +87,10 @@ function slimCommoditiesBlock(raw: unknown): Record<string, unknown> | undefined
 }
 
 /** Header fields only — no summarySections, fieldSnapshot, weather, or venue blobs. */
-export function directoryMetadata(raw: unknown): Record<string, unknown> | null {
+export function directoryMetadata(
+  raw: unknown,
+  options?: { keepSummary?: boolean },
+): Record<string, unknown> | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const source = raw as Record<string, unknown>;
   const out: Record<string, unknown> = {};
@@ -109,7 +112,15 @@ export function directoryMetadata(raw: unknown): Record<string, unknown> | null 
   if (f1) out.f1 = f1;
   const commodities = slimCommoditiesBlock(source.commodities);
   if (commodities) out.commodities = commodities;
+  if (options?.keepSummary && source.summarySections !== undefined) {
+    out.summarySections = source.summarySections;
+  }
   return out;
+}
+
+/** Directory header fields plus `summarySections` for lobby tournament preview. */
+export function lobbyMetadata(raw: unknown): Record<string, unknown> | null {
+  return directoryMetadata(raw, { keepSummary: true });
 }
 
 /** Platform startDate, or commodities sessionOpen when sport-specific dates are nested. */

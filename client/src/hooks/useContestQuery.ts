@@ -28,11 +28,13 @@ export function isContestLiveTracked(contest: Contest | undefined): boolean {
 /**
  * Loads the contest lobby from a contract address in the URL.
  * API calls after the initial fetch use the database id; only this hook accepts an address.
+ * Waits for auth to resolve so a league URL does not fetch anonymously first and 404.
  */
 export function useContestQuery(contestAddress: string | undefined) {
   const routeKey = contestAddress ? normalizeContestAddress(contestAddress) : "";
   const location = useLocation();
   const queryClient = useQueryClient();
+  const { loading: authLoading } = useAuth();
 
   const placeholderData = useMemo((): Contest | undefined => {
     if (!routeKey) return undefined;
@@ -53,7 +55,7 @@ export function useContestQuery(contestAddress: string | undefined) {
       if (!routeKey) throw new Error("Contest address is required");
       return await apiClient.get<Contest>(`/contests/${routeKey}/lobby`);
     },
-    enabled: !!routeKey,
+    enabled: !!routeKey && !authLoading,
     placeholderData,
     staleTime: (query) =>
       isContestLiveTracked(query.state.data) ? SERVER_SYNC_INTERVAL_MS : Infinity,
@@ -85,12 +87,7 @@ export function useContestsQuery(
   const userId = user?.id ?? null;
 
   return useQuery({
-    queryKey: queryKeys.contests.byEvent(
-      eventId ?? "",
-      chainId ?? "all",
-      userId,
-      userGroupId,
-    ),
+    queryKey: queryKeys.contests.byEvent(eventId ?? "", chainId ?? "all", userId, userGroupId),
     queryFn: async () => {
       if (!eventId) throw new Error("Event ID is required");
       const params = new URLSearchParams({ eventId });

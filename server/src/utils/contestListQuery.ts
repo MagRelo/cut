@@ -116,6 +116,26 @@ export async function contestVisibilityWhere(
   };
 }
 
+/** Public contests, plus league contests the Privy user belongs to — no extra round trip. */
+export function contestPrivyVisibilityOr(privyUserId: string | null) {
+  return [
+    { userGroupId: null },
+    ...(privyUserId
+      ? [
+          {
+            userGroup: {
+              members: {
+                some: {
+                  user: { privyUserId },
+                },
+              },
+            },
+          },
+        ]
+      : []),
+  ];
+}
+
 export function sortContestsByEntryFee<
   T extends { settings?: { primaryDeposit?: number } | null | undefined },
 >(contests: T[]): T[] {

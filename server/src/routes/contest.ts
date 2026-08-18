@@ -19,8 +19,7 @@ import {
 } from "../middleware/auth.js";
 import { isStaffUserType } from "../middleware/admin.js";
 import { requireContestPrimaryActionsUnlocked } from "../middleware/contestStatus.js";
-import { contestLineupsIncludeWithoutPlayers } from "../utils/prismaIncludes.js";
-import { formatContestResponse, loadLineupDetailsById } from "../utils/formatContestResponse.js";
+import { formatContestResponse } from "../utils/formatContestResponse.js";
 import {
   hasMinimumPlayers,
   isDuplicateInContest,
@@ -31,7 +30,6 @@ import { getContestTimelineData } from "../utils/contestTimeline.js";
 import { queueVerifyContestContract } from "../services/contest/verifyContestContract.js";
 import { verifyFactoryContestCreation } from "../services/contest/verifyFactoryContestCreation.js";
 import { resolveContestDbId } from "../utils/contestRouteParam.js";
-import { formatOnchainPaymentsForContest } from "../utils/formatOnchainPayments.js";
 import { cloneLineup } from "../services/lineups/cloneLineup.js";
 import { verifyPrimaryEntryOwner } from "../services/contest/verifyPrimaryEntryOwner.js";
 import {
@@ -39,7 +37,6 @@ import {
   verifySecondaryBuyReceipt,
 } from "../services/contest/verifySecondaryBuyReceipt.js";
 import { generateContestEntryId } from "../utils/contestEntryId.js";
-import type { DetailedResult } from "../services/shared/types.js";
 import {
   getReferralGraphAddress,
   getRewardCalculatorAddress,
@@ -51,6 +48,10 @@ import {
   getContestDirectory,
   invalidateContestDirectory,
 } from "../services/contests/listContestDirectory.js";
+import {
+  getContestLobby,
+  invalidateContestLobbyByAddress,
+} from "../services/contests/getContestLobby.js";
 
 const contestRouter = new Hono();
 
@@ -65,79 +66,23 @@ async function leagueContestAccessDenied(
   return null;
 }
 
-const contestDetailSelect = {
-  id: true,
-  name: true,
-  description: true,
-  eventId: true,
-  userGroupId: true,
-  endTime: true,
-  address: true,
-  chainId: true,
-  status: true,
-  settings: true,
-  results: true,
-  pickPopularity: true,
-  pickPopularityLockedAt: true,
-  commentary: true,
-  commentaryGeneratedAt: true,
-  commentaryFeed: true,
-  commentaryFeedGeneratedAt: true,
-  createdAt: true,
-  updatedAt: true,
-  event: true,
-  userGroup: true,
-  _count: {
-    select: {
-      contestLineups: true,
-    },
-  },
-} as const;
-
-async function loadFormattedContestById(contestId: string) {
-  const contest = await prisma.contest.findUnique({
-    where: { id: contestId },
-    select: {
-      ...contestDetailSelect,
-      contestLineups: contestLineupsIncludeWithoutPlayers,
-      onchainPayments: {
-        orderBy: [{ kind: "asc" }, { createdAt: "asc" }],
-        select: {
-          kind: true,
-          amountWei: true,
-          walletAddress: true,
-          metadata: true,
-          user: { select: { name: true, settings: true } },
-        },
-      },
-    },
-  });
-
-  if (!contest) {
-    return null;
+async function contestLobbyResponse(
+  c: Context,
+  routeParam: string,
+  options?: { skipCache?: boolean; status?: 200 | 201; cacheControl?: boolean },
+) {
+  const payload = await getContestLobby(
+    routeParam,
+    getOptionalPrivyUserId(c),
+    options?.skipCache ? { skipCache: true } : undefined,
+  );
+  if (!payload) {
+    return c.json({ error: "Contest not found" }, 404);
   }
-
-  let lineupDetailsById: Awaited<ReturnType<typeof loadLineupDetailsById>> | undefined;
-  if (contest.status !== "OPEN") {
-    const lineupIds = [...new Set(contest.contestLineups.map((cl) => cl.lineupId))];
-    lineupDetailsById = await loadLineupDetailsById(lineupIds);
+  if (options?.cacheControl) {
+    c.header("Cache-Control", "private, max-age=15, stale-while-revalidate=45");
   }
-
-  const formatted = formatContestResponse(contest, lineupDetailsById);
-  const results = contest.results as { detailedResults?: DetailedResult[] } | null;
-  const contestSettings = contest.settings as { oracle?: string } | null;
-  const contestOracleAddress =
-    typeof contestSettings?.oracle === "string" ? contestSettings.oracle : undefined;
-  const onchainPayments =
-    contest.onchainPayments?.length && (contest.status === "SETTLED" || contest.status === "CLOSED")
-      ? formatOnchainPaymentsForContest(
-          contest.onchainPayments,
-          results?.detailedResults,
-          contestOracleAddress,
-        )
-      : undefined;
-
-  return { ...formatted, onchainPayments };
+  return c.json(payload, options?.status ?? 200);
 }
 
 contestRouter.get("/directory", optionalPrivyJwt, async (c) => {
@@ -375,48 +320,18 @@ contestRouter.get("/:id/timeline", optionalAuth, async (c) => {
 });
 
 /** Contest lobby payload — contest detail (no timeline); `:id` may be DB id or contract address. */
-contestRouter.get("/:id/lobby", optionalAuth, async (c) => {
+contestRouter.get("/:id/lobby", optionalPrivyJwt, async (c) => {
   try {
-    const contestId = await resolveContestDbId(c.req.param("id"));
-    if (!contestId) {
-      return c.json({ error: "Contest not found" }, 404);
-    }
-
-    const formattedContest = await loadFormattedContestById(contestId);
-
-    if (!formattedContest) {
-      return c.json({ error: "Contest not found" }, 404);
-    }
-
-    const accessDenied = await leagueContestAccessDenied(c, formattedContest.userGroupId ?? null);
-    if (accessDenied) {
-      return accessDenied;
-    }
-
-    return c.json(formattedContest);
+    return await contestLobbyResponse(c, c.req.param("id"), { cacheControl: true });
   } catch (error) {
     console.error("Error fetching contest lobby:", error);
     return c.json({ error: "Failed to fetch contest lobby" }, 500);
   }
 });
 
-contestRouter.get("/:id", optionalAuth, async (c) => {
+contestRouter.get("/:id", optionalPrivyJwt, async (c) => {
   try {
-    const contestId = await resolveContestDbId(c.req.param("id"));
-    if (!contestId) {
-      return c.json({ error: "Contest not found" }, 404);
-    }
-    const formattedContest = await loadFormattedContestById(contestId);
-    if (!formattedContest) {
-      return c.json({ error: "Contest not found" }, 404);
-    }
-
-    const accessDenied = await leagueContestAccessDenied(c, formattedContest.userGroupId ?? null);
-    if (accessDenied) {
-      return accessDenied;
-    }
-
-    return c.json(formattedContest);
+    return await contestLobbyResponse(c, c.req.param("id"));
   } catch (error) {
     console.error("Error fetching contest:", error);
     return c.json({ error: "Failed to fetch contest" }, 500);
@@ -518,6 +433,7 @@ contestRouter.post("/", requireAuth, async (c) => {
       },
     });
     invalidateContestDirectory();
+    invalidateContestLobbyByAddress(contestAddress);
 
     const bps =
       pinnedSettings.primaryDepositSecondarySubsidyBps ??
@@ -727,12 +643,8 @@ contestRouter.post(
         },
       });
 
-      const formattedContest = await loadFormattedContestById(contestId);
-      if (!formattedContest) {
-        return c.json({ error: "Contest not found" }, 404);
-      }
-
-      return c.json(formattedContest, 201);
+      invalidateContestLobbyByAddress(contestCheck.address);
+      return await contestLobbyResponse(c, contestId, { skipCache: true, status: 201 });
     } catch (error) {
       console.error("Error adding lineup to contest:", error);
       return c.json({ error: "Failed to add lineup to contest" }, 500);
@@ -755,14 +667,20 @@ contestRouter.delete(
           id: contestLineupId,
           contestId,
         },
+        include: {
+          contest: { select: { address: true } },
+        },
       });
 
       // Idempotent: chain leave may succeed before API sync; retry should not 404.
       if (!lineup) {
-        const formattedContest = await loadFormattedContestById(contestId);
+        const formattedContest = await getContestLobby(contestId, getOptionalPrivyUserId(c), {
+          skipCache: true,
+        });
         if (!formattedContest) {
           return c.json({ error: "Contest not found" }, 404);
         }
+        invalidateContestLobbyByAddress(String(formattedContest.address));
         return c.json(formattedContest);
       }
 
@@ -777,12 +695,8 @@ contestRouter.delete(
         },
       });
 
-      const formattedContest = await loadFormattedContestById(contestId);
-      if (!formattedContest) {
-        return c.json({ error: "Contest not found" }, 404);
-      }
-
-      return c.json(formattedContest);
+      invalidateContestLobbyByAddress(lineup.contest.address);
+      return await contestLobbyResponse(c, contestId, { skipCache: true });
     } catch (error) {
       console.error("Error removing lineup from contest:", error);
       return c.json({ error: "Failed to remove lineup from contest" }, 500);

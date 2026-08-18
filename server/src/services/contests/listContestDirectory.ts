@@ -1,7 +1,11 @@
 import { formatUnits } from "viem";
 import { prisma } from "../../lib/prisma.js";
 import { createTtlCache } from "../../lib/ttlCache.js";
-import { CONTEST_LIST_CHAIN_IDS, contestDirectorySelect } from "../../utils/contestListQuery.js";
+import {
+  CONTEST_LIST_CHAIN_IDS,
+  contestDirectorySelect,
+  contestPrivyVisibilityOr,
+} from "../../utils/contestListQuery.js";
 import {
   directoryEventFromRecord,
   eventEndDate,
@@ -208,22 +212,7 @@ export async function listContestDirectory(
   const rows = await prisma.contest.findMany({
     where: {
       chainId: chainId !== undefined ? chainId : { in: [...CONTEST_LIST_CHAIN_IDS] },
-      OR: [
-        { userGroupId: null },
-        ...(privyUserId
-          ? [
-              {
-                userGroup: {
-                  members: {
-                    some: {
-                      user: { privyUserId },
-                    },
-                  },
-                },
-              },
-            ]
-          : []),
-      ],
+      OR: contestPrivyVisibilityOr(privyUserId),
       event: {
         sport: { isEnabled: true },
         ...eventWindow,

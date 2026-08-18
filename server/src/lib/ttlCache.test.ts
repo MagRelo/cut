@@ -47,6 +47,34 @@ describe("createTtlCache", () => {
     expect(load).toHaveBeenCalledTimes(2);
   });
 
+  it("invalidateKey drops a single cached value", async () => {
+    const cache = createTtlCache<number>(1_000);
+    const load = vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(2);
+
+    expect(await cache.getOrLoad("a", load)).toBe(1);
+    cache.invalidateKey("a");
+    expect(await cache.getOrLoad("a", load)).toBe(2);
+    expect(load).toHaveBeenCalledTimes(2);
+  });
+
+  it("invalidatePrefix drops matching keys and leaves others", async () => {
+    const cache = createTtlCache<number>(1_000);
+    const loadAnon = vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(3);
+    const loadUser = vi.fn().mockResolvedValue(1);
+    const loadOther = vi.fn().mockResolvedValue(2);
+
+    expect(await cache.getOrLoad("0xabc:anon", loadAnon)).toBe(1);
+    expect(await cache.getOrLoad("0xabc:user", loadUser)).toBe(1);
+    expect(await cache.getOrLoad("0xdef:anon", loadOther)).toBe(2);
+
+    cache.invalidatePrefix("0xabc:");
+    expect(await cache.getOrLoad("0xabc:anon", loadAnon)).toBe(3);
+    expect(await cache.getOrLoad("0xdef:anon", loadOther)).toBe(2);
+    expect(loadAnon).toHaveBeenCalledTimes(2);
+    expect(loadUser).toHaveBeenCalledTimes(1);
+    expect(loadOther).toHaveBeenCalledTimes(1);
+  });
+
   it("invalidateAll drops cached values", async () => {
     const cache = createTtlCache<number>(1_000);
     const load = vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(2);

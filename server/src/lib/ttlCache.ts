@@ -6,6 +6,8 @@ type CacheEntry<T> = {
 export type TtlCache<T> = {
   getOrLoad: (key: string, load: () => Promise<T>) => Promise<T>;
   invalidateAll: () => void;
+  invalidateKey: (key: string) => void;
+  invalidatePrefix: (prefix: string) => void;
 };
 
 /** In-process TTL cache with in-flight dedupe per key. */
@@ -47,5 +49,19 @@ export function createTtlCache<T>(ttlMs: number): TtlCache<T> {
     values.clear();
   }
 
-  return { getOrLoad, invalidateAll };
+  function invalidateKey(key: string): void {
+    values.delete(key);
+    inflight.delete(key);
+  }
+
+  function invalidatePrefix(prefix: string): void {
+    for (const key of values.keys()) {
+      if (key.startsWith(prefix)) values.delete(key);
+    }
+    for (const key of inflight.keys()) {
+      if (key.startsWith(prefix)) inflight.delete(key);
+    }
+  }
+
+  return { getOrLoad, invalidateAll, invalidateKey, invalidatePrefix };
 }
