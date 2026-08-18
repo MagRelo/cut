@@ -35,14 +35,13 @@ export const CandidatePicker: React.FC<CandidatePickerProps> = ({
 }) => {
   const plugin = useSportUIPlugin(sportId);
   const { sort } = useCandidateSort(sportId);
-  const { data: candidates = [], isLoading } = useEventCandidatesQuery(sportId, eventId);
+  const { data: candidates = [], isLoading } = useEventCandidatesQuery(sportId, eventId, {
+    enabled: isOpen,
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const CandidateRow = plugin?.CandidateRow;
 
-  const sortedCandidates = useMemo(
-    () => sort(candidates, "picker"),
-    [candidates, sort],
-  );
+  const sortedCandidates = useMemo(() => sort(candidates, "picker"), [candidates, sort]);
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -143,7 +142,7 @@ export const CandidatePicker: React.FC<CandidatePickerProps> = ({
                     type="button"
                     onClick={() => void onClearSlot()}
                     disabled={isSaving}
-                    className="rounded-md px-2 py-1.5 text-xs font-normal text-gray-500 font-display transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-md px-2 py-1.5 font-display text-xs font-normal text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Leave empty
                   </button>
@@ -152,7 +151,7 @@ export const CandidatePicker: React.FC<CandidatePickerProps> = ({
                   type="button"
                   onClick={handleClose}
                   disabled={isSaving}
-                  className="rounded-md px-2 py-1.5 text-xs font-normal text-gray-500 font-display transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-md px-2 py-1.5 font-display text-xs font-normal text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Close
                 </button>

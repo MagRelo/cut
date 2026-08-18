@@ -1,17 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
-import { useContestEvent } from "../../hooks/useContestEvent";
+import { useEventScope } from "../../contexts/EventScopeContext";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { useOddsFormat } from "../../hooks/useOddsFormat";
 import { computeTenDollarPurchasePreview } from "../../utils/secondaryPurchasePreview";
 import { PredictionEntryModal } from "./PredictionEntryModal";
-import {
-  candidatesByEventParticipantIdMap,
-  candidatesForLineupPicks,
-  contestLineupDisplayName,
-  lineupPicksFromContestLineup,
-} from "../../lib/candidateUtils";
+import { candidatesFromContestLineup, contestLineupDisplayName } from "../../lib/candidateUtils";
 import { useCandidateSort } from "../../hooks/useCandidateSort";
 import { participantLastName } from "../../lib/candidateSorting";
 
@@ -24,12 +19,8 @@ interface PredictionLineupsListProps {
 export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ contest }) => {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const { formatOdds } = useOddsFormat();
-  const { candidates = [], sportId, status } = useContestEvent(contest);
+  const { sportId, status } = useEventScope();
   const { sort } = useCandidateSort(sportId);
-  const candidatesByEventParticipantId = useMemo(
-    () => candidatesByEventParticipantIdMap(candidates),
-    [candidates],
-  );
 
   // Compute secondary actions lock based on contest status
   const secondaryActionsLocked = areSecondaryActionsLocked(contest.status);
@@ -85,7 +76,10 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
       if (bReturn == null) return -1;
       // Shorter odds (favorites) first — lower projected return on a fixed $10 buy.
       if (aReturn !== bReturn) return aReturn - bReturn;
-      return (a.lineup?.position ?? Number.MAX_SAFE_INTEGER) - (b.lineup?.position ?? Number.MAX_SAFE_INTEGER);
+      return (
+        (a.lineup?.position ?? Number.MAX_SAFE_INTEGER) -
+        (b.lineup?.position ?? Number.MAX_SAFE_INTEGER)
+      );
     });
   }, [entryData, secondaryTotalFunds, paymentDecimals, poolSnapshot, contest.contestLineups]);
 
@@ -101,74 +95,70 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
     <div>
       <div className="space-y-2">
         {sortedEntryRows.map(({ entry, preview, lineup }) => {
-            const userName = lineup?.user?.name || lineup?.user?.email || "Unknown";
-            const lineupName = lineup ? contestLineupDisplayName(lineup) : "";
-            const lineupNumberLabel = getLineupNumberLabel(lineupName);
-            const oddsDisplay =
-              preview.decimalOdds != null ? formatOdds(preview.decimalOdds) : "—";
+          const userName = lineup?.user?.name || lineup?.user?.email || "Unknown";
+          const lineupName = lineup ? contestLineupDisplayName(lineup) : "";
+          const lineupNumberLabel = getLineupNumberLabel(lineupName);
+          const oddsDisplay = preview.decimalOdds != null ? formatOdds(preview.decimalOdds) : "—";
 
-            const userSettings = lineup?.user?.settings;
-            const maybeColor =
-              typeof userSettings === "object" && userSettings !== null
-                ? (userSettings as { color?: unknown }).color
-                : undefined;
-            const resolvedLeftBorderColor = resolveUserBorderColor(maybeColor);
+          const userSettings = lineup?.user?.settings;
+          const maybeColor =
+            typeof userSettings === "object" && userSettings !== null
+              ? (userSettings as { color?: unknown }).color
+              : undefined;
+          const resolvedLeftBorderColor = resolveUserBorderColor(maybeColor);
 
-            return (
-              <div
-                key={entry.entryId}
-                onClick={() => canOpenLineupModal && setSelectedEntryId(entry.entryId)}
-                className={`bg-white rounded-none border-0 border-l border-t border-r border-b border-gray-200 p-3 font-display ${
-                  canOpenLineupModal
-                    ? "cursor-pointer hover:shadow-md"
-                    : "opacity-60 cursor-not-allowed"
-                } transition-all`}
-                style={{
-                  borderLeftColor: resolvedLeftBorderColor,
-                  borderLeftWidth: "5px",
-                  borderLeftStyle: "solid",
-                }}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-base font-semibold text-gray-900 truncate leading-tight sm:text-lg">
-                      {userName}
-                      {lineupNumberLabel && (
-                        <span className="ml-1 text-xs font-medium text-gray-500 sm:text-sm">
-                          {lineupNumberLabel}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-500 truncate">
-                      {(() => {
-                        if (!lineup) return "No players";
-                        const lineupCandidates = candidatesForLineupPicks(
-                          lineupPicksFromContestLineup(lineup),
-                          candidatesByEventParticipantId,
-                        );
-                        const sortedPlayerNames = sort(lineupCandidates, "lineupPicks", status)
-                          .map((candidate) => participantLastName(candidate))
-                          .join(", ");
-
-                        return sortedPlayerNames || lineupName || "No players";
-                      })()}
-                    </div>
+          return (
+            <div
+              key={entry.entryId}
+              onClick={() => canOpenLineupModal && setSelectedEntryId(entry.entryId)}
+              className={`rounded-none border-0 border-b border-l border-r border-t border-gray-200 bg-white p-3 font-display ${
+                canOpenLineupModal
+                  ? "cursor-pointer hover:shadow-md"
+                  : "cursor-not-allowed opacity-60"
+              } transition-all`}
+              style={{
+                borderLeftColor: resolvedLeftBorderColor,
+                borderLeftWidth: "5px",
+                borderLeftStyle: "solid",
+              }}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-base font-semibold leading-tight text-gray-900 sm:text-lg">
+                    {userName}
+                    {lineupNumberLabel && (
+                      <span className="ml-1 text-xs font-medium text-gray-500 sm:text-sm">
+                        {lineupNumberLabel}
+                      </span>
+                    )}
                   </div>
+                  <div className="truncate text-xs text-gray-500">
+                    {(() => {
+                      if (!lineup) return "No players";
+                      const lineupCandidates = candidatesFromContestLineup(lineup);
+                      const sortedPlayerNames = sort(lineupCandidates, "lineupPicks", status)
+                        .map((candidate) => participantLastName(candidate))
+                        .join(", ");
 
-                  <div className="flex-shrink-0 flex items-center gap-2">
-                    <div className="text-right">
-                      <div className="text-lg font-bold tabular-nums text-emerald-600 leading-none mb-0.5">
-                        {oddsDisplay}
-                      </div>
-                      <div className="text-[10px] uppercase text-gray-500 font-semibold tracking-wide leading-none">
-                        Odds
-                      </div>
+                      return sortedPlayerNames || lineupName || "No players";
+                    })()}
+                  </div>
+                </div>
+
+                <div className="flex flex-shrink-0 items-center gap-2">
+                  <div className="text-right">
+                    <div className="mb-0.5 text-lg font-bold tabular-nums leading-none text-emerald-600">
+                      {oddsDisplay}
+                    </div>
+                    <div className="text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
+                      Odds
                     </div>
                   </div>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          );
+        })}
       </div>
 
       <PredictionEntryModal

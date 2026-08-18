@@ -48,6 +48,7 @@ export function useActiveEventQuery(sportId: string) {
 export function useEventCandidatesQuery(
   sportId: string | undefined,
   eventId: string | undefined,
+  options?: { enabled?: boolean },
 ) {
   return useQuery({
     queryKey: queryKeys.sports.candidates(sportId ?? "", eventId ?? ""),
@@ -57,7 +58,7 @@ export function useEventCandidatesQuery(
       );
       return data.candidates;
     },
-    enabled: Boolean(sportId && eventId),
+    enabled: Boolean(sportId && eventId) && (options?.enabled ?? true),
     staleTime: CANDIDATES_STALE_MS,
     refetchInterval: CANDIDATES_STALE_MS,
     refetchOnWindowFocus: false,

@@ -12,7 +12,6 @@ import {
   periodStatusDisplayFromMetadata,
 } from "../lib/eventMetadata";
 import { currentPeriodFromMetadata } from "../lib/eventPeriods";
-import { useEventCandidatesQuery } from "./useSportData";
 
 export interface ContestEventState {
   sportId: string | undefined;
@@ -27,11 +26,7 @@ export interface ContestEventState {
   periodStatusDisplay: string | null;
   eventStartDate: string | null;
   eventStatusDisplay: string;
-  candidates: ReturnType<typeof useEventCandidatesQuery>["data"];
-  isLoading: boolean;
-  isFetching: boolean;
   error: Error | null;
-  refetch: () => Promise<void>;
 }
 
 const MISSING_EVENT_ERROR = new Error("Contest missing event data");
@@ -48,30 +43,14 @@ function toEventShell(contest: Contest): CompetitionEventShell | null {
   };
 }
 
-/** Contest-scoped event — requires contest.event; no SportContext fallback. */
+/** Contest-scoped event shell — no field roster. */
 export function useContestEvent(contest: Contest | undefined): ContestEventState {
   const eventShell = useMemo(() => (contest ? toEventShell(contest) : null), [contest]);
   const sportId = contest?.event?.sportId;
   const eventId = contest?.eventId ?? "";
   const metadata = contest?.event?.metadata ?? null;
 
-  const candidatesQuery = useEventCandidatesQuery(sportId, eventId || undefined);
-
   const status = useMemo(() => eventStatusFromMetadata(metadata), [metadata]);
-
-  const scopeError = !eventShell ? MISSING_EVENT_ERROR : null;
-  const queryError = candidatesQuery.error;
-  const error =
-    scopeError ??
-    (queryError instanceof Error
-      ? queryError
-      : queryError
-        ? new Error("Failed to load event")
-        : null);
-
-  const refetch = async () => {
-    await candidatesQuery.refetch();
-  };
 
   return {
     sportId,
@@ -86,10 +65,6 @@ export function useContestEvent(contest: Contest | undefined): ContestEventState
     periodStatusDisplay: periodStatusDisplayFromMetadata(metadata),
     eventStartDate: eventStartDateFromMetadata(metadata),
     eventStatusDisplay: eventStatusDisplayFromMetadata(metadata),
-    candidates: candidatesQuery.data ?? [],
-    isLoading: Boolean(sportId && candidatesQuery.isLoading),
-    isFetching: candidatesQuery.isFetching,
-    error,
-    refetch,
+    error: eventShell ? null : MISSING_EVENT_ERROR,
   };
 }

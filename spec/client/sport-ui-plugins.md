@@ -35,7 +35,7 @@ flowchart LR
 
 **Data rule:** Platform code passes `Candidate` + `EventStatus` (+ optional `eventMetadata`). It does not pass legacy player types or sport-specific presentation props. Golf reads `roundDisplay` from `eventMetadata` inside the plugin.
 
-**Lineup rule:** Rosters are `lineup.picks[]` keyed by `eventParticipantId`. Resolve full `Candidate` rows via contest/sport event candidates and `candidatesByEventParticipantIdMap` ([`candidateUtils.ts`](../../client/src/lib/candidateUtils.ts)).
+**Lineup rule:** Rosters are `lineup.picks[]` keyed by `eventParticipantId`. Contest/lineup rows map picks to `Candidate` with `candidatesFromLineupPicks` / `candidatesFromContestLineup` (identity + `scoreData` + `total`). The field roster is picker and sport-leaderboard only.
 
 **Score rule:** Lineup totals come from the server — `ContestLineup.score` (contest entries) or `PlatformLineup.score` (sum of pick totals on lineup fetch). Platform uses [`lineupScore.ts`](../../client/src/lib/lineupScore.ts); it does not sum sport-specific points client-side.
 

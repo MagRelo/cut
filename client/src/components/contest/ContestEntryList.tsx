@@ -1,15 +1,13 @@
 import { UserGroupIcon } from "@heroicons/react/24/outline";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { type ContestLineup, type PickPopularityMap } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
 import { canAddPrimaryPosition, type ContestStatus } from "../../types/contest";
 import { useEventScope } from "../../contexts/EventScopeContext";
 import {
-  candidatesByEventParticipantIdMap,
-  candidatesForLineupPicks,
+  candidatesFromContestLineup,
   contestLineupDisplayName,
   isLineupWithPicks,
-  lineupPicksFromContestLineup,
 } from "../../lib/candidateUtils";
 import { useCandidateSort } from "../../hooks/useCandidateSort";
 import { participantLastName } from "../../lib/candidateSorting";
@@ -30,12 +28,8 @@ export const ContestEntryList = ({
   entryListOpensModal,
   pickPopularity = null,
 }: ContestEntryListProps) => {
-  const { candidates, sportId, status } = useEventScope();
+  const { sportId, status } = useEventScope();
   const { sort } = useCandidateSort(sportId);
-  const candidatesByEventParticipantId = useMemo(
-    () => candidatesByEventParticipantIdMap(candidates),
-    [candidates],
-  );
 
   const primaryActionsLocked = entryListOpensModal ?? !canAddPrimaryPosition(contestStatus);
 
@@ -89,14 +83,7 @@ export const ContestEntryList = ({
         const nextInTheMoney = nextLineup != null && (nextLineup.position || 0) <= paidPositions;
         const showPaidCutoffDivider = isInTheMoney && nextLineup != null && !nextInTheMoney;
 
-        const lineupCandidates = sort(
-          candidatesForLineupPicks(
-            lineupPicksFromContestLineup(lineup),
-            candidatesByEventParticipantId,
-          ),
-          "lineupPicks",
-          status,
-        );
+        const lineupCandidates = sort(candidatesFromContestLineup(lineup), "lineupPicks", status);
         const sortedPlayerNames = lineupCandidates.map(participantLastName).join(", ");
 
         const userSettings = lineup.user?.settings;

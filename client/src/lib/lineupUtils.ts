@@ -1,6 +1,5 @@
-import type { Candidate } from "@cut/sport-sdk";
+import { candidatesFromLineupPicks, type Candidate } from "@cut/sport-sdk";
 import type { PlatformLineup, PlatformLineupPick } from "../types/event";
-import { candidatesForLineupPicks } from "./candidateUtils";
 import { predictionNumericValue } from "./sportPrediction";
 
 export function buildCandidatesByEventParticipantId(
@@ -45,11 +44,8 @@ export function lineupPickLastNames(lineup: PlatformLineup): string[] {
     .filter((name): name is string => Boolean(name));
 }
 
-export function candidatesForPlatformLineup(
-  lineup: PlatformLineup,
-  candidatesByEventParticipantId: Map<string, Candidate>,
-): Candidate[] {
-  return candidatesForLineupPicks(lineup.picks, candidatesByEventParticipantId);
+export function candidatesForPlatformLineup(lineup: PlatformLineup): Candidate[] {
+  return candidatesFromLineupPicks(lineup.picks);
 }
 
 export function buildOptimisticPicks(

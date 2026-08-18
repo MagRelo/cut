@@ -272,6 +272,8 @@ describe("slimParticipantMetadata", () => {
         dataGolf: { sg: 1 },
         quote: { last: 72 },
         sessionPriceHistory: [1],
+        priceHistory: [1, 2, 3],
+        gridPosition: 1,
       }),
     ).toEqual({
       firstName: "Max",

@@ -2,12 +2,7 @@ import React, { Fragment, useEffect, useMemo, useState } from "react";
 import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/react";
 import type { Candidate } from "@cut/sport-sdk";
 import { useEventScope } from "../../contexts/EventScopeContext";
-import {
-  candidatesByEventParticipantIdMap,
-  candidatesForLineupPicks,
-  contestLineupDisplayName,
-  lineupPicksFromContestLineup,
-} from "../../lib/candidateUtils";
+import { candidatesFromContestLineup, contestLineupDisplayName } from "../../lib/candidateUtils";
 import { useCandidateSort } from "../../hooks/useCandidateSort";
 import {
   lineupDisplayScore,
@@ -38,22 +33,13 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
   pickPopularity = null,
   contestStatus,
 }) => {
-  const { candidates, status, sportId, metadata } = useEventScope();
+  const { status, sportId, metadata } = useEventScope();
   const { sort } = useCandidateSort(sportId);
-  const candidatesByEventParticipantId = useMemo(
-    () => candidatesByEventParticipantIdMap(candidates),
-    [candidates],
-  );
 
   const lineupCandidates = useMemo(() => {
     if (!lineup) return [];
-    const picks = lineupPicksFromContestLineup(lineup);
-    return sort(
-      candidatesForLineupPicks(picks, candidatesByEventParticipantId),
-      "lineupPicks",
-      status,
-    );
-  }, [lineup, candidatesByEventParticipantId, sort, status]);
+    return sort(candidatesFromContestLineup(lineup), "lineupPicks", status);
+  }, [lineup, sort, status]);
 
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
 
@@ -110,7 +96,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <DialogPanel className="max-w-modal w-full transform overflow-hidden rounded-sm bg-gray-100 p-2 shadow-xl transition-all">
+                <DialogPanel className="w-full max-w-modal transform overflow-hidden rounded-sm bg-gray-100 p-2 shadow-xl transition-all">
                   <div className="max-h-[70vh] overflow-y-auto rounded-sm border border-gray-300 bg-white">
                     <div>
                       <EntryHeader

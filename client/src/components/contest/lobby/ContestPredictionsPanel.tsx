@@ -1,5 +1,6 @@
 import React from "react";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
+import { ContestEventScopeProvider } from "../../../contexts/EventScopeContext";
 import { type Contest } from "../../../types/contest";
 import { type PredictionsPanelMode } from "../../../types/contestLobby";
 import { tabButtonClassName, tabListClassName } from "../../../lib/tabStyles";
@@ -21,44 +22,54 @@ export const ContestPredictionsPanel: React.FC<ContestPredictionsPanelProps> = (
   placeWagerTabLocked,
 }) => {
   return (
-    <div className="space-y-4">
-      <WinnerPoolOverview contest={contest} mode={mode} placeWagerTabLocked={placeWagerTabLocked} />
+    <ContestEventScopeProvider contest={contest}>
+      <div className="space-y-4">
+        <WinnerPoolOverview
+          contest={contest}
+          mode={mode}
+          placeWagerTabLocked={placeWagerTabLocked}
+        />
 
-      {mode === "connectWallet" ? (
-        <SignInPrompt action="use the Winner Pool" className="py-6" />
-      ) : null}
+        {mode === "connectWallet" ? (
+          <SignInPrompt action="use the Winner Pool" className="py-6" />
+        ) : null}
 
-      {mode === "wager" ? (
-        <TabGroup>
-          <TabList className={tabListClassName()}>
-            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
-              {placeWagerTabLocked ? <span> 🔒</span> : null} Bet To Win
-            </Tab>
-            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
-              Open Bets
-            </Tab>
-          </TabList>
-          <TabPanels className="pt-4">
-            <TabPanel className="focus:outline-none">
-              <PredictionLineupsList contest={contest} />
-            </TabPanel>
-            <TabPanel className="focus:outline-none">
-              <PredictionPositionsList contest={contest} />
-            </TabPanel>
-          </TabPanels>
-        </TabGroup>
-      ) : null}
+        {mode === "wager" ? (
+          <TabGroup>
+            <TabList className={tabListClassName()}>
+              <Tab
+                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+              >
+                {placeWagerTabLocked ? <span> 🔒</span> : null} Bet To Win
+              </Tab>
+              <Tab
+                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+              >
+                Open Bets
+              </Tab>
+            </TabList>
+            <TabPanels className="pt-4">
+              <TabPanel className="focus:outline-none">
+                <PredictionLineupsList contest={contest} />
+              </TabPanel>
+              <TabPanel className="focus:outline-none">
+                <PredictionPositionsList contest={contest} />
+              </TabPanel>
+            </TabPanels>
+          </TabGroup>
+        ) : null}
 
-      {mode === "claim" ? <PredictionClaimPanel contest={contest} /> : null}
+        {mode === "claim" ? <PredictionClaimPanel contest={contest} /> : null}
 
-      {mode === "locked" ? (
-        <div className="space-y-2">
-          <h4 className="px-0.5 font-display text-sm font-semibold text-gray-800">Your bets</h4>
-          <PredictionPositionsList contest={contest} />
-        </div>
-      ) : null}
+        {mode === "locked" ? (
+          <div className="space-y-2">
+            <h4 className="px-0.5 font-display text-sm font-semibold text-gray-800">Your bets</h4>
+            <PredictionPositionsList contest={contest} />
+          </div>
+        ) : null}
 
-      {mode === "positions" ? <PredictionPositionsList contest={contest} /> : null}
-    </div>
+        {mode === "positions" ? <PredictionPositionsList contest={contest} /> : null}
+      </div>
+    </ContestEventScopeProvider>
   );
 };

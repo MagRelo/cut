@@ -8,7 +8,6 @@ import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { ContestLobbyView } from "../components/contest/lobby/ContestLobbyView";
 import { ContestListConnectHint } from "../components/contest/ContestList";
-import { ContestEventScopeProvider } from "../contexts/EventScopeContext";
 import { useContestQuery } from "../hooks/useContestQuery";
 import { useContestTimelineQuery } from "../hooks/useContestTimelineQuery";
 import { useContestLobbyState } from "../hooks/useContestLobbyState";
@@ -163,16 +162,14 @@ export const ContestLobby: React.FC = () => {
   }
 
   return (
-    <ContestEventScopeProvider contest={contest}>
-      <ContestLobbyView
-        contest={contest}
-        viewModel={viewModel}
-        currentUserId={user?.id}
-        isAuthenticated={Boolean(user)}
-        isContestDataPending={isContestDataPending}
-        timelineData={timelineData}
-        isTimelineLoading={isTimelinePending}
-      />
-    </ContestEventScopeProvider>
+    <ContestLobbyView
+      contest={contest}
+      viewModel={viewModel}
+      currentUserId={user?.id}
+      isAuthenticated={Boolean(user)}
+      isContestDataPending={isContestDataPending}
+      timelineData={timelineData}
+      isTimelineLoading={isTimelinePending}
+    />
   );
 };

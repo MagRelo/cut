@@ -22,11 +22,7 @@ export type {
   PeriodRules,
 } from "./types.js";
 
-export {
-  formatPeriodLabel,
-  isTimelinePeriod,
-  periodRulesHasDividers,
-} from "./periods.js";
+export { formatPeriodLabel, isTimelinePeriod, periodRulesHasDividers } from "./periods.js";
 
 export {
   mergeEventPeriodFields,
@@ -63,7 +59,10 @@ export type {
 
 export { defaultPayoutVector } from "./payout.js";
 
-export type { ContestCommentaryVoice, ContestCommentaryVoiceId } from "./contestCommentaryVoices.js";
+export type {
+  ContestCommentaryVoice,
+  ContestCommentaryVoiceId,
+} from "./contestCommentaryVoices.js";
 export {
   contestCommentaryVoices,
   DEFAULT_CONTEST_COMMENTARY_VOICE_ID,
@@ -96,3 +95,6 @@ export type {
   SortDirection,
 } from "./candidateSort.js";
 export { compareCandidates, sortCandidates } from "./candidateSort.js";
+
+export type { LineupPickView, CandidatePickMetadata } from "./lineupPick.js";
+export { candidateFromLineupPick, candidatesFromLineupPicks } from "./lineupPick.js";

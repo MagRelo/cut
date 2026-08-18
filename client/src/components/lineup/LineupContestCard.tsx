@@ -8,8 +8,7 @@ import type { ContestLineup, PickPopularityMap } from "../../types/lineup";
 import type { EventStatus } from "../../types/event";
 import type { ContestStatus } from "../../types/contest";
 import {
-  candidatesByEventParticipantIdMap,
-  candidatesForLineupPicks,
+  candidatesFromContestLineup,
   contestLineupDisplayName,
   lineupPicksFromContestLineup,
 } from "../../lib/candidateUtils";
@@ -80,9 +79,7 @@ function pickIdsBySlot(
   return ids;
 }
 
-export const LineupContestCardLoading: React.FC<{ slotCount?: number }> = ({
-  slotCount = 4,
-}) => {
+export const LineupContestCardLoading: React.FC<{ slotCount?: number }> = ({ slotCount = 4 }) => {
   return (
     <div className="bg-white">
       <div
@@ -131,23 +128,22 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const [sliderError, setSliderError] = useState<string | null>(null);
   const [isSavingPrediction, setIsSavingPrediction] = useState(false);
 
+  const platformLineup = lineup.lineup && "picks" in lineup.lineup ? lineup.lineup : null;
+  const lineupId = lineup.lineupId ?? platformLineup?.id ?? "";
+  const lineupName = contestLineupDisplayName(lineup);
+  const canEditSlots = Boolean(isEditable && isEventEditable && lineupId);
+
   const { data: candidates = [], isLoading: isCandidatesLoading } = useEventCandidatesQuery(
     sportId,
     eventId,
+    { enabled: canEditSlots },
   );
   const { sort } = useCandidateSort(sportId);
-  const candidatesByEventParticipantId = useMemo(
-    () => candidatesByEventParticipantIdMap(candidates),
-    [candidates],
-  );
   const { updateLineup, lineups } = useLineupData({ eventId });
   const rosterRules = useSportRosterRules(sportId);
   const predictionRules = useSportPredictionRules(sportId);
   const status = eventStatus;
 
-  const platformLineup = lineup.lineup && "picks" in lineup.lineup ? lineup.lineup : null;
-  const lineupId = lineup.lineupId ?? platformLineup?.id ?? "";
-  const lineupName = contestLineupDisplayName(lineup);
   const expectedPickIdsBySlot = useMemo(
     () =>
       pickIdsBySlot(
@@ -158,14 +154,10 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   );
   const initialCandidates = useMemo(() => {
     if (platformLineup) {
-      return candidatesForPlatformLineup(platformLineup, candidatesByEventParticipantId);
+      return candidatesForPlatformLineup(platformLineup);
     }
-    return candidatesForLineupPicks(
-      lineupPicksFromContestLineup(lineup),
-      candidatesByEventParticipantId,
-    );
-  }, [platformLineup, lineup, candidatesByEventParticipantId]);
-  const canEditSlots = Boolean(isEditable && isEventEditable && lineupId);
+    return candidatesFromContestLineup(lineup);
+  }, [platformLineup, lineup]);
 
   const serverPrediction = useMemo(() => {
     const fromList = lineups.find((entry) => entry.id === lineupId);

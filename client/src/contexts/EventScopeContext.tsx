@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useMemo } from "react";
-import type { Candidate } from "@cut/sport-sdk";
 import type { CompetitionEventShell } from "@cut/sport-sdk";
 import type { Contest } from "../types/contest";
 import type { EventStatus } from "../types/event";
@@ -12,8 +11,6 @@ export type EventScopeValue = {
   metadata: unknown;
   status: EventStatus;
   eventShell: CompetitionEventShell | null;
-  candidates: Candidate[];
-  isLoading: boolean;
   error: Error | null;
 };
 
@@ -28,8 +25,6 @@ function scopeFromContest(state: ReturnType<typeof useContestEvent>): EventScope
     metadata: state.metadata,
     status: state.status,
     eventShell: state.eventShell,
-    candidates: state.candidates ?? [],
-    isLoading: state.isLoading,
     error: state.error,
   };
 }
