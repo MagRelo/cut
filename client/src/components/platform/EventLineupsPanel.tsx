@@ -14,11 +14,10 @@ import {
 } from "../../lib/eventMetadata";
 import { canEditLineupForContest } from "../../lib/lineupEditable";
 import ContestContract from "../../utils/contracts/ContestController.json";
-import { LoadingSpinner } from "../common/LoadingSpinner";
-import { PageSection } from "../layout/PageSection";
 import { ErrorMessage } from "../common/ErrorMessage";
+import { PageSection } from "../layout/PageSection";
 import { SignInPrompt } from "../user/SignInPrompt";
-import { LineupContestCard } from "../lineup/LineupContestCard";
+import { LineupContestCard, LineupContestCardLoading } from "../lineup/LineupContestCard";
 import { ContestLineupJoinActions } from "../contest/ContestLineupJoinActions";
 import { lineupsCopyableIntoContest, lineupsForContestPanel } from "../../lib/lineupContestScope";
 import { lineupPickLastNames } from "../../lib/lineupUtils";
@@ -219,8 +218,8 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
 
   if ((isAuthLoading && !user) || isLineupsLoading) {
     return (
-      <div className="flex justify-center py-8">
-        <LoadingSpinner />
+      <div className="overflow-hidden rounded-sm border border-gray-300 shadow-md">
+        <LineupContestCardLoading />
       </div>
     );
   }

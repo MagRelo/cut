@@ -38,6 +38,7 @@ import {
 import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/lineupPrediction";
 import { useSportRosterRules } from "../../hooks/useSportRosterRules";
 import { useSportPredictionRules } from "../../hooks/useSportPredictionRules";
+import { LineupPlayerSlotLoading } from "./LineupPlayerSlotLoading";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
@@ -63,6 +64,56 @@ interface LineupContestCardProps {
 
 const PLAYERS_TAB_PANEL_CLASS = "flow-root";
 
+function pickIdsBySlot(
+  picks: { slotIndex: number | null; eventParticipantId: string }[],
+  slotCount: number,
+): Array<string | undefined> {
+  const ids: Array<string | undefined> = Array.from({ length: slotCount });
+  [...picks]
+    .sort((a, b) => (a.slotIndex ?? 0) - (b.slotIndex ?? 0))
+    .forEach((pick, index) => {
+      const slot = pick.slotIndex ?? index;
+      if (slot >= 0 && slot < slotCount && pick.eventParticipantId) {
+        ids[slot] = pick.eventParticipantId;
+      }
+    });
+  return ids;
+}
+
+export const LineupContestCardLoading: React.FC<{ slotCount?: number }> = ({
+  slotCount = 4,
+}) => {
+  return (
+    <div className="bg-white">
+      <div
+        className="px-3 py-4 font-display"
+        style={{
+          borderLeftColor: DEFAULT_USER_COLOR,
+          borderLeftWidth: "5px",
+          borderLeftStyle: "solid",
+        }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="h-6 w-40 rounded bg-slate-200" />
+            <div className="mt-1.5 h-4 w-24 rounded bg-slate-100" />
+          </div>
+          <div className="h-8 w-10 rounded bg-slate-100" />
+        </div>
+      </div>
+      <div className="px-3 pb-3 pt-0">
+        <div className="mb-4 mt-3 space-y-6">
+          {Array.from({ length: slotCount }, (_, index) => (
+            <div key={`loading-slot-${index}`} className="px-3">
+              <LineupPlayerSlotLoading />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   lineup,
   contestId,
@@ -80,7 +131,10 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const [sliderError, setSliderError] = useState<string | null>(null);
   const [isSavingPrediction, setIsSavingPrediction] = useState(false);
 
-  const { data: candidates = [] } = useEventCandidatesQuery(sportId, eventId);
+  const { data: candidates = [], isLoading: isCandidatesLoading } = useEventCandidatesQuery(
+    sportId,
+    eventId,
+  );
   const { sort } = useCandidateSort(sportId);
   const candidatesByEventParticipantId = useMemo(
     () => candidatesByEventParticipantIdMap(candidates),
@@ -94,6 +148,14 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const platformLineup = lineup.lineup && "picks" in lineup.lineup ? lineup.lineup : null;
   const lineupId = lineup.lineupId ?? platformLineup?.id ?? "";
   const lineupName = contestLineupDisplayName(lineup);
+  const expectedPickIdsBySlot = useMemo(
+    () =>
+      pickIdsBySlot(
+        platformLineup?.picks ?? lineupPicksFromContestLineup(lineup),
+        rosterRules.slotCount,
+      ),
+    [platformLineup, lineup, rosterRules.slotCount],
+  );
   const initialCandidates = useMemo(() => {
     if (platformLineup) {
       return candidatesForPlatformLineup(platformLineup, candidatesByEventParticipantId);
@@ -261,97 +323,111 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         <div className={PLAYERS_TAB_PANEL_CLASS}>
           <div className="mb-4 mt-3 space-y-6">
             {canEditSlots
-              ? slotEditor.slots.map((candidate, index) => (
-                  <div key={`slot-${index}`} className="px-3">
-                    {candidate ? (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <SportLineupPickRow
-                            candidate={candidate}
-                            status={status}
-                            eventMetadata={eventMetadata}
-                            onClick={() => openDetailModal(candidate)}
-                            popularityBonus={
-                              showPickPopularity
-                                ? pickPopularityForParticipant(
-                                    pickPopularity,
-                                    candidate.eventParticipantId,
-                                  )?.bonus
-                                : null
-                            }
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => slotEditor.openSlot(index)}
-                          disabled={slotActionsDisabled}
-                          className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                          aria-label={`Edit pick in slot ${index + 1}`}
-                        >
-                          <svg
-                            className="h-4 w-4 shrink-0"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              ? slotEditor.slots.map((candidate, index) => {
+                  const awaitingPlayer =
+                    isCandidatesLoading && Boolean(expectedPickIdsBySlot[index]) && !candidate;
+                  return (
+                    <div key={`slot-${index}`} className="px-3">
+                      {awaitingPlayer ? (
+                        <LineupPlayerSlotLoading />
+                      ) : candidate ? (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <SportLineupPickRow
+                              candidate={candidate}
+                              status={status}
+                              eventMetadata={eventMetadata}
+                              onClick={() => openDetailModal(candidate)}
+                              popularityBonus={
+                                showPickPopularity
+                                  ? pickPopularityForParticipant(
+                                      pickPopularity,
+                                      candidate.eventParticipantId,
+                                    )?.bonus
+                                  : null
+                              }
                             />
-                          </svg>
-                          Edit
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between gap-3">
-                        <button
-                          type="button"
-                          onClick={() => slotEditor.openSlot(index)}
-                          disabled={slotActionsDisabled}
-                          className="flex min-w-0 flex-1 items-center gap-3 text-left font-display disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
-                            <UserIcon className="h-6 w-6 text-slate-300" aria-hidden />
                           </div>
-                          <span className="truncate text-md font-semibold leading-tight text-slate-400">
-                            No selection
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => slotEditor.openSlot(index)}
-                          disabled={slotActionsDisabled}
-                          className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-                          aria-label={`Add pick to slot ${index + 1}`}
-                        >
-                          <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
-                          Add
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => slotEditor.openSlot(index)}
+                            disabled={slotActionsDisabled}
+                            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                            aria-label={`Edit pick in slot ${index + 1}`}
+                          >
+                            <svg
+                              className="h-4 w-4 shrink-0"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                              />
+                            </svg>
+                            Edit
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-3">
+                          <button
+                            type="button"
+                            onClick={() => slotEditor.openSlot(index)}
+                            disabled={slotActionsDisabled}
+                            className="flex min-w-0 flex-1 items-center gap-3 text-left font-display disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
+                              <UserIcon className="h-6 w-6 text-slate-300" aria-hidden />
+                            </div>
+                            <span className="truncate text-md font-semibold leading-tight text-slate-400">
+                              No selection
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => slotEditor.openSlot(index)}
+                            disabled={slotActionsDisabled}
+                            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                            aria-label={`Add pick to slot ${index + 1}`}
+                          >
+                            <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
+                            Add
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              : isCandidatesLoading && expectedPickIdsBySlot.some(Boolean)
+                ? expectedPickIdsBySlot.map((pickId, index) =>
+                    pickId ? (
+                      <div key={`loading-pick-${index}`} className="px-3">
+                        <LineupPlayerSlotLoading />
                       </div>
-                    )}
-                  </div>
-                ))
-              : displayCandidates.map((candidate) => (
-                  <div key={candidate.participantId} className="px-3">
-                    <SportLineupPickRow
-                      candidate={candidate}
-                      status={status}
-                      eventMetadata={eventMetadata}
-                      onClick={() => openDetailModal(candidate)}
-                      popularityBonus={
-                        showPickPopularity
-                          ? pickPopularityForParticipant(
-                              pickPopularity,
-                              candidate.eventParticipantId,
-                            )?.bonus
-                          : null
-                      }
-                    />
-                  </div>
-                ))}
+                    ) : null,
+                  )
+                : displayCandidates.map((candidate) => (
+                    <div key={candidate.participantId} className="px-3">
+                      <SportLineupPickRow
+                        candidate={candidate}
+                        status={status}
+                        eventMetadata={eventMetadata}
+                        onClick={() => openDetailModal(candidate)}
+                        popularityBonus={
+                          showPickPopularity
+                            ? pickPopularityForParticipant(
+                                pickPopularity,
+                                candidate.eventParticipantId,
+                              )?.bonus
+                            : null
+                        }
+                      />
+                    </div>
+                  ))}
           </div>
           {canEditSlots ? (
             <SportPredictionField

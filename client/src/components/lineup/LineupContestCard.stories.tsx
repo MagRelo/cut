@@ -5,7 +5,7 @@ import {
   buildContestLineupForCard,
   lineupContestCardStoryDefaults,
 } from "../../test/fixtures/lineupContestCardMock";
-import { LineupContestCard } from "./LineupContestCard";
+import { LineupContestCard, LineupContestCardLoading } from "./LineupContestCard";
 
 const withLineupRoster =
   (eventParticipantIds: string[]): Decorator =>
@@ -79,4 +79,9 @@ export const LockedWithTieBreaker: Story = {
     lineup: buildContestLineupForCard(["ep-scheffler", "ep-mcilroy", "ep-rahm", "ep-schauffele"]),
     isEditable: false,
   },
+};
+
+/** Avatar slots spin until the player field has loaded. */
+export const PlayersLoading: Story = {
+  render: () => <LineupContestCardLoading />,
 };
