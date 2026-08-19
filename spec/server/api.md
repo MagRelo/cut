@@ -113,7 +113,7 @@ No auth. `{ status, service, timestamp }`
 |--------|------|------|-------------|
 | GET | `/` | optional | List contests for an **event** |
 | GET | `/:id` | optional | Contest detail (id or contract address) |
-| GET | `/:id/lobby` | optional | Lobby standings/status (no timeline) |
+| GET | `/:id/lobby` | optional | Lobby standings/status (no timeline). Signed-in viewers may receive `contestLineups[].referralStake` (`{ depth }`, 1–10) when that entry owner is in their invite tree and the contest has a referral-network fee. Anonymous payloads omit it. |
 | GET | `/:id/timeline` | optional | Score timeline; optional `?since=` ISO for deltas |
 | POST | `/` | ✅ | Create contest (staff or league admin) |
 | POST | `/:id/lineups` | ✅ | Join contest with lineup |

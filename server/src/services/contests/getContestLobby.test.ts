@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findFirst } = vi.hoisted(() => ({
+const { findFirst, userFindUnique, queryRaw } = vi.hoisted(() => ({
   findFirst: vi.fn(),
+  userFindUnique: vi.fn(),
+  queryRaw: vi.fn(),
 }));
 
 vi.mock("../../lib/prisma.js", () => ({
   prisma: {
     contest: { findFirst },
+    user: { findUnique: userFindUnique },
+    $queryRaw: queryRaw,
   },
 }));
 
@@ -257,6 +261,87 @@ describe("getContestLobby", () => {
     expect(findFirst).toHaveBeenCalledTimes(2);
     expect((first as { _count: { contestLineups: number } })._count.contestLineups).toBe(1);
     expect((second as { _count: { contestLineups: number } })._count.contestLineups).toBe(2);
+  });
+
+  it("does not look up referral stakes for anonymous viewers", async () => {
+    findFirst.mockResolvedValue(
+      contestRow({ settings: { contestType: "PUBLIC", oracle: "0xoracle", referralNetworkBps: 500 } }),
+    );
+
+    const lobby = await loadContestLobby(ADDRESS, null);
+    const lineups = lobby?.contestLineups as Array<{ referralStake?: unknown }>;
+
+    expect(lineups[0]).not.toHaveProperty("referralStake");
+    expect(userFindUnique).not.toHaveBeenCalled();
+    expect(queryRaw).not.toHaveBeenCalled();
+  });
+
+  it("skips referral overlay when referralNetworkBps is 0", async () => {
+    findFirst.mockResolvedValue(
+      contestRow({ settings: { contestType: "PUBLIC", oracle: "0xoracle", referralNetworkBps: 0 } }),
+    );
+
+    await loadContestLobby(ADDRESS, "did:privy:1");
+
+    expect(userFindUnique).not.toHaveBeenCalled();
+    expect(queryRaw).not.toHaveBeenCalled();
+  });
+
+  it("does not expand contest.findFirst select for referral fields", async () => {
+    findFirst.mockResolvedValue(contestRow());
+
+    await loadContestLobby(ADDRESS, null);
+
+    const select = findFirst.mock.calls[0]?.[0]?.select;
+    expect(select.contestLineups.select.user.select).toEqual({
+      id: true,
+      name: true,
+      settings: true,
+    });
+    expect(select.contestLineups.select.user.select).not.toHaveProperty("referredByUserId");
+  });
+
+  it("annotates lineups in the viewer's invite tree after the slim contest query", async () => {
+    findFirst.mockResolvedValue(
+      contestRow({ settings: { contestType: "PUBLIC", oracle: "0xoracle", referralNetworkBps: 500 } }),
+    );
+    userFindUnique.mockResolvedValue({
+      id: "viewer-1",
+      referralChainId: 84532,
+      referralGroupId: "0x" + "ab".repeat(32),
+      referredUsers: [{ referralChainId: 84532, referralGroupId: "0x" + "ab".repeat(32) }],
+    });
+    queryRaw.mockResolvedValue([{ leaf_id: "user-1", depth: 1 }]);
+
+    const lobby = await loadContestLobby(ADDRESS, "did:privy:1");
+    const lineups = lobby?.contestLineups as Array<{ userId: string; referralStake?: { depth: number } }>;
+
+    expect(lineups[0]?.referralStake).toEqual({ depth: 1 });
+    expect(findFirst).toHaveBeenCalledTimes(1);
+    expect(queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not re-run the referral overlay on a lobby cache hit", async () => {
+    findFirst.mockResolvedValue(
+      contestRow({ settings: { contestType: "PUBLIC", oracle: "0xoracle", referralNetworkBps: 500 } }),
+    );
+    userFindUnique.mockResolvedValue({
+      id: "viewer-1",
+      referralChainId: 84532,
+      referralGroupId: "0x" + "ab".repeat(32),
+      referredUsers: [{ referralChainId: 84532, referralGroupId: "0x" + "ab".repeat(32) }],
+    });
+    queryRaw.mockResolvedValue([{ leaf_id: "user-1", depth: 2 }]);
+
+    const first = await getContestLobby(ADDRESS, "did:privy:stake");
+    const second = await getContestLobby(ADDRESS, "did:privy:stake");
+
+    expect(findFirst).toHaveBeenCalledTimes(1);
+    expect(userFindUnique).toHaveBeenCalledTimes(1);
+    expect(queryRaw).toHaveBeenCalledTimes(1);
+    expect(second).toEqual(first);
+    const lineups = second?.contestLineups as Array<{ referralStake?: { depth: number } }>;
+    expect(lineups[0]?.referralStake).toEqual({ depth: 2 });
   });
 });
 

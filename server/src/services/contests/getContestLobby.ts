@@ -6,6 +6,11 @@ import { lobbyMetadata } from "../../utils/contestEventSummary.js";
 import { isEthereumAddress, normalizeContestAddress } from "../../utils/contestRouteParam.js";
 import { formatOnchainPaymentsForContest } from "../../utils/formatOnchainPayments.js";
 import type { DetailedResult } from "../shared/types.js";
+import {
+  attachReferralStakes,
+  contestReferralNetworkBps,
+  referralStakeForViewerByPrivyId,
+} from "../referral/referralStakeForViewer.js";
 
 export const CONTEST_LOBBY_CACHE_TTL_MS = 15_000;
 
@@ -311,7 +316,34 @@ export async function loadContestLobby(
   });
 
   if (!row) return null;
-  return formatLobbyRow(row);
+  return overlayViewerReferralStakes(formatLobbyRow(row), privyUserId);
+}
+
+async function overlayViewerReferralStakes(
+  payload: ContestLobbyPayload,
+  privyUserId: string | null,
+): Promise<ContestLobbyPayload> {
+  if (!privyUserId) return payload;
+  if (contestReferralNetworkBps(payload.settings) <= 0) return payload;
+
+  const lineups = payload.contestLineups;
+  if (!Array.isArray(lineups) || lineups.length === 0) return payload;
+
+  const contestantIds: string[] = [];
+  for (const row of lineups) {
+    if (!row || typeof row !== "object") continue;
+    const userId = (row as { userId?: unknown }).userId;
+    if (typeof userId === "string" && userId.length > 0) contestantIds.push(userId);
+  }
+  if (contestantIds.length === 0) return payload;
+
+  const depths = await referralStakeForViewerByPrivyId(privyUserId, contestantIds);
+  if (depths.size === 0) return payload;
+
+  return {
+    ...payload,
+    contestLineups: attachReferralStakes(lineups as Array<{ userId: string }>, depths),
+  };
 }
 
 export async function getContestLobby(

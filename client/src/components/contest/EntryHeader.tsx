@@ -1,4 +1,6 @@
 import React from "react";
+import { ReferralStakeIcon } from "./ReferralStakeIcon";
+import { referralStakeLabel } from "../../lib/referralStake";
 
 const DEFAULT_USER_COLOR = "#9CA3AF"; // Tailwind gray-400 hex — matches ContestEntryList
 
@@ -20,6 +22,8 @@ interface EntryHeaderProps {
   baseScore?: number | null;
   showArrow?: boolean;
   onClick?: () => void;
+  /** Viewer-only: this entry owner is in the signed-in user's invite tree. */
+  referralStake?: { depth: number } | null;
 }
 
 export const EntryHeader: React.FC<EntryHeaderProps> = ({
@@ -32,6 +36,7 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
   baseScore,
   showArrow = false,
   onClick,
+  referralStake = null,
 }) => {
   const resolvedBorderColor = isValidHexColor(userColorHex) ? userColorHex : DEFAULT_USER_COLOR;
   const showDecomp =
@@ -97,6 +102,12 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
           )}
         </div>
       </div>
+      {referralStake != null && referralStake.depth >= 1 ? (
+        <p className="mt-2 flex items-start gap-1.5 text-left text-sm font-medium text-emerald-800">
+          <ReferralStakeIcon depth={referralStake.depth} className="mt-0.5 h-4 w-4" />
+          <span>{referralStakeLabel(referralStake.depth)}</span>
+        </p>
+      ) : null}
     </div>
   );
 };

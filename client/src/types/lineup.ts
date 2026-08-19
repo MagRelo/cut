@@ -28,6 +28,11 @@ export interface ContestLineup {
   updatedAt: Date;
   user?: User;
   userId: string;
+  /**
+   * Present when this entry owner is in the signed-in viewer's invite tree (depth 1–10).
+   * If this lineup wins the contest, the viewer earns a referral-network bonus.
+   */
+  referralStake?: { depth: number } | null;
 }
 
 export interface ContestLineupWithContest extends ContestLineup {

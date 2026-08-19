@@ -107,6 +107,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                         totalPoints={totalPoints}
                         baseScore={lineup.baseScore}
                         popularityBonus={popularityBonus}
+                        referralStake={lineup.referralStake}
                       />
                     </div>
 

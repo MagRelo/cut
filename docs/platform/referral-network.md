@@ -63,6 +63,30 @@ Indexing: `OnchainPayment` rows with type `REFERRAL` ([`recordSettlementReferral
 
 ---
 
+## Contest lobby annotation
+
+Signed-in viewers see which **other** contest entries sit in their invite tree. If that lineup is the contest’s **primary winner**, settlement pays the viewer a share of the referral-network fee. Finishing in the money alone does not.
+
+`GET /contests/:id/lobby` may attach a viewer-only field on each `contestLineups[]` item:
+
+```ts
+referralStake?: { depth: number }  // 1 = direct invitee, 2–10 = nested
+```
+
+Rules:
+
+- Anonymous payloads omit the field.
+- Contests with `referralNetworkBps` (or legacy `oracleFeeBps`) of `0` omit the field.
+- The viewer’s own entries are never flagged (the winner is not a fee recipient).
+- Depth matches `GET /auth/referrals/summary`: `referredByUserId` edges, same `referralChainId` + `referralGroupId`, max 10.
+- The flag is computed from the Postgres invite tree (what cron syncs onto `ReferralGraph`). It does not expose a named downline list.
+
+The overlay runs after the slim lobby payload is built. It does not join referral columns onto `contest.findFirst`. Empty downlines skip the ancestor CTE. The 15s lobby cache stores the annotated payload, so cache hits do not re-query.
+
+The client shows a currency-dollar icon on contest standings, the entry detail modal, and the winner-pool odds list. Tooltip copy distinguishes a direct invite from a nested network level.
+
+---
+
 ## Contract addresses
 
 Read from `server/src/contracts/{sepolia,base}.json` and `client/src/utils/contracts/{sepolia,base}.json`. ContestFactory holds `referralGraph`, `rewardCalculator`, and `referralGroupId` as immutables; every contest inherits them.
@@ -127,6 +151,7 @@ Setup services expose `referralRoot` (the platform-root address).
 | Concern | Path |
 |---------|------|
 | Referral config | `server/src/lib/referralConfig.ts` |
+| Lobby referral-stake overlay | `server/src/services/referral/referralStakeForViewer.ts` |
 | Platform root env | `server/src/lib/referralPlatformRoot.ts` |
 | Graph setup / rematerialize | `server/src/services/referral/` |
 | Settlement indexing | `server/src/services/contest/recordSettlementReferralPayments.ts` |

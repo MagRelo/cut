@@ -2,6 +2,7 @@ import { UserGroupIcon } from "@heroicons/react/24/outline";
 import { useRef, useState } from "react";
 import { type ContestLineup, type PickPopularityMap } from "../../types/lineup";
 import { ContestEntryModal } from "./ContestEntryModal";
+import { ReferralStakeIcon } from "./ReferralStakeIcon";
 import { canAddPrimaryPosition, type ContestStatus } from "../../types/contest";
 import { useEventScope } from "../../contexts/EventScopeContext";
 import {
@@ -127,6 +128,9 @@ export const ContestEntryList = ({
                 </div>
 
                 <div className="flex shrink-0 items-center gap-4">
+                  {lineup.referralStake != null && lineup.referralStake.depth >= 1 ? (
+                    <ReferralStakeIcon depth={lineup.referralStake.depth} />
+                  ) : null}
                   {primaryActionsLocked ? (
                     <UserGroupIcon className="h-5 w-5 shrink-0 text-blue-400" aria-hidden />
                   ) : null}

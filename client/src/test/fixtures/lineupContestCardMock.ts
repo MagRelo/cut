@@ -113,7 +113,7 @@ export function createStorybookLineupsList(
 
 export const lineupContestCardStoryDefaults = {
   contestId: STORYBOOK_CONTEST_ID,
-  sportId: "golf",
+  sportId: "pga-golf",
   eventId: STORYBOOK_LINEUP_EVENT_ID,
   eventStatus: "SCHEDULED" as EventStatus,
   isEventEditable: true,

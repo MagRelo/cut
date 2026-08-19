@@ -36,7 +36,7 @@ function buildContest(overrides: Partial<Contest> & { status: ContestStatus }): 
     eventId: "event-1",
     event: {
       id: "event-1",
-      sportId: "golf",
+      sportId: "pga-golf",
       externalId: "R2026001",
       isActive: true,
       metadata: {

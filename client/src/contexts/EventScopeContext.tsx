@@ -42,6 +42,17 @@ export function ContestEventScopeProvider({
   return <EventScopeContext.Provider value={value}>{children}</EventScopeContext.Provider>;
 }
 
+/** Static scope for tests and Storybook — no contest fetch. */
+export function EventScopeProvider({
+  value,
+  children,
+}: {
+  value: EventScopeValue;
+  children: React.ReactNode;
+}) {
+  return <EventScopeContext.Provider value={value}>{children}</EventScopeContext.Provider>;
+}
+
 export function useEventScope(): EventScopeValue {
   const scope = useContext(EventScopeContext);
   if (!scope) {
