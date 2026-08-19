@@ -8,9 +8,9 @@ import { ContestEventScopeProvider } from "../../../contexts/EventScopeContext";
 import { useContestEvent } from "../../../hooks/useContestEvent";
 import { useContestMentionBadge } from "../../../hooks/useContestMentionBadge";
 import { useStreamFeedsSession } from "../../../hooks/useStreamFeedsSession";
-import { useSportUIPlugin } from "../../../hooks/useSportUI";
 import { tabButtonClassName, tabListClassName } from "../../../lib/tabStyles";
 import { EventLineupsPanel } from "../../platform/EventLineupsPanel";
+import { SportEventHeader } from "../../platform/SportEventHeader";
 import { ContestCard } from "../ContestCard";
 import { ContestPayoutsModal } from "../ContestPayoutsModal";
 import { ContestResultsPanel } from "../ContestResultsPanel";
@@ -90,8 +90,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
 
   const [isPayoutsModalOpen, setIsPayoutsModalOpen] = useState(false);
   const { eventShell, error: eventError } = useContestEvent(contest);
-  const plugin = useSportUIPlugin();
-  const EventSummary = plugin?.EventSummary;
 
   return (
     <ContestEventScopeProvider contest={contest}>
@@ -101,7 +99,9 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
             <ErrorMessage message={eventError.message} />
           </div>
         ) : null}
-        {eventShell && EventSummary ? <EventSummary event={eventShell} /> : null}
+        {fieldSportId && eventShell ? (
+          <SportEventHeader sportId={fieldSportId} event={eventShell} variant="context" />
+        ) : null}
         <div>
           <div className="px-3 pb-2 pt-4">
             <ContestCard

@@ -34,7 +34,7 @@ function golfEvent(overrides: Record<string, unknown> = {}) {
       city: "Testville",
       state: "FL",
       beautyImage: "https://example.com/hero.png",
-      summarySections: [{ heading: "Preview", body: "long copy" }],
+      summarySections: [{ title: "Preview", items: [{ body: "long copy" }] }],
       weather: { huge: true },
       ...overrides,
     },
@@ -105,7 +105,7 @@ describe("listContestDirectory", () => {
     ]);
   });
 
-  it("strips summarySections and unused settings from the directory payload", async () => {
+  it("keeps summarySections and strips unused settings from the directory payload", async () => {
     findMany.mockResolvedValue([contestRow(golfEvent())]);
 
     const directory = await listContestDirectory(null, "all", 84532);
@@ -117,8 +117,8 @@ describe("listContestDirectory", () => {
       status: "SCHEDULED",
       course: "Test National",
       beautyImage: "https://example.com/hero.png",
+      summarySections: [{ title: "Preview", items: [{ body: "long copy" }] }],
     });
-    expect(event?.metadata).not.toHaveProperty("summarySections");
     expect(event?.metadata).not.toHaveProperty("weather");
     expect(contest?.settings).toMatchObject({
       primaryDeposit: 25,

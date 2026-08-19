@@ -11,7 +11,7 @@ import { ContestListConnectHint } from "../components/contest/ContestList";
 import { useContestQuery } from "../hooks/useContestQuery";
 import { useContestTimelineQuery } from "../hooks/useContestTimelineQuery";
 import { useContestLobbyState } from "../hooks/useContestLobbyState";
-import { useSportUIPlugin } from "../hooks/useSportUI";
+import { SportEventHeader } from "../components/platform/SportEventHeader";
 import { isApiError } from "../utils/apiError";
 import {
   getDirectoryContextForContest,
@@ -53,12 +53,9 @@ function ContestNotFound({ isAuthenticated }: { isAuthenticated: boolean }) {
 }
 
 function ContestLobbyLoadingShell({ eventShell }: { eventShell: CompetitionEventShell }) {
-  const plugin = useSportUIPlugin(eventShell.sportId);
-  const EventSummary = plugin?.EventSummary;
-
   return (
     <div>
-      {EventSummary ? <EventSummary event={eventShell} /> : null}
+      <SportEventHeader sportId={eventShell.sportId} event={eventShell} variant="context" />
       <div className="border-b border-gray-200">
         <div className="px-3 pb-2 pt-4">
           <div className="animate-pulse space-y-3 rounded-md border border-slate-200 bg-white p-4">

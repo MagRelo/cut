@@ -86,7 +86,7 @@ function slimCommoditiesBlock(raw: unknown): Record<string, unknown> | undefined
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
-/** Header fields only — no summarySections, fieldSnapshot, weather, or venue blobs. */
+/** Header fields — no fieldSnapshot, weather, or venue blobs. Pass `keepSummary` for tournament preview. */
 export function directoryMetadata(
   raw: unknown,
   options?: { keepSummary?: boolean },
@@ -118,7 +118,7 @@ export function directoryMetadata(
   return out;
 }
 
-/** Directory header fields plus `summarySections` for lobby tournament preview. */
+/** Directory/lobby header fields plus `summarySections` for tournament preview. */
 export function lobbyMetadata(raw: unknown): Record<string, unknown> | null {
   return directoryMetadata(raw, { keepSummary: true });
 }
@@ -172,7 +172,7 @@ export function directoryEventFromRecord(event: {
   metadata: unknown;
   sport: { id: string; name: string };
 }): ContestDirectoryEvent {
-  const metadata = directoryMetadata(event.metadata);
+  const metadata = lobbyMetadata(event.metadata);
   return {
     ...eventSummaryForContest({ ...event, metadata }),
     isActive: event.isActive,
