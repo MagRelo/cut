@@ -73,7 +73,6 @@ export const LeagueCreateContestForm = ({
     isFailed,
     transactionError,
   } = useCreateContestSubmission({
-    maxReferralNetworkBps: 2000,
     onContestCreated: (contest) => {
       onContestCreated?.();
       navigate(contestLobbyPath(contest.address));
