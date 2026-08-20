@@ -113,7 +113,7 @@ function slimDirectorySettings(settings: unknown): Record<string, unknown> | nul
     "expiryTimestamp",
     "paymentTokenAddress",
     "paymentTokenSymbol",
-    "oracle",
+    "operator",
     "primaryDeposit",
     "referralNetworkBps",
     "oracleFeeBps",

@@ -1,6 +1,6 @@
 /**
  * Referral graph setup: emergency recovery under REFERRAL_ROOT; organics under that cold root.
- * Hot OPS_ORACLE signs register/batchRegister but is not a graph ancestor.
+ * The hot operator signs register/batchRegister but is not a graph ancestor.
  */
 
 import { getAddress, type Hex } from "viem";

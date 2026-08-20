@@ -8,13 +8,16 @@
  * 
  * Required Environment Variables:
  * - DATABASE_URL
- * - OPS_ORACLE_PK
+ * - OPERATOR_PK
  * - ENABLE_CRON (should be set to "true")
+ *
+ * Organic referral parent comes from chain JSON (`referralPlatformRootAddress`),
+ * written at contract deploy — not from env.
  */
 
 import dotenv from "dotenv";
 import CronScheduler from "./cron/scheduler.js";
-import { getOpsOracleAddress, hasOpsOracleKey } from "./lib/opsOracle.js";
+import { getOperatorAddress, hasOperatorKey } from "./lib/operator.js";
 import {
   formatErrorForHeartbeat,
   registerBetterStackCronProcessMonitoring,
@@ -36,9 +39,9 @@ registerBetterStackCronProcessMonitoring();
 
 async function startCronApp(): Promise<void> {
   const missingEnvVar = ["DATABASE_URL"].find((envVar) => !process.env[envVar]);
-  const missingOracle = hasOpsOracleKey() ? undefined : "OPS_ORACLE_PK";
-  if (missingEnvVar || missingOracle) {
-    const message = `Missing required environment variable: ${missingEnvVar ?? missingOracle}`;
+  const missingOperator = hasOperatorKey() ? undefined : "OPERATOR_PK";
+  if (missingEnvVar || missingOperator) {
+    const message = `Missing required environment variable: ${missingEnvVar ?? missingOperator}`;
     console.error(message);
     await reportBetterStackHeartbeatFailure({
       exitCode: 1,
@@ -60,7 +63,7 @@ async function startCronApp(): Promise<void> {
   console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
   const dbName = process.env.DATABASE_URL?.match(/\/([^/?]+)(?:\?|$)/)?.[1] ?? "unknown";
   console.log(`Database: ${dbName}`);
-  console.log(`Oracle Address: ${getOpsOracleAddress()}`);
+  console.log(`Operator Address: ${getOperatorAddress()}`);
   console.log(`Cron Enabled: ${ENABLE_CRON}`);
   console.log("=".repeat(60));
 

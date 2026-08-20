@@ -1,9 +1,12 @@
 import { isAddress, type Hex } from "viem";
 import { type ContestSettings, type CreateContestInput } from "../types/contest";
-import { getContractAddress } from "../utils/blockchainUtils.tsx";
+import { getContractAddress, getContractConfig } from "../utils/blockchainUtils.tsx";
 import { primaryDepositWeiFromHuman } from "./paymentTokenSpend";
 
 export const DEFAULT_EXPIRY_DAYS_AFTER_TOURNAMENT = 7;
+
+/** Host-capped at 1000 (10%), same as `ContestController` / `referralNetworkBps`. */
+export const MAX_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS = 1000;
 
 /** Defaults aligned with contest settings + factory immutables (operator / referral stack). */
 export function buildContestSettings(
@@ -17,7 +20,7 @@ export function buildContestSettings(
     expiryTimestamp: 0,
     paymentTokenAddress,
     paymentTokenSymbol,
-    oracle: import.meta.env.VITE_ORACLE_ADDRESS || "",
+    operator: import.meta.env.VITE_OPERATOR_ADDRESS || "",
     primaryDeposit: 10,
     referralNetworkBps: Number(import.meta.env.VITE_REFERRAL_NETWORK_BPS) || 500,
     referralGroupId: import.meta.env.VITE_REFERRAL_GROUP_ID || "",
@@ -58,9 +61,16 @@ export function validateContestSettings(
   settings: ContestSettings,
   options?: { maxReferralNetworkBps?: number },
 ): string | null {
-  const oracle = settings.oracle.trim();
-  if (!oracle || !isAddress(oracle)) {
+  const operator = settings.operator.trim();
+  if (!operator || !isAddress(operator)) {
     return "Enter a valid operator address.";
+  }
+
+  const platformRoot = (
+    getContractConfig(settings.chainId)?.referralPlatformRootAddress || ""
+  ).trim();
+  if (platformRoot && isAddress(platformRoot) && operator.toLowerCase() === platformRoot.toLowerCase()) {
+    return "Operator cannot be the referral platform root. Settlement fees must not flow to the hot signing wallet.";
   }
 
   const maxReferralBps = options?.maxReferralNetworkBps ?? 1000;
@@ -72,9 +82,9 @@ export function validateContestSettings(
 
   if (
     settings.primaryDepositSecondarySubsidyBps < 0 ||
-    settings.primaryDepositSecondarySubsidyBps > 10000
+    settings.primaryDepositSecondarySubsidyBps > MAX_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS
   ) {
-    return "Primary deposit secondary subsidy must be between 0 and 10000 basis points.";
+    return `Primary deposit secondary subsidy must be between 0 and ${MAX_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS / 100}% (${MAX_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS} basis points).`;
   }
 
   if (settings.expiryTimestamp <= 0) {

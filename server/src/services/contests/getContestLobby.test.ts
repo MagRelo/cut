@@ -85,7 +85,7 @@ function contestRow(overrides: Record<string, unknown> = {}) {
     address: ADDRESS,
     chainId: 84532,
     status: "OPEN",
-    settings: { contestType: "PUBLIC", oracle: "0xoracle" },
+    settings: { contestType: "PUBLIC", operator: "0xoperator" },
     results: null,
     pickPopularity: null,
     pickPopularityLockedAt: null,
@@ -265,7 +265,7 @@ describe("getContestLobby", () => {
 
   it("does not look up referral stakes for anonymous viewers", async () => {
     findFirst.mockResolvedValue(
-      contestRow({ settings: { contestType: "PUBLIC", oracle: "0xoracle", referralNetworkBps: 500 } }),
+      contestRow({ settings: { contestType: "PUBLIC", operator: "0xoperator", referralNetworkBps: 500 } }),
     );
 
     const lobby = await loadContestLobby(ADDRESS, null);
@@ -278,7 +278,7 @@ describe("getContestLobby", () => {
 
   it("skips referral overlay when referralNetworkBps is 0", async () => {
     findFirst.mockResolvedValue(
-      contestRow({ settings: { contestType: "PUBLIC", oracle: "0xoracle", referralNetworkBps: 0 } }),
+      contestRow({ settings: { contestType: "PUBLIC", operator: "0xoperator", referralNetworkBps: 0 } }),
     );
 
     await loadContestLobby(ADDRESS, "did:privy:1");
@@ -303,7 +303,7 @@ describe("getContestLobby", () => {
 
   it("annotates lineups in the viewer's invite tree after the slim contest query", async () => {
     findFirst.mockResolvedValue(
-      contestRow({ settings: { contestType: "PUBLIC", oracle: "0xoracle", referralNetworkBps: 500 } }),
+      contestRow({ settings: { contestType: "PUBLIC", operator: "0xoperator", referralNetworkBps: 500 } }),
     );
     userFindUnique.mockResolvedValue({
       id: "viewer-1",
@@ -323,7 +323,7 @@ describe("getContestLobby", () => {
 
   it("does not re-run the referral overlay on a lobby cache hit", async () => {
     findFirst.mockResolvedValue(
-      contestRow({ settings: { contestType: "PUBLIC", oracle: "0xoracle", referralNetworkBps: 500 } }),
+      contestRow({ settings: { contestType: "PUBLIC", operator: "0xoperator", referralNetworkBps: 500 } }),
     );
     userFindUnique.mockResolvedValue({
       id: "viewer-1",

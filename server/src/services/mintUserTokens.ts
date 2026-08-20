@@ -21,25 +21,25 @@ function loadPaymentTokenAddressFromSepolia(): string {
 
 const contractConfig = {
     paymentTokenAddress: loadPaymentTokenAddressFromSepolia(),
-    oracleWalletPrivateKey: process.env.OPS_ORACLE_PK || '',
+    operatorPrivateKey: process.env.OPERATOR_PK || '',
     rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
 };
 
 function initializeWalletAndContracts() {
-    if (!contractConfig.oracleWalletPrivateKey) {
-        throw new Error('OPS_ORACLE_PK environment variable is required');
+    if (!contractConfig.operatorPrivateKey) {
+        throw new Error('OPERATOR_PK environment variable is required');
     }
 
     if (
-        contractConfig.oracleWalletPrivateKey.length !== 64 &&
-        !contractConfig.oracleWalletPrivateKey.startsWith('0x')
+        contractConfig.operatorPrivateKey.length !== 64 &&
+        !contractConfig.operatorPrivateKey.startsWith('0x')
     ) {
         throw new Error(
             'Invalid private key format. Expected 64 character hex string or 0x-prefixed hex string',
         );
     }
 
-    const account = privateKeyToAccount(contractConfig.oracleWalletPrivateKey as `0x${string}`);
+    const account = privateKeyToAccount(contractConfig.operatorPrivateKey as `0x${string}`);
     const walletClient = createWalletClient({
         account,
         chain: baseSepolia,

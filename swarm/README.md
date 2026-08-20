@@ -76,7 +76,7 @@ Use your droplet’s **actual** VPC IP if it differs. **Alternative:** `docker s
 
 If Swarm is already initialized, skip this block. To reset: `docker swarm leave --force` (destroys the local swarm state).
 
-1. **Env files** — Confirm **`swarm/env/web.env`**, **`web-staging.env`**, and **`nginx.env`**. In `nginx.env`: **`PRIMARY_HOSTNAME`**, **`STAGING_HOSTNAME`**, **`LETSENCRYPT_EMAIL`**, **`STACK_NAME`**. In each web env: **`ALLOWED_ORIGINS`**, **`DATABASE_URL`**, **`OPS_ORACLE_PK`**, **`PRIVY_*`**, **`REFERRAL_GROUP_ID`** (staging uses Sepolia / `base-sepolia.playthecut.com` values). The **`*.env.example`** files are **full inventories** (required uncommented; defaults and optionals commented). Mirror anything else from [`server/.env.example`](../server/.env.example). **`ENABLE_CRON=false`** in both web envs is expected (the stack also forces it). **`chmod 600 swarm/env/*.env`**.
+1. **Env files** — Confirm **`swarm/env/web.env`**, **`web-staging.env`**, and **`nginx.env`**. In `nginx.env`: **`PRIMARY_HOSTNAME`**, **`STAGING_HOSTNAME`**, **`LETSENCRYPT_EMAIL`**, **`STACK_NAME`**. In each web env: **`ALLOWED_ORIGINS`**, **`DATABASE_URL`**, **`OPERATOR_PK`**, **`PRIVY_*`**, **`REFERRAL_GROUP_ID`** (staging uses Sepolia / `base-sepolia.playthecut.com` values). The **`*.env.example`** files are **full inventories** (required uncommented; defaults and optionals commented). Mirror anything else from [`server/.env.example`](../server/.env.example). **`ENABLE_CRON=false`** in both web envs is expected (the stack also forces it). **`chmod 600 swarm/env/*.env`**.
 
 2. **Cron (off Swarm)**  
    Swarm does **not** run `cron-app`. For another machine, copy [`env/cron.env.example`](env/cron.env.example) → `cron.env` there and run `node dist/src/cron-app.js` (or `pnpm --filter server run start:cron`) with that env — not required on this droplet.
@@ -112,7 +112,7 @@ App images bake Vite output. **`VITE_*` are not** set in Swarm env files.
 | Prod (`cut-v4`) | [`client/.env.production`](../client/.env.example) — e.g. `VITE_API_URL=https://playthecut.com/api` | `pnpm run deploy` |
 | Staging (`cut-v4-staging`) | [`client/.env.staging`](../client/.env.staging.example) — e.g. `VITE_API_URL=https://base-sepolia.playthecut.com/api`, `VITE_TARGET_CHAIN=testnet` | `pnpm run deploy:staging` |
 
-Also set `VITE_PRIVY_APP_ID`, `VITE_ORACLE_ADDRESS`, `VITE_REFERRAL_GROUP_ID`, `VITE_SIDE_BET_STAKE_RECIPIENT`, paymaster / PostHog as needed for that environment.
+Also set `VITE_PRIVY_APP_ID`, `VITE_OPERATOR_ADDRESS`, `VITE_REFERRAL_GROUP_ID`, `VITE_SIDE_BET_STAKE_RECIPIENT`, paymaster / PostHog as needed for that environment.
 
 ## 4. Database migrations (critical with 2 web replicas)
 

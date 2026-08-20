@@ -8,7 +8,9 @@ Contract design: [`contracts/lib/contestCatalyst/docs/ReferralNetworkIntegration
 
 ## Tree policy
 
-The **cold referral platform root** (`REFERRAL_PLATFORM_ROOT_ADDRESS` / `VITE_REFERRAL_PLATFORM_ROOT_ADDRESS`) registers once under `REFERRAL_ROOT` (`0x0000000000000000000000000000000000000001`). It is **not** a contest role. The hot **OPS_ORACLE** signs `register` / `batchRegister` and acts as ContestFactory `operator`, but is **not** a graph ancestor. Every user with a wallet on the contest chain is on the graph:
+The **cold referral platform root** (`referralPlatformRootAddress` in chain JSON) registers once under `REFERRAL_ROOT` (`0x0000000000000000000000000000000000000001`). It is **not** a contest role. The hot **operator** (`OPERATOR_PK`) signs `register` / `batchRegister` and acts as ContestFactory `operator`, but is **not** a graph ancestor.
+
+**Invariant:** platform root ≠ operator. Settlement referral-network fees credit the platform root when it is on the payout chain. The operator key lives on web and cron; those funds must not land on that hot wallet. Forge deploys (`ReferralDeployGuard`) revert if `REFERRAL_PLATFORM_ROOT_ADDRESS` is missing, zero, or equal to the operator, then register the root on-chain and write it to client/server JSON.
 
 | User | DB `referrerAddress` | On-chain parent |
 |------|----------------------|-----------------|
@@ -98,7 +100,7 @@ Read from `server/src/contracts/{sepolia,base}.json` and `client/src/utils/contr
 Minimal Sepolia redeploy (keeps existing MockUSDC):
 
 ```bash
-# contracts/.env: DEPLOYER_PK, OPS_ORACLE_PK, BASE_SEPOLIA_RPC_URL, REFERRAL_GROUP_ID,
+# contracts/.env: DEPLOYER_PK, OPERATOR_PK, BASE_SEPOLIA_RPC_URL, REFERRAL_GROUP_ID,
 # PAYMENT_TOKEN_ADDRESS, REFERRAL_GRAPH_ADDRESS, REWARD_CALCULATOR_ADDRESS (factory-only)
 pnpm run sepolia:deploy-referral
 pnpm run sepolia:deploy-contest-factory
@@ -117,12 +119,11 @@ Patch `referralGraphAddress`, `rewardCalculatorAddress`, and `contestFactoryAddr
 | Variable | Purpose |
 |----------|---------|
 | `REFERRAL_GROUP_ID` | `bytes32` — same on graph and factory |
-| `REFERRAL_PLATFORM_ROOT_ADDRESS` | Cold address-only organic parent under `REFERRAL_ROOT`; receives its referral share |
-| `OPS_ORACLE_PK` | Signs `register` / `batchRegister` and contest operator txs |
-| `OPS_ORACLE_ADDRESS` | Optional; pins the OPS address instead of deriving from `OPS_ORACLE_PK` |
+| `OPERATOR_PK` | Signs `register` / `batchRegister` and contest operator txs |
+| `OPERATOR_ADDRESS` | Optional; pins the operator address instead of deriving from `OPERATOR_PK` |
 | `REFERRAL_SYNC_CHAIN_ID` | Optional; scripts default `84532` |
 
-Client: `VITE_REFERRAL_PLATFORM_ROOT_ADDRESS` must match server `REFERRAL_PLATFORM_ROOT_ADDRESS`. No platform-root private key is accepted by web or cron.
+Platform root lives in `server/src/contracts/{base,sepolia}.json` as `referralPlatformRootAddress` (written at contract deploy). Web and cron do not take it as env. `REFERRAL_PLATFORM_ROOT_ADDRESS` is required in `contracts/.env` at deploy; optional env fallback for rematerialize scripts only. No platform-root private key is accepted by web or cron.
 
 ### After deploy
 
@@ -152,13 +153,14 @@ Setup services expose `referralRoot` (the platform-root address).
 |---------|------|
 | Referral config | `server/src/lib/referralConfig.ts` |
 | Lobby referral-stake overlay | `server/src/services/referral/referralStakeForViewer.ts` |
-| Platform root env | `server/src/lib/referralPlatformRoot.ts` |
+| Platform root env (deploy only) | `contracts/env.example` / forge `ReferralDeployGuard` |
 | Graph setup / rematerialize | `server/src/services/referral/` |
 | Settlement indexing | `server/src/services/contest/recordSettlementReferralPayments.ts` |
 
 ### Checklist
 
-- [ ] `REFERRAL_PLATFORM_ROOT_ADDRESS` set and bootstrapped under `REFERRAL_ROOT`
+- [ ] `REFERRAL_PLATFORM_ROOT_ADDRESS` set at contract deploy (≠ operator) and registered under `REFERRAL_ROOT`
+- [ ] `referralPlatformRootAddress` present in client/server chain JSON
 - [ ] `REFERRAL_GROUP_ID` matches factory + graph
 - [ ] OPS authorized as ReferralGraph oracle for the group
 - [ ] Organics rematerialized under platform root

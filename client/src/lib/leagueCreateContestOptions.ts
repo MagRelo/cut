@@ -25,9 +25,9 @@ export function formatLeagueEntryFee(fee: LeagueEntryFee, tokenSymbol: string): 
   return `${fee} ${tokenSymbol}`;
 }
 
-/** Primary deposit → secondary subsidy % for `_primaryDepositSecondarySubsidyBps` (0%–20%). */
+/** Primary deposit → secondary subsidy % for `_primaryDepositSecondarySubsidyBps` (0%–10%). */
 export const LEAGUE_PRIMARY_SUBSIDY_PERCENTS = Array.from(
-  { length: 21 },
+  { length: 11 },
   (_, index) => index,
 ) as readonly number[];
 

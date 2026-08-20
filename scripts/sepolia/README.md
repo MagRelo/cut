@@ -18,9 +18,9 @@ Partial redeploys (use `DEPLOYER_PK`) — see root [scripts/README.md](../README
 
 ### `pushPayouts.js`
 
-OPS_ORACLE push of primary or secondary payouts after settlement.
+Operator push of primary or secondary payouts after settlement.
 
-**Required env:** `OPS_ORACLE_PK` (must be the contest oracle)
+**Required env:** `OPERATOR_PK` (must be the contest operator)
 
 ## Prerequisites
 

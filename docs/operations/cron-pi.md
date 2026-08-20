@@ -36,7 +36,7 @@ Minimum:
 - `NODE_ENV=production`, `ENABLE_CRON=true`
 - `DATABASE_URL` (allowlist Pi outbound IP on DB firewall; use the **direct** DB URL on port 25060, not the pgBouncer pool — see [database-connections.md](database-connections.md))
 - `PRISMA_SOCKET_TIMEOUT=60` (or higher) — required for Pi → managed Postgres RTT; default in code is 60
-- `OPS_ORACLE_PK` (contest + referral oracle; address derived from the key)
+- `OPERATOR_PK` (contest + referral oracle; address derived from the key)
 - `BETTERSTACK_HEARTBEAT_URL` (recommended)
 
 Add `PGA_API_KEY`, `DATAGOLF_API_KEY`, `SIDE_BETS_ENABLED`, RPC URLs as needed.

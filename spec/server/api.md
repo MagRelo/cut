@@ -129,7 +129,7 @@ No auth. `{ status, service, timestamp }`
 
 **POST `/:id/secondary-participants` body:** `entryId`, `transactionHash`, `chainId`, optional `amountWei`. The server loads the receipt once (no polling), requires a `SecondaryPositionAdded` log on this contest for the caller and `entryId`, and stores that log's `amount`. If `amountWei` is sent it must match. Replays of the same `transactionHash` are idempotent (no second RPC, no double-count).
 
-**POST `/` body:** `eventId`, `name`, `address` (0x), `chainId`, `transactionHash` (factory `createContest` tx; `transactionId` is accepted as an alias), `settings`, optional `userGroupId`, `description`, `endDate`. Settings addresses and bps (0–10000) are validated. The server loads the receipt once (no polling), requires a `ContestCreated` log from the configured ContestFactory for `address`, reads `operator()` / `paymentToken()` on the clone, and overwrites `settings.oracle` and `settings.paymentTokenAddress` with those on-chain values. Rejects if the operator or token does not match server config.
+**POST `/` body:** `eventId`, `name`, `address` (0x), `chainId`, `transactionHash` (factory `createContest` tx; `transactionId` is accepted as an alias), `settings`, optional `userGroupId`, `description`, `endDate`. Settings addresses and bps (0–10000) are validated. The server loads the receipt once (no polling), requires a `ContestCreated` log from the configured ContestFactory for `address`, reads `operator()` / `paymentToken()` on the clone, and overwrites `settings.operator` and `settings.paymentTokenAddress` with those on-chain values. Rejects if the operator or token does not match server config.
 
 League contests return **404** to non-members.
 

@@ -6,17 +6,14 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { getChainConfig } from "../../lib/chainConfig.js";
-import { getOpsOraclePrivateKey } from "../../lib/opsOracle.js";
+import { getOperatorPrivateKey } from "../../lib/operator.js";
 import ReferralGraph from "../../contracts/ReferralGraph.json" with { type: "json" };
 
-/** Referral txs are signed by the unified OPS_ORACLE key. */
-export function getReferralOraclePrivateKey(): Hex {
-  return getOpsOraclePrivateKey();
-}
+/** Referral txs are signed by the operator key. */
 
 export function getReferralWalletClient(chainId: number) {
   const { chain, rpcUrl } = getChainConfig(chainId);
-  const account = privateKeyToAccount(getReferralOraclePrivateKey());
+  const account = privateKeyToAccount(getOperatorPrivateKey());
   const walletClient = createWalletClient({
     account,
     chain,

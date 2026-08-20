@@ -1,6 +1,6 @@
 # Base mainnet cutover
 
-Ship `newSettle` to production on **Base Sepolia**, soak for about a week while preparing **Base** mainnet, then flip the client to Base last.
+Production is live on **Base Sepolia** (`84532`) with the current contest + referral stack. Soak is complete, including factory and graph redeploys. Remaining work is Base mainnet contracts, graph rematerialize, staging smoke, then flip the production client to **Base** (`8453`).
 
 Payment token on Base is **canonical USDC** (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`). Sepolia uses **MockUSDC (xUSDC)**.
 
@@ -12,256 +12,223 @@ Related:
 - Swarm web vs cron: [swarm/README.md](swarm/README.md)
 
 ```text
-1. Sepolia deploy + smoke     →    2. Merge → deploy prod (still Sepolia)
-                                         ↓
-3. ~1 week Sepolia soak            3. In parallel: Base contracts + roles + smoke
-                                         ↓
-                                   4. Client → Base only (last)
+Prod (playthecut.com)     →  Base Sepolia 84532   ← you are here
+Staging (base-sepolia…)   →  Base Sepolia 84532
+
+1. Deploy Base contracts + roles
+2. Rematerialize referral graph on 8453
+3. Staging smoke on Base (retarget bake; prod stays Sepolia)
+4. Prod client → Base only (last)
 ```
 
-ABI: `settleContest(entries, bps)` via `ReferralGraph` + `RewardCalculator` (no settlement referral signature, no `RewardDistributor`).
+Settlement ABI: `settleContest(winningEntries, payoutBps, secondaryWinner)` via `ReferralGraph` + `RewardCalculator`. No settlement referral signature, no `RewardDistributor`.
+
+### On-chain roles
+
+Contest role is **`operator`**. ReferralGraph uses authorized **`oracle`** for registration. One hot EOA (`OPERATOR_PK`) is wired into both at deploy. Env keys: `OPERATOR_PK` / `OPERATOR_ADDRESS` / `VITE_OPERATOR_ADDRESS`.
+
+| On-chain | Contract | Cap | Who |
+| -------- | -------- | --- | --- |
+| `owner` | `ReferralGraph` | `authorizeOracle` / `unauthorizeOracle` / `transferOwnership` | Deployer (`DEPLOYER_PK`), then cold |
+| `operator` | `ContestFactory` → every `ContestController` | activate / lock / settle / cancel / merkle / push | `OPERATOR_PK` address (`VITE_OPERATOR_ADDRESS`) |
+| authorized `oracle` | `ReferralGraph` (`REFERRAL_GROUP_ID`) | `register` / `batchRegister` / skiplist | Same `OPERATOR_PK` address |
+| (not a contest role) | Referral tree parent | Organic parent under `REFERRAL_ROOT`; receives fee share | `contracts/.env` `REFERRAL_PLATFORM_ROOT_ADDRESS` → chain JSON |
+
+`operator` is a trusted escrow/ops agent, not an on-chain truth source. It is distinct from ReferralGraph’s per-group oracle. The operator is not a graph ancestor and is not a referral-fee recipient.
 
 ---
 
-## 0. Preconditions
+## Current state (Sepolia)
 
-- [x] Work on `**newSettle**` until section 2 merge; prod stays on pre-`newSettle` until then
-- [x] Prod DB popularity migration (`20260715200000_contest_popularity_scoring`) — done if already applied
-- [x] `ReferralGraph` ownership remains on the **deployer** (cold after broadcast; no transfer / renounce)
-- [x] Document addresses (before Sepolia deploy):
+`newSettle` is on `main`. Prod and staging wallets target Sepolia. Cron syncs the referral graph on `84532`.
 
-| Role                            | Env key         | Address | Notes                                                                   |
-| ------------------------------- | --------------- | ------- | ----------------------------------------------------------------------- |
-| Deployer (cold)                 | `DEPLOYER_PK`   | TBD     | `contracts/.env`, forge broadcast; keeps `ReferralGraph` ownership      |
-| OPS_ORACLE (contest + referral) | `OPS_ORACLE_PK` | TBD     | One EOA; authed as ReferralGraph oracle at deploy. **Not** the deployer |
+| Host | Image / role | Chain |
+| ---- | ------------ | ----- |
+| [playthecut.com](https://playthecut.com) | `cut_web` (prod), `ENABLE_CRON=false` | Sepolia `84532` |
+| [base-sepolia.playthecut.com](https://base-sepolia.playthecut.com) | `cut_web-staging` | Sepolia `84532` |
+| Cron Pi | `cron-app`, `ENABLE_CRON=true` | Sepolia `84532` |
 
-- [x] Fund deployer with Sepolia ETH (section 1) and later **~0.02 ETH** on Base (section 3)
-- [x] Fund OPS_ORACLE with enough **ETH** on each chain it will sign on (Sepolia for soak; Base for section 3+)
-- [x] Confirm `REFERRAL_GROUP_ID` (bytes32) — same value for Sepolia + Base and in `server` / web / cron / `VITE_REFERRAL_GROUP_ID`
+### Live Sepolia addresses
+
+Keep MockUSDC. ContestFactory was redeployed against the soak graph (do **not** run `deploy:contracts:sepolia` — that redeploys MockUSDC).
+
+| Contract | Address |
+| -------- | ------- |
+| MockUSDC (`paymentTokenAddress`) | `0x6662473494b64c6aec18E703E839AF26d371f570` |
+| ContestFactory | `0x6B6bb3319D39CaEC4730c761bd156199866660Bc` |
+| ReferralGraph | `0x820bDEe2FB655eFCfaF82971F7e827a5141417bB` |
+| RewardCalculator | `0xE2E7184C7Fc5A35Be22c23A87Ca2d7f6E2d6B72c` |
+
+Same values in `client/src/utils/contracts/sepolia.json` and `server/src/contracts/sepolia.json`.
+
+### Roles and graph (Sepolia)
+
+| Role | Status |
+| ---- | ------ |
+| `ReferralGraph.owner` | Deployer (`DEPLOYER_PK`); cold after broadcast (no transfer / renounce) |
+| `ContestFactory.operator` | `OPERATOR_PK` address; factory immutable on every contest |
+| ReferralGraph authorized `oracle` | Same `OPERATOR_PK` address, scoped to `REFERRAL_GROUP_ID` |
+| Referral platform root | `REFERRAL_PLATFORM_ROOT_ADDRESS` in `contracts/.env` at deploy; persisted as `referralPlatformRootAddress` in chain JSON. Registered under `REFERRAL_ROOT`. Deploy reverts if it equals the operator. No private key in web/cron |
+| `REFERRAL_GROUP_ID` | Same bytes32 on Sepolia, Base, server, web, cron, and `VITE_REFERRAL_GROUP_ID` |
+| `REFERRAL_SYNC_CHAIN_ID` | `84532` until section 4 |
+
+Soak used the **same EOA** for deployer and `OPERATOR_PK`. Split them on Base.
+
+Tree: platform root → organics under root → invitees under inviter **primary** smart wallet. Never register invitees under the referral root. Rematerialize exits non-zero on parent audit mismatch.
+
+### Prod soak (done)
+
+- Full contest lifecycle on prod Sepolia (create → enter → lock → settle → claim/push)
+- Referral fees + `OnchainPayment` `REFERRAL` rows under real traffic
+- Cron lock / settle / referral sync stable
+- Client bake `VITE_TARGET_CHAIN=testnet`
+
+Old Sepolia contest addresses (prior factories) stay on the previous ABI. Settle leftovers with **old** tooling; never the current `settleContest` against those controllers.
+
+---
+
+## 1. Deploy Base contracts
+
+`Deploy_base.s.sol` deploys three contracts in one broadcast. Payment token is **not** deployed — `scripts/deploy.js` writes canonical Base USDC into config.
+
+| Contract | Notes |
+| -------- | ----- |
+| `ContestFactory` | New contests only; immutable `operator` = `OPERATOR_PK` address |
+| `ReferralGraph` | `initialOwner` = deployer; authorized `oracle` for `REFERRAL_GROUP_ID` = `OPERATOR_PK` address |
+| `RewardCalculator` | Stateless |
+
+`client` + `server` `base.json` currently list `contestFactoryAddress` `0x87446Ef8ff9B142ADaa8cAb44bf8B12c27E5F0C3`. That is a leftover from the pre-cutover stack, **not** this factory. Overwrite it on deploy. Contest create also requires `referralGraphAddress` and `rewardCalculatorAddress` — both missing until this step.
+
+### 1a. Preconditions
+
+- [ ] `OPERATOR_PK` set at deploy (address becomes factory `operator` + ReferralGraph authorized `oracle`). Prefer a **distinct** EOA from the deployer
+- [ ] `REFERRAL_GROUP_ID` matches Sepolia / server / `VITE_REFERRAL_GROUP_ID`
+- [ ] Deployer funded with **~0.02 ETH** on Base (quiet L1 is cheaper; this covers retries)
+- [ ] Operator EOA funded with Base ETH (gas for settle / push / `register`)
+- [ ] `REFERRAL_PLATFORM_ROOT_ADDRESS` decided and differs from the operator (fees must not flow to the hot wallet)
 
 USDC treasury / wallet seeding is funded outside this plan.
 
----
-
-## 1. Sepolia deploy + smoke (`newSettle`)
-
-Prove contracts, roles, referral bootstrap, and full settle/claim on testnet. Local or staging app pointed at Sepolia — **not** prod yet.
-
-### 1a. Deploy contracts
-
-Keep existing MockUSDC. Deploy referral stack and factory separately (do **not** run `deploy:contracts:sepolia` — that redeploys MockUSDC). Partial scripts do not rewrite app config; patch both `sepolia.json` files by hand.
+### 1b. Broadcast
 
 ```bash
-# contracts/.env: DEPLOYER_PK, OPS_ORACLE_PK, BASE_SEPOLIA_RPC_URL, REFERRAL_GROUP_ID
-pnpm run sepolia:deploy-referral
-pnpm run sepolia:deploy-contest-factory
-# then patch client + server sepolia.json (keep paymentTokenAddress)
-pnpm run deploy:copy-artifacts
-pnpm run verify:contracts:sepolia
-```
-
-- [x] Fresh `ContestFactory` + `ReferralGraph` + `RewardCalculator` (MockUSDC unchanged)
-- [x] `client` + `server` `sepolia.json` updated:
-  - `contestFactoryAddress` = `0xf849E0910a3411e62018F727B902A494387E56A8`
-  - `referralGraphAddress` = `0x82b6029706825361379272B1B8679C858D779Ca6`
-  - `rewardCalculatorAddress` = `0xbABc5295825E4AA8D10C098a22f78364309d45fe`
-  - `paymentTokenAddress` = existing MockUSDC `0x6662473494b64c6aec18E703E839AF26d371f570`
-- [x] `pnpm run deploy:copy-artifacts`
-- [x] Verify on Blockscout (`pnpm run verify:contracts:sepolia`)
-
-### 1b. Roles on Sepolia
-
-- [x] `OPS_ORACLE_PK` set at deploy; its address is the ReferralGraph oracle (Sepolia soak: same EOA as deployer)
-- [x] `ReferralGraph` owner = deployer (unchanged)
-- [x] Server/local: `OPS_ORACLE_PK` matches on-chain contest + referral oracle
-- [x] `REFERRAL_GROUP_ID` matches on-chain auth
-- [x] `REFERRAL_SYNC_CHAIN_ID=84532`
-
-### 1c. Rebuild referral graph
-
-```bash
-pnpm --filter server run script:rematerialize-referral-graph --dry-run
-pnpm --filter server run script:rematerialize-referral-graph --reset-hashes
-```
-
-Uses `REFERRAL_SYNC_CHAIN_ID` (84532). Maps DB organics/invites onto the graph: platform root → organics under root → invitees under inviter **primary** smart wallet. Never registers invitees under the referral root. Exits non-zero on parent audit mismatch.
-
-- [x] Referral root registered under `REFERRAL_ROOT` (`REFERRAL_PLATFORM_ROOT_ADDRESS`)
-- [x] Organics under platform root
-- [x] Invite chains match DB (`referredByUserId` → inviter primary); audit clean (11/11)
-- [x] Spot-check DipChutney → One Direction; User 0x16ca → DipChutney; User 0x4151 → User 0x16ca
-
-New graph (after rematerialize redeploy):
-
-- ReferralGraph `0x82b6029706825361379272B1B8679C858D779Ca6`
-- RewardCalculator `0xbABc5295825E4AA8D10C098a22f78364309d45fe`
-
-### 1d. Smoke / acceptance
-
-- [x] Create contest on new graph: **rematerializeSmoke** `0x4AEB6018B063589B392F808007036DC1844ef48B` / DB `cmrp9q7er0001mdxrul1k8be1` (10 xUSDC, 700 bps)
-- [x] Enter lineup / primary deposit (ephemeral entrant registered under DipChutney)
-- [x] Lock → settle — **2-arg** `settleContest` (`0x88e08db7…51b8`)
-- [x] Referral fee transfers + `OnchainPayment` `REFERRAL` rows (**3**): DipChutney 0.357 / One Direction 0.214 / oracle 0.129 xUSDC
-- [x] Push primary (`0x62f9d517…458a5`)
-- [x] **Gate:** rematerialize + invite-chain fee smoke green
-
-Verified: entrant → DipChutney → One Direction → oracle (not oracle-only).
-
----
-
-## 2. Merge `newSettle` → `main` and deploy (prod stays on Sepolia)
-
-Ship the new settle stack to production while the client remains on **Base Sepolia** (`VITE_TARGET_CHAIN=testnet`, chain `84532`).
-
-- [x] Rebase/merge latest `main` into `newSettle` if needed; resolve conflicts
-- [x] Merge `newSettle` → `main`
-- [x] Push `main`
-- [x] Build/release image (`pnpm run deploy` / release pipeline)
-- [x] Swarm: roll **web** (`ENABLE_CRON=false`)
-- [x] Cron host: **same** build, `ENABLE_CRON=true`, restart `cron-app`
-- [x] Env on web + cron (Sepolia soak). Inventories: `[swarm/env/web.env.example](swarm/env/web.env.example)`, `[swarm/env/cron.env.example](swarm/env/cron.env.example)`, `[client/.env.example](client/.env.example)` (bake `VITE_*` before image build):
-
-| Check                                               | Done |
-| --------------------------------------------------- | ---- |
-| `OPS_ORACLE_PK` (web + cron)                        | [ ]  |
-| Client `VITE_ORACLE_ADDRESS` = OPS_ORACLE address   | [ ]  |
-| `VITE_TARGET_CHAIN=testnet` (prod stays on Sepolia) | [ ]  |
-| `REFERRAL_GROUP_ID` everywhere                      | [ ]  |
-| `BASE_SEPOLIA_RPC_URL` / chain `84532`              | [ ]  |
-| `REFERRAL_SYNC_CHAIN_ID=84532`                      | [ ]  |
-| No `rewardDistributorAddress` required              | [ ]  |
-| `GET /api/cron/status` OK                           | [ ]  |
-
-- [x] Post-deploy prod smoke on Sepolia: create small contest → enter → settle path healthy
-- [x] **Gate:** section 3 Base work can proceed in parallel with the soak; do **not** flip the client to Base yet
-
----
-
-## 3. Sepolia soak (~1 week) + Base prep in parallel
-
-Prod users and contests remain on Sepolia. Prepare Base mainnet without switching the client.
-
-### 3a. Soak checklist (prod / Sepolia)
-
-- [x] At least one full contest lifecycle on prod Sepolia (create → enter → lock → settle → claim)
-- [x] Referral fees + sync look healthy under real traffic
-- [x] Cron settle / lock paths stable
-- [x] No settle calls against **old** contest addresses with the new ABI (use old tooling for leftovers)
-
-### 3b. Deploy Base contracts
-
-Same stack as Sepolia, minus MockUSDC. Can run from `main` or a short-lived branch once section 2 is merged.
-
-`Deploy_base.s.sol` deploys:
-
-| Contract           | Notes                                                          |
-| ------------------ | -------------------------------------------------------------- |
-| `ContestFactory`   | New contests only                                              |
-| `ReferralGraph`    | `initialOwner` = deployer; oracle auth for `REFERRAL_GROUP_ID` |
-| `RewardCalculator` | Stateless                                                      |
-
-Payment token is **not** deployed — canonical Base USDC is written into config by `scripts/deploy.js`.
-
-```bash
-# contracts/.env: DEPLOYER_PK, OPS_ORACLE_PK, BASE_RPC_URL, REFERRAL_GROUP_ID
+# contracts/.env: DEPLOYER_PK, OPERATOR_PK, BASE_RPC_URL, REFERRAL_GROUP_ID, REFERRAL_PLATFORM_ROOT_ADDRESS
 pnpm run deploy:contracts:base
 ```
 
+`deploy.js` writes `client` + `server` `base.json` (`paymentTokenAddress`, `contestFactoryAddress`, `referralGraphAddress`, `rewardCalculatorAddress`, `referralPlatformRootAddress`) and copies ABIs. Forge registers the platform root under `REFERRAL_ROOT` in the same run.
+
 - [ ] Forge broadcast OK; capture addresses
-- [ ] `client` + `server` `base.json` updated with:
-  - `paymentTokenAddress` = Base USDC
-  - `contestFactoryAddress`
-  - `referralGraphAddress`
-  - `rewardCalculatorAddress`
-- [ ] `pnpm run deploy:copy-artifacts`
+- [ ] `base.json` (client + server) has USDC + factory + graph + calculator + platform root
+- [ ] `pnpm run deploy:copy-artifacts` if ABIs were not copied in the same run
 - [ ] Verify (`pnpm run verify:contracts:base`)
-- [ ] Confirm `ReferralGraph` owner remains deployer
+- [ ] `ReferralGraph.owner` remains deployer
+- [ ] Factory `operator()` and graph `isAuthorizedOracle(ops, REFERRAL_GROUP_ID)` = `OPERATOR_PK` address
+- [ ] Platform root registered under `REFERRAL_ROOT` and differs from the operator
 
-**Important:** Old Base contests (if any) stay on the previous factory/ABI. Only **new** contests use this factory.
+Only **new** contests use this factory.
 
-### 3c. Roles on Base
+### 1c. Roles on Base
 
-- [ ] Same OPS_ORACLE / `REFERRAL_GROUP_ID` story as Sepolia (section 1b), now for chain `8453`
+- [ ] Same operator + authorized-oracle / `REFERRAL_GROUP_ID` story as Sepolia, now for chain `8453`
 - [ ] Ops scripts / local smoke: `REFERRAL_SYNC_CHAIN_ID=8453`
-- [ ] OPS_ORACLE funded with Base ETH
+- [ ] Client bake for staging smoke: `VITE_OPERATOR_ADDRESS` = factory `operator`
 
-### 3d. Rebuild referral graph on Base
+---
 
-Same rematerialize script as Sepolia; point env at Base:
+## 2. Rebuild referral graph on Base
+
+Same rematerialize script as Sepolia; point env at Base. Prod cron stays on `84532` until section 4.
 
 ```bash
-# server/.env: REFERRAL_SYNC_CHAIN_ID=8453 (and Base RPC / OPS_ORACLE funded)
+# server/.env: REFERRAL_SYNC_CHAIN_ID=8453 (and Base RPC / OPERATOR_PK funded)
 pnpm --filter server run script:rematerialize-referral-graph --dry-run
 pnpm --filter server run script:rematerialize-referral-graph --reset-hashes
 ```
 
-- [ ] Emergency recovery registered under `REFERRAL_ROOT`
-- [ ] Organics under referral platform root; invitees under inviter primary on `8453`
+Maps DB organics/invites onto the new graph: platform root → organics under root → invitees under inviter primary. Never registers invitees under the referral root.
+
+- [ ] Platform root registered under `REFERRAL_ROOT`
+- [ ] Organics under platform root; invitees under inviter primary on `8453`
 - [ ] Audit clean (zero parent mismatches / deferred)
-
-### 3e. Base smoke (pre–client flip)
-
-Prefer the staging host [`https://base-sepolia.playthecut.com`](https://base-sepolia.playthecut.com) (see [swarm/README.md](swarm/README.md) **Staging**) for Sepolia deploys and, when retargeted, Base smoke — **not** the Sepolia prod client at `playthecut.com`. For Base smoke, point staging’s bake (`client/.env.staging`) and `web-staging.env` at chain `8453` / USDC; test wallets must already hold Base USDC (seeded outside this plan).
-
-- [ ] Create a **small** contest on the new factory
-- [ ] Enter → activate → lock → settle → referral fees → claim/push
-- [ ] **Gate:** do not flip the client to Base until soak + this smoke are green
 
 ---
 
-## 4. Client → Base only (last)
+## 3. Base smoke (pre–client flip)
 
-After ~1 week on Sepolia and Base smoke is green, point production wallets at Base `8453`.
+Use staging [`https://base-sepolia.playthecut.com`](https://base-sepolia.playthecut.com) ([swarm/README.md](swarm/README.md) **Staging**) — **not** prod at `playthecut.com`. Retarget staging’s bake (`client/.env.staging`) and `web-staging.env` at chain `8453` / USDC. Test wallets must already hold Base USDC (seeded outside this plan).
 
-- [ ] Prod client: `VITE_TARGET_CHAIN=mainnet` (Base only for user-facing chain)
-- [ ] Web + cron env cutover to Base:
+- [ ] Staging bake: `VITE_TARGET_CHAIN=mainnet` (or equivalent RPC/chain for Base)
+- [ ] Staging server: `REFERRAL_SYNC_CHAIN_ID=8453`, `BASE_RPC_URL` set
+- [ ] Privy: Base mainnet allowed for the staging origin
+- [ ] Pimlico sponsorship policy covers Base if paymaster is enabled
+- [ ] Create a **small** contest on the new factory
+- [ ] Enter → activate → lock → settle → referral fees → claim/push
+- [ ] Confirm fees go down the invite chain (operator is not a fee recipient)
+- [ ] **Gate:** do not flip the prod client until this smoke is green
 
-| Check                                                                | Done |
-| -------------------------------------------------------------------- | ---- |
-| `BASE_RPC_URL` / chain `8453`                                        | [ ]  |
-| `REFERRAL_SYNC_CHAIN_ID=8453`                                        | [ ]  |
-| Address JSON / ABIs resolve `base.json` (new factory + USDC)         | [ ]  |
-| `VITE_ORACLE_ADDRESS` / `OPS_ORACLE_PK` unchanged and funded on Base | [ ]  |
-| `REFERRAL_GROUP_ID` unchanged                                        | [ ]  |
+Staging hostname can stay `base-sepolia.playthecut.com` for this smoke; it is the staging slot, not a chain name.
 
-- [ ] Rebuild/redeploy web (and cron if env-only changes need a restart)
+---
+
+## 4. Prod client → Base only (last)
+
+Point production wallets at Base `8453`. Keep Sepolia contracts as-is for leftover contests.
+
+- [ ] Prod client: `VITE_TARGET_CHAIN=mainnet` in `client/.env.production` (bake-time; not Swarm env)
+- [ ] Privy: Base mainnet allowed for `https://playthecut.com`
+- [ ] Pimlico policy / paymaster valid on Base if used
+- [ ] Web + cron env cutover:
+
+| Check | Done |
+| ----- | ---- |
+| `BASE_RPC_URL` / chain `8453` | [ ] |
+| `REFERRAL_SYNC_CHAIN_ID=8453` | [ ] |
+| Address JSON / ABIs resolve `base.json` (new factory + USDC + platform root) | [ ] |
+| `VITE_OPERATOR_ADDRESS` / `OPERATOR_PK` funded on Base | [ ] |
+| `REFERRAL_GROUP_ID` unchanged | [ ] |
+
+- [ ] Rebuild/redeploy web (`pnpm run deploy` / `pnpm run launch`); restart cron if env-only (`cron-pi.md`)
 - [ ] Smoke UI on Base: balances, create contest, entry path
 - [ ] First real Base contest (small entry / soft cap)
 - [ ] Confirm create / entry / secondary resolve Base USDC + new factory
 
+After cutover, staging can return to Sepolia (`VITE_TARGET_CHAIN=testnet`, `REFERRAL_SYNC_CHAIN_ID=84532`) as the testnet slot.
+
 ---
 
-## 5. Rollback / holds
+## Rollback / holds
 
-| If this fails…                             | Hold / do this                                                     |
-| ------------------------------------------ | ------------------------------------------------------------------ |
-| Sepolia settle / roles broken              | Fix on `newSettle`; do **not** merge                               |
-| Merge/deploy broken on Sepolia prod        | Roll web/cron back to previous image; fix on branch                |
-| Referral sync `deferred > 0`               | Fix missing parents before settle with `referralNetworkBps > 0`    |
-| Base deploy or smoke broken                | Keep prod on Sepolia; fix Base prep; do **not** flip client        |
-| Client Base flip breaks wallet UX          | Revert `VITE_TARGET_CHAIN` to `testnet`; keep Base contracts as-is |
-| Need to settle an **old** leftover contest | Use **old** settle tooling; never new ABI on old controllers       |
+| If this fails… | Hold / do this |
+| -------------- | -------------- |
+| Base deploy or rematerialize broken | Keep prod on Sepolia; fix Base prep; do **not** flip client |
+| Staging Base smoke broken | Keep prod on Sepolia; fix staging bake / graph; do **not** flip client |
+| Client Base flip breaks wallet UX | Revert `VITE_TARGET_CHAIN` to `testnet`; keep Base contracts as-is |
+| Referral sync `deferred > 0` | Fix missing parents before settle with `referralNetworkBps > 0` |
+| Need to settle a **Sepolia leftover** contest | Use **old** settle tooling; never new ABI on old controllers |
 
 ---
 
 ## Quick command index
 
-| Step                        | Command                                                                       |
-| --------------------------- | ----------------------------------------------------------------------------- |
-| Sepolia deploy              | `pnpm run deploy:contracts:sepolia`                                           |
-| Base deploy                 | `pnpm run deploy:contracts:base`                                              |
-| Copy ABIs                   | `pnpm run deploy:copy-artifacts`                                              |
-| Rematerialize graph         | `pnpm --filter server run script:rematerialize-referral-graph --reset-hashes` |
-| Bootstrap referral root     | `pnpm --filter server run script:bootstrap-referral-root`              |
-| Register organics only      | `pnpm --filter server run script:register-users-under-referral-root`            |
-| Sync invites (cron)         | `pnpm --filter server run service:batch-sync-referral-graph`                  |
-| Sepolia mint xUSDC          | `pnpm run mint-tokens`                                                        |
-| Merge (after Sepolia smoke) | `git checkout main && git merge newSettle`                                    |
+| Step | Command |
+| ---- | ------- |
+| Base deploy | `pnpm run deploy:contracts:base` |
+| Copy ABIs | `pnpm run deploy:copy-artifacts` |
+| Verify Base | `pnpm run verify:contracts:base` |
+| Rematerialize graph | `pnpm --filter server run script:rematerialize-referral-graph --reset-hashes` |
+| Bootstrap referral root | `pnpm --filter server run script:bootstrap-referral-root` |
+| Register organics only | `pnpm --filter server run script:register-users-under-referral-root` |
+| Sync invites (cron) | `pnpm --filter server run service:batch-sync-referral-graph` |
+| Sepolia factory-only (keeps MockUSDC) | `pnpm run sepolia:deploy-contest-factory` |
+| Sepolia mint xUSDC | `pnpm run mint-tokens` |
+| Prod image | `pnpm run deploy` then `pnpm run launch` |
+| Staging image | `pnpm run deploy:staging` then `pnpm run launch:staging` |
 
 ---
 
 ## Open decisions
 
-- [ ] Final OPS_ORACLE address (single key for contest + referral)
+- [ ] Final Base operator address (`OPERATOR_PK`, distinct from deployer)
+- [ ] Document deployer + platform-root addresses in [wallet-roles-cashflows.md](docs/operations/wallet-roles-cashflows.md) after broadcast
 - [ ] First Base contest after client flip (sport / entry fee / soft cap)
-- [ ] Exact soak exit criteria before section 4 (e.g. N contests settled, zero critical incidents)

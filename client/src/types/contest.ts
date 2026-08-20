@@ -67,7 +67,7 @@ export function areSecondaryActionsLocked(contestStatus: ContestStatus): boolean
 
 /**
  * Contest settings persisted at create time. Payment token, operator, and referral stack are
- * factory immutables; settings store the expected operator as `oracle` for display/verify.
+ * factory immutables; settings store the expected operator as `operator` for display/verify.
  * The DB `endTime` column should match `new Date(expiryTimestamp * 1000)`.
  */
 export interface ContestSettings {
@@ -83,8 +83,8 @@ export interface ContestSettings {
   /** ERC-20 symbol at creation (display; token metadata is not in the contest contract). */
   paymentTokenSymbol: string;
 
-  /** Factory `operator` address (settings key kept as `oracle` for existing rows). */
-  oracle: string;
+  /** Factory `operator` address. */
+  operator: string;
 
   /**
    * `_primaryDepositAmount` in human token units.
@@ -103,6 +103,7 @@ export interface ContestSettings {
   /**
    * `_primaryDepositSecondarySubsidyBps` — BPS of each primary deposit credited to
    * `secondaryPrimarySubsidyPerEntry` (unbacked); remainder to `primaryPrizePool`.
+   * Host-capped at 1000 (10%).
    */
   primaryDepositSecondarySubsidyBps: number;
 

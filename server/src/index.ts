@@ -14,15 +14,15 @@ dotenv.config({ path: ".env", override: true });
 // Import other modules after env vars are loaded
 import { serve } from "@hono/node-server";
 import app from "./app.js";
-import { hasOpsOracleKey } from "./lib/opsOracle.js";
+import { hasOperatorKey } from "./lib/operator.js";
 const requiredEnvVars = ["DATABASE_URL", "PRIVY_APP_ID", "PRIVY_APP_SECRET"];
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
     throw new Error(`Missing required environment variable: ${envVar}`);
   }
 }
-if (!hasOpsOracleKey()) {
-  throw new Error("Missing required environment variable: OPS_ORACLE_PK");
+if (!hasOperatorKey()) {
+  throw new Error("Missing required environment variable: OPERATOR_PK");
 }
 
 async function startServer() {

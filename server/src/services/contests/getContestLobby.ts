@@ -249,7 +249,7 @@ function formatLobbyRow(row: ContestLobbyRow): ContestLobbyPayload {
   const results = row.results as { detailedResults?: DetailedResult[] } | null;
   const contestSettings = row.settings as { oracle?: string } | null;
   const contestOracleAddress =
-    typeof contestSettings?.oracle === "string" ? contestSettings.oracle : undefined;
+    typeof contestSettings?.operator === "string" ? contestSettings.operator : undefined;
   const onchainPayments =
     row.onchainPayments.length && (row.status === "SETTLED" || row.status === "CLOSED")
       ? formatOnchainPaymentsForContest(

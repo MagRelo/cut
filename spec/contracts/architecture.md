@@ -92,7 +92,7 @@ graph TB
 - State changes before external calls
 
 ### Access Control
-- Oracle/admin functions protected (OPS_ORACLE)
+- Operator functions protected (`OPERATOR_PK`)
 - Immutable contest parameters after create
 
 ### Safe Token Handling

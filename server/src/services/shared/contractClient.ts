@@ -5,7 +5,7 @@
 import { createPublicClient, createWalletClient, http, getContract, type WalletClient } from "viem";
 import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import { getChainConfig } from "../../lib/chainConfig.js";
-import { getOpsOracleAddress, getOpsOraclePrivateKey } from "../../lib/opsOracle.js";
+import { getOperatorAddress, getOperatorPrivateKey } from "../../lib/operator.js";
 import ContestController from "../../contracts/ContestController.json" with { type: "json" };
 
 /**
@@ -15,8 +15,8 @@ export function getWalletClient(chainId: number): {
   walletClient: WalletClient;
   account: PrivateKeyAccount;
 } {
-  // OPS_ORACLE key (contest + referral); throws if missing/malformed
-  const privateKey = getOpsOraclePrivateKey();
+  // OPERATOR_PK (contest + referral); throws if missing/malformed
+  const privateKey = getOperatorPrivateKey();
 
   // Get chain configuration
   const chainConfig = getChainConfig(chainId);
@@ -57,10 +57,10 @@ export function getContestContract(contestAddress: string, chainId: number) {
 }
 
 /**
- * Verify on-chain `operator` matches OPS_ORACLE address.
+ * Verify on-chain `operator` matches OPERATOR_PK / OPERATOR_ADDRESS.
  */
 export async function verifyOperator(contestAddress: string, chainId: number): Promise<boolean> {
-  const expectedOperator = getOpsOracleAddress();
+  const expectedOperator = getOperatorAddress();
 
   const contract = getContestContract(contestAddress, chainId);
   const actualOperator = (await contract.read.operator!()) as string;

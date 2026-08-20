@@ -409,7 +409,7 @@ contestRouter.post("/", requireAuth, async (c) => {
     const contestAddress = factoryCheck.contestAddress;
     const pinnedSettings = {
       ...(settings ?? {}),
-      oracle: factoryCheck.operator,
+      operator: factoryCheck.operator,
       paymentTokenAddress: factoryCheck.paymentToken,
     };
 
@@ -469,7 +469,7 @@ contestRouter.post("/", requireAuth, async (c) => {
         chainId,
         contestAddress: contest.address,
         paymentTokenAddress: pinnedSettings.paymentTokenAddress,
-        operator: pinnedSettings.oracle,
+        operator: pinnedSettings.operator,
         primaryDepositAmountWei,
         referralNetworkBps,
         expiryTimestamp: pinnedSettings.expiryTimestamp,

@@ -38,7 +38,7 @@ export interface ContestSettings {
 
   paymentTokenAddress: string;
   paymentTokenSymbol: string;
-  oracle: string;
+  operator: string;
   /** Human token units; maps to `_primaryDepositAmount` with 18 decimals on-chain. `0` = free primary layer. */
   primaryDeposit: number;
   /** `_referralNetworkBps` on ContestController. */

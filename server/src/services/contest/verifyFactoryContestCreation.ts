@@ -10,7 +10,7 @@ import ContestFactory from "../../contracts/ContestFactory.json" with { type: "j
 import ContestController from "../../contracts/ContestController.json" with { type: "json" };
 import { getChainConfig } from "../../lib/chainConfig.js";
 import { getContestFactoryAddress, getPaymentTokenAddress } from "../../lib/contractAddresses.js";
-import { getOpsOracleAddress } from "../../lib/opsOracle.js";
+import { getOperatorAddress } from "../../lib/operator.js";
 
 const factoryAbi = ContestFactory.abi as Abi;
 const contestAbi = ContestController.abi as Abi;
@@ -71,7 +71,7 @@ export async function verifyFactoryContestCreation(params: {
 
   let expectedOperator: `0x${string}`;
   try {
-    expectedOperator = getOpsOracleAddress();
+    expectedOperator = getOperatorAddress();
   } catch (error) {
     console.error("verifyFactoryContestCreation operator config:", error);
     return { ok: false, error: "rpc_error" };

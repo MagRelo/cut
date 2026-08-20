@@ -1,12 +1,12 @@
 /**
- * Oracle-only: call ContestController.pushPrimaryPayouts or pushSecondaryPayouts on Base Sepolia.
+ * Operator-only: call ContestController.pushPrimaryPayouts or pushSecondaryPayouts on Base Sepolia.
  *
  * Usage (from repo root):
  *   node scripts/sepolia/pushPayouts.js primary <controllerAddress>
  *   node scripts/sepolia/pushPayouts.js secondary <controllerAddress>
  *   pnpm run push-primary-payouts -- 0x...
  *
- * Env (contracts/.env): OPS_ORACLE_PK (must be the contest oracle)
+ * Env (contracts/.env): OPERATOR_PK (must be the contest operator)
  * Optional: CONTEST_CONTROLLER_ADDRESS if you omit the CLI address
  * Primary: ENTRY_IDS — comma-separated entry ids, e.g. ENTRY_IDS=1,2,3
  * Secondary: ENTRY_ID — winning entry id; PARTICIPANTS — comma-separated addresses
@@ -29,7 +29,7 @@ import path from "path";
 dotenv.config({ path: path.join(process.cwd(), "contracts", ".env") });
 
 const CONTEST_ABI = parseAbi([
-  "function oracle() external view returns (address)",
+  "function operator() external view returns (address)",
   "function pushPrimaryPayouts(uint256[] entryIds) external",
   "function pushSecondaryPayouts(address[] participantAddresses, uint256 entryId) external",
 ]);
@@ -82,12 +82,12 @@ async function main() {
     process.exit(1);
   }
 
-  const PRIVATE_KEY = process.env.OPS_ORACLE_PK;
+  const PRIVATE_KEY = process.env.OPERATOR_PK;
   const RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
   const contestAddress = addressArg?.trim() || process.env.CONTEST_CONTROLLER_ADDRESS;
 
   if (!PRIVATE_KEY) {
-    throw new Error("OPS_ORACLE_PK is required in contracts/.env");
+    throw new Error("OPERATOR_PK is required in contracts/.env");
   }
   if (!contestAddress || !isAddress(contestAddress)) {
     throw new Error(
@@ -114,16 +114,16 @@ async function main() {
     client: { public: publicClient, wallet: walletClient },
   });
 
-  const oracleOnChain = await contest.read.oracle();
-  if (oracleOnChain.toLowerCase() !== account.address.toLowerCase()) {
+  const operatorOnChain = await contest.read.operator();
+  if (operatorOnChain.toLowerCase() !== account.address.toLowerCase()) {
     throw new Error(
-      `Wallet ${account.address} is not the contest oracle (${oracleOnChain}). Only the oracle can push payouts.`
+      `Wallet ${account.address} is not the contest operator (${operatorOnChain}). Only the operator can push payouts.`
     );
   }
 
   console.log("Chain:", baseSepolia.name, "id", baseSepolia.id);
   console.log("Contest:", contestAddress);
-  console.log("Oracle wallet:", account.address);
+  console.log("Operator wallet:", account.address);
 
   if (mode === "primary") {
     const entryIds = parseEntryIds(process.env.ENTRY_IDS);

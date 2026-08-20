@@ -1,5 +1,5 @@
 /**
- * Retry oracle pushPrimaryPayouts / pushSecondaryPayouts after on-chain settleContest.
+ * Retry operator pushPrimaryPayouts / pushSecondaryPayouts after on-chain settleContest.
  *
  * Requires the contest to already be settled on-chain (contract state SETTLED) and
  * `contest.results` in the DB (from settlement) so we have `winningEntries`.
@@ -9,7 +9,7 @@
  * or:
  *   CONTEST_ID=<contestId> pnpm --filter server run service:push-contest-payouts
  *
- * Env (same as other oracle services): OPS_ORACLE_PK, chain RPC via chainConfig.
+ * Env (same as other operator services): OPERATOR_PK, chain RPC via chainConfig.
  */
 
 import { prisma } from "../lib/prisma.js";
@@ -60,9 +60,9 @@ async function main() {
     process.exit(1);
   }
 
-  const isValidOracle = await verifyOperator(contest.address, contest.chainId);
-  if (!isValidOracle) {
-    console.error("Oracle address mismatch (OPS_ORACLE_PK vs contract oracle).");
+  const isValidOperator = await verifyOperator(contest.address, contest.chainId);
+  if (!isValidOperator) {
+    console.error("Operator address mismatch (OPERATOR_PK vs contract operator).");
     process.exit(1);
   }
 

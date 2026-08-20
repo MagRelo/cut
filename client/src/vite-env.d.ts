@@ -5,8 +5,8 @@ interface ImportMetaEnv {
   readonly VITE_API_URL?: string;
   /** Privy app ID (Dashboard → App settings). */
   readonly VITE_PRIVY_APP_ID?: string;
-  /** Public OPS_ORACLE address; must match server `OPS_ORACLE_PK` / on-chain contest oracle. */
-  readonly VITE_ORACLE_ADDRESS?: string;
+  /** Public ContestFactory.operator; must match server `OPERATOR_PK`. */
+  readonly VITE_OPERATOR_ADDRESS?: string;
   /** Must match server `REFERRAL_GROUP_ID` (32-byte hex). */
   readonly VITE_REFERRAL_GROUP_ID?: string;
   /** Side-bet stake recipient (USDC). */
@@ -21,7 +21,7 @@ interface ImportMetaEnv {
   readonly VITE_POSTHOG_KEY?: string;
   /** Referral network fee BPS on contest create. Default 500. */
   readonly VITE_REFERRAL_NETWORK_BPS?: string;
-  /** Primary-deposit secondary subsidy BPS. Default 0. */
+  /** Primary-deposit secondary subsidy BPS. Default 0, max 1000 (10%). */
   readonly VITE_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS?: string;
   /** Pimlico dashboard sponsorship policy id (`sp_…`) for smart-wallet gas sponsorship. */
   readonly VITE_PIMLICO_SPONSORSHIP_POLICY_ID?: string;

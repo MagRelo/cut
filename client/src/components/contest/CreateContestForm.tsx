@@ -15,6 +15,7 @@ import { useUserGroupsQuery } from "../../hooks/useUserGroupQuery";
 import {
   buildContestSettings,
   DEFAULT_EXPIRY_DAYS_AFTER_TOURNAMENT,
+  MAX_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS,
 } from "../../lib/contestCreation";
 import {
   getCreateContestStatusMessage,
@@ -146,7 +147,7 @@ export const CreateContestForm = () => {
         ...s,
         paymentTokenAddress: paymentTokenAddress || "",
         paymentTokenSymbol: paymentTokenSymbol ?? "xUSDC",
-        oracle: s.oracle.trim(),
+        operator: s.operator.trim(),
         chainId: chainId ?? 0,
         expiryTimestamp: s.expiryTimestamp,
       },
@@ -241,19 +242,19 @@ export const CreateContestForm = () => {
 
         <div className="space-y-2">
           <label htmlFor="primaryDepositSecondarySubsidyBps" className="block font-medium">
-            Primary deposit → secondary subsidy BPS (0–10000)
+            Primary deposit → secondary subsidy BPS (0–{MAX_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS})
           </label>
           <p className="text-xs text-gray-600">
             <span className="font-mono">_primaryDepositSecondarySubsidyBps</span>: BPS of each
             primary deposit credited to that entry&apos;s unbacked secondary subsidy pool; the
-            remainder credits the primary prize pool (see <span className="font-mono">ContestController</span>
-            NatSpec).
+            remainder credits the primary prize pool (max 10%; see{" "}
+            <span className="font-mono">ContestController</span> NatSpec).
           </p>
           <input
             type="number"
             id="primaryDepositSecondarySubsidyBps"
             min={0}
-            max={10000}
+            max={MAX_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS}
             step={1}
             value={s.primaryDepositSecondarySubsidyBps}
             onChange={(e) =>
@@ -313,7 +314,7 @@ export const CreateContestForm = () => {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="oracle" className="block font-medium">
+          <label htmlFor="operator" className="block font-medium">
             Operator
           </label>
           <p className="text-xs text-gray-600">
@@ -323,9 +324,9 @@ export const CreateContestForm = () => {
           </p>
           <input
             type="text"
-            id="oracle"
-            value={s.oracle}
-            onChange={(e) => patchSettings({ oracle: e.target.value })}
+            id="operator"
+            value={s.operator}
+            onChange={(e) => patchSettings({ operator: e.target.value })}
             required
             className="w-full p-2 border rounded-md font-mono text-sm"
             placeholder="0x…"

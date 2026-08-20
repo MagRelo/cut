@@ -20,7 +20,7 @@ const contestSettingsSchema = z
     chainId: z.number().optional(),
     paymentTokenAddress: ethAddress.optional(),
     paymentTokenSymbol: z.string().max(PAYMENT_TOKEN_SYMBOL_MAX_LENGTH).optional(),
-    oracle: ethAddress.optional(),
+    operator: ethAddress.optional(),
     expiryTimestamp: z.number().optional(),
     primaryDeposit: z.number().min(0).optional(),
     referralNetworkBps: bps.optional(),

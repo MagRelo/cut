@@ -121,9 +121,9 @@ function getDeployerAddress() {
   return addressFromPk(process.env.DEPLOYER_PK);
 }
 
-/** OPS_ORACLE address, derived from OPS_ORACLE_PK; falls back to the deployer. */
-function getReferralOracleAddress() {
-  const fromOps = addressFromPk(process.env.OPS_ORACLE_PK);
+/** Operator address, derived from OPERATOR_PK; falls back to the deployer. */
+function getOperatorAddress() {
+  const fromOps = addressFromPk(process.env.OPERATOR_PK);
   if (fromOps) return fromOps;
   return getDeployerAddress() ?? "0x0000000000000000000000000000000000000000";
 }
@@ -132,6 +132,40 @@ function getReferralGroupId() {
   const raw = process.env.REFERRAL_GROUP_ID?.trim();
   if (!raw) return "0x0000000000000000000000000000000000000000000000000000000000000000";
   return raw.startsWith("0x") ? raw : `0x${raw}`;
+}
+
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+const REFERRAL_ROOT = "0x0000000000000000000000000000000000000001";
+
+function isEvmAddress(value) {
+  return /^0x[a-fA-F0-9]{40}$/.test(value);
+}
+
+/** Cold organic parent under REFERRAL_ROOT. Required at deploy; written into chain JSON. */
+function getPlatformRootAddress() {
+  const raw = process.env.REFERRAL_PLATFORM_ROOT_ADDRESS?.trim();
+  if (!raw || !isEvmAddress(raw)) {
+    throw new Error(
+      "REFERRAL_PLATFORM_ROOT_ADDRESS must be a nonzero EVM address in contracts/.env",
+    );
+  }
+  if (raw.toLowerCase() === ZERO_ADDRESS || raw.toLowerCase() === REFERRAL_ROOT) {
+    throw new Error("REFERRAL_PLATFORM_ROOT_ADDRESS cannot be zero or REFERRAL_ROOT");
+  }
+  const operator = getOperatorAddress()?.toLowerCase();
+  if (operator && raw.toLowerCase() === operator) {
+    throw new Error(
+      "REFERRAL_PLATFORM_ROOT_ADDRESS must differ from the operator. Referral-network fees settle to the platform root; the operator is a hot signing key and must not receive those funds.",
+    );
+  }
+  try {
+    return execSync(`cast --to-checksum-address ${raw}`, {
+      cwd: path.join(projectRoot, "contracts"),
+      encoding: "utf8",
+    }).trim();
+  } catch {
+    return raw;
+  }
 }
 
 function parseDeploymentOutput(output) {
@@ -168,6 +202,7 @@ function updateConfigFiles(network, addresses) {
     contestFactoryAddress: addresses.ContestFactory,
     referralGraphAddress: addresses.ReferralGraph,
     rewardCalculatorAddress: addresses.RewardCalculator,
+    referralPlatformRootAddress: getPlatformRootAddress(),
   };
 
   const clientConfigPath = path.join(
@@ -244,7 +279,8 @@ function copyContractArtifacts() {
 
 function buildVerifyCommand(network, contractName, address, addresses) {
   const deployer = getDeployerAddress();
-  const referralOracle = getReferralOracleAddress();
+  const operator = getOperatorAddress();
+  const referralOracle = operator; // same EOA today; distinct constructor slots
   const referralGroupId = getReferralGroupId();
 
   const paths = {
@@ -268,8 +304,8 @@ function buildVerifyCommand(network, contractName, address, addresses) {
       addresses.paymentTokenAddress;
     const referralGraph = addresses.ReferralGraph;
     const rewardCalculator = addresses.RewardCalculator;
-    if (paymentToken && referralOracle && referralGraph && rewardCalculator) {
-      constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address,address,bytes32)" ${paymentToken} ${referralOracle} ${referralGraph} ${rewardCalculator} ${referralGroupId})`;
+    if (paymentToken && operator && referralGraph && rewardCalculator) {
+      constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address,address,bytes32)" ${paymentToken} ${operator} ${referralGraph} ${rewardCalculator} ${referralGroupId})`;
     }
   } else if (contractName === "ReferralGraph" && deployer) {
     constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,bytes32)" ${deployer} ${referralOracle} ${referralGroupId})`;
@@ -309,13 +345,21 @@ function verifyContracts(network, addresses) {
 function checkEnvironment() {
   logStep("Checking environment variables");
 
-  const requiredVars = ["DEPLOYER_PK"];
+  const requiredVars = ["DEPLOYER_PK", "REFERRAL_PLATFORM_ROOT_ADDRESS", "REFERRAL_GROUP_ID"];
 
   const missingVars = requiredVars.filter((varName) => !process.env[varName]);
 
   if (missingVars.length > 0) {
     logError(`Missing required environment variables: ${missingVars.join(", ")}`);
     logError("Please set these variables in your .env file or environment");
+    process.exit(1);
+  }
+
+  try {
+    const platformRoot = getPlatformRootAddress();
+    logSuccess(`Platform root (≠ operator): ${platformRoot}`);
+  } catch (error) {
+    logError(error.message);
     process.exit(1);
   }
 

@@ -5,7 +5,7 @@
  *
  * Prerequisites: `contracts/.env` with DEPLOYER_PK, BASE_SEPOLIA_RPC_URL,
  * PAYMENT_TOKEN_ADDRESS, REFERRAL_GRAPH_ADDRESS, REWARD_CALCULATOR_ADDRESS,
- * REFERRAL_GROUP_ID, and OPS_ORACLE_PK (operator); Foundry (`forge`).
+ * REFERRAL_GROUP_ID, and OPERATOR_PK (operator); Foundry (`forge`).
  *
  * Usage (from repo root):
  *   node scripts/sepolia/deployContestFactory.js

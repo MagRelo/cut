@@ -45,7 +45,7 @@ The contracts layer implements the core blockchain functionality for Play The Cu
 ### With Server
 
 - Server reads contract state via RPC calls
-- Server writes to contracts via operator functions (OPS_ORACLE key → factory `operator`):
+- Server writes to contracts via operator functions (`OPERATOR_PK` → factory `operator`):
   - `activateContest()` - Start contest
   - `lockContest()` - Lock secondary positions
   - `settleContest(winningEntries, payoutBps, secondaryWinner)` - Settle and distribute prizes

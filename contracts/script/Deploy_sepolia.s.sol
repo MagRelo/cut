@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
+import {console2} from "forge-std/console2.sol";
 import {MockUSDC} from "../src/mocks/MockUSDC.sol";
 import {ContestFactory} from "../lib/contestCatalyst/src/ContestFactory.sol";
 import {ReferralGraph} from "../lib/referralTree/src/core/ReferralGraph.sol";
 import {RewardCalculator} from "../lib/referralTree/src/core/RewardCalculator.sol";
+import {ReferralDeployGuard} from "./ReferralDeployGuard.sol";
 
 /// @notice Base Sepolia (84532): MockUSDC (xUSDC) + referral stack + ContestFactory.
-contract DeploySepolia is Script {
+contract DeploySepolia is ReferralDeployGuard {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PK");
         address deployer = vm.addr(deployerPrivateKey);
-        uint256 opsOraclePk = vm.envOr("OPS_ORACLE_PK", uint256(0));
-        address operator = opsOraclePk != 0 ? vm.addr(opsOraclePk) : deployer;
+        (address operator, uint256 operatorPk) = loadOperator(deployer);
+        address platformRoot = requirePlatformRoot(operator);
         bytes32 referralGroupId = vm.envBytes32("REFERRAL_GROUP_ID");
 
         vm.startBroadcast(deployerPrivateKey);
@@ -38,12 +39,15 @@ contract DeploySepolia is Script {
 
         vm.stopBroadcast();
 
+        registerPlatformRoot(referralGraph, platformRoot, referralGroupId, operatorPk, deployerPrivateKey);
+
         console2.log("=== Deployment Summary ===");
         console2.log("MockUSDC:", address(usdc));
         console2.log("ContestFactory:", address(contestFactory));
         console2.log("ReferralGraph:", address(referralGraph));
         console2.log("RewardCalculator:", address(rewardCalculator));
         console2.log("Operator (OPS):", operator);
+        console2.log("Platform root:", platformRoot);
         console2.log("Owner (deployer):", deployer);
     }
 }

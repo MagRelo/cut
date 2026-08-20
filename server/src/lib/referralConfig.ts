@@ -1,11 +1,16 @@
 import { getAddress, isAddress, type Hex } from "viem";
 import baseContracts from "../contracts/base.json" with { type: "json" };
 import sepoliaContracts from "../contracts/sepolia.json" with { type: "json" };
-import { requireReferralPlatformRootAddress } from "./referralPlatformRoot.js";
+import {
+  assertPlatformRootNotOperator,
+  getReferralPlatformRootAddressFromEnv,
+  parseNonzeroEvmAddress,
+} from "./referralPlatformRoot.js";
 
 type ChainContractJson = {
   referralGraphAddress?: string;
   rewardCalculatorAddress?: string;
+  referralPlatformRootAddress?: string;
 };
 
 function chainContractsForId(chainId: number): ChainContractJson | null {
@@ -82,13 +87,25 @@ export function getReferralSyncChainIdFromEnv(): number {
 
 /**
  * Cold referral platform root registered under REFERRAL_ROOT; organics descend from it.
- * Hot OPS_ORACLE signs register/batchRegister but is not a graph ancestor.
+ * Source of truth is chain JSON written at contract deploy. Env is an optional
+ * fallback for rematerialize scripts before JSON is updated — not a web/cron startup var.
  */
 export function getReferralRootAddress(chainId: number): `0x${string}` {
   if (chainId !== 8453 && chainId !== 84532) {
     throw new Error(`Unsupported referral chain id: ${chainId}`);
   }
-  return requireReferralPlatformRootAddress().toLowerCase() as `0x${string}`;
+  const fromJson = parseNonzeroEvmAddress(
+    chainContractsForId(chainId)?.referralPlatformRootAddress,
+    "referralPlatformRootAddress",
+  );
+  const addr = fromJson ?? getReferralPlatformRootAddressFromEnv();
+  if (!addr) {
+    throw new Error(
+      `referralPlatformRootAddress missing for chain ${chainId}. Set it in server/src/contracts JSON at deploy, or REFERRAL_PLATFORM_ROOT_ADDRESS for scripts.`,
+    );
+  }
+  assertPlatformRootNotOperator(addr);
+  return addr.toLowerCase() as `0x${string}`;
 }
 
 export function requireReferralGroupId(): Hex {

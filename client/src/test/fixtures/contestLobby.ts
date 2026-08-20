@@ -21,7 +21,7 @@ const baseSettings: ContestSettings = {
   expiryTimestamp: Math.floor(Date.now() / 1000) + 86400 * 7,
   paymentTokenAddress: "0x0000000000000000000000000000000000000001",
   paymentTokenSymbol: "xUSDC",
-  oracle: "0x0000000000000000000000000000000000000002",
+  operator: "0x0000000000000000000000000000000000000002",
   primaryDeposit: 10,
   oracleFeeBps: 500,
   primaryDepositSecondarySubsidyBps: 0,

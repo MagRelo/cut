@@ -4,7 +4,7 @@
  * Uses `contracts/script/Deploy_sepolia_referral.s.sol`. Does not modify app config JSON.
  *
  * Prerequisites: `contracts/.env` with DEPLOYER_PK, BASE_SEPOLIA_RPC_URL, REFERRAL_GROUP_ID;
- * optional OPS_ORACLE_PK (oracle defaults to deployer if unset).
+ * optional OPERATOR_PK (oracle defaults to deployer if unset).
  *
  * Usage (from repo root):
  *   node scripts/sepolia/deployReferral.js

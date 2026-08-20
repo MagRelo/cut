@@ -1,6 +1,6 @@
 # Security audit
 
-Play The Cut v4 — server + client pass focused on Privy wallets, OPS_ORACLE on-chain payouts, and remaining authz / input gaps.
+Play The Cut v4 — server + client pass focused on Privy wallets, operator on-chain payouts, and remaining authz / input gaps.
 
 **Last updated:** 2026-08-17  
 **Resume here:** work the open findings below in suggested order. The canvas at `.cursor/projects/.../canvases/security-hardening-audit.canvas.tsx` mirrors this list (open it beside chat to filter by severity).
@@ -60,14 +60,14 @@ Smart-wallet `sendTransaction` and embedded-wallet `sendTransaction({ sponsor: t
 
 ---
 
-#### 3. Hot OPS_ORACLE key signs any stored contest address
+#### 3. Hot operator key signs any stored contest address
 
 | | |
 |---|---|
 | **Location** | `server/src/services/shared/contractClient.ts:14` |
 | **Area** | On-chain / operator |
 
-`getWalletClient()` loads `OPS_ORACLE_PK` on the web server and cron. activate/lock/settle/push/referral register all use it. No per-tx allowlist, simulation gate, or value cap. Compromising the app host is full contest + referral-oracle control.
+`getWalletClient()` loads `OPERATOR_PK` on the web server and cron. activate/lock/settle/push/referral register all use it. No per-tx allowlist, simulation gate, or value cap. Compromising the app host is full contest + referral-oracle control.
 
 **Exploit.** Server RCE or leaked env lets the attacker settle factory contests to chosen `entryIds` and push payouts, or `batchRegister` a poisoned referral tree. Contest escrow moves on-chain; this is not a DB-only issue.
 
@@ -196,7 +196,7 @@ Replay detection compares only `lastTransactionHash`. `amountWei` is incremented
 |---|------|-----|
 | 1 | Verify side-bet funding txs before OPEN | Stops unfunded tickets becoming graded liability |
 | 2 | Allowlist paymaster destinations; require policy id in prod | Stops gas-sponsorship drain via Send / arbitrary calls |
-| 3 | Keep `OPS_ORACLE_PK` off the public web process; simulate + allowlist | Shrinks blast radius if the API host is compromised |
+| 3 | Keep `OPERATOR_PK` off the public web process; simulate + allowlist | Shrinks blast radius if the API host is compromised |
 | 4 | Rate limits, production CORS fail-closed, security headers | Stops quota burn, invite brute force, clickjacking |
 | 5 | Secondary buy used-hash table | Stops inflated participant deposits in DB/UI |
 | 6 | Authenticated RPC in production | Reliable settle/push and fewer DB desyncs |
@@ -206,6 +206,6 @@ Replay detection compares only `lastTransactionHash`. `amountWei` is incremented
 
 ## Reference
 
-- On-chain: `OPS_ORACLE_PK` is contest operator and ReferralGraph oracle — must never be the referral tree root
+- On-chain: `OPERATOR_PK` is contest operator and ReferralGraph oracle — must never be the referral tree root
 - Admin APIs: gated by `userType` ADMIN / SUPER_ADMIN after Privy auth
 - No production secrets were read during the original audit

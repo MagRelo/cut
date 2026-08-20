@@ -10,7 +10,7 @@ export interface VerifyContestContractParams {
   contestAddress: string;
 
   paymentTokenAddress: string;
-  /** ContestController `operator` (factory immutable; stored as settings.oracle). */
+  /** ContestController `operator` (factory immutable; stored as settings.operator). */
   operator: string;
 
   /** `_primaryDepositAmount` as uint256 decimal string (token base units). */

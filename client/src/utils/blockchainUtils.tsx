@@ -14,6 +14,8 @@ export interface ContractConfig {
   /** ReferralGraph (same source of truth as `server/src/contracts/*.json`). */
   referralGraphAddress?: string;
   rewardCalculatorAddress?: string;
+  /** Cold organic parent under REFERRAL_ROOT; written at contract deploy. */
+  referralPlatformRootAddress?: string;
   /** Legacy mainnet config only — not deployed on Sepolia after xUSDC migration. */
   platformTokenAddress?: string;
   depositManagerAddress?: string;

@@ -101,9 +101,9 @@ function getDeployerAddress() {
   return addressFromPk(process.env.DEPLOYER_PK);
 }
 
-/** OPS_ORACLE address, derived from OPS_ORACLE_PK; falls back to the deployer. */
-function getReferralOracleAddress() {
-  const fromOps = addressFromPk(process.env.OPS_ORACLE_PK);
+/** Operator address, derived from OPERATOR_PK; falls back to the deployer. */
+function getOperatorAddress() {
+  const fromOps = addressFromPk(process.env.OPERATOR_PK);
   if (fromOps) return fromOps;
   return getDeployerAddress() ?? "0x0000000000000000000000000000000000000000";
 }
@@ -160,7 +160,8 @@ function loadContractAddresses(network) {
 
 function buildVerifyCommand(network, contractName, address, addresses) {
   const deployer = getDeployerAddress();
-  const referralOracle = getReferralOracleAddress();
+  const operator = getOperatorAddress();
+  const referralOracle = operator; // same EOA today; distinct constructor slots
   const referralGroupId = getReferralGroupId();
 
   const paths = {
@@ -186,8 +187,8 @@ function buildVerifyCommand(network, contractName, address, addresses) {
       addresses.paymentTokenAddress;
     const referralGraph = addresses.ReferralGraph;
     const rewardCalculator = addresses.RewardCalculator;
-    if (paymentToken && referralOracle && referralGraph && rewardCalculator) {
-      constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address,address,bytes32)" ${paymentToken} ${referralOracle} ${referralGraph} ${rewardCalculator} ${referralGroupId})`;
+    if (paymentToken && operator && referralGraph && rewardCalculator) {
+      constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,address,address,bytes32)" ${paymentToken} ${operator} ${referralGraph} ${rewardCalculator} ${referralGroupId})`;
     }
   } else if (contractName === "ReferralGraph" && deployer) {
     constructorArgs = `--constructor-args $(cast abi-encode "constructor(address,address,bytes32)" ${deployer} ${referralOracle} ${referralGroupId})`;

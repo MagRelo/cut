@@ -179,7 +179,7 @@ export function placeholderContestFromNavigation(
       expiryTimestamp: 0,
       paymentTokenAddress: "",
       paymentTokenSymbol: "USDC",
-      oracle: "",
+      operator: "",
       primaryDeposit: preview?.settings?.primaryDeposit ?? 0,
       primaryDepositSecondarySubsidyBps: 0,
     },

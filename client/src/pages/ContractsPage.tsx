@@ -53,6 +53,14 @@ const ContractsPage: React.FC = () => {
         blockExplorerUrl: explorer(extra.rewardCalculatorAddress),
       });
     }
+    if (extra.referralPlatformRootAddress) {
+      contracts.push({
+        name: "Referral platform root",
+        address: extra.referralPlatformRootAddress,
+        description: "Cold organic parent under REFERRAL_ROOT (not a contract)",
+        blockExplorerUrl: explorer(extra.referralPlatformRootAddress),
+      });
+    }
 
     return contracts;
   };

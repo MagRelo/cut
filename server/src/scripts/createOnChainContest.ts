@@ -19,7 +19,7 @@ import { baseSepolia } from "viem/chains";
 import ContestFactory from "../contracts/ContestFactory.json" with { type: "json" };
 import sepoliaContracts from "../contracts/sepolia.json" with { type: "json" };
 import { getChainConfig } from "../lib/chainConfig.js";
-import { getOpsOracleAddress, getOpsOraclePrivateKey } from "../lib/opsOracle.js";
+import { getOperatorAddress, getOperatorPrivateKey } from "../lib/operator.js";
 import { parseReferralGroupIdFromEnv } from "../lib/referralConfig.js";
 import { prisma } from "../lib/prisma.js";
 
@@ -45,8 +45,8 @@ function parseArgs(): { eventId: string; name: string } {
 async function main(): Promise<void> {
   const { eventId, name } = parseArgs();
 
-  const privateKey = getOpsOraclePrivateKey();
-  const operator = getOpsOracleAddress();
+  const privateKey = getOperatorPrivateKey();
+  const operator = getOperatorAddress();
 
   const referralGroupId = parseReferralGroupIdFromEnv();
   if (!referralGroupId) {
@@ -152,7 +152,7 @@ async function main(): Promise<void> {
         chainId: BASE_SEPOLIA_CHAIN_ID,
         paymentTokenAddress: paymentToken,
         paymentTokenSymbol: "xUSDC",
-        oracle: operator,
+        operator: operator,
         expiryTimestamp: Number(expiryTimestamp),
         primaryDeposit: DEFAULT_PRIMARY_DEPOSIT,
         referralNetworkBps: DEFAULT_REFERRAL_NETWORK_BPS,

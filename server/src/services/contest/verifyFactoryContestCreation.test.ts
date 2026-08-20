@@ -116,8 +116,8 @@ vi.mock("../../lib/chainConfig.js", () => ({
   getChainConfig: () => ({ chain: { id: 84532 }, rpcUrl: "http://127.0.0.1" }),
 }));
 
-vi.mock("../../lib/opsOracle.js", () => ({
-  getOpsOracleAddress: () => "0x6666666666666666666666666666666666666666",
+vi.mock("../../lib/operator.js", () => ({
+  getOperatorAddress: () => "0x6666666666666666666666666666666666666666",
 }));
 
 vi.mock("../../lib/contractAddresses.js", () => ({
