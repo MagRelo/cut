@@ -51,5 +51,6 @@ export function buildF1SortKeys(input: {
     driverName,
     racePosition,
     points: -points,
+    total: points,
   };
 }

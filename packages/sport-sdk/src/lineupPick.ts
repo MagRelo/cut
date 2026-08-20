@@ -26,6 +26,33 @@ export type CandidatePickMetadata = {
   total: number | null;
 };
 
+export type CandidateSortKeyInput = {
+  displayName: string;
+  participantMetadata: unknown;
+  scoreData: unknown;
+  total: number | null;
+};
+
+/** Read sport sort-key inputs from field or lineup-pick candidate metadata. */
+export function sortKeyInputFromCandidate(candidate: Candidate): CandidateSortKeyInput {
+  const metadata = candidate.metadata;
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return {
+      displayName: candidate.displayName,
+      participantMetadata: {},
+      scoreData: {},
+      total: null,
+    };
+  }
+  const record = metadata as CandidatePickMetadata;
+  return {
+    displayName: candidate.displayName,
+    participantMetadata: record.participant ?? {},
+    scoreData: record.scoreData ?? {},
+    total: typeof record.total === "number" ? record.total : null,
+  };
+}
+
 /**
  * Lift a lineup pick into a `Candidate` so ParticipantRow / ParticipantDetail
  * work without joining the field roster.

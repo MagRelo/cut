@@ -41,6 +41,7 @@ export function buildCommoditiesSortKeys(input: {
     sectorName: sector,
     pctReturn: -pctReturn,
     points: -points,
+    total: points,
     displayName: input.displayName.toLowerCase(),
   };
 }

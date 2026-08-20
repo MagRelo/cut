@@ -103,9 +103,9 @@ Contest lineup slots use platform `SportLineupPickRow` (wraps `ParticipantRow` p
 |---------|---------|-----------------|
 | `picker` | `CandidatePicker` | Static key order (e.g. golf: OWGR → DataGolf → name) |
 | `fieldLeaderboard` | `EventLeaderboardPanel` | `scheduled` vs `active` key lists |
-| `lineupPicks` | Lineup cards, contest entry modal/list | `scheduled` vs `active` key lists |
+| `lineupPicks` | Lineup cards, contest entry list/modal | `scheduled` (name) vs `active` (contest `total` descending) |
 
-Sport packages populate `Candidate.sortKeys` in `build*Candidates`; export `*CandidateSortConfig` from the sport package and attach to the UI plugin. Platform surfaces call `useCandidateSort(sportId)` → `sort(candidates, context, eventStatus?)`.
+Sport packages populate `Candidate.sortKeys` in `build*Candidates`. Lineup-pick candidates from `candidateFromLineupPick` start with empty `sortKeys`; `CandidateSortConfig.buildSortKeys` fills them from nested pick metadata before sorting. Export `*CandidateSortConfig` from the sport package and attach to the UI plugin. Platform surfaces call `useCandidateSort(sportId)` → `sort(candidates, context, eventStatus?)`.
 
 `ParticipantRowProps`: `{ candidate, status: EventStatus, onClick?, ownershipPercentage?, eventMetadata? }`. Platform passes `status` from the parent event hook; golf reads `roundDisplay` from `eventMetadata` internally.
 

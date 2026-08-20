@@ -1,5 +1,9 @@
-import type { CandidateSortConfig } from "@cut/sport-sdk";
-import { commoditiesCandidateHasDisplayName } from "./commoditiesSortKeys.js";
+import type { Candidate, CandidateSortConfig } from "@cut/sport-sdk";
+import { sortKeyInputFromCandidate } from "@cut/sport-sdk";
+import {
+  buildCommoditiesSortKeys,
+  commoditiesCandidateHasDisplayName,
+} from "./commoditiesSortKeys.js";
 
 const scheduledSortKeys = [
   { key: "sector", direction: "asc" as const },
@@ -12,6 +16,11 @@ const activeSortKeys = [
   { key: "displayName", direction: "asc" as const },
 ];
 
+const lineupPickSortKeys = [
+  { key: "total", direction: "desc" as const },
+  { key: "displayName", direction: "asc" as const },
+];
+
 export const commoditiesCandidateSortConfig: CandidateSortConfig = {
   contexts: {
     picker: scheduledSortKeys,
@@ -21,8 +30,10 @@ export const commoditiesCandidateSortConfig: CandidateSortConfig = {
     },
     lineupPicks: {
       scheduled: scheduledSortKeys,
-      active: activeSortKeys,
+      active: lineupPickSortKeys,
     },
   },
   filter: commoditiesCandidateHasDisplayName,
+  buildSortKeys: (candidate: Candidate) =>
+    buildCommoditiesSortKeys(sortKeyInputFromCandidate(candidate)),
 };

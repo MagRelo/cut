@@ -465,7 +465,7 @@ External | Platform-native | Hybrid
 
 ## UX notes
 - Picker sort keys: declare in competition brief; implement in sport package `build*Candidates` + `candidateSortConfig` (`picker` context). Golf: OWGR → DataGolf → name (rankings order even during live events).
-- Field / lineup list sort keys: `fieldLeaderboard` and `lineupPicks` contexts use `scheduled` (name) vs `active` (live leaderboard order) key lists.
+- Field / lineup list sort keys: `fieldLeaderboard` uses `scheduled` (name) vs `active` (live leaderboard order). `lineupPicks` uses `scheduled` (name) vs `active` (contest total descending).
 - Live display (what users see per pick):
 - Fun factor / why users care:
 

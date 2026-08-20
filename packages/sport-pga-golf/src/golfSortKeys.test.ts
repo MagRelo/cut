@@ -78,6 +78,7 @@ describe("buildGolfSortKeys", () => {
     expect(keys.leaderboardPosition).toBe(3);
     expect(keys.lastName).toBe("scheffler");
     expect(keys.stableford).toBe(12);
+    expect(keys.total).toBe(12);
   });
 });
 
@@ -122,10 +123,70 @@ describe("golfCandidateSortConfig", () => {
     expect(sorted.map((item) => item.participantId)).toEqual(["p1", "p2"]);
   });
 
-  it("sorts lineup picks by leaderboard order when live", () => {
-    const sorted = sortCandidates([mcilroy, scheffler], golfCandidateSortConfig, "lineupPicks", {
+  it("sorts lineup picks by total points when live, not stroke leaderboard", () => {
+    const fewerPointsBetterGolf = {
+      ...scheffler,
+      sortKeys: buildGolfSortKeys({
+        displayName: "Scottie Scheffler",
+        participantMetadata: {
+          firstName: "Scottie",
+          lastName: "Scheffler",
+          owgr: "2",
+          dataGolf: { dg_rank: 1 },
+        },
+        scoreData: { leaderboardTotal: "-8", leaderboardPosition: "T3" },
+        total: 10,
+      }),
+    };
+    const morePointsWorseGolf = {
+      ...mcilroy,
+      sortKeys: buildGolfSortKeys({
+        displayName: "Rory McIlroy",
+        participantMetadata: {
+          firstName: "Rory",
+          lastName: "McIlroy",
+          owgr: "1",
+          dataGolf: { dg_rank: 2 },
+        },
+        scoreData: { leaderboardTotal: "-2", leaderboardPosition: "T10" },
+        total: 18,
+      }),
+    };
+    const sorted = sortCandidates(
+      [fewerPointsBetterGolf, morePointsWorseGolf],
+      golfCandidateSortConfig,
+      "lineupPicks",
+      { eventStatus: "LIVE" },
+    );
+    expect(sorted.map((item) => item.participantId)).toEqual(["p2", "p1"]);
+  });
+
+  it("hydrates empty lineup-pick sortKeys from nested metadata", () => {
+    const low = {
+      eventParticipantId: "ep-low",
+      participantId: "p-low",
+      displayName: "Scottie Scheffler",
+      sortKeys: {},
+      metadata: {
+        participant: { firstName: "Scottie", lastName: "Scheffler" },
+        scoreData: { leaderboardTotal: "-8", leaderboardPosition: "T3" },
+        total: 10,
+      },
+    };
+    const high = {
+      eventParticipantId: "ep-high",
+      participantId: "p-high",
+      displayName: "Rory McIlroy",
+      sortKeys: {},
+      metadata: {
+        participant: { firstName: "Rory", lastName: "McIlroy" },
+        scoreData: { leaderboardTotal: "-2", leaderboardPosition: "T10" },
+        total: 18,
+      },
+    };
+    const sorted = sortCandidates([low, high], golfCandidateSortConfig, "lineupPicks", {
       eventStatus: "LIVE",
     });
-    expect(sorted.map((item) => item.participantId)).toEqual(["p1", "p2"]);
+    expect(sorted.map((item) => item.participantId)).toEqual(["p-high", "p-low"]);
   });
 });

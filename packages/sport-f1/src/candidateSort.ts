@@ -1,5 +1,6 @@
-import type { CandidateSortConfig } from "@cut/sport-sdk";
-import { f1CandidateHasDisplayName } from "./f1SortKeys.js";
+import type { Candidate, CandidateSortConfig } from "@cut/sport-sdk";
+import { sortKeyInputFromCandidate } from "@cut/sport-sdk";
+import { buildF1SortKeys, f1CandidateHasDisplayName } from "./f1SortKeys.js";
 
 const nameSortKeys = [
   { key: "gridPosition", direction: "asc" as const },
@@ -21,6 +22,11 @@ const activeSortKeys = [
   { key: "driverName", direction: "asc" as const },
 ];
 
+const lineupPickSortKeys = [
+  { key: "total", direction: "desc" as const },
+  { key: "driverName", direction: "asc" as const },
+];
+
 export const f1CandidateSortConfig: CandidateSortConfig = {
   contexts: {
     picker: pickerSortKeys,
@@ -30,8 +36,9 @@ export const f1CandidateSortConfig: CandidateSortConfig = {
     },
     lineupPicks: {
       scheduled: nameSortKeys,
-      active: activeSortKeys,
+      active: lineupPickSortKeys,
     },
   },
   filter: f1CandidateHasDisplayName,
+  buildSortKeys: (candidate: Candidate) => buildF1SortKeys(sortKeyInputFromCandidate(candidate)),
 };

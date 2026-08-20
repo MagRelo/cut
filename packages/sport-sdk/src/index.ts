@@ -96,5 +96,13 @@ export type {
 } from "./candidateSort.js";
 export { compareCandidates, sortCandidates } from "./candidateSort.js";
 
-export type { LineupPickView, CandidatePickMetadata } from "./lineupPick.js";
-export { candidateFromLineupPick, candidatesFromLineupPicks } from "./lineupPick.js";
+export type {
+  LineupPickView,
+  CandidatePickMetadata,
+  CandidateSortKeyInput,
+} from "./lineupPick.js";
+export {
+  candidateFromLineupPick,
+  candidatesFromLineupPicks,
+  sortKeyInputFromCandidate,
+} from "./lineupPick.js";

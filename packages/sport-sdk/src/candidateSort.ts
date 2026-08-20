@@ -23,6 +23,8 @@ export type CandidateSortContextDef =
 export interface CandidateSortConfig {
   contexts: Record<CandidateSortContext, CandidateSortContextDef>;
   filter?: (candidate: Candidate) => boolean;
+  /** Fill empty `sortKeys` (lineup-pick candidates) from nested metadata. */
+  buildSortKeys?: (candidate: Candidate) => Record<string, number | string>;
 }
 
 export interface SortCandidatesOptions {
@@ -91,6 +93,14 @@ export function compareCandidates(
   return 0;
 }
 
+function hydrateSortKeys(candidates: Candidate[], config: CandidateSortConfig): Candidate[] {
+  if (!config.buildSortKeys) return candidates;
+  return candidates.map((candidate) => {
+    if (Object.keys(candidate.sortKeys).length > 0) return candidate;
+    return { ...candidate, sortKeys: config.buildSortKeys!(candidate) };
+  });
+}
+
 export function sortCandidates(
   candidates: Candidate[],
   config: CandidateSortConfig,
@@ -99,6 +109,7 @@ export function sortCandidates(
 ): Candidate[] {
   const contextDef = config.contexts[context];
   const keyDefs = sortKeyDefsForContext(contextDef, context, options?.eventStatus);
-  const filtered = config.filter ? candidates.filter(config.filter) : candidates;
+  const hydrated = hydrateSortKeys(candidates, config);
+  const filtered = config.filter ? hydrated.filter(config.filter) : hydrated;
   return [...filtered].sort((a, b) => compareCandidates(a, b, keyDefs));
 }

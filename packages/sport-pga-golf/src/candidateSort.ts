@@ -1,5 +1,6 @@
-import type { CandidateSortConfig } from "@cut/sport-sdk";
-import { golfCandidateHasDisplayName } from "./golfSortKeys.js";
+import type { Candidate, CandidateSortConfig } from "@cut/sport-sdk";
+import { sortKeyInputFromCandidate } from "@cut/sport-sdk";
+import { buildGolfSortKeys, golfCandidateHasDisplayName } from "./golfSortKeys.js";
 
 const nameSortKeys = [
   { key: "lastName", direction: "asc" as const },
@@ -9,6 +10,12 @@ const nameSortKeys = [
 const leaderboardSortKeys = [
   { key: "leaderboardScore", direction: "asc" as const },
   { key: "leaderboardPosition", direction: "asc" as const },
+  { key: "lastName", direction: "asc" as const },
+  { key: "firstName", direction: "asc" as const },
+];
+
+const lineupPickSortKeys = [
+  { key: "total", direction: "desc" as const },
   { key: "lastName", direction: "asc" as const },
   { key: "firstName", direction: "asc" as const },
 ];
@@ -29,8 +36,9 @@ export const golfCandidateSortConfig: CandidateSortConfig = {
     },
     lineupPicks: {
       scheduled: nameSortKeys,
-      active: leaderboardSortKeys,
+      active: lineupPickSortKeys,
     },
   },
   filter: golfCandidateHasDisplayName,
+  buildSortKeys: (candidate: Candidate) => buildGolfSortKeys(sortKeyInputFromCandidate(candidate)),
 };

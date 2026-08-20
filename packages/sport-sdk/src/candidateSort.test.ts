@@ -88,6 +88,29 @@ describe("sortCandidates", () => {
     expect(sorted.map((item) => item.participantId)).toEqual(["low", "high"]);
   });
 
+  it("hydrates empty sortKeys before applying context keys", () => {
+    const config: CandidateSortConfig = {
+      contexts: {
+        picker: [{ key: "name", direction: "asc" }],
+        fieldLeaderboard: { scheduled: [], active: [] },
+        lineupPicks: {
+          scheduled: [{ key: "name", direction: "asc" }],
+          active: [{ key: "total", direction: "desc" }],
+        },
+      },
+      buildSortKeys: (item) => {
+        const metadata = item.metadata as { total?: number; name?: string };
+        return { total: metadata.total ?? 0, name: metadata.name ?? item.displayName };
+      },
+    };
+    const items = [candidate("low", {}), candidate("high", {})];
+    items[0]!.metadata = { total: 4, name: "low" };
+    items[1]!.metadata = { total: 12, name: "high" };
+
+    const sorted = sortCandidates(items, config, "lineupPicks", { eventStatus: "LIVE" });
+    expect(sorted.map((item) => item.participantId)).toEqual(["high", "low"]);
+  });
+
   it("applies config filter before sorting", () => {
     const config: CandidateSortConfig = {
       contexts: {

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { candidateFromLineupPick, candidatesFromLineupPicks } from "./lineupPick.js";
+import {
+  candidateFromLineupPick,
+  candidatesFromLineupPicks,
+  sortKeyInputFromCandidate,
+} from "./lineupPick.js";
 import type { LineupPickView } from "./lineupPick.js";
 
 const golfScoreData = {
@@ -31,6 +35,22 @@ function golfPick(overrides: Partial<LineupPickView> = {}): LineupPickView {
 }
 
 describe("candidateFromLineupPick", () => {
+  it("extracts sort-key inputs from nested pick metadata", () => {
+    const candidate = candidateFromLineupPick(golfPick());
+    expect(candidate).not.toBeNull();
+    expect(sortKeyInputFromCandidate(candidate!)).toEqual({
+      displayName: "Rory McIlroy",
+      participantMetadata: {
+        firstName: "Rory",
+        lastName: "McIlroy",
+        imageUrl: "https://example.com/rory.png",
+        country: "NIR",
+      },
+      scoreData: golfScoreData,
+      total: 42,
+    });
+  });
+
   it("nests identity, sport live record, and total for parse helpers", () => {
     const candidate = candidateFromLineupPick(golfPick());
     expect(candidate).toMatchObject({

@@ -133,5 +133,6 @@ export function buildGolfSortKeys(input: {
     firstName: names.firstName,
     name: names.name,
     stableford: input.total ?? scoreData.stableford ?? 0,
+    total: input.total ?? scoreData.stableford ?? 0,
   };
 }
