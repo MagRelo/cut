@@ -50,7 +50,7 @@ const formatAmount = (txn: UserTransaction): { text: string; className: string }
 const TxnDescription: React.FC<{ txn: UserTransaction }> = ({ txn }) => {
   const title = txn.contestAddress ? (
     <Link
-      to={contestLobbyPath(txn.contestAddress)}
+      to={contestLobbyPath(txn.contestAddress ?? txn.contestId ?? "")}
       className="font-medium text-gray-900 hover:text-blue-700 hover:underline"
     >
       {txn.label}

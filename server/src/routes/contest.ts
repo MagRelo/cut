@@ -1,4 +1,4 @@
-import { Context, Hono } from "hono";
+import { Context, Hono, type Next } from "hono";
 import type { Prisma } from "@prisma/client";
 import { predictionNumericValue } from "../utils/sportPrediction.js";
 import { prisma } from "../lib/prisma.js";
@@ -30,6 +30,7 @@ import { getContestTimelineData } from "../utils/contestTimeline.js";
 import { queueVerifyContestContract } from "../services/contest/verifyContestContract.js";
 import { verifyFactoryContestCreation } from "../services/contest/verifyFactoryContestCreation.js";
 import { resolveContestDbId } from "../utils/contestRouteParam.js";
+import { hasOnchainEscrow } from "../utils/hasOnchainEscrow.js";
 import { cloneLineup } from "../services/lineups/cloneLineup.js";
 import { verifyPrimaryEntryOwner } from "../services/contest/verifyPrimaryEntryOwner.js";
 import {
@@ -50,8 +51,20 @@ import {
 } from "../services/contests/listContestDirectory.js";
 import {
   getContestLobby,
-  invalidateContestLobbyByAddress,
+  invalidateContestLobby,
 } from "../services/contests/getContestLobby.js";
+
+async function requireWalletChainIfEscrow(c: Context, next: Next): Promise<Response | void> {
+  const contestId = c.req.param("id");
+  const contest = await prisma.contest.findUnique({
+    where: { id: contestId },
+    select: { address: true },
+  });
+  if (contest && hasOnchainEscrow(contest)) {
+    return requireWalletChain(c, next);
+  }
+  await next();
+}
 
 const contestRouter = new Hono();
 
@@ -195,6 +208,9 @@ contestRouter.post("/:id/secondary-participants", requireAuth, requireWalletChai
     });
     if (!contest) {
       return c.json({ error: "Contest not found" }, 404);
+    }
+    if (!hasOnchainEscrow(contest)) {
+      return c.json({ error: "Winner Pool is not available for $0 contests" }, 400);
     }
 
     const accessDenied = await leagueContestAccessDenied(c, contest.userGroupId);
@@ -387,6 +403,36 @@ contestRouter.post("/", requireAuth, async (c) => {
       return c.json({ error: "Event not found" }, 404);
     }
 
+    const isOffChain = settings?.primaryDeposit === 0;
+    const endTime = new Date(endDate);
+
+    if (isOffChain) {
+      const contest = await prisma.contest.create({
+        data: {
+          name,
+          description: description || null,
+          eventId,
+          userGroupId: userGroupId || null,
+          endTime,
+          address: null,
+          chainId,
+          status: "OPEN",
+          settings: (settings ?? {}) as Prisma.InputJsonValue,
+        },
+        include: {
+          event: true,
+          userGroup: true,
+        },
+      });
+      invalidateContestDirectory();
+      invalidateContestLobby(contest);
+      return c.json(contest, 201);
+    }
+
+    if (!transactionHash || !address) {
+      return c.json({ error: "transactionHash and address are required for paid contests" }, 400);
+    }
+
     const factoryCheck = await verifyFactoryContestCreation({
       chainId,
       transactionHash: transactionHash as `0x${string}`,
@@ -413,8 +459,6 @@ contestRouter.post("/", requireAuth, async (c) => {
       paymentTokenAddress: factoryCheck.paymentToken,
     };
 
-    const endTime = new Date(endDate);
-
     const contest = await prisma.contest.create({
       data: {
         name,
@@ -433,7 +477,7 @@ contestRouter.post("/", requireAuth, async (c) => {
       },
     });
     invalidateContestDirectory();
-    invalidateContestLobbyByAddress(contestAddress);
+    invalidateContestLobby(contest);
 
     const bps =
       pinnedSettings.primaryDepositSecondarySubsidyBps ??
@@ -467,7 +511,7 @@ contestRouter.post("/", requireAuth, async (c) => {
       ).toString();
       void queueVerifyContestContract({
         chainId,
-        contestAddress: contest.address,
+        contestAddress,
         paymentTokenAddress: pinnedSettings.paymentTokenAddress,
         operator: pinnedSettings.operator,
         primaryDepositAmountWei,
@@ -493,7 +537,7 @@ contestRouter.post(
   "/:id/lineups",
   requireContestPrimaryActionsUnlocked,
   requireAuth,
-  requireWalletChain,
+  requireWalletChainIfEscrow,
   async (c) => {
     try {
       const body = await c.req.json();
@@ -527,22 +571,25 @@ contestRouter.post(
         }
       }
 
-      const entryId = String(generateContestEntryId(contestCheck.address, lineupId));
+      let entryId: string | null = null;
+      if (hasOnchainEscrow(contestCheck)) {
+        entryId = String(generateContestEntryId(contestCheck.address, lineupId));
 
-      const ownerCheck = await verifyPrimaryEntryOwner({
-        contestAddress: contestCheck.address,
-        chainId: contestCheck.chainId,
-        entryId,
-        walletAddress: user.address,
-      });
-      if (!ownerCheck.ok) {
-        if (ownerCheck.error === "rpc_error") {
-          return c.json({ error: "Failed to verify on-chain entry owner" }, 502);
+        const ownerCheck = await verifyPrimaryEntryOwner({
+          contestAddress: contestCheck.address,
+          chainId: contestCheck.chainId,
+          entryId,
+          walletAddress: user.address,
+        });
+        if (!ownerCheck.ok) {
+          if (ownerCheck.error === "rpc_error") {
+            return c.json({ error: "Failed to verify on-chain entry owner" }, 502);
+          }
+          if (ownerCheck.error === "unowned") {
+            return c.json({ error: "Entry is not owned on-chain" }, 400);
+          }
+          return c.json({ error: "Entry is not owned by this wallet" }, 403);
         }
-        if (ownerCheck.error === "unowned") {
-          return c.json({ error: "Entry is not owned on-chain" }, 400);
-        }
-        return c.json({ error: "Entry is not owned by this wallet" }, 403);
       }
 
       const lineup = await prisma.lineup.findUnique({
@@ -619,18 +666,20 @@ contestRouter.post(
         return c.json({ error: "This lineup has already been added to this contest" }, 400);
       }
 
-      const existingEntry = await prisma.contestLineup.findFirst({
-        where: {
-          contestId,
-          entryId,
-        },
-      });
+      if (entryId) {
+        const existingEntry = await prisma.contestLineup.findFirst({
+          where: {
+            contestId,
+            entryId,
+          },
+        });
 
-      if (existingEntry) {
-        return c.json(
-          { error: "An entry with this player composition already exists in this contest" },
-          400,
-        );
+        if (existingEntry) {
+          return c.json(
+            { error: "An entry with this player composition already exists in this contest" },
+            400,
+          );
+        }
       }
 
       await prisma.contestLineup.create({
@@ -643,7 +692,7 @@ contestRouter.post(
         },
       });
 
-      invalidateContestLobbyByAddress(contestCheck.address);
+      invalidateContestLobby(contestCheck);
       return await contestLobbyResponse(c, contestId, { skipCache: true, status: 201 });
     } catch (error) {
       console.error("Error adding lineup to contest:", error);
@@ -668,7 +717,7 @@ contestRouter.delete(
           contestId,
         },
         include: {
-          contest: { select: { address: true } },
+          contest: { select: { id: true, address: true } },
         },
       });
 
@@ -680,7 +729,10 @@ contestRouter.delete(
         if (!formattedContest) {
           return c.json({ error: "Contest not found" }, 404);
         }
-        invalidateContestLobbyByAddress(String(formattedContest.address));
+        invalidateContestLobby({
+          id: String(formattedContest.id),
+          address: typeof formattedContest.address === "string" ? formattedContest.address : null,
+        });
         return c.json(formattedContest);
       }
 
@@ -695,7 +747,7 @@ contestRouter.delete(
         },
       });
 
-      invalidateContestLobbyByAddress(lineup.contest.address);
+      invalidateContestLobby(lineup.contest);
       return await contestLobbyResponse(c, contestId, { skipCache: true });
     } catch (error) {
       console.error("Error removing lineup from contest:", error);

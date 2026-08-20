@@ -35,9 +35,9 @@ export function useContestPotDisplay(contest: Contest) {
     isLoading: isPredictionDataLoading,
     contestChainReadsUnavailable,
   } = useContestPredictionData({
-    contestAddress: contest.address,
+    contestAddress: contest.address ?? "",
     entryIds: [],
-    enabled: !!contest.address && !!contest.chainId,
+    enabled: Boolean(contest.address && contest.chainId),
     chainId: contest.chainId,
     paymentTokenAddress: contestPaymentToken,
   });

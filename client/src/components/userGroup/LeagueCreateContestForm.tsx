@@ -30,6 +30,7 @@ import {
   primarySubsidyPercentToBps,
 } from "../../lib/leagueCreateContestOptions";
 import { contestLobbyPath } from "../../utils/contestRoutes";
+import { getTargetChainIdFromEnv } from "../../config/targetChain";
 
 interface LeagueCreateContestFormProps {
   userGroupId: string;
@@ -60,6 +61,7 @@ export const LeagueCreateContestForm = ({
 
   const tokenSymbol = paymentTokenSymbol ?? "xUSDC";
   const entryFee = LEAGUE_ENTRY_FEE_OPTIONS[entryFeeIndex];
+  const isFreeContest = entryFee === 0;
   const inviteRewardPercent = LEAGUE_INVITE_REWARD_PERCENTS[inviteRewardIndex];
   const primarySubsidyPercent = LEAGUE_PRIMARY_SUBSIDY_PERCENTS[primarySubsidyIndex];
 
@@ -75,7 +77,7 @@ export const LeagueCreateContestForm = ({
   } = useCreateContestSubmission({
     onContestCreated: (contest) => {
       onContestCreated?.();
-      navigate(contestLobbyPath(contest.address));
+      navigate(contestLobbyPath(contest));
     },
   });
 
@@ -86,25 +88,30 @@ export const LeagueCreateContestForm = ({
       return;
     }
 
+    const resolvedChainId = chainId || getTargetChainIdFromEnv();
     const expiryTimestamp = computeExpiryTimestampFromTournamentEnd(selectedEvent.endDate);
-    const baseSettings = buildContestSettings(chainId ?? 0, paymentTokenAddress || "", tokenSymbol);
+    const baseSettings = buildContestSettings(
+      resolvedChainId,
+      paymentTokenAddress || "",
+      tokenSymbol,
+    );
 
     await submitContest({
       name: selectedEvent.eventName,
-      transactionId: "",
-      address: "",
-      chainId: chainId ?? 0,
+      chainId: resolvedChainId,
       eventId: selectedEvent.eventId,
       userGroupId,
       settings: {
         ...baseSettings,
         primaryDeposit: entryFee,
-        primaryDepositSecondarySubsidyBps: primarySubsidyPercentToBps(primarySubsidyPercent),
-        referralNetworkBps: inviteRewardPercentToBps(inviteRewardPercent),
+        primaryDepositSecondarySubsidyBps: isFreeContest
+          ? 0
+          : primarySubsidyPercentToBps(primarySubsidyPercent),
+        referralNetworkBps: isFreeContest ? 0 : inviteRewardPercentToBps(inviteRewardPercent),
         expiryTimestamp,
         paymentTokenAddress: paymentTokenAddress || "",
         paymentTokenSymbol: tokenSymbol,
-        chainId: chainId ?? 0,
+        chainId: resolvedChainId,
       },
     });
   };
@@ -135,42 +142,46 @@ export const LeagueCreateContestForm = ({
         disabled={!canCreateContest || isProcessing}
       />
 
-      <DiscreteValueSlider
-        id="league-primary-subsidy"
-        label="Winner Pool Subsidy"
-        description="Share of each entry fee sent to the Winner Pool—jumpstarts the pool so predictions are more fun from the start"
-        valueIndex={primarySubsidyIndex}
-        valueCount={LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length}
-        displayValue={formatPrimarySubsidyPercent(primarySubsidyPercent)}
-        minLabel={formatPrimarySubsidyPercent(LEAGUE_PRIMARY_SUBSIDY_PERCENTS[0])}
-        maxLabel={formatPrimarySubsidyPercent(
-          LEAGUE_PRIMARY_SUBSIDY_PERCENTS[LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length - 1],
-        )}
-        onChange={setPrimarySubsidyIndex}
-        disabled={!canCreateContest || isProcessing}
-      />
+      {!isFreeContest ? (
+        <>
+          <DiscreteValueSlider
+            id="league-primary-subsidy"
+            label="Winner Pool Subsidy"
+            description="Share of each entry fee sent to the Winner Pool—jumpstarts the pool so predictions are more fun from the start"
+            valueIndex={primarySubsidyIndex}
+            valueCount={LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length}
+            displayValue={formatPrimarySubsidyPercent(primarySubsidyPercent)}
+            minLabel={formatPrimarySubsidyPercent(LEAGUE_PRIMARY_SUBSIDY_PERCENTS[0])}
+            maxLabel={formatPrimarySubsidyPercent(
+              LEAGUE_PRIMARY_SUBSIDY_PERCENTS[LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length - 1],
+            )}
+            onChange={setPrimarySubsidyIndex}
+            disabled={!canCreateContest || isProcessing}
+          />
 
-      <DiscreteValueSlider
-        id="league-invite-rewards"
-        label="Invite Rewards"
-        description={
-          <>
-            Share of contest pool paid to the invite network.{" "}
-            <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
-              Learn more...
-            </Link>
-          </>
-        }
-        valueIndex={inviteRewardIndex}
-        valueCount={LEAGUE_INVITE_REWARD_PERCENTS.length}
-        displayValue={formatInviteRewardPercent(inviteRewardPercent)}
-        minLabel={formatInviteRewardPercent(LEAGUE_INVITE_REWARD_PERCENTS[0])}
-        maxLabel={formatInviteRewardPercent(
-          LEAGUE_INVITE_REWARD_PERCENTS[LEAGUE_INVITE_REWARD_PERCENTS.length - 1],
-        )}
-        onChange={setInviteRewardIndex}
-        disabled={!canCreateContest || isProcessing}
-      />
+          <DiscreteValueSlider
+            id="league-invite-rewards"
+            label="Invite Rewards"
+            description={
+              <>
+                Share of contest pool paid to the invite network.{" "}
+                <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
+                  Learn more...
+                </Link>
+              </>
+            }
+            valueIndex={inviteRewardIndex}
+            valueCount={LEAGUE_INVITE_REWARD_PERCENTS.length}
+            displayValue={formatInviteRewardPercent(inviteRewardPercent)}
+            minLabel={formatInviteRewardPercent(LEAGUE_INVITE_REWARD_PERCENTS[0])}
+            maxLabel={formatInviteRewardPercent(
+              LEAGUE_INVITE_REWARD_PERCENTS[LEAGUE_INVITE_REWARD_PERCENTS.length - 1],
+            )}
+            onChange={setInviteRewardIndex}
+            disabled={!canCreateContest || isProcessing}
+          />
+        </>
+      ) : null}
 
       <button
         type="submit"

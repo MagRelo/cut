@@ -76,15 +76,44 @@ export const createContestSchema = z.object({
     .refine((val) => [8453, 84532].includes(val), {
       message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
     }),
-  address: ethAddress,
-  /** Factory `createContest` tx. Client may send this as `transactionId`. */
+  address: ethAddress.optional(),
+  /** Factory `createContest` tx. Client may send this as `transactionId`. Required for paid contests. */
   transactionHash: z.string().regex(TX_HASH_REGEX, "Invalid transaction hash").optional(),
   transactionId: z.string().regex(TX_HASH_REGEX, "Invalid transaction hash").optional(),
   status: z.enum(["OPEN", "ACTIVE", "LOCKED", "SETTLED", "CANCELLED", "CLOSED"]).default("OPEN"),
   settings: contestSettingsSchema,
 })
   .superRefine((data, ctx) => {
-    if (!data.transactionHash && !data.transactionId) {
+    const deposit = data.settings?.primaryDeposit;
+    const tx = data.transactionHash ?? data.transactionId;
+    const isOffChain = deposit === 0;
+
+    if (isOffChain) {
+      if (data.address) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "address must be omitted for $0 contests",
+          path: ["address"],
+        });
+      }
+      if (tx) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "transactionHash must be omitted for $0 contests",
+          path: ["transactionHash"],
+        });
+      }
+      return;
+    }
+
+    if (!data.address) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "address is required for paid contests",
+        path: ["address"],
+      });
+    }
+    if (!tx) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "transactionHash is required",
@@ -94,7 +123,7 @@ export const createContestSchema = z.object({
   })
   .transform((data) => ({
     ...data,
-    transactionHash: (data.transactionHash ?? data.transactionId) as string,
+    transactionHash: data.transactionHash ?? data.transactionId,
   }));
 
 // Schema for updating a contest

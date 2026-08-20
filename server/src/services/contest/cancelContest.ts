@@ -7,6 +7,7 @@
 import { prisma } from '../../lib/prisma.js';
 import { getContestContract, verifyOperator, readContestState } from '../shared/contractClient.js';
 import { ContestState, type OperationResult } from '../shared/types.js';
+import { hasOnchainEscrow } from '../../utils/hasOnchainEscrow.js';
 
 export async function cancelContest(contestId: string, reason?: string): Promise<OperationResult> {
   try {
@@ -31,6 +32,25 @@ export async function cancelContest(contestId: string, reason?: string): Promise
         success: false,
         contestId,
         error: `Cannot cancel contest with status ${contest.status}`,
+      };
+    }
+
+    if (!hasOnchainEscrow(contest)) {
+      await prisma.contest.update({
+        where: { id: contestId },
+        data: {
+          status: 'CANCELLED',
+          results: JSON.parse(JSON.stringify({
+            cancelled: true,
+            reason: reason || 'Contest cancelled',
+            cancelledAt: new Date().toISOString(),
+          })),
+        },
+      });
+      console.log(`[cancelContest] Cancelled off-chain contest ${contestId}`);
+      return {
+        success: true,
+        contestId,
       };
     }
 

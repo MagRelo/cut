@@ -126,7 +126,8 @@ export interface Contest {
   status: ContestStatus;
   settings: ContestSettings;
   transactionId?: string;
-  address: string;
+  /** Factory ContestController address. Null for $0 (off-chain) contests. */
+  address: string | null;
   chainId: number; // Chain ID (8453 for Base, 84532 for Base Sepolia)
   createdAt: Date;
   updatedAt: Date;
@@ -184,8 +185,10 @@ export type OnchainPaymentView = {
 export interface CreateContestInput {
   name: string;
   eventId: string;
-  transactionId: string;
-  address: string;
+  /** Factory create tx. Required for paid contests; omit for $0. */
+  transactionId?: string;
+  /** ContestController address. Required for paid contests; omit for $0. */
+  address?: string;
   chainId: number;
   settings: ContestSettings;
   description?: string;

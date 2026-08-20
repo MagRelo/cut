@@ -41,14 +41,22 @@ type ContestLobbyPayload = Record<string, unknown>;
 
 const lobbyCache = createTtlCache<ContestLobbyPayload>(CONTEST_LOBBY_CACHE_TTL_MS);
 
-export function contestLobbyCacheKey(address: string, privyUserId: string | null): string {
-  return `${normalizeContestAddress(address)}:${privyUserId ?? "anon"}`;
+export function contestLobbyCacheKey(routeKey: string, privyUserId: string | null): string {
+  return `${normalizeContestAddress(routeKey)}:${privyUserId ?? "anon"}`;
 }
 
-export function contestLobbyCachePrefix(address: string): string {
-  return `${normalizeContestAddress(address)}:`;
+export function contestLobbyCachePrefix(routeKey: string): string {
+  return `${normalizeContestAddress(routeKey)}:`;
 }
 
+export function invalidateContestLobby(contest: { id: string; address?: string | null }): void {
+  lobbyCache.invalidatePrefix(contestLobbyCachePrefix(contest.id));
+  if (contest.address) {
+    lobbyCache.invalidatePrefix(contestLobbyCachePrefix(contest.address));
+  }
+}
+
+/** @deprecated Use invalidateContestLobby. */
 export function invalidateContestLobbyByAddress(address: string): void {
   lobbyCache.invalidatePrefix(contestLobbyCachePrefix(address));
 }
@@ -358,8 +366,7 @@ export async function getContestLobby(
   const trimmed = routeParam.trim();
   if (!trimmed) return null;
 
-  // Cache is address-keyed so join/leave (database id) still invalidate lobby URLs.
-  if (options?.skipCache || !isEthereumAddress(trimmed)) {
+  if (options?.skipCache) {
     return loadContestLobby(trimmed, privyUserId);
   }
 

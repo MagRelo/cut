@@ -30,7 +30,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
 
   // Fetch prediction data
   const { entryData, canWithdraw, contestState, isLoading } = useContestPredictionData({
-    contestAddress: contest.address,
+    contestAddress: contest.address ?? "",
     entryIds,
     enabled: !!userAddress,
     chainId: contest.chainId,
@@ -62,7 +62,11 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
     setWithdrawingEntryId(entryId);
 
     try {
-      const calls = createWithdrawPredictionCalls(contest.address, parseInt(entryId), tokenAmount);
+      const calls = createWithdrawPredictionCalls(
+        contest.address ?? "",
+        parseInt(entryId),
+        tokenAmount,
+      );
       await execute(calls);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);

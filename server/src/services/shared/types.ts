@@ -39,7 +39,7 @@ export interface ContestSettings {
   paymentTokenAddress: string;
   paymentTokenSymbol: string;
   operator: string;
-  /** Human token units; maps to `_primaryDepositAmount` with 18 decimals on-chain. `0` = free primary layer. */
+  /** Human token units. `0` = off-chain contest (no escrow). Paid maps to `_primaryDepositAmount` on-chain. */
   primaryDeposit: number;
   /** `_referralNetworkBps` on ContestController. */
   referralNetworkBps?: number;
@@ -84,7 +84,7 @@ export interface ContestResults {
   winningEntries: string[]; // Entry IDs that won
   payoutBps: number[]; // Basis points for each winner (must sum to 10000)
   detailedResults: DetailedResult[];
-  settleTx: {
+  settleTx?: {
     hash: string;
   };
   snapshot?: ContestSnapshot; // Snapshot of contest state at settlement time

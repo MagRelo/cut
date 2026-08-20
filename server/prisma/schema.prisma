@@ -216,7 +216,7 @@ model Contest {
   id                     String    @id @default(cuid())
   name                   String
   endTime                DateTime
-  address                String
+  address                String?
   chainId                Int
   eventId                String
   status                 String

@@ -20,6 +20,7 @@ import {
   verifyOperator,
 } from "../services/shared/contractClient.js";
 import { ContestState, type ContestResults } from "../services/shared/types.js";
+import { hasOnchainEscrow } from "../utils/hasOnchainEscrow.js";
 
 function parseContestIdFromArgv(): string | undefined {
   const args = process.argv.slice(2).filter((a) => a !== "--");
@@ -49,6 +50,11 @@ async function main() {
     console.error(
       "Contest has no results.winningEntries. Run settlement first (on-chain settleContest + DB results).",
     );
+    process.exit(1);
+  }
+
+  if (!hasOnchainEscrow(contest)) {
+    console.error("Contest has no on-chain escrow; payout push is not applicable.");
     process.exit(1);
   }
 

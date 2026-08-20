@@ -3,6 +3,7 @@ import {
   contractStateToStatus,
   type ContestStatus,
 } from "../services/shared/types.js";
+import { hasOnchainEscrow } from "./hasOnchainEscrow.js";
 
 /**
  * Prefer on-chain ContestController.state for action gates; fall back to DB on RPC errors.
@@ -11,9 +12,13 @@ import {
 export async function resolveContestStatus(contest: {
   id: string;
   status: string;
-  address: string;
+  address: string | null;
   chainId: number;
 }): Promise<ContestStatus> {
+  if (!hasOnchainEscrow(contest)) {
+    return contest.status as ContestStatus;
+  }
+
   try {
     const onChain = await readContestState(contest.address, contest.chainId);
     return contractStateToStatus(onChain);

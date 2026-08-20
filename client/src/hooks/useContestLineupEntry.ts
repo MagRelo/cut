@@ -19,6 +19,7 @@ import {
   platformLineupPrediction,
 } from "../lib/lineupUtils";
 import ContestContract from "../utils/contracts/ContestController.json";
+import { contestRouteKey, hasOnchainEscrow } from "../lib/hasOnchainEscrow";
 
 export function useContestLineupEntry(contest: Contest) {
   const posthog = usePostHog();
@@ -29,6 +30,8 @@ export function useContestLineupEntry(contest: Contest) {
   const joinContest = useJoinContest();
   const leaveContest = useLeaveContest();
   const { lineups } = useLineupData({ eventId: contest.eventId });
+  const onchain = hasOnchainEscrow(contest);
+  const routeKey = contestRouteKey(contest);
 
   const [serverError, setServerError] = useState<string | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
@@ -53,12 +56,14 @@ export function useContestLineupEntry(contest: Contest) {
     return map;
   }, [userContestLineups]);
 
-  const { data: primaryDepositRaw, isPending: isPrimaryDepositLoading } = useReadContract({
+  const { data: primaryDepositRaw, isPending: isPrimaryDepositLoadingOnChain } = useReadContract({
     address: contest.address as `0x${string}`,
     abi: ContestContract.abi,
     functionName: "primaryDepositAmount",
     args: [],
+    query: { enabled: onchain },
   });
+  const isPrimaryDepositLoading = onchain && isPrimaryDepositLoadingOnChain;
   const contestantDepositAmount =
     typeof primaryDepositRaw === "bigint" ? primaryDepositRaw : undefined;
 
@@ -67,7 +72,9 @@ export function useContestLineupEntry(contest: Contest) {
     abi: ContestContract.abi,
     functionName: "paymentToken",
     args: [],
-    query: { enabled: Boolean(contest.address) },
+    query: {
+      enabled: Boolean(onchain && contest.address),
+    },
   });
 
   const contestPaymentToken =
@@ -79,17 +86,17 @@ export function useContestLineupEntry(contest: Contest) {
     address: balanceAddress,
     token: contestPaymentToken as `0x${string}`,
     query: {
-      enabled: Boolean(balanceAddress && contestPaymentToken && user),
+      enabled: Boolean(onchain && balanceAddress && contestPaymentToken && user),
     },
   });
 
   const spendableForContest = contestTokenBalanceData?.value ?? paymentTokenBalance ?? 0n;
 
   const hasEnoughBalance = useMemo(() => {
+    if (!onchain) return true;
     if (contestantDepositAmount === undefined) return false;
-    if (contestantDepositAmount === 0n) return true;
     return hasEnoughTokenBalance(spendableForContest, contestantDepositAmount);
-  }, [spendableForContest, contestantDepositAmount]);
+  }, [onchain, spendableForContest, contestantDepositAmount]);
 
   const checkForDuplicateInContest = useCallback(
     (lineupId: string): boolean => {
@@ -145,7 +152,7 @@ export function useContestLineupEntry(contest: Contest) {
         try {
           await joinContest.mutateAsync({
             contestId: contest.id,
-            contestAddress: contest.address,
+            contestRouteKey: routeKey,
             lineupId: pendingAction.lineupId,
             entryId: pendingAction.entryId,
           });
@@ -180,7 +187,7 @@ export function useContestLineupEntry(contest: Contest) {
           if (contestLineupId) {
             await leaveContest.mutateAsync({
               contestId: contest.id,
-              contestAddress: contest.address,
+              contestRouteKey: routeKey,
               contestLineupId,
             });
           }
@@ -216,6 +223,27 @@ export function useContestLineupEntry(contest: Contest) {
       return;
     }
     setValidationError(null);
+    setSubmissionError(null);
+
+    if (!hasOnchainEscrow(contest)) {
+      setPendingAction({ type: "join", lineupId });
+      try {
+        await joinContest.mutateAsync({
+          contestId: contest.id,
+          contestRouteKey: routeKey,
+          lineupId,
+        });
+        setPendingAction(null);
+        setServerError(null);
+      } catch (error) {
+        setServerError(
+          `Failed to join contest: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+        setPendingAction(null);
+      }
+      return;
+    }
+
     if (isPrimaryDepositLoading) return;
     if (contestantDepositAmount === undefined) {
       setSubmissionError("Unable to read contest details from blockchain");
@@ -234,7 +262,6 @@ export function useContestLineupEntry(contest: Contest) {
 
     const entryId = generateEntryId(contest.address, lineupId);
     setPendingAction({ type: "join", lineupId, entryId: entryId.toString() });
-    setSubmissionError(null);
 
     const calls = createJoinContestCalls(
       contest.address,
@@ -250,6 +277,31 @@ export function useContestLineupEntry(contest: Contest) {
     const contestLineup = contest.contestLineups?.find(
       (cl) => cl.lineupId === lineupId && cl.userId === user?.id,
     );
+    const contestLineupId = contestLineup?.id ?? enteredLineupsMap.get(lineupId);
+    if (!contestLineupId) {
+      setSubmissionError("Entry not found. Cannot leave contest.");
+      return;
+    }
+
+    if (!hasOnchainEscrow(contest)) {
+      setPendingAction({ type: "leave", lineupId });
+      try {
+        await leaveContest.mutateAsync({
+          contestId: contest.id,
+          contestRouteKey: routeKey,
+          contestLineupId,
+        });
+        setPendingAction(null);
+        setServerError(null);
+      } catch (error) {
+        setServerError(
+          `Failed to leave contest: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+        setPendingAction(null);
+      }
+      return;
+    }
+
     if (!contestLineup?.entryId) {
       setSubmissionError("Entry ID not found. Cannot leave contest.");
       return;
@@ -260,7 +312,13 @@ export function useContestLineupEntry(contest: Contest) {
   };
 
   const isLineupProcessing = (lineupId: string) =>
-    pendingAction?.lineupId === lineupId && (isJoinSending || isJoinConfirming || isLeaveSending || isLeaveConfirming);
+    pendingAction?.lineupId === lineupId &&
+    (isJoinSending ||
+      isJoinConfirming ||
+      isLeaveSending ||
+      isLeaveConfirming ||
+      joinContest.isPending ||
+      leaveContest.isPending);
 
   return {
     enteredLineupsMap,

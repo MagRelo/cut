@@ -34,6 +34,19 @@ describe("deriveContestLobbyViewModel primary gates", () => {
     ).toBe(false);
   });
 
+  it("hides Winner Pool when the contest has no on-chain escrow", () => {
+    const vm = deriveContestLobbyViewModel(
+      {
+        ...contestFixtures.active,
+        address: null,
+        settings: { ...contestFixtures.active.settings, primaryDeposit: 0 },
+      },
+      { contestStateOnChain: ContestState.ACTIVE },
+    );
+    expect(vm.layout.showPredictionsTab).toBe(false);
+    expect(vm.primary.mode).toBe("liveTimeline");
+  });
+
   it("CANCELLED: join false, leave true", () => {
     const status = effectiveContestStatus("OPEN", ContestState.CANCELLED);
     expect(canAddPrimaryPosition(status)).toBe(false);

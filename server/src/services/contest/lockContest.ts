@@ -8,6 +8,7 @@
 import { prisma } from '../../lib/prisma.js';
 import { getContestContract, verifyOperator, readContestState } from '../shared/contractClient.js';
 import { ContestState, type OperationResult } from '../shared/types.js';
+import { hasOnchainEscrow } from '../../utils/hasOnchainEscrow.js';
 
 export async function lockContest(contestId: string): Promise<OperationResult> {
   try {
@@ -32,6 +33,18 @@ export async function lockContest(contestId: string): Promise<OperationResult> {
         success: false,
         contestId,
         error: `Contest status is ${contest.status}, expected ACTIVE`,
+      };
+    }
+
+    if (!hasOnchainEscrow(contest)) {
+      await prisma.contest.update({
+        where: { id: contestId },
+        data: { status: 'LOCKED' },
+      });
+      console.log(`[lockContest] Locked off-chain contest ${contestId}`);
+      return {
+        success: true,
+        contestId,
       };
     }
 

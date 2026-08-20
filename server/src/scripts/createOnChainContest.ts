@@ -25,7 +25,7 @@ import { prisma } from "../lib/prisma.js";
 
 const BASE_SEPOLIA_CHAIN_ID = 84532;
 const EXPIRY_DAYS_AFTER_SESSION = 7;
-const DEFAULT_PRIMARY_DEPOSIT = 0;
+const DEFAULT_PRIMARY_DEPOSIT = 10;
 const DEFAULT_REFERRAL_NETWORK_BPS = 500;
 
 function parseArgs(): { eventId: string; name: string } {

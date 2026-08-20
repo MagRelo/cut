@@ -26,7 +26,7 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
 
   // Fetch prediction data
   const { entryData, canClaim, isLoading } = useContestPredictionData({
-    contestAddress: contest.address,
+    contestAddress: contest.address ?? "",
     entryIds,
     enabled: !!userAddress,
     chainId: contest.chainId,
@@ -74,7 +74,7 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
     setClaimingEntryId(entryId);
 
     try {
-      const calls = createClaimPredictionPayoutCalls(contest.address, parseInt(entryId));
+      const calls = createClaimPredictionPayoutCalls(contest.address ?? "", parseInt(entryId));
       await execute(calls);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);

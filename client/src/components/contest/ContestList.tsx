@@ -64,7 +64,7 @@ export const ContestList = ({
           <ContestListItem
             key={contest.id}
             contest={contest}
-            to={contestLobbyPath(contest.address)}
+            to={contestLobbyPath(contest)}
             eventShell={eventShell}
             variant={variant}
           />

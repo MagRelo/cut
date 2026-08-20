@@ -6,6 +6,7 @@ import { type ContestSettings, type CreateContestInput } from "../../types/conte
 import { contestLobbyPath } from "../../utils/contestRoutes";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useAuth } from "../../contexts/AuthContext";
+import { getTargetChainIdFromEnv } from "../../config/targetChain";
 import { useFirstEnabledSportId } from "../../hooks/useSportData";
 import {
   CreateContestEventPicker,
@@ -75,7 +76,7 @@ export const CreateContestForm = () => {
     onContestCreated: (contest) => {
       resetForm();
       setExpiryDaysAfterTournament(DEFAULT_EXPIRY_DAYS_AFTER_TOURNAMENT);
-      navigate(contestLobbyPath(contest.address));
+      navigate(contestLobbyPath(contest));
     },
   });
 
@@ -137,19 +138,23 @@ export const CreateContestForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const resolvedChainId = chainId || getTargetChainIdFromEnv();
     const s = formData.settings;
     const pending: CreateContestInput = {
       ...formData,
       eventId: selectedEvent?.eventId ?? "",
-      chainId: chainId ?? 0,
+      chainId: resolvedChainId,
       userGroupId: formData.userGroupId || undefined,
       settings: {
         ...s,
         paymentTokenAddress: paymentTokenAddress || "",
         paymentTokenSymbol: paymentTokenSymbol ?? "xUSDC",
         operator: s.operator.trim(),
-        chainId: chainId ?? 0,
+        chainId: resolvedChainId,
         expiryTimestamp: s.expiryTimestamp,
+        ...(s.primaryDeposit === 0
+          ? { referralNetworkBps: 0, primaryDepositSecondarySubsidyBps: 0 }
+          : {}),
       },
     };
 
@@ -200,7 +205,7 @@ export const CreateContestForm = () => {
           </label>
           <p className="text-xs text-gray-600">
             Fixed Layer 1 stake per primary participant. Use <span className="font-medium">0</span> for
-            a free contest (no deposit; still uses the same contract flow).
+            a free contest (no wallet, no Winner Pool).
           </p>
           <div className="relative">
             <input
@@ -219,50 +224,54 @@ export const CreateContestForm = () => {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="referralNetworkBps" className="block font-medium">
-            Invite network fee BPS (0–1000)
-          </label>
-          <p className="text-xs text-gray-600">
-            <span className="font-mono">_referralNetworkBps</span>: share of contest TVL
-            distributed to the referral network at settlement (restored to prize pools if no
-            payable referrer chain).
-          </p>
-          <input
-            type="number"
-            id="referralNetworkBps"
-            min={0}
-            max={1000}
-            step={1}
-            value={s.referralNetworkBps ?? s.oracleFeeBps ?? 0}
-            onChange={(e) => patchSettings({ referralNetworkBps: Number(e.target.value) })}
-            className="w-full p-2 border rounded-md"
-          />
-        </div>
+        {s.primaryDeposit > 0 ? (
+          <>
+            <div className="space-y-2">
+              <label htmlFor="referralNetworkBps" className="block font-medium">
+                Invite network fee BPS (0–1000)
+              </label>
+              <p className="text-xs text-gray-600">
+                <span className="font-mono">_referralNetworkBps</span>: share of contest TVL
+                distributed to the referral network at settlement (restored to prize pools if no
+                payable referrer chain).
+              </p>
+              <input
+                type="number"
+                id="referralNetworkBps"
+                min={0}
+                max={1000}
+                step={1}
+                value={s.referralNetworkBps ?? s.oracleFeeBps ?? 0}
+                onChange={(e) => patchSettings({ referralNetworkBps: Number(e.target.value) })}
+                className="w-full p-2 border rounded-md"
+              />
+            </div>
 
-        <div className="space-y-2">
-          <label htmlFor="primaryDepositSecondarySubsidyBps" className="block font-medium">
-            Primary deposit → secondary subsidy BPS (0–{MAX_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS})
-          </label>
-          <p className="text-xs text-gray-600">
-            <span className="font-mono">_primaryDepositSecondarySubsidyBps</span>: BPS of each
-            primary deposit credited to that entry&apos;s unbacked secondary subsidy pool; the
-            remainder credits the primary prize pool (max 10%; see{" "}
-            <span className="font-mono">ContestController</span> NatSpec).
-          </p>
-          <input
-            type="number"
-            id="primaryDepositSecondarySubsidyBps"
-            min={0}
-            max={MAX_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS}
-            step={1}
-            value={s.primaryDepositSecondarySubsidyBps}
-            onChange={(e) =>
-              patchSettings({ primaryDepositSecondarySubsidyBps: Number(e.target.value) })
-            }
-            className="w-full p-2 border rounded-md"
-          />
-        </div>
+            <div className="space-y-2">
+              <label htmlFor="primaryDepositSecondarySubsidyBps" className="block font-medium">
+                Primary deposit → secondary subsidy BPS (0–{MAX_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS})
+              </label>
+              <p className="text-xs text-gray-600">
+                <span className="font-mono">_primaryDepositSecondarySubsidyBps</span>: BPS of each
+                primary deposit credited to that entry&apos;s unbacked secondary subsidy pool; the
+                remainder credits the primary prize pool (max 10%; see{" "}
+                <span className="font-mono">ContestController</span> NatSpec).
+              </p>
+              <input
+                type="number"
+                id="primaryDepositSecondarySubsidyBps"
+                min={0}
+                max={MAX_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS}
+                step={1}
+                value={s.primaryDepositSecondarySubsidyBps}
+                onChange={(e) =>
+                  patchSettings({ primaryDepositSecondarySubsidyBps: Number(e.target.value) })
+                }
+                className="w-full p-2 border rounded-md"
+              />
+            </div>
+          </>
+        ) : null}
       </div>
 
       <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
@@ -301,37 +310,41 @@ export const CreateContestForm = () => {
           )}
         </div>
 
-        <div className="space-y-2">
-          <span className="block font-medium">Payment token</span>
-          <p className="text-xs text-gray-600">
-            <span className="font-mono">_paymentToken</span>: ERC20 used for all deposits,
-            collateral, and payouts.
-          </p>
-          <div className="p-2 bg-gray-100 rounded-md font-mono text-xs break-all">
-            {paymentTokenAddress || "Not configured"}
-          </div>
-          <p className="text-sm text-gray-600">{paymentTokenSymbol ?? "xUSDC"}</p>
-        </div>
+        {s.primaryDeposit > 0 ? (
+          <>
+            <div className="space-y-2">
+              <span className="block font-medium">Payment token</span>
+              <p className="text-xs text-gray-600">
+                <span className="font-mono">_paymentToken</span>: ERC20 used for all deposits,
+                collateral, and payouts.
+              </p>
+              <div className="p-2 bg-gray-100 rounded-md font-mono text-xs break-all">
+                {paymentTokenAddress || "Not configured"}
+              </div>
+              <p className="text-sm text-gray-600">{paymentTokenSymbol ?? "xUSDC"}</p>
+            </div>
 
-        <div className="space-y-2">
-          <label htmlFor="operator" className="block font-medium">
-            Operator
-          </label>
-          <p className="text-xs text-gray-600">
-            Factory <span className="font-mono">operator</span>: trusted escrow agent allowed to
-            advance/cancel/settle the contest (<span className="font-mono">onlyOperator</span>).
-            Must match the address fixed on ContestFactory at deploy.
-          </p>
-          <input
-            type="text"
-            id="operator"
-            value={s.operator}
-            onChange={(e) => patchSettings({ operator: e.target.value })}
-            required
-            className="w-full p-2 border rounded-md font-mono text-sm"
-            placeholder="0x…"
-          />
-        </div>
+            <div className="space-y-2">
+              <label htmlFor="operator" className="block font-medium">
+                Operator
+              </label>
+              <p className="text-xs text-gray-600">
+                Factory <span className="font-mono">operator</span>: trusted escrow agent allowed to
+                advance/cancel/settle the contest (<span className="font-mono">onlyOperator</span>).
+                Must match the address fixed on ContestFactory at deploy.
+              </p>
+              <input
+                type="text"
+                id="operator"
+                value={s.operator}
+                onChange={(e) => patchSettings({ operator: e.target.value })}
+                required
+                className="w-full p-2 border rounded-md font-mono text-sm"
+                placeholder="0x…"
+              />
+            </div>
+          </>
+        ) : null}
 
         <div className="space-y-2">
           <label htmlFor="expiryDaysAfterTournament" className="block font-medium">

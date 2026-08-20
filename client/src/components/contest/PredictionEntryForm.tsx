@@ -304,7 +304,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
     try {
       const calls = createAddPredictionCalls(
-        contest.address,
+        contest.address ?? "",
         Number.parseInt(entryId, 10),
         amountBigInt,
         contestPaymentToken,

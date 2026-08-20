@@ -30,7 +30,7 @@ type DirectoryContest = {
   eventId: string;
   userGroupId: string | null;
   endTime: Date;
-  address: string;
+  address: string | null;
   chainId: number;
   status: string;
   settings: Record<string, unknown> | null;
@@ -146,7 +146,7 @@ function formatDirectoryContest(row: {
   eventId: string;
   userGroupId: string | null;
   endTime: Date;
-  address: string;
+  address: string | null;
   chainId: number;
   status: string;
   settings: unknown;

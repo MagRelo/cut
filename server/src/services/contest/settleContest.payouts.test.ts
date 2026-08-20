@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { defaultPayoutVector } from "@cut/sport-sdk";
 import { requireSportModule } from "../../sports/registry.js";
+import { resolveSettlementEntryId } from "./settleContest.js";
 
 function mockLineup(
   entryId: string,
@@ -63,5 +64,15 @@ describe("settlement payout assignment", () => {
     const payouts = calculatePayoutBps(lineups);
     expect(payouts).toEqual([7000, 2000, 1000]);
     expect(payouts.reduce((a, b) => a + b, 0)).toBe(10000);
+  });
+});
+
+describe("resolveSettlementEntryId", () => {
+  it("uses the on-chain entryId when present", () => {
+    expect(resolveSettlementEntryId({ id: "cl_lineup", entryId: "12345" })).toBe("12345");
+  });
+
+  it("falls back to the lineup id for off-chain contests", () => {
+    expect(resolveSettlementEntryId({ id: "cl_lineup", entryId: null })).toBe("cl_lineup");
   });
 });

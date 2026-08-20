@@ -10,6 +10,7 @@ import ContestFactoryContract from "../utils/contracts/ContestFactory.json";
 import { getContractAddress } from "../utils/blockchainUtils.tsx";
 import { buildCreateContestFactoryCallParams } from "../lib/contestCreation";
 import { useAuth } from "../contexts/AuthContext";
+import { getTargetChainIdFromEnv } from "../config/targetChain";
 
 export function getCreateContestStatusMessage(
   isSending: boolean,
@@ -124,9 +125,39 @@ export function useCreateContestSubmission(options?: UseCreateContestSubmissionO
   const submitContest = async (pending: CreateContestInput) => {
     setError(null);
 
+    const resolvedChainId = pending.chainId || chainId || getTargetChainIdFromEnv();
+    const payload: CreateContestInput = { ...pending, chainId: resolvedChainId };
+
+    if (payload.settings.primaryDeposit === 0) {
+      if (payload.settings.expiryTimestamp <= 0) {
+        setError("A valid contest expiry is required for the active tournament.");
+        return;
+      }
+      setLoading(true);
+      createContestMutation.mutate(
+        {
+          ...payload,
+          address: undefined,
+          transactionId: undefined,
+        },
+        {
+          onSuccess: (contest) => {
+            setLoading(false);
+            options?.onContestCreated?.(contest);
+          },
+          onError: (err) => {
+            console.error("Error creating contest in backend:", err);
+            setError("Failed to create contest");
+            setLoading(false);
+          },
+        },
+      );
+      return;
+    }
+
     const built = buildCreateContestFactoryCallParams(
-      pending,
-      chainId ?? 0,
+      payload,
+      resolvedChainId,
       paymentTokenAddress || "",
       { maxReferralNetworkBps: options?.maxReferralNetworkBps },
     );
@@ -135,7 +166,7 @@ export function useCreateContestSubmission(options?: UseCreateContestSubmissionO
       return;
     }
 
-    pendingContestForApiRef.current = pending;
+    pendingContestForApiRef.current = payload;
     const { params } = built;
     const calls = createContestCalls(
       params.primaryDepositAmount,

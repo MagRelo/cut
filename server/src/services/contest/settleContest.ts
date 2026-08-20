@@ -34,6 +34,7 @@ import { getContract, erc20Abi } from "viem";
 import { captureContestWinPayoutRecorded } from "../analytics/posthog.js";
 import { contestLineupsInclude } from "../../utils/prismaIncludes.js";
 import { sortedPlayerLastNamesFromPicks } from "../../utils/lineupPickPresentation.js";
+import { hasOnchainEscrow } from "../../utils/hasOnchainEscrow.js";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 const SETTLED_STATE_CONFIRM_RETRIES = 3;
@@ -101,6 +102,7 @@ const isValidHexColor = (value: unknown): value is string => {
 };
 
 type ContestLineupForSettlement = {
+  id: string;
   entryId: string | null;
   score: number | null;
   createdAt: Date;
@@ -119,6 +121,10 @@ type ContestLineupForSettlement = {
     }>;
   };
 };
+
+export function resolveSettlementEntryId(lineup: { id: string; entryId: string | null }): string {
+  return lineup.entryId ?? lineup.id;
+}
 
 export async function settleContest(contestId: string): Promise<OperationResult> {
   try {
@@ -161,6 +167,67 @@ export async function settleContest(contestId: string): Promise<OperationResult>
         success: false,
         contestId,
         error: "Contest has no lineups to settle",
+      };
+    }
+
+    if (!hasOnchainEscrow(contest)) {
+      if (contest.status === "ACTIVE") {
+        const lockResult = await lockContest(contestId);
+        if (!lockResult.success) {
+          return {
+            success: false,
+            contestId,
+            error: `Failed to lock before settle: ${lockResult.error ?? "unknown error"}`,
+          };
+        }
+      }
+
+      const { winningEntries, payoutBps, detailedResults } = calculatePayouts(
+        contest.contestLineups,
+        contest.event.sportId,
+      );
+
+      if (winningEntries.length === 0) {
+        return {
+          success: false,
+          contestId,
+          error: "No winners calculated",
+        };
+      }
+
+      for (const row of detailedResults) {
+        row.payoutAmountWei = "0";
+        row.positionBonusAmountWei = "0";
+      }
+
+      const snapshot: ContestSnapshot = {
+        contractBalance: "0",
+        primaryPrizePool: "0",
+        primarySideBalance: "0",
+        secondarySideBalance: "0",
+        totalSecondaryLiquidity: "0",
+        primaryDepositSecondarySubsidyBps: 0,
+      };
+
+      const results: ContestResults = {
+        winningEntries,
+        payoutBps,
+        detailedResults,
+        snapshot,
+      };
+
+      await prisma.contest.update({
+        where: { id: contestId },
+        data: {
+          status: "SETTLED",
+          results: JSON.parse(JSON.stringify(results)),
+        },
+      });
+
+      console.log(`[settleContest] Settled off-chain contest ${contestId}`);
+      return {
+        success: true,
+        contestId,
       };
     }
 
@@ -435,9 +502,6 @@ function calculatePayouts(
     if (lineup?.score === undefined || lineup?.score === null) {
       throw new Error("Lineup missing score field");
     }
-    if (!lineup?.entryId) {
-      throw new Error("Lineup missing entryId field");
-    }
     return true;
   });
 
@@ -447,12 +511,12 @@ function calculatePayouts(
 
   const sportModule = requireSportModule(sportId);
   const lineupByEntryId = new Map(
-    validLineups.map((lineup) => [lineup.entryId as string, lineup]),
+    validLineups.map((lineup) => [resolveSettlementEntryId(lineup), lineup]),
   );
 
   const ranked = sportModule.rankEntries(
     validLineups.map((lineup) => ({
-      entryId: lineup.entryId!,
+      entryId: resolveSettlementEntryId(lineup),
       score: lineup.score,
       prediction: lineup.lineup.prediction,
       createdAt: lineup.createdAt,

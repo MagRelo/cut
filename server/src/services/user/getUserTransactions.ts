@@ -170,7 +170,7 @@ export async function getUserTransactions(userId: string): Promise<UserTransacti
       label: lineup.contest.name,
       detail: "Contest entry",
       contestId: lineup.contest.id,
-      contestAddress: lineup.contest.address,
+      ...(lineup.contest.address ? { contestAddress: lineup.contest.address } : {}),
       chainId: lineup.contest.chainId,
     });
   }
@@ -186,7 +186,7 @@ export async function getUserTransactions(userId: string): Promise<UserTransacti
       label: pred.contest.name,
       detail: `Winner pool ticket · entry ${pred.entryId}`,
       contestId: pred.contest.id,
-      contestAddress: pred.contest.address,
+      ...(pred.contest.address ? { contestAddress: pred.contest.address } : {}),
       chainId: pred.chainId,
       txHash: pred.lastTransactionHash,
     });

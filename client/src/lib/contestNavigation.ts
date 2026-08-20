@@ -6,7 +6,7 @@ import type {
   ContestDirectoryResponse,
   EventContestGroup,
 } from "../types/contest";
-import { normalizeContestAddress } from "../utils/contestRoutes";
+import { isEthereumAddress, normalizeContestAddress } from "../utils/contestRoutes";
 import { queryKeys } from "../utils/queryKeys";
 
 export type ContestLobbyNavigationState = {
@@ -118,9 +118,11 @@ export function getDirectoryContextForContest(
     if (!data) continue;
     for (const section of DIRECTORY_SECTIONS) {
       for (const group of data[section]) {
-        const contest = group.contests.find(
-          (entry: Contest) => normalizeContestAddress(entry.address) === normalized,
-        );
+        const contest = group.contests.find((entry: Contest) => {
+          if (entry.id === contestAddress || entry.id === normalized) return true;
+          if (entry.address && normalizeContestAddress(entry.address) === normalized) return true;
+          return false;
+        });
         if (contest) {
           return {
             eventShell: eventShellFromDirectoryEvent(group.event),
@@ -161,10 +163,13 @@ export function placeholderContestFromNavigation(
   nav: ContestLobbyNavigationState,
 ): Contest {
   const preview = nav.contestPreview;
-  const address = normalizeContestAddress(contestAddress);
+  const onchain = isEthereumAddress(contestAddress);
+  const address = onchain
+    ? normalizeContestAddress(contestAddress)
+    : (preview?.address ?? null);
 
   return {
-    id: preview?.id ?? "",
+    id: preview?.id ?? (onchain ? "" : contestAddress),
     name: preview?.name ?? "",
     description: preview?.description ?? null,
     eventId: nav.eventShell.id,

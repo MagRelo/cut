@@ -6,6 +6,7 @@ import {
   type PredictionsPanelMode,
 } from "../types/contestLobby";
 import { ContestState } from "./useContestPredictionData";
+import { hasOnchainEscrow } from "../lib/hasOnchainEscrow";
 
 export interface DeriveContestLobbyViewModelInput {
   contestStateOnChain?: number;
@@ -98,7 +99,7 @@ export function deriveContestLobbyViewModel(
   const lineupsTabIndex = showLineupsTab ? tabIndex++ : -1;
   const contestTabIndex = tabIndex++;
   // Predictions (live/locked) and Results (settled) share the slot before Cutbot.
-  const showPredictionsTab = phase === "live" || phase === "locked";
+  const showPredictionsTab = hasOnchainEscrow(contest) && (phase === "live" || phase === "locked");
   const showResultsTab = isSettled;
   const tailTabIndex =
     showPredictionsTab || showResultsTab ? tabIndex++ : -1;

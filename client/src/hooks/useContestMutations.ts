@@ -11,21 +11,21 @@ import { normalizeContestAddress } from "../utils/contestRoutes";
 
 interface JoinContestParams {
   contestId: string;
-  contestAddress: string;
+  contestRouteKey: string;
   lineupId: string;
-  entryId: string;
+  entryId?: string;
 }
 
 interface LeaveContestParams {
   contestId: string;
-  contestAddress: string;
+  contestRouteKey: string;
   contestLineupId: string;
 }
 
 type DirectorySnapshot = Array<[readonly unknown[], ContestDirectoryResponse | undefined]>;
 
-function lobbyQueryKey(contestAddress: string) {
-  return queryKeys.contests.byLobbyRoute(normalizeContestAddress(contestAddress));
+function lobbyQueryKey(routeKey: string) {
+  return queryKeys.contests.byLobbyRoute(normalizeContestAddress(routeKey));
 }
 
 function snapshotDirectoryCaches(queryClient: QueryClient): DirectorySnapshot {
@@ -34,13 +34,19 @@ function snapshotDirectoryCaches(queryClient: QueryClient): DirectorySnapshot {
   });
 }
 
+function contestMatchesRoute(entry: Contest, routeKey: string): boolean {
+  const normalized = normalizeContestAddress(routeKey);
+  if (entry.id === routeKey || entry.id === normalized) return true;
+  if (entry.address && normalizeContestAddress(entry.address) === normalized) return true;
+  return false;
+}
+
 function patchDirectoryContestLineups(
   queryClient: QueryClient,
-  contestAddress: string,
+  contestRouteKey: string,
   updateLineups: (lineups: ContestLineup[] | undefined) => ContestLineup[] | undefined,
   countDelta: number,
 ): void {
-  const normalized = normalizeContestAddress(contestAddress);
   const sections = ["upcoming", "live", "past"] as const;
 
   for (const [key, data] of snapshotDirectoryCaches(queryClient)) {
@@ -54,8 +60,8 @@ function patchDirectoryContestLineups(
 
     for (const section of sections) {
       next[section] = data[section].map((group) => {
-        const contestIndex = group.contests.findIndex(
-          (entry) => normalizeContestAddress(entry.address) === normalized,
+        const contestIndex = group.contests.findIndex((entry) =>
+          contestMatchesRoute(entry, contestRouteKey),
         );
         if (contestIndex < 0) return group;
         changed = true;
@@ -88,10 +94,11 @@ export function useCreateContest() {
 
   return useMutation({
     mutationFn: async (params: CreateContestInput) => {
-      const { settings, transactionId, ...rest } = params;
+      const { settings, transactionId, address, ...rest } = params;
       return await apiClient.post<Contest>("/contests", {
         ...rest,
-        transactionHash: transactionId,
+        ...(transactionId ? { transactionHash: transactionId } : {}),
+        ...(address ? { address } : {}),
         endDate: settings.expiryTimestamp * 1000,
         settings,
       });
@@ -121,8 +128,8 @@ export function useJoinContest() {
       });
     },
 
-    onMutate: async ({ contestAddress, contestId, lineupId }) => {
-      const lobbyKey = lobbyQueryKey(contestAddress);
+    onMutate: async ({ contestRouteKey, contestId, lineupId }) => {
+      const lobbyKey = lobbyQueryKey(contestRouteKey);
       await queryClient.cancelQueries({ queryKey: lobbyKey });
       await queryClient.cancelQueries({
         queryKey: [...queryKeys.contests.all, "directory"],
@@ -152,7 +159,7 @@ export function useJoinContest() {
 
       patchDirectoryContestLineups(
         queryClient,
-        contestAddress,
+        contestRouteKey,
         (lineups) => [...(lineups || []), optimisticLineup],
         1,
       );
@@ -186,8 +193,8 @@ export function useLeaveContest() {
       return await apiClient.delete<Contest>(`/contests/${contestId}/lineups/${contestLineupId}`);
     },
 
-    onMutate: async ({ contestAddress, contestLineupId }) => {
-      const lobbyKey = lobbyQueryKey(contestAddress);
+    onMutate: async ({ contestRouteKey, contestLineupId }) => {
+      const lobbyKey = lobbyQueryKey(contestRouteKey);
       await queryClient.cancelQueries({ queryKey: lobbyKey });
       await queryClient.cancelQueries({
         queryKey: [...queryKeys.contests.all, "directory"],
@@ -207,7 +214,7 @@ export function useLeaveContest() {
 
       patchDirectoryContestLineups(
         queryClient,
-        contestAddress,
+        contestRouteKey,
         (lineups) => (lineups || []).filter((lineup) => lineup.id !== contestLineupId),
         -1,
       );

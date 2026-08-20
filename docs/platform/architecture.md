@@ -29,7 +29,7 @@ flowchart TB
 | **Sports** | Each sport is a registered plugin (PGA Golf, NFL Fantasy, etc.). The platform lists enabled sports; users switch via a sport picker in the nav. |
 | **Active event** | One active event per sport at a time (e.g. this week's PGA tournament, this week's NFL slate). |
 | **Lineups** | Event-scoped. A user builds a roster from that event's candidate pool, then enters it into one or more contests for that event. |
-| **Contests** | Paid competitions tied to a single event. Lifecycle: `OPEN → ACTIVE → LOCKED → SETTLED → CLOSED`. On-chain via `ContestController`. |
+| **Contests** | Paid competitions tied to a single event, or $0 contests with no on-chain escrow. Lifecycle: `OPEN → ACTIVE → LOCKED → SETTLED → CLOSED`. Paid contests deploy via `ContestFactory` / `ContestController`. $0 contests are database-only (no wallet, no Winner Pool). |
 | **Leagues** | Cross-sport social groups (`UserGroup`). No sport field on the league—a single league can host golf and NFL contests simultaneously. Sport is determined per contest via the event. |
 | **Account** | One user, one wallet, one referral graph. Lineups and contest entries span sports under the same identity. |
 
@@ -101,8 +101,8 @@ model Sport {
 
 | Model | Purpose |
 |-------|---------|
-| `Contest` | Competition instance. `eventId` (determines sport), optional `userGroupId` (league scope). On-chain `address`, `settings`, `results`. After lock: `pickPopularity`, `pickPopularityLockedAt` (see [consensus-axis.md](consensus-axis.md)). |
-| `ContestLineup` | A lineup entered into a contest. `score` (final ranked total), `baseScore`, `popularityBonus`, `position`, `entryId` (on-chain). |
+| `Contest` | Competition instance. `eventId` (determines sport), optional `userGroupId` (league scope). On-chain `address` when paid (`null` for $0), `settings`, `results`. After lock: `pickPopularity`, `pickPopularityLockedAt` (see [consensus-axis.md](consensus-axis.md)). |
+| `ContestLineup` | A lineup entered into a contest. `score` (final ranked total), `baseScore`, `popularityBonus`, `position`, `entryId` (on-chain; null for $0 contests). |
 | `ContestLineupTimeline` | Score/position snapshots over time (`score` = final total). |
 | `UserGroup` | League. **No sport field.** Hosts contests across any enabled sport. |
 | `UserGroupMember` | League membership (`ADMIN` or `MEMBER`). |
@@ -129,7 +129,7 @@ Leagues are sport-neutral containers. A friends group can run a golf pool and an
 - League membership grants access to all contests where `contest.userGroupId = group.id`, regardless of sport.
 - Each contest binds to exactly one `CompetitionEvent`; the event's `sportId` determines which sport plugin handles scoring and roster rules.
 - Entering a contest requires a lineup for **that contest's event**—there is no cross-sport lineup.
-- Creating a league contest: admin picks sport → event → contest settings → on-chain deploy.
+- Creating a league contest: admin picks sport → event → contest settings. Paid contests deploy on-chain; $0 contests are created in the database only.
 - League detail UI groups contests by sport or event, with a sport badge on each contest card. Entry CTAs deep-link to `/sports/:sportId/lineup` for the relevant event.
 
 ---
@@ -240,7 +240,7 @@ Core platform endpoints:
 | `/contests` | Multi-sport live contests hub |
 | `/sports/:sportId` | Sport home — active event contest list (`SportHubPage`) |
 | `/sports/:sportId/leaderboard` | Leaderboard + `SportEventHeader` |
-| `/contest/:address` | Contest lobby (on-chain address in URL) |
+| `/contest/:address` | Contest lobby (on-chain address or database id in URL) |
 | `/leagues/:id` | Cross-sport league — contests grouped by event |
 | `/account` | Wallet, referrals, settings (sport-neutral) |
 
@@ -287,9 +287,7 @@ Contest lifecycle is sport-agnostic. The sport plugin only answers "should this 
 1. Event completes → sport plugin finishes final scoring
 2. Platform ranks all `ContestLineup` entries for contests on that event (via `sport.rankEntries`)
 3. Platform derives payout vector (via `sport.derivePayoutVector` or default policy: 100% to 1st if fewer than 10 entries, else 70/20/10 for top 3)
-4. Oracle calls `settleContest(winningEntries, payoutBps)` on-chain
-5. Oracle pushes primary and secondary payouts; indexes `OnchainPayment` rows
-6. Users claim or receive pushed payouts
+4. Paid contests: oracle calls `settleContest(winningEntries, payoutBps)` on-chain, then pushes payouts. $0 contests write standings to the database only (no contract, no payouts).
 
 **Tie-breaker pattern** (platform-wide): score descending → prediction distance ascending → entry time ascending. The prediction field shape is sport-specific (golf: winning Stableford score; other sports define their own).
 

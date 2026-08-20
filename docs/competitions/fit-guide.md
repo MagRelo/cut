@@ -226,7 +226,7 @@ The roster size should match **how much attention users will give the event**. A
 
 ## 7. Contest & money fit
 
-Contests are paid competitions with on-chain entry, optional secondary market, and oracle settlement. The sport does not change the contract layer — but it must support sensible contest timing.
+Contests are paid competitions with on-chain entry, optional Winner Pool, and oracle settlement — or $0 contests with no escrow and no Winner Pool. The sport does not change the contract layer — but it must support sensible contest timing.
 
 **Questions to answer:**
 

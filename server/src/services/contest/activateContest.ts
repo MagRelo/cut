@@ -8,6 +8,7 @@ import { prisma } from "../../lib/prisma.js";
 import { requireSportModule } from "../../sports/registry.js";
 import { getContestContract, verifyOperator, readContestState } from "../shared/contractClient.js";
 import { ContestState, type OperationResult } from "../shared/types.js";
+import { hasOnchainEscrow } from "../../utils/hasOnchainEscrow.js";
 
 export async function activateContest(contestId: string): Promise<OperationResult> {
   try {
@@ -50,6 +51,18 @@ export async function activateContest(contestId: string): Promise<OperationResul
         success: false,
         contestId,
         error: "Contest has no entries",
+      };
+    }
+
+    if (!hasOnchainEscrow(contest)) {
+      await prisma.contest.update({
+        where: { id: contestId },
+        data: { status: "ACTIVE" },
+      });
+      console.log(`[activateContest] Activated off-chain contest ${contestId}`);
+      return {
+        success: true,
+        contestId,
       };
     }
 

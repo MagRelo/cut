@@ -46,7 +46,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
     poolSnapshot,
     paymentDecimals,
   } = useContestPredictionData({
-    contestAddress: contest.address,
+    contestAddress: contest.address ?? "",
     entryIds,
     enabled: true,
     chainId: contest.chainId,
