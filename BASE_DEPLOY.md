@@ -55,7 +55,7 @@ Keep MockUSDC. ContestFactory was redeployed against the soak graph (do **not** 
 | Contract | Address |
 | -------- | ------- |
 | MockUSDC (`paymentTokenAddress`) | `0x6662473494b64c6aec18E703E839AF26d371f570` |
-| ContestFactory | `0x6B6bb3319D39CaEC4730c761bd156199866660Bc` |
+| ContestFactory | `0x6e5cC151E1271eD82cdf39B431B18Cd02cEFA016` |
 | ReferralGraph | `0x820bDEe2FB655eFCfaF82971F7e827a5141417bB` |
 | RewardCalculator | `0xE2E7184C7Fc5A35Be22c23A87Ca2d7f6E2d6B72c` |
 
