@@ -26,7 +26,7 @@ const app = (
           },
           capture_pageview: true,
           capture_pageleave: true,
-          autocapture: true,
+          autocapture: false,
           capture_exceptions: {
             capture_unhandled_errors: true,
             capture_unhandled_rejections: true,

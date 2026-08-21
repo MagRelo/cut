@@ -2,7 +2,7 @@
 
 Play The Cut v4 — server + client pass focused on Privy wallets, operator on-chain payouts, and remaining authz / input gaps.
 
-**Last updated:** 2026-08-17  
+**Last updated:** 2026-08-21  
 **Resume here:** work the open findings below in suggested order. The canvas at `.cursor/projects/.../canvases/security-hardening-audit.canvas.tsx` mirrors this list (open it beside chat to filter by severity).
 
 ---
@@ -19,6 +19,9 @@ Play The Cut v4 — server + client pass focused on Privy wallets, operator on-c
 | User settings schema | — | `24173dc5` — `server/src/schemas/user.ts` | Strict Zod; cannot smuggle `userType` via settings JSON |
 | Admin list query | — | `24173dc5` — `server/src/routes/admin.ts` | `userType` query allowlisted before `$queryRaw` |
 | Lean auth / provisioning | Medium | `privyUserProvisioning.ts`, `middleware/auth.ts`, `routes/auth.ts` | Read-only middleware; `POST /auth/session` for signup/sync; lean `GET /auth/me`; wallet conflicts → 409 |
+| Production CORS + security headers | Medium | `corsOrigins.ts`, `app.ts` | Production requires `ALLOWED_ORIGINS` (no localhost); CSP `frame-ancestors`, HSTS, `X-Frame-Options` |
+| Lineup picks max length | Low | `schemas/lineup.ts` | Zod cap of 8 picks on lineup writes |
+| Debug routes / PostHog / cron status / AdminRoute | Low | `App.tsx`, `main.tsx`, `cron.ts`, `AdminRoute.tsx` | DEV-only `/debug` and `/dev/*`; identify by user id only, no autocapture; cron status staff-only; no admin UI while auth loads |
 
 **Explicitly out of scope** (skipped during factory-verify work): unique `(chainId, address)` on `Contest`, lifecycle origin checks on existing rows.
 
@@ -26,7 +29,7 @@ Play The Cut v4 — server + client pass focused on Privy wallets, operator on-c
 
 ## Open findings
 
-Counts: **0 Critical** · **3 High** · **4 Medium** · **2 Low**
+Counts: **0 Critical** · **3 High** · **3 Medium** · **0 Low**
 
 ### High
 
@@ -92,23 +95,6 @@ Body size is capped at 128KB, but there is no per-IP or per-user rate limit. Aut
 
 ---
 
-#### 5. CORS falls back to localhost with credentials
-
-| | |
-|---|---|
-| **Location** | `server/src/app.ts:79` |
-| **Area** | HTTP / ops |
-
-If `ALLOWED_ORIGINS` is unset in production, origin is `localhost:5173` and `localhost:3000` with `credentials: true`. No CSP, HSTS, `frame-ancestors`, or referrer-policy headers.
-
-**Exploit.** A missed env on a public host is a cross-origin API. Missing `frame-ancestors` allows clickjacking the SPA (wallet connect / send).
-
-**Fix.** Fail startup in production if `ALLOWED_ORIGINS` is missing or includes localhost. Add `hono/secure-headers` (CSP, HSTS, X-Frame-Options).
-
----
-
-### Medium
-
 #### 6. Operator txs default to public Base RPC
 
 | | |
@@ -139,38 +125,6 @@ Replay detection compares only `lastTransactionHash`. `amountWei` is incremented
 
 ---
 
-### Low
-
-#### 9. Lineup picks array has no max length in Zod
-
-| | |
-|---|---|
-| **Location** | `server/src/schemas/lineup.ts:13` |
-| **Area** | API authz |
-
-`lineupWriteBodySchema` accepts any array of strings up to the 128KB body cap. Sport roster validation rejects invalid rosters afterward, but only after parsing.
-
-**Exploit.** Authenticated users send tens of thousands of pick ids per request to burn DB/validation time.
-
-**Fix.** Cap picks to the sport roster size (e.g. max 8) in the schema.
-
----
-
-#### 10. Debug routes and open PostHog autocapture ship in production builds
-
-| | |
-|---|---|
-| **Location** | `client/src/App.tsx:223` |
-| **Area** | HTTP / ops |
-
-`/debug` and `/dev/*` are registered for all builds. PostHog `identify()` sends email; autocapture is on. `GET /api/cron/status` is unauthenticated. `AdminRoute` renders children while auth is still loading.
-
-**Exploit.** Information disclosure (wallet, email, userType, cron layout). Brief admin-UI flash before redirect. Analytics PII in DOM events.
-
-**Fix.** Gate debug routes on DEV. Tighten PostHog (no autocapture of inputs). Require auth or a shared secret for cron status. Do not render admin children until `userType` is known.
-
----
-
 ## What is already sound
 
 - activate / lock / settle / cancel call `verifyOperator()` before writing
@@ -180,6 +134,7 @@ Replay detection compares only `lastTransactionHash`. `amountWei` is incremented
 - Users can still self-claim secondary payouts if a push batch fails mid-way
 - Contest registration now requires factory `ContestCreated` and pins operator/token from chain
 - Auth middleware is read-only (JWT + DB); signup/sync is `POST /auth/session` only; session wallet comes from DB primary `UserWallet`
+- Production CORS fails closed without `ALLOWED_ORIGINS`; responses include CSP `frame-ancestors`, HSTS, and `X-Frame-Options`
 
 ## What still trusts the operator host
 
@@ -197,10 +152,9 @@ Replay detection compares only `lastTransactionHash`. `amountWei` is incremented
 | 1 | Verify side-bet funding txs before OPEN | Stops unfunded tickets becoming graded liability |
 | 2 | Allowlist paymaster destinations; require policy id in prod | Stops gas-sponsorship drain via Send / arbitrary calls |
 | 3 | Keep `OPERATOR_PK` off the public web process; simulate + allowlist | Shrinks blast radius if the API host is compromised |
-| 4 | Rate limits, production CORS fail-closed, security headers | Stops quota burn, invite brute force, clickjacking |
+| 4 | Rate limits | Stops quota burn, invite brute force, contest/lineup write spam |
 | 5 | Secondary buy used-hash table | Stops inflated participant deposits in DB/UI |
 | 6 | Authenticated RPC in production | Reliable settle/push and fewer DB desyncs |
-| 7 | Lineup picks max length; debug route gating; PostHog tightening | Defense in depth / info disclosure |
 
 ---
 

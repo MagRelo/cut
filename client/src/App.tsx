@@ -220,10 +220,13 @@ const AppShell: React.FC = () => {
               }
             />
 
-            {/* Debug / dev */}
-            <Route path="/debug" element={<DebugPage />} />
-            <Route path="/dev/commodity-icons" element={<CommodityIconPreviewPage />} />
-            <Route path="/dev/commodity-avatar-variants" element={<CommodityAvatarVariantPreviewPage />} />
+            {import.meta.env.DEV && (
+              <>
+                <Route path="/debug" element={<DebugPage />} />
+                <Route path="/dev/commodity-icons" element={<CommodityIconPreviewPage />} />
+                <Route path="/dev/commodity-avatar-variants" element={<CommodityAvatarVariantPreviewPage />} />
+              </>
+            )}
           </Routes>
         </OnboardingRedirectGate>
       </AppLayout>

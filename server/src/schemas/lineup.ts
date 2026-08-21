@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { LINEUP_PREDICTION_TYPE } from "@cut/sport-sdk";
-import { NAME_MAX_LENGTH } from "./limits.js";
+import { LINEUP_PICKS_MAX, NAME_MAX_LENGTH } from "./limits.js";
 
 export const lineupPredictionSchema = z
   .object({
@@ -10,9 +10,11 @@ export const lineupPredictionSchema = z
   .strict();
 
 export const lineupWriteBodySchema = z.object({
-  picks: z.array(z.string().min(1), {
-    invalid_type_error: "picks must be an array of eventParticipant IDs",
-  }),
+  picks: z
+    .array(z.string().min(1), {
+      invalid_type_error: "picks must be an array of eventParticipant IDs",
+    })
+    .max(LINEUP_PICKS_MAX),
   name: z.string().trim().min(1).max(NAME_MAX_LENGTH).optional(),
   contestId: z.string().min(1).optional(),
   prediction: lineupPredictionSchema.nullish(),

@@ -14,6 +14,8 @@ export const BPS_MIN = 0;
 export const BPS_MAX = 10_000;
 
 export const API_JSON_BODY_MAX_BYTES = 128 * 1024;
+/** Hard cap on lineup write `picks` (sport roster max is 3–4; 8 is a safe ceiling). */
+export const LINEUP_PICKS_MAX = 8;
 
 export const ADMIN_LIST_USER_TYPES = [
   "USER",

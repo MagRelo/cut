@@ -168,11 +168,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!user?.id || !posthog) return;
-    posthog.identify(user.id, {
-      email: user.email ?? undefined,
-      name: user.name,
-    });
-  }, [user?.id, user?.email, user?.name, posthog]);
+    posthog.identify(user.id);
+  }, [user?.id, posthog]);
 
   useEffect(() => {
     if (!user?.id || !posthog) return;

@@ -2,9 +2,11 @@ import fs from "node:fs";
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { secureHeaders } from "hono/secure-headers";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import apiRoutes from "./routes/api.js";
+import { resolveAllowedOrigins } from "./lib/corsOrigins.js";
 import { cacheControlForStaticPath } from "./lib/staticCacheControl.js";
 import { resolvePageMetadata, type PageMetadata } from "./lib/pageMetadata.js";
 import {
@@ -83,16 +85,25 @@ async function serveSpaHtmlWithMetadata(c: Context) {
   }
 }
 
-// Configure CORS middleware
+app.use(
+  "*",
+  secureHeaders({
+    xFrameOptions: "DENY",
+    referrerPolicy: "strict-origin-when-cross-origin",
+    strictTransportSecurity: "max-age=31536000; includeSubDomains",
+    crossOriginOpenerPolicy: "same-origin-allow-popups",
+    contentSecurityPolicy: {
+      frameAncestors: ["'none'"],
+    },
+  }),
+);
+
 app.use(
   "*",
   cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(",") || [
-      "http://localhost:5173",
-      "http://localhost:3000",
-    ],
+    origin: resolveAllowedOrigins(),
     credentials: true,
-  })
+  }),
 );
 
 // Configure logging middleware

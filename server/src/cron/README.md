@@ -73,7 +73,7 @@ Better Stack heartbeat reports on the **score** pipeline only.
 
 ## API
 
-`GET /api/cron/status` — whether cron is enabled and the pipeline steps (see `src/routes/cron.ts`).
+`GET /api/cron/status` — whether cron is enabled and the pipeline steps (see `src/routes/cron.ts`). Staff only (`ADMIN` / `SUPER_ADMIN` after Privy auth).
 
 ---
 

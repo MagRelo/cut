@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { requireAuth } from "../middleware/auth.js";
+import { requireAdmin } from "../middleware/admin.js";
 
 const cronRouter = new Hono();
 
@@ -13,8 +15,7 @@ const PIPELINE_STEPS = [
   "feedWorker (in-process; CommentaryFeedJob queue, concurrency 1)",
 ] as const;
 
-// Get cron status
-cronRouter.get("/status", (c) => {
+cronRouter.get("/status", requireAuth, requireAdmin, (c) => {
   const enabled = process.env.ENABLE_CRON === "true";
 
   return c.json({

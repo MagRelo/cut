@@ -13,7 +13,7 @@ export function AdminRoute({ children }: AdminRouteProps) {
   const { user, loading, isAdmin } = useAuth();
 
   if (loading) {
-    return <>{children}</>;
+    return null;
   }
 
   if (!user) {
