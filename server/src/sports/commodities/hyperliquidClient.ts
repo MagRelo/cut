@@ -43,6 +43,12 @@ export type HlAssetWithContext = {
 
 type CacheEntry<T> = { value: T; expiresAt: number };
 
+function evictExpired<T>(cache: Map<string, CacheEntry<T>>, now: number): void {
+  for (const [key, entry] of cache) {
+    if (entry.expiresAt <= now) cache.delete(key);
+  }
+}
+
 function getInfoUrl(): string {
   return process.env.HYPERLIQUID_INFO_URL?.trim() || DEFAULT_INFO_URL;
 }
@@ -107,6 +113,7 @@ export async function fetchPerpDexs(): Promise<HlPerpDex[]> {
 export async function fetchAssetContexts(dex: string): Promise<HlAssetWithContext[]> {
   const cacheKey = dex;
   const now = Date.now();
+  evictExpired(assetContextsCache, now);
   const cached = assetContextsCache.get(cacheKey);
   if (cached && cached.expiresAt > now) {
     return cached.value;
@@ -168,6 +175,7 @@ export async function fetchCandles(
 ): Promise<HlCandle[]> {
   const cacheKey = `${coin}:${interval}:${startMs}:${endMs}`;
   const now = Date.now();
+  evictExpired(candleCache, now);
   const cached = candleCache.get(cacheKey);
   if (cached && cached.expiresAt > now) {
     return cached.value;
@@ -218,4 +226,9 @@ export function clearHyperliquidClientCache(): void {
   perpDexsCache = null;
   assetContextsCache.clear();
   candleCache.clear();
+}
+
+/** Test helper: candle snapshots keyed by start/end must not grow without bound. */
+export function hyperliquidCandleCacheSize(): number {
+  return candleCache.size;
 }
