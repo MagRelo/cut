@@ -65,3 +65,4 @@ Product, operations, and sport-specific reference for Play The Cut. For as-built
 | [economics-sketch.md](internal/economics-sketch.md) | Fee revenue model |
 | [product-growth-funnel.md](internal/product-growth-funnel.md) | AARRR funnel definitions |
 | [navigation-ia-discussion.md](internal/navigation-ia-discussion.md) | Multi-sport nav draft |
+| [drive-referrals.md](internal/drive-referrals.md) | Agent brief: register, then share `?ref=` invite URLs |
