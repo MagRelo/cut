@@ -27,7 +27,7 @@ REFERRAL_PLATFORM_ROOT_ADDRESS    Cold address-only — organic referral-tree pa
 
 | Role | Purpose | Holds keys? | Env / config | Known address |
 |------|---------|-------------|--------------|---------------|
-| **Deployer** | Broadcasts forge scripts; inherits contract ownership | Yes — `contracts/.env` `DEPLOYER_PK` | Deploy time only | TBD |
+| **Deployer** | Broadcasts forge scripts; inherits contract ownership | Yes — `contracts/.env` `DEPLOYER_PK` | Deploy time only | `0x853C54FB2e9d674A9a158B7F6e8F323d023f03c8` |
 
 | Asset | Direction | Notes |
 |-------|-----------|-------|
@@ -69,9 +69,9 @@ Post-deploy options:
 
 ### Open
 
-- [ ] Document deployer address for the Base mainnet deploy.
+- [x] Document deployer address for the Base mainnet deploy.
 - [ ] Decide **owner disposition** after deploy: keep cold / multi-sig / renounce.
-- [ ] Set `OPERATOR_PK` at deploy so its address (not the deployer) is the authorized referral oracle on mainnet.
+- [x] Set `OPERATOR_PK` at deploy so its address (not the deployer) is the authorized referral oracle on mainnet.
 
 ---
 
@@ -81,7 +81,7 @@ Post-deploy options:
 
 | Role | Purpose | Holds keys? | Env / config | Known address |
 |------|---------|-------------|--------------|---------------|
-| **Operator** | On-chain: factory / contest `operator` (activate / lock / settle / cancel / push). Separately: ReferralGraph authorized `oracle` for `REFERRAL_GROUP_ID` (`register` / `batchRegister` / skiplist) | Yes — server + cron | `OPERATOR_PK` (address derived, or pin `OPERATOR_ADDRESS`); client `VITE_OPERATOR_ADDRESS` | TBD |
+| **Operator** | On-chain: factory / contest `operator` (activate / lock / settle / cancel / push). Separately: ReferralGraph authorized `oracle` for `REFERRAL_GROUP_ID` (`register` / `batchRegister` / skiplist) | Yes — server + cron | `OPERATOR_PK` (address derived, or pin `OPERATOR_ADDRESS`); client `VITE_OPERATOR_ADDRESS` | `0x3f76535570b1Bb18D454bC7A8B76f2dEE1726AA5` |
 
 That address must match `OPERATOR_PK`, `ContestFactory.operator()`, ReferralGraph `isAuthorizedOracle` for `REFERRAL_GROUP_ID`, and client `VITE_OPERATOR_ADDRESS`. It must **differ** from the referral platform root. Referral-network fees settle to the platform root; the operator is a hot signing key and must not receive those funds. Contract deploys revert if the addresses match.
 
@@ -117,7 +117,7 @@ Contest escrow itself is **not** operator balance — users move payment token i
 
 Env: `server/.env` / cron / swarm → `OPERATOR_PK` (optional `OPERATOR_ADDRESS`), RPC; client → `VITE_OPERATOR_ADDRESS`, `VITE_REFERRAL_GROUP_ID`.
 
-**Open:** Confirm mainnet operator address; fund with Base ETH before cutover.
+**Open:** Keep operator ETH float warm for settle / register / push after cutover.
 
 ---
 
@@ -127,7 +127,7 @@ Env: `server/.env` / cron / swarm → `OPERATOR_PK` (optional `OPERATOR_ADDRESS`
 
 | Role | Purpose | Holds keys? | Env / config | Known address |
 |------|---------|-------------|--------------|---------------|
-| **Referral platform root** | Organic parent under `REFERRAL_ROOT`; receives its referral-network fee share | **No** in app env — ops custody only | `REFERRAL_PLATFORM_ROOT_ADDRESS` in `contracts/.env` at deploy; persisted as `referralPlatformRootAddress` in client/server chain JSON | TBD |
+| **Referral platform root** | Organic parent under `REFERRAL_ROOT`; receives its referral-network fee share | **No** in app env — ops custody only | `REFERRAL_PLATFORM_ROOT_ADDRESS` in `contracts/.env` at deploy; persisted as `referralPlatformRootAddress` in client/server chain JSON | `0x15c3DC71f1f7Fd975e6c82Ff84e8bcaC0E4b2acb` |
 
 ### Balance model
 
@@ -181,9 +181,9 @@ Env: client `VITE_SIDE_BET_STAKE_RECIPIENT`; server `SIDE_BETS_ENABLED` (+ DataG
 
 | Bucket | Role | Env key | Base Sepolia | Base mainnet |
 |--------|------|---------|--------------|--------------|
-| Infra | Deployer | `DEPLOYER_PK` | | |
-| Cron-Ops | Operator (contest lifecycle + referral signer) | `OPERATOR_PK` | | |
-| Referral | Platform root (organic referral parent) | `referralPlatformRootAddress` (chain JSON) | | |
+| Infra | Deployer | `DEPLOYER_PK` | | `0x853C54FB2e9d674A9a158B7F6e8F323d023f03c8` |
+| Cron-Ops | Operator (contest lifecycle + referral signer) | `OPERATOR_PK` | | `0x3f76535570b1Bb18D454bC7A8B76f2dEE1726AA5` |
+| Referral | Platform root (organic referral parent) | `referralPlatformRootAddress` (chain JSON) | `0x15c3DC71f1f7Fd975e6c82Ff84e8bcaC0E4b2acb` | `0x15c3DC71f1f7Fd975e6c82Ff84e8bcaC0E4b2acb` |
 | Marketing_test | Side-bet in | `VITE_SIDE_BET_STAKE_RECIPIENT` | | `0x6569E9BA175fA46FFf13bc649E0D92813E507a06` |
 | Marketing_test | Side-bet out | — | | |
 
