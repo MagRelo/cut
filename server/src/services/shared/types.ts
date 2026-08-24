@@ -145,6 +145,10 @@ export interface DetailedResult {
    * Preserved so the UI can show the amount even after claimable state is zeroed on-chain.
    */
   positionBonusAmountWei?: string;
+  /** Lineup winning-score prediction used as the same-score tiebreaker. */
+  prediction?: number | null;
+  /** Absolute distance from this lineup's prediction to the contest winning score. */
+  predictionDistance?: number | null;
 }
 
 // Operation result types

@@ -72,6 +72,9 @@ export function getRewardCalculatorAddress(chainId: number): `0x${string}` | nul
 /** REFERRAL_ROOT sentinel on ReferralGraph (no payable chain). */
 export const REFERRAL_ROOT = "0x0000000000000000000000000000000000000001" as const;
 
+/** Display name for the cold platform-root wallet in referral payout UI. */
+export const PLATFORM_ROOT_DISPLAY_NAME = "CutBot";
+
 const DEFAULT_REFERRAL_SYNC_CHAIN_ID = 84532;
 
 /** Chain id for referral graph sync scripts (default Base Sepolia). */

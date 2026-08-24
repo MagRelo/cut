@@ -179,6 +179,10 @@ export type OnchainPaymentView = {
   score?: number;
   playerLastNames?: string[];
   lineupName?: string;
+  /** Lineup winning-score prediction (same-score tiebreaker). */
+  prediction?: number | null;
+  /** Distance from prediction to the contest winning score. */
+  predictionDistance?: number | null;
   metadata?: Record<string, unknown>;
 };
 
@@ -240,6 +244,10 @@ export interface DetailedResult {
    * Preserved so the UI can show the amount even after claimable state is zeroed on-chain.
    */
   positionBonusAmountWei?: string;
+  /** Lineup winning-score prediction used as the same-score tiebreaker. */
+  prediction?: number | null;
+  /** Absolute distance from this lineup's prediction to the contest winning score. */
+  predictionDistance?: number | null;
 }
 
 // Snapshot of contest state at settlement time (for display purposes)

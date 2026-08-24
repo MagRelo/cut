@@ -63,6 +63,20 @@ function formatShareBps(shareBps: number) {
   return `${percent.toFixed(fractionDigits)}% of pool`;
 }
 
+function formatPrimaryScore(row: OnchainPaymentView): string | null {
+  if (row.score == null) return null;
+  return `${row.score} pts`;
+}
+
+function formatPrimaryLineupLabel(row: OnchainPaymentView): string {
+  const name = row.playerLastNames?.length
+    ? row.playerLastNames.join(", ")
+    : row.lineupName ?? "";
+  if (row.prediction == null) return name;
+  const tiebreaker = `Tiebreaker: ${row.prediction}`;
+  return name ? `${name} · ${tiebreaker}` : tiebreaker;
+}
+
 function parseAmountWei(row: OnchainPaymentView): bigint | null {
   try {
     return BigInt(row.amountWei);
@@ -122,6 +136,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
           <ContestPayoutDividedRows>
             {primary.map((row, index) => {
               const payoutWei = parseAmountWei(row);
+              const scoreLabel = formatPrimaryScore(row);
               return (
                 <div
                   key={`${row.entryId ?? row.walletAddress}-${index}`}
@@ -144,9 +159,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                         <div className="min-w-0 py-0.5">
                           <ContestPayoutRowTitle>{row.username}</ContestPayoutRowTitle>
                           <ContestPayoutRowSubtitle>
-                            {row.playerLastNames?.length
-                              ? row.playerLastNames.join(", ")
-                              : row.lineupName}
+                            {formatPrimaryLineupLabel(row)}
                           </ContestPayoutRowSubtitle>
                         </div>
                       }
@@ -156,12 +169,12 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
                             <ContestPayoutGradientMoney>
                               {formatDollarFromWei(payoutWei, paymentDecimals)}
                             </ContestPayoutGradientMoney>
-                            {row.score != null ? (
-                              <ContestPayoutSubAmount>{row.score} pts</ContestPayoutSubAmount>
+                            {scoreLabel ? (
+                              <ContestPayoutSubAmount>{scoreLabel}</ContestPayoutSubAmount>
                             ) : null}
                           </>
-                        ) : row.score != null ? (
-                          <ContestPayoutRowSubtitle>{row.score} pts</ContestPayoutRowSubtitle>
+                        ) : scoreLabel ? (
+                          <ContestPayoutRowSubtitle>{scoreLabel}</ContestPayoutRowSubtitle>
                         ) : (
                           <span className="text-xs text-slate-400">—</span>
                         )

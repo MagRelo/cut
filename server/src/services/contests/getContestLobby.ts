@@ -5,7 +5,9 @@ import { contestPrivyVisibilityOr } from "../../utils/contestListQuery.js";
 import { lobbyMetadata } from "../../utils/contestEventSummary.js";
 import { isEthereumAddress, normalizeContestAddress } from "../../utils/contestRouteParam.js";
 import { formatOnchainPaymentsForContest } from "../../utils/formatOnchainPayments.js";
+import { enrichDetailedResultsTiebreakers } from "../../utils/contestResultTiebreakers.js";
 import type { DetailedResult } from "../shared/types.js";
+import { getReferralRootAddress } from "../../lib/referralConfig.js";
 import {
   attachReferralStakes,
   contestReferralNetworkBps,
@@ -262,12 +264,29 @@ function formatLobbyRow(row: ContestLobbyRow): ContestLobbyPayload {
       : typeof contestSettings?.oracle === "string"
         ? contestSettings.oracle
         : undefined;
+  let platformRootAddress: string | undefined;
+  try {
+    platformRootAddress = getReferralRootAddress(row.chainId);
+  } catch {
+    platformRootAddress = undefined;
+  }
+  let detailedResults: DetailedResult[] | undefined;
+  try {
+    detailedResults = enrichDetailedResultsTiebreakers(
+      results?.detailedResults,
+      row.contestLineups,
+      row.event.sportId,
+    );
+  } catch {
+    detailedResults = results?.detailedResults;
+  }
   const onchainPayments =
     row.onchainPayments.length && (row.status === "SETTLED" || row.status === "CLOSED")
       ? formatOnchainPaymentsForContest(
           row.onchainPayments,
-          results?.detailedResults,
+          detailedResults,
           contestOracleAddress,
+          platformRootAddress,
         )
       : undefined;
 
@@ -283,7 +302,10 @@ function formatLobbyRow(row: ContestLobbyRow): ContestLobbyPayload {
     chainId: row.chainId,
     status: row.status,
     settings: row.settings,
-    results: row.results,
+    results:
+      results && detailedResults
+        ? { ...results, detailedResults }
+        : row.results,
     pickPopularity: row.pickPopularity,
     pickPopularityLockedAt: row.pickPopularityLockedAt,
     commentary: row.commentary,

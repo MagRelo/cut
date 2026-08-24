@@ -1,5 +1,8 @@
 import { useMemo } from "react";
 import type { Contest, OnchainPaymentView, DetailedResult, SecondaryPayoutResult, RewardsPayoutResult } from "../types/contest";
+import { getContractConfig } from "../utils/blockchainUtils";
+
+const PLATFORM_ROOT_DISPLAY_NAME = "CutBot";
 
 function amountWei(p: { amountWei: string }): bigint {
   try {
@@ -31,6 +34,8 @@ function mapDetailedResultToPrimaryRow(r: DetailedResult): OnchainPaymentView {
     score: r.score,
     playerLastNames: r.playerLastNames,
     lineupName: r.lineupName,
+    prediction: r.prediction,
+    predictionDistance: r.predictionDistance,
   };
 }
 
@@ -71,6 +76,15 @@ function referralFromLegacy(rows: RewardsPayoutResult[]): OnchainPaymentView[] {
   }));
 }
 
+function labelPlatformRoot(row: OnchainPaymentView, chainId: number): OnchainPaymentView {
+  const root = getContractConfig(chainId)?.referralPlatformRootAddress;
+  if (!root || row.walletAddress.toLowerCase() !== root.toLowerCase()) {
+    return row;
+  }
+  if (row.username === PLATFORM_ROOT_DISPLAY_NAME) return row;
+  return { ...row, username: PLATFORM_ROOT_DISPLAY_NAME };
+}
+
 export function computeContestPayoutSections(contest: Contest) {
   const ledger = contest.onchainPayments ?? [];
   const useLedger = ledger.length > 0;
@@ -85,13 +99,28 @@ export function computeContestPayoutSections(contest: Contest) {
     primary = detailedResults.map(mapDetailedResultToPrimaryRow);
   }
 
+  if (detailedResults.length > 0) {
+    const byEntryId = new Map(detailedResults.map((r) => [r.entryId, r]));
+    primary = primary.map((row) => {
+      const detail = row.entryId ? byEntryId.get(row.entryId) : undefined;
+      if (!detail) return row;
+      return {
+        ...row,
+        prediction: row.prediction ?? detail.prediction,
+        predictionDistance: row.predictionDistance ?? detail.predictionDistance,
+      };
+    });
+  }
+
   const secondary: OnchainPaymentView[] = useLedger
     ? ledger.filter((p) => p.kind === "SECONDARY")
     : secondaryFromLegacy(contest.results?.secondaryPayouts ?? []);
 
-  const referral: OnchainPaymentView[] = useLedger
-    ? ledger.filter((p) => p.kind === "REFERRAL")
-    : referralFromLegacy(contest.results?.rewardsPayouts ?? []);
+  const referral: OnchainPaymentView[] = (
+    useLedger
+      ? ledger.filter((p) => p.kind === "REFERRAL")
+      : referralFromLegacy(contest.results?.rewardsPayouts ?? [])
+  ).map((row) => labelPlatformRoot(row, contest.chainId));
 
   const sortPrimary = [...primary].sort((a, b) => {
     const pa = a.position ?? 999;
@@ -119,6 +148,6 @@ export function computeContestPayoutSections(contest: Contest) {
 export function useContestPayoutSections(contest: Contest) {
   return useMemo(
     () => computeContestPayoutSections(contest),
-    [contest.onchainPayments, contest.results],
+    [contest.onchainPayments, contest.results, contest.chainId],
   );
 }

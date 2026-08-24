@@ -35,6 +35,7 @@ import { captureContestWinPayoutRecorded } from "../analytics/posthog.js";
 import { contestLineupsInclude } from "../../utils/prismaIncludes.js";
 import { sortedPlayerLastNamesFromPicks } from "../../utils/lineupPickPresentation.js";
 import { hasOnchainEscrow } from "../../utils/hasOnchainEscrow.js";
+import { tiebreakFieldsFromRankedRow } from "../../utils/contestResultTiebreakers.js";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 const SETTLED_STATE_CONFIRM_RETRIES = 3;
@@ -559,6 +560,7 @@ function calculatePayouts(
       payoutBasisPoints: payout,
       playerLastNames,
       userColor: resolvedUserColor,
+      ...tiebreakFieldsFromRankedRow(row.predictionDistance, lineup.lineup.prediction),
     });
   }
 

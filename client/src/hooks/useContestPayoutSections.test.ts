@@ -122,4 +122,62 @@ describe("useContestPayoutSections", () => {
     expect(result.primary).toHaveLength(1);
     expect(result.primary[0]?.username).toBe("alice");
   });
+
+  it("copies lineup tiebreaker prediction onto primary standings", () => {
+    const contest = buildContest({
+      results: {
+        winningEntries: ["1"],
+        payoutBps: [10000],
+        detailedResults: [
+          {
+            entryId: "1",
+            position: 1,
+            score: 24,
+            payoutBasisPoints: 10000,
+            payoutAmountWei: "0",
+            positionBonusAmountWei: "0",
+            lineupName: "Lineup A",
+            username: "alice",
+            prediction: 22,
+            predictionDistance: 2,
+          },
+          {
+            entryId: "2",
+            position: 2,
+            score: 24,
+            payoutBasisPoints: 0,
+            payoutAmountWei: "0",
+            positionBonusAmountWei: "0",
+            lineupName: "Lineup B",
+            username: "bob",
+            prediction: 10,
+            predictionDistance: 14,
+          },
+        ],
+      },
+    });
+
+    const result = computeContestPayoutSections(contest);
+
+    expect(result.primary[0]?.prediction).toBe(22);
+    expect(result.primary[0]?.predictionDistance).toBe(2);
+    expect(result.primary[1]?.prediction).toBe(10);
+  });
+
+  it("labels platform-root referral payouts CutBot", () => {
+    const contest = buildContest({
+      chainId: 8453,
+      onchainPayments: [
+        {
+          kind: "REFERRAL",
+          amountWei: "140000",
+          walletAddress: "0x15c3DC71f1f7Fd975e6c82Ff84e8bcaC0E4b2acb",
+          username: "Unknown",
+        },
+      ],
+    });
+
+    const result = computeContestPayoutSections(contest);
+    expect(result.referral[0]?.username).toBe("CutBot");
+  });
 });

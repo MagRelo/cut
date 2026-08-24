@@ -1,5 +1,6 @@
 import type { PaymentKind } from "@prisma/client";
 import type { DetailedResult } from "../services/shared/types.js";
+import { PLATFORM_ROOT_DISPLAY_NAME } from "../lib/referralConfig.js";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
@@ -29,6 +30,8 @@ export type OnchainPaymentView = {
   score?: number;
   playerLastNames?: string[];
   lineupName?: string;
+  prediction?: number | null;
+  predictionDistance?: number | null;
   metadata?: Record<string, unknown>;
 };
 
@@ -59,10 +62,25 @@ function isOracleReferralPayment(
   return walletAddress.toLowerCase() === contestOracleAddress.toLowerCase();
 }
 
+function paymentUsername(
+  userName: string | null | undefined,
+  walletAddress: string,
+  platformRootAddress: string | undefined,
+): string {
+  if (
+    platformRootAddress &&
+    walletAddress.toLowerCase() === platformRootAddress.toLowerCase()
+  ) {
+    return PLATFORM_ROOT_DISPLAY_NAME;
+  }
+  return userName ?? "Unknown";
+}
+
 export function formatOnchainPaymentsForContest(
   payments: PaymentRow[],
   detailedResults: DetailedResult[] | undefined,
   contestOracleAddress?: string,
+  platformRootAddress?: string,
 ): OnchainPaymentView[] {
   const byEntryId = new Map<string, DetailedResult>();
   for (const r of detailedResults ?? []) {
@@ -89,7 +107,7 @@ export function formatOnchainPaymentsForContest(
         kind: p.kind,
         amountWei: p.amountWei,
         walletAddress: p.walletAddress,
-        username: p.user?.name ?? "Unknown",
+        username: paymentUsername(p.user?.name, p.walletAddress, platformRootAddress),
         userColor: pickUserColor(p.user?.settings),
         metadata: meta,
       };
@@ -99,6 +117,10 @@ export function formatOnchainPaymentsForContest(
       if (detail?.score !== undefined) view.score = detail.score;
       if (detail?.playerLastNames) view.playerLastNames = detail.playerLastNames;
       if (detail?.lineupName) view.lineupName = detail.lineupName;
+      if (detail?.prediction !== undefined) view.prediction = detail.prediction;
+      if (detail?.predictionDistance !== undefined) {
+        view.predictionDistance = detail.predictionDistance;
+      }
       return view;
     });
 }

@@ -40,6 +40,7 @@ import type {
 import { requireSportModule } from "../sports/registry.js";
 import { contestLineupsInclude } from "../utils/prismaIncludes.js";
 import { sortedPlayerLastNamesFromPicks } from "../utils/lineupPickPresentation.js";
+import { tiebreakFieldsFromRankedRow } from "../utils/contestResultTiebreakers.js";
 
 const BASE_SEPOLIA_CHAIN_ID = 84532;
 const TX_DELAY_MS = 2000;
@@ -215,6 +216,7 @@ function calculatePayouts(
       payoutBasisPoints: payout,
       playerLastNames,
       userColor,
+      ...tiebreakFieldsFromRankedRow(row.predictionDistance, lineup.lineup.prediction),
     });
   }
 

@@ -84,6 +84,48 @@ describe("formatOnchainPaymentsForContest", () => {
     expect(result.map((r) => r.kind)).toEqual(["PRIMARY", "SECONDARY"]);
   });
 
+  it("labels the platform-root wallet CutBot when no user is joined", () => {
+    const root = "0x15c3DC71f1f7Fd975e6c82Ff84e8bcaC0E4b2acb";
+    const result = formatOnchainPaymentsForContest(
+      [referralRow(root, "140000", {}, null)],
+      undefined,
+      ORACLE,
+      root,
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.username).toBe("CutBot");
+  });
+
+  it("copies prediction tiebreaker fields from detailed results", () => {
+    const result = formatOnchainPaymentsForContest(
+      [
+        {
+          kind: "PRIMARY",
+          amountWei: "1000",
+          walletAddress: REFERRER_A,
+          metadata: { entryId: "1" },
+          user: { name: "alice", settings: null },
+        },
+      ],
+      [
+        {
+          username: "alice",
+          lineupName: "A",
+          entryId: "1",
+          position: 1,
+          score: 24,
+          payoutBasisPoints: 10000,
+          prediction: 22,
+          predictionDistance: 2,
+        },
+      ],
+    );
+
+    expect(result[0]?.prediction).toBe(22);
+    expect(result[0]?.predictionDistance).toBe(2);
+  });
+
   it("matches oracle wallet case-insensitively", () => {
     const result = formatOnchainPaymentsForContest(
       [referralRow(ORACLE.toUpperCase(), "500"), referralRow(REFERRER_A, "300")],
