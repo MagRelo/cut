@@ -6,6 +6,7 @@ import { useFirstEnabledSportId } from "../hooks/useSportData";
 import { BRAND_PROSE, BRAND_WORDMARK } from "../lib/brand";
 import { ONBOARDING_DISMISSED_KEY } from "../lib/onboardingSettings";
 import { getPendingLeagueInviteCode } from "../lib/leagueInviteCapture";
+import { isTargetTestnet } from "../config/targetChain";
 
 const ACCENT_COLORS = [
   "#0a73eb",
@@ -60,11 +61,6 @@ export function OnboardingPage() {
     }
   }, [user]);
 
-  const mergeSettings = (patch: Record<string, unknown>) => ({
-    ...(user?.settings ?? {}),
-    ...patch,
-  });
-
   const navigateAfterDismiss = () => {
     const from = (location.state as { from?: Location })?.from;
     if (from) {
@@ -83,7 +79,7 @@ export function OnboardingPage() {
     if (!user) return;
     setSaving(true);
     try {
-      await updateUserSettings(mergeSettings({ [ONBOARDING_DISMISSED_KEY]: true }));
+      await updateUserSettings({ [ONBOARDING_DISMISSED_KEY]: true });
       navigateAfterDismiss();
     } finally {
       setSaving(false);
@@ -108,7 +104,7 @@ export function OnboardingPage() {
     if (!user) return;
     setSaving(true);
     try {
-      await updateUserSettings(mergeSettings({ color: accentColor }));
+      await updateUserSettings({ color: accentColor });
       setStep((s) => Math.min(s + 1, STEP_COUNT - 1));
     } finally {
       setSaving(false);
@@ -119,7 +115,7 @@ export function OnboardingPage() {
     if (!user) return;
     setSaving(true);
     try {
-      await updateUserSettings(mergeSettings({ [ONBOARDING_DISMISSED_KEY]: true }));
+      await updateUserSettings({ [ONBOARDING_DISMISSED_KEY]: true });
       navigateAfterDismiss();
     } finally {
       setSaving(false);
@@ -406,35 +402,42 @@ export function OnboardingPage() {
             <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
               Add funds to your account
             </h1>
-            <p className="text-gray-700 leading-relaxed font-display mb-6">
-              You&apos;ll need funds in your account to compete in contests. Most people get funds
-              from other players—share your Account ID with whoever referred you to receive a
-              transfer.
-            </p>
-            {/*
-            <p className="text-gray-700 leading-relaxed font-display mb-3">
-              You&apos;ll need funds in your account to compete in contests. There are two ways to
-              get them:
-            </p>
-            <ol className="mb-6 list-decimal list-outside space-y-3 pl-6 font-display text-gray-700 leading-relaxed marker:font-semibold marker:text-gray-900 sm:pl-8">
-              <li className="pl-1">
-                <strong>Player-to-player.</strong> Most people receive funds from other players:{" "}
-                <strong>anyone</strong> can send you funds <strong>any time</strong>. Share your
-                Account ID with whoever referred you to receive a transfer.
-              </li>
-              <li className="pl-1">
-                <strong>Crypto.</strong> You can also add funds by depositing <strong>USDC</strong>{" "}
-                on <strong>Base</strong>.
-              </li>
-            </ol>
-            */}
+            {isTargetTestnet() ? (
+              <p className="text-gray-700 leading-relaxed font-display mb-6">
+                You&apos;ll need funds in your account to compete in contests. Most people get funds
+                from other players—share your Account ID with whoever referred you to receive a
+                transfer.
+              </p>
+            ) : (
+              <>
+                <p className="text-gray-700 leading-relaxed font-display mb-3">
+                  You&apos;ll need <strong>USDC</strong> on <strong>Base</strong> in your account to
+                  compete. Add it yourself from{" "}
+                  <strong>Coinbase</strong> or <strong>Robinhood</strong> if you don&apos;t already
+                  have crypto:
+                </p>
+                <ol className="mb-4 list-decimal list-outside space-y-2 pl-6 font-display text-gray-700 leading-relaxed marker:font-semibold marker:text-gray-900 sm:pl-8">
+                  <li className="pl-1">Get the Coinbase or Robinhood app.</li>
+                  <li className="pl-1">Buy USDC.</li>
+                  <li className="pl-1">
+                    Send USDC on the <strong>Base</strong> network to your Account ID (copy it from
+                    Account → Manage funds).
+                  </li>
+                </ol>
+                <p className="text-gray-700 leading-relaxed font-display mb-6">
+                  Anyone with USDC on Base can also send to your Account ID, including the person
+                  who referred you. Cash out the same way: send USDC from Manage funds to your
+                  Coinbase or Robinhood Base deposit address.
+                </p>
+              </>
+            )}
 
             <StepActions>
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
               <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
-                lame
+                nice
               </button>
             </StepActions>
           </>

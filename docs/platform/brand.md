@@ -42,11 +42,14 @@ Import from shared modules; do not hardcode brand strings in UI or server meta:
 - Client: [`client/src/lib/brand.ts`](../client/src/lib/brand.ts)
 - Server: [`server/src/lib/brand.ts`](../server/src/lib/brand.ts)
 
+## Payment token
+
+Contest entry fees, prizes, and transfers use **USDC** on **Base**. Do not use CUT as a payment-token name in user-facing copy.
+
 ## Exclusions
 
 Do not rename these — they are not the product wordmark:
 
 - Golf **CUT** position label (missed cut)
-- On-chain **CUT** payment token symbol
 - API headers (`X-Cut-*`), npm scope (`@cut/*`), repo folder name (`cut`)
 - Internal spec shorthand (e.g. "Cut user") in engineering docs

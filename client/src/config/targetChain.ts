@@ -19,3 +19,8 @@ export function isStagingDeploy(): boolean {
 export function isTargetTestnet(): boolean {
   return getTargetChainIdFromEnv() === baseSepolia.id;
 }
+
+/** Fallback payment-token ticker before the on-chain symbol loads. */
+export function defaultPaymentTokenSymbol(): "USDC" | "xUSDC" {
+  return isTargetTestnet() ? "xUSDC" : "USDC";
+}

@@ -6,7 +6,7 @@ import { type ContestSettings, type CreateContestInput } from "../../types/conte
 import { contestLobbyPath } from "../../utils/contestRoutes";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useAuth } from "../../contexts/AuthContext";
-import { getTargetChainIdFromEnv } from "../../config/targetChain";
+import { defaultPaymentTokenSymbol, getTargetChainIdFromEnv } from "../../config/targetChain";
 import { useFirstEnabledSportId } from "../../hooks/useSportData";
 import {
   CreateContestEventPicker,
@@ -53,7 +53,7 @@ export const CreateContestForm = () => {
     settings: buildContestSettings(
       chainId ?? 0,
       paymentTokenAddress || "",
-      paymentTokenSymbol ?? "xUSDC",
+      paymentTokenSymbol ?? defaultPaymentTokenSymbol(),
     ),
     description: undefined,
     userGroupId: undefined,
@@ -103,7 +103,7 @@ export const CreateContestForm = () => {
       settings: buildContestSettings(
         chainId ?? 0,
         paymentTokenAddress || "",
-        paymentTokenSymbol ?? "xUSDC",
+        paymentTokenSymbol ?? defaultPaymentTokenSymbol(),
       ),
       description: undefined,
       userGroupId: lockedUserGroupId || undefined,
@@ -148,7 +148,7 @@ export const CreateContestForm = () => {
       settings: {
         ...s,
         paymentTokenAddress: paymentTokenAddress || "",
-        paymentTokenSymbol: paymentTokenSymbol ?? "xUSDC",
+        paymentTokenSymbol: paymentTokenSymbol ?? defaultPaymentTokenSymbol(),
         operator: s.operator.trim(),
         chainId: resolvedChainId,
         expiryTimestamp: s.expiryTimestamp,
@@ -219,7 +219,7 @@ export const CreateContestForm = () => {
               className="w-full p-2 border rounded-md pr-12"
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-              {paymentTokenSymbol ?? "xUSDC"}
+              {paymentTokenSymbol ?? defaultPaymentTokenSymbol()}
             </div>
           </div>
         </div>
@@ -321,7 +321,7 @@ export const CreateContestForm = () => {
               <div className="p-2 bg-gray-100 rounded-md font-mono text-xs break-all">
                 {paymentTokenAddress || "Not configured"}
               </div>
-              <p className="text-sm text-gray-600">{paymentTokenSymbol ?? "xUSDC"}</p>
+              <p className="text-sm text-gray-600">{paymentTokenSymbol ?? defaultPaymentTokenSymbol()}</p>
             </div>
 
             <div className="space-y-2">

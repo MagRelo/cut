@@ -13,6 +13,7 @@ export const updateUserSettingsSchema = z
   .object({
     color: z.string().regex(HEX_COLOR_REGEX, "Invalid color").optional(),
     oddsFormat: z.enum(["american", "decimal", "english"]).optional(),
+    onboardingDismissed: z.boolean().optional(),
   })
   .strict();
 
@@ -32,6 +33,9 @@ export function mergeUserSettings(
   }
   if (patch.oddsFormat !== undefined) {
     base.oddsFormat = patch.oddsFormat;
+  }
+  if (patch.onboardingDismissed !== undefined) {
+    base.onboardingDismissed = patch.onboardingDismissed;
   }
   return base;
 }

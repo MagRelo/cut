@@ -4,6 +4,7 @@ import { formatUnits, parseUnits } from "viem";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useTransferTokens } from "../../hooks/useTokenOperations";
 import { useAuth } from "../../contexts/AuthContext";
+import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../config/targetChain";
 import { PAYMENT_TOKEN_DECIMALS } from "../../lib/paymentTokenSpend";
 
 export type SendProps = {
@@ -26,7 +27,8 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
 
   const resolvedDecimals = paymentTokenDecimals ?? PAYMENT_TOKEN_DECIMALS;
   const paymentBalance = paymentTokenBalance ?? 0n;
-  const targetSymbol = paymentTokenSymbol ?? "xUSDC";
+  const targetSymbol = paymentTokenSymbol ?? defaultPaymentTokenSymbol();
+  const showCexOfframp = !isTargetTestnet();
 
   const [recipientAddress, setRecipientAddress] = useState(initialRecipientAddress ?? "");
   const [amount, setAmount] = useState("");
@@ -112,6 +114,13 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
 
   return (
     <div className="space-y-4 font-display">
+      {showCexOfframp ? (
+        <p className="text-sm text-gray-600">
+          Send USDC to another player, or cash out to your Coinbase or Robinhood{" "}
+          <strong>Base</strong> USDC deposit address. Use the Base network only.
+        </p>
+      ) : null}
+
       <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">Available</span>

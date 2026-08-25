@@ -1,6 +1,6 @@
 # Wallet roles and ops cashflows
 
-Operational inventory of **platform wallets / keys** on Base — organized by ops bucket. Use this to coordinate funding, key custody, and mainnet cutover.
+Operational inventory of **platform wallets / keys** on Base — organized by ops bucket. Use this to coordinate funding and key custody.
 
 Related: [referral-network.md](../platform/referral-network.md) · [economics-sketch.md](../internal/economics-sketch.md) · [cron-pi.md](cron-pi.md) · [contracts/env.example](../../contracts/env.example) · [client/.env.example](../../client/.env.example) · [server/.env.example](../../server/.env.example)
 
@@ -45,7 +45,7 @@ Env: `contracts/.env` → `DEPLOYER_PK`, `OPERATOR_PK` (its address becomes the 
 | Quiet L1 / happy path | **~0.001–0.005 ETH** | **~$2–15** |
 | Busy L1 or retries | **~0.005–0.02 ETH** | **~$15–50** |
 
-**Practical fund:** put **0.02 ETH** on the deployer EOA for mainnet cutover (covers deploy + a couple retries + `transferOwnership` txs). Sepolia is cheap/test ETH. Re-estimate before go-live with `forge script … --estimate` — fees move with L1.
+**Practical fund:** put **0.02 ETH** on the deployer EOA for a Base deploy (covers deploy + a couple retries + `transferOwnership` txs). Sepolia is cheap/test ETH. Re-estimate with `forge script … --estimate` — fees move with L1.
 
 ### Roles the deployer inherits
 
@@ -53,7 +53,7 @@ From `Deploy_base.s.sol` as written today (`initialOwner = deployer`; the Referr
 
 | Cap / role | Contract | Deployer gets it? | What it can do | Keep on deployer? |
 |------------|----------|-------------------|----------------|-------------------|
-| **`owner`** | `ReferralGraph` | **Yes** (constructor `initialOwner`) | `authorizeOracle` / `unauthorizeOracle`, `transferOwnership` | Maybe — admin capability; often move to a multi-sig / cold Ops admin after cutover |
+| **`owner`** | `ReferralGraph` | **Yes** (constructor `initialOwner`) | `authorizeOracle` / `unauthorizeOracle`, `transferOwnership` | Maybe — admin capability; often move to a multi-sig / cold Ops admin |
 | **Authorized referral oracle** (`REFERRAL_GROUP_ID`) | `ReferralGraph` | **No** if `OPERATOR_PK` is set (its address is authed instead) | `register` / `batchRegister` / skiplist (oracle paths) | **No** — this belongs to the operator, not the cold deployer |
 | **ContestFactory operator** | `ContestFactory` | **No** if `OPERATOR_PK` is set | Lifecycle / settle / push on every contest from that factory | Factory immutable → **operator** (`VITE_OPERATOR_ADDRESS`) |
 | **ContestFactory owner** | `ContestFactory` | **No** | Factory is not Ownable; anyone can `createContest` (4 uint args) | N/A |
@@ -117,7 +117,7 @@ Contest escrow itself is **not** operator balance — users move payment token i
 
 Env: `server/.env` / cron / swarm → `OPERATOR_PK` (optional `OPERATOR_ADDRESS`), RPC; client → `VITE_OPERATOR_ADDRESS`, `VITE_REFERRAL_GROUP_ID`.
 
-**Open:** Keep operator ETH float warm for settle / register / push after cutover.
+**Open:** Keep operator ETH float warm for settle / register / push.
 
 ---
 

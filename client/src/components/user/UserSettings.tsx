@@ -43,7 +43,16 @@ export function UserSettings() {
       if (draft.name !== user?.name) {
         await updateUser({ name: draft.name });
       }
-      await updateUserSettings(draft.settings);
+      const settingsPatch: Record<string, unknown> = {};
+      if (typeof draft.settings.color === "string") {
+        settingsPatch.color = draft.settings.color;
+      }
+      if (typeof draft.settings.oddsFormat === "string") {
+        settingsPatch.oddsFormat = draft.settings.oddsFormat;
+      }
+      if (Object.keys(settingsPatch).length > 0) {
+        await updateUserSettings(settingsPatch);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update settings");
     } finally {

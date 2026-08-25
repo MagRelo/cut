@@ -2,6 +2,8 @@
 
 Product, operations, and sport-specific reference for Play The Cut. For as-built technical specs (APIs, cron, plugins), see [`spec/README.md`](../spec/README.md).
 
+Production is **Base** (`8453`) with **canonical USDC**. Players add and withdraw USDC themselves (Coinbase or Robinhood if they do not already have crypto). Staging is Base Sepolia with MockUSDC (xUSDC). Wallet inventory: [wallet-roles-cashflows.md](operations/wallet-roles-cashflows.md). Network addresses: [BASE_DEPLOY.md](../BASE_DEPLOY.md).
+
 ## Platform
 
 | Doc | Purpose |
@@ -16,7 +18,7 @@ Product, operations, and sport-specific reference for Play The Cut. For as-built
 
 | Doc | Purpose |
 |-----|---------|
-| [wallet-roles-cashflows.md](operations/wallet-roles-cashflows.md) | Platform wallet roles, funding, contest / side-bet cashflows |
+| [wallet-roles-cashflows.md](operations/wallet-roles-cashflows.md) | Platform wallet roles, funding, contest / side-bet cashflows. Prod is Base + USDC (self-serve on/off-ramp; Coinbase/Robinhood recommended). |
 | [database-connections.md](operations/database-connections.md) | Connection budget, PgBouncer pooling, pooled vs direct URLs |
 | [cron-pi.md](operations/cron-pi.md) | Raspberry Pi cron host (Tailscale, deploy, PM2) |
 | [email-program.md](operations/email-program.md) | Email cadence and audiences |

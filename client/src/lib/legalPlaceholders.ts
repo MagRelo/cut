@@ -14,7 +14,7 @@ export const MIN_AGE = 21;
 export const MIN_AGE_TEXT =
   "twenty one (21) years of age, or the age of majority in your jurisdiction, whichever is greater";
 
-export const PAYMENT_TOKEN = "xUSDC";
+export const PAYMENT_TOKEN = "USDC";
 export const BLOCKCHAIN_NETWORK = "Base";
 
 export const supportMailto = `mailto:${SUPPORT_EMAIL}`;

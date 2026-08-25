@@ -9,6 +9,7 @@ import {
   useSelectedSportEvent,
 } from "../contest/CreateContestEventPicker";
 import { useAuth } from "../../contexts/AuthContext";
+import { defaultPaymentTokenSymbol } from "../../config/targetChain";
 import { useFirstEnabledSportId } from "../../hooks/useSportData";
 import {
   getCreateContestStatusMessage,
@@ -59,7 +60,7 @@ export const LeagueCreateContestForm = ({
   );
   const [primarySubsidyIndex, setPrimarySubsidyIndex] = useState(3);
 
-  const tokenSymbol = paymentTokenSymbol ?? "xUSDC";
+  const tokenSymbol = paymentTokenSymbol ?? defaultPaymentTokenSymbol();
   const entryFee = LEAGUE_ENTRY_FEE_OPTIONS[entryFeeIndex];
   const isFreeContest = entryFee === 0;
   const inviteRewardPercent = LEAGUE_INVITE_REWARD_PERCENTS[inviteRewardIndex];

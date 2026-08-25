@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 import { mergeUserSettings, updateUserSettingsSchema } from "./user.js";
 
 describe("updateUserSettingsSchema", () => {
-  it("accepts color and oddsFormat", () => {
+  it("accepts color, oddsFormat, and onboardingDismissed", () => {
     const parsed = updateUserSettingsSchema.safeParse({
       color: "#0a73eb",
       oddsFormat: "decimal",
+      onboardingDismissed: true,
     });
     expect(parsed.success).toBe(true);
   });
@@ -29,6 +30,17 @@ describe("mergeUserSettings", () => {
       color: "#0a73eb",
       marketingUnsubscribed: true,
       oddsFormat: "american",
+    });
+  });
+
+  it("patches onboardingDismissed without dropping other keys", () => {
+    const merged = mergeUserSettings(
+      { color: "#0a73eb", onboardingDismissed: false },
+      { onboardingDismissed: true },
+    );
+    expect(merged).toEqual({
+      color: "#0a73eb",
+      onboardingDismissed: true,
     });
   });
 });

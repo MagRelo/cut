@@ -6,6 +6,7 @@ import { Modal } from "../common/Modal";
 import type { Contest } from "../../types/contest";
 import ContestContract from "../../utils/contracts/ContestController.json";
 import { useAuth } from "../../contexts/AuthContext";
+import { defaultPaymentTokenSymbol } from "../../config/targetChain";
 import { Link } from "react-router-dom";
 import {
   ContestPayoutDividedRows,
@@ -250,7 +251,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
 }) => {
   const { paymentTokenSymbol, paymentTokenDecimals } = useAuth();
   const tokenDecimals = paymentTokenDecimals ?? 6;
-  const tokenLabel = paymentTokenSymbol ?? "xUSDC";
+  const tokenLabel = paymentTokenSymbol ?? defaultPaymentTokenSymbol();
   const chainId = contest?.chainId as 8453 | 84532 | undefined;
   const referralNetworkBps = Math.max(
     0,

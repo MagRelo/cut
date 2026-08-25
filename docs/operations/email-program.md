@@ -66,11 +66,11 @@ flowchart LR
 
 | Field | Detail |
 |-------|--------|
-| **Purpose** | Orient new user after account creation; set expectations (fantasy + contests + CUT). |
+| **Purpose** | Orient new user after account creation; set expectations (fantasy + contests + USDC on Base). |
 | **Trigger** | **Manual:** operator runs send script when ready. **Not** sent from signup or `service:init-event`. |
 | **Send window** | Operator-chosen. |
 | **Audience** | All users with email who have not already received `WELCOME` (per-user idempotency). |
-| **Content** | Welcome; weekly curated experience + live updates; three wagering types (Parlays, Contest Rules, Winner Pool); deposit/withdraw (self-custody, crypto, P2P); CTAs to app and Account funds. |
+| **Content** | Welcome; weekly curated experience + live updates; three wagering types (Parlays, Contest Rules, Winner Pool); deposit/withdraw (self-custody USDC on Base; Coinbase or Robinhood if new to crypto; P2P also works); CTAs to app and Account funds. |
 | **Skip if** | No email; already logged `WELCOME` for `userId`. |
 | **Idempotency** | Log `userId` + `WELCOME`. |
 
