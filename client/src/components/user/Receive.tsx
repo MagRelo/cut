@@ -1,5 +1,6 @@
 import { useAccount } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
+import { Link } from "react-router-dom";
 import { ShareInviteButton } from "../common/ShareInviteButton";
 import { CopyButton } from "../common/CopyToClipboard";
 import { useAuth } from "../../contexts/AuthContext";
@@ -39,14 +40,9 @@ export const Receive = () => {
             Deposit <strong>USDC</strong> on <strong>Base</strong> network to play. Play the Cut
             does not accept credit cards or Apple Pay. You can purchase & send USDC using Coinbase
             or Robinhood apps.{" "}
-            <a
-              className="text-blue-600"
-              href="https://www.playthecut.com/help/deposit"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <Link className="text-blue-600 hover:underline" to="/faq#funds">
               Learn more...
-            </a>
+            </Link>
           </p>
         ) : (
           <p className="mb-4 text-sm text-gray-600">
