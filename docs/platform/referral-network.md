@@ -121,7 +121,7 @@ Patch `referralGraphAddress`, `rewardCalculatorAddress`, and `contestFactoryAddr
 | `REFERRAL_GROUP_ID` | `bytes32` — same on graph and factory |
 | `OPERATOR_PK` | Signs `register` / `batchRegister` and contest operator txs |
 | `OPERATOR_ADDRESS` | Optional; pins the operator address instead of deriving from `OPERATOR_PK` |
-| `REFERRAL_SYNC_CHAIN_ID` | Optional; scripts default `84532` |
+| `REFERRAL_SYNC_CHAIN_ID` | Optional; prod `8453`; scripts default `84532` |
 
 Platform root lives in `server/src/contracts/{base,sepolia}.json` as `referralPlatformRootAddress` (written at contract deploy). Web and cron do not take it as env. `REFERRAL_PLATFORM_ROOT_ADDRESS` is required in `contracts/.env` at deploy; optional env fallback for rematerialize scripts only. No platform-root private key is accepted by web or cron.
 

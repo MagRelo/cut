@@ -174,4 +174,4 @@ Full spec: [`spec/server/cron.md`](../../../spec/server/cron.md). Status: `GET /
 
 | Date | externalId | Operator | Notes |
 |------|------------|----------|-------|
-| | | | |
+| 2026-08-25 | R2026060 | matt | TOUR Championship (East Lake); 30-player field; active; summarySections written |
