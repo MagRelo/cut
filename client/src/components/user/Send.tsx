@@ -116,8 +116,8 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
     <div className="space-y-4 font-display">
       {showCexOfframp ? (
         <p className="text-sm text-gray-600">
-          Send USDC to another player, or cash out to your Coinbase or Robinhood{" "}
-          <strong>Base</strong> USDC deposit address. Use the Base network only.
+          Send USDC to another player, or cash out to your Coinbase or Robinhood USDC deposit
+          address on the Base network. Use the Base network only.
         </p>
       ) : null}
 

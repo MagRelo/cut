@@ -1,7 +1,7 @@
 ---
 # Onboarding content — tracked in repo (implementation todos for reference)
 name: Onboarding content sketch
-overview: 'A stepped, one-primary-action-per-screen onboarding narrative for Play The Cut: draft headlines, body copy, and CTAs aligned with existing FAQ/product terms (Stableford, lineups, contests, winner pool / secondary market, USDC on Base, Privy).'
+overview: 'A stepped, one-primary-action-per-screen onboarding narrative for Play The Cut: draft headlines, body copy, and CTAs aligned with existing FAQ/product terms (Stableford, lineups, contests, winner pool / secondary market, USDC on the Base network, Privy).'
 todos:
   - id: lock-terminology
     content: 'Step 2 framing: “How you’ll show up” (display name + color; lineup labels programmatic)'
@@ -25,8 +25,8 @@ todos:
 
 - **Display identity**: [`UserSettings`](../client/src/components/user/UserSettings.tsx) edits **display name** and **accent color** (`user.settings.color`). Contests and leaderboards show you as _name + color_ (see [`ContestEntryList`](../client/src/components/contest/ContestEntryList.tsx)).
 - **Lineups**: A **lineup** is a set of **4 golfers** for a **specific tournament** ([`TournamentLineup`](../server/prisma/schema.prisma)). Lineup labels are assigned programmatically for now. You can have **multiple lineups**; each can be entered into contests ([FAQ](../client/src/pages/FAQPage.tsx)).
-- **Contests**: Tournament-scoped competitions; **entry fees in USDC on Base**; **primary prize pool** for lineup finishers; lineups **lock when the tournament starts**. **v1 onboarding** includes a **winner pool** screen after contests—the **secondary prediction market** on which lineup wins (UI: “Winner Pool” in e.g. [`ContestResultsPanel`](../client/src/components/contest/ContestResultsPanel.tsx)), not a tutorial on **primary payout tiers** (those stay in [FAQ](../client/src/pages/FAQPage.tsx)). Then **contest lifecycle** (OPEN → ACTIVE → LOCKED → SETTLED → CLOSED) ties together lineup locks and when the prediction market is open; see [FAQ contest-status section](../client/src/pages/FAQPage.tsx).
-- **Funding last**: Tie to **Privy + Account** and **USDC on Base** for entries/prizes ([FAQ Adding & withdrawing funds](../client/src/pages/FAQPage.tsx)). Coinbase or Robinhood if the player does not already have crypto.
+- **Contests**: Tournament-scoped competitions; **entry fees in USDC on the Base network**; **primary prize pool** for lineup finishers; lineups **lock when the tournament starts**. **v1 onboarding** includes a **winner pool** screen after contests—the **secondary prediction market** on which lineup wins (UI: “Winner Pool” in e.g. [`ContestResultsPanel`](../client/src/components/contest/ContestResultsPanel.tsx)), not a tutorial on **primary payout tiers** (those stay in [FAQ](../client/src/pages/FAQPage.tsx)). Then **contest lifecycle** (OPEN → ACTIVE → LOCKED → SETTLED → CLOSED) ties together lineup locks and when the prediction market is open; see [FAQ contest-status section](../client/src/pages/FAQPage.tsx).
+- **Funding last**: Tie to **Privy + Account** and **USDC on the Base network** for entries/prizes ([FAQ Adding & withdrawing funds](../client/src/pages/FAQPage.tsx)). Coinbase or Robinhood if the player does not already have crypto.
 
 **Step 2 framing (locked)**: **“How you’ll show up”**—display **name** + **accent color** (`User.name`, `user.settings.color`). No “team name” in onboarding; lineup labels stay programmatic.
 
@@ -118,7 +118,7 @@ _(Pull exact status names from your UI; FAQ table is the source of truth.)_
 ### 8. Fund your account (last)
 
 - **Headline**: You’re ready—add funds when you want to play for stakes
-- **Body**: Sign-in uses **Privy** (email, phone, or wallet—however the app is set up). **USDC on Base** is what you use for **entries** and what you **win**. If you don’t already have crypto, use **Coinbase** or **Robinhood**: buy USDC, then send it on Base to your Account ID (Manage funds). Anyone with USDC on Base can also send to that address. Cash out from Manage funds → Send to a Coinbase or Robinhood Base deposit address. You can explore lineups and contests first.
+- **Body**: Sign-in uses **Privy** (email, phone, or wallet—however the app is set up). **USDC on the Base network** is what you use for **entries** and what you **win**. If you don’t already have crypto, use **Coinbase** or **Robinhood**: buy USDC, then send it on the Base network to your Account ID (Manage funds). Anyone with USDC on the Base network can also send to that address. Cash out from Manage funds → Send to a Coinbase or Robinhood USDC deposit address on the Base network. You can explore lineups and contests first.
 - **Primary CTA**: Go to Manage funds _(e.g. [`AccountTransferFundsPage`](../client/src/pages/AccountTransferFundsPage.tsx))_
 - **Secondary**: Finish and go home
 

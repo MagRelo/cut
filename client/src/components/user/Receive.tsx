@@ -8,6 +8,7 @@ import { useChainId } from "wagmi";
 import { useTokenSymbol } from "../../utils/blockchainUtils";
 import { buildFundSendUrl } from "../../lib/fundLinks";
 import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../config/targetChain";
+import { BLOCKCHAIN_NETWORK } from "../../lib/legalPlaceholders";
 
 function truncateMiddle(value: string, head = 8, tail = 6) {
   if (value.length <= head + tail + 1) return value;
@@ -27,6 +28,7 @@ export const Receive = () => {
   const displayName = user?.name?.trim() || null;
   const email = user?.email?.trim() || null;
   const showCexOnramp = !isTargetTestnet();
+  const networkLabel = showCexOnramp ? BLOCKCHAIN_NETWORK : "Base Sepolia";
 
   return (
     <div className="space-y-4 font-display">
@@ -34,9 +36,17 @@ export const Receive = () => {
         <h3 className="text-lg font-semibold text-gray-900">Add Funds</h3>
         {showCexOnramp ? (
           <p className="mb-4 text-sm text-gray-600">
-            Play The Cut runs on <strong>Base</strong>. Send <strong>USDC</strong> to your Account
-            ID to compete. If you don&apos;t already have crypto, use{" "}
-            <strong>Coinbase</strong> or <strong>Robinhood</strong>.
+            Deposit <strong>USDC</strong> on <strong>Base</strong>network to play. Play the Cut does
+            not accept credit cards or Apple Pay. You can purchase & send USDC using Coinbase or
+            Robinhood apps.{" "}
+            <a
+              className="text-blue-600"
+              href="https://www.playthecut.com/help/deposit"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Learn more...
+            </a>
           </p>
         ) : (
           <p className="mb-4 text-sm text-gray-600">
@@ -46,32 +56,50 @@ export const Receive = () => {
         )}
       </div>
 
+      {walletAddress ? (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <p className="mb-3 text-sm font-medium text-gray-900">
+            Before you send, match all three:
+          </p>
+          <dl className="mb-3 divide-y divide-gray-200 overflow-hidden rounded-md border border-gray-200 bg-white">
+            <div className="grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-x-3 px-3 py-2.5 text-sm">
+              <dt className="font-medium text-gray-600">Token</dt>
+              <dd className="min-w-0 font-semibold text-gray-900">{tokenSymbol}</dd>
+            </div>
+            <div className="grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-x-3 px-3 py-2.5 text-sm">
+              <dt className="font-medium text-gray-600">Network</dt>
+              <dd className="min-w-0 font-semibold text-gray-900">{networkLabel}</dd>
+            </div>
+            <div className="grid grid-cols-[7rem_minmax(0,1fr)] items-start gap-x-3 px-3 py-2.5 text-sm">
+              <dt className="pt-1 font-medium text-gray-600">Address</dt>
+              <dd className="flex min-w-0 items-center gap-3">
+                <span
+                  className="min-w-0 flex-1 break-all font-mono text-xs text-gray-900"
+                  title={walletAddress}
+                >
+                  {walletAddress}
+                </span>
+                <CopyButton text={walletAddress} />
+              </dd>
+            </div>
+          </dl>
+          <p className="text-xs text-gray-500">
+            Only send USDC using the Base network. Do not send USDC from Ethereum, Polygon,
+            Arbitrum, or any other network to this deposit address.
+          </p>
+        </div>
+      ) : null}
+
       {walletAddress && showCexOnramp ? (
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <label className="mb-2 block text-sm font-medium text-gray-700">Account ID</label>
-          <p className="mb-3 text-sm text-gray-600">
-            This is your wallet on Base. Copy it into Coinbase or Robinhood when you send USDC.
-          </p>
-          <div className="mb-3 flex min-w-0 items-center gap-3 rounded-md border border-gray-200 bg-white p-3">
-            <span
-              className="min-w-0 flex-1 break-all font-mono text-xs text-gray-900"
-              title={walletAddress}
-            >
-              {walletAddress}
-            </span>
-            <CopyButton text={walletAddress} />
-          </div>
-          <ol className="mb-3 list-decimal space-y-1 pl-5 text-sm text-gray-700">
-            <li>Get the Coinbase or Robinhood app if you don&apos;t already have crypto.</li>
-            <li>Buy USDC.</li>
+          <p className="mb-2 text-sm font-medium text-gray-900">From Coinbase or Robinhood</p>
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-gray-700">
+            <li>Get the Coinbase or Robinhood app if you don&apos;t already have USDC.</li>
+            <li>Buy {tokenSymbol}.</li>
             <li>
-              Send or withdraw USDC on the <strong>Base</strong> network to the Account ID above.
+              Send {tokenSymbol} on {BLOCKCHAIN_NETWORK} to the Destination address above.
             </li>
           </ol>
-          <p className="text-xs text-gray-500">
-            USDC only, Base network only. Sending a different token or using another network can
-            lose funds.
-          </p>
         </div>
       ) : null}
 
@@ -83,8 +111,8 @@ export const Receive = () => {
             </label>
             {showCexOnramp ? (
               <p className="mt-1 text-sm text-gray-600">
-                Anyone with USDC on Base can send to your Account ID. Share this link so they can
-                transfer from Manage Funds.
+                Anyone with USDC on {BLOCKCHAIN_NETWORK} can send to your destination address. Share
+                this link so they can transfer from Manage Funds.
               </p>
             ) : null}
           </div>

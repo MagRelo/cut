@@ -284,14 +284,14 @@ export const LeagueStarterGuidePage: React.FC = () => {
               </p>
             ) : (
               <p>
-                Your <strong>Account ID</strong> is your smart wallet on <strong>Base</strong>. Copy
-                it from{" "}
+                Your <strong>Account ID</strong> is your smart wallet on{" "}
+                <strong>the Base network</strong>. Copy it from{" "}
                 <Link to="/account/funds" className="text-blue-600 hover:underline">
                   Manage funds
                 </Link>{" "}
-                and send <strong>USDC</strong> on Base to that address. Members can fund themselves
-                with Coinbase or Robinhood. Each player also has a funding link there if another
-                player should transfer USDC from the app.
+                and send <strong>USDC</strong> on the Base network to that address. Members can fund
+                themselves with Coinbase or Robinhood. Each player also has a funding link there if
+                another player should transfer USDC from the app.
               </p>
             )}
           </div>
@@ -309,13 +309,13 @@ export const LeagueStarterGuidePage: React.FC = () => {
               <li>
                 <strong>Add Funds</strong> — {testnet
                   ? "share a link with someone who has funds so they can transfer to your account."
-                  : "copy your Account ID and send USDC on Base (Coinbase or Robinhood if you don't already have crypto), or share a link so another player can transfer."}
+                  : "copy your Account ID and send USDC on the Base network (Coinbase or Robinhood if you don't already have crypto), or share a link so another player can transfer."}
               </li>
               <li>
                 <strong>Send</strong> —{" "}
                 {testnet
                   ? "peer-to-peer transfer: enter a recipient wallet address and amount, or use a fund link / league Manage tab Send funds link to pre-fill the recipient."
-                  : "transfer USDC to another player, or cash out to a Coinbase or Robinhood Base deposit address. A fund link or league Manage tab Send funds link pre-fills the recipient."}
+                  : "transfer USDC to another player, or cash out to a Coinbase or Robinhood USDC deposit address on the Base network. A fund link or league Manage tab Send funds link pre-fills the recipient."}
               </li>
             </ul>
           </div>
@@ -333,7 +333,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
                   <li>
                     {testnet
                       ? "Use Send funds on the Manage tab member list (or Manage funds) to transfer starter xUSDC from your wallet."
-                      : "Ask members to add USDC on Base themselves (Coinbase or Robinhood). Optionally use Send funds on the Manage tab to transfer USDC from your wallet."}
+                      : "Ask members to add USDC on the Base network themselves (Coinbase or Robinhood). Optionally use Send funds on the Manage tab to transfer USDC from your wallet."}
                   </li>
                 </ol>
               </li>

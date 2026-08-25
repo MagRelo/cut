@@ -174,8 +174,8 @@ const ContractsPage: React.FC = () => {
       </div>
 
       {renderContractSection(
-        testnet ? "Base Sepolia Testnet" : "Base",
-        testnet ? "Deployed contracts on Base Sepolia" : "Deployed contracts on Base",
+        testnet ? "Base Sepolia Testnet" : "Base network",
+        testnet ? "Deployed contracts on Base Sepolia" : "Deployed contracts on the Base network",
         contracts,
         testnet ? "https://base-sepolia.blockscout.com" : "https://base.blockscout.com",
         chainId === targetChainId

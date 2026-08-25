@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
-import { ExclamationTriangleIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { Receive } from "../components/user/Receive.tsx";
 import { Send } from "../components/user/Send.tsx";
@@ -91,21 +91,7 @@ export function TransferFundsPage() {
               </p>
             </div>
           </div>
-        ) : (
-          <div
-            className="overflow-hidden rounded-lg border border-blue-200 bg-blue-50/80 shadow-sm"
-            role="note"
-          >
-            <div className="flex items-start gap-2 px-3 py-2.5">
-              <InformationCircleIcon className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" aria-hidden />
-              <p className="text-sm leading-relaxed text-blue-950/90">
-                Play The Cut uses <strong>USDC</strong> on the <strong>Base</strong> network. Add
-                funds from Coinbase or Robinhood, or send USDC from any Base wallet. Cash out the
-                same way from the Send tab.
-              </p>
-            </div>
-          </div>
-        )}
+        ) : null}
       </div>
     </>
   );

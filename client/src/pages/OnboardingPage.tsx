@@ -411,8 +411,8 @@ export function OnboardingPage() {
             ) : (
               <>
                 <p className="text-gray-700 leading-relaxed font-display mb-3">
-                  You&apos;ll need <strong>USDC</strong> on <strong>Base</strong> in your account to
-                  compete. Add it yourself from{" "}
+                  You&apos;ll need <strong>USDC</strong> on <strong>the Base network</strong> in
+                  your account to compete. Add it yourself from{" "}
                   <strong>Coinbase</strong> or <strong>Robinhood</strong> if you don&apos;t already
                   have crypto:
                 </p>
@@ -420,14 +420,14 @@ export function OnboardingPage() {
                   <li className="pl-1">Get the Coinbase or Robinhood app.</li>
                   <li className="pl-1">Buy USDC.</li>
                   <li className="pl-1">
-                    Send USDC on the <strong>Base</strong> network to your Account ID (copy it from
+                    Send USDC on <strong>the Base network</strong> to your Account ID (copy it from
                     Account → Manage funds).
                   </li>
                 </ol>
                 <p className="text-gray-700 leading-relaxed font-display mb-6">
-                  Anyone with USDC on Base can also send to your Account ID, including the person
-                  who referred you. Cash out the same way: send USDC from Manage funds to your
-                  Coinbase or Robinhood Base deposit address.
+                  Anyone with USDC on the Base network can also send to your Account ID, including
+                  the person who referred you. Cash out the same way: send USDC from Manage funds to
+                  your Coinbase or Robinhood USDC deposit address on the Base network.
                 </p>
               </>
             )}

@@ -44,7 +44,7 @@ Import from shared modules; do not hardcode brand strings in UI or server meta:
 
 ## Payment token
 
-Contest entry fees, prizes, and transfers use **USDC** on **Base**. Do not use CUT as a payment-token name in user-facing copy.
+Contest entry fees, prizes, and transfers use **USDC** on **the Base network**. Do not use CUT as a payment-token name in user-facing copy.
 
 ## Exclusions
 

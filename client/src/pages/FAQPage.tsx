@@ -617,9 +617,9 @@ export const FAQPage: React.FC = () => {
             </p>
             <p className="mb-2 text-gray-700">
               When you sign in, we create a smart wallet for you to hold {tokenLabel} on{" "}
-              {testnet ? "Base Sepolia" : "Base"} and handle on-chain actions like contest entries,
-              sends, and claims. Your funds stay in your wallet, not a platform-operated account,
-              and nothing moves without your approval.
+              {testnet ? "Base Sepolia" : "the Base network"} and handle on-chain actions like
+              contest entries, sends, and claims. Your funds stay in your wallet, not a
+              platform-operated account, and nothing moves without your approval.
             </p>
             <ul className="list-disc space-y-1 pl-6 text-gray-700">
               <li>
@@ -667,8 +667,8 @@ export const FAQPage: React.FC = () => {
             <div>
               <h3 className="mb-2 text-lg font-semibold text-gray-900">What is USDC?</h3>
               <p className="mb-2 text-gray-700">
-                USDC is a US dollar-backed stablecoin. Play The Cut uses canonical USDC on the{" "}
-                <strong>Base</strong> network for contest entry fees, prizes, and transfers. One
+                USDC is a US dollar-backed stablecoin. Play The Cut uses canonical USDC on{" "}
+                <strong>the Base network</strong> for contest entry fees, prizes, and transfers. One
                 USDC is treated as $1.
               </p>
               <p className="text-gray-700">
@@ -718,12 +718,12 @@ export const FAQPage: React.FC = () => {
               <div>
                 <h3 className="mb-2 text-lg font-semibold text-gray-900">How do I add funds?</h3>
                 <p className="mb-2 text-gray-700">
-                  Play The Cut uses <strong>USDC</strong> on the <strong>Base</strong> network. Copy
+                  Play The Cut uses <strong>USDC</strong> on <strong>the Base network</strong>. Copy
                   your Account ID from{" "}
                   <Link to="/account/funds" className="text-blue-600 hover:underline">
                     Account → Manage funds
                   </Link>{" "}
-                  and send USDC to it.
+                  and send USDC to it. Match token, network, and destination before you send.
                 </p>
                 <p className="mb-2 text-gray-700">
                   If you don&apos;t already have crypto, use <strong>Coinbase</strong> or{" "}
@@ -733,13 +733,13 @@ export const FAQPage: React.FC = () => {
                   <li>Get the Coinbase or Robinhood app.</li>
                   <li>Buy USDC.</li>
                   <li>
-                    Send or withdraw USDC on the <strong>Base</strong> network to your Account ID.
+                    Send or withdraw USDC on <strong>the Base network</strong> to your Account ID.
                   </li>
                 </ol>
                 <p className="text-gray-700">
-                  Anyone with USDC on Base can also send to your Account ID, including another
-                  player. Share the funding link on Manage funds if you want them to transfer from
-                  the app.
+                  Anyone with USDC on the Base network can also send to your Account ID, including
+                  another player. Share the funding link on Manage funds if you want them to
+                  transfer from the app.
                 </p>
               </div>
               <div>
@@ -751,8 +751,9 @@ export const FAQPage: React.FC = () => {
                   <Link to="/account/funds?tab=send" className="text-blue-600 hover:underline">
                     Manage funds → Send
                   </Link>
-                  , paste your Coinbase or Robinhood <strong>Base USDC deposit address</strong>, and
-                  send USDC. You can also send to another player&apos;s Account ID.
+                  , paste your Coinbase or Robinhood{" "}
+                  <strong>USDC deposit address on the Base network</strong>, and send USDC. You can
+                  also send to another player&apos;s Account ID.
                 </p>
               </div>
               <div>
@@ -760,9 +761,10 @@ export const FAQPage: React.FC = () => {
                   Which network and token should I use?
                 </h3>
                 <p className="text-gray-700">
-                  <strong>USDC only</strong>, on the <strong>Base</strong> network only. Sending a
-                  different token or using another network (Ethereum, Solana, and so on) can lose
-                  funds.
+                  Match all three: <strong>token</strong> (USDC only), <strong>network</strong> (the
+                  Base network only), and <strong>destination</strong> (your Account ID from Manage
+                  funds). Sending a different token, using another network (Ethereum, Solana, and so
+                  on), or the wrong address can lose funds.
                 </p>
               </div>
             </>
@@ -844,7 +846,7 @@ export const FAQPage: React.FC = () => {
                 </Link>{" "}
                 for all contract addresses
               </li>
-              <li>View contracts on BaseScan (Base network block explorer)</li>
+              <li>View contracts on BaseScan (the Base network block explorer)</li>
               <li>Verify contract code and transactions independently</li>
               <li>
                 Deployed contracts are listed for {testnet ? "Base Sepolia testnet" : "Base mainnet"}
