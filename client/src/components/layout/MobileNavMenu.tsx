@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { formatUnits } from "viem";
 import { useAuth } from "../../contexts/AuthContext";
-import { BRAND_WORDMARK } from "../../lib/brand";
+import { BRAND_PROSE, BRAND_WORDMARK } from "../../lib/brand";
 import { signInReturnFrom } from "../../lib/navRoutes";
 import {
   ACCOUNT_HOME_LINK,
@@ -103,10 +103,11 @@ export const MobileNavMenu: React.FC = () => {
                       <Link
                         to="/"
                         onClick={closeMenu}
-                        className="flex items-center gap-2 rounded-sm opacity-90 transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+                        aria-label={BRAND_PROSE}
+                        className="flex items-center gap-1.5 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
                       >
-                        <img src="/logo-transparent.png" alt="" className="h-7 w-auto" />
-                        <span className="font-display text-lg uppercase tracking-widest text-slate-900">
+                        <img src="/logo-transparent.png" alt="" className="h-8 w-auto" />
+                        <span className="font-display text-lg font-medium uppercase leading-none tracking-[0.06em] text-slate-900">
                           {BRAND_WORDMARK}
                         </span>
                         <StagingBadge />

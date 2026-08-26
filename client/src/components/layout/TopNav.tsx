@@ -3,7 +3,7 @@ import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { signInReturnFrom } from "../../lib/navRoutes";
-import { BRAND_WORDMARK } from "../../lib/brand";
+import { BRAND_PROSE, BRAND_WORDMARK } from "../../lib/brand";
 import { LEFT_TABS } from "../../lib/navTabs";
 import { MobileNavMenu } from "./MobileNavMenu";
 import { StagingBadge } from "./StagingBadge";
@@ -47,13 +47,14 @@ export const TopNav: React.FC = () => {
       <div className="flex h-14 min-w-0 items-center gap-3 px-4">
         <Link
           to="/"
-          className="flex shrink-0 items-center gap-2 rounded-sm opacity-90 transition-opacity hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+          aria-label={BRAND_PROSE}
+          className="flex shrink-0 items-center gap-1.5 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
         >
-          <img src="/logo-transparent.png" alt="" className="h-8 w-auto" />
-          <span className="mt-1 font-display text-lg uppercase leading-snug tracking-widest text-slate-900">
+          <img src="/logo-transparent.png" alt="" className="h-9 w-auto" />
+          <span className="font-display text-lg font-medium uppercase leading-none tracking-[0.06em] text-slate-900">
             {BRAND_WORDMARK}
           </span>
-          <StagingBadge className="mt-0.5" />
+          <StagingBadge />
         </Link>
 
         <nav
