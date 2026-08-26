@@ -97,7 +97,7 @@ export const CandidatePicker: React.FC<CandidatePickerProps> = ({
                 ) : null}
               </div>
 
-              <div className="relative min-h-0 flex-1 overflow-y-auto bg-slate-900">
+              <div className="relative min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-slate-600 via-slate-700 to-slate-900">
                 {isLoading ? (
                   <div className="flex justify-center py-12">
                     <LoadingSpinner />
