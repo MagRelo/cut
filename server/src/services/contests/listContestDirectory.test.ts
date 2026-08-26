@@ -76,19 +76,19 @@ describe("listContestDirectory", () => {
   it("issues one contest.findMany and public-only visibility when anonymous", async () => {
     findMany.mockResolvedValue([contestRow(golfEvent())]);
 
-    await listContestDirectory(null, "all", 84532);
+    await listContestDirectory(null, "all");
 
     expect(findMany).toHaveBeenCalledTimes(1);
     const where = findMany.mock.calls[0]?.[0]?.where;
     expect(where.OR).toEqual([{ userGroupId: null }]);
-    expect(where.chainId).toBe(84532);
+    expect(where.chainId).toBeUndefined();
     expect(where.event.sport).toEqual({ isEnabled: true });
   });
 
   it("includes membership filter for a signed-in Privy user", async () => {
     findMany.mockResolvedValue([contestRow(golfEvent())]);
 
-    await listContestDirectory("did:privy:1", "all", 84532);
+    await listContestDirectory("did:privy:1", "all");
 
     const where = findMany.mock.calls[0]?.[0]?.where;
     expect(where.OR).toEqual([
@@ -108,7 +108,7 @@ describe("listContestDirectory", () => {
   it("keeps summarySections and strips unused settings from the directory payload", async () => {
     findMany.mockResolvedValue([contestRow(golfEvent())]);
 
-    const directory = await listContestDirectory(null, "all", 84532);
+    const directory = await listContestDirectory(null, "all");
     const event = directory.upcoming[0]?.event;
     const contest = directory.upcoming[0]?.contests[0];
 
@@ -132,8 +132,8 @@ describe("listContestDirectory", () => {
   it("serves a second getContestDirectory call from cache", async () => {
     findMany.mockResolvedValue([contestRow(golfEvent())]);
 
-    const first = await getContestDirectory(null, "all", 84532);
-    const second = await getContestDirectory(null, "all", 84532);
+    const first = await getContestDirectory(null, "all");
+    const second = await getContestDirectory(null, "all");
 
     expect(findMany).toHaveBeenCalledTimes(1);
     expect(second).toEqual(first);

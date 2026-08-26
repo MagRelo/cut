@@ -2,7 +2,6 @@ import { formatUnits } from "viem";
 import { prisma } from "../../lib/prisma.js";
 import { createTtlCache } from "../../lib/ttlCache.js";
 import {
-  CONTEST_LIST_CHAIN_IDS,
   contestDirectorySelect,
   contestPrivyVisibilityOr,
 } from "../../utils/contestListQuery.js";
@@ -68,9 +67,8 @@ const directoryCache = createTtlCache<ContestDirectoryResponse>(DIRECTORY_CACHE_
 export function contestDirectoryCacheKey(
   privyUserId: string | null,
   scope: ContestDirectoryScope,
-  chainId?: number,
 ): string {
-  return `${chainId ?? "all"}:${scope}:${privyUserId ?? "anon"}`;
+  return `${scope}:${privyUserId ?? "anon"}`;
 }
 
 export function invalidateContestDirectory(): void {
@@ -80,10 +78,9 @@ export function invalidateContestDirectory(): void {
 export async function getContestDirectory(
   privyUserId: string | null,
   scope: ContestDirectoryScope = "all",
-  chainId?: number,
 ): Promise<ContestDirectoryResponse> {
-  return directoryCache.getOrLoad(contestDirectoryCacheKey(privyUserId, scope, chainId), () =>
-    listContestDirectory(privyUserId, scope, chainId),
+  return directoryCache.getOrLoad(contestDirectoryCacheKey(privyUserId, scope), () =>
+    listContestDirectory(privyUserId, scope),
   );
 }
 
@@ -197,7 +194,6 @@ function buildGroups(
 export async function listContestDirectory(
   privyUserId: string | null,
   scope: ContestDirectoryScope = "all",
-  chainId?: number,
 ): Promise<ContestDirectoryResponse> {
   const lookbackDate = new Date();
   lookbackDate.setUTCDate(lookbackDate.getUTCDate() - PAST_EVENT_LOOKBACK_DAYS);
@@ -211,7 +207,6 @@ export async function listContestDirectory(
 
   const rows = await prisma.contest.findMany({
     where: {
-      chainId: chainId !== undefined ? chainId : { in: [...CONTEST_LIST_CHAIN_IDS] },
       OR: contestPrivyVisibilityOr(privyUserId),
       event: {
         sport: { isEnabled: true },

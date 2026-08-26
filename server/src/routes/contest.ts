@@ -101,11 +101,9 @@ async function contestLobbyResponse(
 contestRouter.get("/directory", optionalPrivyJwt, async (c) => {
   try {
     const scopeParam = c.req.query("scope");
-    const chainIdParam = c.req.query("chainId");
 
     const validation = contestDirectoryQuerySchema.safeParse({
       scope: scopeParam || "all",
-      chainId: chainIdParam ? parseInt(chainIdParam) : undefined,
     });
 
     if (!validation.success) {
@@ -118,9 +116,9 @@ contestRouter.get("/directory", optionalPrivyJwt, async (c) => {
       );
     }
 
-    const { scope, chainId } = validation.data;
+    const { scope } = validation.data;
     const privyUserId = getOptionalPrivyUserId(c);
-    const directory = await getContestDirectory(privyUserId, scope, chainId);
+    const directory = await getContestDirectory(privyUserId, scope);
 
     c.header("Cache-Control", "private, max-age=15, stale-while-revalidate=45");
 
