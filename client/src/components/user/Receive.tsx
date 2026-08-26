@@ -37,9 +37,8 @@ export const Receive = () => {
         <h3 className="text-lg font-semibold text-gray-900">Add Funds</h3>
         {showCexOnramp ? (
           <p className="mb-4 text-sm text-gray-600">
-            Deposit <strong>USDC</strong> on <strong>Base</strong> network to play. Play the Cut
-            does not accept credit cards or Apple Pay. You can purchase & send USDC using Coinbase
-            or Robinhood apps.{" "}
+            Deposit <strong>USDC</strong> on <strong>Base</strong> network to play. You can purchase
+            & send USDC using Coinbase or Robinhood apps.{" "}
             <Link className="text-blue-600 hover:underline" to="/faq#funds">
               Learn more...
             </Link>
