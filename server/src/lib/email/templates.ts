@@ -1,4 +1,4 @@
-import { BRAND_PROSE, BRAND_URL, BRAND_WORDMARK } from "../brand.js";
+import { BRAND_LOGO_HEIGHT, BRAND_LOGO_SRC, BRAND_LOGO_WIDTH, BRAND_PROSE, BRAND_URL, BRAND_WORDMARK } from "../brand.js";
 import { escapeHtml } from "./escape.js";
 import { FONT_BODY, FONT_DISPLAY, GOOGLE_FONTS_URL } from "./styles.js";
 
@@ -7,10 +7,10 @@ export { escapeHtml };
 const PRODUCT_NAME = BRAND_PROSE;
 const HEADER_BRAND_WORDMARK = BRAND_WORDMARK;
 const DEFAULT_APP_URL = BRAND_URL;
-const LOGO_PATH = "/logo-transparent.png";
+const LOGO_PATH = BRAND_LOGO_SRC;
 /** Compact brand strip (email title lives in body). PNG aspect 678×787. */
 const LOGO_HEIGHT = 30;
-const LOGO_WIDTH = Math.round((LOGO_HEIGHT * 678) / 787);
+const LOGO_WIDTH = Math.round((LOGO_HEIGHT * BRAND_LOGO_WIDTH) / BRAND_LOGO_HEIGHT);
 const HEADER_BRAND_SIZE_PX = 16;
 const HEADER_BRAND_COLOR = "#3f3f46";
 /** Wordmark sits lower than logo box center; align text midpoint with golf ball in mark. */

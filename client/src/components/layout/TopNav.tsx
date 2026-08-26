@@ -5,6 +5,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { signInReturnFrom } from "../../lib/navRoutes";
 import { BRAND_PROSE, BRAND_WORDMARK } from "../../lib/brand";
 import { LEFT_TABS } from "../../lib/navTabs";
+import { BrandLogo } from "../common/BrandLogo";
 import { MobileNavMenu } from "./MobileNavMenu";
 import { StagingBadge } from "./StagingBadge";
 import { UserMenu } from "./UserMenu";
@@ -50,7 +51,7 @@ export const TopNav: React.FC = () => {
           aria-label={BRAND_PROSE}
           className="flex shrink-0 items-center gap-1.5 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
         >
-          <img src="/logo-transparent.png" alt="" className="h-9 w-auto" />
+          <BrandLogo className="h-9 w-auto" />
           <span className="mt-1.5 font-display text-lg font-medium uppercase leading-none tracking-[0.06em] text-slate-900">
             {BRAND_WORDMARK}
           </span>
@@ -76,7 +77,7 @@ export const TopNav: React.FC = () => {
                 className={`${tabLinkClass(false)} inline-flex items-center gap-1`}
                 aria-label="Cut Store"
               >
-                <img src="/logo-transparent.png" alt="" className="h-5 w-auto shrink-0" />
+                <BrandLogo className="h-5 w-auto shrink-0" />
                 STORE
                 <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
               </a>

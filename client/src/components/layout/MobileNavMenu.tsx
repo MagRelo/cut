@@ -14,6 +14,7 @@ import {
   LEFT_TABS,
   leagueNavItemsFromAuth,
 } from "../../lib/navTabs";
+import { BrandLogo } from "../common/BrandLogo";
 import { StagingBadge } from "./StagingBadge";
 
 const mobileNavItemBase =
@@ -106,7 +107,7 @@ export const MobileNavMenu: React.FC = () => {
                         aria-label={BRAND_PROSE}
                         className="flex items-center gap-1.5 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
                       >
-                        <img src="/logo-transparent.png" alt="" className="h-8 w-auto" />
+                        <BrandLogo className="h-8 w-auto" />
                         <span className="font-display text-lg font-medium uppercase leading-none tracking-[0.06em] text-slate-900">
                           {BRAND_WORDMARK}
                         </span>
@@ -246,11 +247,7 @@ export const MobileNavMenu: React.FC = () => {
                               className={`${mobileNavItemClass(false)} inline-flex items-center gap-1.5`}
                               aria-label="Cut Store"
                             >
-                              <img
-                                src="/logo-transparent.png"
-                                alt=""
-                                className="h-5 w-auto shrink-0"
-                              />
+                              <BrandLogo className="h-5 w-auto shrink-0" />
                               STORE
                               <ArrowTopRightOnSquareIcon
                                 className="h-3.5 w-3.5 shrink-0"
@@ -268,11 +265,7 @@ export const MobileNavMenu: React.FC = () => {
                               className={`${mobileNavItemClass(false)} inline-flex items-center gap-1.5`}
                               aria-label="Cut Store"
                             >
-                              <img
-                                src="/logo-transparent.png"
-                                alt=""
-                                className="h-5 w-auto shrink-0"
-                              />
+                              <BrandLogo className="h-5 w-auto shrink-0" />
                               STORE
                               <ArrowTopRightOnSquareIcon
                                 className="h-3.5 w-3.5 shrink-0"

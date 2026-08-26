@@ -3,6 +3,7 @@ import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
 import { useFirstEnabledSportId } from "../hooks/useSportData";
+import { BrandLogo } from "../components/common/BrandLogo";
 import { BRAND_PROSE, BRAND_WORDMARK } from "../lib/brand";
 import { ONBOARDING_DISMISSED_KEY } from "../lib/onboardingSettings";
 import { getPendingLeagueInviteCode } from "../lib/leagueInviteCapture";
@@ -155,11 +156,7 @@ export function OnboardingPage() {
         {step === 0 && (
           <>
             <div className="flex min-w-0 flex-row flex-nowrap items-center justify-center gap-4 pb-2 mb-2 sm:gap-6">
-              <img
-                src="/logo-transparent.png"
-                alt={`${BRAND_PROSE} logo`}
-                className="h-28 sm:h-36 md:h-44 w-auto flex-shrink-0"
-              />
+              <BrandLogo decorative={false} className="h-28 w-auto flex-shrink-0 sm:h-36 md:h-44" />
               <h1 className="min-w-0 text-left text-4xl sm:text-5xl md:text-6xl font-bold text-black">
                 {BRAND_WORDMARK}
                 <div className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-400">

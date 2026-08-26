@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { BRAND_PROSE, BRAND_WORDMARK } from "../../lib/brand";
+import { BRAND_WORDMARK } from "../../lib/brand";
+import { BrandLogo } from "./BrandLogo";
 import { LoadingSpinnerSmall } from "./LoadingSpinnerSmall";
 
 interface GlobalLoadingOverlayProps {
@@ -62,7 +63,7 @@ export const GlobalLoadingOverlay: React.FC<GlobalLoadingOverlayProps> = ({ isBl
       }`}
     >
       <div className="flex flex-col items-center gap-2 text-white">
-        <img src="/logo-transparent.png" alt={`${BRAND_PROSE} logo`} className="h-14 w-auto" />
+        <BrandLogo decorative={false} className="h-14 w-auto" />
 
         <div>
           <p className="text-sm tracking-[0.2em] uppercase text-white/80">{BRAND_WORDMARK}</p>

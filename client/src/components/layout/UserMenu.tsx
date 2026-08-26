@@ -4,6 +4,7 @@ import { formatUnits } from "viem";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { accountMatch } from "../../lib/navRoutes";
+import { BrandLogo } from "../common/BrandLogo";
 import {
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
@@ -176,7 +177,7 @@ export const UserMenu: React.FC = () => {
               onClick={close}
               aria-label="Cut Store"
             >
-              <img src="/logo-transparent.png" alt="" className="h-5 w-auto shrink-0" />
+              <BrandLogo className="h-5 w-auto shrink-0" />
               STORE
               <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
             </a>

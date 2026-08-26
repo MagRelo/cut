@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Share } from "../components/common/Share";
 import { InfoScorecard } from "../components/common/InfoScorecard";
 import { PageSection } from "../components/layout/PageSection";
+import { BrandLogo } from "../components/common/BrandLogo";
 import { BRAND_PROSE, BRAND_TAGLINE, BRAND_URL, BRAND_WORDMARK } from "../lib/brand";
 import { HARDCODED_PLAYERS } from "../lib/marketingDummies";
 
@@ -13,11 +14,7 @@ export const Home: React.FC = () => {
         {/* Logo above wordmark — matches loading screen layout */}
         <div className="flex justify-center px-2 pb-2 sm:px-0">
           <div className="flex min-w-0 max-w-full flex-col items-center justify-center gap-2">
-            <img
-              src="/logo-transparent.png"
-              alt={`${BRAND_PROSE} logo`}
-              className="h-24 w-auto flex-shrink-0 sm:h-32"
-            />
+            <BrandLogo decorative={false} className="h-24 w-auto flex-shrink-0 sm:h-32" />
 
             <h1 className="min-w-0 text-center font-display text-4xl font-medium tracking-widest text-black sm:text-5xl md:text-6xl">
               {BRAND_WORDMARK}

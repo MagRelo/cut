@@ -7,6 +7,8 @@ Canonical product naming for user-facing copy, marketing, and documentation.
 | Context | Format | Example |
 | --- | --- | --- |
 | Wordmark | `PLAYTHECUT` — one word, all caps | Nav header, loading screen, email header |
+| Mark | `/logo-transparent.png` (678×787) | In-app lockup, email header. Not used as favicon. |
+| Favicon | `/favicon.svg` | Tab icon, web app manifest |
 | Prose | `Play The Cut` — capital T in The | FAQ, emails, page titles, share text |
 | URL | `https://playthecut.com` | Share links, OG URLs, email CTAs |
 
@@ -17,6 +19,15 @@ Canonical product naming for user-facing copy, marketing, and documentation.
 - Logo-adjacent text in nav, mobile menu, and hero headers
 - Loading and error overlays
 - Email header strip (next to logo)
+
+**Mark (`/logo-transparent.png`)**
+
+- In-app lockup (`BrandLogo`) and email header image
+- Not the tab icon or manifest icon — those use `/favicon.svg` so the 123KB PNG is fetched once
+
+**Favicon (`/favicon.svg`)**
+
+- Browser tab icon and web app manifest icon
 
 **Prose (`Play The Cut`)**
 
