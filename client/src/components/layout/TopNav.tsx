@@ -51,7 +51,7 @@ export const TopNav: React.FC = () => {
           className="flex shrink-0 items-center gap-1.5 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
         >
           <img src="/logo-transparent.png" alt="" className="h-9 w-auto" />
-          <span className="font-display text-lg font-medium uppercase leading-none tracking-[0.06em] text-slate-900">
+          <span className="mt-1.5 font-display text-lg font-medium uppercase leading-none tracking-[0.06em] text-slate-900">
             {BRAND_WORDMARK}
           </span>
           <StagingBadge />
