@@ -34,9 +34,9 @@ export const Receive = () => {
   return (
     <div className="space-y-4 font-display">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900">Add {tokenSymbol}</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Add {tokenSymbol} to your wallet</h3>
         {showCexOnramp ? (
-          <p className="mb-4 text-sm text-gray-600">
+          <p className="mb-3 text-sm text-gray-600">
             Add funds to your wallet by sending {tokenSymbol} on {BLOCKCHAIN_NETWORK}. You can buy
             and send {tokenSymbol} from Coinbase, Robinhood, or another wallet.{" "}
             <Link className="text-blue-600 hover:underline" to="/faq#funds">
@@ -44,13 +44,33 @@ export const Receive = () => {
             </Link>
           </p>
         ) : (
-          <p className="mb-4 text-sm text-gray-600">
+          <p className="mb-3 text-sm text-gray-600">
             Balances are funded player-to-player. Share your funding link with someone who already
             has {tokenSymbol} and ask them to send you some.
           </p>
         )}
-      </div>
 
+        <ul className="space-y-2 text-xs text-gray-700">
+          <li className="flex gap-2">
+            <span className="shrink-0" aria-hidden>
+              💡
+            </span>
+            <span>
+              Tip: Send a small test transaction (say $1) to make sure the details are right. Then
+              send another transaction with the full amount.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="shrink-0" aria-hidden>
+              ⚠️
+            </span>
+            <span>
+              Only send {tokenSymbol} on {networkLabel} network. Sending from Ethereum, Polygon,
+              Arbitrum, or another network may result in lost funds.
+            </span>
+          </li>
+        </ul>
+      </div>
       {walletAddress ? (
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
           <p className="mb-3 text-sm font-medium text-gray-900">
@@ -79,23 +99,28 @@ export const Receive = () => {
               </dd>
             </div>
           </dl>
-          <p className="text-xs text-gray-500">
-            Only send {tokenSymbol} on {networkLabel}. Sending from Ethereum, Polygon, Arbitrum, or
-            another network may result in lost funds.
-          </p>
         </div>
       ) : null}
 
       {walletAddress && showCexOnramp ? (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <p className="mb-2 text-sm font-medium text-gray-900">From Coinbase or Robinhood</p>
-          <ol className="list-decimal space-y-1 pl-5 text-sm text-gray-700">
-            <li>Get the Coinbase or Robinhood app if you don&apos;t already have {tokenSymbol}.</li>
-            <li>Buy {tokenSymbol}.</li>
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+          <p className="mb-1 text-sm font-semibold text-gray-900">
+            Buy {tokenSymbol} with Coinbase or Robinhood
+          </p>
+          <p className="mb-3 text-sm text-gray-600">
+            Don't have {tokenSymbol} yet? Use a major exchange, then transfer it to the wallet
+            address above.
+          </p>
+          <ol className="list-decimal space-y-1.5 pl-5 text-sm text-gray-700">
+            <li>Open Coinbase or Robinhood and buy {tokenSymbol}.</li>
             <li>
-              Send {tokenSymbol} on {BLOCKCHAIN_NETWORK} to your wallet address above.
+              Send {tokenSymbol} to your wallet address above on {BLOCKCHAIN_NETWORK}.
             </li>
           </ol>
+          <p className="mt-3 text-xs text-gray-500">
+            Double-check the address and network before sending. Transfers typically arrive within a
+            few minutes.
+          </p>
         </div>
       ) : null}
 
