@@ -1,0 +1,12 @@
+---
+description: Do not drive Chrome or browser tools to test UI; the user verifies rendering.
+alwaysApply: true
+---
+
+# No Browser Testing
+
+Do not use Chrome, browser MCP tools, or other browser automation to click through the app and verify rendering.
+
+After UI, layout, styling, routing, or copy changes: implement the change, then stop. The user tests rendering themselves.
+
+Do not navigate pages, take screenshots, or exercise flows in a browser as a verification step.

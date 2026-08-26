@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
@@ -32,6 +32,14 @@ export function TransferFundsPage() {
       />
 
       <div className="space-y-4">
+        <p className="font-display text-sm text-gray-700">
+          Play The Cut shows your balance and helps you use your wallet. You stay in control and can
+          add or send funds anytime.{` `}
+          <Link to="/faq#account" className="text-blue-600 hover:underline">
+            Learn more...
+          </Link>
+        </p>
+
         <div className="rounded-sm border border-gray-200">
           <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
             <TabList className={tabListClassName()}>

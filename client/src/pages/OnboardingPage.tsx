@@ -405,7 +405,7 @@ export function OnboardingPage() {
             {isTargetTestnet() ? (
               <p className="text-gray-700 leading-relaxed font-display mb-6">
                 You&apos;ll need funds in your account to compete in contests. Most people get funds
-                from other players—share your Account ID with whoever referred you to receive a
+                from other players—share your wallet address with whoever referred you to receive a
                 transfer.
               </p>
             ) : (
@@ -420,14 +420,14 @@ export function OnboardingPage() {
                   <li className="pl-1">Get the Coinbase or Robinhood app.</li>
                   <li className="pl-1">Buy USDC.</li>
                   <li className="pl-1">
-                    Send USDC on <strong>the Base network</strong> to your Account ID (copy it from
-                    Account → Manage funds).
+                    Send USDC on <strong>the Base network</strong> to your wallet address (copy it
+                    from Account → Manage funds).
                   </li>
                 </ol>
                 <p className="text-gray-700 leading-relaxed font-display mb-6">
-                  Anyone with USDC on the Base network can also send to your Account ID, including
-                  the person who referred you. Cash out the same way: send USDC from Manage funds to
-                  your Coinbase or Robinhood USDC deposit address on the Base network.
+                  Anyone with USDC on the Base network can also send to your wallet address,
+                  including the person who referred you. To send funds out, use Manage funds → Send
+                  to your Coinbase or Robinhood USDC address on the Base network.
                 </p>
               </>
             )}

@@ -3,16 +3,12 @@ import { formatUnits } from "viem";
 import { Link } from "react-router-dom";
 import { PageSection } from "../layout/PageSection";
 import { useAuth } from "../../contexts/AuthContext";
+import { defaultPaymentTokenSymbol } from "../../config/targetChain";
 
-const manageLinkClass =
-  "text-blue-600 ml-2 hover:text-blue-700 transition-colors font-normal text-sm";
-
-interface TokenBalancesProps {
-  showContestHistoryLink?: boolean;
-}
-
-export function TokenBalances({ showContestHistoryLink = true }: TokenBalancesProps) {
-  const { paymentTokenBalance, balancesUnavailable, refetchBalances } = useAuth();
+export function TokenBalances() {
+  const { paymentTokenBalance, paymentTokenSymbol, balancesUnavailable, refetchBalances } =
+    useAuth();
+  const tokenSymbol = paymentTokenSymbol ?? defaultPaymentTokenSymbol();
 
   const balanceTotal = balancesUnavailable
     ? null
@@ -20,13 +16,8 @@ export function TokenBalances({ showContestHistoryLink = true }: TokenBalancesPr
 
   return (
     <PageSection>
-      <div className={`flex items-center justify-between ${showContestHistoryLink ? "mb-2" : ""}`}>
-        <h2 className="min-w-0 text-lg font-semibold text-gray-700 font-display">
-          Balance
-          <Link to="/account/funds" className={manageLinkClass}>
-            manage...
-          </Link>
-        </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="min-w-0 text-lg font-semibold text-gray-700 font-display">Balance</h2>
         <div className="min-w-0 justify-end text-right">
           {balancesUnavailable ? (
             <span
@@ -42,6 +33,11 @@ export function TokenBalances({ showContestHistoryLink = true }: TokenBalancesPr
           )}
         </div>
       </div>
+
+      <p className="mt-2 font-display text-sm text-gray-700">
+        Your {tokenSymbol} is held in your wallet, not by Play The Cut. You stay in control and can
+        add or send funds anytime.
+      </p>
 
       {balancesUnavailable && (
         <div
@@ -69,16 +65,14 @@ export function TokenBalances({ showContestHistoryLink = true }: TokenBalancesPr
         </div>
       )}
 
-      {showContestHistoryLink && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <Link
-            to="/account/funds?tab=activity"
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-          >
-            Activity →
-          </Link>
-        </div>
-      )}
+      <div className="mt-3">
+        <Link
+          to="/account/funds"
+          className="font-display text-sm font-medium text-blue-600 hover:text-blue-700"
+        >
+          Add or send funds →
+        </Link>
+      </div>
     </PageSection>
   );
 }

@@ -34,13 +34,13 @@ export const Receive = () => {
   return (
     <div className="space-y-4 font-display">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900">Add Funds</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Add {tokenSymbol}</h3>
         {showCexOnramp ? (
           <p className="mb-4 text-sm text-gray-600">
-            Deposit <strong>USDC</strong> on <strong>Base</strong> network to play. You can purchase
-            & send USDC using Coinbase or Robinhood apps.{" "}
+            Send {tokenSymbol} on {BLOCKCHAIN_NETWORK} to your Play The Cut wallet. You can buy and
+            send {tokenSymbol} from Coinbase, Robinhood, or another wallet.{" "}
             <Link className="text-blue-600 hover:underline" to="/faq#funds">
-              Learn more...
+              Learn more
             </Link>
           </p>
         ) : (
@@ -57,30 +57,31 @@ export const Receive = () => {
             Before you send, match all three:
           </p>
           <dl className="mb-3 divide-y divide-gray-200 overflow-hidden rounded-md border border-gray-200 bg-white">
-            <div className="grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-x-3 px-3 py-2.5 text-sm">
+            <div className="grid grid-cols-[9rem_minmax(0,1fr)] items-center gap-x-3 px-3 py-2.5 text-sm">
               <dt className="font-medium text-gray-600">Token</dt>
               <dd className="min-w-0 font-semibold text-gray-900">{tokenSymbol}</dd>
             </div>
-            <div className="grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-x-3 px-3 py-2.5 text-sm">
+            <div className="grid grid-cols-[9rem_minmax(0,1fr)] items-center gap-x-3 px-3 py-2.5 text-sm">
               <dt className="font-medium text-gray-600">Network</dt>
               <dd className="min-w-0 font-semibold text-gray-900">{networkLabel}</dd>
             </div>
-            <div className="grid grid-cols-[7rem_minmax(0,1fr)] items-start gap-x-3 px-3 py-2.5 text-sm">
-              <dt className="pt-1 font-medium text-gray-600">Address</dt>
-              <dd className="flex min-w-0 items-center gap-3">
-                <span
-                  className="min-w-0 flex-1 break-all font-mono text-xs text-gray-900"
-                  title={walletAddress}
-                >
-                  {walletAddress}
-                </span>
-                <CopyButton text={walletAddress} />
+            <div className="px-3 py-2.5 text-sm">
+              <dt className="font-medium text-gray-600">Wallet address</dt>
+              <dd className="mt-2">
+                <div className="overflow-x-auto">
+                  <p className="whitespace-nowrap font-mono text-xs text-gray-900">
+                    {walletAddress}
+                  </p>
+                </div>
+                <div className="mt-2">
+                  <CopyButton text={walletAddress} />
+                </div>
               </dd>
             </div>
           </dl>
           <p className="text-xs text-gray-500">
-            Only send USDC using the Base network. Do not send USDC from Ethereum, Polygon,
-            Arbitrum, or any other network to this deposit address.
+            Only send {tokenSymbol} on {networkLabel}. Sending from Ethereum, Polygon, Arbitrum, or
+            another network may result in lost funds.
           </p>
         </div>
       ) : null}
@@ -89,10 +90,10 @@ export const Receive = () => {
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
           <p className="mb-2 text-sm font-medium text-gray-900">From Coinbase or Robinhood</p>
           <ol className="list-decimal space-y-1 pl-5 text-sm text-gray-700">
-            <li>Get the Coinbase or Robinhood app if you don&apos;t already have USDC.</li>
+            <li>Get the Coinbase or Robinhood app if you don&apos;t already have {tokenSymbol}.</li>
             <li>Buy {tokenSymbol}.</li>
             <li>
-              Send {tokenSymbol} on {BLOCKCHAIN_NETWORK} to the Destination address above.
+              Send {tokenSymbol} on {BLOCKCHAIN_NETWORK} to your wallet address above.
             </li>
           </ol>
         </div>
@@ -106,8 +107,8 @@ export const Receive = () => {
             </label>
             {showCexOnramp ? (
               <p className="mt-1 text-sm text-gray-600">
-                Anyone with USDC on {BLOCKCHAIN_NETWORK} can send to your destination address. Share
-                this link so they can transfer from Manage Funds.
+                Anyone with {tokenSymbol} on {BLOCKCHAIN_NETWORK} can send to your wallet address.
+                Share this link so they can transfer from Manage Funds.
               </p>
             ) : null}
           </div>
@@ -126,7 +127,7 @@ export const Receive = () => {
               </div>
             ) : null}
             <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 text-sm">
-              <span className="shrink-0 font-medium text-gray-600">Account ID</span>
+              <span className="shrink-0 font-medium text-gray-600">Wallet address</span>
               <span
                 className="min-w-0 truncate text-right font-mono text-xs text-gray-900"
                 title={walletAddress}
@@ -146,7 +147,7 @@ export const Receive = () => {
           </div>
         </div>
       ) : (
-        <p className="text-sm text-gray-500">Connect your wallet to add funds.</p>
+        <p className="text-sm text-gray-500">Sign in to add funds.</p>
       )}
     </div>
   );

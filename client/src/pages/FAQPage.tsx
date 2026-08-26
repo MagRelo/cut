@@ -55,7 +55,7 @@ export const FAQPage: React.FC = () => {
           </li>
           <li>
             <a href="#funds" className="text-blue-600 hover:underline">
-              Adding & withdrawing funds
+              Adding & sending funds
             </a>
           </li>
           <li>
@@ -672,13 +672,13 @@ export const FAQPage: React.FC = () => {
                 USDC is treated as $1.
               </p>
               <p className="text-gray-700">
-                Add or withdraw USDC from{" "}
+                Add or send USDC from{" "}
                 <Link to="/account/funds" className="text-blue-600 hover:underline">
                   Account → Manage funds
                 </Link>
                 . See{" "}
                 <a href="#funds" className="text-blue-600 hover:underline">
-                  Adding &amp; withdrawing funds
+                  Adding &amp; sending funds
                 </a>
                 .
               </p>
@@ -689,7 +689,7 @@ export const FAQPage: React.FC = () => {
 
       <PageSection id="funds" className="scroll-mt-4">
         <h2 className="mb-4 font-display text-2xl font-bold text-gray-900">
-          Adding &amp; withdrawing funds
+          Adding &amp; sending funds
         </h2>
 
         <div className="space-y-4">
@@ -709,7 +709,7 @@ export const FAQPage: React.FC = () => {
               <div>
                 <h3 className="mb-2 text-lg font-semibold text-gray-900">How do I send funds?</h3>
                 <p className="text-gray-700">
-                  Open Manage funds → Send, paste a recipient Account ID, and transfer xUSDC.
+                  Open Manage funds → Send, paste a recipient wallet address, and transfer xUSDC.
                 </p>
               </div>
             </>
@@ -719,11 +719,11 @@ export const FAQPage: React.FC = () => {
                 <h3 className="mb-2 text-lg font-semibold text-gray-900">How do I add funds?</h3>
                 <p className="mb-2 text-gray-700">
                   Play The Cut uses <strong>USDC</strong> on <strong>the Base network</strong>. Copy
-                  your Account ID from{" "}
+                  your wallet address from{" "}
                   <Link to="/account/funds" className="text-blue-600 hover:underline">
                     Account → Manage funds
                   </Link>{" "}
-                  and send USDC to it. Match token, network, and destination before you send.
+                  and send USDC to it. Match token, network, and wallet address before you send.
                 </p>
                 <p className="mb-2 text-gray-700">
                   If you don&apos;t already have crypto, use <strong>Coinbase</strong> or{" "}
@@ -733,27 +733,25 @@ export const FAQPage: React.FC = () => {
                   <li>Get the Coinbase or Robinhood app.</li>
                   <li>Buy USDC.</li>
                   <li>
-                    Send or withdraw USDC on <strong>the Base network</strong> to your Account ID.
+                    Send USDC on <strong>the Base network</strong> to your wallet address.
                   </li>
                 </ol>
                 <p className="text-gray-700">
-                  Anyone with USDC on the Base network can also send to your Account ID, including
-                  another player. Share the funding link on Manage funds if you want them to
-                  transfer from the app.
+                  Anyone with USDC on the Base network can also send to your wallet address,
+                  including another player. Share the funding link on Manage funds if you want them
+                  to transfer from the app.
                 </p>
               </div>
               <div>
-                <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                  How do I withdraw or cash out?
-                </h3>
+                <h3 className="mb-2 text-lg font-semibold text-gray-900">How do I send funds?</h3>
                 <p className="mb-2 text-gray-700">
                   Open{" "}
                   <Link to="/account/funds?tab=send" className="text-blue-600 hover:underline">
                     Manage funds → Send
                   </Link>
                   , paste your Coinbase or Robinhood{" "}
-                  <strong>USDC deposit address on the Base network</strong>, and send USDC. You can
-                  also send to another player&apos;s Account ID.
+                  <strong>USDC wallet address on the Base network</strong>, and send USDC. You can
+                  also send to another player&apos;s wallet address.
                 </p>
               </div>
               <div>
@@ -762,9 +760,9 @@ export const FAQPage: React.FC = () => {
                 </h3>
                 <p className="text-gray-700">
                   Match all three: <strong>token</strong> (USDC only), <strong>network</strong> (the
-                  Base network only), and <strong>destination</strong> (your Account ID from Manage
-                  funds). Sending a different token, using another network (Ethereum, Solana, and so
-                  on), or the wrong address can lose funds.
+                  Base network only), and <strong>wallet address</strong> (from Manage funds).
+                  Sending a different token, using another network (Ethereum, Solana, and so on), or
+                  the wrong address can lose funds.
                 </p>
               </div>
             </>

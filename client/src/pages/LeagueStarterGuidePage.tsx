@@ -268,10 +268,12 @@ export const LeagueStarterGuidePage: React.FC = () => {
           ) : null}
 
           <div>
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">Account ID &amp; fund links</h3>
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">
+              Wallet address &amp; fund links
+            </h3>
             {testnet ? (
               <p>
-                Your <strong>Account ID</strong> is your smart wallet address on the{" "}
+                Your <strong>wallet address</strong> is your smart wallet on the{" "}
                 <Link to="/account" className="text-blue-600 hover:underline">
                   Account
                 </Link>{" "}
@@ -284,7 +286,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
               </p>
             ) : (
               <p>
-                Your <strong>Account ID</strong> is your smart wallet on{" "}
+                Your <strong>wallet address</strong> is your smart wallet on{" "}
                 <strong>the Base network</strong>. Copy it from{" "}
                 <Link to="/account/funds" className="text-blue-600 hover:underline">
                   Manage funds
@@ -309,13 +311,13 @@ export const LeagueStarterGuidePage: React.FC = () => {
               <li>
                 <strong>Add Funds</strong> — {testnet
                   ? "share a link with someone who has funds so they can transfer to your account."
-                  : "copy your Account ID and send USDC on the Base network (Coinbase or Robinhood if you don't already have crypto), or share a link so another player can transfer."}
+                  : "copy your wallet address and send USDC on the Base network (Coinbase or Robinhood if you don't already have crypto), or share a link so another player can transfer."}
               </li>
               <li>
                 <strong>Send</strong> —{" "}
                 {testnet
                   ? "peer-to-peer transfer: enter a recipient wallet address and amount, or use a fund link / league Manage tab Send funds link to pre-fill the recipient."
-                  : "transfer USDC to another player, or cash out to a Coinbase or Robinhood USDC deposit address on the Base network. A fund link or league Manage tab Send funds link pre-fills the recipient."}
+                  : "send USDC to another player, or to a Coinbase or Robinhood USDC address on the Base network. A fund link or league Manage tab Send funds link pre-fills the recipient."}
               </li>
             </ul>
           </div>
@@ -347,7 +349,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
             </Link>
             {" "}and{" "}
             <Link to="/faq#funds" className="text-blue-600 hover:underline">
-              FAQ → Adding &amp; withdrawing funds
+              FAQ → Adding &amp; sending funds
             </Link>
             .
           </p>
