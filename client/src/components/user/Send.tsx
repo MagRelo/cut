@@ -8,6 +8,7 @@ import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../config/targetC
 import { PAYMENT_TOKEN_DECIMALS } from "../../lib/paymentTokenSpend";
 import { BLOCKCHAIN_NETWORK } from "../../lib/legalPlaceholders";
 import { getSmartWalletsPaymasterConfig } from "../../lib/privySmartWalletPaymaster";
+import { targetSymbol } from "../../utils/blockchainUtils";
 
 export type SendProps = {
   /** Pre-fill recipient (e.g. admin support: target user wallet). */
@@ -161,6 +162,27 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
         ) : (
           <p className="mt-1 text-sm text-gray-600">Send {targetSymbol} to another wallet.</p>
         )}
+
+        <ul className="mt-3 space-y-2 text-xs text-gray-700">
+          <li className="flex gap-2">
+            <span className="shrink-0" aria-hidden>
+              💡
+            </span>
+            <span>
+              Tip: Send a small test transaction (say $1) to make sure the details are right. Then
+              send another transaction with the full amount.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="shrink-0" aria-hidden>
+              ⚠️
+            </span>
+            <span>
+              Only send {targetSymbol} to a {networkLabel} address. Sending to an address on
+              Ethereum, Polygon, Arbitrum, or another network may result in lost funds.
+            </span>
+          </li>
+        </ul>
       </div>
 
       <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
