@@ -81,6 +81,15 @@ graph LR
 
 `app.ts` serves `index.html` for non-API routes and rewrites title + OG/Twitter tags per path (`lib/pageMetadata.ts`). Static assets use `@hono/node-server` `serveStatic` with `root: ./public`. Request paths are mapped through `rewritePublicStaticRequestPath`: the file is `realpath`'d, must stay inside `public/`, and dotfiles / `..` / directories are not served.
 
+CORS (`ALLOWED_ORIGINS`, credentials) applies to `/api/*` only. Static files do not send `Vary: Origin`, so browsers can disk-cache logos and other public images.
+
+| Asset | Cache-Control |
+|------|----------------|
+| HTML | `no-cache, no-store, must-revalidate` |
+| Vite hashed `/assets/*` | `public, max-age=31536000, immutable` |
+| Images and fonts (logos, avatars, `.png` / `.svg` / …) | `public, max-age=31536000, immutable` |
+| Other public files (`manifest.json`) | `public, max-age=86400` |
+
 | Path | Title |
 |------|-------|
 | `/contest/:id` | `$entry Contest Name \| Play The Cut` (contest description when present) |

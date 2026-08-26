@@ -98,8 +98,10 @@ app.use(
   }),
 );
 
+// CORS only on /api. On static files it adds `Vary: Origin` + credentials, which
+// stops Chrome from disk-caching logos (memory cache only, ~minutes).
 app.use(
-  "*",
+  "/api/*",
   cors({
     origin: resolveAllowedOrigins(),
     credentials: true,

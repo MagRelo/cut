@@ -19,10 +19,14 @@ describe("cacheControlForStaticPath", () => {
     expect(cacheControlForStaticPath("/assets/logo-xyz.png")).toBe(expected);
   });
 
-  it("caches unhashed public files for one day", () => {
-    const expected = "public, max-age=86400";
-    expect(cacheControlForStaticPath("public/manifest.json")).toBe(expected);
+  it("caches unhashed images and fonts for a year and marks them immutable", () => {
+    const expected = "public, max-age=31536000, immutable";
     expect(cacheControlForStaticPath("public/logo-transparent.png")).toBe(expected);
     expect(cacheControlForStaticPath("public/commodities/avatars/gold.png")).toBe(expected);
+    expect(cacheControlForStaticPath("public/favicon.svg")).toBe(expected);
+  });
+
+  it("caches unhashed non-media public files for one day", () => {
+    expect(cacheControlForStaticPath("public/manifest.json")).toBe("public, max-age=86400");
   });
 });
