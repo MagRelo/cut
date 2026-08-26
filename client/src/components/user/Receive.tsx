@@ -37,8 +37,8 @@ export const Receive = () => {
         <h3 className="text-lg font-semibold text-gray-900">Add {tokenSymbol}</h3>
         {showCexOnramp ? (
           <p className="mb-4 text-sm text-gray-600">
-            Send {tokenSymbol} on {BLOCKCHAIN_NETWORK} to your Play The Cut wallet. You can buy and
-            send {tokenSymbol} from Coinbase, Robinhood, or another wallet.{" "}
+            Add funds to your wallet by sending {tokenSymbol} on {BLOCKCHAIN_NETWORK}. You can buy
+            and send {tokenSymbol} from Coinbase, Robinhood, or another wallet.{" "}
             <Link className="text-blue-600 hover:underline" to="/faq#funds">
               Learn more...
             </Link>
