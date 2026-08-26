@@ -78,8 +78,8 @@ export const FAQPage: React.FC = () => {
           <div>
             <h3 className="mb-2 text-lg font-semibold text-gray-900">How does scoring work?</h3>
             <p className="mb-2 text-gray-700">
-              Play The Cut uses a Modified Stableford scoring system where players earn points based on
-              their performance on each hole:
+              Play The Cut uses a Modified Stableford scoring system where players earn points based
+              on their performance on each hole:
             </p>
             <ul className="list-disc space-y-1 pl-6 text-gray-700">
               <li>Hole-in-one: +10 points</li>
@@ -210,8 +210,8 @@ export const FAQPage: React.FC = () => {
               </li>
             </ol>
             <p className="mt-2 text-gray-700">
-              Leaderboards refresh about every 5 minutes during active tournaments. Final
-              settlement uses the same ranking rules.
+              Leaderboards refresh about every 5 minutes during active tournaments. Final settlement
+              uses the same ranking rules.
             </p>
           </div>
 
@@ -252,9 +252,9 @@ export const FAQPage: React.FC = () => {
           <div>
             <h3 className="mb-2 text-lg font-semibold text-gray-900">Are there any fees?</h3>
             <p className="mb-2 text-gray-700">
-              Play The Cut does not take platform fees. A portion of each pot (typically 7%) goes to the
-              invite network to grow the game and reward the community. Learn more about the invite
-              network{" "}
+              Play The Cut does not take platform fees. A portion of each pot (typically 7%) goes to
+              the invite network to grow the game and reward the community. Learn more about the
+              invite network{" "}
               <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
                 here
               </Link>
@@ -726,7 +726,7 @@ export const FAQPage: React.FC = () => {
                   and send USDC to it. Match token, network, and wallet address before you send.
                 </p>
                 <p className="mb-2 text-gray-700">
-                  If you don&apos;t already have crypto, use <strong>Coinbase</strong> or{" "}
+                  If you don&apos;t already have USDC, use <strong>Coinbase</strong> or{" "}
                   <strong>Robinhood</strong>:
                 </p>
                 <ol className="mb-2 list-decimal space-y-1 pl-6 text-gray-700">
@@ -847,7 +847,8 @@ export const FAQPage: React.FC = () => {
               <li>View contracts on BaseScan (the Base network block explorer)</li>
               <li>Verify contract code and transactions independently</li>
               <li>
-                Deployed contracts are listed for {testnet ? "Base Sepolia testnet" : "Base mainnet"}
+                Deployed contracts are listed for{" "}
+                {testnet ? "Base Sepolia testnet" : "Base mainnet"}
               </li>
             </ul>
           </div>

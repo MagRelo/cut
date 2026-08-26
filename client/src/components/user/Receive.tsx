@@ -40,7 +40,7 @@ export const Receive = () => {
             Send {tokenSymbol} on {BLOCKCHAIN_NETWORK} to your Play The Cut wallet. You can buy and
             send {tokenSymbol} from Coinbase, Robinhood, or another wallet.{" "}
             <Link className="text-blue-600 hover:underline" to="/faq#funds">
-              Learn more
+              Learn more...
             </Link>
           </p>
         ) : (

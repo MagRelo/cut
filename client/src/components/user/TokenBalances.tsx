@@ -3,12 +3,9 @@ import { formatUnits } from "viem";
 import { Link } from "react-router-dom";
 import { PageSection } from "../layout/PageSection";
 import { useAuth } from "../../contexts/AuthContext";
-import { defaultPaymentTokenSymbol } from "../../config/targetChain";
 
 export function TokenBalances() {
-  const { paymentTokenBalance, paymentTokenSymbol, balancesUnavailable, refetchBalances } =
-    useAuth();
-  const tokenSymbol = paymentTokenSymbol ?? defaultPaymentTokenSymbol();
+  const { paymentTokenBalance, balancesUnavailable, refetchBalances } = useAuth();
 
   const balanceTotal = balancesUnavailable
     ? null
@@ -17,17 +14,17 @@ export function TokenBalances() {
   return (
     <PageSection>
       <div className="flex items-center justify-between">
-        <h2 className="min-w-0 text-lg font-semibold text-gray-700 font-display">Balance</h2>
+        <h2 className="min-w-0 font-display text-lg font-semibold text-gray-700">Balance</h2>
         <div className="min-w-0 justify-end text-right">
           {balancesUnavailable ? (
             <span
-              className="text-lg font-semibold text-amber-800 font-display tabular-nums"
+              className="font-display text-lg font-semibold tabular-nums text-amber-800"
               title="Could not load balance from the network"
             >
               —
             </span>
           ) : (
-            <div className="text-lg font-semibold text-gray-800 font-display tabular-nums">
+            <div className="font-display text-lg font-semibold tabular-nums text-gray-800">
               ${balanceTotal}
             </div>
           )}
@@ -35,13 +32,13 @@ export function TokenBalances() {
       </div>
 
       <p className="mt-2 font-display text-sm text-gray-700">
-        Your {tokenSymbol} is held in your wallet, not by Play The Cut. You stay in control and can
-        add or send funds anytime.
+        Your balance is held in your wallet, not by Play The Cut. You stay in control and can add or
+        send funds anytime.
       </p>
 
       {balancesUnavailable && (
         <div
-          className="mt-2 overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-tl from-amber-100 via-amber-50 to-white shadow-sm font-display mb-2"
+          className="mb-2 mt-2 overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-tl from-amber-100 via-amber-50 to-white font-display shadow-sm"
           role="status"
         >
           <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50/80 px-3 py-2">
@@ -51,7 +48,7 @@ export function TokenBalances() {
             </div>
           </div>
           <div className="p-3">
-            <p className="text-sm text-amber-950/90 leading-relaxed">
+            <p className="text-sm leading-relaxed text-amber-950/90">
               Couldn&apos;t load balances from the network.{" "}
               <button
                 type="button"
@@ -65,7 +62,7 @@ export function TokenBalances() {
         </div>
       )}
 
-      <div className="mt-3">
+      <div className="mt-2">
         <Link
           to="/account/funds"
           className="font-display text-sm font-medium text-blue-600 hover:text-blue-700"
