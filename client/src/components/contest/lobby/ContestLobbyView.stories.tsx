@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { lobbyDecorators } from "../../../../.storybook/decorators";
+import { withActiveEventFixture } from "../../../../.storybook/decorators/activeEventFixture";
+import { FIXTURE_CANDIDATES } from "../../../test/fixtures/candidates";
 import {
   contestFixtures,
   contestLobbyViewModels,
@@ -66,4 +68,21 @@ export const PredictionsConnectWallet: Story = {
     viewModel: contestLobbyViewModels.activeNoWallet,
     isAuthenticated: false,
   },
+};
+
+/** Open contest, signed out — Lineups tab shows the dummy picker. */
+export const GuestLineups: Story = {
+  args: {
+    contest: contestFixtures.open,
+    viewModel: contestLobbyViewModels.openPreRound,
+    isAuthenticated: false,
+    currentUserId: undefined,
+  },
+  decorators: [
+    withActiveEventFixture({
+      eventId: contestFixtures.open.eventId,
+      status: "SCHEDULED",
+      candidates: FIXTURE_CANDIDATES,
+    }),
+  ],
 };

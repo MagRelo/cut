@@ -18,6 +18,7 @@ import { ErrorMessage } from "../common/ErrorMessage";
 import { PageSection } from "../layout/PageSection";
 import { SignInPrompt } from "../user/SignInPrompt";
 import { LineupContestCard, LineupContestCardLoading } from "../lineup/LineupContestCard";
+import { GuestLineupPicker } from "../lineup/GuestLineupPicker";
 import { ContestLineupJoinActions } from "../contest/ContestLineupJoinActions";
 import { lineupsCopyableIntoContest, lineupsForContestPanel } from "../../lib/lineupContestScope";
 import { lineupPickLastNames } from "../../lib/lineupUtils";
@@ -213,7 +214,19 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
   ) : null;
 
   if (!isAuthenticated) {
-    return <SignInPrompt action="build lineups" className="py-6" />;
+    return (
+      <div className="overflow-hidden rounded-sm border border-gray-300 shadow-md">
+        <GuestLineupPicker
+          sportId={sportId}
+          eventId={eventId}
+          eventStatus={eventStatus}
+          eventMetadata={eventMetadata}
+        />
+        <div className="border-t border-gray-200 bg-slate-50 px-3 py-4">
+          <SignInPrompt action="save your lineup" className="mx-auto" />
+        </div>
+      </div>
+    );
   }
 
   if ((isAuthLoading && !user) || isLineupsLoading) {
