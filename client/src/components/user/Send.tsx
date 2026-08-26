@@ -8,6 +8,7 @@ import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../config/targetC
 import { PAYMENT_TOKEN_DECIMALS } from "../../lib/paymentTokenSpend";
 import { BLOCKCHAIN_NETWORK } from "../../lib/legalPlaceholders";
 import { getSmartWalletsPaymasterConfig } from "../../lib/privySmartWalletPaymaster";
+import { targetSymbol } from "../../utils/blockchainUtils";
 
 export type SendProps = {
   /** Pre-fill recipient (e.g. admin support: target user wallet). */
