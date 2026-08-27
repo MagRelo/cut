@@ -11,7 +11,6 @@ import { useCandidateSort } from "../../hooks/useCandidateSort";
 import { participantLastName } from "../../lib/candidateSorting";
 
 import { getLineupNumberLabel, resolveUserBorderColor } from "../../lib/lineupDisplay";
-import { ReferralStakeIcon } from "./ReferralStakeIcon";
 
 interface PredictionLineupsListProps {
   contest: Contest;
@@ -147,9 +146,6 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
                 </div>
 
                 <div className="flex flex-shrink-0 items-center gap-2">
-                  {lineup?.referralStake != null && lineup.referralStake.depth >= 1 ? (
-                    <ReferralStakeIcon depth={lineup.referralStake.depth} />
-                  ) : null}
                   <div className="text-right">
                     <div className="mb-0.5 text-lg font-bold tabular-nums leading-none text-emerald-600">
                       {oddsDisplay}
