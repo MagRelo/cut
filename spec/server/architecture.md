@@ -83,12 +83,15 @@ graph LR
 
 CORS (`ALLOWED_ORIGINS`, credentials) applies to `/api/*` only. Static files do not send `Vary: Origin`, so browsers can disk-cache logos and other public images.
 
-| Asset | Cache-Control |
-|------|----------------|
-| HTML | `no-cache, no-store, must-revalidate` |
-| Vite hashed `/assets/*` | `public, max-age=31536000, immutable` |
-| Images and fonts (logos, avatars, `.png` / `.svg` / …) | `public, max-age=31536000, immutable` |
-| Other public files (`manifest.json`) | `public, max-age=86400` |
+`Cross-Origin-Resource-Policy` is `same-origin` on HTML and `/api` (Hono `secureHeaders`). Static files from `public/` override it to `cross-origin` so email clients and other sites can hotlink logos and OG images. Static files do not send `Access-Control-Allow-Origin`.
+
+| Asset | Cache-Control | CORP |
+|------|----------------|------|
+| HTML | `no-cache, no-store, must-revalidate` | `same-origin` |
+| `/api/*` | (route-specific) | `same-origin` |
+| Vite hashed `/assets/*` | `public, max-age=31536000, immutable` | `cross-origin` |
+| Images and fonts (logos, avatars, `.png` / `.svg` / …) | `public, max-age=31536000, immutable` | `cross-origin` |
+| Other public files (`manifest.json`) | `public, max-age=86400` | `cross-origin` |
 
 | Path | Title |
 |------|-------|

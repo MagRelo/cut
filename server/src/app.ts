@@ -92,6 +92,7 @@ app.use(
     referrerPolicy: "strict-origin-when-cross-origin",
     strictTransportSecurity: "max-age=31536000; includeSubDomains",
     crossOriginOpenerPolicy: "same-origin-allow-popups",
+    crossOriginResourcePolicy: "same-origin",
     contentSecurityPolicy: {
       frameAncestors: ["'none'"],
     },
@@ -182,6 +183,8 @@ if (publicRoot) {
       rewriteRequestPath: (requestPath) => rewritePublicStaticRequestPath(requestPath),
       onFound: (filePath, c) => {
         c.header("Cache-Control", cacheControlForStaticPath(filePath));
+        // Default secureHeaders CORP is same-origin and blocks <img> from email/other sites.
+        c.header("Cross-Origin-Resource-Policy", "cross-origin");
       },
     }),
   );
