@@ -81,17 +81,14 @@ graph LR
 
 `app.ts` serves `index.html` for non-API routes and rewrites title + OG/Twitter tags per path (`lib/pageMetadata.ts`). Static assets use `@hono/node-server` `serveStatic` with `root: ./public`. Request paths are mapped through `rewritePublicStaticRequestPath`: the file is `realpath`'d, must stay inside `public/`, and dotfiles / `..` / directories are not served.
 
-CORS (`ALLOWED_ORIGINS`, credentials) applies to `/api/*` only. Static files do not send `Vary: Origin`, so browsers can disk-cache logos and other public images.
+CORS (`ALLOWED_ORIGINS`, credentials) applies to `/api/*` only. Static files do not send `Vary: Origin`, so browsers can disk-cache logos and other public images. `Cross-Origin-Resource-Policy` is `cross-origin` so email clients and other sites can hotlink logos and OG images.
 
-`Cross-Origin-Resource-Policy` is `same-origin` on HTML and `/api` (Hono `secureHeaders`). Static files from `public/` override it to `cross-origin` so email clients and other sites can hotlink logos and OG images. Static files do not send `Access-Control-Allow-Origin`.
-
-| Asset | Cache-Control | CORP |
-|------|----------------|------|
-| HTML | `no-cache, no-store, must-revalidate` | `same-origin` |
-| `/api/*` | (route-specific) | `same-origin` |
-| Vite hashed `/assets/*` | `public, max-age=31536000, immutable` | `cross-origin` |
-| Images and fonts (logos, avatars, `.png` / `.svg` / …) | `public, max-age=31536000, immutable` | `cross-origin` |
-| Other public files (`manifest.json`) | `public, max-age=86400` | `cross-origin` |
+| Asset | Cache-Control |
+|------|----------------|
+| HTML | `no-cache, no-store, must-revalidate` |
+| Vite hashed `/assets/*` | `public, max-age=31536000, immutable` |
+| Images and fonts (logos, avatars, `.png` / `.svg` / …) | `public, max-age=31536000, immutable` |
+| Other public files (`manifest.json`) | `public, max-age=86400` |
 
 | Path | Title |
 |------|-------|
