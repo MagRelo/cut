@@ -187,13 +187,6 @@ export const contestQuerySchema = z.object({
 
 export const contestDirectoryQuerySchema = z.object({
   scope: z.enum(["live", "past", "all"]).default("all"),
-  chainId: z
-    .number()
-    .int()
-    .refine((val) => [8453, 84532].includes(val), {
-      message: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
-    })
-    .optional(),
 });
 
 // Types derived from schemas

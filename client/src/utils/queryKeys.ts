@@ -33,14 +33,12 @@ export const queryKeys = {
     directory: (
       scope: string,
       userId?: string | null,
-      chainId?: number | "all",
     ) =>
       [
         ...queryKeys.contests.all,
         "directory",
         scope,
         userId ?? "anon",
-        chainId ?? "all",
       ] as const,
   },
   lineups: {
