@@ -28,6 +28,16 @@ export function lineupPopularityBonus(contestLineup: ContestLineup): number {
   return contestLineup.popularityBonus ?? 0;
 }
 
+/** Leaderboard order: stored rank, then score when ranks are tied (e.g. all 999). */
+export function compareContestEntryOrder(
+  a: { position?: number | null; score?: number | null },
+  b: { position?: number | null; score?: number | null },
+): number {
+  const posDiff = (a.position || 0) - (b.position || 0);
+  if (posDiff !== 0) return posDiff;
+  return (b.score || 0) - (a.score || 0);
+}
+
 export function pickPopularityForParticipant(
   map: PickPopularityMap | null | undefined,
   eventParticipantId: string,

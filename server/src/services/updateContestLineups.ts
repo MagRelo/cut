@@ -251,23 +251,22 @@ export async function updateContestLineupsForEvent(
 
   for (const lineups of Object.values(contestLineupsByContest)) {
     const ranked = module.rankEntries(
-      lineups
-        .filter((lineup) => lineup.entryId)
-        .map((lineup) => ({
-          entryId: lineup.entryId!,
-          score: lineup.score,
-          prediction: lineup.lineup.prediction,
-          createdAt: lineup.createdAt,
-        })),
+      lineups.map((lineup) => ({
+        // Off-chain contests never mint an entryId; rank by contest-lineup id
+        // the same way settlement does (`resolveSettlementEntryId`).
+        entryId: lineup.entryId ?? lineup.id,
+        score: lineup.score,
+        prediction: lineup.lineup.prediction,
+        createdAt: lineup.createdAt,
+      })),
     );
     const positionByEntryId = new Map(ranked.map((row) => [row.entryId, row.position]));
 
     const positionUpdates: { id: string; position: number }[] = [];
 
     for (const lineup of lineups) {
-      const position = lineup.entryId
-        ? (positionByEntryId.get(lineup.entryId) ?? 999)
-        : 999;
+      const rankKey = lineup.entryId ?? lineup.id;
+      const position = positionByEntryId.get(rankKey) ?? 999;
       if (lineup.position !== position) {
         lineup.position = position;
         positionUpdates.push({ id: lineup.id, position });

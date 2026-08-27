@@ -13,7 +13,7 @@ import {
 import { useCandidateSort } from "../../hooks/useCandidateSort";
 import { participantLastName } from "../../lib/candidateSorting";
 import { getLineupNumberLabel, resolveUserBorderColor } from "../../lib/lineupDisplay";
-import { lineupPopularityBonus } from "../../lib/lineupScore";
+import { compareContestEntryOrder, lineupPopularityBonus } from "../../lib/lineupScore";
 
 interface ContestEntryListProps {
   contestLineups?: ContestLineup[];
@@ -62,7 +62,7 @@ export const ContestEntryList = ({
   };
 
   const sortedLineups = contestLineups
-    ? [...contestLineups].sort((a, b) => (a.position || 0) - (b.position || 0))
+    ? [...contestLineups].sort(compareContestEntryOrder)
     : [];
 
   const totalEntries = sortedLineups.length;
