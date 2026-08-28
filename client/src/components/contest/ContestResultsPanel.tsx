@@ -68,13 +68,26 @@ function formatPrimaryScore(row: OnchainPaymentView): string | null {
   return `${row.score} pts`;
 }
 
-function formatPrimaryLineupLabel(row: OnchainPaymentView): string {
+function formatPrimaryLineupLabel(row: OnchainPaymentView, isTied: boolean): string {
   const name = row.playerLastNames?.length
     ? row.playerLastNames.join(", ")
     : row.lineupName ?? "";
-  if (row.prediction == null) return name;
-  const tiebreaker = `Tiebreaker: ${row.prediction}`;
-  return name ? `${name} · ${tiebreaker}` : tiebreaker;
+  if (!isTied || row.prediction == null) return name;
+  return name ? `${name} (${row.prediction})` : `(${row.prediction})`;
+}
+
+function getScoresWithTies(rows: OnchainPaymentView[]): Set<number> {
+  const scoreCounts = new Map<number, number>();
+  for (const row of rows) {
+    if (row.score != null) {
+      scoreCounts.set(row.score, (scoreCounts.get(row.score) ?? 0) + 1);
+    }
+  }
+  const tiedScores = new Set<number>();
+  for (const [score, count] of scoreCounts) {
+    if (count > 1) tiedScores.add(score);
+  }
+  return tiedScores;
 }
 
 function parseAmountWei(row: OnchainPaymentView): bigint | null {
@@ -134,56 +147,60 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
           <p className="pl-2 text-sm text-slate-500">No contest payouts recorded.</p>
         ) : (
           <ContestPayoutDividedRows>
-            {primary.map((row, index) => {
-              const payoutWei = parseAmountWei(row);
-              const scoreLabel = formatPrimaryScore(row);
-              return (
-                <div
-                  key={`${row.entryId ?? row.walletAddress}-${index}`}
-                  className="flex items-center gap-2"
-                >
-                  {row.position != null ? (
-                    <div className="flex shrink-0 items-center px-2">
-                      <PositionBadge
-                        position={row.position}
-                        isInTheMoney
-                        isUser={false}
-                        primaryActionsLocked
+            {(() => {
+              const tiedScores = getScoresWithTies(primary);
+              return primary.map((row, index) => {
+                const payoutWei = parseAmountWei(row);
+                const scoreLabel = formatPrimaryScore(row);
+                const isTied = row.score != null && tiedScores.has(row.score);
+                return (
+                  <div
+                    key={`${row.entryId ?? row.walletAddress}-${index}`}
+                    className="flex items-center gap-2"
+                  >
+                    {row.position != null ? (
+                      <div className="flex shrink-0 items-center px-2">
+                        <PositionBadge
+                          position={row.position}
+                          isInTheMoney
+                          isUser={false}
+                          primaryActionsLocked
+                        />
+                      </div>
+                    ) : null}
+                    <div className="min-w-0 flex-1">
+                      <ContestPayoutRow
+                        userColor={row.userColor}
+                        left={
+                          <div className="min-w-0 py-0.5">
+                            <ContestPayoutRowTitle>{row.username}</ContestPayoutRowTitle>
+                            <ContestPayoutRowSubtitle>
+                              {formatPrimaryLineupLabel(row, isTied)}
+                            </ContestPayoutRowSubtitle>
+                          </div>
+                        }
+                        right={
+                          payoutWei !== null && payoutWei > 0n ? (
+                            <>
+                              <ContestPayoutGradientMoney>
+                                {formatDollarFromWei(payoutWei, paymentDecimals)}
+                              </ContestPayoutGradientMoney>
+                              {scoreLabel ? (
+                                <ContestPayoutSubAmount>{scoreLabel}</ContestPayoutSubAmount>
+                              ) : null}
+                            </>
+                          ) : scoreLabel ? (
+                            <ContestPayoutRowSubtitle>{scoreLabel}</ContestPayoutRowSubtitle>
+                          ) : (
+                            <span className="text-xs text-slate-400">—</span>
+                          )
+                        }
                       />
                     </div>
-                  ) : null}
-                  <div className="min-w-0 flex-1">
-                    <ContestPayoutRow
-                      userColor={row.userColor}
-                      left={
-                        <div className="min-w-0 py-0.5">
-                          <ContestPayoutRowTitle>{row.username}</ContestPayoutRowTitle>
-                          <ContestPayoutRowSubtitle>
-                            {formatPrimaryLineupLabel(row)}
-                          </ContestPayoutRowSubtitle>
-                        </div>
-                      }
-                      right={
-                        payoutWei !== null && payoutWei > 0n ? (
-                          <>
-                            <ContestPayoutGradientMoney>
-                              {formatDollarFromWei(payoutWei, paymentDecimals)}
-                            </ContestPayoutGradientMoney>
-                            {scoreLabel ? (
-                              <ContestPayoutSubAmount>{scoreLabel}</ContestPayoutSubAmount>
-                            ) : null}
-                          </>
-                        ) : scoreLabel ? (
-                          <ContestPayoutRowSubtitle>{scoreLabel}</ContestPayoutRowSubtitle>
-                        ) : (
-                          <span className="text-xs text-slate-400">—</span>
-                        )
-                      }
-                    />
                   </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </ContestPayoutDividedRows>
         )}
       </ContestResultsSection>
