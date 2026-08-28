@@ -21,7 +21,7 @@ export const Contests: React.FC = () => {
       {showUpcomingSection ? (
         <>
           <div className="mb-3">
-            <PageHeader title="Upcoming Events" />
+            <PageHeader title="🚩 Upcoming Events" />
           </div>
           <GroupedContestList
             groups={upcoming}
@@ -36,7 +36,17 @@ export const Contests: React.FC = () => {
           {showUpcomingSection ? <hr className="my-5 border-gray-200" /> : null}
 
           <div className="mb-3">
-            <PageHeader title="In Progress" />
+            <PageHeader
+              title={
+                <>
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full bg-green-500"
+                    aria-hidden="true"
+                  />
+                  In Progress
+                </>
+              }
+            />
           </div>
           <GroupedContestList groups={live} loading={false} error={null} />
         </>
