@@ -1,5 +1,6 @@
 import React from "react";
 import { GroupedContestList } from "../components/contest/GroupedContestList";
+import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { PageHeader } from "../components/common/PageHeader";
 import { useContestDirectory } from "../hooks/useContestDirectory";
 
@@ -12,9 +13,18 @@ export const Contests: React.FC = () => {
   const past = data?.past ?? [];
   // Only swap to the spinner on the first load — keep cards mounted while refetching.
   const showInitialLoading = isLoading && !data;
-  const showUpcomingSection = showInitialLoading || upcoming.length > 0;
+  const showUpcomingSection = upcoming.length > 0;
   const showLiveSection = live.length > 0;
   const showPastSection = past.length > 0;
+
+  if (showInitialLoading) {
+    return (
+      <div className="mb-4 mt-4 min-h-[80px] text-center">
+        <p className="mb-4 font-display font-semibold text-gray-400">Loading Events</p>
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <div className="mb-4">
@@ -25,7 +35,7 @@ export const Contests: React.FC = () => {
           </div>
           <GroupedContestList
             groups={upcoming}
-            loading={showInitialLoading}
+            loading={false}
             error={errorMessage}
             variant="upcoming"
           />

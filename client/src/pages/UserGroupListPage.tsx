@@ -19,7 +19,7 @@ export const UserGroupListPage = () => {
       <PageHeader title="Leagues" />
       <PageSection>
         {isLoading ? (
-          <div className="flex justify-center items-center py-12">
+          <div className="flex items-center justify-center py-12">
             <LoadingSpinner />
           </div>
         ) : error ? (
@@ -29,7 +29,7 @@ export const UserGroupListPage = () => {
         )}
       </PageSection>
       {showFooter ? (
-        <div className="flex flex-col items-center gap-3 py-8 text-center">
+        <div className="flex flex-col items-center gap-5 py-8 text-center">
           <p className="font-display text-sm text-gray-600">
             Thinking about starting a league?{" "}
             <Link to="/guides/start-a-league" className="text-blue-600 hover:text-blue-700">
