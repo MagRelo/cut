@@ -90,7 +90,10 @@ export function deriveContestLobbyViewModel(
     hasWallet,
   );
 
-  const showLineupsTab = Boolean(contest.event?.sportId);
+  // Roster builder is only needed while entry is open; after that, lineups live on Contest.
+  const showLineupsTab =
+    Boolean(contest.event?.sportId) &&
+    canAddPrimaryPosition(effectiveContestStatus(contest.status, contestStateOnChain));
   // Live/locked contests always get Feed; settled contests keep it if history exists.
   const showFeedTab =
     phase === "live" || phase === "locked" || contestHasCommentaryFeedItems(contest);

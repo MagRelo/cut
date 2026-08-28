@@ -34,6 +34,21 @@ describe("deriveContestLobbyViewModel primary gates", () => {
     ).toBe(false);
   });
 
+  it("shows Lineups tab only while the contest is open for entry", () => {
+    expect(deriveContestLobbyViewModel(contestFixtures.open).layout.showLineupsTab).toBe(true);
+    expect(deriveContestLobbyViewModel(contestFixtures.active).layout.showLineupsTab).toBe(false);
+    expect(deriveContestLobbyViewModel(contestFixtures.locked).layout.showLineupsTab).toBe(false);
+    expect(deriveContestLobbyViewModel(contestFixtures.settled).layout.showLineupsTab).toBe(false);
+  });
+
+  it("hides Lineups tab when on-chain is ACTIVE even if DB is OPEN", () => {
+    const vm = deriveContestLobbyViewModel(contestFixtures.open, {
+      contestStateOnChain: ContestState.ACTIVE,
+    });
+    expect(vm.layout.showLineupsTab).toBe(false);
+    expect(vm.layout.defaultTabIndex).toBe(vm.layout.contestTabIndex);
+  });
+
   it("hides Winner Pool when the contest has no on-chain escrow", () => {
     const vm = deriveContestLobbyViewModel(
       {

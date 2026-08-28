@@ -61,6 +61,15 @@ export const Empty: Story = {
   },
 };
 
+export const Loading: Story = {
+  args: {
+    contestLineups: [],
+    contestStatus: "ACTIVE",
+    entryListOpensModal: true,
+    isLoading: true,
+  },
+};
+
 export const ManyEntries: Story = {
   args: {
     contestLineups: Array.from({ length: 8 }, (_, i) =>

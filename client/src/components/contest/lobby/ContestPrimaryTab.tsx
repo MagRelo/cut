@@ -39,6 +39,7 @@ export const ContestPrimaryTab: React.FC<ContestPrimaryTabProps> = ({
         contestStatus={contest.status}
         entryListOpensModal={entryListOpensModal}
         pickPopularity={contest.pickPopularity}
+        isLoading={isContestDataPending}
       />
     </div>
   );

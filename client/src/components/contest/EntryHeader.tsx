@@ -103,7 +103,7 @@ export const EntryHeader: React.FC<EntryHeaderProps> = ({
         </div>
       </div>
       {referralStake != null && referralStake.depth >= 1 ? (
-        <p className="mt-2 flex items-start gap-1.5 text-left text-sm font-medium text-emerald-800">
+        <p className="mt-2 flex items-start gap-1.5 text-left text-sm text-emerald-800">
           <ReferralStakeIcon depth={referralStake.depth} className="mt-0.5 h-4 w-4" />
           <span>{referralStakeLabel(referralStake.depth)}</span>
         </p>

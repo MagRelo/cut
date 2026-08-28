@@ -1,6 +1,7 @@
 import { UserGroupIcon } from "@heroicons/react/24/outline";
 import { useRef, useState } from "react";
 import { type ContestLineup, type PickPopularityMap } from "../../types/lineup";
+import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ContestEntryModal } from "./ContestEntryModal";
 import { ReferralStakeIcon } from "./ReferralStakeIcon";
 import { canAddPrimaryPosition, type ContestStatus } from "../../types/contest";
@@ -21,6 +22,8 @@ interface ContestEntryListProps {
   /** When set, controls row click + display; otherwise derived from `contestStatus`. */
   entryListOpensModal?: boolean;
   pickPopularity?: PickPopularityMap | null;
+  /** True while lobby data is still loading and lineups may be incomplete. */
+  isLoading?: boolean;
 }
 
 export const ContestEntryList = ({
@@ -28,6 +31,7 @@ export const ContestEntryList = ({
   contestStatus,
   entryListOpensModal,
   pickPopularity = null,
+  isLoading = false,
 }: ContestEntryListProps) => {
   const { sportId, status } = useEventScope();
   const { sort } = useCandidateSort(sportId);
@@ -67,6 +71,18 @@ export const ContestEntryList = ({
 
   const totalEntries = sortedLineups.length;
   const paidPositions = totalEntries < 10 ? 1 : 3;
+
+  if (isLoading && sortedLineups.length === 0) {
+    return (
+      <div
+        className="flex min-h-[160px] items-center justify-center py-8"
+        aria-busy="true"
+        aria-label="Loading teams"
+      >
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   if (sortedLineups.length === 0) {
     return (
