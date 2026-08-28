@@ -83,7 +83,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
             <p className="mb-2">
               When you create a league contest, you choose an <strong>Invite Rewards</strong>{" "}
               percentage—how much of the contest pool is reserved for the invite network. The
-              default is <strong>7%</strong> (you can set anywhere from 0% to 20%).
+              default is <strong>7%</strong> (you can set anywhere from 0% to 10%).
             </p>
             <p className="mb-2">
               Those rewards are paid when the contest settles and a winner is crowned. The share
