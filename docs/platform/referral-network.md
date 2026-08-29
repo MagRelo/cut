@@ -18,6 +18,8 @@ The **cold referral platform root** (`referralPlatformRootAddress` in chain JSON
 | Organic (no invite) | `null` | Platform root address |
 | Invited | Inviter wallet | Inviter (must already be on-chain) |
 
+**Signup vs graph:** Postgres stores the invite at `POST /auth/session` even when the inviter is not yet `isRegistered` on ReferralGraph. Cron registers the invitee only after the parent is on-chain. A missing or unresolved `ref` does not block account creation.
+
 **Settlement:** `getReferrer(winner, groupId)` must be non-zero and not `REFERRAL_ROOT` for a payable chain. The server blocks settle if the winner is not `isRegistered` when `referralNetworkBps > 0`. The contest calls `getPayoutChain(payoutAnchor, groupId, 10)` and `RewardCalculator.calculateRewards`, then transfers each share (geometric split; the winner is never a fee recipient). The platform root is always an ancestor for organics in this model.
 
 **Settlement events:**

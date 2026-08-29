@@ -1,12 +1,11 @@
 import type { User as PrivyApiUser } from "@privy-io/node";
 import { isAddress } from "viem";
 import { prisma } from "./prisma.js";
-import { getPrivyClient } from "./privyClient.js";
 import { mintUSDCToUser } from "../services/mintUserTokens.js";
+import { pickWalletPublicKeyForChain } from "../utils/pickWalletForChain.js";
 import {
   isReferralRequiredForSignup,
   parseReferralGroupIdFromEnv,
-  requireReferralGroupIdForSignup,
 } from "./referralConfig.js";
 
 /** JWT valid but no Cut user row — client should POST /auth/session. */
@@ -44,6 +43,7 @@ export class PrivyWalletIdentityConflictError extends Error {
   }
 }
 
+/** Identity conflicts still 400. Referral-tree codes are unused by signup (attachment is best-effort). */
 export type ReferralErrorCode =
   | "REFERRER_REQUIRED"
   | "REFERRER_NOT_IN_TREE"
@@ -284,64 +284,80 @@ async function syncEmailFromPrivy(userId: string, email: string | null) {
   });
 }
 
-async function resolveReferralForNewUser(
+export type ResolvedSignupReferral = {
+  referredByUserId: string;
+  groupIdHex: string | null;
+  referrerAddress: string;
+};
+
+type ReferrerWalletRow = {
+  userId: string;
+  publicKey: string;
+  user: {
+    wallets: Array<{ publicKey: string; chainId: number; isPrimary: boolean }>;
+  };
+};
+
+async function findCutWalletByAddress(
+  addressLower: string,
+  preferChainId: number,
+): Promise<ReferrerWalletRow | null> {
+  const include = { user: { include: { wallets: true } } } as const;
+  const byAddress = {
+    publicKey: { equals: addressLower, mode: "insensitive" as const },
+  };
+
+  const onPreferredChain = await prisma.userWallet.findFirst({
+    where: { chainId: preferChainId, ...byAddress },
+    include,
+  });
+  if (onPreferredChain) return onPreferredChain;
+
+  return prisma.userWallet.findFirst({
+    where: {
+      chainId: { in: [...BASE_CHAIN_IDS] },
+      ...byAddress,
+    },
+    include,
+  });
+}
+
+/**
+ * Best-effort signup referrer from Cut DB. Does not require the inviter to already
+ * be registered on ReferralGraph (cron attaches them on-chain later).
+ * Returns null instead of throwing so account creation is never blocked.
+ */
+export async function tryResolveReferralForNewUser(
   referrerHeader: string,
   chainId: number,
   newUserWalletLower: string,
-): Promise<{ referredByUserId: string; groupIdHex: string; referrerAddress: string }> {
+): Promise<ResolvedSignupReferral | null> {
   const referrerLower = referrerHeader.toLowerCase();
   if (referrerLower === newUserWalletLower) {
-    throw new ReferralProvisionError(
-      "SELF_REFERRAL_NOT_ALLOWED",
-      "You cannot use your own address as referrer",
-    );
+    console.warn("Signup referral skipped: self-referral");
+    return null;
   }
 
-  let groupIdHex: string;
+  let groupIdHex: string | null = null;
   try {
-    groupIdHex = requireReferralGroupIdForSignup();
-  } catch {
-    throw new ReferralProvisionError(
-      "REFERRAL_GROUP_INVALID",
-      "Referral group is not configured correctly on the server",
-    );
+    groupIdHex = parseReferralGroupIdFromEnv();
+  } catch (error) {
+    console.warn("Signup referral: REFERRAL_GROUP_ID is invalid; attaching invite without group id", error);
   }
 
-  const refWallet = await prisma.userWallet.findFirst({
-    where: {
-      chainId,
-      publicKey: referrerLower,
-    },
-    include: { user: true },
-  });
-
-  if (!refWallet?.user.privyUserId) {
-    throw new ReferralProvisionError(
-      "REFERRER_NOT_IN_TREE",
-      "Referrer is not a registered Cut user on this chain",
-    );
+  const refWallet = await findCutWalletByAddress(referrerLower, chainId);
+  if (!refWallet) {
+    console.warn(`Signup referral skipped: no Cut user wallet for ${referrerLower}`);
+    return null;
   }
 
-  const privy = getPrivyClient();
-  const refPrivy = await privy.users()._get(refWallet.user.privyUserId);
-  const smart = refPrivy.linked_accounts.find((a) => a.type === "smart_wallet");
-  if (!smart || !("address" in smart) || typeof smart.address !== "string") {
-    throw new ReferralProvisionError(
-      "REFERRER_NOT_SMART_WALLET",
-      "Referrer must use a smart wallet address",
-    );
-  }
-  if (smart.address.toLowerCase() !== referrerLower) {
-    throw new ReferralProvisionError(
-      "REFERRER_NOT_SMART_WALLET",
-      "Referrer header does not match the referrer smart wallet",
-    );
-  }
+  const primaryOnSignupChain = pickWalletPublicKeyForChain(refWallet.user.wallets, chainId);
+  const referrerAddress = (primaryOnSignupChain ?? refWallet.publicKey).toLowerCase();
 
   return {
     referredByUserId: refWallet.userId,
     groupIdHex,
-    referrerAddress: referrerLower,
+    referrerAddress,
   };
 }
 
@@ -402,6 +418,8 @@ export async function syncExistingUserFromPrivy(
 /**
  * Create or sync Cut user + wallets from Privy API user payload.
  * Only call from POST /auth/session (or explicit sync), not middleware.
+ * After Privy auth, a new Cut user is always created: invite attachment is
+ * best-effort and must not 400 (inviter missing, other chain, or not yet on ReferralGraph).
  */
 export async function provisionUserFromPrivy(
   privyUser: PrivyApiUser,
@@ -421,12 +439,10 @@ export async function provisionUserFromPrivy(
   let normalizedReferrer: string | undefined;
   if (rawReferrer) {
     if (!isAddress(rawReferrer)) {
-      throw new ReferralProvisionError(
-        "INVALID_REFERRER_ADDRESS",
-        "Referrer address must be a valid EVM address",
-      );
+      console.warn("Signup referral skipped: invalid referrer address");
+    } else {
+      normalizedReferrer = rawReferrer.toLowerCase();
     }
-    normalizedReferrer = rawReferrer.toLowerCase();
   }
 
   const byPrivy = await prisma.user.findFirst({
@@ -471,22 +487,18 @@ export async function provisionUserFromPrivy(
 
   const referralRequired = isReferralRequiredForSignup();
   if (referralRequired && !normalizedReferrer) {
-    throw new ReferralProvisionError(
-      "REFERRER_REQUIRED",
-      "A invite link is required to create an account",
+    console.warn(
+      "REFERRAL_REQUIRED_FOR_SIGNUP is set; creating account without a referrer so signup is not blocked after Privy auth",
     );
   }
 
-  let referral:
-    | {
-        referredByUserId: string;
-        groupIdHex: string;
-        referrerAddress: string;
-      }
-    | undefined;
-
+  let referral: ResolvedSignupReferral | undefined;
   if (normalizedReferrer) {
-    referral = await resolveReferralForNewUser(normalizedReferrer, chainId, address);
+    try {
+      referral = (await tryResolveReferralForNewUser(normalizedReferrer, chainId, address)) ?? undefined;
+    } catch (error) {
+      console.warn("Signup referral skipped due to unexpected error:", error);
+    }
   }
 
   const platformGroupId = parseReferralGroupIdFromEnv();

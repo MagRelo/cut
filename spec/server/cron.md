@@ -93,7 +93,7 @@ Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event statu
 
 ### 4. Referral graph
 
-`batchSyncReferralGraph` — syncs on-chain referral registrations.
+`batchSyncReferralGraph` — registers pending users on ReferralGraph. Invitees wait until their inviter is on-chain; organics register under the platform root. Signup already stored the Postgres invite edge; this job does not create accounts.
 
 ---
 

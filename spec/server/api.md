@@ -20,6 +20,7 @@ Middleware verifies the Privy JWT and loads the Cut user from Postgres (`User` +
 | `NEEDS_PROVISIONING` | 401 | Valid JWT, no Cut user — client should `POST /auth/session` |
 | `WALLET_NOT_PROVISIONED_FOR_CHAIN` | 409 | User exists, no primary wallet for `X-Cut-Chain-Id` |
 | `WALLET_OWNED_BY_OTHER_ACCOUNT` | 409 | Privy-linked address belongs to another user |
+| `EMAIL_ALREADY_BOUND` | 400 | Email already linked to another Cut user (identity conflict; not a referral miss) |
 
 JSON bodies are capped at 128 KiB.
 
@@ -56,7 +57,7 @@ No auth. `{ status, service, timestamp }`
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/me` | ✅ | User profile + `userGroups` (read-only; no Privy fetch) |
-| POST | `/session` | JWT | Signup / sync from Privy; accepts optional `X-Cut-Referrer-Address` |
+| POST | `/session` | JWT | Signup / sync from Privy. Optional `X-Cut-Referrer-Address` is best-effort: a missing, unknown, or not-yet-on-chain inviter does not fail the request. After a valid Privy JWT, a new Cut user is always created. |
 | POST | `/sync-wallets` | ✅ | Re-sync `UserWallet` rows from Privy linked accounts |
 | GET | `/referrals/summary` | ✅ | Referral tree summary |
 | PUT | `/update` | ✅ | Update display name (1–80 chars) |

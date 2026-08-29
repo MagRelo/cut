@@ -85,7 +85,7 @@ Golf quote logic: `sports/pga-golf/buildGolfMarketSnapshot.ts`
 
 | Service | Purpose |
 |---------|---------|
-| `lib/privyUserProvisioning.ts` | User + wallet from Privy |
+| `lib/privyUserProvisioning.ts` | User + wallet from Privy. Signup referral is best-effort (never blocks after JWT). |
 | `batch/batchSyncReferralGraph.ts` | On-chain referral graph sync |
 
 Middleware: `middleware/auth.ts`

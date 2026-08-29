@@ -63,9 +63,9 @@ sequenceDiagram
   Client->>API: GET /auth/me
   API->>DB: JWT verify + load User + UserWallet
   alt No Cut user yet
-    Client->>API: POST /auth/session + referrer
+    Client->>API: POST /auth/session + optional referrer
     API->>Privy: users()._get
-    API->>DB: create/sync User + UserWallet
+    API->>DB: create/sync User + UserWallet (referral best-effort)
   end
   API-->>Client: profile + userGroups
   Client->>API: GET /lineups/:eventId
@@ -74,6 +74,7 @@ sequenceDiagram
 - **Authoritative user record:** Postgres (`User`, `UserWallet`)
 - **Session wallet:** DB `UserWallet.isPrimary` for `X-Cut-Chain-Id` (not Privy pick on every request)
 - **Staff:** `userType` on user → `AdminRoute` / `/api/admin`
+- **Signup referral:** `X-Cut-Referrer-Address` attaches `referredByUserId` when the address is already a Cut `UserWallet` (either Base chain). It does not require the inviter to be on ReferralGraph. After Privy email OTP, session create must not fail because referral could not be applied. Cron registers invitees on-chain once the parent is registered.
 
 ---
 

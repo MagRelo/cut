@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_SMART_CHAIN,
   pickEvmWallet,
@@ -10,6 +10,9 @@ const prismaMock = vi.hoisted(() => ({
   user: {
     findUnique: vi.fn(),
     findFirst: vi.fn(),
+    findUniqueOrThrow: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
   },
   userWallet: {
     findFirst: vi.fn(),
@@ -133,6 +136,192 @@ describe("syncUserWalletsForPrivyUser", () => {
 
     await expect(syncUserWalletsForPrivyUser("user-1", privyUser, 84532)).rejects.toBeInstanceOf(
       WalletConflictError,
+    );
+  });
+});
+
+const INVITER = "0x14c110d971ef58dfeda15767a89aa3b0d9ea857e";
+const INVITEE = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const GROUP_ID = `0x${"11".repeat(32)}`;
+
+function inviterWalletRow(overrides?: {
+  chainId?: number;
+  wallets?: Array<{ publicKey: string; chainId: number; isPrimary: boolean }>;
+}) {
+  const chainId = overrides?.chainId ?? 84532;
+  const wallets = overrides?.wallets ?? [
+    { publicKey: INVITER, chainId, isPrimary: true },
+  ];
+  return {
+    userId: "inviter",
+    publicKey: INVITER,
+    user: { wallets },
+  };
+}
+
+describe("tryResolveReferralForNewUser", () => {
+  const originalGroupId = process.env.REFERRAL_GROUP_ID;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.REFERRAL_GROUP_ID = GROUP_ID;
+  });
+
+  afterEach(() => {
+    process.env.REFERRAL_GROUP_ID = originalGroupId;
+  });
+
+  it("returns null for self-referral instead of throwing", async () => {
+    const { tryResolveReferralForNewUser } = await import("./privyUserProvisioning.js");
+    await expect(tryResolveReferralForNewUser(INVITEE, 84532, INVITEE)).resolves.toBeNull();
+    expect(prismaMock.userWallet.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("returns null when the inviter has no Cut wallet", async () => {
+    prismaMock.userWallet.findFirst.mockResolvedValue(null);
+    const { tryResolveReferralForNewUser } = await import("./privyUserProvisioning.js");
+
+    await expect(tryResolveReferralForNewUser(INVITER, 84532, INVITEE)).resolves.toBeNull();
+  });
+
+  it("attaches a Cut user found on the signup chain without a Privy or on-chain check", async () => {
+    prismaMock.userWallet.findFirst.mockResolvedValueOnce(inviterWalletRow());
+    const { tryResolveReferralForNewUser } = await import("./privyUserProvisioning.js");
+
+    await expect(tryResolveReferralForNewUser(INVITER, 84532, INVITEE)).resolves.toEqual({
+      referredByUserId: "inviter",
+      groupIdHex: GROUP_ID,
+      referrerAddress: INVITER,
+    });
+    expect(prismaMock.userWallet.findFirst).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to the inviter wallet on the other Base chain", async () => {
+    prismaMock.userWallet.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(inviterWalletRow({ chainId: 8453 }));
+    const { tryResolveReferralForNewUser } = await import("./privyUserProvisioning.js");
+
+    await expect(tryResolveReferralForNewUser(INVITER, 84532, INVITEE)).resolves.toEqual({
+      referredByUserId: "inviter",
+      groupIdHex: GROUP_ID,
+      referrerAddress: INVITER,
+    });
+    expect(prismaMock.userWallet.findFirst).toHaveBeenCalledTimes(2);
+  });
+
+  it("parents under the inviter primary on the signup chain when the header matched a secondary wallet", async () => {
+    const primary = "0xcccccccccccccccccccccccccccccccccccccccc";
+    prismaMock.userWallet.findFirst.mockResolvedValueOnce(
+      inviterWalletRow({
+        wallets: [
+          { publicKey: INVITER, chainId: 84532, isPrimary: false },
+          { publicKey: primary, chainId: 84532, isPrimary: true },
+        ],
+      }),
+    );
+    const { tryResolveReferralForNewUser } = await import("./privyUserProvisioning.js");
+
+    await expect(tryResolveReferralForNewUser(INVITER, 84532, INVITEE)).resolves.toEqual({
+      referredByUserId: "inviter",
+      groupIdHex: GROUP_ID,
+      referrerAddress: primary,
+    });
+  });
+});
+
+describe("provisionUserFromPrivy referral", () => {
+  const originalGroupId = process.env.REFERRAL_GROUP_ID;
+  const originalRequired = process.env.REFERRAL_REQUIRED_FOR_SIGNUP;
+
+  const privyUser = {
+    id: "did:privy:new",
+    linked_accounts: [
+      { type: "smart_wallet", address: INVITEE },
+      { type: "email", address: "new@example.com" },
+    ],
+  } as Parameters<typeof pickEvmWallet>[0];
+
+  function stubNewUserDb() {
+    prismaMock.user.findFirst.mockResolvedValue(null);
+    prismaMock.user.create.mockResolvedValue({ id: "new-user" });
+    prismaMock.user.findUniqueOrThrow.mockResolvedValue({ id: "new-user" });
+    prismaMock.user.findUnique.mockResolvedValue({ id: "new-user", userType: "USER" });
+    prismaMock.userWallet.findUnique.mockResolvedValue(null);
+    prismaMock.userWallet.create.mockResolvedValue({});
+    prismaMock.$transaction.mockResolvedValue([]);
+    prismaMock.userWallet.findFirst.mockImplementation(async (args: { where?: { isPrimary?: boolean } }) => {
+      if (args?.where?.isPrimary) {
+        return { publicKey: INVITEE };
+      }
+      return null;
+    });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.REFERRAL_GROUP_ID = GROUP_ID;
+    delete process.env.REFERRAL_REQUIRED_FOR_SIGNUP;
+    stubNewUserDb();
+  });
+
+  afterEach(() => {
+    process.env.REFERRAL_GROUP_ID = originalGroupId;
+    process.env.REFERRAL_REQUIRED_FOR_SIGNUP = originalRequired;
+  });
+
+  it("creates the user when the referrer is not a Cut user yet", async () => {
+    const { provisionUserFromPrivy } = await import("./privyUserProvisioning.js");
+    const session = await provisionUserFromPrivy(privyUser, 84532, { referrerAddress: INVITER });
+
+    expect(session.userId).toBe("new-user");
+    expect(prismaMock.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          referredByUserId: null,
+          referrerAddress: null,
+        }),
+      }),
+    );
+  });
+
+  it("creates the user when the referrer header is not a valid address", async () => {
+    const { provisionUserFromPrivy } = await import("./privyUserProvisioning.js");
+    await provisionUserFromPrivy(privyUser, 84532, { referrerAddress: "not-an-address" });
+    expect(prismaMock.user.create).toHaveBeenCalled();
+  });
+
+  it("creates the user when an invite is required but none was sent", async () => {
+    process.env.REFERRAL_REQUIRED_FOR_SIGNUP = "true";
+    const { provisionUserFromPrivy } = await import("./privyUserProvisioning.js");
+    await provisionUserFromPrivy(privyUser, 84532);
+    expect(prismaMock.user.create).toHaveBeenCalled();
+  });
+
+  it("records referredByUserId when the inviter exists only on the other Base chain", async () => {
+    prismaMock.userWallet.findFirst.mockImplementation(async (args: { where?: Record<string, unknown> }) => {
+      if (args?.where?.isPrimary) {
+        return { publicKey: INVITEE };
+      }
+      const pk = args?.where?.publicKey as { equals?: string } | string | undefined;
+      const addr = typeof pk === "object" ? pk.equals : pk;
+      if (addr?.toLowerCase() === INVITER) {
+        if (args?.where?.chainId === 84532) return null;
+        return inviterWalletRow({ chainId: 8453 });
+      }
+      return null;
+    });
+
+    const { provisionUserFromPrivy } = await import("./privyUserProvisioning.js");
+    await provisionUserFromPrivy(privyUser, 84532, { referrerAddress: INVITER });
+
+    expect(prismaMock.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          referredByUserId: "inviter",
+          referrerAddress: INVITER,
+        }),
+      }),
     );
   });
 });
