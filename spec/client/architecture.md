@@ -87,7 +87,7 @@ flowchart TB
 
 | Layer | Tool | Examples |
 |-------|------|----------|
-| Server state | React Query | events, lineups, contests, side bets |
+| Server state | React Query | events, lineups, contests |
 | Auth state | Context | user, balances, `startAuthFlow` |
 | Chain state | Wagmi | contest contract, token balances |
 | Local UI | useState | modals, form drafts |

@@ -18,7 +18,7 @@ Production is **Base** (`8453`) with **canonical USDC**. Players add and withdra
 
 | Doc | Purpose |
 |-----|---------|
-| [wallet-roles-cashflows.md](operations/wallet-roles-cashflows.md) | Platform wallet roles, funding, contest / side-bet cashflows. Prod is Base + USDC (self-serve on/off-ramp; Coinbase/Robinhood recommended). |
+| [wallet-roles-cashflows.md](operations/wallet-roles-cashflows.md) | Platform wallet roles, funding, contest cashflows. Prod is Base + USDC (self-serve on/off-ramp; Coinbase/Robinhood recommended). |
 | [database-connections.md](operations/database-connections.md) | Connection budget, PgBouncer pooling, pooled vs direct URLs |
 | [cron-pi.md](operations/cron-pi.md) | Raspberry Pi cron host (Tailscale, deploy, PM2) |
 | [email-program.md](operations/email-program.md) | Email cadence and audiences |
@@ -40,8 +40,6 @@ Production is **Base** (`8453`) with **canonical USDC**. Players add and withdra
 | Doc | Purpose |
 |-----|---------|
 | [event-activation-runbook.md](sports/golf/event-activation-runbook.md) | Activate a PGA tournament week |
-| [side-bet-odds-methodology.md](sports/golf/side-bet-odds-methodology.md) | Side-bet pricing math |
-| [side-bet-production-plan.md](sports/golf/side-bet-production-plan.md) | Side-bet ops and settlement |
 
 ### F1 (`f1`)
 

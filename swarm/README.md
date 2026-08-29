@@ -112,7 +112,7 @@ App images bake Vite output. **`VITE_*` are not** set in Swarm env files.
 | Prod (`cut-v4`) | [`client/.env.production`](../client/.env.example) — e.g. `VITE_API_URL=https://playthecut.com/api`, `VITE_TARGET_CHAIN=mainnet` | `pnpm run deploy` |
 | Staging (`cut-v4-staging`) | [`client/.env.staging`](../client/.env.staging.example) — e.g. `VITE_API_URL=https://base-sepolia.playthecut.com/api`, `VITE_TARGET_CHAIN=testnet` | `pnpm run deploy:staging` |
 
-Also set `VITE_PRIVY_APP_ID`, `VITE_OPERATOR_ADDRESS`, `VITE_REFERRAL_GROUP_ID`, `VITE_SIDE_BET_STAKE_RECIPIENT`, paymaster / PostHog as needed for that environment.
+Also set `VITE_PRIVY_APP_ID`, `VITE_OPERATOR_ADDRESS`, `VITE_REFERRAL_GROUP_ID`, paymaster / PostHog as needed for that environment.
 
 ## 4. Database migrations (critical with 2 web replicas)
 

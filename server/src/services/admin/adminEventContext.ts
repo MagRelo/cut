@@ -2,7 +2,6 @@ import type { CompetitionEvent, Sport } from "@prisma/client";
 import { readCurrentPeriod, readPeriodDisplay, readPeriodStatusDisplay } from "@cut/sport-sdk";
 import { prisma } from "../../lib/prisma.js";
 import { getActiveEvents } from "../events/getActiveEvents.js";
-import { getPropBetModule } from "../../sports/propBetRegistry.js";
 import { eventStatusFromMetadata } from "../../utils/eventStatus.js";
 
 export type AdminEventRow = CompetitionEvent & { sport: Sport };
@@ -51,14 +50,7 @@ export function eventStatusForDashboard(metadata: unknown, sportId?: string): st
 }
 
 export function isEventCompleteForSettlement(metadata: unknown, sportId?: string): boolean {
-  if (sportId) {
-    const prop = getPropBetModule(sportId);
-    if (prop?.isEventCompleteForSettlement) {
-      return prop.isEventCompleteForSettlement(metadata);
-    }
-    return eventStatusFromMetadata(metadata, sportId) === "COMPLETE";
-  }
-  return eventStatusFromMetadata(metadata) === "COMPLETE";
+  return eventStatusFromMetadata(metadata, sportId) === "COMPLETE";
 }
 
 export async function resolveAdminEvents(eventIdOverride?: string): Promise<AdminEventRow[]> {

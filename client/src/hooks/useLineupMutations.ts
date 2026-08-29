@@ -3,7 +3,6 @@ import { usePostHog } from "posthog-js/react";
 import type { Candidate } from "@cut/sport-sdk";
 import { queryKeys } from "../utils/queryKeys";
 import type { PlatformLineupListItem } from "../types/lineup";
-import type { SideBetMarketResponse } from "../types/sideBet";
 import { useAuth } from "../contexts/AuthContext";
 import { captureLineupCreated, captureLineupUpdated } from "../lib/analytics/posthog";
 import { createLineupForEvent, cloneLineupById, updateLineupById } from "../lib/lineupApi";
@@ -31,25 +30,6 @@ interface UpdateLineupParams {
   picks: string[];
   name?: string;
   predictionValue?: number;
-}
-
-function resetSideBetMarketCache(queryClient: QueryClient, lineupId: string) {
-  const previous = queryClient.getQueryData<SideBetMarketResponse>(
-    queryKeys.sideBet.market(lineupId),
-  );
-  queryClient.setQueryData<SideBetMarketResponse>(queryKeys.sideBet.market(lineupId), {
-    bettable: false,
-    marketStatus: "UNAVAILABLE",
-    unavailableReason: "ROSTER_CHANGED",
-    quoteVersion: 0,
-    selections: [],
-    tickets: previous?.tickets ?? [],
-  });
-}
-
-function invalidateSideBetQueries(queryClient: QueryClient, lineupId: string) {
-  void queryClient.invalidateQueries({ queryKey: queryKeys.sideBet.market(lineupId) });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.sideBet.tickets(lineupId) });
 }
 
 function findLineupListContext(
@@ -159,10 +139,6 @@ export function useCreateLineup() {
       if (userId) {
         queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byEvent(userId, eventId) });
       }
-      if (data?.id) {
-        resetSideBetMarketCache(queryClient, data.id);
-        invalidateSideBetQueries(queryClient, data.id);
-      }
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
     },
   });
@@ -178,13 +154,9 @@ export function useCloneLineup() {
       return await cloneLineupById({ lineupId, contestId, name });
     },
 
-    onSuccess: (data, { eventId }) => {
+    onSuccess: (_data, { eventId }) => {
       if (userId) {
         queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byEvent(userId, eventId) });
-      }
-      if (data?.id) {
-        resetSideBetMarketCache(queryClient, data.id);
-        invalidateSideBetQueries(queryClient, data.id);
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
     },
@@ -249,10 +221,6 @@ export function useUpdateLineup() {
         );
       }
 
-      resetSideBetMarketCache(queryClient, lineupId);
-      await queryClient.cancelQueries({ queryKey: queryKeys.sideBet.market(lineupId) });
-      await queryClient.cancelQueries({ queryKey: queryKeys.sideBet.tickets(lineupId) });
-
       return { previousLineups, eventId, lineupId, userId: uid };
     },
 
@@ -280,10 +248,6 @@ export function useUpdateLineup() {
           queryKey: queryKeys.lineups.byEvent(userId, context.eventId),
         });
         queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byId(userId, data.id) });
-      }
-      if (data?.id) {
-        resetSideBetMarketCache(queryClient, data.id);
-        invalidateSideBetQueries(queryClient, data.id);
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
     },

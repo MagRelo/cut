@@ -5,9 +5,6 @@ import { getPaymentTokenAddress } from "../../lib/contractAddresses.js";
 export type UserTxnType =
   | "CONTEST_ENTRY"
   | "PREDICTION_BUY"
-  | "SIDE_BET"
-  | "SIDE_BET_PAYOUT"
-  | "SIDE_BET_REFUND"
   | "PAYOUT_PRIMARY"
   | "PAYOUT_SECONDARY"
   | "PAYOUT_REFERRAL";
@@ -52,20 +49,12 @@ function humanFromWei(
   }
 }
 
-function eventDisplayName(metadata: unknown): string | null {
-  if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
-    const name = (metadata as { name?: unknown }).name;
-    if (typeof name === "string" && name.trim()) return name.trim();
-  }
-  return null;
-}
-
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
 export async function getUserTransactions(userId: string): Promise<UserTransaction[]> {
-  const [lineups, predictions, tickets, payments] = await Promise.all([
+  const [lineups, predictions, payments] = await Promise.all([
     prisma.contestLineup.findMany({
       where: { userId },
       select: {
@@ -101,31 +90,6 @@ export async function getUserTransactions(userId: string): Promise<UserTransacti
             address: true,
             name: true,
             chainId: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.sideBetTicket.findMany({
-      where: { userId },
-      select: {
-        id: true,
-        createdAt: true,
-        updatedAt: true,
-        stakeAmount: true,
-        decimalOddsAtPlacement: true,
-        americanDisplayAtPlacement: true,
-        status: true,
-        fundingTxHash: true,
-        hitsRequired: true,
-        topN: true,
-        sideBetMarket: {
-          select: {
-            event: {
-              select: {
-                metadata: true,
-              },
-            },
           },
         },
       },
@@ -190,47 +154,6 @@ export async function getUserTransactions(userId: string): Promise<UserTransacti
       chainId: pred.chainId,
       txHash: pred.lastTransactionHash,
     });
-  }
-
-  for (const ticket of tickets) {
-    const eventName =
-      eventDisplayName(ticket.sideBetMarket.event.metadata) ?? "Side bet";
-    const oddsDetail = `${ticket.hitsRequired}/${ticket.topN} · ${ticket.americanDisplayAtPlacement}`;
-
-    rows.push({
-      id: `SIDE_BET:${ticket.id}`,
-      type: "SIDE_BET",
-      createdAt: ticket.createdAt.toISOString(),
-      amount: -roundMoney(ticket.stakeAmount),
-      currency: "USD",
-      label: eventName,
-      detail: `Side bet · ${oddsDetail} · ${ticket.status}`,
-      txHash: ticket.fundingTxHash,
-    });
-
-    if (ticket.status === "WON") {
-      const payout = roundMoney(ticket.stakeAmount * ticket.decimalOddsAtPlacement);
-      rows.push({
-        id: `SIDE_BET_PAYOUT:${ticket.id}`,
-        type: "SIDE_BET_PAYOUT",
-        createdAt: ticket.updatedAt.toISOString(),
-        amount: payout,
-        currency: "USD",
-        label: eventName,
-        detail: `Side bet payout · ${oddsDetail}`,
-      });
-    } else if (ticket.status === "VOID" || ticket.status === "REFUND_PENDING") {
-      rows.push({
-        id: `SIDE_BET_REFUND:${ticket.id}`,
-        type: "SIDE_BET_REFUND",
-        createdAt: ticket.updatedAt.toISOString(),
-        amount: roundMoney(ticket.stakeAmount),
-        currency: "USD",
-        label: eventName,
-        detail: `Side bet refund · ${ticket.status}`,
-        txHash: ticket.fundingTxHash,
-      });
-    }
   }
 
   for (const payment of payments) {

@@ -205,7 +205,6 @@ Scored against [fit-guide.md](../../competitions/fit-guide.md) evaluation worksh
 - Full race weekend (qualifying + race) as one event
 - Championship / season-long standings in the app
 - Constructor or team-based roster slots
-- Prop bets / side bets
 - Sub-minute live timing (websocket)
 - Multiple overlapping F1 events
 - Driver substitutions after lineup lock

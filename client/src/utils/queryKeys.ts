@@ -48,11 +48,6 @@ export const queryKeys = {
     byId: (userId: string, lineupId: string) =>
       [...queryKeys.lineups.all, "detail", userId, lineupId] as const,
   },
-  sideBet: {
-    all: ["sideBetMarket"] as const,
-    market: (lineupId: string) => [...queryKeys.sideBet.all, lineupId] as const,
-    tickets: (lineupId: string) => [...queryKeys.sideBet.all, "tickets", lineupId] as const,
-  },
   user: {
     all: ["user"] as const,
     contests: () => [...queryKeys.user.all, "contests"] as const,
@@ -71,8 +66,6 @@ export const queryKeys = {
     all: ["admin"] as const,
     dashboard: (eventId?: string) =>
       [...queryKeys.admin.all, "dashboard", eventId ?? "active"] as const,
-    sideBetReport: (eventId?: string) =>
-      [...queryKeys.admin.all, "sideBetReport", eventId ?? "active"] as const,
     userList: (chainId: number, userType: string) =>
       [...queryKeys.admin.all, "users", chainId, userType] as const,
     userDetail: (userId: string, chainId: number) =>

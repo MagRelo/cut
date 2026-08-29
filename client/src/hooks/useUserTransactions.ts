@@ -5,9 +5,6 @@ import apiClient from "../utils/apiClient";
 export type UserTxnType =
   | "CONTEST_ENTRY"
   | "PREDICTION_BUY"
-  | "SIDE_BET"
-  | "SIDE_BET_PAYOUT"
-  | "SIDE_BET_REFUND"
   | "PAYOUT_PRIMARY"
   | "PAYOUT_SECONDARY"
   | "PAYOUT_REFERRAL";

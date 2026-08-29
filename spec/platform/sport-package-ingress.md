@@ -4,7 +4,7 @@ Move sport-specific data ingress from `server/src/sports/` into workspace sport 
 
 **Related:** [plugins.md](plugins.md) · [add-sport-checklist.md](add-sport-checklist.md) · [docs/platform/architecture.md](../../docs/platform/architecture.md)
 
-**Decision:** Adopt **Option C — repository adapter** (not Prisma inside packages). Estimated effort: ~2–3 days for F1 proof + repository design; ~1 week for all three sports, prop bets, and doc updates.
+**Decision:** Adopt **Option C — repository adapter** (not Prisma inside packages). Estimated effort: ~2–3 days for F1 proof + repository design; ~1 week for all three sports and doc updates.
 
 ---
 
@@ -23,7 +23,6 @@ _(none)_
 - [ ] Migrate **F1**: move `openf1Client` + `sync*.ts` + `initEvent` into `@cut/sport-f1`; wire via repository + config
 - [ ] Migrate **PGA Golf**: move `pga*` clients, `sync*.ts`, enrichment into `@cut/sport-pga-golf`
 - [ ] Migrate **Commodities**: move Hyperliquid clients + `sync*.ts` into `@cut/sport-commodities`
-- [ ] Move `buildGolfMarketSnapshot` + DataGolf fetch into `@cut/sport-pga-golf` prop bet module
 - [ ] Update `add-sport-checklist.md` and `plugins.md` to reflect package-owned sync + repository pattern
 
 ---
@@ -71,7 +70,6 @@ flowchart LR
 | Sync orchestration | `initEvent`, `syncMetadata`, `syncField`, `syncLiveScores` |
 | Enrichment | `syncTeeTimes`, `enrichParticipantProfiles` |
 | Metadata merge | per-sport `metadataMerge.ts` |
-| Prop bet ingest logic | `buildGolfMarketSnapshot`, DataGolf snapshot mapping |
 
 Env keys pass via a config object at boot — packages do not read `process.env` directly.
 
@@ -80,8 +78,6 @@ Env keys pass via a config object at boot — packages do not read `process.env`
 - `server/src/cron/scheduler.ts` — scheduling, concurrency guard
 - `runSportEventPipeline.ts` — generic sync sequence
 - `updateContestLineups.ts` — contest score aggregation
-- `refreshOpenSideBetQuotes.ts` — side-bet batch orchestration
-- `persistMarketSnapshot.ts` — `SideBetMarket` DB writes
 - Contest activate/settle/close batches, referral graph sync
 
 ### Module wiring change
@@ -131,10 +127,9 @@ interface SportEventRepository {
 | 1 | `SportEventRepository` + Prisma adapter; migrate **F1** | Low — validates pattern |
 | 2 | Migrate **PGA Golf** | Medium — most production traffic |
 | 3 | Migrate **Commodities** | Medium |
-| 4 | Prop bet ingest into `@cut/sport-pga-golf`; collapse `server/src/sports/pga-golf/` to adapter only | Low |
-| 5 | Update plugin specs and add-sport checklist | Docs |
+| 4 | Update plugin specs and add-sport checklist | Docs |
 
-Start with **F1** — smallest server IO surface, self-contained `openf1Client.ts`, no side bets or enrichment sub-pipelines.
+Start with **F1** — smallest server IO surface, self-contained `openf1Client.ts`, no enrichment sub-pipelines.
 
 ---
 
@@ -142,7 +137,6 @@ Start with **F1** — smallest server IO surface, self-contained `openf1Client.t
 
 - Tournament summary JSON (`server/src/tournamentSummaries/`) — editorial content; optional later move to `packages/sport-pga-golf/summaries/`
 - Cron timing and concurrency
-- Side bet market/ticket schema and admin settle (only quote fetch + grading rules move to the plugin)
 - Prisma schema (stays platform-owned; repository shields packages from churn)
 
 ---

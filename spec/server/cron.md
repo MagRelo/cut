@@ -7,7 +7,7 @@ Schedules:
 
 | Job | Cron | Purpose |
 | --- | --- | --- |
-| `scorePipeline` | `*/5 * * * *` | Scores, side-bet quotes, contest lifecycle, referral sync |
+| `scorePipeline` | `*/5 * * * *` | Scores, contest lifecycle, referral sync |
 | `overviewPipeline` | `*/20 * * * *` | Legacy PGA `Contest.commentary` overview refresh |
 | `feedWorker` | in-process loop | Drain `CommentaryFeedJob` queue (concurrency 1) |
 
@@ -21,8 +21,7 @@ flowchart TD
   B -->|yes| Z[Skip]
   B -->|no| C[getActiveEvents]
   C --> D[For each event: runSportEventPipeline]
-  D --> E[refreshSideBetQuotes]
-  E --> F[batchActivateContests]
+  D --> F[batchActivateContests]
   F --> G[batchSettleContests]
   G --> H[batchSyncReferralGraph]
   H --> K[Done]
@@ -69,18 +68,7 @@ Multi-minute hung `UPDATE`s on primary keys are a bug symptom (client timeout / 
 
 Pi cron should keep `PRISMA_SOCKET_TIMEOUT` at least `60` (home → managed Postgres RTT). Prefer the direct DB URL; pgBouncer does not fix lock storms from parallel per-row updates.
 
-### 2. Side-bet quote refresh
-
-Golf-owned entry: `server/src/sports/pga-golf/cron/refreshSideBetQuotes.ts` → `refreshOpenSideBetQuotes`:
-
-- Skips if `SIDE_BETS_ENABLED` is not true or no `DATAGOLF_API_KEY`
-- Finds 4-pick lineups on active events with ingestible market status
-- Fetches one DataGolf snapshot per batch
-- Calls `ingestPropBetQuoteForLineup` per lineup
-
-**Not in cron:** side-bet lock, settle, close — those are **admin** operations.
-
-### 3. Contest batches
+### 2. Contest batches
 
 | Batch                   | Typical transition                              |
 | ----------------------- | ----------------------------------------------- |
@@ -91,7 +79,7 @@ Terminal on-chain states are `SETTLED` / `CANCELLED`. Permissionless `cancelExpi
 
 Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event status.
 
-### 4. Referral graph
+### 3. Referral graph
 
 `batchSyncReferralGraph` — registers pending users on ReferralGraph. Invitees wait until their inviter is on-chain; organics register under the platform root. Signup already stored the Postgres invite edge; this job does not create accounts.
 
@@ -140,7 +128,6 @@ Detect path (`detectAndEnqueueContestFeed`) advances `lastHoleState` / `lastCont
 | Init commodities event     | `pnpm run service:init-event commodities 2026-W27`          |
 | Sync commodities (manual)  | `service:sync-commodities-metadata` · `-field` · `-scores`  |
 | Lock contests              | `POST /api/admin/contests/lock-eligible`                    |
-| Side-bet lock/settle/close | `POST /api/admin/bets/side/*`                               |
 | Email blast                | `pnpm --filter server run script:send-blast new-tournament` |
 
 See [docs/sports/golf/event-activation-runbook.md](../../docs/sports/golf/event-activation-runbook.md).

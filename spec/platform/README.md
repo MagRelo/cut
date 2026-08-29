@@ -2,7 +2,7 @@
 
 Play The Cut is a **multi-sport competition platform**: one app, one database, one deployment. Users pick a sport, build an **event-scoped lineup**, and enter **contests** (public or within a **league**). Account, wallet, and referral graph are shared across sports.
 
-Only **PGA Golf** (`pga-golf`) is fully featured on v4 (side bets, tournament summaries, rolling Cutbot feed). **F1** (`f1`) and **Commodities** (`commodities`) are registered reference sports with scoring, contests, and (for commodities) daily contest overview commentary. The architecture supports additional sports without changing contests, leagues, or on-chain contracts.
+Only **PGA Golf** (`pga-golf`) is fully featured on v4 (tournament summaries, rolling Cutbot feed). **F1** (`f1`) and **Commodities** (`commodities`) are registered reference sports with scoring, contests, and (for commodities) daily contest overview commentary. The architecture supports additional sports without changing contests, leagues, or on-chain contracts.
 
 ---
 
@@ -58,9 +58,8 @@ A user builds **one or more lineups per contest** (`Lineup.contestId`). Copy/clo
 | Contests | CRUD, join/leave, timeline, secondary market participants |
 | Settlement | Rank entries, derive payouts, oracle + on-chain settle |
 | Cron | Multi-sport sync pipeline every 5 minutes |
-| Side bets (platform) | `SideBetMarket` / `SideBetTicket` persistence, HTTP, admin batch ops |
 | Email | Templates, blasts, `EmailSendLog` keyed by `eventId` |
-| Admin | Dashboard, user ops, side-bet reports |
+| Admin | Dashboard, user ops |
 
 ### 2. Sport plugins (`SportModule`)
 
@@ -69,21 +68,14 @@ Per-sport packages implement ingestion, candidates, validation, scoring, ranking
 **Server:** `server/src/sports/registry.ts` — `getSportModule`, `requireSportModule`  
 **Golf:** `@cut/sport-pga-golf` + `server/src/sports/pga-golf/handlers.ts`
 
-### 3. Prop bet plugins (`PropBetModule`)
-
-Optional per sport — separate from `SportModule`. Golf uses DataGolf round-robin parlays.
-
-**Server:** `server/src/sports/propBetRegistry.ts`  
-**Golf:** `packages/sport-pga-golf/src/prop-bet.ts` + `server/src/sports/pga-golf/buildGolfMarketSnapshot.ts`
-
-### 4. Client UI plugins (`SportUIPlugin`)
+### 3. Client UI plugins (`SportUIPlugin`)
 
 Sport-specific React components injected into the platform shell (candidate rows, pick detail, prediction field, event summary).
 
 **Client:** `client/src/sports/registry.ts`  
 **Golf:** `client/src/sports/pga-golf/`
 
-### 5. On-chain layer
+### 4. On-chain layer
 
 Unchanged and sport-agnostic. `ContestController` / `ContestFactory` on Base. Entries are opaque `entryId` values; oracle supplies `winningEntries` + `payoutBps`.
 
@@ -99,7 +91,6 @@ See [contracts/README.md](../contracts/README.md).
 | `/api/lineups` | ✅ Live |
 | `/api/contests` | ✅ Live |
 | `/api/userGroups` | ✅ Live |
-| `/api/bets` | ✅ Live (feature flag) |
 | `/api/admin` | ✅ Live |
 | `/api/auth` | ✅ Live |
 | `/api/cron` | ✅ Live |
@@ -115,9 +106,8 @@ Every **5 minutes** when `ENABLE_CRON=true`:
 
 1. For each `CompetitionEvent` where `isActive=true`:
    - `runSportEventPipeline` → sync metadata, field, scores, update contest lineups
-2. `refreshOpenSideBetQuotes` (if `SIDE_BETS_ENABLED` + DataGolf key)
-3. `batchActivateContests` / `batchSettleContests`
-4. `batchSyncReferralGraph`
+2. `batchActivateContests` / `batchSettleContests`
+3. `batchSyncReferralGraph`
 
 Details: [server/cron.md](../server/cron.md)
 

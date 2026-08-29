@@ -12,7 +12,7 @@ Three state domains: **server cache** (React Query), **session** (Context), **ch
 
 | Pattern | Usage |
 |---------|-------|
-| `useQuery` | Reads — events, lineups, contests, side bets |
+| `useQuery` | Reads — events, lineups, contests |
 | `useMutation` | Writes — lineup save, profile update |
 | `invalidateQueries` | After mutations that affect related reads |
 | `enabled` | Gate queries until `eventId` / `userId` / `sportId` known |
@@ -27,7 +27,6 @@ Three state domains: **server cache** (React Query), **session** (Context), **ch
 | Contest lobby (`byLobbyRoute`) | 5m while ACTIVE/LOCKED; Infinity otherwise | 5m while ACTIVE/LOCKED |
 | Contest timeline | 5m while ACTIVE/LOCKED; Infinity when finished/terminal | 5m while ACTIVE/LOCKED; full then `?since=` merge |
 | Contest directory | 15m | — (focus refetch when stale) |
-| Side bet market | 0 | 60s |
 
 Global defaults in `queryClient.ts` apply where hooks do not override.
 
@@ -126,10 +125,9 @@ Prefer server cache over duplicating API data in local state.
 
 | Mutation | Invalidate / patch |
 |----------|--------------------|
-| Save lineup | `lineups.byEvent`, `sideBet.market` |
+| Save lineup | `lineups.byEvent`, `contests.all` |
 | Join/leave contest | Optimistic patch `contests.byLobbyRoute` + directory caches; then invalidate `contests.all`, `lineups.all`, `user.contests` |
 | Update profile | `auth` user query |
-| Place side bet | `sideBet.tickets`, `sideBet.market` |
 
 Centralized in mutation hooks (`useLineupMutations`, `useContestMutations`, etc.).
 

@@ -12,9 +12,6 @@ import { getTransactionUrl } from "../../utils/blockchainUtils";
 const TYPE_LABELS: Record<UserTxnType, string> = {
   CONTEST_ENTRY: "Entry",
   PREDICTION_BUY: "Winner pool ticket",
-  SIDE_BET: "Side bet",
-  SIDE_BET_PAYOUT: "Side bet win",
-  SIDE_BET_REFUND: "Side bet refund",
   PAYOUT_PRIMARY: "Payout",
   PAYOUT_SECONDARY: "Winner pool payout",
   PAYOUT_REFERRAL: "Referral",
@@ -105,7 +102,7 @@ export function UserActivityPanel() {
       <div className="text-center my-8">
         <p className="text-gray-400 font-semibold font-display mb-2">No activity yet</p>
         <p className="text-sm text-gray-500">
-          Contest entries, winner pool tickets, side bets, and payouts will show up here.{" "}
+          Contest entries, winner pool tickets, and payouts will show up here.{" "}
           <Link to="/contests" className="text-blue-600 hover:text-blue-800 underline">
             Browse contests
           </Link>

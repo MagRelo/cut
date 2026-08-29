@@ -7,7 +7,6 @@ const cronRouter = new Hono();
 const PIPELINE_STEPS = [
   "scorePipeline (*/5 * * * *)",
   "getActiveEvents → runSportEventPipeline per active event (incl. golf afterLiveScoreSync classify/enqueue)",
-  "refreshSideBetQuotes (golf; when SIDE_BETS_ENABLED + DATAGOLF_API_KEY)",
   "batchActivateContests",
   "batchSettleContests",
   "batchSyncReferralGraph",

@@ -53,25 +53,6 @@ Orchestrated by `cron/scheduler.ts`.
 
 ---
 
-## Side bets (platform)
-
-| Service | Purpose |
-|---------|---------|
-| `propBets/ingestPropBetQuoteForLineup.ts` | Registry → module → persist |
-| `propBets/persistMarketSnapshot.ts` | Write `SideBetMarket` / selections |
-| `sideBets/refreshOpenSideBetQuotes.ts` | Cron batch quote refresh |
-| `sideBets/markSideBetMarketStaleAfterRosterChange.ts` | After lineup save |
-| `sideBets/lineupSideBetUtils.ts` | Placement names, sorted IDs |
-| `sideBets/fetchSideBetDataGolfSnapshot.ts` | Shared DataGolf fetch for batch |
-| `betting/settleSideBetTicket.ts` | Grade via `PropBetModule` |
-| `batch/batchLockSideBetMarkets.ts` | Admin |
-| `batch/batchSettleSideBets.ts` | Admin |
-| `batch/batchCloseSideBetMarkets.ts` | Admin |
-
-Golf quote logic: `sports/pga-golf/buildGolfMarketSnapshot.ts`
-
----
-
 ## Admin
 
 | Service | Purpose |
@@ -111,17 +92,6 @@ Scripts: `scripts/sendBlastEmail.ts`, `scripts/emailPreview.ts`
 | Contest join/leave flows | Invoked from `routes/contest.ts` + client wagmi |
 
 Contract ABIs: `server/src/contracts/`
-
----
-
-## Odds (golf side bets)
-
-| Path | Purpose |
-|------|---------|
-| `services/odds/calculateRoundRobinOdds.ts` | 4-player parlay matrix |
-| `services/odds/dataGolf*.ts` | DataGolf API clients |
-
-Used by golf `PropBetModule` ingest path only.
 
 ---
 

@@ -154,20 +154,6 @@ export {
 } from "./create-module.js";
 
 export {
-  createPgaGolfPropBetModule,
-  type PgaGolfPropBetHandlers,
-} from "./create-prop-bet-module.js";
-
-export {
-  isGolfFinishInTopN,
-  gradeGolfPropTicket,
-  type GolfPropBetMarketMetadata,
-  type GolfPropBetResultsMetadata,
-  type GolfPropBetSelection,
-  type GolfPropBetTicketMetadata,
-} from "./prop-bet.js";
-
-export {
   DEFAULT_CUTBOT_ATTRIBUTION,
   DEFAULT_QUOTE_COLOR,
   EVENT_BLURB_SECTION_TITLE,

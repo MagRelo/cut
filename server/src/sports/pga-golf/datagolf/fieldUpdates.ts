@@ -3,9 +3,9 @@ import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 
 export type DataGolfTourParam = "pga" | "opp";
 
-/** `field-updates` / outrights tour: env `SIDE_BET_DATAGOLF_TOUR` (`pga` default, `opp` opposite field). */
+/** `field-updates` tour: env `DATAGOLF_TOUR` (`pga` default, `opp` opposite field). */
 export function dataGolfTourFromEnv(): DataGolfTourParam {
-  const t = process.env.SIDE_BET_DATAGOLF_TOUR?.trim().toLowerCase();
+  const t = process.env.DATAGOLF_TOUR?.trim().toLowerCase();
   return t === "opp" ? "opp" : "pga";
 }
 

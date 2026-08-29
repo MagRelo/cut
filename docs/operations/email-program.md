@@ -24,7 +24,7 @@ Tournament-week emails:
 
 | Phase | Product focus | Day | Email |
 |-------|----------------|-----|-------|
-| **1 — Parlay / tournament open** | Event, field, odds, history | **Manual** (when ready) | New Tournament |
+| **1 — Tournament open** | Event, field, history | **Manual** (when ready) | New Tournament |
 | **2 — Contest reminder** | Open contests for engaged non-entrants | **Wednesday** | Reminder — played, not entered |
 | **Wrap** | Results, all action | **Sunday PM** | Tournament Recap |
 
@@ -70,13 +70,13 @@ flowchart LR
 | **Trigger** | **Manual:** operator runs send script when ready. **Not** sent from signup or `service:init-event`. |
 | **Send window** | Operator-chosen. |
 | **Audience** | All users with email who have not already received `WELCOME` (per-user idempotency). |
-| **Content** | Welcome; weekly curated experience + live updates; three wagering types (Parlays, Contest Rules, Winner Pool); deposit/withdraw (self-custody USDC on the Base network; Coinbase or Robinhood if new to crypto; P2P also works); CTAs to app and Account funds. |
+| **Content** | Welcome; weekly curated experience + live updates; two wagering types (Fantasy Contests, Winner Pool); deposit/withdraw (self-custody USDC on the Base network; Coinbase or Robinhood if new to crypto; P2P also works); CTAs to app and Account funds. |
 | **Skip if** | No email; already logged `WELCOME` for `userId`. |
 | **Idempotency** | Log `userId` + `WELCOME`. |
 
 ---
 
-### 2. New Tournament (manual — Parlay)
+### 2. New Tournament (manual)
 
 | Field | Detail |
 |-------|--------|

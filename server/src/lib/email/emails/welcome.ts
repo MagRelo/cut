@@ -58,11 +58,6 @@ ${renderSection(
       description:
         "Every contest also runs a Winner Pool—a live market on which lineup wins the field. Back the entry you like, watch prices move as money flows in, and track projected odds as the event unfolds. When the contest settles, wagers on the winner share the pool.",
     },
-    {
-      title: "Parlays",
-      description:
-        "Turn your lineup into fixed-odds tickets where the sport supports them. Lock in a price before the event runs its course—a focused way to back your card without entering a full fantasy contest.",
-    },
   ]),
 )}
 ${tournamentBlock}

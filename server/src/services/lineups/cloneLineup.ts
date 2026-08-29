@@ -2,7 +2,6 @@ import { prisma } from "../../lib/prisma.js";
 import { clipName } from "../../schemas/limits.js";
 import { formatLineupResponse, lineupDetailInclude } from "./formatLineup.js";
 import { writeLineupPicks } from "./validateLineupPicks.js";
-import { markSideBetMarketStaleAfterRosterChange } from "../sideBets/markSideBetMarketStaleAfterRosterChange.js";
 import { validateLineupContestScope } from "./validateLineupContestScope.js";
 import { getContestEditBlock, lineupEditBlockToHttp } from "../../utils/lineupEditable.js";
 
@@ -68,7 +67,6 @@ export async function cloneLineup(input: CloneLineupInput) {
   });
 
   await writeLineupPicks(lineup.id, picks);
-  await markSideBetMarketStaleAfterRosterChange(lineup.id);
 
   const saved = await prisma.lineup.findUniqueOrThrow({
     where: { id: lineup.id },

@@ -29,7 +29,7 @@ Pass script arguments **directly** — do **not** insert `--` before them. In th
 
 - [ ] **externalId** confirmed from [PGA Tour schedule](https://www.pgatour.com/schedule)
 - [ ] **PGA field published** — init pulls the field from PGA; thin field if too early
-- [ ] **DataGolf API key** in server env (rankings + tee times during init; side-bet quotes if enabled)
+- [ ] **DataGolf API key** in server env (rankings + tee times during init)
 - [ ] **Local DB** running (`pnpm run db:start`) with platform schema migrated
 - [ ] **MailerSend** configured only if sending email today
 
@@ -104,7 +104,7 @@ Optional: `pnpm run service:sync-event-metadata <eventId>` or `pnpm run service:
 
 ---
 
-### 5. Contests & side bets (same week)
+### 5. Contests (same week)
 
 Not part of init — handle when the week opens.
 
@@ -114,8 +114,6 @@ Not part of init — handle when the week opens.
 | Activate contests | Cron (`batchActivateContests`) when `ENABLE_CRON=true` |
 | Lock contests | Admin **Lock eligible contests** or `service:batch-lock-contests` |
 | Settle / close contests | Cron when `ENABLE_CRON=true`, or batch CLI scripts |
-| Side-bet quote refresh | Cron pipeline (`refreshOpenSideBetQuotes`) when `SIDE_BETS_ENABLED=true` + DataGolf key |
-| Side-bet lock / settle / close | Admin panel (`/admin`) — manual ops |
 
 ---
 
@@ -150,14 +148,13 @@ Requires `ENABLE_CRON=true` on the API server or a dedicated `cron-app` process 
 Pipeline order:
 
 1. **`runSportEventPipeline`** per `CompetitionEvent` with `isActive=true` — metadata, field, withdrawals; live scores + lineup updates when the sport says the event is live
-2. **`refreshOpenSideBetQuotes`** — when `SIDE_BETS_ENABLED` and `DATAGOLF_API_KEY` are set
-3. **`batchActivateContests`** — `OPEN` → `ACTIVE`
-4. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED`
-5. **`batchSyncReferralGraph`**
+2. **`batchActivateContests`** — `OPEN` → `ACTIVE`
+3. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED`
+4. **`batchSyncReferralGraph`**
 
 **Post-expiry escape hatch:** If the operator never settles, permissionless `cancelExpired()` unlocks after `expiryTimestamp + SETTLEMENT_GRACE_PERIOD` (1 day). See [wallet-roles-cashflows.md](../../operations/wallet-roles-cashflows.md).
 
-**Admin only (not cron):** `batchLockContests` (`ACTIVE` → `LOCKED`), side-bet lock / settle / close.
+**Admin only (not cron):** `batchLockContests` (`ACTIVE` → `LOCKED`).
 
 Full spec: [`spec/server/cron.md`](../../../spec/server/cron.md). Status: `GET /api/cron/status`.
 

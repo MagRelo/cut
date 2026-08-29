@@ -36,7 +36,6 @@ JSON bodies are capped at 128 KiB.
 | `/lineups` | `lineups.ts` | ✅ |
 | `/contests` | `contest.ts` | ✅ |
 | `/userGroups` | `userGroup.ts` | ✅ |
-| `/bets` | `bets.ts` | ✅ (flag) |
 | `/admin` | `admin.ts` | ✅ staff |
 | `/cron` | `cron.ts` | ✅ |
 | `/unsubscribe` | `unsubscribe.ts` | ✅ |
@@ -63,7 +62,7 @@ No auth. `{ status, service, timestamp }`
 | PUT | `/update` | ✅ | Update display name (1–80 chars) |
 | PUT | `/settings` | ✅ | Merge allowlisted settings (`color`, `oddsFormat`). Does not change `marketingUnsubscribed`. |
 | GET | `/contests` | ✅ | User's contest history |
-| GET | `/transactions` | ✅ | Synthetic activity feed (entries, predictions, side bets, payouts) |
+| GET | `/transactions` | ✅ | Synthetic activity feed (entries, predictions, payouts) |
 
 ---
 
@@ -104,7 +103,6 @@ No auth. `{ status, service, timestamp }`
 - `prediction` must be `{ "type": "winningLineupTotal", "value": <int> }` inside the sport's `predictionRules` min/max. Extra keys are rejected. Omit on create to store a sport default.
 - `name` is optional, max 80 characters
 - `requireEventEditable` / `requireLineupEditable` — blocked after event is live/complete
-- Marks side-bet market stale on save
 
 ---
 
@@ -156,22 +154,6 @@ Client routes use `/leagues/*`; API path remains `/userGroups` for compatibility
 
 ---
 
-## Side bets (`/api/bets`)
-
-Requires `SIDE_BETS_ENABLED=true`.
-
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/side/lineup/:lineupId/market` | ✅ | Market + selections for lineup |
-| POST | `/side/tickets` | ✅ | Place ticket |
-| GET | `/side/tickets` | ✅ | User's tickets (optional filters) |
-
-**Place ticket body:** `lineupId`, `hitsRequired` (2\|3\|4), `topN` (5\|10\|20), `stakeAmount`, optional `transactionHashes`
-
-Response includes `playerIds` (= `eventParticipantIds`) for client compat.
-
----
-
 ## Admin (`/api/admin`)
 
 Staff only (`requireAdmin`).
@@ -182,10 +164,6 @@ Staff only (`requireAdmin`).
 | POST | `/contests/lock-eligible` | Batch lock contests |
 | GET | `/users` | User list + on-chain balances. Query `userType`: `USER` (default), `TEST`, `ADMIN`, `SUPER_ADMIN`, `PUBLIC` |
 | GET | `/users/:id` | User detail |
-| GET | `/bets/side/tournament-report` | Side-bet exposure report |
-| POST | `/bets/side/lock` | Lock side-bet markets |
-| POST | `/bets/side/settle` | Settle side-bet tickets |
-| POST | `/bets/side/close` | Close markets |
 | POST | `/test-email` | Send preview email (`mode`: preview kinds) |
 
 ---

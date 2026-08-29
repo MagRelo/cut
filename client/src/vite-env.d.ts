@@ -9,8 +9,6 @@ interface ImportMetaEnv {
   readonly VITE_OPERATOR_ADDRESS?: string;
   /** Must match server `REFERRAL_GROUP_ID` (32-byte hex). */
   readonly VITE_REFERRAL_GROUP_ID?: string;
-  /** Side-bet stake recipient (USDC). */
-  readonly VITE_SIDE_BET_STAKE_RECIPIENT?: string;
   /** `mainnet` (Base) or `testnet` (Base Sepolia). Defaults to testnet if unset. */
   readonly VITE_TARGET_CHAIN?: string;
   /** Optional Base mainnet JSON-RPC URL. Falls back to the chain default if unset. */

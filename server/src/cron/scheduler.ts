@@ -4,7 +4,6 @@ import { runSportEventPipeline } from "../services/cron/runSportEventPipeline.js
 import { batchActivateContests } from "../services/batch/batchActivateContests.js";
 import { batchSettleContests } from "../services/batch/batchSettleContests.js";
 import { batchSyncReferralGraph } from "../services/batch/batchSyncReferralGraph.js";
-import { refreshOpenSideBetQuotes } from "../services/sideBets/refreshOpenSideBetQuotes.js";
 import { refreshContestOverviews } from "../sports/pga-golf/commentary/refreshContestOverviews.js";
 import { refreshCommoditiesContestOverviews } from "../sports/commodities/commentary/refreshCommoditiesContestOverviews.js";
 import {
@@ -110,12 +109,6 @@ class CronScheduler {
           pipelineErrors,
         );
       }
-
-      await this.executeWithErrorHandling(
-        "Refresh Side Bet Quotes",
-        refreshOpenSideBetQuotes,
-        pipelineErrors,
-      );
 
       await this.executeWithErrorHandling(
         "Activate Contests",

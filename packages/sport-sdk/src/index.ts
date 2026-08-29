@@ -4,14 +4,10 @@ export type {
   EventStatus,
   LineupEntryInput,
   LineupPickShell,
-  MarketSnapshot,
   PayoutVector,
   PopularityMode,
   PopularityRules,
   PredictionRules,
-  PropBetGrade,
-  PropBetResultsShell,
-  PropBetTicketShell,
   RankedEntry,
   RosterRules,
   ScoringAggregation,
@@ -47,7 +43,6 @@ export {
 } from "./lineupPrediction.js";
 
 export type { SportModule } from "./sport-module.js";
-export type { PropBetIngestBatchContext, PropBetModule } from "./prop-bet-module.js";
 export type {
   EmailAnnouncementContent,
   EmailAnnouncementSection,

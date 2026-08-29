@@ -14,7 +14,7 @@ Node.js backend (Hono + Prisma + PostgreSQL) for the v4 platform.
 |------|---------|
 | `src/routes/` | HTTP handlers |
 | `src/services/` | Business logic |
-| `src/sports/` | `SportModule` + `PropBetModule` registries, golf handlers |
+| `src/sports/` | `SportModule` registry, golf handlers |
 | `src/middleware/` | Auth, admin, event editable, league membership |
 | `src/cron/` | `scheduler.ts` — 5-minute pipeline |
 | `src/lib/email/` | Email templates + blasts (`eventId`) |
@@ -39,8 +39,8 @@ Node.js backend (Hono + Prisma + PostgreSQL) for the v4 platform.
 |----------|---------|
 | `DATABASE_URL` | PostgreSQL connection |
 | `ENABLE_CRON` | `true` to run scheduler in main server |
-| `SIDE_BETS_ENABLED` | `true` to enable side-bet APIs + cron quote refresh |
-| `DATAGOLF_API_KEY` | Side-bet quote ingest + golf field sync |
+| `DATAGOLF_API_KEY` | Golf rankings and tee times (field sync) |
+| `DATAGOLF_TOUR` | DataGolf tour (`pga` default) |
 | `MAILERSEND_*` | Transactional / marketing email |
 | Privy vars | Auth token verification |
 

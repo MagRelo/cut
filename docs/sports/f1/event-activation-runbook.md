@@ -171,7 +171,6 @@ Not part of init — open when the race week goes live.
 | Activate contests | Cron `batchActivateContests` when event status is `LIVE` |
 | Lock contests | Admin **Lock eligible contests** or `service:batch-lock-contests` |
 | Settle / close contests | Cron when event is `COMPLETE`, or batch CLI scripts |
-| Side bets | **Not supported** for F1 in v1 |
 
 **Contest lifecycle (F1):**
 
@@ -233,10 +232,9 @@ Requires `ENABLE_CRON=true` on the API server or dedicated `cron-app` process. S
 Pipeline order (same as golf):
 
 1. **`runSportEventPipeline`** per active event — metadata, field; live scores + contest lineup updates when F1 status is `LIVE` or `COMPLETE`
-2. **`refreshOpenSideBetQuotes`** — golf only (`SIDE_BETS_ENABLED`)
-3. **`batchActivateContests`** — `OPEN` → `ACTIVE` when event is `LIVE`
-4. **`batchSettleContests`** — when event is `COMPLETE`
-5. **`batchSyncReferralGraph`**
+2. **`batchActivateContests`** — `OPEN` → `ACTIVE` when event is `LIVE`
+3. **`batchSettleContests`** — when event is `COMPLETE`
+4. **`batchSyncReferralGraph`**
 
 **Post-expiry escape hatch:** If the operator never settles, permissionless `cancelExpired()` unlocks after `expiryTimestamp + SETTLEMENT_GRACE_PERIOD` (1 day). See [wallet-roles-cashflows.md](../../operations/wallet-roles-cashflows.md).
 

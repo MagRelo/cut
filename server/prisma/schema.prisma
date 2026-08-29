@@ -43,7 +43,6 @@ model User {
   onchainPayments              OnchainPayment[]
   contestSecondaryParticipants ContestSecondaryParticipant[]
   wallets                      UserWallet[]
-  sideBetTickets               SideBetTicket[]
   emailSendLogs                EmailSendLog[]
   referredBy                   User?                         @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
   referredUsers                User[]                        @relation("UserReferrals")
@@ -129,10 +128,9 @@ model CompetitionEvent {
 
   sport          Sport              @relation(fields: [sportId], references: [id])
   participants   EventParticipant[]
-  lineups        Lineup[]
-  contests       Contest[]
-  sideBetMarkets SideBetMarket[]
-  emailSendLogs  EmailSendLog[]
+  lineups       Lineup[]
+  contests      Contest[]
+  emailSendLogs EmailSendLog[]
 
   @@unique([sportId, externalId])
   @@index([sportId, isActive])
@@ -192,7 +190,6 @@ model Lineup {
   contest        Contest?         @relation(fields: [contestId], references: [id])
   picks          LineupPick[]
   contestLineups ContestLineup[]
-  sideBetMarket  SideBetMarket?
 
   @@index([userId, eventId])
   @@index([userId, eventId, contestId])
@@ -367,97 +364,6 @@ model ContestSecondaryParticipant {
   @@unique([contestId, entryId, walletAddress])
   @@index([contestId, entryId])
   @@index([walletAddress])
-}
-
-// ---------------------------------------------------------------------------
-// Side bets (prop bets — optional per sport)
-// ---------------------------------------------------------------------------
-
-enum SideBetMarketStatus {
-  UNAVAILABLE
-  OPEN
-  LOCKED
-  SETTLING
-  SETTLED
-  VOID
-  CLOSED
-}
-
-enum SideBetTicketStatus {
-  OPEN
-  WON
-  LOST
-  VOID
-  REFUND_PENDING
-}
-
-model SideBetMarket {
-  id                 String              @id @default(cuid())
-  lineupId           String              @unique
-  eventId            String
-  status             SideBetMarketStatus @default(UNAVAILABLE)
-  unavailableReason  String?
-  quoteVersion       Int                 @default(0)
-  dgEventId          Int?
-  dgEventName        String?
-  dgFieldLastUpdated String?
-  dgOddsLastUpdated  String?
-  datagolfTour       String              @default("pga")
-  lockedAt           DateTime?
-  settledAt          DateTime?
-  closedAt           DateTime?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-
-  lineup     Lineup             @relation(fields: [lineupId], references: [id], onDelete: Cascade)
-  event      CompetitionEvent   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  selections SideBetSelection[]
-  tickets    SideBetTicket[]
-
-  @@index([eventId])
-  @@index([status])
-}
-
-model SideBetSelection {
-  id              String @id @default(cuid())
-  sideBetMarketId String
-  hitsRequired    Int
-  topN            Int
-  decimalOdds     Float
-  americanDisplay String
-  quoteVersion    Int
-
-  sideBetMarket SideBetMarket @relation(fields: [sideBetMarketId], references: [id], onDelete: Cascade)
-
-  @@unique([sideBetMarketId, hitsRequired, topN, quoteVersion])
-  @@index([sideBetMarketId, quoteVersion])
-}
-
-model SideBetTicket {
-  id                         String              @id @default(cuid())
-  sideBetMarketId            String
-  userId                     String
-  hitsRequired               Int
-  topN                       Int
-  stakeAmount                Float
-  decimalOddsAtPlacement     Float
-  americanDisplayAtPlacement String
-  quoteVersionAtPlacement    Int
-  /// Four `EventParticipant.id` values for this event (sorted); set at placement for settlement.
-  eventParticipantIds        String[]            @default([])
-  status                     SideBetTicketStatus @default(OPEN)
-  fundingTxHash              String?
-  settlementNotes            Json?
-  createdAt                  DateTime            @default(now())
-  updatedAt                  DateTime            @updatedAt
-
-  sideBetMarket SideBetMarket @relation(fields: [sideBetMarketId], references: [id], onDelete: Cascade)
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, fundingTxHash])
-  @@index([userId])
-  @@index([sideBetMarketId])
-  @@index([status])
 }
 
 // ---------------------------------------------------------------------------

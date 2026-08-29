@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "../utils/apiClient";
-import type { AdminDashboardResponse, AdminSideBetEventReportResponse } from "../types/admin";
+import type { AdminDashboardResponse } from "../types/admin";
 import { queryKeys } from "../utils/queryKeys";
 
 export function useAdminDashboardQuery(eventId?: string) {
@@ -14,22 +14,5 @@ export function useAdminDashboardQuery(eventId?: string) {
       });
     },
     staleTime: 30_000,
-  });
-}
-
-export function useAdminSideBetReportQuery(eventId?: string, enabled = true) {
-  const eid = eventId?.trim() || undefined;
-  return useQuery({
-    queryKey: queryKeys.admin.sideBetReport(eid),
-    queryFn: async () => {
-      const qs = eid ? `?eventId=${encodeURIComponent(eid)}` : "";
-      return apiClient.get<AdminSideBetEventReportResponse>(
-        `/admin/bets/side/event-report${qs}`,
-        { requiresAuth: true },
-      );
-    },
-    enabled,
-    staleTime: 30_000,
-    retry: false,
   });
 }

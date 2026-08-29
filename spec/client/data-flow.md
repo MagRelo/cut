@@ -27,7 +27,6 @@
 | `contests.byLobbyRoute(address)` | `GET /contests/:address/lobby` | Standings/status only — no timeline |
 | `contests.timeline(address)` | `GET /contests/:address/timeline` | Chart history; refreshes use `?since=` |
 | `lineups.byEvent(userId, eventId)` | `GET /lineups/:eventId` | User-scoped; response includes `PlatformLineup.score` |
-| `sideBet.market(lineupId)` | `GET /bets/side/lineup/:id/market` | |
 
 ---
 
@@ -72,10 +71,10 @@ sequenceDiagram
   Picker->>Hook: saveLineup(picks, prediction)
   Hook->>API: POST body picks + prediction
   API-->>Hook: lineup
-  Hook->>RQ: invalidate lineups.byEvent, sideBet.market
+  Hook->>RQ: invalidate lineups.byEvent, contests.all
 ```
 
-`useLineupMutations` passes `eventParticipantId` picks directly to the API. Server validates roster via `SportModule.validateRoster` and marks side-bet quote stale.
+`useLineupMutations` passes `eventParticipantId` picks directly to the API. Server validates roster via `SportModule.validateRoster`.
 
 ---
 
@@ -140,18 +139,6 @@ Order: **on-chain first**, then server indexes the entry. Server links `lineupId
 3. `useContestsQuery(eventId, ...)` → `GET /contests?eventId=`
 
 League detail uses `useUserGroupContestsQuery` → `GET /userGroups/:id/contests` (cross-event with `eventSummary`).
-
----
-
-## Side bets (when enabled)
-
-| Step | Hook / API |
-|------|------------|
-| Load market | `GET /bets/side/lineup/:lineupId/market` |
-| Place ticket | `POST /bets/side/tickets` |
-| User tickets | `GET /bets/side/tickets` |
-
-Invalidate `sideBet.market(lineupId)` after lineup save.
 
 ---
 

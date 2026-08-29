@@ -91,22 +91,3 @@ export interface LineupPickShell {
   slotIndex: number;
   metadata?: unknown;
 }
-
-export type PropBetGrade = "WON" | "LOST" | "VOID";
-
-export interface PropBetTicketShell {
-  id: string;
-  lineupId: string;
-  metadata: unknown;
-}
-
-export interface PropBetResultsShell {
-  eventId: string;
-  metadata: unknown;
-}
-
-export interface MarketSnapshot {
-  lineupId: string;
-  capturedAt: Date;
-  metadata: unknown;
-}

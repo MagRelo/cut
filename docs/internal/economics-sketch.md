@@ -109,7 +109,7 @@ Monthly secondary fee ≈ 0.07 × m_avg × H_tot
 
 The sections above are a **forward model** — personas, funnel targets, and scale math. This section records what **actually happened** on production over an 8-week PGA window (**2026-05-02 → 2026-06-27**, eight tournaments) so we can compare theory to data and refine targets.
 
-**Scope:** Base Sepolia (`chainId` 84532), xUSDC (6 decimals). **27** unique users with at least one paid contest lineup in the window. Contest platform fees come from **`referralNetworkBps` (700 = 7%)** on gross TVL at settlement (primary + secondary), aligned with the sketch’s 7% take. Side bets are a **separate rail** (stakes to `VITE_SIDE_BET_STAKE_RECIPIENT`); they are **not** in the sketch formulas above.
+**Scope:** Base Sepolia (`chainId` 84532), xUSDC (6 decimals). **27** unique users with at least one paid contest lineup in the window. Platform income is the oracle’s share of **contest referral-network fees** (`referralNetworkBps` 700 = 7%) on gross TVL at settlement (primary + secondary), aligned with the sketch’s 7% take.
 
 ### What we measured
 
@@ -120,7 +120,7 @@ The sections above are a **forward model** — personas, funnel targets, and sca
 | Primary TVL / MAU / month | ~$37 | ~$37 |
 | Contest fee as % of primary TVL | ~6.5% blended | ~7% when secondary included |
 
-**Platform income** = oracle’s share of contest referral-network fees (indexed `OnchainPayment` kind `REFERRAL` to the operator address) **plus** net side-bet P&L on **settled** tickets (stake minus estimated payout). User-to-user referral shares are pass-through, not platform income.
+**Platform income** = oracle’s share of contest referral-network fees (indexed `OnchainPayment` kind `REFERRAL` to the operator address). User-to-user referral shares are pass-through, not platform income.
 
 **Adjusted** adds estimated May contest fees that settled on-chain but were **not indexed** in `OnchainPayment` until June (primary TVL × 7%). June indexed amounts match settlement snapshots closely (e.g. RBC Canadian: $170 gross → $11.90 fee; U.S. Open: $413.85 gross → $31.15 fee).
 
@@ -131,11 +131,10 @@ The sections above are a **forward model** — personas, funnel targets, and sca
 | Monthly primary spend **S** | Casual $40; Regular $200 | **~$37** (≈ Casual) |
 | Secondary attach **m** | Casual 0.15; Regular 0.43 | **Near 0** in practice (few secondary participants) |
 | Contest platform fee / MAU / mo | Casual **$3**; Regular **$20** | **~$3** indexed; **~$3.10** adjusted |
-| Side bets | Not modeled | ~$17 net on ~$215 settled handle (volatile by week) |
 
 Live cohort behavior maps to the sketch **Casual** tier, not **Regular**. The gap to Regular is mostly **entry frequency** and **Winner Pool attach**, not take rate or buy-in (paid contests were mostly **$20** entry).
 
-Weekly revenue per **that week’s active entrant** swung from about **−$3.70** (PGA Championship — side bets lost) to **+$5.25** (Memorial) because side-bet P&L is lumpy; contest fees are the stabler core.
+Weekly revenue per **that week’s active entrant** ranged from about **−$3.70** (PGA Championship) to **+$5.25** (Memorial). Contest fees are the stabler core.
 
 ### Bridge persona: Light Regular ($10 ARPU)
 
@@ -155,7 +154,7 @@ Example that closes the gap without jumping straight to Regular volume: **~5 ent
 
 At **$10 ARPU**, the sketch headline “100 users → ~$2,000/mo” becomes **~200 users** for the same MRR; at sketch **Regular ($20)**, 100 users still holds.
 
-### Scale targets at $10 ARPU (contest fees; side bets upside)
+### Scale targets at $10 ARPU (contest fees)
 
 | Milestone | MRR | MAUs @ $10/mo |
 |-----------|----:|--------------:|
@@ -188,9 +187,8 @@ Platform income by tournament week (indexed; May contest fees under-counted):
 
 1. **Retention / entries per month** — largest gap vs sketch Regular; moving Casual → Light Regular is ~3× ARPU.
 2. **Winner Pool (m)** — sketch assumes meaningful secondary; production was minimal; fee is on **gross TVL**, so secondary moves the needle when it exists (U.S. Open week).
-3. **Side bets** — material week-to-week variance; treat as margin upside, not the core model until payout rail and book depth mature.
-4. **Free contests** — zero primary **S** and zero platform fee; mix dilutes cohort ARPU.
-5. **Indexing** — use on-chain settlement events or snapshot gross for May-era contests when reconciling platform revenue; DB `OnchainPayment` alone understates contest fees before ~June 2026.
+3. **Free contests** — zero primary **S** and zero platform fee; mix dilutes cohort ARPU.
+4. **Indexing** — use on-chain settlement events or snapshot gross for May-era contests when reconciling platform revenue; DB `OnchainPayment` alone understates contest fees before ~June 2026.
 
 ### How to use both sections
 
@@ -201,7 +199,7 @@ Platform income by tournament week (indexed; May contest fees under-counted):
 | Scale math at Regular / Serious | Conservative MAU counts and ARPU floors |
 | Investor “what if we execute the funnel” | Operator “what we earned last month” |
 
-Revisit this table quarterly or after major product changes (real-money rail, secondary growth, side-bet settlement automation, multi-sport).
+Revisit this table quarterly or after major product changes (real-money rail, secondary growth, multi-sport).
 
 ---
 

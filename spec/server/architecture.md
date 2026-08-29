@@ -27,7 +27,7 @@ sequenceDiagram
 |-------|----------------|
 | **Routes** (`src/routes/*.ts`) | HTTP parsing, status codes, auth gates |
 | **Services** (`src/services/**`) | Platform business rules, batch ops, orchestration |
-| **Plugins** (`src/sports/registry.ts`, `propBetRegistry.ts`) | Sport-specific ingest, scoring, prop quotes |
+| **Plugins** (`src/sports/registry.ts`) | Sport-specific ingest, scoring |
 | **Prisma** | Typed DB access |
 
 Routes stay thin; reusable logic lives in services so cron and admin can share it.
@@ -37,13 +37,10 @@ Routes stay thin; reusable logic lives in services so cron and admin can share i
 ```mermaid
 graph LR
   API[Routes / Services] --> SR[sports/registry.ts]
-  API --> PR[propBetRegistry.ts]
   SR --> Golf["@cut/sport-pga-golf + handlers"]
-  PR --> GolfProp[pga-golf PropBetModule]
 ```
 
 - `requireSportModule(sportId)` — throws if sport not registered
-- `getPropBetModule(sportId)` — returns `undefined` if sport has no props
 
 ## Middleware
 
@@ -63,19 +60,13 @@ graph LR
 
 - Active event: `CompetitionEvent.isActive` (one per sport, set by init)
 - Candidates: sport plugin `getCandidatePool`
-- Lineup create/update: `services/lineups/createLineupForEvent.ts` / `updateLineupById.ts` → validates via plugin, marks side-bet stale
+- Lineup create/update: `services/lineups/createLineupForEvent.ts` / `updateLineupById.ts` → validates via plugin
 
 ### Contests
 
 - HTTP: `routes/contest.ts`
 - Lifecycle batches: `services/batch/batchActivateContests.ts`, `batchSettleContests.ts`
 - Settlement: `services/contest/settleContest.ts` → plugin ranking + on-chain operator `settleContest(..., secondaryWinner)`
-
-### Side bets
-
-- HTTP: `routes/bets.ts`
-- Ingest: `services/propBets/` + `PropBetModule`
-- Admin: `routes/admin.ts` lock/settle/close batches
 
 ### SPA HTML / Open Graph
 
@@ -116,7 +107,6 @@ HTML is never cached so crawlers and share unfurls pick up the rewrite on the ne
 - Privy Bearer tokens on protected routes
 - League contests hidden from non-members (404)
 - Admin routes require staff `userType`
-- Side bets gated by `SIDE_BETS_ENABLED`
 
 ## Scalability notes
 

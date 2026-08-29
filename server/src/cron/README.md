@@ -31,7 +31,7 @@ Graceful shutdown: SIGTERM / SIGINT stop all scheduled tasks and request feed wo
 
 | Job | Cadence | Notes |
 | --- | --- | --- |
-| `scorePipeline` | `*/5 * * * *` | Scores, golf side-bet quotes, activate/settle, referral |
+| `scorePipeline` | `*/5 * * * *` | Scores, activate/settle, referral |
 | `overviewPipeline` | `*/20 * * * *` | PGA continuous + commodities day-settle `Contest.commentary` refresh |
 | `feedWorker` | in-process | Drains `CommentaryFeedJob` (concurrency 1; PGA feed stories) |
 
@@ -50,16 +50,15 @@ Separate running flags skip a tick if that pipeline is still in progress.
      - `syncLiveScores`
      - `updateContestLineupsForEvent`
      - `afterLiveScoreSync` (golf: classify + enqueue feed jobs)
-3. **`refreshSideBetQuotes`** — golf-owned; no-op unless `SIDE_BETS_ENABLED` and `DATAGOLF_API_KEY`
-4. **`batchActivateContests`** — `OPEN` → `ACTIVE` when the sport says the event is live
-5. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED` when the event is complete
-6. **`batchSyncReferralGraph`** — push pending referral registrations on-chain
+3. **`batchActivateContests`** — `OPEN` → `ACTIVE` when the sport says the event is live
+4. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED` when the event is complete
+5. **`batchSyncReferralGraph`** — push pending referral registrations on-chain
 
 Terminal on-chain states are `SETTLED` and `CANCELLED`. Permissionless `cancelExpired()` unlocks after `expiryTimestamp + SETTLEMENT_GRACE_PERIOD` (1 day) if the operator never settles.
 
 Better Stack heartbeat reports on the **score** pipeline only.
 
-**Not in cron:** `batchLockContests` (`ACTIVE` → `LOCKED`) — admin API or CLI only. Side-bet lock / settle / close — admin only.
+**Not in cron:** `batchLockContests` (`ACTIVE` → `LOCKED`) — admin API or CLI only.
 
 ---
 

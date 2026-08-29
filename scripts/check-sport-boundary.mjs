@@ -77,6 +77,6 @@ for (const line of violations) {
   console.error(`  ${line}`);
 }
 console.error(
-  `\n${violations.length} violation(s). Use requireSportModule / getPropBetModule / email content registry instead.`,
+  `\n${violations.length} violation(s). Use requireSportModule / email content registry instead.`,
 );
 process.exit(1);

@@ -89,7 +89,7 @@ flowchart TB
 
 - **Purpose:** User's golfers for one tournament (fantasy "team" for the week).
 - **Fields:** `id`, `userId`, `tournamentId`, `name`, timestamps
-- **Relations:** `players` via `TournamentLineupPlayer`, `contestLineups`, optional `sideBetMarket`
+- **Relations:** `players` via `TournamentLineupPlayer`, `contestLineups`
 
 ### TournamentLineupPlayer
 
@@ -113,7 +113,7 @@ flowchart TB
 - **User:** Auth (Privy/email), profile, settings JSON, referral fields.
 - **UserWallet:** Chain addresses per user (`publicKey`, `chainId`, `isPrimary`).
 
-Other models in schema (not league-specific): `ContestLineup`, `ContestLineupTimeline`, `ContestSecondaryParticipant`, `SideBetMarket`, `SideBetTicket`, `OnchainPayment`, `EmailSendLog`, etc.
+Other models in schema (not league-specific): `ContestLineup`, `ContestLineupTimeline`, `ContestSecondaryParticipant`, `OnchainPayment`, `EmailSendLog`, etc.
 
 ## Deprecated design (not in schema)
 

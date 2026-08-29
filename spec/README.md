@@ -16,7 +16,7 @@ Architecture and behavior documentation for the **v4 platform** (`v4` branch). T
 | Contest FK | `tournamentId` | `eventId` |
 | Contest entry FK | `tournamentLineupId` | `lineupId` |
 | APIs | `/api/tournaments`, `/api/lineup` | `/api/sports`, `/api/lineups` |
-| Sport logic | Inline PGA services | `SportModule` + `PropBetModule` plugins |
+| Sport logic | Inline PGA services | `SportModule` plugins |
 | Client routing | Tournament-centric home | `/sports/:sportId`, `/leagues/*` |
 
 Legacy routes `/api/tournaments` and `/api/lineup` return **501** on v4.
@@ -49,7 +49,7 @@ Use this order for a full architecture walkthrough:
 | # | Doc | What you'll learn |
 |---|-----|-------------------|
 | 1 | [Platform overview](platform/README.md) | Product model, layers, package layout |
-| 2 | [Plugin system](platform/plugins.md) | `SportModule`, `SportUIPlugin`, `PropBetModule` |
+| 2 | [Plugin system](platform/plugins.md) | `SportModule`, `SportUIPlugin` |
 | 3 | [Server architecture](server/architecture.md) | Hono app, registries, request flow |
 | 4 | [Data models](server/data-models.md) | Prisma schema (platform) |
 | 5 | [API reference](server/api.md) | Live HTTP routes |
@@ -66,8 +66,6 @@ Use this order for a full architecture walkthrough:
 
 | Topic | Doc |
 |-------|-----|
-| Side bet odds | [docs/sports/golf/side-bet-odds-methodology.md](../docs/sports/golf/side-bet-odds-methodology.md) |
-| Side bet ops | [docs/sports/golf/side-bet-production-plan.md](../docs/sports/golf/side-bet-production-plan.md) |
 | Tie-breakers | [docs/platform/lineup-tie-breaker.md](../docs/platform/lineup-tie-breaker.md) |
 | Referrals | [docs/platform/referral-network.md](../docs/platform/referral-network.md) |
 | Email program | [docs/operations/email-program.md](../docs/operations/email-program.md) |
@@ -89,12 +87,12 @@ Use this order for a full architecture walkthrough:
 
 ```
 packages/
-  sport-sdk/           Shared types + SportModule, SportUIPlugin, PropBetModule interfaces
-  sport-pga-golf/      PGA golf server plugin (ranking, validation, prop grading)
+  sport-sdk/           Shared types + SportModule, SportUIPlugin interfaces
+  sport-pga-golf/      PGA golf server plugin (ranking, validation)
   secondary-pricing/   Bonding curve math (sport-agnostic)
 
 server/
-  src/sports/          Sport + prop bet registries, pga-golf handlers
+  src/sports/          Sport registries, pga-golf handlers
   src/routes/          Hono routers (api.ts mounts live routes)
   src/services/        Platform business logic
   src/cron/            Scheduler

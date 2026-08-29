@@ -22,7 +22,7 @@
  */
 
 import "dotenv/config";
-import { Prisma, PrismaClient, SideBetMarketStatus, SideBetTicketStatus } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 
 const PGA_GOLF_ROSTER_RULES = {
@@ -191,53 +191,6 @@ interface LegacyContestLineupTimeline {
   createdAt: Date;
 }
 
-interface LegacySideBetMarket {
-  id: string;
-  tournamentLineupId: string;
-  tournamentId: string;
-  status: string;
-  unavailableReason: string | null;
-  quoteVersion: number;
-  dgEventId: number | null;
-  dgEventName: string | null;
-  dgFieldLastUpdated: string | null;
-  dgOddsLastUpdated: string | null;
-  datagolfTour: string;
-  lockedAt: Date | null;
-  settledAt: Date | null;
-  closedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface LegacySideBetSelection {
-  id: string;
-  sideBetMarketId: string;
-  hitsRequired: number;
-  topN: number;
-  decimalOdds: number;
-  americanDisplay: string;
-  quoteVersion: number;
-}
-
-interface LegacySideBetTicket {
-  id: string;
-  sideBetMarketId: string;
-  userId: string;
-  hitsRequired: number;
-  topN: number;
-  stakeAmount: number;
-  decimalOddsAtPlacement: number;
-  americanDisplayAtPlacement: string;
-  quoteVersionAtPlacement: number;
-  playerIds: string[];
-  status: string;
-  fundingTxHash: string | null;
-  settlementNotes: unknown;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 interface LegacyEmailSendLog {
   id: string;
   kind: string;
@@ -264,9 +217,6 @@ interface LegacySnapshot {
   contestLineupTimelines: LegacyContestLineupTimeline[];
   onchainPayments: Awaited<ReturnType<typeof readLegacyOnchainPayments>>;
   secondaryParticipants: Awaited<ReturnType<typeof readLegacySecondaryParticipants>>;
-  sideBetMarkets: LegacySideBetMarket[];
-  sideBetSelections: LegacySideBetSelection[];
-  sideBetTickets: LegacySideBetTicket[];
   emailSendLogs: LegacyEmailSendLog[];
 }
 
@@ -285,9 +235,6 @@ interface MigrationStats {
   contestLineupTimelines: number;
   onchainPayments: number;
   secondaryParticipants: number;
-  sideBetMarkets: number;
-  sideBetSelections: number;
-  sideBetTickets: number;
   emailSendLogs: number;
 }
 
@@ -464,15 +411,6 @@ async function readLegacySnapshot(legacy: PrismaClient): Promise<LegacySnapshot>
   const secondaryParticipants = await readLegacyTable("ContestSecondaryParticipant", () =>
     readLegacySecondaryParticipants(legacy),
   );
-  const sideBetMarkets = await readLegacyTable("SideBetMarket", () =>
-    legacy.$queryRaw<LegacySideBetMarket[]>`SELECT * FROM "SideBetMarket" ORDER BY "id"`,
-  );
-  const sideBetSelections = await readLegacyTable("SideBetSelection", () =>
-    legacy.$queryRaw<LegacySideBetSelection[]>`SELECT * FROM "SideBetSelection" ORDER BY "id"`,
-  );
-  const sideBetTickets = await readLegacyTable("SideBetTicket", () =>
-    legacy.$queryRaw<LegacySideBetTicket[]>`SELECT * FROM "SideBetTicket" ORDER BY "id"`,
-  );
   const emailSendLogs = await readLegacyTable("EmailSendLog", () =>
     legacy.$queryRaw<LegacyEmailSendLog[]>`SELECT * FROM "EmailSendLog" ORDER BY "id"`,
   );
@@ -492,9 +430,6 @@ async function readLegacySnapshot(legacy: PrismaClient): Promise<LegacySnapshot>
     contestLineupTimelines,
     onchainPayments,
     secondaryParticipants,
-    sideBetMarkets,
-    sideBetSelections,
-    sideBetTickets,
     emailSendLogs,
   };
 }
@@ -582,24 +517,6 @@ function lineupPrediction(
   return { type: "winningLineupTotal", value: winningScorePrediction };
 }
 
-function mapSideBetTicketPlayerIds(
-  playerIds: string[],
-  tournamentPlayerIds: Set<string>,
-): { eventParticipantIds: string[]; warnings: string[] } {
-  const warnings: string[] = [];
-  const eventParticipantIds: string[] = [];
-  for (const playerId of playerIds) {
-    if (!tournamentPlayerIds.has(playerId)) {
-      warnings.push(`SideBetTicket playerId ${playerId} not found in TournamentPlayer`);
-      continue;
-    }
-    // TournamentPlayer.id is preserved as EventParticipant.id
-    eventParticipantIds.push(playerId);
-  }
-  eventParticipantIds.sort((a, b) => a.localeCompare(b));
-  return { eventParticipantIds, warnings };
-}
-
 function snapshotStats(snapshot: LegacySnapshot): MigrationStats {
   return {
     users: snapshot.users.length,
@@ -616,9 +533,6 @@ function snapshotStats(snapshot: LegacySnapshot): MigrationStats {
     contestLineupTimelines: snapshot.contestLineupTimelines.length,
     onchainPayments: snapshot.onchainPayments.length,
     secondaryParticipants: snapshot.secondaryParticipants.length,
-    sideBetMarkets: snapshot.sideBetMarkets.length,
-    sideBetSelections: snapshot.sideBetSelections.length,
-    sideBetTickets: snapshot.sideBetTickets.length,
     emailSendLogs: snapshot.emailSendLogs.length,
   };
 }
@@ -721,26 +635,6 @@ function validateSnapshot(snapshot: LegacySnapshot): string[] {
     }
   }
 
-  for (const market of snapshot.sideBetMarkets) {
-    if (!lineupIds.has(market.tournamentLineupId)) {
-      errors.push(
-        `SideBetMarket ${market.id} references missing lineup ${market.tournamentLineupId}`,
-      );
-    }
-    if (!tournamentIds.has(market.tournamentId)) {
-      errors.push(
-        `SideBetMarket ${market.id} references missing tournament ${market.tournamentId}`,
-      );
-    }
-  }
-
-  for (const ticket of snapshot.sideBetTickets) {
-    const { warnings } = mapSideBetTicketPlayerIds(ticket.playerIds, tournamentPlayerIds);
-    for (const w of warnings) {
-      errors.push(`SideBetTicket ${ticket.id}: ${w}`);
-    }
-  }
-
   return errors;
 }
 
@@ -771,8 +665,6 @@ async function seedSport(target: PrismaClient) {
 
 async function applyMigration(target: PrismaClient, snapshot: LegacySnapshot) {
   await seedSport(target);
-
-  const tournamentPlayerIds = new Set(snapshot.tournamentPlayers.map((tp) => tp.id));
 
   await target.$transaction(async (tx) => {
     for (const user of snapshot.users) {
@@ -1013,95 +905,6 @@ async function applyMigration(target: PrismaClient, snapshot: LegacySnapshot) {
       });
     }
 
-    for (const market of snapshot.sideBetMarkets) {
-      await tx.sideBetMarket.upsert({
-        where: { id: market.id },
-        create: {
-          id: market.id,
-          lineupId: market.tournamentLineupId,
-          eventId: market.tournamentId,
-          status: market.status as SideBetMarketStatus,
-          unavailableReason: market.unavailableReason,
-          quoteVersion: market.quoteVersion,
-          dgEventId: market.dgEventId,
-          dgEventName: market.dgEventName,
-          dgFieldLastUpdated: market.dgFieldLastUpdated,
-          dgOddsLastUpdated: market.dgOddsLastUpdated,
-          datagolfTour: market.datagolfTour,
-          lockedAt: market.lockedAt,
-          settledAt: market.settledAt,
-          closedAt: market.closedAt,
-          createdAt: market.createdAt,
-          updatedAt: market.updatedAt,
-        },
-        update: {
-          lineupId: market.tournamentLineupId,
-          eventId: market.tournamentId,
-          status: market.status as SideBetMarketStatus,
-          unavailableReason: market.unavailableReason,
-          quoteVersion: market.quoteVersion,
-          dgEventId: market.dgEventId,
-          dgEventName: market.dgEventName,
-          dgFieldLastUpdated: market.dgFieldLastUpdated,
-          dgOddsLastUpdated: market.dgOddsLastUpdated,
-          datagolfTour: market.datagolfTour,
-          lockedAt: market.lockedAt,
-          settledAt: market.settledAt,
-          closedAt: market.closedAt,
-          updatedAt: market.updatedAt,
-        },
-      });
-    }
-
-    if (snapshot.sideBetSelections.length > 0) {
-      await tx.sideBetSelection.createMany({
-        data: snapshot.sideBetSelections,
-        skipDuplicates: true,
-      });
-    }
-
-    for (const ticket of snapshot.sideBetTickets) {
-      const { eventParticipantIds } = mapSideBetTicketPlayerIds(
-        ticket.playerIds,
-        tournamentPlayerIds,
-      );
-      await tx.sideBetTicket.upsert({
-        where: { id: ticket.id },
-        create: {
-          id: ticket.id,
-          sideBetMarketId: ticket.sideBetMarketId,
-          userId: ticket.userId,
-          hitsRequired: ticket.hitsRequired,
-          topN: ticket.topN,
-          stakeAmount: ticket.stakeAmount,
-          decimalOddsAtPlacement: ticket.decimalOddsAtPlacement,
-          americanDisplayAtPlacement: ticket.americanDisplayAtPlacement,
-          quoteVersionAtPlacement: ticket.quoteVersionAtPlacement,
-          eventParticipantIds,
-          status: ticket.status as SideBetTicketStatus,
-          fundingTxHash: ticket.fundingTxHash,
-          settlementNotes: ticket.settlementNotes as Prisma.InputJsonValue,
-          createdAt: ticket.createdAt,
-          updatedAt: ticket.updatedAt,
-        },
-        update: {
-          sideBetMarketId: ticket.sideBetMarketId,
-          userId: ticket.userId,
-          hitsRequired: ticket.hitsRequired,
-          topN: ticket.topN,
-          stakeAmount: ticket.stakeAmount,
-          decimalOddsAtPlacement: ticket.decimalOddsAtPlacement,
-          americanDisplayAtPlacement: ticket.americanDisplayAtPlacement,
-          quoteVersionAtPlacement: ticket.quoteVersionAtPlacement,
-          eventParticipantIds,
-          status: ticket.status as SideBetTicketStatus,
-          fundingTxHash: ticket.fundingTxHash,
-          settlementNotes: ticket.settlementNotes as Prisma.InputJsonValue,
-          updatedAt: ticket.updatedAt,
-        },
-      });
-    }
-
     for (const log of snapshot.emailSendLogs) {
       await tx.emailSendLog.upsert({
         where: { id: log.id },
@@ -1160,9 +963,6 @@ async function reconcile(
     contestLineupTimelines: await target.contestLineupTimeline.count(),
     onchainPayments: await target.onchainPayment.count(),
     secondaryParticipants: await target.contestSecondaryParticipant.count(),
-    sideBetMarkets: await target.sideBetMarket.count(),
-    sideBetSelections: await target.sideBetSelection.count(),
-    sideBetTickets: await target.sideBetTicket.count(),
     emailSendLogs: await target.emailSendLog.count(),
   };
 
@@ -1235,29 +1035,6 @@ async function reconcile(
     if (!targetSecondaryKeys.has(secondaryKey(row))) {
       mismatches.push(
         `secondary participant missing: contest=${row.contestId} entryId=${row.entryId}`,
-      );
-    }
-  }
-
-  const legacyTickets = snapshot.sideBetTickets.filter((t) => t.playerIds.length > 0);
-  const targetTickets = await target.sideBetTicket.findMany({
-    where: { eventParticipantIds: { isEmpty: false } },
-    select: { id: true, eventParticipantIds: true },
-  });
-  const targetTicketMap = new Map(targetTickets.map((t) => [t.id, t.eventParticipantIds]));
-  const tpIds = new Set(snapshot.tournamentPlayers.map((tp) => tp.id));
-
-  for (const ticket of legacyTickets) {
-    const expectedIds = mapSideBetTicketPlayerIds(ticket.playerIds, tpIds).eventParticipantIds;
-    const got = targetTicketMap.get(ticket.id);
-    if (!got) {
-      mismatches.push(`sideBetTicket ${ticket.id} missing eventParticipantIds on target`);
-      continue;
-    }
-    const gotSorted = [...got].sort((a, b) => a.localeCompare(b));
-    if (gotSorted.join(",") !== expectedIds.join(",")) {
-      mismatches.push(
-        `sideBetTicket ${ticket.id} participant ids mismatch: expected [${expectedIds.join(", ")}], got [${gotSorted.join(", ")}]`,
       );
     }
   }

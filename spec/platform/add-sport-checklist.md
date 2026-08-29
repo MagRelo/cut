@@ -131,7 +131,6 @@ Verify the new sport works through shared platform paths (pass `sportId` from `E
 
 Optional, separate track:
 
-- [ ] `PropBetModule` in `packages/sport-<id>/` + register in `server/src/sports/propBetRegistry.ts`
 - [ ] `SportEmailContent` in `server/src/sports/<id>/emailContent.ts` + register in `server/src/sports/emailContentRegistry.ts`
 
 ---
@@ -231,7 +230,7 @@ If Phase 8 shipped: `pnpm --filter server run script:contest-commentary <testCon
 Reverse of add — no platform schema or contest/wallet changes required:
 
 1. Set `Sport.isEnabled = false` (or remove seed row)
-2. Unregister from server registries (`registry.ts`, `propBetRegistry.ts`, `emailContentRegistry.ts`, `eventStatusRegistry.ts`) and `client/src/sports/registry.ts`
+2. Unregister from server registries (`registry.ts`, `emailContentRegistry.ts`, `eventStatusRegistry.ts`) and `client/src/sports/registry.ts`
 3. Delete `packages/sport-<id>/`, `server/src/sports/<id>/`, `client/src/sports/<id>/`, and sport-specific scripts/docs
 4. Run `pnpm run check:sport-boundary`
 

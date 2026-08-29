@@ -212,7 +212,6 @@ sequenceDiagram
       Plugin->>Plugin: afterLiveScoreSync optional
     end
   end
-  Core->>Core: refreshSideBetQuotes golf
   Core->>Contest: batchActivateContests
   Core->>Contest: batchSettleContests
   Note over Core,Contest: Terminal states SETTLED / CANCELLED
@@ -293,19 +292,6 @@ Contest lifecycle is sport-agnostic. The sport plugin only answers "should this 
 
 ---
 
-## Prop bets (optional per sport)
-
-Side bets and prop markets are a separate plugin lane, not part of the core `SportModule`. Golf implements a `PropBetModule` for DataGolf parlays. Other sports opt in when needed.
-
-```typescript
-interface PropBetModule {
-  ingestQuotes(lineupId: string): Promise<MarketSnapshot | null>;
-  gradeTicket(ticket, results): "WON" | "LOST" | "VOID";
-}
-```
-
----
-
 ## Adding a new sport
 
 A new sport requires:
@@ -340,11 +326,10 @@ packages/
 
 server/
   src/sports/registry.ts       # SportModule registry
-  src/sports/propBetRegistry.ts # PropBetModule registry
   src/routes/sports.ts         # GET /sports, active event, candidates
   src/routes/lineups.ts        # Lineup CRUD
   src/services/contest/        # Lifecycle + settlement
-  src/cron/scheduler.ts        # Multi-sport pipeline + side-bet quotes
+  src/cron/scheduler.ts        # Multi-sport pipeline
 
 client/
   src/sports/registry.ts       # SportUIPlugin registry

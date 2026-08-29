@@ -17,13 +17,11 @@ REFERRAL_PLATFORM_ROOT_ADDRESS    Cold address-only — organic referral-tree pa
                                   (no private key in web, cron, or server env; not a contest role)
 ```
 
-(Marketing_test side-bet wallets are a paymentToken ledger, not a signing key held by the app.)
-
 ---
 
 ## 1. Infra — Deployer (`DEPLOYER_PK`)
 
-**Shape:** One-time (or rare) deploy expense. Fund with **ETH**, run `Deploy_base.s.sol` (or Sepolia), then treat as a **cold wallet** unless you leave it as long-lived contract owner (see below). No ongoing prize or side-bet custody.
+**Shape:** One-time (or rare) deploy expense. Fund with **ETH**, run `Deploy_base.s.sol` (or Sepolia), then treat as a **cold wallet** unless you leave it as long-lived contract owner (see below). No ongoing prize custody.
 
 | Role | Purpose | Holds keys? | Env / config | Known address |
 |------|---------|-------------|--------------|---------------|
@@ -142,41 +140,6 @@ settleContest → ReferralNetworkFeeDistributed → cold platform root (when anc
 
 ---
 
-## 4. Marketing_test — Side-bet in / out
-
-**Shape:** A **paymentToken ledger** only — no meaningful ETH role beyond optional outbound-tx gas if ops sends payouts from `out`. Separate from contest escrow and the operator key.
-
-| Role | Purpose | Holds keys? | Env / config | Known address |
-|------|---------|-------------|--------------|---------------|
-| **Side-bet in** | Receives stake on place | Receive-only preferred (no app key) | `VITE_SIDE_BET_STAKE_RECIPIENT` | `0x6569E9BA175fA46FFf13bc649E0D92813E507a06` |
-| **Side-bet out** | Pays WON / void refunds after admin settle | Yes if sending | **Open** — no dedicated env; manual today | TBD |
-
-### Ledger model
-
-```text
-User stake (paymentToken) ──► in
-                              │
-Admin grades (WON / LOST / VOID)
-                              │
-         ┌────────────────────┴────────────────────┐
-         ▼                                         ▼
-out ──paymentToken──► winner / refund          retained on in (LOST)
-```
-
-| Line | Asset | Meaning |
-|------|-------|---------|
-| **In** | Payment token ↑ | Ticket stakes (`fundingTxHash`) |
-| **Out** | Payment token ↓ | Payouts / voids after settle |
-| **Net** | Payment token | Settled handle P&L ≈ stakes retained − payouts |
-
-Treat **in** and **out** as ledger columns (same EOA or two wallets — decide below). Size **out** float to cover open WON liability; sweep net from **in** on a cadence. Grading is admin (`POST /api/admin/bets/side/settle`); chain payout not automated yet.
-
-Env: client `VITE_SIDE_BET_STAKE_RECIPIENT`; server `SIDE_BETS_ENABLED` (+ DataGolf for quotes).
-
-**Open:** out ≡ in or separate hot wallet; payout automation vs manual; weekly in/out reconciliation.
-
----
-
 ## Address register
 
 | Bucket | Role | Env key | Base Sepolia | Base mainnet |
@@ -184,7 +147,5 @@ Env: client `VITE_SIDE_BET_STAKE_RECIPIENT`; server `SIDE_BETS_ENABLED` (+ DataG
 | Infra | Deployer | `DEPLOYER_PK` | | `0x853C54FB2e9d674A9a158B7F6e8F323d023f03c8` |
 | Cron-Ops | Operator (contest lifecycle + referral signer) | `OPERATOR_PK` | | `0x3f76535570b1Bb18D454bC7A8B76f2dEE1726AA5` |
 | Referral | Platform root (organic referral parent) | `referralPlatformRootAddress` (chain JSON) | `0x15c3DC71f1f7Fd975e6c82Ff84e8bcaC0E4b2acb` | `0x15c3DC71f1f7Fd975e6c82Ff84e8bcaC0E4b2acb` |
-| Marketing_test | Side-bet in | `VITE_SIDE_BET_STAKE_RECIPIENT` | | `0x6569E9BA175fA46FFf13bc649E0D92813E507a06` |
-| Marketing_test | Side-bet out | — | | |
 
 Never commit private keys. Addresses only in this doc; keys only in sealed env / secrets managers.

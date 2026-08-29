@@ -338,7 +338,7 @@ authRouter.get("/contests", requireAuth, async (c) => {
   }
 });
 
-// Synthetic activity feed: entries, predictions, side bets, payouts
+// Synthetic activity feed: entries, predictions, payouts
 authRouter.get("/transactions", requireAuth, async (c) => {
   try {
     const user = c.get("user");

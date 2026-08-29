@@ -16,7 +16,7 @@ graph TB
 
   subgraph server[Server]
     API[Hono /api]
-    REG[SportModule + PropBetModule registries]
+    REG[SportModule registry]
     SVC[Services]
     CRON[Cron pipeline]
   end
@@ -121,7 +121,6 @@ sequenceDiagram
   User->>Client: Build 4 picks + prediction
   Client->>API: POST /lineups/:eventId
   API->>Mod: validateRoster
-  API->>API: mark side-bet stale
   User->>Client: Join contest
   Client->>Chain: addPrimaryPosition
   Chain-->>Client: confirmed
@@ -160,31 +159,10 @@ Settlement uses aggregated lineup scores from `EventParticipant.total` and sport
 Every 5 minutes (`ENABLE_CRON=true`):
 
 1. For each active event → `runSportEventPipeline` (plugin sync + lineup scores)
-2. `refreshOpenSideBetQuotes` (DataGolf → `PropBetModule`)
-3. `batchActivateContests` / `batchSettleContests`
-4. `batchSyncReferralGraph`
+2. `batchActivateContests` / `batchSettleContests`
+3. `batchSyncReferralGraph`
 
 Client does **not** trigger cron; it benefits from fresher scores and contest status on next query/refetch.
-
-Side-bet **lock / settle / close** are admin API actions, not cron.
-
----
-
-## Side bets (prop markets)
-
-```mermaid
-flowchart LR
-  DG[DataGolf API] --> Mod[PropBetModule pga-golf]
-  Mod --> DB[SideBetMarket + selections]
-  Cron[refreshOpenSideBetQuotes] --> Mod
-  User[User ticket] --> API[POST /bets/side/tickets]
-  Admin[Admin settle] --> Grade[gradeTicket]
-  Grade --> DB
-```
-
-- One market per lineup (4 picks required for golf parlay)
-- Grading: `PropBetModule.gradeTicket` — "N of 4 finish top X"
-- Client reads market via `GET /bets/side/lineup/:lineupId/market`
 
 ---
 
@@ -226,7 +204,6 @@ Scripts: `pnpm --filter server run script:send-blast ...`
 | Contest ranks / timeline | Server DB (derived from scores + chain) |
 | Deposits, entry ownership, payouts | On-chain contracts |
 | Contest status | Both — server mirrors after chain ops |
-| Side-bet odds | Server DB (ingested quotes) |
 | Auth session | Privy |
 
 ---

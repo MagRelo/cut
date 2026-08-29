@@ -9,7 +9,6 @@ import {
   formatLineupResponse,
   lineupDetailInclude,
 } from "./formatLineup.js";
-import { markSideBetMarketStaleAfterRosterChange } from "../sideBets/markSideBetMarketStaleAfterRosterChange.js";
 import { validateLineupPicks, writeLineupPicks } from "./validateLineupPicks.js";
 import { getLineupEditBlock, lineupEditBlockToHttp } from "../../utils/lineupEditable.js";
 
@@ -98,8 +97,6 @@ export async function updateLineupById(input: UpdateLineupInput) {
     where: { id: input.lineupId },
     include: lineupDetailInclude,
   });
-
-  await markSideBetMarketStaleAfterRosterChange(input.lineupId);
 
   return { lineup: formatLineupResponse(saved) };
 }

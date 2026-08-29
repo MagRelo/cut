@@ -12,7 +12,7 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 ### User
 - Privy-linked (`privyUserId`), profile, `settings` JSON
 - Referral fields: `referrerAddress`, `referralGroupId`, `referredByUserId`, etc.
-- Relations: `lineups`, `contestLineups`, `wallets`, `userGroups`, `sideBetTickets`
+- Relations: `lineups`, `contestLineups`, `wallets`, `userGroups`
 
 ### UserWallet
 - `chainId` + `publicKey` (unique per chain)
@@ -111,25 +111,6 @@ See [consensus-axis.md](../../docs/platform/consensus-axis.md) for shape and cro
 
 ---
 
-## Side bets
-
-### SideBetMarket
-- One per `lineupId` (unique)
-- `eventId`, `status`, `quoteVersion`
-- DataGolf metadata: `dgEventId`, `dgEventName`, timestamps
-
-**Status:** `UNAVAILABLE` → `OPEN` → `LOCKED` → `SETTLED` / `VOID` / `CLOSED`
-
-### SideBetSelection
-- Priced cell: `hitsRequired`, `topN`, `decimalOdds`, `americanDisplay`, `quoteVersion`
-
-### SideBetTicket
-- User stake on a market
-- `eventParticipantIds` — four IDs frozen at placement
-- `status`: `OPEN` \| `WON` \| `LOST` \| `VOID` \| `REFUND_PENDING`
-
----
-
 ## Email
 
 ### EmailSendLog
@@ -155,8 +136,6 @@ erDiagram
   UserGroup ||--o{ Contest : hosts
   Contest ||--o{ ContestLineup : has
   ContestLineup }o--|| Lineup : uses
-  Lineup ||--o| SideBetMarket : optional
-  SideBetMarket ||--o{ SideBetTicket : has
 ```
 
 ---

@@ -39,7 +39,7 @@ Minimum:
 - `OPERATOR_PK` (contest + referral oracle; address derived from the key)
 - `BETTERSTACK_HEARTBEAT_URL` (recommended)
 
-Add `PGA_API_KEY`, `DATAGOLF_API_KEY`, `SIDE_BETS_ENABLED`, RPC URLs as needed.
+Add `PGA_API_KEY`, `DATAGOLF_API_KEY`, RPC URLs as needed.
 
 ### Pipeline load (PGA)
 

@@ -69,15 +69,6 @@ export interface AdminDashboardEvent {
   sportName: string;
 }
 
-export interface AdminDashboardParlayTypeRow {
-  hitsRequired: number;
-  topN: number;
-  ticketCount: number;
-  stakeTotal: number;
-  openCount: number;
-  openLiability: number;
-}
-
 export interface AdminDashboardResponse {
   generatedAt: string;
   /** Set when exactly one event is in scope; null when multiple active events are shown. */
@@ -108,24 +99,9 @@ export interface AdminDashboardResponse {
     };
     items: AdminDashboardContest[];
   };
-  parlays: {
-    marketsByStatus: Record<string, number>;
-    ticketsByStatus: Record<string, number>;
-    totals: {
-      stakeInflow: number;
-      openStake: number;
-      openLiability: number;
-      ticketCount: number;
-    };
-    byParlayType: AdminDashboardParlayTypeRow[];
-  };
   operations: {
     activeContests: number;
     contestsNeedingLock: number;
-    openSideBetMarkets: number;
-    openSideBetTickets: number;
-    lockedSideBetMarkets: number;
-    sideBetsEnabled: boolean;
     eventIsComplete: boolean;
     suggestedActions: string[];
   };
@@ -145,41 +121,4 @@ export interface AdminBatchLockContestsResponse {
   succeeded: number;
   failed: number;
   results: AdminBatchContestOperationResult[];
-}
-
-/** Row from `GET /api/admin/bets/side/event-report`. */
-export interface AdminSideBetEventReportTicket {
-  id: string;
-  userId: string;
-  userName: string | null;
-  userEmail: string | null;
-  lineupId: string;
-  lineupName: string;
-  eventId: string;
-  eventName: string;
-  marketId: string;
-  marketStatus: string;
-  hitsRequired: number;
-  topN: number;
-  stakeAmount: number;
-  decimalOddsAtPlacement: number;
-  americanDisplayAtPlacement: string;
-  quoteVersionAtPlacement: number;
-  status: string;
-  createdAt: string;
-  potentialPayout: number;
-}
-
-/** Response from `GET /api/admin/bets/side/event-report`. */
-export interface AdminSideBetEventReportResponse {
-  eventId: string | null;
-  eventIds: string[];
-  eventName: string | null;
-  ticketCount: number;
-  totals: {
-    stakeInflow: number;
-    openLiability: number;
-    openStake: number;
-  };
-  tickets: AdminSideBetEventReportTicket[];
 }

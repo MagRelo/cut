@@ -37,8 +37,7 @@ Golf-only: optional legacy `tournamentSummaries/{externalId}.json` seed into met
 Every 5 minutes — single pipeline in `src/cron/scheduler.ts`:
 
 1. Per active event: metadata, field, withdrawals, live scores (when live), contest lineup updates
-2. Side-bet quote refresh (feature-flagged)
-3. Batch activate / settle contests
-4. Referral graph sync
+2. Batch activate / settle contests
+3. Referral graph sync
 
 See [`spec/server/cron.md`](../../spec/server/cron.md) for the full sequence.

@@ -237,7 +237,6 @@ Contests are paid competitions with on-chain entry, optional Winner Pool, and or
 | **Settlement** | Are final results available within hours, not weeks? |
 | **Disputes** | Any history of reversed results after settlement? |
 | **Secondary market** | Does in-contest trading add excitement, or is the event too short / too deterministic? |
-| **Side bets / props** | Optional — does the sport offer parlay-friendly markets (golf top-20, etc.)? |
 
 ---
 

@@ -25,7 +25,7 @@ client/src/
   components/
     platform/         Sport-agnostic lineup/event UI shells
     contest/          Contest list, cards, lobby, create forms
-    lineup/           Lineup cards, side bets, prediction slider
+    lineup/           Lineup cards, prediction slider
     userGroup/        League UI
     common/           Nav, ProtectedRoute, CountdownTimer, modals
   sports/
@@ -91,7 +91,7 @@ client/src/
 - Base path: `/api` via `apiClient`
 - Auth: `Authorization: Bearer <privy_access_token>`
 - Optional: `X-Cut-Chain-Id` for multi-chain wallet resolution
-- Live APIs: `/sports`, `/lineups`, `/contests`, `/userGroups`, `/bets`, `/auth`
+- Live APIs: `/sports`, `/lineups`, `/contests`, `/userGroups`, `/auth`
 - Legacy `/tournaments` and `/lineup` return **501** — client must not call them on v4
 
 ---

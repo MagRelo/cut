@@ -5,9 +5,8 @@ import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { PageHeader } from "../components/common/PageHeader";
 import { PageSection } from "../components/layout/PageSection";
-import { AdminStatCard } from "../components/admin/AdminStatCard";
 import { AdminOperationsPanel } from "../components/admin/AdminOperationsPanel";
-import { useAdminDashboardQuery, useAdminSideBetReportQuery } from "../hooks/useAdminDashboard";
+import { useAdminDashboardQuery } from "../hooks/useAdminDashboard";
 import { queryKeys } from "../utils/queryKeys";
 import type { AdminDashboardContest } from "../types/admin";
 
@@ -112,18 +111,12 @@ export const AdminPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [contestScope, setContestScope] = useState<ContestScopeFilter>("all");
   const dashboardQuery = useAdminDashboardQuery();
-  const hasActiveEvents = (dashboardQuery.data?.events.length ?? 0) > 0;
-  const sideReportQuery = useAdminSideBetReportQuery(
-    undefined,
-    hasActiveEvents && (dashboardQuery.data?.operations.sideBetsEnabled ?? false),
-  );
 
   const refreshAll = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
   }, [queryClient]);
 
   const dashboard = dashboardQuery.data;
-  const sideReport = sideReportQuery.data;
   const loading = dashboardQuery.isLoading;
   const error =
     dashboardQuery.error instanceof Error
@@ -145,8 +138,6 @@ export const AdminPage: React.FC = () => {
     }
     return items;
   }, [contests?.items, contestScope]);
-  const parlays = dashboard?.parlays;
-  const ops = dashboard?.operations;
 
   const headerActions = (
     <div className="flex flex-wrap gap-2 items-center">
@@ -226,113 +217,8 @@ export const AdminPage: React.FC = () => {
               </div>
             </div>
             <ContestsTable contests={filteredContests} />
-            <AdminOperationsPanel section="contest" onActionComplete={refreshAll} />
+            <AdminOperationsPanel onActionComplete={refreshAll} />
           </PageSection>
-
-          {ops?.sideBetsEnabled ? (
-            <PageSection className="space-y-4">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 mb-1">Side bets</h2>
-                <p className="text-xs text-gray-500">
-                  Side-bet markets and tickets across active events.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <AdminStatCard
-                  label="Stake inflow"
-                  value={formatUsd(parlays?.totals.stakeInflow ?? 0)}
-                />
-                <AdminStatCard label="Open stake" value={formatUsd(parlays?.totals.openStake ?? 0)} />
-                <AdminStatCard
-                  label="Open liability"
-                  value={formatUsd(parlays?.totals.openLiability ?? 0)}
-                  variant="warning"
-                />
-                <AdminStatCard label="Tickets" value={parlays?.totals.ticketCount ?? 0} />
-              </div>
-
-              <div className="flex flex-wrap gap-4 text-xs text-gray-600">
-                <div>
-                  <span className="font-medium text-gray-700">Markets: </span>
-                  {Object.entries(parlays?.marketsByStatus ?? {})
-                    .map(([s, n]) => `${s} ${n}`)
-                    .join(", ") || "none"}
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Tickets: </span>
-                  {Object.entries(parlays?.ticketsByStatus ?? {})
-                    .map(([s, n]) => `${s} ${n}`)
-                    .join(", ") || "none"}
-                </div>
-              </div>
-
-              {sideReportQuery.isLoading ? (
-                <div className="flex justify-center py-6">
-                  <LoadingSpinner />
-                </div>
-              ) : sideReportQuery.isError ? (
-                <p className="text-sm text-amber-700">
-                  Ticket detail report unavailable (
-                  {sideReportQuery.error instanceof Error
-                    ? sideReportQuery.error.message
-                    : "error"}
-                  ).
-                </p>
-              ) : sideReport && sideReport.tickets.length > 0 ? (
-                <div>
-                  <div className="overflow-x-auto max-h-[400px] overflow-y-auto border border-gray-200 rounded-sm">
-                    <table className="min-w-full text-xs text-left">
-                      <thead className="bg-gray-100 text-gray-700 sticky top-0">
-                        <tr>
-                          <th className="px-2 py-2 font-medium">User</th>
-                          <th className="px-2 py-2 font-medium">Event</th>
-                          <th className="px-2 py-2 font-medium">Lineup</th>
-                          <th className="px-2 py-2 font-medium">Parlay</th>
-                          <th className="px-2 py-2 font-medium text-right">Stake</th>
-                          <th className="px-2 py-2 font-medium">Odds</th>
-                          <th className="px-2 py-2 font-medium text-right">Payout</th>
-                          <th className="px-2 py-2 font-medium">Status</th>
-                          <th className="px-2 py-2 font-medium">Mkt</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {sideReport.tickets.map((ticket) => (
-                          <tr key={ticket.id} className="hover:bg-gray-50">
-                            <td className="px-2 py-1.5 max-w-[140px] truncate" title={ticket.userEmail ?? ""}>
-                              {ticket.userName ?? ticket.userEmail ?? "—"}
-                            </td>
-                            <td className="px-2 py-1.5 max-w-[120px] truncate" title={ticket.eventName}>
-                              {ticket.eventName}
-                            </td>
-                            <td className="px-2 py-1.5 max-w-[120px] truncate" title={ticket.lineupName}>
-                              {ticket.lineupName}
-                            </td>
-                            <td className="px-2 py-1.5 whitespace-nowrap">
-                              {ticket.hitsRequired}/{ticket.topN}
-                            </td>
-                            <td className="px-2 py-1.5 text-right tabular-nums">
-                              {ticket.stakeAmount.toFixed(2)}
-                            </td>
-                            <td className="px-2 py-1.5">{ticket.americanDisplayAtPlacement}</td>
-                            <td className="px-2 py-1.5 text-right tabular-nums">
-                              {ticket.potentialPayout.toFixed(2)}
-                            </td>
-                            <td className="px-2 py-1.5">{ticket.status}</td>
-                            <td className="px-2 py-1.5">{ticket.marketStatus}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">No parlay tickets this week.</p>
-              )}
-
-              <AdminOperationsPanel section="side" onActionComplete={refreshAll} />
-            </PageSection>
-          ) : null}
         </>
       )}
     </div>

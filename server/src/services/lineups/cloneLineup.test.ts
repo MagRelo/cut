@@ -6,7 +6,6 @@ const {
   create,
   validateLineupContestScope,
   writeLineupPicks,
-  markSideBetMarketStaleAfterRosterChange,
   getContestEditBlock,
 } = vi.hoisted(() => ({
   findUnique: vi.fn(),
@@ -14,7 +13,6 @@ const {
   create: vi.fn(),
   validateLineupContestScope: vi.fn(),
   writeLineupPicks: vi.fn(),
-  markSideBetMarketStaleAfterRosterChange: vi.fn(),
   getContestEditBlock: vi.fn(),
 }));
 
@@ -30,10 +28,6 @@ vi.mock("./validateLineupContestScope.js", () => ({
 
 vi.mock("./validateLineupPicks.js", () => ({
   writeLineupPicks,
-}));
-
-vi.mock("../sideBets/markSideBetMarketStaleAfterRosterChange.js", () => ({
-  markSideBetMarketStaleAfterRosterChange,
 }));
 
 vi.mock("../../utils/lineupEditable.js", () => ({
@@ -60,7 +54,6 @@ describe("cloneLineup", () => {
     validateLineupContestScope.mockResolvedValue({ ok: true });
     getContestEditBlock.mockResolvedValue(null);
     writeLineupPicks.mockResolvedValue(undefined);
-    markSideBetMarketStaleAfterRosterChange.mockResolvedValue(undefined);
   });
 
   it("returns not_found when source lineup is missing", async () => {
@@ -190,7 +183,6 @@ describe("cloneLineup", () => {
       },
     });
     expect(writeLineupPicks).toHaveBeenCalledWith("lineup-2", ["ep-1", "ep-2"]);
-    expect(markSideBetMarketStaleAfterRosterChange).toHaveBeenCalledWith("lineup-2");
     expect(result).toMatchObject({ lineupId: "lineup-2" });
   });
 });
