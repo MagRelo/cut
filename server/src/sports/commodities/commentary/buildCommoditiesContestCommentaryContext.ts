@@ -16,8 +16,9 @@ import {
 } from "@cut/sport-sdk";
 import { prisma } from "../../../lib/prisma.js";
 import { lineupPicksInclude } from "../../../utils/prismaIncludes.js";
-import { commentaryOwnerDisplayName } from "../../../services/contest/commentaryOwnerDisplayName.js";
+import { commentaryEntriesFromLineups } from "../../../services/contest/commentaryEntriesFromLineups.js";
 import type { ContestCommentaryDiagnostics } from "../../../services/contest/commentaryDiagnostics.js";
+import { contestLineupEntryKey } from "../../../utils/hasOnchainEscrow.js";
 
 export interface BuildCommoditiesContestCommentaryContextOptions {
   popularityWeight?: number;
@@ -114,32 +115,8 @@ export async function buildCommoditiesContestCommentaryContext(
     };
   }
 
-  const enteredLineups = contest.contestLineups.filter((lineup) =>
-    Boolean(lineup.entryId),
-  );
-  const entryCountByUserId = new Map<string, number>();
-  for (const lineup of enteredLineups) {
-    entryCountByUserId.set(
-      lineup.userId,
-      (entryCountByUserId.get(lineup.userId) ?? 0) + 1,
-    );
-  }
-
-  const entries: CommoditiesContestCommentaryEntry[] = enteredLineups.map(
-    (lineup) => ({
-      entryId: lineup.entryId!,
-      displayName: commentaryOwnerDisplayName({
-        userName: lineup.user.name,
-        lineupName: lineup.lineup.name,
-        userEntryCount: entryCountByUserId.get(lineup.userId) ?? 1,
-      }),
-      prediction: lineup.lineup.prediction,
-      createdAt: lineup.createdAt,
-      eventParticipantIds: lineup.lineup.picks.map(
-        (pick) => pick.eventParticipantId,
-      ),
-    }),
-  );
+  const entries: CommoditiesContestCommentaryEntry[] =
+    commentaryEntriesFromLineups(contest.contestLineups);
   if (entries.length === 0) {
     throw new Error(`Contest ${contestId} has no entered lineups`);
   }
@@ -206,10 +183,11 @@ export async function buildCommoditiesContestCommentaryContext(
     ]),
   );
   const scoreDrift = contest.contestLineups.flatMap((lineup) => {
-    if (!lineup.entryId || lineup.score == null) return [];
-    const recomputed = recomputedByEntry.get(lineup.entryId);
+    if (lineup.score == null) return [];
+    const entryId = contestLineupEntryKey(lineup);
+    const recomputed = recomputedByEntry.get(entryId);
     if (recomputed == null || recomputed === lineup.score) return [];
-    return [{ entryId: lineup.entryId, persisted: lineup.score, recomputed }];
+    return [{ entryId, persisted: lineup.score, recomputed }];
   });
   const warnings: string[] = [];
   if (missingTotals.length > 0) {

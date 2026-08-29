@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { parseContestCommentaryFeedDocument } from "@cut/sport-pga-golf";
 import type { ActivityResponse, FeedsClient } from "@stream-io/feeds-react-sdk";
 import { type Contest } from "../../../types/contest";
+import { contestLineupIdentityKeys } from "../../../lib/hasOnchainEscrow";
 import { useContestStreamFeed } from "../../../hooks/useContestStreamFeed";
 import {
   STREAM_REACTIONS_ENABLED,
@@ -110,8 +111,8 @@ function currentUserEntryIds(
   if (!userId) return entryIds;
   for (const row of contest.contestLineups ?? []) {
     if (row.userId !== userId) continue;
-    if (typeof row.entryId === "string" && row.entryId.trim()) {
-      entryIds.add(row.entryId);
+    for (const key of contestLineupIdentityKeys(row)) {
+      entryIds.add(key);
     }
   }
   return entryIds;

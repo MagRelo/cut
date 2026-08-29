@@ -1,15 +1,12 @@
 import { parseLineupPrediction } from "@cut/sport-sdk";
 import { requireSportModule } from "../sports/registry.js";
 import type { DetailedResult } from "../services/shared/types.js";
+import { contestLineupEntryKey } from "./hasOnchainEscrow.js";
 
 export type TiebreakFields = {
   prediction: number | null;
   predictionDistance: number | null;
 };
-
-function settlementEntryId(lineup: { id: string; entryId?: string | null }): string {
-  return lineup.entryId ?? lineup.id;
-}
 
 export function tiebreakFieldsFromRankedRow(
   predictionDistance: number,
@@ -46,7 +43,7 @@ export function enrichDetailedResultsTiebreakers(
   const sportModule = requireSportModule(sportId);
   const ranked = sportModule.rankEntries(
     lineups.map((lineup) => ({
-      entryId: settlementEntryId(lineup),
+      entryId: contestLineupEntryKey(lineup),
       score: lineup.score,
       prediction: lineup.lineup.prediction,
       createdAt: lineup.createdAt,
@@ -54,7 +51,7 @@ export function enrichDetailedResultsTiebreakers(
   );
   const byEntryId = new Map(ranked.map((row) => [row.entryId, row]));
   const predictionByEntryId = new Map(
-    lineups.map((lineup) => [settlementEntryId(lineup), lineup.lineup.prediction]),
+    lineups.map((lineup) => [contestLineupEntryKey(lineup), lineup.lineup.prediction]),
   );
 
   return detailedResults.map((row) => {

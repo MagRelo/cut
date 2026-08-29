@@ -11,7 +11,7 @@ export async function resolveMentionedUserIds(params: {
   const rows = await prisma.contestLineup.findMany({
     where: {
       contestId: params.contestId,
-      entryId: { in: entryIds },
+      OR: [{ entryId: { in: entryIds } }, { id: { in: entryIds } }],
     },
     select: { userId: true },
   });

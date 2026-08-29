@@ -34,7 +34,7 @@ import { getContract, erc20Abi } from "viem";
 import { captureContestWinPayoutRecorded } from "../analytics/posthog.js";
 import { contestLineupsInclude } from "../../utils/prismaIncludes.js";
 import { sortedPlayerLastNamesFromPicks } from "../../utils/lineupPickPresentation.js";
-import { hasOnchainEscrow } from "../../utils/hasOnchainEscrow.js";
+import { contestLineupEntryKey, hasOnchainEscrow } from "../../utils/hasOnchainEscrow.js";
 import { tiebreakFieldsFromRankedRow } from "../../utils/contestResultTiebreakers.js";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
@@ -123,8 +123,11 @@ type ContestLineupForSettlement = {
   };
 };
 
-export function resolveSettlementEntryId(lineup: { id: string; entryId: string | null }): string {
-  return lineup.entryId ?? lineup.id;
+export function resolveSettlementEntryId(lineup: {
+  id: string;
+  entryId: string | null;
+}): string {
+  return contestLineupEntryKey(lineup);
 }
 
 export async function settleContest(contestId: string): Promise<OperationResult> {

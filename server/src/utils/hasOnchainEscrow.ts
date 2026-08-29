@@ -9,3 +9,11 @@ export function hasOnchainEscrow<T extends { address?: string | null }>(
 export function contestRouteKey(contest: { id: string; address?: string | null }): string {
   return contest.address ? contest.address.toLowerCase() : contest.id;
 }
+
+/** On-chain entry id when present; ContestLineup.id for free/off-chain entries. */
+export function contestLineupEntryKey(lineup: {
+  id: string;
+  entryId?: string | null;
+}): string {
+  return lineup.entryId ?? lineup.id;
+}

@@ -12,6 +12,7 @@ import { prisma } from "../lib/prisma.js";
 import { requireSportModule } from "../sports/registry.js";
 import { lineupPicksInclude } from "../utils/prismaIncludes.js";
 import { getActiveEvents } from "./events/getActiveEvents.js";
+import { contestLineupEntryKey } from "../utils/hasOnchainEscrow.js";
 
 /** Stay at or below default Prisma connection_limit. */
 const POSITION_UPDATE_CHUNK = 5;
@@ -252,9 +253,7 @@ export async function updateContestLineupsForEvent(
   for (const lineups of Object.values(contestLineupsByContest)) {
     const ranked = module.rankEntries(
       lineups.map((lineup) => ({
-        // Off-chain contests never mint an entryId; rank by contest-lineup id
-        // the same way settlement does (`resolveSettlementEntryId`).
-        entryId: lineup.entryId ?? lineup.id,
+        entryId: contestLineupEntryKey(lineup),
         score: lineup.score,
         prediction: lineup.lineup.prediction,
         createdAt: lineup.createdAt,
@@ -265,7 +264,7 @@ export async function updateContestLineupsForEvent(
     const positionUpdates: { id: string; position: number }[] = [];
 
     for (const lineup of lineups) {
-      const rankKey = lineup.entryId ?? lineup.id;
+      const rankKey = contestLineupEntryKey(lineup);
       const position = positionByEntryId.get(rankKey) ?? 999;
       if (lineup.position !== position) {
         lineup.position = position;

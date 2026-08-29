@@ -65,7 +65,7 @@ Users must be able to read / watch / mark-read their own `notification:{userId}`
 
 After `persistContestFeed`, new items are published via `publishContestFeedItemsToStream`:
 
-1. Resolve `subjects.entryIds` → `ContestLineup.userId`
+1. Resolve `subjects.entryIds` → `ContestLineup.userId` (match `entryId` or `ContestLineup.id`; free contests have no on-chain ticket id)
 2. Upsert those Stream users
 3. `addActivity` onto `contest:{contestId}` as user `cutbot`, with stable activity `id`
 4. When mentions exist: `mentioned_user_ids`, `create_notification_activity: true`, `copy_custom_to_notification: true`, `skip_push: true`
@@ -80,7 +80,7 @@ Stream failures are logged and do not fail the commentary batch.
 
 ## Client lobby
 
-- Connected users with Stream configured watch `contest:{contestId}` and render Cutbot posts. Reactions (`fire`, `like`, `money`, `laugh`, `dislike`; `enforce_unique`) are enabled via `STREAM_REACTIONS_ENABLED`. Each post includes a closed-by-default accordion listing reactors as `emoji - display name` (from `latest_reactions`, with a full `queryActivityReactions` fetch when opened and counts exceed that preview).
+- Connected users with Stream configured watch `contest:{contestId}` and render Cutbot posts. Mention highlighting matches the viewer’s `ContestLineup.entryId` or `ContestLineup.id`. Reactions (`fire`, `like`, `money`, `laugh`, `dislike`; `enforce_unique`) are enabled via `STREAM_REACTIONS_ENABLED`. Each post includes a closed-by-default accordion listing reactors as `emoji - display name` (from `latest_reactions`, with a full `queryActivityReactions` fetch when opened and counts exceed that preview).
 - Guests / Stream-unavailable paths fall back to `Contest.commentaryFeed` JSON (no reactions).
 - Cutbot tab label is `Cutbot (N)` when the user has N unread notification activities whose `custom.contestId` matches the open contest. Selecting (or viewing) the Cutbot tab marks those aggregated notification **groups** read via `markActivity({ mark_read: groupIds })`.
 
