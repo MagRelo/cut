@@ -1,5 +1,5 @@
 /**
- * Pre-settlement guard: winner must be on ReferralGraph (Option B — no oracle fallback).
+ * Pre-settlement guard: winner must be registered on ReferralGraph when referralNetworkBps > 0.
  */
 
 import { getAddress, type Hex } from "viem";
@@ -34,7 +34,7 @@ export async function assertWinnerRegisteredOnReferralGraph(params: {
   if (!registered) {
     return {
       ok: false,
-      error: `Winner ${winner} is not registered on ReferralGraph for group ${referralGroupId}. Run oracle-root bootstrap and user registration before settlement.`,
+      error: `Winner ${winner} is not registered on ReferralGraph for group ${referralGroupId}. Run platform-root bootstrap and user registration before settlement.`,
     };
   }
 

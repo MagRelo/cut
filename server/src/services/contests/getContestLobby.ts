@@ -7,7 +7,7 @@ import { isEthereumAddress, normalizeContestAddress } from "../../utils/contestR
 import { formatOnchainPaymentsForContest } from "../../utils/formatOnchainPayments.js";
 import { enrichDetailedResultsTiebreakers } from "../../utils/contestResultTiebreakers.js";
 import type { DetailedResult } from "../shared/types.js";
-import { getReferralRootAddress } from "../../lib/referralConfig.js";
+import { getReferralPlatformRootAddress } from "../../lib/referralConfig.js";
 import {
   attachReferralStakes,
   contestReferralNetworkBps,
@@ -266,7 +266,7 @@ function formatLobbyRow(row: ContestLobbyRow): ContestLobbyPayload {
         : undefined;
   let platformRootAddress: string | undefined;
   try {
-    platformRootAddress = getReferralRootAddress(row.chainId);
+    platformRootAddress = getReferralPlatformRootAddress(row.chainId);
   } catch {
     platformRootAddress = undefined;
   }

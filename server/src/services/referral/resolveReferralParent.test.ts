@@ -16,7 +16,7 @@ import {
   resolveExpectedReferralParent,
 } from "./resolveReferralParent.js";
 
-const REFERRAL_ROOT_ADDR = "0xbe18962d9c9da9681b6ef29df03055a3f329f352" as const;
+const PLATFORM_ROOT = "0xbe18962d9c9da9681b6ef29df03055a3f329f352" as const;
 
 describe("resolveReferralParent", () => {
   beforeEach(() => {
@@ -33,7 +33,7 @@ describe("resolveReferralParent", () => {
     ).toBe(false);
   });
 
-  it("resolves organic to emergency recovery referral root", async () => {
+  it("resolves organic to platform root", async () => {
     const result = await resolveExpectedReferralParent(
       {
         id: "u1",
@@ -42,9 +42,9 @@ describe("resolveReferralParent", () => {
         wallets: [],
       },
       84532,
-      REFERRAL_ROOT_ADDR,
+      PLATFORM_ROOT,
     );
-    expect(result).toEqual({ kind: "organic", parent: REFERRAL_ROOT_ADDR });
+    expect(result).toEqual({ kind: "organic", parent: PLATFORM_ROOT });
   });
 
   it("resolves invitee via referredByUserId primary wallet", async () => {
@@ -63,7 +63,33 @@ describe("resolveReferralParent", () => {
         wallets: [],
       },
       84532,
-      REFERRAL_ROOT_ADDR,
+      PLATFORM_ROOT,
+    );
+
+    expect(result).toEqual({
+      kind: "invited",
+      parent: "0x14c110d971ef58dfeda15767a89aa3b0d9ea857e",
+      inviterUserId: "inviter",
+    });
+  });
+
+  it("uses inviter primary even when referrerAddress disagrees", async () => {
+    findUnique.mockResolvedValue({
+      id: "inviter",
+      wallets: [
+        { publicKey: "0x14c110d971ef58dfeda15767a89aa3b0d9ea857e", chainId: 84532, isPrimary: true },
+      ],
+    });
+
+    const result = await resolveExpectedReferralParent(
+      {
+        id: "invitee",
+        referredByUserId: "inviter",
+        referrerAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        wallets: [],
+      },
+      84532,
+      PLATFORM_ROOT,
     );
 
     expect(result).toEqual({

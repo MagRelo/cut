@@ -3,10 +3,7 @@ import { isAddress } from "viem";
 import { prisma } from "./prisma.js";
 import { mintUSDCToUser } from "../services/mintUserTokens.js";
 import { pickWalletPublicKeyForChain } from "../utils/pickWalletForChain.js";
-import {
-  isReferralRequiredForSignup,
-  parseReferralGroupIdFromEnv,
-} from "./referralConfig.js";
+import { parseReferralGroupIdFromEnv } from "./referralConfig.js";
 
 /** JWT valid but no Cut user row — client should POST /auth/session. */
 export class AuthNeedsProvisioningError extends Error {
@@ -483,13 +480,6 @@ export async function provisionUserFromPrivy(
 
     await syncUserWalletsForPrivyUser(existingWallet.userId, privyUser, preferredChainId);
     return sessionUserAfterProvision(privyId, chainId);
-  }
-
-  const referralRequired = isReferralRequiredForSignup();
-  if (referralRequired && !normalizedReferrer) {
-    console.warn(
-      "REFERRAL_REQUIRED_FOR_SIGNUP is set; creating account without a referrer so signup is not blocked after Privy auth",
-    );
   }
 
   let referral: ResolvedSignupReferral | undefined;

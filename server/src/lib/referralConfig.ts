@@ -24,12 +24,6 @@ function chainContractsForId(chainId: number): ChainContractJson | null {
   }
 }
 
-export function isReferralRequiredForSignup(): boolean {
-  const v = process.env.REFERRAL_REQUIRED_FOR_SIGNUP?.trim().toLowerCase();
-  if (!v) return false;
-  return v === "1" || v === "true" || v === "yes" || v === "on";
-}
-
 /** Returns null if unset; throws if set but not a valid 32-byte hex string. */
 export function parseReferralGroupIdFromEnv(): Hex | null {
   const raw = process.env.REFERRAL_GROUP_ID?.trim();
@@ -93,7 +87,7 @@ export function getReferralSyncChainIdFromEnv(): number {
  * Source of truth is chain JSON written at contract deploy. Env is an optional
  * fallback for rematerialize scripts before JSON is updated — not a web/cron startup var.
  */
-export function getReferralRootAddress(chainId: number): `0x${string}` {
+export function getReferralPlatformRootAddress(chainId: number): `0x${string}` {
   if (chainId !== 8453 && chainId !== 84532) {
     throw new Error(`Unsupported referral chain id: ${chainId}`);
   }

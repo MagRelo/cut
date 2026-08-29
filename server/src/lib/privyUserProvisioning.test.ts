@@ -232,7 +232,6 @@ describe("tryResolveReferralForNewUser", () => {
 
 describe("provisionUserFromPrivy referral", () => {
   const originalGroupId = process.env.REFERRAL_GROUP_ID;
-  const originalRequired = process.env.REFERRAL_REQUIRED_FOR_SIGNUP;
 
   const privyUser = {
     id: "did:privy:new",
@@ -261,13 +260,11 @@ describe("provisionUserFromPrivy referral", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.REFERRAL_GROUP_ID = GROUP_ID;
-    delete process.env.REFERRAL_REQUIRED_FOR_SIGNUP;
     stubNewUserDb();
   });
 
   afterEach(() => {
     process.env.REFERRAL_GROUP_ID = originalGroupId;
-    process.env.REFERRAL_REQUIRED_FOR_SIGNUP = originalRequired;
   });
 
   it("creates the user when the referrer is not a Cut user yet", async () => {
@@ -288,13 +285,6 @@ describe("provisionUserFromPrivy referral", () => {
   it("creates the user when the referrer header is not a valid address", async () => {
     const { provisionUserFromPrivy } = await import("./privyUserProvisioning.js");
     await provisionUserFromPrivy(privyUser, 84532, { referrerAddress: "not-an-address" });
-    expect(prismaMock.user.create).toHaveBeenCalled();
-  });
-
-  it("creates the user when an invite is required but none was sent", async () => {
-    process.env.REFERRAL_REQUIRED_FOR_SIGNUP = "true";
-    const { provisionUserFromPrivy } = await import("./privyUserProvisioning.js");
-    await provisionUserFromPrivy(privyUser, 84532);
     expect(prismaMock.user.create).toHaveBeenCalled();
   });
 

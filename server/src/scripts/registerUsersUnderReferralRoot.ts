@@ -1,5 +1,5 @@
 /**
- * Register organic users under the emergency-recovery referral root (no invite fields).
+ * Register organic users under the platform root (no invite fields).
  * Prefer `script:rematerialize-referral-graph` for a full DB→chain rebuild.
  *
  *   pnpm --filter server run script:register-users-under-referral-root
@@ -12,15 +12,14 @@ import { prisma } from "../lib/prisma.js";
 import { getReferralSyncChainIdFromEnv } from "../lib/referralConfig.js";
 import {
   bootstrapReferralRoot,
-  isReferralRootRegistered,
+  isPlatformRootRegistered,
   isWalletRegisteredOnGraph,
   registerWalletOnReferralGraph,
   resolveReferralGraphSetup,
 } from "../services/referral/referralGraphSetup.js";
 import { referralGraphGetReferrer } from "../services/referral/referralGraph.js";
+import { ALREADY_ON_CHAIN } from "../services/referral/syncReferralGraphUser.js";
 import { pickWalletPublicKeyForChain } from "../utils/pickWalletForChain.js";
-
-const ALREADY_ON_CHAIN = "already_registered";
 
 function hasDryRunFlag(): boolean {
   return process.argv.includes("--dry-run") || process.argv.includes("dry-run");
@@ -31,13 +30,13 @@ async function main() {
   const dryRun = hasDryRunFlag();
   const setup = resolveReferralGraphSetup(chainId);
 
-  if (!(await isReferralRootRegistered(setup))) {
+  if (!(await isPlatformRootRegistered(setup))) {
     const boot = await bootstrapReferralRoot(setup, { dryRun });
     if (!dryRun && !boot.registered && boot.txHash == null) {
-      throw new Error("Referral root is not registered; run bootstrap first");
+      throw new Error("Platform root is not registered; run bootstrap first");
     }
     if (dryRun) {
-      console.log("[dry-run] would bootstrap emergency recovery under REFERRAL_ROOT");
+      console.log("[dry-run] would bootstrap platform root under REFERRAL_ROOT");
     }
   }
 
@@ -58,7 +57,7 @@ async function main() {
     const wallet = pickWalletPublicKeyForChain(u.wallets, chainId);
     if (!wallet) continue;
 
-    if (wallet.toLowerCase() === setup.referralRoot.toLowerCase()) {
+    if (wallet.toLowerCase() === setup.platformRoot.toLowerCase()) {
       skippedAlready += 1;
       continue;
     }
@@ -71,10 +70,10 @@ async function main() {
           getAddress(wallet).toLowerCase() as `0x${string}`,
           setup.groupId,
         );
-        if (parent !== setup.referralRoot.toLowerCase()) {
+        if (parent !== setup.platformRoot.toLowerCase()) {
           failed += 1;
           console.error(
-            `failed user=${u.id}: already registered under ${parent}, expected referralRoot`,
+            `failed user=${u.id}: already registered under ${parent}, expected platform root`,
           );
           continue;
         }
@@ -95,7 +94,7 @@ async function main() {
       const { txHash, skipped } = await registerWalletOnReferralGraph(
         setup,
         wallet,
-        setup.referralRoot,
+        setup.platformRoot,
         { dryRun },
       );
 
@@ -128,7 +127,7 @@ async function main() {
       {
         chainId,
         dryRun,
-        referralRoot: setup.referralRoot,
+        platformRoot: setup.platformRoot,
         candidates: users.length,
         registered,
         skippedAlready,

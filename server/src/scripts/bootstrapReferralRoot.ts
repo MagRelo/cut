@@ -1,5 +1,5 @@
 /**
- * Register cold emergency-recovery address under REFERRAL_ROOT on ReferralGraph.
+ * Register cold platform-root address under REFERRAL_ROOT on ReferralGraph.
  *
  *   pnpm --filter server run script:bootstrap-referral-root
  *   pnpm --filter server run script:bootstrap-referral-root --dry-run
@@ -9,7 +9,7 @@ import "dotenv/config";
 import { getReferralSyncChainIdFromEnv } from "../lib/referralConfig.js";
 import {
   bootstrapReferralRoot,
-  isReferralRootRegistered,
+  isPlatformRootRegistered,
   resolveReferralGraphSetup,
 } from "../services/referral/referralGraphSetup.js";
 
@@ -22,13 +22,13 @@ async function main() {
   const dryRun = hasDryRunFlag();
   const setup = resolveReferralGraphSetup(chainId);
 
-  const already = await isReferralRootRegistered(setup);
+  const already = await isPlatformRootRegistered(setup);
   if (already) {
     console.log(
       JSON.stringify(
         {
           chainId,
-          referralRoot: setup.referralRoot,
+          platformRoot: setup.platformRoot,
           graphAddress: setup.graphAddress,
           status: "already_registered",
         },
@@ -45,7 +45,7 @@ async function main() {
       {
         chainId,
         dryRun,
-        referralRoot: setup.referralRoot,
+        platformRoot: setup.platformRoot,
         graphAddress: setup.graphAddress,
         ...result,
       },

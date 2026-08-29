@@ -13,20 +13,18 @@ import {
 } from "./referralGraph.js";
 import {
   bootstrapReferralRoot,
-  isReferralRootRegistered,
-  isWalletRegisteredOnGraph,
-  registerWalletOnReferralGraph,
+  isPlatformRootRegistered,
   resolveReferralGraphSetup,
-  type ReferralGraphSetup,
 } from "./referralGraphSetup.js";
 import {
   isOrganicReferralUser,
   resolveExpectedReferralParent,
   type ReferralParentUser,
 } from "./resolveReferralParent.js";
-
-const ALREADY_ON_CHAIN = "already_registered";
-const MAX_WAVES = 500;
+import {
+  runRegistrationWaves,
+  syncUserOntoGraph,
+} from "./syncReferralGraphUser.js";
 
 export type RematerializeOptions = {
   chainId?: number;
@@ -40,7 +38,7 @@ export type RematerializeResult = {
   dryRun: boolean;
   resetHashes: boolean;
   hashesCleared: number;
-  oracleBootstrapped: boolean;
+  platformRootBootstrapped: boolean;
   organicsRegistered: number;
   organicsSkipped: number;
   inviteesRegistered: number;
@@ -91,23 +89,6 @@ async function resetSyncHashes(chainId: number, dryRun: boolean): Promise<number
   return result.count;
 }
 
-async function markSynced(
-  userId: string,
-  setup: ReferralGraphSetup,
-  txHash: string,
-  dryRun: boolean,
-): Promise<void> {
-  if (dryRun) return;
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      referralOnchainTxHash: txHash,
-      referralGroupId: setup.groupId,
-      referralChainId: setup.chainId,
-    },
-  });
-}
-
 export async function rematerializeReferralGraph(
   options: RematerializeOptions = {},
 ): Promise<RematerializeResult> {
@@ -121,7 +102,7 @@ export async function rematerializeReferralGraph(
     dryRun,
     resetHashes,
     hashesCleared: 0,
-    oracleBootstrapped: false,
+    platformRootBootstrapped: false,
     organicsRegistered: 0,
     organicsSkipped: 0,
     inviteesRegistered: 0,
@@ -132,7 +113,6 @@ export async function rematerializeReferralGraph(
     auditOk: 0,
   };
 
-  // Phase 0
   if (resetHashes) {
     result.hashesCleared = await resetSyncHashes(chainId, dryRun);
     console.log(
@@ -140,216 +120,77 @@ export async function rematerializeReferralGraph(
     );
   }
 
-  // Phase 1
-  if (!(await isReferralRootRegistered(setup))) {
+  if (!(await isPlatformRootRegistered(setup))) {
     const boot = await bootstrapReferralRoot(setup, { dryRun });
-    result.oracleBootstrapped = boot.registered || boot.txHash != null;
+    result.platformRootBootstrapped = boot.registered || boot.txHash != null;
     console.log(
       dryRun
-        ? "[dry-run] would bootstrap oracle under REFERRAL_ROOT"
-        : `oracle bootstrap: registered=${boot.registered} tx=${boot.txHash}`,
+        ? "[dry-run] would bootstrap platform root under REFERRAL_ROOT"
+        : `platform root bootstrap: registered=${boot.registered} tx=${boot.txHash}`,
     );
   } else {
-    console.log("oracle already registered under REFERRAL_ROOT");
+    console.log("platform root already registered under REFERRAL_ROOT");
   }
 
   const users = await loadUsersForChain(chainId);
-  const organics = users.filter((u) => isOrganicReferralUser(u));
   const invitees = users.filter((u) => !isOrganicReferralUser(u));
+  const toSync: UserRow[] = [];
 
-  // Phase 2 — organics
-  for (const u of organics) {
+  for (const u of users) {
     const wallet = pickWalletPublicKeyForChain(u.wallets, chainId);
-    if (!wallet) continue;
-    if (getAddress(wallet).toLowerCase() === setup.referralRoot.toLowerCase()) {
-      result.organicsSkipped += 1;
-      continue;
-    }
-
-    try {
-      if (await isWalletRegisteredOnGraph(setup, wallet)) {
-        const onChainParent = await referralGraphGetReferrer(
-          setup.chainId,
-          setup.graphAddress,
-          getAddress(wallet).toLowerCase() as `0x${string}`,
-          setup.groupId,
-        );
-        if (onChainParent !== setup.referralRoot.toLowerCase()) {
-          result.failed.push({
-            userId: u.id,
-            name: u.name,
-            error: `organic wallet already registered under ${onChainParent}, expected oracle`,
-          });
-          continue;
-        }
-        await markSynced(u.id, setup, ALREADY_ON_CHAIN, dryRun);
-        result.organicsSkipped += 1;
-        continue;
-      }
-
-      const { txHash, skipped } = await registerWalletOnReferralGraph(
-        setup,
-        wallet,
-        setup.referralRoot,
-        { dryRun },
-      );
-      if (skipped) {
-        result.organicsSkipped += 1;
-        continue;
-      }
-      await markSynced(u.id, setup, txHash ?? (dryRun ? "dry-run" : ALREADY_ON_CHAIN), dryRun);
-      result.organicsRegistered += 1;
-      console.log(
-        `${dryRun ? "[dry-run] would register" : "registered"} organic user=${u.name} wallet=${wallet}`,
-      );
-    } catch (e) {
-      result.failed.push({
-        userId: u.id,
-        name: u.name,
-        error: e instanceof Error ? e.message : String(e),
-      });
-    }
-  }
-
-  // Phase 3 — invitees in waves (never under oracle)
-  const queue = [...invitees];
-  let wave = 0;
-  while (queue.length > 0 && wave < MAX_WAVES) {
-    wave += 1;
-    const notReady: UserRow[] = [];
-    let progressed = false;
-
-    for (const u of queue) {
-      const wallet = pickWalletPublicKeyForChain(u.wallets, chainId);
-      if (!wallet) {
+    if (!wallet) {
+      if (!isOrganicReferralUser(u)) {
         result.deferred.push({
           userId: u.id,
           name: u.name,
           reason: `no wallet on chain ${chainId}`,
         });
-        continue;
       }
-
-      const resolved = await resolveExpectedReferralParent(u, chainId, setup.referralRoot);
-      if (resolved.kind === "error") {
-        result.deferred.push({ userId: u.id, name: u.name, reason: resolved.error });
-        continue;
-      }
-      if (resolved.kind === "organic") {
-        result.failed.push({
-          userId: u.id,
-          name: u.name,
-          error: "invitee resolved as organic (bug)",
-        });
-        continue;
-      }
-
-      const parent = resolved.parent;
-      if (parent === setup.referralRoot.toLowerCase()) {
-        result.failed.push({
-          userId: u.id,
-          name: u.name,
-          error: "refusing to register invitee under oracle",
-        });
-        continue;
-      }
-
-      try {
-        const parentOnChain = await referralGraphIsRegistered(
-          setup.chainId,
-          setup.graphAddress,
-          parent,
-          setup.groupId,
-        );
-        if (!parentOnChain) {
-          notReady.push(u);
-          continue;
-        }
-
-        if (await isWalletRegisteredOnGraph(setup, wallet)) {
-          const onChainParent = await referralGraphGetReferrer(
-            setup.chainId,
-            setup.graphAddress,
-            getAddress(wallet).toLowerCase() as `0x${string}`,
-            setup.groupId,
-          );
-          if (onChainParent !== parent) {
-            result.failed.push({
-              userId: u.id,
-              name: u.name,
-              error: `already registered under ${onChainParent}, expected ${parent}`,
-            });
-            continue;
-          }
-          await markSynced(u.id, setup, ALREADY_ON_CHAIN, dryRun);
-          result.inviteesSkipped += 1;
-          progressed = true;
-          continue;
-        }
-
-        const { txHash, skipped } = await registerWalletOnReferralGraph(
-          setup,
-          wallet,
-          parent,
-          { dryRun },
-        );
-        if (skipped) {
-          const onChainParent = await referralGraphGetReferrer(
-            setup.chainId,
-            setup.graphAddress,
-            getAddress(wallet).toLowerCase() as `0x${string}`,
-            setup.groupId,
-          );
-          if (onChainParent !== parent) {
-            result.failed.push({
-              userId: u.id,
-              name: u.name,
-              error: `skipped register but parent is ${onChainParent}, expected ${parent}`,
-            });
-            continue;
-          }
-          await markSynced(u.id, setup, ALREADY_ON_CHAIN, dryRun);
-          result.inviteesSkipped += 1;
-          progressed = true;
-          continue;
-        }
-
-        await markSynced(u.id, setup, txHash ?? (dryRun ? "dry-run" : ALREADY_ON_CHAIN), dryRun);
-        result.inviteesRegistered += 1;
-        progressed = true;
-        console.log(
-          `${dryRun ? "[dry-run] would register" : "registered"} invitee user=${u.name} wallet=${wallet} parent=${parent}`,
-        );
-      } catch (e) {
-        result.failed.push({
-          userId: u.id,
-          name: u.name,
-          error: e instanceof Error ? e.message : String(e),
-        });
-      }
+      continue;
     }
+    if (getAddress(wallet).toLowerCase() === setup.platformRoot.toLowerCase()) {
+      result.organicsSkipped += 1;
+      continue;
+    }
+    toSync.push(u);
+  }
 
-    queue.length = 0;
-    queue.push(...notReady);
-    if (!progressed) {
-      for (const u of notReady) {
-        result.deferred.push({
-          userId: u.id,
-          name: u.name,
-          reason: "parent not registered on chain yet",
-        });
+  const waveOutcomes = await runRegistrationWaves(toSync, (u) =>
+    syncUserOntoGraph(u, setup, { dryRun, stampChainAndGroup: true }),
+  );
+
+  for (const { user: u, outcome } of waveOutcomes) {
+    const organic = isOrganicReferralUser(u);
+    if (outcome.kind === "synced") {
+      if (organic) {
+        if (outcome.skipped) result.organicsSkipped += 1;
+        else result.organicsRegistered += 1;
+      } else if (outcome.skipped) {
+        result.inviteesSkipped += 1;
+      } else {
+        result.inviteesRegistered += 1;
       }
-      break;
+      if (!outcome.skipped) {
+        const wallet = pickWalletPublicKeyForChain(u.wallets, chainId);
+        console.log(
+          organic
+            ? `${dryRun ? "[dry-run] would register" : "registered"} organic user=${u.name} wallet=${wallet}`
+            : `${dryRun ? "[dry-run] would register" : "registered"} invitee user=${u.name} wallet=${wallet}`,
+        );
+      }
+    } else if (outcome.kind === "failed") {
+      result.failed.push({ userId: u.id, name: u.name, error: outcome.error });
+    } else {
+      result.deferred.push({ userId: u.id, name: u.name, reason: outcome.reason });
     }
   }
 
-  // Phase 4 — audit invitees
   if (!dryRun) {
     for (const u of invitees) {
       const wallet = pickWalletPublicKeyForChain(u.wallets, chainId);
       if (!wallet) continue;
 
-      const resolved = await resolveExpectedReferralParent(u, chainId, setup.referralRoot);
+      const resolved = await resolveExpectedReferralParent(u, chainId, setup.platformRoot);
       if (resolved.kind !== "invited") continue;
 
       const userAddr = getAddress(wallet).toLowerCase() as `0x${string}`;

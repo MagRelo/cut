@@ -1,31 +1,18 @@
 /**
  * Push pending users to ReferralGraph (one register tx per user).
- * Organic users → emergency recovery referral root; invited users → inviter primary when on-chain.
+ * Organic users → platform root; invited users → inviter primary when on-chain.
  */
 
-import { getAddress, type Hex } from "viem";
+import { type Hex } from "viem";
 import { prisma } from "../../lib/prisma.js";
 import { getReferralGraphAddress } from "../../lib/referralConfig.js";
+import { resolveReferralGraphSetup } from "../referral/referralGraphSetup.js";
 import {
-  referralGraphGetReferrer,
-  referralGraphIsRegistered,
-} from "../referral/referralGraph.js";
-import {
-  bootstrapReferralRoot,
-  isReferralRootRegistered,
-  registerWalletOnReferralGraph,
-  resolveReferralGraphSetup,
-  type ReferralGraphSetup,
-} from "../referral/referralGraphSetup.js";
-import {
-  isOrganicReferralUser,
-  resolveExpectedReferralParent,
-} from "../referral/resolveReferralParent.js";
+  runRegistrationWaves,
+  syncUserOntoGraph,
+} from "../referral/syncReferralGraphUser.js";
 import { type BatchOperationResult } from "../shared/types.js";
 import { pickWalletPublicKeyForChain } from "../../utils/pickWalletForChain.js";
-
-const ALREADY_ON_CHAIN = "already_registered";
-const MAX_WAVES = 500;
 
 type PendingUser = Awaited<ReturnType<typeof loadPendingUsers>>[number];
 
@@ -46,32 +33,14 @@ function userWalletOnChain(u: PendingUser): string | null {
   return pickWalletPublicKeyForChain(u.wallets, cid);
 }
 
-async function resolveReferrerForSync(
-  u: PendingUser,
-  setup: ReferralGraphSetup,
-): Promise<{ ready: boolean; referrer: `0x${string}` | null; error?: string }> {
-  const resolved = await resolveExpectedReferralParent(u, setup.chainId, setup.referralRoot);
-
-  if (resolved.kind === "error") {
-    return { ready: false, referrer: null, error: resolved.error };
+function deferredBatchError(reason: string): string {
+  if (reason === "parent not registered on chain yet") {
+    return "deferred: referrer not registered on chain yet";
   }
-
-  if (resolved.kind === "organic") {
-    if (!(await isReferralRootRegistered(setup))) {
-      await bootstrapReferralRoot(setup);
-    }
-    const ready = await isReferralRootRegistered(setup);
-    return { ready, referrer: ready ? setup.referralRoot : null };
+  if (reason === "platform root not registered on chain yet") {
+    return "deferred: platform root not registered on chain yet";
   }
-
-  // Invited: never use referral root; wait until parent is on-chain
-  const onChain = await referralGraphIsRegistered(
-    setup.chainId,
-    setup.graphAddress,
-    resolved.parent,
-    setup.groupId,
-  );
-  return { ready: onChain, referrer: resolved.parent };
+  return `deferred: ${reason}`;
 }
 
 export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
@@ -83,7 +52,6 @@ export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
   const results: BatchOperationResult["results"] = [];
   let succeeded = 0;
   let failed = 0;
-
   const queue: PendingUser[] = [];
 
   for (const u of pending) {
@@ -103,52 +71,8 @@ export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
     }
 
     try {
-      const setup = resolveReferralGraphSetup(chainId);
-      const registered = await referralGraphIsRegistered(
-        chainId,
-        graphAddr,
-        getAddress(userAddr).toLowerCase() as `0x${string}`,
-        groupId,
-      );
-
-      if (registered) {
-        const expected = await resolveExpectedReferralParent(u, chainId, setup.referralRoot);
-        if (expected.kind === "error") {
-          failed += 1;
-          results.push({
-            success: false,
-            contestId: u.id,
-            error: `already on-chain but cannot resolve expected parent: ${expected.error}`,
-          });
-          continue;
-        }
-
-        const actual = await referralGraphGetReferrer(
-          chainId,
-          graphAddr,
-          getAddress(userAddr).toLowerCase() as `0x${string}`,
-          groupId,
-        );
-        const expectedParent = expected.parent.toLowerCase();
-        if (actual !== expectedParent) {
-          failed += 1;
-          results.push({
-            success: false,
-            contestId: u.id,
-            error: `parent mismatch: on-chain ${actual}, expected ${expectedParent}`,
-          });
-          continue;
-        }
-
-        await prisma.user.update({
-          where: { id: u.id },
-          data: { referralOnchainTxHash: ALREADY_ON_CHAIN },
-        });
-        succeeded += 1;
-        results.push({ success: true, contestId: u.id });
-      } else {
-        queue.push(u);
-      }
+      resolveReferralGraphSetup(chainId);
+      queue.push(u);
     } catch (e) {
       failed += 1;
       results.push({
@@ -159,143 +83,33 @@ export async function batchSyncReferralGraph(): Promise<BatchOperationResult> {
     }
   }
 
-  let wave = 0;
-  while (queue.length > 0 && wave < MAX_WAVES) {
-    wave += 1;
-    const notReady: PendingUser[] = [];
-    let progressed = false;
+  const waveOutcomes = await runRegistrationWaves(queue, async (u) => {
+    const setup = resolveReferralGraphSetup(u.referralChainId!);
+    return syncUserOntoGraph(u, setup);
+  });
 
-    for (const u of queue) {
-      const chainId = u.referralChainId!;
-      const userAddr = userWalletOnChain(u);
-      if (!userAddr) {
-        failed += 1;
-        results.push({
-          success: false,
-          contestId: u.id,
-          error: "Missing wallet for chain",
-        });
-        continue;
-      }
-
-      let setup: ReferralGraphSetup;
-      try {
-        setup = resolveReferralGraphSetup(chainId);
-      } catch (e) {
-        failed += 1;
-        results.push({
-          success: false,
-          contestId: u.id,
-          error: e instanceof Error ? e.message : String(e),
-        });
-        continue;
-      }
-
-      // Refuse to register invitees under oracle if resolution somehow yields organic incorrectly
-      if (!isOrganicReferralUser(u)) {
-        const expected = await resolveExpectedReferralParent(u, chainId, setup.referralRoot);
-        if (expected.kind === "invited" && expected.parent === setup.referralRoot.toLowerCase()) {
-          failed += 1;
-          results.push({
-            success: false,
-            contestId: u.id,
-            error: "refusing to register invitee under oracle",
-          });
-          continue;
-        }
-      }
-
-      const { ready, referrer, error } = await resolveReferrerForSync(u, setup);
-      if (!ready || !referrer) {
-        if (error && !u.referrerAddress && !u.referredByUserId) {
-          // organic waiting on oracle — defer
-        } else if (error && (u.referrerAddress || u.referredByUserId)) {
-          // keep deferred for missing parent wallet etc. — only fail hard errors later
-        }
-        notReady.push(u);
-        continue;
-      }
-
-      if (userAddr.toLowerCase() === referrer.toLowerCase()) {
-        failed += 1;
-        results.push({
-          success: false,
-          contestId: u.id,
-          error: "User wallet cannot be its own referrer",
-        });
-        continue;
-      }
-
-      try {
-        const { txHash, skipped } = await registerWalletOnReferralGraph(
-          setup,
-          userAddr,
-          referrer,
-        );
-
-        if (skipped && !txHash) {
-          const actual = await referralGraphGetReferrer(
-            setup.chainId,
-            setup.graphAddress,
-            getAddress(userAddr).toLowerCase() as `0x${string}`,
-            setup.groupId,
-          );
-          if (actual !== referrer.toLowerCase()) {
-            failed += 1;
-            results.push({
-              success: false,
-              contestId: u.id,
-              error: `parent mismatch after skip: on-chain ${actual}, expected ${referrer}`,
-            });
-            continue;
-          }
-          await prisma.user.update({
-            where: { id: u.id },
-            data: { referralOnchainTxHash: ALREADY_ON_CHAIN },
-          });
-          succeeded += 1;
-          results.push({ success: true, contestId: u.id });
-          progressed = true;
-          continue;
-        }
-
-        if (txHash) {
-          await prisma.user.update({
-            where: { id: u.id },
-            data: { referralOnchainTxHash: txHash },
-          });
-          succeeded += 1;
-          results.push({ success: true, contestId: u.id, transactionHash: txHash });
-          progressed = true;
-        }
-      } catch (e) {
-        failed += 1;
-        results.push({
-          success: false,
-          contestId: u.id,
-          error: e instanceof Error ? e.message : String(e),
-        });
-      }
+  let deferred = 0;
+  for (const { user: u, outcome } of waveOutcomes) {
+    if (outcome.kind === "synced") {
+      succeeded += 1;
+      results.push({
+        success: true,
+        contestId: u.id,
+        ...(outcome.txHash && outcome.txHash.startsWith("0x")
+          ? { transactionHash: outcome.txHash as `0x${string}` }
+          : {}),
+      });
+    } else if (outcome.kind === "failed") {
+      failed += 1;
+      results.push({ success: false, contestId: u.id, error: outcome.error });
+    } else {
+      deferred += 1;
+      results.push({
+        success: false,
+        contestId: u.id,
+        error: deferredBatchError(outcome.reason),
+      });
     }
-
-    queue.length = 0;
-    queue.push(...notReady);
-
-    if (!progressed) {
-      break;
-    }
-  }
-
-  const deferred = queue.length;
-  for (const u of queue) {
-    results.push({
-      success: false,
-      contestId: u.id,
-      error:
-        u.referrerAddress || u.referredByUserId
-          ? "deferred: referrer not registered on chain yet"
-          : "deferred: referral root not registered on chain yet",
-    });
   }
 
   return {

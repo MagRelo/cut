@@ -1,12 +1,12 @@
 /**
- * Referral graph setup: emergency recovery under REFERRAL_ROOT; organics under that cold root.
- * The hot operator signs register/batchRegister but is not a graph ancestor.
+ * Referral graph setup: platform root under REFERRAL_ROOT; organics under that cold root.
+ * The hot operator (graph oracle) signs register/batchRegister but is not a graph ancestor.
  */
 
 import { getAddress, type Hex } from "viem";
 import {
   getReferralGraphAddress,
-  getReferralRootAddress,
+  getReferralPlatformRootAddress,
   REFERRAL_ROOT,
   requireReferralGroupId,
 } from "../../lib/referralConfig.js";
@@ -20,8 +20,8 @@ export type ReferralGraphSetup = {
   chainId: number;
   graphAddress: `0x${string}`;
   groupId: Hex;
-  /** Cold emergency-recovery address (tree root under REFERRAL_ROOT). */
-  referralRoot: `0x${string}`;
+  /** Cold platform-root wallet (tree parent under REFERRAL_ROOT). */
+  platformRoot: `0x${string}`;
 };
 
 export function resolveReferralGraphSetup(chainId: number): ReferralGraphSetup {
@@ -33,26 +33,26 @@ export function resolveReferralGraphSetup(chainId: number): ReferralGraphSetup {
     chainId,
     graphAddress,
     groupId: requireReferralGroupId(),
-    referralRoot: getReferralRootAddress(chainId),
+    platformRoot: getReferralPlatformRootAddress(chainId),
   };
 }
 
-export async function isReferralRootRegistered(setup: ReferralGraphSetup): Promise<boolean> {
+export async function isPlatformRootRegistered(setup: ReferralGraphSetup): Promise<boolean> {
   return referralGraphIsRegistered(
     setup.chainId,
     setup.graphAddress,
-    setup.referralRoot,
+    setup.platformRoot,
     setup.groupId,
   );
 }
 
-/** Register cold emergency-recovery wallet under REFERRAL_ROOT (idempotent). */
+/** Register cold platform-root wallet under REFERRAL_ROOT (idempotent). */
 export async function bootstrapReferralRoot(
   setup: ReferralGraphSetup,
   options?: { dryRun?: boolean },
 ): Promise<{ registered: boolean; txHash: Hex | null }> {
   const dryRun = options?.dryRun ?? false;
-  if (await isReferralRootRegistered(setup)) {
+  if (await isPlatformRootRegistered(setup)) {
     return { registered: false, txHash: null };
   }
   if (dryRun) {
@@ -61,7 +61,7 @@ export async function bootstrapReferralRoot(
   const txHash = await referralGraphRegister(
     setup.chainId,
     setup.graphAddress,
-    setup.referralRoot,
+    setup.platformRoot,
     REFERRAL_ROOT,
     setup.groupId,
   );
@@ -76,7 +76,7 @@ export async function isWalletRegisteredOnGraph(
   return referralGraphIsRegistered(setup.chainId, setup.graphAddress, addr, setup.groupId);
 }
 
-/** Register one user wallet with a referrer (emergency recovery or inviter). */
+/** Register one user wallet with a referrer (platform root or inviter). */
 export async function registerWalletOnReferralGraph(
   setup: ReferralGraphSetup,
   userWallet: string,

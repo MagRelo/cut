@@ -1,6 +1,6 @@
 # Referral network (on-chain)
 
-Contest **referral network fees** (typically 5% of gross TVL at settlement, `referralNetworkBps = 500`) are deducted once during `settleContest`. `ContestController` resolves the winning entry owner's referrer chain via `ReferralGraph` + `RewardCalculator` and transfers the fee from contest balance, or restores unallocated fee proportionally to the primary and secondary prize pools when no payable referrer exists.
+Contest **referral network fees** (typically 7% of gross TVL at settlement, `referralNetworkBps = 700`) are deducted once during `settleContest`. `ContestController` resolves the winning entry owner's referrer chain via `ReferralGraph` + `RewardCalculator` and transfers the fee from contest balance, or restores unallocated fee proportionally to the primary and secondary prize pools when no payable referrer exists.
 
 Contract design: [`contracts/lib/contestCatalyst/docs/ReferralNetworkIntegration.md`](../../contracts/lib/contestCatalyst/docs/ReferralNetworkIntegration.md). Cron: [`spec/server/cron.md`](../../spec/server/cron.md).
 
@@ -43,7 +43,7 @@ flowchart TB
 
   ROOT --> PlatformRoot
   PlatformRoot --> Organic
-  Invited -->|"referrer on-chain"| Invited
+  Organic -->|"referrer on-chain"| Invited
   Settle --> Fee
   Fee --> PlatformRoot
 ```
@@ -139,13 +139,13 @@ pnpm --filter server run script:rematerialize-referral-graph --reset-hashes
 | Script | Role |
 |--------|------|
 | `rematerializeReferralGraph.ts` | Phase 0 optional hash reset → platform root → organics → invite waves → parent audit |
-| `bootstrapReferralRoot.ts` | Thin helper: `register(referralRoot, REFERRAL_ROOT, groupId)` |
+| `bootstrapReferralRoot.ts` | Thin helper: `register(platformRoot, REFERRAL_ROOT, groupId)` |
 | `registerUsersUnderReferralRoot.ts` | Organics only (`referredByUserId` and `referrerAddress` null) |
 | `batchSyncReferralGraph.ts` | Ongoing cron: pending `referralOnchainTxHash: null`; fails on parent mismatch |
 
-Setup services expose `referralRoot` (the platform-root address).
+Setup services expose `platformRoot` (the cold platform-root address).
 
-**Do not** register invited users under the referral root as “missing parents.” ReferralGraph cannot re-parent.
+**Do not** register invited users under the platform root as “missing parents.” ReferralGraph cannot re-parent.
 
 ---
 
@@ -155,6 +155,7 @@ Setup services expose `referralRoot` (the platform-root address).
 |---------|------|
 | Referral config | `server/src/lib/referralConfig.ts` |
 | Lobby referral-stake overlay | `server/src/services/referral/referralStakeForViewer.ts` |
+| On-chain user sync (cron + rematerialize) | `server/src/services/referral/syncReferralGraphUser.ts` |
 | Platform root env (deploy only) | `contracts/env.example` / forge `ReferralDeployGuard` |
 | Graph setup / rematerialize | `server/src/services/referral/` |
 | Settlement indexing | `server/src/services/contest/recordSettlementReferralPayments.ts` |

@@ -1,6 +1,6 @@
 /**
  * Resolve expected on-chain parent from durable DB invite fields.
- * Organics → emergency recovery (referral root); invitees → inviter primary wallet on the target chain.
+ * Organics → platform root; invitees → inviter primary wallet on the target chain.
  */
 
 import { getAddress, isAddress } from "viem";
@@ -28,15 +28,15 @@ export function isOrganicReferralUser(u: {
 
 /**
  * Expected parent wallet for graph registration / audit.
- * Never returns the referral root for invited users.
+ * Never uses REFERRAL_ROOT as parent for invited users.
  */
 export async function resolveExpectedReferralParent(
   user: ReferralParentUser,
   chainId: number,
-  referralRoot: `0x${string}`,
+  platformRoot: `0x${string}`,
 ): Promise<ResolveReferralParentResult> {
   if (isOrganicReferralUser(user)) {
-    return { kind: "organic", parent: referralRoot };
+    return { kind: "organic", parent: platformRoot };
   }
 
   if (user.referredByUserId) {
@@ -60,16 +60,6 @@ export async function resolveExpectedReferralParent(
     }
 
     const parent = getAddress(inviterPrimary).toLowerCase() as `0x${string}`;
-
-    // Optional consistency check: DB referrerAddress should match inviter primary when set
-    if (user.referrerAddress && isAddress(user.referrerAddress)) {
-      const listed = getAddress(user.referrerAddress).toLowerCase();
-      if (listed !== parent) {
-        // Prefer referredByUserId → primary; log mismatch via error only if we want strictness.
-        // Plan: use inviter primary as source of truth.
-      }
-    }
-
     return { kind: "invited", parent, inviterUserId: inviter.id };
   }
 
