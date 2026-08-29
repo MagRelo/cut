@@ -5,6 +5,9 @@ import {
   resolveAdminEvents,
 } from "./adminEventContext.js";
 
+/** Contests still in play (not settled, cancelled, or closed). */
+const LIVE_CONTEST_STATUSES = ["OPEN", "ACTIVE", "LOCKED"] as const;
+
 function parsePrimaryDeposit(settings: unknown): number {
   if (typeof settings !== "object" || settings === null) return 0;
   const raw = (settings as { primaryDeposit?: unknown }).primaryDeposit;
@@ -12,7 +15,88 @@ function parsePrimaryDeposit(settings: unknown): number {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
+function primaryCashForContest(settings: unknown, lineupCount: number): number {
+  return parsePrimaryDeposit(settings) * lineupCount;
+}
+
+function rollingWeekAgo(now = new Date()): Date {
+  return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+}
+
+async function getPlatformOverview() {
+  const [userCount, newUsersThisWeek, liveEventCount, liveContests, leagueRows] = await Promise.all([
+    prisma.user.count(),
+    prisma.user.count({ where: { createdAt: { gte: rollingWeekAgo() } } }),
+    prisma.competitionEvent.count({ where: { isActive: true } }),
+    prisma.contest.findMany({
+      where: {
+        status: { in: [...LIVE_CONTEST_STATUSES] },
+        event: { isActive: true },
+      },
+      select: {
+        settings: true,
+        userGroupId: true,
+        _count: { select: { contestLineups: true } },
+      },
+    }),
+    prisma.userGroup.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        createdAt: true,
+        _count: { select: { members: true, contests: true } },
+      },
+    }),
+  ]);
+
+  let liveContestCash = 0;
+  for (const contest of liveContests) {
+    liveContestCash += primaryCashForContest(contest.settings, contest._count.contestLineups);
+  }
+
+  const leagues = leagueRows.map((league) => ({
+    id: league.id,
+    name: league.name,
+    description: league.description,
+    memberCount: league._count.members,
+    contestCount: league._count.contests,
+    createdAt: league.createdAt.toISOString(),
+  }));
+
+  return {
+    stats: {
+      userCount,
+      newUsersThisWeek,
+      liveEventCount,
+      liveContestCount: liveContests.length,
+      liveContestCash,
+      liveLeagueContestCount: liveContests.filter((contest) => contest.userGroupId).length,
+      leagueCount: leagues.length,
+    },
+    leagues,
+  };
+}
+
 const emptyDashboard = {
+  stats: {
+    userCount: 0,
+    newUsersThisWeek: 0,
+    liveEventCount: 0,
+    liveContestCount: 0,
+    liveContestCash: 0,
+    liveLeagueContestCount: 0,
+    leagueCount: 0,
+  },
+  leagues: [] as Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    memberCount: number;
+    contestCount: number;
+    createdAt: string;
+  }>,
   contests: {
     summary: {
       total: 0,
@@ -45,7 +129,11 @@ const emptyDashboard = {
 export type AdminDashboardResponse = Awaited<ReturnType<typeof getAdminDashboard>>;
 
 export async function getAdminDashboard(eventIdOverride?: string) {
-  const eventRows = await resolveAdminEvents(eventIdOverride);
+  const [eventRows, overview] = await Promise.all([
+    resolveAdminEvents(eventIdOverride),
+    getPlatformOverview(),
+  ]);
+  const { stats, leagues } = overview;
 
   if (eventRows.length === 0) {
     return {
@@ -57,6 +145,8 @@ export async function getAdminDashboard(eventIdOverride?: string) {
         contestLineups: 0,
       },
       ...emptyDashboard,
+      stats,
+      leagues,
     };
   }
 
@@ -101,7 +191,7 @@ export async function getAdminDashboard(eventIdOverride?: string) {
     const primaryDeposit = parsePrimaryDeposit(contest.settings);
     const contestLineupCount = contest._count.contestLineups;
     const secondaryParticipantCount = contest._count.secondaryParticipants;
-    const estimatedPrimaryCash = primaryDeposit * contestLineupCount;
+    const estimatedPrimaryCash = primaryCashForContest(contest.settings, contestLineupCount);
     contestsByStatus[contest.status] = (contestsByStatus[contest.status] ?? 0) + 1;
     totalPrimaryCash += estimatedPrimaryCash;
     totalSecondaryParticipants += secondaryParticipantCount;
@@ -130,7 +220,7 @@ export async function getAdminDashboard(eventIdOverride?: string) {
   const suggestedActions: string[] = [];
   if (activeContests > 0) {
     suggestedActions.push(
-      `${activeContests} contest(s) ACTIVE — lock winner pool when secondary entries should close.`,
+      `${activeContests} contest(s) ACTIVE — lock each contest when secondary entries should close.`,
     );
   }
   if (suggestedActions.length === 0) {
@@ -172,6 +262,8 @@ export async function getAdminDashboard(eventIdOverride?: string) {
       lineups: eventLineupCount,
       contestLineups: lineupCount,
     },
+    stats,
+    leagues,
     contests: {
       summary: {
         total: contests.length,

@@ -86,7 +86,7 @@ Better Stack heartbeat reports on the **score** pipeline only.
 | Sync scores                       | `pnpm run service:sync-event-scores`                                                               |
 | Update lineups                    | `pnpm run service:update-contest-lineups`                                                          |
 | Activate / settle (batch) | `service:batch-activate-contests`, `service:batch-settle-contests` |
-| Lock contests                     | `service:batch-lock-contests` or `POST /api/admin/contests/lock-eligible`                          |
+| Lock contests                     | `POST /api/admin/contests/:contestId/lock`, `service:batch-lock-contests`, or `POST /api/admin/contests/lock-eligible` |
 | Referral sync                     | `service:batch-sync-referral-graph`                                                                |
 
 Operator runbooks: [`docs/sports/golf/event-activation-runbook.md`](../../../docs/sports/golf/event-activation-runbook.md) (golf) · [`docs/sports/f1/event-activation-runbook.md`](../../../docs/sports/f1/event-activation-runbook.md) (F1) · [`docs/sports/commodities/event-activation-runbook.md`](../../../docs/sports/commodities/event-activation-runbook.md) (commodities).

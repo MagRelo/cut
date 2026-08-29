@@ -127,7 +127,7 @@ Detect path (`detectAndEnqueueContestFeed`) advances `lastHoleState` / `lastCont
 | Init golf event            | `pnpm run service:init-event pga-golf R2026033`             |
 | Init commodities event     | `pnpm run service:init-event commodities 2026-W27`          |
 | Sync commodities (manual)  | `service:sync-commodities-metadata` · `-field` · `-scores`  |
-| Lock contests              | `POST /api/admin/contests/lock-eligible`                    |
+| Lock contests              | `POST /api/admin/contests/:contestId/lock` or `POST /api/admin/contests/lock-eligible` |
 | Email blast                | `pnpm --filter server run script:send-blast new-tournament` |
 
 See [docs/sports/golf/event-activation-runbook.md](../../docs/sports/golf/event-activation-runbook.md).

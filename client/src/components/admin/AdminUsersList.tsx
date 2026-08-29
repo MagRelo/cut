@@ -1,0 +1,115 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { formatUnits } from "viem";
+import { LoadingSpinner } from "../common/LoadingSpinner";
+import { ErrorMessage } from "../common/ErrorMessage";
+import { useAuth } from "../../contexts/AuthContext";
+import { useAdminUsersQuery } from "../../hooks/useAdminUserQueries";
+import { PAYMENT_TOKEN_DECIMALS } from "../../lib/paymentTokenSpend";
+
+function formatPaymentBalance(wei: string | null): string {
+  if (wei === null) return "—";
+  try {
+    return Number(formatUnits(BigInt(wei), PAYMENT_TOKEN_DECIMALS)).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    });
+  } catch {
+    return "—";
+  }
+}
+
+const USER_TYPE_OPTIONS = ["USER", "TEST", "ADMIN", "SUPER_ADMIN", "PUBLIC"] as const;
+
+function formatLastContestEntry(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+export function AdminUsersList() {
+  const [userTypeFilter, setUserTypeFilter] = useState<string>("USER");
+  const { paymentTokenSymbol } = useAuth();
+  const tokenLabel = paymentTokenSymbol ?? "xUSDC";
+  const { data, isLoading, error } = useAdminUsersQuery(userTypeFilter);
+  const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;
+  const totalFormatted = data ? formatPaymentBalance(data.totalPaymentTokenBalanceWei) : null;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-gray-600 space-y-0.5">
+          <p>
+            Staff-only list, sorted by last contest entry.{" "}
+            {data ? `${data.total} user(s) total` : null}
+          </p>
+          {data ? (
+            <p className="font-medium text-gray-800">
+              Total on this page: {totalFormatted} {tokenLabel}
+            </p>
+          ) : null}
+        </div>
+        <label className="flex items-center gap-2 text-sm text-gray-600">
+          User type
+          <select
+            value={userTypeFilter}
+            onChange={(e) => setUserTypeFilter(e.target.value)}
+            className="rounded-sm border border-gray-300 bg-white px-2 py-1 text-sm text-gray-800"
+          >
+            {USER_TYPE_OPTIONS.map((userType) => (
+              <option key={userType} value={userType}>
+                {userType}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <LoadingSpinner />
+        </div>
+      ) : error ? (
+        <ErrorMessage message={errorMessage || "Failed to load users"} />
+      ) : (
+        <div className="overflow-x-auto border border-gray-200 rounded-sm">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50 text-left">
+                <th className="p-3 font-medium text-gray-700">Name</th>
+                <th className="p-3 font-medium text-gray-700">Email</th>
+                <th className="p-3 font-medium text-gray-700 whitespace-nowrap">Last contest entry</th>
+                <th className="p-3 font-medium text-gray-700 text-right whitespace-nowrap">
+                  {tokenLabel} balance
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data?.items ?? []).map((u) => (
+                <tr key={u.id} className="border-b border-gray-100 hover:bg-gray-50/80">
+                  <td className="p-3 text-gray-900 font-medium">
+                    <Link to={`/admin/users/${u.id}`} className="text-blue-600 hover:text-blue-800">
+                      {u.name}
+                    </Link>
+                  </td>
+                  <td className="p-3 text-gray-600 max-w-[180px] truncate" title={u.email ?? ""}>
+                    {u.email ?? "—"}
+                  </td>
+                  <td className="p-3 text-gray-600 whitespace-nowrap">
+                    {formatLastContestEntry(u.lastContestEntryAt)}
+                  </td>
+                  <td className="p-3 text-gray-800 text-right tabular-nums whitespace-nowrap">
+                    {formatPaymentBalance(u.paymentTokenBalanceWei ?? null)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

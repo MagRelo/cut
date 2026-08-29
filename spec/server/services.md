@@ -57,7 +57,7 @@ Orchestrated by `cron/scheduler.ts`.
 
 | Service | Purpose |
 |---------|---------|
-| `admin/getAdminDashboard.ts` | Dashboard aggregates |
+| `admin/getAdminDashboard.ts` | Dashboard aggregates (users, events, contests, leagues) |
 | `admin/adminEventContext.ts` | Resolve active event; `eventId` / `tournamentId` alias |
 
 ---

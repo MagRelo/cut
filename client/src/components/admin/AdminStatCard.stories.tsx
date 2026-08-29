@@ -45,6 +45,14 @@ export const Success: Story = {
   },
 };
 
+export const Info: Story = {
+  args: {
+    label: "Users",
+    value: "1,204",
+    variant: "info",
+  },
+};
+
 export const AllVariants: Story = {
   args: {
     label: "Users",
@@ -55,7 +63,7 @@ export const AllVariants: Story = {
   },
   render: () => (
     <div className="grid gap-3 sm:grid-cols-3">
-      <AdminStatCard label="Users" value="1,204" />
+      <AdminStatCard label="Users" value="1,204" variant="info" />
       <AdminStatCard label="Alerts" value={2} variant="warning" hint="Check cron logs" />
       <AdminStatCard label="Volume" value="$4.2k" variant="success" />
     </div>

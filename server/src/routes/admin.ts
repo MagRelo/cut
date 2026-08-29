@@ -6,6 +6,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/admin.js";
 import { getPublicClient } from "../services/shared/contractClient.js";
 import { batchLockContests } from "../services/batch/batchLockContests.js";
+import { lockContest } from "../services/contest/lockContest.js";
 import { getAdminDashboard } from "../services/admin/getAdminDashboard.js";
 import {
   isEmailConfigured,
@@ -20,7 +21,7 @@ import { ADMIN_LIST_USER_TYPES } from "../schemas/limits.js";
 
 const adminRouter = new Hono();
 
-/** GET /api/admin/dashboard — active events, contests, and ops hints. */
+/** GET /api/admin/dashboard — platform stats, active events, contests, and ops hints. */
 adminRouter.get("/dashboard", requireAuth, requireAdmin, async (c) => {
   try {
     const eventId = resolveEventIdParam(c.req.query("eventId"));
@@ -43,6 +44,25 @@ adminRouter.post("/contests/lock-eligible", requireAuth, requireAdmin, async (c)
   } catch (error) {
     console.error("admin batch lock contests error:", error);
     return c.json({ error: "Failed to lock contests" }, 500);
+  }
+});
+
+/** POST /api/admin/contests/:contestId/lock — ACTIVE → LOCKED for one contest. */
+adminRouter.post("/contests/:contestId/lock", requireAuth, requireAdmin, async (c) => {
+  try {
+    const contestId = c.req.param("contestId")?.trim();
+    if (!contestId) {
+      return c.json({ error: "contestId is required" }, 400);
+    }
+    const result = await lockContest(contestId);
+    if (!result.success) {
+      const status = result.error === "Contest not found" ? 404 : 400;
+      return c.json({ error: result.error ?? "Failed to lock contest", contestId }, status);
+    }
+    return c.json(result);
+  } catch (error) {
+    console.error("admin lock contest error:", error);
+    return c.json({ error: "Failed to lock contest" }, 500);
   }
 });
 

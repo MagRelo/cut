@@ -69,7 +69,9 @@ client/src/
 | `/leagues/*` | User group pages | Canonical league URLs |
 | `/user-groups/*` | redirects | → `/leagues/*` |
 | `/account/*` | Account, history, funds | |
-| `/admin/*` | Admin dashboard | `ADMIN` / `SUPER_ADMIN` |
+| `/admin` | Admin dashboard | Staff only. Tabs: Users, Events, Contests, Leagues (`?tab=`) |
+| `/admin/users` | Users list | Same list as the Users tab |
+| `/admin/users/:userId` | User detail | `ADMIN` / `SUPER_ADMIN` |
 
 ---
 

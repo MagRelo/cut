@@ -162,6 +162,7 @@ Staff only (`requireAdmin`).
 |--------|------|-------------|
 | GET | `/dashboard` | Ops dashboard. Query: `eventId` or `tournamentId` alias |
 | POST | `/contests/lock-eligible` | Batch lock contests |
+| POST | `/contests/:contestId/lock` | Lock one ACTIVE contest |
 | GET | `/users` | User list + on-chain balances. Query `userType`: `USER` (default), `TEST`, `ADMIN`, `SUPER_ADMIN`, `PUBLIC` |
 | GET | `/users/:id` | User detail |
 | POST | `/test-email` | Send preview email (`mode`: preview kinds) |

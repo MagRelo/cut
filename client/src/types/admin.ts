@@ -55,6 +55,15 @@ export interface AdminDashboardContest {
   endTime: string;
 }
 
+export interface AdminDashboardLeague {
+  id: string;
+  name: string;
+  description: string | null;
+  memberCount: number;
+  contestCount: number;
+  createdAt: string;
+}
+
 export interface AdminDashboardEvent {
   id: string;
   name: string;
@@ -89,6 +98,20 @@ export interface AdminDashboardResponse {
     lineups: number;
     contestLineups: number;
   };
+  /** Platform-wide totals (not scoped to the event filter). */
+  stats: {
+    userCount: number;
+    /** Users created in the last 7 days. */
+    newUsersThisWeek: number;
+    liveEventCount: number;
+    liveContestCount: number;
+    /** Sum of `primaryDeposit * lineupCount` for live contests on active events. */
+    liveContestCash: number;
+    /** Live contests that belong to a league. */
+    liveLeagueContestCount: number;
+    leagueCount: number;
+  };
+  leagues: AdminDashboardLeague[];
   contests: {
     summary: {
       total: number;
@@ -105,6 +128,14 @@ export interface AdminDashboardResponse {
     eventIsComplete: boolean;
     suggestedActions: string[];
   };
+}
+
+/** Matches server `OperationResult` from `lockContest`. */
+export interface AdminLockContestResponse {
+  success: boolean;
+  contestId: string;
+  transactionHash?: string;
+  error?: string;
 }
 
 /** Matches server `OperationResult` from contest batch jobs. */

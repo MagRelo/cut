@@ -27,7 +27,7 @@ export function AdminUserDetailPage() {
     <>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title={data?.name ?? "User"} />
-        <Link to="/admin/users" className="text-sm text-blue-600 hover:text-blue-800 font-medium self-start sm:self-center">
+        <Link to="/admin?tab=users" className="text-sm text-blue-600 hover:text-blue-800 font-medium self-start sm:self-center">
           Back to list
         </Link>
       </div>
