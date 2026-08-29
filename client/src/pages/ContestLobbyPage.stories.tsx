@@ -7,9 +7,9 @@ import {
   contestWithTimeline,
 } from "../test/fixtures/contestLobby";
 import { ContestLobbyView } from "../components/contest/lobby/ContestLobbyView";
+import { ContestLobbyLoadingShell } from "../components/contest/lobby/ContestLobbyLoadingShell";
 import { deriveContestLobbyViewModel } from "../hooks/deriveContestLobbyViewModel";
 import { ContestState } from "../hooks/useContestPredictionData";
-import { LoadingSpinner } from "../components/common/LoadingSpinner";
 
 /**
  * Full page stories use `ContestLobbyView` with derived view models (same as the wired page).
@@ -76,13 +76,22 @@ export const LoadingPlaceholder: Story = {
     contest: contestFixtures.open,
     viewModel: deriveContestLobbyViewModel(contestFixtures.open),
   },
-  render: () => (
-    <div className="space-y-3 p-4">
-      <div className="rounded-lg bg-white shadow">
-        <div className="flex min-h-[176px] items-center justify-center">
-          <LoadingSpinner />
-        </div>
-      </div>
-    </div>
-  ),
+  render: () => {
+    const event = contestFixtures.active.event;
+    return (
+      <ContestLobbyLoadingShell
+        eventShell={
+          event
+            ? {
+                id: event.id,
+                sportId: event.sportId,
+                externalId: event.externalId,
+                isActive: event.isActive,
+                metadata: event.metadata,
+              }
+            : null
+        }
+      />
+    );
+  },
 };

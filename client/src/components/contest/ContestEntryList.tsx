@@ -1,7 +1,6 @@
 import { UserGroupIcon } from "@heroicons/react/24/outline";
 import { useRef, useState } from "react";
 import { type ContestLineup, type PickPopularityMap } from "../../types/lineup";
-import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ContestEntryModal } from "./ContestEntryModal";
 import { ReferralStakeIcon } from "./ReferralStakeIcon";
 import { canAddPrimaryPosition, type ContestStatus } from "../../types/contest";
@@ -25,6 +24,50 @@ interface ContestEntryListProps {
   /** True while lobby data is still loading and lineups may be incomplete. */
   isLoading?: boolean;
 }
+
+const ENTRY_LIST_SKELETON_ROWS = [
+  { nameWidth: "42%", picksWidth: "62%" },
+  { nameWidth: "54%", picksWidth: "48%" },
+  { nameWidth: "36%", picksWidth: "70%" },
+  { nameWidth: "48%", picksWidth: "44%" },
+  { nameWidth: "40%", picksWidth: "58%" },
+] as const;
+
+export const ContestEntryListSkeleton = () => {
+  return (
+    <div aria-busy="true" aria-label="Loading teams">
+      {ENTRY_LIST_SKELETON_ROWS.map((row, index) => (
+        <div
+          key={index}
+          className={`rounded-sm border border-gray-200 p-3 shadow-sm ${index > 0 ? "mt-2" : ""}`}
+          style={{
+            borderLeftColor: "#E5E7EB",
+            borderLeftWidth: "5px",
+            borderLeftStyle: "solid",
+          }}
+          aria-hidden
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div
+                className="h-5 animate-skeleton-pulse rounded sm:h-6"
+                style={{ width: row.nameWidth }}
+              />
+              <div
+                className="mt-1.5 h-3 animate-skeleton-pulse rounded"
+                style={{ width: row.picksWidth }}
+              />
+            </div>
+            <div className="flex shrink-0 flex-col items-center">
+              <div className="h-5 w-8 animate-skeleton-pulse rounded" />
+              <div className="mt-1 h-2 w-6 animate-skeleton-pulse rounded" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export const ContestEntryList = ({
   contestLineups,
@@ -73,15 +116,7 @@ export const ContestEntryList = ({
   const paidPositions = totalEntries < 10 ? 1 : 3;
 
   if (isLoading && sortedLineups.length === 0) {
-    return (
-      <div
-        className="flex min-h-[160px] items-center justify-center py-8"
-        aria-busy="true"
-        aria-label="Loading teams"
-      >
-        <LoadingSpinner />
-      </div>
-    );
+    return <ContestEntryListSkeleton />;
   }
 
   if (sortedLineups.length === 0) {

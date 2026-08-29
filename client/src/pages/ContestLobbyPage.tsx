@@ -4,14 +4,13 @@ import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import type { CompetitionEventShell } from "@cut/sport-sdk";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../contexts/AuthContext";
-import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { ContestLobbyView } from "../components/contest/lobby/ContestLobbyView";
+import { ContestLobbyLoadingShell } from "../components/contest/lobby/ContestLobbyLoadingShell";
 import { ContestListConnectHint } from "../components/contest/ContestList";
 import { useContestQuery } from "../hooks/useContestQuery";
 import { useContestTimelineQuery } from "../hooks/useContestTimelineQuery";
 import { useContestLobbyState } from "../hooks/useContestLobbyState";
-import { SportEventHeader } from "../components/platform/SportEventHeader";
 import { isApiError } from "../utils/apiError";
 import {
   getDirectoryContextForContest,
@@ -47,25 +46,6 @@ function ContestNotFound({ isAuthenticated }: { isAuthenticated: boolean }) {
             </div>
           </>
         )}
-      </div>
-    </div>
-  );
-}
-
-function ContestLobbyLoadingShell({ eventShell }: { eventShell: CompetitionEventShell }) {
-  return (
-    <div>
-      <SportEventHeader sportId={eventShell.sportId} event={eventShell} variant="context" />
-      <div className="border-b border-gray-200">
-        <div className="px-3 pb-2 pt-4">
-          <div className="animate-pulse space-y-3 rounded-md border border-slate-200 bg-white p-4">
-            <div className="h-5 w-2/3 rounded bg-slate-200" />
-            <div className="h-4 w-1/2 rounded bg-slate-100" />
-          </div>
-        </div>
-        <div className="flex min-h-[120px] items-center justify-center p-4">
-          <LoadingSpinner />
-        </div>
       </div>
     </div>
   );
@@ -117,15 +97,7 @@ export const ContestLobby: React.FC = () => {
   const isTimelinePending = timelineData === undefined && (isTimelineLoading || isTimelineFetching);
 
   if (isLoading && !contest) {
-    if (eventShell) {
-      return <ContestLobbyLoadingShell eventShell={eventShell} />;
-    }
-
-    return (
-      <div className="flex min-h-[176px] items-center justify-center p-4">
-        <LoadingSpinner />
-      </div>
-    );
+    return <ContestLobbyLoadingShell eventShell={eventShell} />;
   }
 
   if (queryError && !contest) {

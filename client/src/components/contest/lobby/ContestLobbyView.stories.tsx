@@ -70,6 +70,16 @@ export const PredictionsConnectWallet: Story = {
   },
 };
 
+/** Live contest tab while lobby + timeline requests are still in flight. */
+export const LoadingLive: Story = {
+  args: {
+    contest: contestFixtures.active,
+    viewModel: contestLobbyViewModels.activeLive,
+    isContestDataPending: true,
+    isTimelineLoading: true,
+  },
+};
+
 /** Open contest, signed out — Lineups tab shows the dummy picker. */
 export const GuestLineups: Story = {
   args: {

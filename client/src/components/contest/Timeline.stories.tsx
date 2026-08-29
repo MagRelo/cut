@@ -7,6 +7,7 @@ import {
   charlesSchwabTimelineLeaderUserId,
 } from "../../test/fixtures/timelineCharlesSchwab";
 import { Timeline } from "./Timeline";
+import { TimelineSkeleton } from "./TimelineSkeleton";
 
 const meta = {
   title: "Contest/Timeline",
@@ -70,6 +71,13 @@ export const Default: Story = {
     currentUserId: "user-1",
     timelineData: buildTimelineData(),
   },
+};
+
+export const Loading: Story = {
+  args: {
+    timelineData: buildTimelineData(),
+  },
+  render: () => <TimelineSkeleton />,
 };
 
 export const MultiTeam: Story = {

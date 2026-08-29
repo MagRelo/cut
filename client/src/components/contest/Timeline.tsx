@@ -18,7 +18,12 @@ import {
   type PeriodRules,
 } from "@cut/sport-sdk";
 import type { TimelineData, TimelineMetric } from "../../types/contest";
-import { cn } from "../../lib/tabStyles";
+import {
+  DEFAULT_TIMELINE_TITLE,
+  TimelineChartWell,
+  TimelineFrame,
+  TimelineHeader,
+} from "./timelineLayout";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -217,7 +222,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 }) => {
   const periodRules = timelineData.periods ?? null;
   const showPeriodDividers = periodRulesHasDividers(periodRules);
-  const timelineTitle = periodRules?.timelineTitle ?? "Event Timeline";
+  const timelineTitle = periodRules?.timelineTitle ?? DEFAULT_TIMELINE_TITLE;
 
   const topTeams = useMemo(() => {
     if (!timelineData.teams.length) return [];
@@ -376,37 +381,21 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   if (!timelineData.teams.length) {
     return (
-      <div
-        className={cn(
-          "flex items-center justify-center font-display",
-          fitContainer && "h-full min-h-0 w-full",
-          className,
-        )}
-      >
-        <div className="font-display text-red-500">No timeline data provided</div>
-      </div>
+      <TimelineFrame className={className} fitContainer={fitContainer}>
+        <TimelineHeader title={timelineTitle} />
+        <TimelineChartWell fitContainer={fitContainer}>
+          <div className="flex h-full items-center justify-center font-display text-sm text-gray-500">
+            No timeline data provided
+          </div>
+        </TimelineChartWell>
+      </TimelineFrame>
     );
   }
 
   return (
-    <div
-      className={cn(
-        "flex w-full flex-col overflow-hidden rounded-sm border border-gray-300 bg-white font-display",
-        fitContainer && "h-full min-h-0",
-        className,
-      )}
-    >
-      <div className="shrink-0 px-3 pb-2 pt-2.5">
-        <h3 className="text-sm font-semibold leading-tight text-gray-900">{timelineTitle}</h3>
-        <p className="mt-0.5 text-[11px] leading-snug text-gray-500">
-          Each line tracks a lineup&apos;s total points.
-        </p>
-      </div>
-
-      <div
-        className={cn("timeline-chart min-h-0 px-2 pb-3 pt-1", fitContainer ? "flex-1" : "")}
-        style={fitContainer ? undefined : { height: "220px" }}
-      >
+    <TimelineFrame className={className} fitContainer={fitContainer}>
+      <TimelineHeader title={timelineTitle} />
+      <TimelineChartWell fitContainer={fitContainer}>
         {chartTimestamps.length === 0 ? (
           <div className="flex h-full items-center justify-center font-display text-sm text-gray-500">
             No timeline data available.
@@ -414,7 +403,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         ) : (
           <Line data={chartData} options={options} plugins={[timelineChartPlugin]} />
         )}
-      </div>
-    </div>
+      </TimelineChartWell>
+    </TimelineFrame>
   );
 };
