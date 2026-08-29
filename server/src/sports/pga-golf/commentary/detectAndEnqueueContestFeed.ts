@@ -40,7 +40,7 @@ export async function detectAndEnqueueContestFeed(eventId: string): Promise<void
         },
       },
       contestLineups: {
-        some: { entryId: { not: null } },
+        some: {},
       },
     },
     select: {

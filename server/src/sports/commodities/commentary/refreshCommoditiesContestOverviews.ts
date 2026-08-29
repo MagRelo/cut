@@ -84,7 +84,7 @@ export async function refreshCommoditiesContestOverviews(
           },
         },
         contestLineups: {
-          some: { entryId: { not: null } },
+          some: {},
         },
       },
       select: {

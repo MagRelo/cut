@@ -102,7 +102,7 @@ describe("refreshContestOverviews", () => {
           },
         },
         contestLineups: {
-          some: { entryId: { not: null } },
+          some: {},
         },
         OR: [
           { commentaryGeneratedAt: null },
