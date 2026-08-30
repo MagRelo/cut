@@ -47,7 +47,7 @@ Week open price locks after first LIVE sync. `sessionStarted` / `sessionComplete
 | `COMMODITIES_HL_CATALOG_TTL_MS` | `3600000` | Catalog cache TTL |
 | `COMMODITIES_HL_MARK_CACHE_MS` | `45000` | Mark quote cache |
 | `COMMODITIES_SESSION_TZ` | `America/New_York` | Default TZ when init omits session flags |
-| `COMMODITIES_SESSION_OPEN` | `09:30` | Default open when init omits `--open` |
+| `COMMODITIES_SESSION_OPEN` | `12:00` | Default open when init omits `--open` |
 | `COMMODITIES_SESSION_CLOSE` | `16:30` | Default Friday close when init omits `--close` |
 
 ---

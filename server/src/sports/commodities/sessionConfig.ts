@@ -7,7 +7,7 @@ import {
 } from "./externalId.js";
 
 const DEFAULT_TZ = "America/New_York";
-const DEFAULT_OPEN = "09:30";
+const DEFAULT_OPEN = "12:00";
 const DEFAULT_CLOSE = "16:30";
 
 const ISO_DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2}T/;

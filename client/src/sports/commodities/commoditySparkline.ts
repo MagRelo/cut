@@ -9,7 +9,7 @@ import {
   type CommoditiesSessionBounds,
 } from "@cut/sport-commodities";
 
-/** Default Mon column window when the session starts Monday 9:30. */
+/** Default Mon column window when the session starts Monday noon. */
 export const SPARKLINE_COLUMN_MS = 24 * 60 * 60 * 1000;
 
 export type SessionSparklineChart = {

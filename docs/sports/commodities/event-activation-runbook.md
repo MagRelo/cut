@@ -45,7 +45,7 @@ Pass script arguments **directly** — do **not** insert `--` before them. Use `
 | Variable | Default | Notes |
 |----------|---------|-------|
 | `COMMODITIES_SESSION_TZ` | `America/New_York` | Default session timezone when init omits `--open`/`--close` |
-| `COMMODITIES_SESSION_OPEN` | `09:30` | Default SCHEDULED → LIVE time (time-only, session TZ) |
+| `COMMODITIES_SESSION_OPEN` | `12:00` | Default SCHEDULED → LIVE time (time-only, session TZ) |
 | `COMMODITIES_SESSION_CLOSE` | `16:30` | Default Friday close (time-only, session TZ) |
 | `ENABLE_CRON` | — | `true` on cron worker for 5-minute pipeline + overview pipeline |
 | `CONTEST_COMMENTARY_ENABLED` | — | `true` to enable daily contest overview commentary |
@@ -82,7 +82,7 @@ Use the **current ISO week** in `America/New_York` as `externalId`:
 2026-W27
 ```
 
-Week runs Monday 9:30 AM ET through Friday 4:30 PM ET.
+Week runs Monday 12:00 PM ET through Friday 4:30 PM ET.
 
 ### 3. Optional — data spike
 
@@ -94,7 +94,7 @@ Validates session-boundary scoring for allowlist tickers.
 
 ### 4. Init event
 
-Default (full trading week from env — Mon 9:30 ET through Fri 4:30 PM ET):
+Default (full trading week from env — Mon 12:00 ET through Fri 4:30 PM ET):
 
 ```bash
 pnpm --filter server run service:init-event commodities 2026-W27

@@ -45,7 +45,15 @@ describe("resolveWeeklySessionBounds", () => {
     delete process.env.COMMODITIES_SESSION_CLOSE;
   });
 
-  it("resolves Mon 9:30 ET through Fri 16:30 ET for ISO week 27 2026", () => {
+  it("defaults to Mon 12:00 ET through Fri 16:30 ET for ISO week 27 2026", () => {
+    process.env.COMMODITIES_SESSION_TZ = "America/New_York";
+
+    const bounds = resolveWeeklySessionBounds("2026-W27");
+    expect(bounds.sessionOpen).toBe("2026-06-29T16:00:00.000Z");
+    expect(bounds.sessionClose).toBe("2026-07-03T20:30:00.000Z");
+  });
+
+  it("honors COMMODITIES_SESSION_OPEN/CLOSE env overrides", () => {
     process.env.COMMODITIES_SESSION_TZ = "America/New_York";
     process.env.COMMODITIES_SESSION_OPEN = "09:30";
     process.env.COMMODITIES_SESSION_CLOSE = "16:30";

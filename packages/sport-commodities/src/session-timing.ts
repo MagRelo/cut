@@ -18,7 +18,7 @@ export type CommoditiesSessionBounds = {
 
 export const DEFAULT_COMMODITIES_SESSION_CALENDAR: CommoditiesSessionCalendar = {
   timezone: "America/New_York",
-  openTime: "09:30:00",
+  openTime: "12:00:00",
   closeTime: "16:30:00",
 };
 

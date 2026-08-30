@@ -100,7 +100,7 @@ describe("session timing", () => {
     expect(earlyCloses).not.toEqual(defaultCloses);
   });
 
-  it("defaults calendar to NYSE session times", () => {
+  it("defaults calendar to session open/close times", () => {
     const closes = buildSessionDayCloseTimestamps(
       SESSION_OPEN,
       SESSION_CLOSE,

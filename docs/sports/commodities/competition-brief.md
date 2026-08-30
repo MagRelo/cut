@@ -25,12 +25,12 @@ Pick three commodities for the trading week; your lineup scores the sum of their
 | **sportId** | `commodities` |
 | **Slug** | `commodities` |
 | **Display name** | `Commodity Futures – Week 27` |
-| **Session window** | Monday 09:30 ET → Friday 16:30 ET (ISO timestamps in `metadata.commodities`) |
+| **Session window** | Monday 12:00 ET → Friday 16:30 ET (ISO timestamps in `metadata.commodities`) |
 | **Typical duration** | One trading week; `--open`/`--close` overrides for local eval |
 | **Active events** | One active commodities event at a time (`CompetitionEvent.isActive`) |
 | **SCHEDULED → LIVE** | Cron sets `metadata.commodities.sessionStarted` when `now >= sessionOpen` (same pipeline pass activates contests) |
 | **LIVE → COMPLETE** | Cron sets `metadata.commodities.sessionComplete` when `now >= sessionClose` (same pass settles contests) |
-| **Init defaults** | Env `COMMODITIES_SESSION_TZ/OPEN/CLOSE` (Mon 9:30 – Fri 16:30 America/New_York) |
+| **Init defaults** | Env `COMMODITIES_SESSION_TZ/OPEN/CLOSE` (Mon 12:00 – Fri 16:30 America/New_York) |
 | **Init overrides** | `service:init-event commodities 2026-W27 --open +2m --close +62m` (or ISO datetimes) |
 
 **Scoring:** Five daily legs from Hyperliquid marks/candles (see [data-sources.md](./data-sources.md)).
