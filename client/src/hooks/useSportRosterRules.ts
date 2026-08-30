@@ -1,17 +1,22 @@
 import type { RosterRules } from "@cut/sport-sdk";
 import { useSportsQuery } from "./useSportData";
 
-const DEFAULT_SLOT_COUNT = 4;
+const FALLBACK_ROSTER_RULES: RosterRules = {
+  slotCount: 4,
+  minPicks: 4,
+  maxPicks: 4,
+  allowDuplicates: false,
+};
 
-export function useSportRosterRules(sportId: string | undefined): RosterRules {
-  const { data: sports = [] } = useSportsQuery();
-  const sport = sports.find((entry) => entry.id === sportId);
-  return (
-    sport?.rosterRules ?? {
-      slotCount: DEFAULT_SLOT_COUNT,
-      minPicks: DEFAULT_SLOT_COUNT,
-      maxPicks: DEFAULT_SLOT_COUNT,
-      allowDuplicates: false,
-    }
-  );
+/**
+ * Roster size for a sport. Returns `undefined` until the sports catalog has
+ * loaded so callers do not render golf's 4 slots as a stand-in.
+ */
+export function useSportRosterRules(sportId: string | undefined): RosterRules | undefined {
+  const { data: sports, isPending } = useSportsQuery();
+  if (!sportId) return undefined;
+  const sport = sports?.find((entry) => entry.id === sportId);
+  if (sport?.rosterRules) return sport.rosterRules;
+  if (isPending) return undefined;
+  return FALLBACK_ROSTER_RULES;
 }

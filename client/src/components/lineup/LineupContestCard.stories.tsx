@@ -1,5 +1,6 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import { lobbyDecorators } from "../../../.storybook/decorators";
+import { withActiveEventFixture } from "../../../.storybook/decorators/activeEventFixture";
 import { resetStorybookLineups } from "../../../.storybook/mocks/useLineupData";
 import {
   buildContestLineupForCard,
@@ -24,7 +25,7 @@ const meta = {
   title: "Lineup/LineupContestCard",
   component: LineupContestCard,
   tags: ["autodocs"],
-  decorators: [...lobbyDecorators, cardShell],
+  decorators: [...lobbyDecorators, cardShell, withActiveEventFixture()],
   parameters: { layout: "fullscreen" },
   args: {
     ...lineupContestCardStoryDefaults,
@@ -83,5 +84,5 @@ export const LockedWithTieBreaker: Story = {
 
 /** Avatar slots spin until the player field has loaded. */
 export const PlayersLoading: Story = {
-  render: () => <LineupContestCardLoading />,
+  render: () => <LineupContestCardLoading slotCount={4} />,
 };

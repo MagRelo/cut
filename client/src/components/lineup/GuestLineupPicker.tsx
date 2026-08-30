@@ -7,6 +7,7 @@ import { SportLineupPickRow } from "../platform/SportLineupPickRow";
 import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
 import { useEventCandidatesQuery } from "../../hooks/useSportData";
 import { useSportRosterRules } from "../../hooks/useSportRosterRules";
+import { LineupPlayerSlotLoading } from "./LineupPlayerSlotLoading";
 import { LineupEmptySlotLabel, LineupSlotShell } from "./LineupSlotShell";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
@@ -41,7 +42,8 @@ export const GuestLineupPicker: React.FC<GuestLineupPickerProps> = ({
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
 
-  const slots = padToSlots(picks, rosterRules.slotCount);
+  const slotCount = rosterRules?.slotCount ?? 0;
+  const slots = padToSlots(picks, slotCount);
   const selectedEventParticipantIds = picks.map((candidate) => candidate.eventParticipantId);
 
   const openSlot = (index: number) => {
@@ -73,6 +75,35 @@ export const GuestLineupPicker: React.FC<GuestLineupPickerProps> = ({
     [fieldCandidates, selectedSlotIndex, slots],
   );
 
+  if (!rosterRules) {
+    return (
+      <div className="bg-white">
+        <div
+          className="px-3 py-4 font-display"
+          style={{
+            borderLeftColor: DEFAULT_USER_COLOR,
+            borderLeftWidth: "5px",
+            borderLeftStyle: "solid",
+          }}
+        >
+          <div className="min-w-0 text-left font-display">
+            <div className="truncate text-xl font-semibold leading-tight text-gray-900">
+              Create your lineup
+            </div>
+            <div className="mt-1.5 h-4 w-28 rounded bg-slate-100" />
+          </div>
+        </div>
+        <div className="px-3 pb-3 pt-0">
+          <div className="mb-4 mt-3 space-y-6">
+            <div className="px-3">
+              <LineupPlayerSlotLoading />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white">
       <div
@@ -87,7 +118,9 @@ export const GuestLineupPicker: React.FC<GuestLineupPickerProps> = ({
           <div className="truncate text-xl font-semibold leading-tight text-gray-900">
             Create your lineup
           </div>
-          <div className="truncate text-sm leading-tight text-gray-700">Choose four players</div>
+          <div className="truncate text-sm leading-tight text-gray-700">
+            Choose {slotCount} {slotCount === 1 ? "player" : "players"}
+          </div>
         </div>
       </div>
 

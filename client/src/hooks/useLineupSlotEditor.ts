@@ -31,6 +31,16 @@ function eventParticipantIdsFromSlots(slots: Array<Candidate | null>): string[] 
     .map((candidate) => candidate.eventParticipantId);
 }
 
+/** True when local slots already match server picks and the sport's slot count. */
+export function shouldReuseHydratedSlots(
+  prev: Array<Candidate | null>,
+  initialCandidateKey: string,
+  slotCount: number,
+): boolean {
+  if (prev.length !== slotCount) return false;
+  return eventParticipantIdsFromSlots(prev).join(",") === initialCandidateKey;
+}
+
 function idsFromCandidateKey(key: string): string[] {
   return key === "" ? [] : key.split(",");
 }
@@ -115,8 +125,7 @@ export function useLineupSlotEditor({
   useEffect(() => {
     if (saveStatus !== "idle") return;
     setSlots((prev) => {
-      const prevKey = eventParticipantIdsFromSlots(prev).join(",");
-      if (prevKey === initialCandidateKey) return prev;
+      if (shouldReuseHydratedSlots(prev, initialCandidateKey, slotCount)) return prev;
       return hydrateSlotsFromIds(
         idsFromCandidateKey(initialCandidateKey),
         fieldCandidatesRef.current,

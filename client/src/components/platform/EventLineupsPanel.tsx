@@ -8,6 +8,7 @@ import type { ContestLineup, PlatformLineupListItem } from "../../types/lineup";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLineupData } from "../../hooks/useLineupData";
 import { useContestLineupEntry } from "../../hooks/useContestLineupEntry";
+import { useSportRosterRules } from "../../hooks/useSportRosterRules";
 import {
   eventDisplayNameFromMetadata,
   eventStatusFromMetadata,
@@ -68,6 +69,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
   isAuthenticated,
 }) => {
   const { loading: isAuthLoading, user } = useAuth();
+  const rosterRules = useSportRosterRules(sportId);
   const {
     lineups,
     lineupError,
@@ -229,10 +231,10 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
     );
   }
 
-  if ((isAuthLoading && !user) || isLineupsLoading) {
+  if ((isAuthLoading && !user) || isLineupsLoading || !rosterRules) {
     return (
       <div className="overflow-hidden rounded-sm border border-gray-300 shadow-md">
-        <LineupContestCardLoading />
+        <LineupContestCardLoading slotCount={rosterRules?.slotCount} />
       </div>
     );
   }

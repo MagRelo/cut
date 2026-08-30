@@ -80,7 +80,8 @@ function pickIdsBySlot(
   return ids;
 }
 
-export const LineupContestCardLoading: React.FC<{ slotCount?: number }> = ({ slotCount = 4 }) => {
+export const LineupContestCardLoading: React.FC<{ slotCount?: number }> = ({ slotCount }) => {
+  const slotPlaceholders = slotCount && slotCount > 0 ? slotCount : 1;
   return (
     <div className="bg-white">
       <div
@@ -101,7 +102,7 @@ export const LineupContestCardLoading: React.FC<{ slotCount?: number }> = ({ slo
       </div>
       <div className="px-3 pb-3 pt-0">
         <div className="mb-4 mt-3 space-y-6">
-          {Array.from({ length: slotCount }, (_, index) => (
+          {Array.from({ length: slotPlaceholders }, (_, index) => (
             <div key={`loading-slot-${index}`} className="px-3">
               <LineupPlayerSlotLoading />
             </div>
@@ -144,14 +145,15 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const rosterRules = useSportRosterRules(sportId);
   const predictionRules = useSportPredictionRules(sportId);
   const status = eventStatus;
+  const slotCount = rosterRules?.slotCount ?? 0;
 
   const expectedPickIdsBySlot = useMemo(
     () =>
       pickIdsBySlot(
         platformLineup?.picks ?? lineupPicksFromContestLineup(lineup),
-        rosterRules.slotCount,
+        slotCount,
       ),
-    [platformLineup, lineup, rosterRules.slotCount],
+    [platformLineup, lineup, slotCount],
   );
   const initialCandidates = useMemo(() => {
     if (platformLineup) {
@@ -184,7 +186,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const slotEditor = useLineupSlotEditor({
     lineupId,
     contestId: platformLineup?.contestId ?? contestId,
-    slotCount: rosterRules.slotCount,
+    slotCount,
     initialCandidates,
     fieldCandidates: candidates,
     lineups,
@@ -274,6 +276,10 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       : undefined;
   const userColorHex = typeof maybeUserColor === "string" ? maybeUserColor : undefined;
   const resolvedBorderColor = isValidHexColor(userColorHex) ? userColorHex : DEFAULT_USER_COLOR;
+
+  if (!rosterRules) {
+    return <LineupContestCardLoading />;
+  }
 
   return (
     <div className="bg-white">

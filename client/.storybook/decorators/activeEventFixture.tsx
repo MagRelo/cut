@@ -1,5 +1,4 @@
 import type { ComponentType } from "react";
-import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Candidate } from "@cut/sport-sdk";
 import type { Decorator } from "@storybook/react-vite";
@@ -67,20 +66,18 @@ export function withActiveEventFixture(options: ActiveEventFixtureOptions = {}):
   return function ActiveEventFixtureDecorator(Story: ComponentType) {
     const Wrapped = () => {
       const queryClient = useQueryClient();
-
-      useEffect(() => {
-        const activeEvent = buildActiveEventResponse({
-          sportId,
-          status,
-          eventId,
-          eventMetadata,
-          candidates,
-        });
-        queryClient.setQueryData(queryKeys.sports.activeEvent(sportId), activeEvent);
-        if (candidates) {
-          queryClient.setQueryData(queryKeys.sports.candidates(sportId, eventId), candidates);
-        }
-      }, [queryClient]);
+      const activeEvent = buildActiveEventResponse({
+        sportId,
+        status,
+        eventId,
+        eventMetadata,
+        candidates,
+      });
+      queryClient.setQueryData(queryKeys.sports.activeEvent(sportId), activeEvent);
+      queryClient.setQueryData(queryKeys.sports.list(), [activeEvent.sport]);
+      if (candidates) {
+        queryClient.setQueryData(queryKeys.sports.candidates(sportId, eventId), candidates);
+      }
 
       return <Story />;
     };
