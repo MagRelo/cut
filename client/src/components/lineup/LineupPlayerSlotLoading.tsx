@@ -1,10 +1,11 @@
 import React from "react";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { LINEUP_SLOT_SHELL_CLASSNAME } from "./LineupSlotShell";
 
 /** Circular spinner in the player-avatar slot while candidates are still loading. */
 export const LineupPlayerSlotLoading: React.FC = () => {
   return (
-    <div className="flex items-center gap-3" role="status" aria-label="Loading player">
+    <div className={LINEUP_SLOT_SHELL_CLASSNAME} role="status" aria-label="Loading player">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
         <LoadingSpinnerSmall color="gray" />
       </div>

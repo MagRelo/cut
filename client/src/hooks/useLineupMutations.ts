@@ -7,7 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { captureLineupCreated, captureLineupUpdated } from "../lib/analytics/posthog";
 import { createLineupForEvent, cloneLineupById, updateLineupById } from "../lib/lineupApi";
 import { useOptionalEventScope } from "../contexts/EventScopeContext";
-import { buildOptimisticPicks } from "../lib/lineupUtils";
+import { buildOptimisticPicks, lineupScoreFromPicks, mergeUpdatedLineupIntoList } from "../lib/lineupUtils";
 import { toLineupPredictionValue } from "../lib/sportPrediction";
 
 interface CreateLineupParams {
@@ -204,20 +204,21 @@ export function useUpdateLineup() {
       if (previousLineups) {
         queryClient.setQueryData<PlatformLineupListItem[]>(
           queryKeys.lineups.byEvent(uid, eventId),
-          previousLineups.map((lineup) =>
-            lineup.id === lineupId
-              ? {
-                  ...lineup,
-                  name: name || lineup.name,
-                  picks: buildOptimisticPicks(picks, candidates),
-                  ...(predictionValue !== undefined
-                    ? {
-                        prediction: toLineupPredictionValue(predictionValue),
-                      }
-                    : {}),
-                }
-              : lineup,
-          ),
+          previousLineups.map((lineup) => {
+            if (lineup.id !== lineupId) return lineup;
+            const nextPicks = buildOptimisticPicks(picks, candidates);
+            return {
+              ...lineup,
+              name: name || lineup.name,
+              picks: nextPicks,
+              score: lineupScoreFromPicks(nextPicks),
+              ...(predictionValue !== undefined
+                ? {
+                    prediction: toLineupPredictionValue(predictionValue),
+                  }
+                : {}),
+            };
+          }),
         );
       }
 
@@ -242,14 +243,18 @@ export function useUpdateLineup() {
           lineup_id: data.id,
           tournament_id: eventId,
         });
+        queryClient.setQueryData<PlatformLineupListItem[]>(
+          queryKeys.lineups.byEvent(userId, eventId),
+          (previous) => (previous ? mergeUpdatedLineupIntoList(previous, data) : previous),
+        );
+        const list = queryClient.getQueryData<PlatformLineupListItem[]>(
+          queryKeys.lineups.byEvent(userId, eventId),
+        );
+        const merged = list?.find((row) => row.id === data.id);
+        if (merged) {
+          queryClient.setQueryData(queryKeys.lineups.byId(userId, data.id), merged);
+        }
       }
-      if (userId && context?.eventId) {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.lineups.byEvent(userId, context.eventId),
-        });
-        queryClient.invalidateQueries({ queryKey: queryKeys.lineups.byId(userId, data.id) });
-      }
-      queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
     },
   });
 }

@@ -1,5 +1,10 @@
-import { candidatesFromLineupPicks, type Candidate } from "@cut/sport-sdk";
+import {
+  candidatesFromLineupPicks,
+  sortKeyInputFromCandidate,
+  type Candidate,
+} from "@cut/sport-sdk";
 import type { PlatformLineup, PlatformLineupPick } from "../types/event";
+import type { PlatformLineupListItem } from "../types/lineup";
 import { predictionNumericValue } from "./sportPrediction";
 
 export function buildCandidatesByEventParticipantId(
@@ -48,6 +53,10 @@ export function candidatesForPlatformLineup(lineup: PlatformLineup): Candidate[]
   return candidatesFromLineupPicks(lineup.picks);
 }
 
+export function lineupScoreFromPicks(picks: PlatformLineupPick[]): number {
+  return picks.reduce((sum, pick) => sum + (pick.total ?? 0), 0);
+}
+
 export function buildOptimisticPicks(
   eventParticipantIds: string[],
   candidates: Candidate[],
@@ -55,6 +64,7 @@ export function buildOptimisticPicks(
   const byEventParticipantId = buildCandidatesByEventParticipantId(candidates);
   return eventParticipantIds.map((eventParticipantId, slotIndex) => {
     const candidate = byEventParticipantId.get(eventParticipantId);
+    const sortInput = candidate ? sortKeyInputFromCandidate(candidate) : null;
     return {
       id: `optimistic-${slotIndex}`,
       slotIndex,
@@ -64,11 +74,27 @@ export function buildOptimisticPicks(
             id: candidate.participantId,
             displayName: candidate.displayName,
             externalId: null,
-            metadata: candidate.metadata,
+            metadata: sortInput?.participantMetadata ?? null,
           }
         : null,
-      scoreData: null,
-      total: null,
+      scoreData: sortInput?.scoreData ?? null,
+      total: sortInput?.total ?? null,
     };
   });
+}
+
+/** Replace a lineup in the event list from a PUT body, keeping contest entries. */
+export function mergeUpdatedLineupIntoList(
+  lineups: PlatformLineupListItem[],
+  updated: PlatformLineup,
+): PlatformLineupListItem[] {
+  return lineups.map((lineup) =>
+    lineup.id === updated.id
+      ? {
+          ...lineup,
+          ...updated,
+          contestLineups: lineup.contestLineups,
+        }
+      : lineup,
+  );
 }

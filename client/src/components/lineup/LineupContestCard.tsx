@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
-import { PlusIcon, UserIcon } from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import { CandidatePicker } from "../platform/CandidatePicker";
 import { SportLineupPickRow } from "../platform/SportLineupPickRow";
 import type { Candidate } from "@cut/sport-sdk";
@@ -38,6 +38,7 @@ import { DUPLICATE_LINEUP_PREDICTION_MESSAGE } from "../../utils/lineupPredictio
 import { useSportRosterRules } from "../../hooks/useSportRosterRules";
 import { useSportPredictionRules } from "../../hooks/useSportPredictionRules";
 import { LineupPlayerSlotLoading } from "./LineupPlayerSlotLoading";
+import { LineupEmptySlotLabel, LineupSlotShell } from "./LineupSlotShell";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
@@ -245,7 +246,8 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     return () => window.clearTimeout(timer);
   }, [canEditSlots, prediction, savePrediction, serverPrediction]);
 
-  const slotActionsDisabled = !canEditSlots || slotEditor.isSaving || isSavingPrediction;
+  const slotActionsDisabled =
+    !canEditSlots || slotEditor.isSaving || slotEditor.isSaved || isSavingPrediction;
 
   const openDetailModal = (candidate: Candidate) => {
     setDetailCandidate(candidate);
@@ -323,8 +325,8 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                       {awaitingPlayer ? (
                         <LineupPlayerSlotLoading />
                       ) : candidate ? (
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0 flex-1">
+                        <LineupSlotShell>
+                          <div className="min-w-0 flex-1 overflow-hidden">
                             <SportLineupPickRow
                               candidate={candidate}
                               status={status}
@@ -363,21 +365,16 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                             </svg>
                             Edit
                           </button>
-                        </div>
+                        </LineupSlotShell>
                       ) : (
-                        <div className="flex items-center justify-between gap-3">
+                        <LineupSlotShell>
                           <button
                             type="button"
                             onClick={() => slotEditor.openSlot(index)}
                             disabled={slotActionsDisabled}
-                            className="flex min-w-0 flex-1 items-center gap-3 text-left font-display disabled:cursor-not-allowed disabled:opacity-50"
+                            className="flex min-w-0 flex-1 items-center overflow-hidden text-left font-display disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
-                              <UserIcon className="h-6 w-6 text-slate-300" aria-hidden />
-                            </div>
-                            <span className="truncate text-md font-semibold leading-tight text-slate-400">
-                              No selection
-                            </span>
+                            <LineupEmptySlotLabel />
                           </button>
                           <button
                             type="button"
@@ -389,7 +386,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                             <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
                             Add
                           </button>
-                        </div>
+                        </LineupSlotShell>
                       )}
                     </div>
                   );
@@ -447,7 +444,9 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
           onClearSlot={() => void slotEditor.handlePlayerSelect(null)}
           selectedEventParticipantIds={slotEditor.selectedEventParticipantIds}
           isSaving={slotEditor.isSaving}
+          isSaved={slotEditor.isSaved}
           saveError={slotEditor.saveError}
+          savingEventParticipantId={slotEditor.savingEventParticipantId}
         />
       ) : null}
 

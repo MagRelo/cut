@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { PlusIcon, UserIcon } from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import type { Candidate } from "@cut/sport-sdk";
 import type { EventStatus } from "../../types/event";
 import { CandidatePicker } from "../platform/CandidatePicker";
@@ -7,6 +7,7 @@ import { SportLineupPickRow } from "../platform/SportLineupPickRow";
 import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
 import { useEventCandidatesQuery } from "../../hooks/useSportData";
 import { useSportRosterRules } from "../../hooks/useSportRosterRules";
+import { LineupEmptySlotLabel, LineupSlotShell } from "./LineupSlotShell";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
@@ -95,8 +96,8 @@ export const GuestLineupPicker: React.FC<GuestLineupPickerProps> = ({
           {slots.map((candidate, index) => (
             <div key={`guest-slot-${index}`} className="px-3">
               {candidate ? (
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1">
+                <LineupSlotShell>
+                  <div className="min-w-0 flex-1 overflow-hidden">
                     <SportLineupPickRow
                       candidate={candidate}
                       status={eventStatus}
@@ -126,20 +127,15 @@ export const GuestLineupPicker: React.FC<GuestLineupPickerProps> = ({
                     </svg>
                     Edit
                   </button>
-                </div>
+                </LineupSlotShell>
               ) : (
-                <div className="flex items-center justify-between gap-3">
+                <LineupSlotShell>
                   <button
                     type="button"
                     onClick={() => openSlot(index)}
-                    className="flex min-w-0 flex-1 items-center gap-3 text-left font-display"
+                    className="flex min-w-0 flex-1 items-center overflow-hidden text-left font-display"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
-                      <UserIcon className="h-6 w-6 text-slate-300" aria-hidden />
-                    </div>
-                    <span className="truncate text-md font-semibold leading-tight text-slate-400">
-                      No selection
-                    </span>
+                    <LineupEmptySlotLabel />
                   </button>
                   <button
                     type="button"
@@ -150,7 +146,7 @@ export const GuestLineupPicker: React.FC<GuestLineupPickerProps> = ({
                     <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
                     Add
                   </button>
-                </div>
+                </LineupSlotShell>
               )}
             </div>
           ))}

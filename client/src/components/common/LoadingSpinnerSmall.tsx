@@ -2,9 +2,13 @@ import React from "react";
 
 interface LoadingSpinnerSmallProps {
   color?: "white" | "green" | "blue" | "red" | "gray";
+  className?: string;
 }
 
-export const LoadingSpinnerSmall: React.FC<LoadingSpinnerSmallProps> = ({ color = "white" }) => {
+export const LoadingSpinnerSmall: React.FC<LoadingSpinnerSmallProps> = ({
+  color = "white",
+  className = "h-5 w-5",
+}) => {
   const getColorClass = () => {
     switch (color) {
       case "green":
@@ -22,7 +26,7 @@ export const LoadingSpinnerSmall: React.FC<LoadingSpinnerSmallProps> = ({ color 
 
   return (
     <svg
-      className={`animate-spin h-5 w-5 ${getColorClass()}`}
+      className={`animate-spin ${className} ${getColorClass()}`}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
