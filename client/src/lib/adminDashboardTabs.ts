@@ -1,4 +1,4 @@
-export const ADMIN_DASHBOARD_TABS = ["users", "events", "contests", "leagues"] as const;
+export const ADMIN_DASHBOARD_TABS = ["users", "events", "contests", "leagues", "wallets"] as const;
 
 export type AdminDashboardTab = (typeof ADMIN_DASHBOARD_TABS)[number];
 
