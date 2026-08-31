@@ -25,3 +25,17 @@ export const SettledFree: Story = {
     contest: contestFixtures.settledFree,
   },
 };
+
+export const SettledWithReferralTree: Story = {
+  name: "Settled - 3 Level Referral Tree",
+  args: {
+    contest: contestFixtures.settledWithReferrals,
+  },
+};
+
+export const SettledWithDeepReferralTree: Story = {
+  name: "Settled - 5 Level Referral Tree",
+  args: {
+    contest: contestFixtures.settledWithDeepReferrals,
+  },
+};
