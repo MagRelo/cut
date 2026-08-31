@@ -40,9 +40,8 @@ export class PrivyWalletIdentityConflictError extends Error {
   }
 }
 
-/** Identity conflicts still 400. Referral-tree codes are unused by signup (attachment is best-effort). */
+/** Identity conflicts still 400. Remaining referral-tree codes are unused by signup (attachment is best-effort). */
 export type ReferralErrorCode =
-  | "REFERRER_REQUIRED"
   | "REFERRER_NOT_IN_TREE"
   | "REFERRER_NOT_SMART_WALLET"
   | "SELF_REFERRAL_NOT_ALLOWED"

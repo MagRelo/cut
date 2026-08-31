@@ -488,12 +488,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (error.statusCode === 401 && error.code !== "NEEDS_PROVISIONING") {
               setServerSessionError(null);
             } else {
-              let msg = error.message;
-              if (error.code === "REFERRER_REQUIRED") {
-                msg +=
-                  "\n\nUse an invite link from a friend then refresh the page and sign in again.";
-              }
-              setServerSessionError(msg);
+              setServerSessionError(error.message);
               if (error.statusCode === 400 || error.statusCode === 403) {
                 void endPrivyAndWagmiSession();
               }
