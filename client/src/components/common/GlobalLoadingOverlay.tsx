@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { BRAND_WORDMARK } from "../../lib/brand";
 import { BrandLogo } from "./BrandLogo";
 import { LoadingSpinnerSmall } from "./LoadingSpinnerSmall";
@@ -45,11 +46,11 @@ export const GlobalLoadingOverlay: React.FC<GlobalLoadingOverlayProps> = ({ isBl
     };
   }, [effectiveBlocking]);
 
-  if (!isRendered) {
+  if (!isRendered || typeof document === "undefined") {
     return null;
   }
 
-  return (
+  return createPortal(
     <div
       aria-hidden={!isVisible}
       aria-live="polite"
@@ -73,6 +74,7 @@ export const GlobalLoadingOverlay: React.FC<GlobalLoadingOverlayProps> = ({ isBl
           <LoadingSpinnerSmall color="white" />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
