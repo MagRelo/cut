@@ -16,6 +16,7 @@ import {
   ContestPayoutRowTitle,
   ContestPayoutSubAmount,
 } from "./contestPayoutPresentation";
+import { ReferralRewardsTree } from "./ReferralRewardsTree";
 
 interface ContestResultsPanelProps {
   contest: Contest;
@@ -263,36 +264,10 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
           </>
         }
       >
-        {referral.length === 0 ? (
-          <p className="pl-2 text-sm text-slate-500">No rewards payouts recorded.</p>
-        ) : (
-          <ContestPayoutDividedRows>
-            {referral.map((row, index) => {
-              const wei = parseAmountWei(row);
-              return (
-                <ContestPayoutRow
-                  key={`${row.walletAddress}-${index}`}
-                  userColor={row.userColor}
-                  left={
-                    <div className="min-w-0">
-                      <ContestPayoutRowTitle>{row.username}</ContestPayoutRowTitle>
-                      <ContestPayoutRowSubtitle>Referral Reward</ContestPayoutRowSubtitle>
-                    </div>
-                  }
-                  right={
-                    wei !== null ? (
-                      <ContestPayoutGradientMoney>
-                        {formatDollarFromWei(wei, paymentDecimals)}
-                      </ContestPayoutGradientMoney>
-                    ) : (
-                      <span className="text-xs text-slate-400">—</span>
-                    )
-                  }
-                />
-              );
-            })}
-          </ContestPayoutDividedRows>
-        )}
+        <ReferralRewardsTree
+          referralPayments={referral}
+          paymentDecimals={paymentDecimals}
+        />
       </ContestResultsSection>
     </ContestPayoutLayout>
   );
