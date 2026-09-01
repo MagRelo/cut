@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { PageHeader } from "../components/common/PageHeader";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { useJoinLeague } from "../hooks/useUserGroupMutations";
@@ -58,7 +57,7 @@ export const UserGroupJoinPage = () => {
   if (isPending) {
     return (
       <>
-        <PageHeader title="Joining league..." />
+        <h1 className="font-display text-xl font-semibold text-gray-900">Joining league...</h1>
         <div className="flex justify-center items-center py-12">
           <LoadingSpinner />
         </div>
@@ -76,7 +75,7 @@ export const UserGroupJoinPage = () => {
 
     return (
       <>
-        <PageHeader title="Join League" />
+        <h1 className="font-display text-xl font-semibold text-gray-900">Join League</h1>
         <ErrorMessage message={message} />
         <Link to="/leagues" className="text-sm text-blue-600 hover:text-blue-700 font-display">
           Go to Leagues

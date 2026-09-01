@@ -2,7 +2,6 @@ import React, { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import type { CompetitionEventShell } from "@cut/sport-sdk";
 import { ContestList, ContestListConnectHint } from "../components/contest/ContestList";
-import { PageHeader } from "../components/common/PageHeader";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { useAuth } from "../contexts/AuthContext";
 import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
@@ -61,7 +60,7 @@ export const SportHubContests: React.FC = () => {
 
   return (
     <div className="mb-4 space-y-4">
-      <PageHeader title="Live Contests" />
+      <h1 className="font-display text-xl font-semibold text-gray-900">Live Contests</h1>
       <ContestList
         contests={contests}
         loading={showLoading}

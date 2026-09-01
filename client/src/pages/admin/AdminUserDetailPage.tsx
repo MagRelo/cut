@@ -3,7 +3,6 @@ import { useChainId } from "wagmi";
 import { getContractAddress } from "../../utils/blockchainUtils";
 import { WalletTokenBalancesCard } from "../../components/admin/WalletTokenBalancesCard";
 import { Send } from "../../components/user/Send";
-import { PageHeader } from "../../components/common/PageHeader";
 import { PageSection } from "../../components/layout/PageSection";
 import { LoadingSpinner } from "../../components/common/LoadingSpinner";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
@@ -26,7 +25,7 @@ export function AdminUserDetailPage() {
   return (
     <>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <PageHeader title={data?.name ?? "User"} />
+        <h1 className="font-display text-xl font-semibold text-gray-900">{data?.name ?? "User"}</h1>
         <Link to="/admin?tab=users" className="text-sm text-blue-600 hover:text-blue-800 font-medium self-start sm:self-center">
           Back to list
         </Link>

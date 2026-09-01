@@ -1,7 +1,7 @@
 import React from "react";
 import { GroupedContestList } from "../components/contest/GroupedContestList";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
-import { PageHeader } from "../components/common/PageHeader";
+import { ListHeader } from "../components/common/ListHeader";
 import { useContestDirectory } from "../hooks/useContestDirectory";
 
 export const Contests: React.FC = () => {
@@ -31,7 +31,7 @@ export const Contests: React.FC = () => {
       {showUpcomingSection ? (
         <>
           <div className="mb-3">
-            <PageHeader title="🚩 Upcoming Events" />
+            <ListHeader title="🚩 Upcoming Events" />
           </div>
           <GroupedContestList
             groups={upcoming}
@@ -46,7 +46,7 @@ export const Contests: React.FC = () => {
           {showUpcomingSection ? <hr className="my-5 border-gray-200" /> : null}
 
           <div className="mb-3">
-            <PageHeader
+            <ListHeader
               title={
                 <>
                   <span
@@ -67,7 +67,7 @@ export const Contests: React.FC = () => {
             <hr className="mb-5 mt-4 border-gray-200" />
           ) : null}
           <div className="mb-3">
-            <PageHeader title="Past Events" />
+            <ListHeader title="Past Events" />
           </div>
           <GroupedContestList groups={past} loading={false} error={null} variant="past" />
         </>

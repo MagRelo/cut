@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { PageHeader } from "../components/common/PageHeader";
 import { PageSection } from "../components/layout/PageSection";
 import { isTargetTestnet } from "../config/targetChain";
 
@@ -27,7 +26,9 @@ export const FAQPage: React.FC = () => {
 
   return (
     <>
-      <PageHeader title="Frequently Asked Questions" className="mb-3" />
+      <h1 className="mb-3 font-display text-xl font-semibold text-gray-900">
+        Frequently Asked Questions
+      </h1>
 
       {/* Quick Navigation */}
       <PageSection>

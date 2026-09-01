@@ -1,5 +1,4 @@
 import { Link, useNavigate } from "react-router-dom";
-import { PageHeader } from "../components/common/PageHeader";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { PageSection } from "../components/layout/PageSection";
 import { UserGroupForm } from "../components/userGroup/UserGroupForm";
@@ -26,7 +25,7 @@ export const UserGroupCreatePage = () => {
           { label: "Create League", path: "/leagues/create" },
         ]}
       />
-      <PageHeader title="Create League" />
+      <h1 className="mb-2 font-display text-xl font-semibold text-gray-900">Create League</h1>
       <p className="mb-4 font-display text-sm leading-relaxed text-gray-600">
         Set a name and optional description—then invite friends and create contests from the Manage
         tab.{" "}

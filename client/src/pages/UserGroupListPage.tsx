@@ -1,6 +1,5 @@
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
-import { PageHeader } from "../components/common/PageHeader";
 import { PageSection } from "../components/layout/PageSection";
 import { UserGroupList } from "../components/userGroup/UserGroupList";
 import { useUserGroupsQuery } from "../hooks/useUserGroupQuery";
@@ -16,7 +15,7 @@ export const UserGroupListPage = () => {
 
   return (
     <>
-      <PageHeader title="Leagues" />
+      <h1 className="font-display text-xl font-semibold text-gray-900">Leagues</h1>
       <PageSection>
         {isLoading ? (
           <div className="flex items-center justify-center py-12">

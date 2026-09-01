@@ -1,33 +1,33 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { PageHeader } from "./PageHeader";
+import { ListHeader } from "./ListHeader";
 
 const meta = {
-  title: "Common/PageHeader",
-  component: PageHeader,
+  title: "Common/ListHeader",
+  component: ListHeader,
   tags: ["autodocs"],
   parameters: {
     layout: "padded",
   },
-} satisfies Meta<typeof PageHeader>;
+} satisfies Meta<typeof ListHeader>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    title: "Live Contests",
+    title: "Upcoming Events",
   },
 };
 
 export const LongTitle: Story = {
   args: {
-    title: "Frequently Asked Questions",
+    title: "Past Events",
   },
 };
 
 export const WithActions: Story = {
   args: {
-    title: "Contests",
+    title: "In Progress",
     actions: (
       <button
         type="button"

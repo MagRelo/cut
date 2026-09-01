@@ -1,5 +1,4 @@
 import React from "react";
-import { PageHeader } from "../components/common/PageHeader";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { CreateContestForm } from "../components/contest/CreateContestForm";
 
@@ -12,7 +11,7 @@ const CreateContestPage: React.FC = () => {
           { label: "Create Contest", path: "/contests/create" },
         ]}
       />
-      <PageHeader title="Create Contest" className="mb-3" />
+      <h1 className="mb-3 font-display text-xl font-semibold text-gray-900">Create Contest</h1>
       <CreateContestForm />
     </>
   );

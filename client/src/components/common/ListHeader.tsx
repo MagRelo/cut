@@ -1,12 +1,12 @@
 import React from "react";
 
-interface PageHeaderProps {
+interface ListHeaderProps {
   title: React.ReactNode;
   className?: string;
   actions?: React.ReactNode;
 }
 
-export const PageHeader: React.FC<PageHeaderProps> = ({ title, className = "", actions }) => {
+export const ListHeader: React.FC<ListHeaderProps> = ({ title, className = "", actions }) => {
   return (
     <div className={`flex items-center justify-between gap-4 ${className}`}>
       <h2 className="m-0 min-w-0 max-w-full">

@@ -4,7 +4,6 @@ import { useAccount } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 
 import { CopyButton } from "../components/common/CopyToClipboard";
-import { PageHeader } from "../components/common/PageHeader";
 import { ShareInviteButton } from "../components/common/ShareInviteButton";
 import { PageSection } from "../components/layout/PageSection";
 import { UserSettings } from "../components/user/UserSettings";
@@ -207,7 +206,7 @@ export function UserPage() {
 
   return (
     <>
-      <PageHeader title="Account Settings" />
+      <h1 className="font-display text-xl font-semibold text-gray-900">Account Settings</h1>
 
       <TokenBalances />
 
