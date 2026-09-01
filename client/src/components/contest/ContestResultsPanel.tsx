@@ -122,11 +122,11 @@ function ContestWinnerRows({
                 <>
                   <PayoutAmount wei={payoutWei} paymentDecimals={paymentDecimals} />
                   {scoreLabel ? (
-                    <ContestPayoutSubAmount tone="emphasis">{scoreLabel}</ContestPayoutSubAmount>
+                    <ContestPayoutSubAmount>{scoreLabel}</ContestPayoutSubAmount>
                   ) : null}
                 </>
               ) : scoreLabel ? (
-                <ContestPayoutSubAmount tone="emphasis">{scoreLabel}</ContestPayoutSubAmount>
+                <ContestPayoutSubAmount>{scoreLabel}</ContestPayoutSubAmount>
               ) : (
                 <span className="text-xs text-slate-400">—</span>
               )

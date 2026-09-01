@@ -19,7 +19,7 @@ export function ContestPayoutHeroCard({ label, amount }: { label: string; amount
 
 const gradientMoneySizeClass = {
   hero: "text-4xl font-bold leading-none tracking-tight sm:text-5xl",
-  row: "text-lg font-semibold leading-tight",
+  row: "text-base font-semibold leading-tight",
 } as const;
 
 const gradientMoneyToneClass = {
