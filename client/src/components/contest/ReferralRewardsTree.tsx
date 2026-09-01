@@ -104,7 +104,7 @@ function ReferralNodeRow({
   const shareLabel = node.sharePercent.toFixed(1);
 
   return (
-    <div className="relative flex items-stretch gap-2">
+    <div className="relative flex items-stretch gap-1">
       {!isFirst && (
         <div className="flex w-6 shrink-0 items-stretch py-1">
           <TreeConnector isLast={isLast} />
