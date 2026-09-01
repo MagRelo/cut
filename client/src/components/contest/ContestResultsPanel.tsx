@@ -247,7 +247,11 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
           </>
         }
       >
-        <ReferralRewardsTree referralPayments={referral} paymentDecimals={paymentDecimals} />
+        <ReferralRewardsTree
+          referralPayments={referral}
+          paymentDecimals={paymentDecimals}
+          winners={primary}
+        />
       </ContestResultsSection>
     </ContestPayoutLayout>
   );

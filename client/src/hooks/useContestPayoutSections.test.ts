@@ -178,7 +178,7 @@ describe("useContestPayoutSections", () => {
     });
 
     const result = computeContestPayoutSections(contest);
-    expect(result.referral[0]?.username).toBe("👤 Rich Bouquet");
+    expect(result.referral[0]?.username).toBe("🏌️ Rich Bouquet");
     expect(result.referral[0]?.userColor).toBe("#64748b");
   });
 });

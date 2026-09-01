@@ -6,39 +6,42 @@ import {
   ContestPayoutRow,
   ContestPayoutRowSubtitle,
   ContestPayoutRowTitle,
+  ContestPayoutSubAmount,
 } from "./contestPayoutPresentation";
 
 interface ReferralRewardsTreeProps {
   referralPayments: OnchainPaymentView[];
   paymentDecimals: number;
+  /** Contest winners, used to label the first link in each referral chain. */
+  winners?: OnchainPaymentView[];
 }
 
 interface ReferralNode {
   payment: OnchainPaymentView;
   level: number;
-  sharePercent: number;
 }
 
 interface ReferralGroup {
   id: string;
+  winnerUsername: string;
   nodes: ReferralNode[];
 }
 
-function calculateGeometricSharePercent(level: number, totalLevels: number): number {
-  if (totalLevels === 1) return 100;
-  const ratio = 5 / 3;
-  const shares: number[] = [];
-  let current = 1;
-  for (let i = 0; i < totalLevels; i++) {
-    shares.push(current);
-    current = current / ratio;
+function winnerUsernameByWallet(winners: OnchainPaymentView[] | undefined): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const winner of winners ?? []) {
+    if (!winner.walletAddress) continue;
+    names.set(winner.walletAddress.toLowerCase(), winner.username);
   }
-  const totalShares = shares.reduce((a, b) => a + b, 0);
-  return (shares[level] / totalShares) * 100;
+  return names;
 }
 
-function groupReferralPayments(referralPayments: OnchainPaymentView[]): ReferralGroup[] {
+function groupReferralPayments(
+  referralPayments: OnchainPaymentView[],
+  winners: OnchainPaymentView[] | undefined,
+): ReferralGroup[] {
   const groupMap = new Map<string, ReferralNode[]>();
+  const winnerNames = winnerUsernameByWallet(winners);
 
   for (const payment of referralPayments) {
     const meta = payment.metadata ?? {};
@@ -51,21 +54,30 @@ function groupReferralPayments(referralPayments: OnchainPaymentView[]): Referral
     groupMap.get(winner)!.push({
       payment,
       level: recipientIndex,
-      sharePercent: 0,
     });
   }
 
   const result: ReferralGroup[] = [];
   for (const [winner, nodes] of groupMap) {
     nodes.sort((a, b) => a.level - b.level);
-    const totalLevels = nodes.length;
-    for (let i = 0; i < nodes.length; i++) {
-      nodes[i].sharePercent = calculateGeometricSharePercent(i, totalLevels);
-    }
-    result.push({ id: winner, nodes });
+    result.push({
+      id: winner,
+      winnerUsername: winnerNames.get(winner.toLowerCase()) ?? "Unknown",
+      nodes,
+    });
   }
 
   return result;
+}
+
+function referredUsername(group: ReferralGroup, index: number): string {
+  if (index === 0) return group.winnerUsername;
+  return group.nodes[index - 1]?.payment.username ?? "Unknown";
+}
+
+function referralLevelLabel(level: number): string {
+  if (level <= 0) return "Direct";
+  return `Level ${level + 1}`;
 }
 
 function TreeLevelIndicator({ level }: { level: number }) {
@@ -78,7 +90,7 @@ function TreeLevelIndicator({ level }: { level: number }) {
 
 function TreeConnector({ isLast }: { isLast: boolean }) {
   return (
-    <div className="relative ml-2.5 flex h-full w-4">
+    <div className="relative ml-4 flex h-full w-4">
       <div
         className={`absolute left-0 top-0 w-0.5 bg-gradient-to-b from-emerald-400 to-emerald-500 ${
           isLast ? "h-1/2" : "h-full"
@@ -91,17 +103,18 @@ function TreeConnector({ isLast }: { isLast: boolean }) {
 
 function ReferralNodeRow({
   node,
+  referredName,
   isFirst,
   isLast,
   paymentDecimals,
 }: {
   node: ReferralNode;
+  referredName: string;
   isFirst: boolean;
   isLast: boolean;
   paymentDecimals: number;
 }) {
   const wei = parseAmountWei(node.payment);
-  const shareLabel = node.sharePercent.toFixed(1);
 
   return (
     <div className="relative flex items-stretch gap-1">
@@ -120,19 +133,20 @@ function ReferralNodeRow({
             left={
               <div className="min-w-0">
                 <ContestPayoutRowTitle>{node.payment.username}</ContestPayoutRowTitle>
-                <ContestPayoutRowSubtitle>
-                  Level {node.level + 1} · {shareLabel}%
-                </ContestPayoutRowSubtitle>
+                <ContestPayoutRowSubtitle>Referred: {referredName}</ContestPayoutRowSubtitle>
               </div>
             }
             right={
-              wei !== null ? (
-                <ContestPayoutGradientMoney>
-                  {formatDollarFromWei(wei, paymentDecimals)}
-                </ContestPayoutGradientMoney>
-              ) : (
-                <span className="text-xs text-slate-400">—</span>
-              )
+              <>
+                {wei !== null ? (
+                  <ContestPayoutGradientMoney>
+                    {formatDollarFromWei(wei, paymentDecimals)}
+                  </ContestPayoutGradientMoney>
+                ) : (
+                  <span className="text-xs text-slate-400">—</span>
+                )}
+                <ContestPayoutSubAmount>{referralLevelLabel(node.level)}</ContestPayoutSubAmount>
+              </>
             }
           />
         </div>
@@ -144,8 +158,12 @@ function ReferralNodeRow({
 export const ReferralRewardsTree: React.FC<ReferralRewardsTreeProps> = ({
   referralPayments,
   paymentDecimals,
+  winners,
 }) => {
-  const groups = useMemo(() => groupReferralPayments(referralPayments), [referralPayments]);
+  const groups = useMemo(
+    () => groupReferralPayments(referralPayments, winners),
+    [referralPayments, winners],
+  );
 
   if (groups.length === 0) {
     return <p className="pl-2 text-sm text-slate-500">&bull; No rewards payouts recorded</p>;
@@ -159,6 +177,7 @@ export const ReferralRewardsTree: React.FC<ReferralRewardsTreeProps> = ({
             <ReferralNodeRow
               key={`${node.payment.walletAddress}-${index}`}
               node={node}
+              referredName={referredUsername(group, index)}
               isFirst={index === 0}
               isLast={index === group.nodes.length - 1}
               paymentDecimals={paymentDecimals}

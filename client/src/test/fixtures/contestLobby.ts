@@ -151,7 +151,7 @@ export const contestFixtures = {
         kind: "REFERRAL",
         amountWei: "7500000000000000",
         walletAddress: "0xReferralPlatformRoot",
-        username: "👤 Rich Bouquet",
+        username: "🏌️ Rich Bouquet",
         userColor: "#64748b",
         metadata: {
           winner: "0xWinnerAddress0001",
@@ -251,7 +251,7 @@ export const contestFixtures = {
         kind: "REFERRAL",
         amountWei: "17185000000000000",
         walletAddress: "0xReferralPlatformRoot",
-        username: "👤 Rich Bouquet",
+        username: "🏌️ Rich Bouquet",
         userColor: "#64748b",
         metadata: {
           winner: "0xWinnerAddress0001",

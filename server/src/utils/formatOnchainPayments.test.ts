@@ -94,7 +94,7 @@ describe("formatOnchainPaymentsForContest", () => {
     );
 
     expect(result).toHaveLength(1);
-    expect(result[0]?.username).toBe("👤 Rich Bouquet");
+    expect(result[0]?.username).toBe("🏌️ Rich Bouquet");
     expect(result[0]?.userColor).toBe("#64748b");
   });
 

@@ -8,7 +8,7 @@ import type {
 } from "../types/contest";
 import { getContractConfig } from "../utils/blockchainUtils";
 
-const PLATFORM_ROOT_DISPLAY_NAME = "👤 Rich Bouquet";
+const PLATFORM_ROOT_DISPLAY_NAME = "🏌️ Rich Bouquet";
 /** Tailwind slate-500 — left-border highlight for platform-root referral payouts. */
 const PLATFORM_ROOT_DISPLAY_COLOR = "#64748b";
 
