@@ -56,7 +56,7 @@ export const ContestList = ({
         <p className="mb-1 font-display text-base font-semibold text-gray-900">
           Contests coming soon...
         </p>
-        <p className="font-display text-sm leading-relaxed text-gray-600">
+        <p className="font-display text-sm text-gray-600">
           New contests will show up here when they open. Check back soon.
         </p>
       </div>
