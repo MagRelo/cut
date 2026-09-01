@@ -60,6 +60,18 @@ export const contestListSelect = {
   },
 } as const;
 
+/** Event rows for the directory, including weeks that do not have contests yet. */
+export const contestDirectoryEventSelect = {
+  id: true,
+  sportId: true,
+  externalId: true,
+  isActive: true,
+  metadata: true,
+  createdAt: true,
+  updatedAt: true,
+  sport: { select: { id: true, name: true } },
+} as const;
+
 /** Directory list: slim contest row plus event header fields. */
 export const contestDirectorySelect = {
   id: true,
@@ -88,16 +100,7 @@ export const contestDirectorySelect = {
     },
   },
   event: {
-    select: {
-      id: true,
-      sportId: true,
-      externalId: true,
-      isActive: true,
-      metadata: true,
-      createdAt: true,
-      updatedAt: true,
-      sport: { select: { id: true, name: true } },
-    },
+    select: contestDirectoryEventSelect,
   },
 } as const;
 

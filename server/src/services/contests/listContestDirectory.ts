@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma.js";
 import { createTtlCache } from "../../lib/ttlCache.js";
 import {
+  contestDirectoryEventSelect,
   contestDirectorySelect,
   contestPrivyVisibilityOr,
 } from "../../utils/contestListQuery.js";
@@ -161,7 +162,6 @@ function buildGroups(
 
   for (const event of events) {
     const contests = contestsByEventId.get(event.id) ?? [];
-    if (contests.length === 0) continue;
     const sortedContests = [...contests].sort((a, b) => {
       return (Number(b.settings?.primaryDeposit) || 0) - (Number(a.settings?.primaryDeposit) || 0);
     });
@@ -174,6 +174,24 @@ function buildGroups(
   return groups.sort(
     (a, b) => groupEventSortTime(b.event, sortKey) - groupEventSortTime(a.event, sortKey),
   );
+}
+
+function bucketDirectoryEvent(event: EventWithSport): "upcoming" | "live" | "past" {
+  const status = eventStatusFromMetadata(event.metadata, event.sportId);
+  if (status === "LIVE") return "live";
+  if (status === "COMPLETE") return "past";
+  return "upcoming";
+}
+
+/** Only upcoming weeks can appear before any contest exists. */
+function shouldListDirectoryEvent(
+  event: EventWithSport,
+  contestCount: number,
+  now = new Date(),
+): boolean {
+  if (contestCount > 0) return true;
+  if (bucketDirectoryEvent(event) !== "upcoming") return false;
+  return event.isActive || eventEndDate(event).getTime() >= now.getTime();
 }
 
 export async function listContestDirectory(
@@ -190,21 +208,30 @@ export async function listContestDirectory(
           OR: [{ isActive: true }, { isActive: false, updatedAt: { gte: lookbackDate } }],
         };
 
-  const rows = await prisma.contest.findMany({
-    where: {
-      OR: contestPrivyVisibilityOr(privyUserId),
-      event: {
-        sport: { isEnabled: true },
-        ...eventWindow,
-      },
-    },
-    select: contestDirectorySelect,
-  });
+  const eventWhere = {
+    sport: { isEnabled: true },
+    ...eventWindow,
+  };
 
-  const upcomingEvents: EventWithSport[] = [];
-  const liveEvents: EventWithSport[] = [];
-  const pastEvents: EventWithSport[] = [];
-  const seenEvents = new Set<string>();
+  const [rows, eventRows] = await Promise.all([
+    prisma.contest.findMany({
+      where: {
+        OR: contestPrivyVisibilityOr(privyUserId),
+        event: eventWhere,
+      },
+      select: contestDirectorySelect,
+    }),
+    prisma.competitionEvent.findMany({
+      where: eventWhere,
+      select: contestDirectoryEventSelect,
+    }),
+  ]);
+
+  const eventsById = new Map<string, EventWithSport>();
+  for (const event of eventRows) {
+    eventsById.set(event.id, event);
+  }
+
   const contestsByEventId = new Map<string, DirectoryContest[]>();
 
   for (const row of rows) {
@@ -212,17 +239,26 @@ export async function listContestDirectory(
     const existing = contestsByEventId.get(row.eventId) ?? [];
     existing.push(formatted);
     contestsByEventId.set(row.eventId, existing);
+    if (!eventsById.has(row.event.id)) {
+      eventsById.set(row.event.id, row.event);
+    }
+  }
 
-    if (seenEvents.has(row.event.id)) continue;
-    seenEvents.add(row.event.id);
+  const upcomingEvents: EventWithSport[] = [];
+  const liveEvents: EventWithSport[] = [];
+  const pastEvents: EventWithSport[] = [];
 
-    const status = eventStatusFromMetadata(row.event.metadata, row.event.sportId);
-    if (status === "LIVE") {
-      liveEvents.push(row.event);
-    } else if (status === "COMPLETE") {
-      pastEvents.push(row.event);
+  for (const event of eventsById.values()) {
+    const contestCount = contestsByEventId.get(event.id)?.length ?? 0;
+    if (!shouldListDirectoryEvent(event, contestCount)) continue;
+
+    const bucket = bucketDirectoryEvent(event);
+    if (bucket === "live") {
+      liveEvents.push(event);
+    } else if (bucket === "past") {
+      pastEvents.push(event);
     } else {
-      upcomingEvents.push(row.event);
+      upcomingEvents.push(event);
     }
   }
 

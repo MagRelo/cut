@@ -52,8 +52,8 @@ export const ContestList = ({
 
   const listContent =
     contests.length === 0 ? (
-      <div>
-        <p className="mb-1 font-display text-base font-semibold text-gray-900">No contests yet</p>
+      <div className="rounded-md border border-slate-200 bg-white p-3 shadow-sm">
+        <p className="mb-1 font-display text-base font-semibold text-gray-900">Coming soon...</p>
         <p className="font-display text-sm leading-relaxed text-gray-600">
           New contests will show up here when they open. Check back soon.
         </p>

@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findMany } = vi.hoisted(() => ({
+const { findMany, findEvents } = vi.hoisted(() => ({
   findMany: vi.fn(),
+  findEvents: vi.fn(),
 }));
 
 vi.mock("../../lib/prisma.js", () => ({
   prisma: {
     contest: { findMany },
+    competitionEvent: { findMany: findEvents },
   },
 }));
 
@@ -72,6 +74,7 @@ describe("listContestDirectory", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     invalidateContestDirectory();
+    findEvents.mockResolvedValue([]);
   });
 
   it("issues one contest.findMany and public-only visibility when anonymous", async () => {
@@ -80,10 +83,12 @@ describe("listContestDirectory", () => {
     await listContestDirectory(null, "all");
 
     expect(findMany).toHaveBeenCalledTimes(1);
+    expect(findEvents).toHaveBeenCalledTimes(1);
     const where = findMany.mock.calls[0]?.[0]?.where;
     expect(where.OR).toEqual([{ userGroupId: null }]);
     expect(where.chainId).toBeUndefined();
     expect(where.event.sport).toEqual({ isEnabled: true });
+    expect(findEvents.mock.calls[0]?.[0]?.where.sport).toEqual({ isEnabled: true });
   });
 
   it("includes membership filter for a signed-in Privy user", async () => {
@@ -177,6 +182,80 @@ describe("listContestDirectory", () => {
     const second = await getContestDirectory(null, "all");
 
     expect(findMany).toHaveBeenCalledTimes(1);
+    expect(findEvents).toHaveBeenCalledTimes(1);
     expect(second).toEqual(first);
+  });
+
+  it("lists an active upcoming event with no contests", async () => {
+    findMany.mockResolvedValue([]);
+    findEvents.mockResolvedValue([
+      golfEvent({
+        status: "NOT_STARTED",
+        startDate: "2026-09-17T12:00:00.000Z",
+        endDate: "2026-09-20T22:00:00.000Z",
+      }),
+    ]);
+
+    const directory = await listContestDirectory(null, "all");
+
+    expect(directory.upcoming).toHaveLength(1);
+    expect(directory.upcoming[0]?.event.name).toBe("Test Open");
+    expect(directory.upcoming[0]?.contests).toEqual([]);
+    expect(directory.live).toEqual([]);
+    expect(directory.past).toEqual([]);
+  });
+
+  it("omits a live event that has no contests", async () => {
+    findMany.mockResolvedValue([]);
+    findEvents.mockResolvedValue([
+      golfEvent({
+        status: "IN_PROGRESS",
+        startDate: "2026-08-31T12:00:00.000Z",
+        endDate: "2026-09-04T22:00:00.000Z",
+      }),
+    ]);
+
+    const directory = await listContestDirectory(null, "all");
+
+    expect(directory.upcoming).toEqual([]);
+    expect(directory.live).toEqual([]);
+    expect(directory.past).toEqual([]);
+  });
+
+  it("omits a completed event that has no contests", async () => {
+    findMany.mockResolvedValue([]);
+    findEvents.mockResolvedValue([
+      golfEvent({
+        status: "COMPLETED",
+        startDate: "2026-08-27T12:00:00.000Z",
+        endDate: "2026-08-30T22:00:00.000Z",
+      }),
+    ]);
+
+    const directory = await listContestDirectory(null, "all");
+
+    expect(directory.upcoming).toEqual([]);
+    expect(directory.live).toEqual([]);
+    expect(directory.past).toEqual([]);
+  });
+
+  it("omits inactive stub events whose dates have already passed", async () => {
+    findMany.mockResolvedValue([]);
+    findEvents.mockResolvedValue([
+      {
+        ...golfEvent({
+          status: "",
+          startDate: "2026-04-06T15:34:58.000Z",
+          endDate: "2026-04-06T15:34:58.000Z",
+        }),
+        isActive: false,
+      },
+    ]);
+
+    const directory = await listContestDirectory(null, "all");
+
+    expect(directory.upcoming).toEqual([]);
+    expect(directory.live).toEqual([]);
+    expect(directory.past).toEqual([]);
   });
 });
