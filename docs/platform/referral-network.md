@@ -18,7 +18,7 @@ The **cold referral platform root** (`referralPlatformRootAddress` in chain JSON
 | Organic (no invite) | `null` | Platform root address |
 | Invited | Inviter wallet | Inviter (must already be on-chain) |
 
-**Signup vs graph:** Postgres stores the invite at `POST /auth/session` even when the inviter is not yet `isRegistered` on ReferralGraph. Cron registers the invitee only after the parent is on-chain. A missing or unresolved `ref` does not block account creation.
+**Signup vs graph:** Postgres stores the invite at `POST /auth/session` when `X-Cut-Referral-Code` matches `User.referralCode`, even when the inviter is not yet `isRegistered` on ReferralGraph. Cron registers the invitee only after the parent is on-chain. A missing, invalid, or `0x` `ref` does not block account creation.
 
 **Settlement:** `getReferrer(winner, groupId)` must be non-zero and not `REFERRAL_ROOT` for a payable chain. The server blocks settle if the winner is not `isRegistered` when `referralNetworkBps > 0`. The contest calls `getPayoutChain(payoutAnchor, groupId, 10)` and `RewardCalculator.calculateRewards`, then transfers each share (geometric split; the winner is never a fee recipient). The platform root is always an ancestor for organics in this model.
 
@@ -154,6 +154,7 @@ Setup services expose `platformRoot` (the cold platform-root address).
 | Concern | Path |
 |---------|------|
 | Referral config | `server/src/lib/referralConfig.ts` |
+| Signup invite codes | `server/src/lib/referralCode.ts` |
 | Lobby referral-stake overlay | `server/src/services/referral/referralStakeForViewer.ts` |
 | On-chain user sync (cron + rematerialize) | `server/src/services/referral/syncReferralGraphUser.ts` |
 | Platform root env (deploy only) | `contracts/env.example` / forge `ReferralDeployGuard` |

@@ -55,8 +55,8 @@ No auth. `{ status, service, timestamp }`
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/me` | ✅ | User profile + `userGroups` (read-only; no Privy fetch) |
-| POST | `/session` | JWT | Signup / sync from Privy. Optional `X-Cut-Referrer-Address` is best-effort: a missing, unknown, or not-yet-on-chain inviter does not fail the request. After a valid Privy JWT, a new Cut user is always created. |
+| GET | `/me` | ✅ | User profile + `userGroups` + `referralCode` (read-only; no Privy fetch). Mints a code if the user has none. |
+| POST | `/session` | JWT | Signup / sync from Privy. Optional `X-Cut-Referral-Code` is best-effort: a missing, unknown, `0x` address, or unused invite code does not fail the request. After a valid Privy JWT, a new Cut user is always created. Profile includes `referralCode`. |
 | POST | `/sync-wallets` | ✅ | Re-sync `UserWallet` rows from Privy linked accounts |
 | GET | `/referrals/summary` | ✅ | Referral tree summary |
 | PUT | `/update` | ✅ | Update display name (1–80 chars) |

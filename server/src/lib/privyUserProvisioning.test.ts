@@ -142,20 +142,18 @@ describe("syncUserWalletsForPrivyUser", () => {
 
 const INVITER = "0x14c110d971ef58dfeda15767a89aa3b0d9ea857e";
 const INVITEE = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+const INVITER_CODE = "k7xPm2Qd";
 const GROUP_ID = `0x${"11".repeat(32)}`;
 
-function inviterWalletRow(overrides?: {
-  chainId?: number;
+function inviterUserRow(overrides?: {
   wallets?: Array<{ publicKey: string; chainId: number; isPrimary: boolean }>;
 }) {
-  const chainId = overrides?.chainId ?? 84532;
   const wallets = overrides?.wallets ?? [
-    { publicKey: INVITER, chainId, isPrimary: true },
+    { publicKey: INVITER, chainId: 84532, isPrimary: true },
   ];
   return {
-    userId: "inviter",
-    publicKey: INVITER,
-    user: { wallets },
+    id: "inviter",
+    wallets,
   };
 }
 
@@ -171,61 +169,74 @@ describe("tryResolveReferralForNewUser", () => {
     process.env.REFERRAL_GROUP_ID = originalGroupId;
   });
 
-  it("returns null for self-referral instead of throwing", async () => {
-    const { tryResolveReferralForNewUser } = await import("./privyUserProvisioning.js");
-    await expect(tryResolveReferralForNewUser(INVITEE, 84532, INVITEE)).resolves.toBeNull();
-    expect(prismaMock.userWallet.findFirst).not.toHaveBeenCalled();
-  });
-
-  it("returns null when the inviter has no Cut wallet", async () => {
-    prismaMock.userWallet.findFirst.mockResolvedValue(null);
-    const { tryResolveReferralForNewUser } = await import("./privyUserProvisioning.js");
-
+  it("returns null for a 0x wallet without looking up a user", async () => {
+    const { tryResolveReferralForNewUser } = await import("./referralCode.js");
     await expect(tryResolveReferralForNewUser(INVITER, 84532, INVITEE)).resolves.toBeNull();
+    expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
   });
 
-  it("attaches a Cut user found on the signup chain without a Privy or on-chain check", async () => {
-    prismaMock.userWallet.findFirst.mockResolvedValueOnce(inviterWalletRow());
-    const { tryResolveReferralForNewUser } = await import("./privyUserProvisioning.js");
+  it("returns null for an unknown code", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    const { tryResolveReferralForNewUser } = await import("./referralCode.js");
 
-    await expect(tryResolveReferralForNewUser(INVITER, 84532, INVITEE)).resolves.toEqual({
+    await expect(tryResolveReferralForNewUser(INVITER_CODE, 84532, INVITEE)).resolves.toBeNull();
+  });
+
+  it("returns null for self-referral instead of throwing", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(
+      inviterUserRow({
+        wallets: [{ publicKey: INVITEE, chainId: 84532, isPrimary: true }],
+      }),
+    );
+    const { tryResolveReferralForNewUser } = await import("./referralCode.js");
+    await expect(tryResolveReferralForNewUser(INVITER_CODE, 84532, INVITEE)).resolves.toBeNull();
+  });
+
+  it("attaches a Cut user found by code without a Privy or on-chain check", async () => {
+    prismaMock.user.findUnique.mockResolvedValueOnce(inviterUserRow());
+    const { tryResolveReferralForNewUser } = await import("./referralCode.js");
+
+    await expect(tryResolveReferralForNewUser(INVITER_CODE, 84532, INVITEE)).resolves.toEqual({
       referredByUserId: "inviter",
       groupIdHex: GROUP_ID,
       referrerAddress: INVITER,
     });
-    expect(prismaMock.userWallet.findFirst).toHaveBeenCalledTimes(1);
+    expect(prismaMock.user.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { referralCode: INVITER_CODE } }),
+    );
   });
 
-  it("falls back to the inviter wallet on the other Base chain", async () => {
-    prismaMock.userWallet.findFirst
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(inviterWalletRow({ chainId: 8453 }));
-    const { tryResolveReferralForNewUser } = await import("./privyUserProvisioning.js");
-
-    await expect(tryResolveReferralForNewUser(INVITER, 84532, INVITEE)).resolves.toEqual({
-      referredByUserId: "inviter",
-      groupIdHex: GROUP_ID,
-      referrerAddress: INVITER,
-    });
-    expect(prismaMock.userWallet.findFirst).toHaveBeenCalledTimes(2);
-  });
-
-  it("parents under the inviter primary on the signup chain when the header matched a secondary wallet", async () => {
+  it("parents under the inviter primary on the signup chain when the inviter has a secondary wallet", async () => {
     const primary = "0xcccccccccccccccccccccccccccccccccccccccc";
-    prismaMock.userWallet.findFirst.mockResolvedValueOnce(
-      inviterWalletRow({
+    prismaMock.user.findUnique.mockResolvedValueOnce(
+      inviterUserRow({
         wallets: [
           { publicKey: INVITER, chainId: 84532, isPrimary: false },
           { publicKey: primary, chainId: 84532, isPrimary: true },
         ],
       }),
     );
-    const { tryResolveReferralForNewUser } = await import("./privyUserProvisioning.js");
+    const { tryResolveReferralForNewUser } = await import("./referralCode.js");
 
-    await expect(tryResolveReferralForNewUser(INVITER, 84532, INVITEE)).resolves.toEqual({
+    await expect(tryResolveReferralForNewUser(INVITER_CODE, 84532, INVITEE)).resolves.toEqual({
       referredByUserId: "inviter",
       groupIdHex: GROUP_ID,
       referrerAddress: primary,
+    });
+  });
+
+  it("uses an inviter wallet on the other Base chain when none exists on the signup chain", async () => {
+    prismaMock.user.findUnique.mockResolvedValueOnce(
+      inviterUserRow({
+        wallets: [{ publicKey: INVITER, chainId: 8453, isPrimary: true }],
+      }),
+    );
+    const { tryResolveReferralForNewUser } = await import("./referralCode.js");
+
+    await expect(tryResolveReferralForNewUser(INVITER_CODE, 84532, INVITEE)).resolves.toEqual({
+      referredByUserId: "inviter",
+      groupIdHex: GROUP_ID,
+      referrerAddress: INVITER,
     });
   });
 });
@@ -245,10 +256,21 @@ describe("provisionUserFromPrivy referral", () => {
     prismaMock.user.findFirst.mockResolvedValue(null);
     prismaMock.user.create.mockResolvedValue({ id: "new-user" });
     prismaMock.user.findUniqueOrThrow.mockResolvedValue({ id: "new-user" });
-    prismaMock.user.findUnique.mockResolvedValue({ id: "new-user", userType: "USER" });
     prismaMock.userWallet.findUnique.mockResolvedValue(null);
     prismaMock.userWallet.create.mockResolvedValue({});
     prismaMock.$transaction.mockResolvedValue([]);
+    prismaMock.user.findUnique.mockImplementation(async (args: { where?: Record<string, unknown> }) => {
+      if (args?.where?.referralCode === INVITER_CODE) {
+        return inviterUserRow();
+      }
+      if (args?.where?.referralCode) {
+        return null;
+      }
+      if (args?.where?.privyUserId || args?.where?.id) {
+        return { id: "new-user", userType: "USER" };
+      }
+      return null;
+    });
     prismaMock.userWallet.findFirst.mockImplementation(async (args: { where?: { isPrimary?: boolean } }) => {
       if (args?.where?.isPrimary) {
         return { publicKey: INVITEE };
@@ -267,11 +289,32 @@ describe("provisionUserFromPrivy referral", () => {
     process.env.REFERRAL_GROUP_ID = originalGroupId;
   });
 
-  it("creates the user when the referrer is not a Cut user yet", async () => {
+  it("creates the user when the referral code is unknown", async () => {
+    prismaMock.user.findUnique.mockImplementation(async (args: { where?: Record<string, unknown> }) => {
+      if (args?.where?.referralCode) return null;
+      if (args?.where?.privyUserId || args?.where?.id) {
+        return { id: "new-user", userType: "USER" };
+      }
+      return null;
+    });
     const { provisionUserFromPrivy } = await import("./privyUserProvisioning.js");
-    const session = await provisionUserFromPrivy(privyUser, 84532, { referrerAddress: INVITER });
+    const session = await provisionUserFromPrivy(privyUser, 84532, { referralCode: INVITER_CODE });
 
     expect(session.userId).toBe("new-user");
+    expect(prismaMock.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          referredByUserId: null,
+          referrerAddress: null,
+          referralCode: expect.stringMatching(/^[A-HJ-NP-Za-hj-km-np-z2-9]{8}$/),
+        }),
+      }),
+    );
+  });
+
+  it("creates the user when the header is a wallet address", async () => {
+    const { provisionUserFromPrivy } = await import("./privyUserProvisioning.js");
+    await provisionUserFromPrivy(privyUser, 84532, { referralCode: INVITER });
     expect(prismaMock.user.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -282,34 +325,16 @@ describe("provisionUserFromPrivy referral", () => {
     );
   });
 
-  it("creates the user when the referrer header is not a valid address", async () => {
+  it("records referredByUserId when the invite code belongs to a Cut user", async () => {
     const { provisionUserFromPrivy } = await import("./privyUserProvisioning.js");
-    await provisionUserFromPrivy(privyUser, 84532, { referrerAddress: "not-an-address" });
-    expect(prismaMock.user.create).toHaveBeenCalled();
-  });
-
-  it("records referredByUserId when the inviter exists only on the other Base chain", async () => {
-    prismaMock.userWallet.findFirst.mockImplementation(async (args: { where?: Record<string, unknown> }) => {
-      if (args?.where?.isPrimary) {
-        return { publicKey: INVITEE };
-      }
-      const pk = args?.where?.publicKey as { equals?: string } | string | undefined;
-      const addr = typeof pk === "object" ? pk.equals : pk;
-      if (addr?.toLowerCase() === INVITER) {
-        if (args?.where?.chainId === 84532) return null;
-        return inviterWalletRow({ chainId: 8453 });
-      }
-      return null;
-    });
-
-    const { provisionUserFromPrivy } = await import("./privyUserProvisioning.js");
-    await provisionUserFromPrivy(privyUser, 84532, { referrerAddress: INVITER });
+    await provisionUserFromPrivy(privyUser, 84532, { referralCode: INVITER_CODE });
 
     expect(prismaMock.user.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           referredByUserId: "inviter",
           referrerAddress: INVITER,
+          referralCode: expect.any(String),
         }),
       }),
     );

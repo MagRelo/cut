@@ -2,7 +2,8 @@ import type { User as PrivyApiUser } from "@privy-io/node";
 import { isAddress } from "viem";
 import { prisma } from "./prisma.js";
 import { mintUSDCToUser } from "../services/mintUserTokens.js";
-import { pickWalletPublicKeyForChain } from "../utils/pickWalletForChain.js";
+import { generateUniqueReferralCode } from "../utils/inviteCode.js";
+import { tryResolveReferralForNewUser, type ResolvedSignupReferral } from "./referralCode.js";
 import { parseReferralGroupIdFromEnv } from "./referralConfig.js";
 
 /** JWT valid but no Cut user row — client should POST /auth/session. */
@@ -66,8 +67,8 @@ export type CutAuthUser = {
 };
 
 export type ProvisioningOptions = {
-  /** Raw `0x` address from `X-Cut-Referrer-Address`, if present */
-  referrerAddress?: string;
+  /** Opaque `User.referralCode` from `X-Cut-Referral-Code`, if present */
+  referralCode?: string;
 };
 
 export const DEFAULT_SMART_CHAIN = 84532;
@@ -280,83 +281,6 @@ async function syncEmailFromPrivy(userId: string, email: string | null) {
   });
 }
 
-export type ResolvedSignupReferral = {
-  referredByUserId: string;
-  groupIdHex: string | null;
-  referrerAddress: string;
-};
-
-type ReferrerWalletRow = {
-  userId: string;
-  publicKey: string;
-  user: {
-    wallets: Array<{ publicKey: string; chainId: number; isPrimary: boolean }>;
-  };
-};
-
-async function findCutWalletByAddress(
-  addressLower: string,
-  preferChainId: number,
-): Promise<ReferrerWalletRow | null> {
-  const include = { user: { include: { wallets: true } } } as const;
-  const byAddress = {
-    publicKey: { equals: addressLower, mode: "insensitive" as const },
-  };
-
-  const onPreferredChain = await prisma.userWallet.findFirst({
-    where: { chainId: preferChainId, ...byAddress },
-    include,
-  });
-  if (onPreferredChain) return onPreferredChain;
-
-  return prisma.userWallet.findFirst({
-    where: {
-      chainId: { in: [...BASE_CHAIN_IDS] },
-      ...byAddress,
-    },
-    include,
-  });
-}
-
-/**
- * Best-effort signup referrer from Cut DB. Does not require the inviter to already
- * be registered on ReferralGraph (cron attaches them on-chain later).
- * Returns null instead of throwing so account creation is never blocked.
- */
-export async function tryResolveReferralForNewUser(
-  referrerHeader: string,
-  chainId: number,
-  newUserWalletLower: string,
-): Promise<ResolvedSignupReferral | null> {
-  const referrerLower = referrerHeader.toLowerCase();
-  if (referrerLower === newUserWalletLower) {
-    console.warn("Signup referral skipped: self-referral");
-    return null;
-  }
-
-  let groupIdHex: string | null = null;
-  try {
-    groupIdHex = parseReferralGroupIdFromEnv();
-  } catch (error) {
-    console.warn("Signup referral: REFERRAL_GROUP_ID is invalid; attaching invite without group id", error);
-  }
-
-  const refWallet = await findCutWalletByAddress(referrerLower, chainId);
-  if (!refWallet) {
-    console.warn(`Signup referral skipped: no Cut user wallet for ${referrerLower}`);
-    return null;
-  }
-
-  const primaryOnSignupChain = pickWalletPublicKeyForChain(refWallet.user.wallets, chainId);
-  const referrerAddress = (primaryOnSignupChain ?? refWallet.publicKey).toLowerCase();
-
-  return {
-    referredByUserId: refWallet.userId,
-    groupIdHex,
-    referrerAddress,
-  };
-}
-
 async function maybeMintTestnetUsdc(address: string, chainId: number): Promise<void> {
   const isTokenMintingEnabled = process.env.ENABLE_TOKEN_MINTING === "true";
   const isBaseSepolia = chainId === 84532;
@@ -431,15 +355,7 @@ export async function provisionUserFromPrivy(
   const { address } = picked;
   const privyId = privyUser.id;
 
-  const rawReferrer = options?.referrerAddress?.trim();
-  let normalizedReferrer: string | undefined;
-  if (rawReferrer) {
-    if (!isAddress(rawReferrer)) {
-      console.warn("Signup referral skipped: invalid referrer address");
-    } else {
-      normalizedReferrer = rawReferrer.toLowerCase();
-    }
-  }
+  const rawReferralCode = options?.referralCode?.trim();
 
   const byPrivy = await prisma.user.findFirst({
     where: { privyUserId: privyId },
@@ -482,9 +398,9 @@ export async function provisionUserFromPrivy(
   }
 
   let referral: ResolvedSignupReferral | undefined;
-  if (normalizedReferrer) {
+  if (rawReferralCode) {
     try {
-      referral = (await tryResolveReferralForNewUser(normalizedReferrer, chainId, address)) ?? undefined;
+      referral = (await tryResolveReferralForNewUser(rawReferralCode, chainId, address)) ?? undefined;
     } catch (error) {
       console.warn("Signup referral skipped due to unexpected error:", error);
     }
@@ -507,6 +423,8 @@ export async function provisionUserFromPrivy(
     }
   }
 
+  const referralCode = await generateUniqueReferralCode();
+
   await prisma.user.create({
     data: {
       privyUserId: privyId,
@@ -516,6 +434,7 @@ export async function provisionUserFromPrivy(
         onboardingDismissed: false,
       },
       ...(email ? { email } : {}),
+      referralCode,
       referrerAddress: referral?.referrerAddress ?? null,
       referralGroupId: referral?.groupIdHex ?? platformGroupId ?? null,
       referredByUserId: referral?.referredByUserId ?? null,

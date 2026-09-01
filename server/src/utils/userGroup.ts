@@ -46,6 +46,7 @@ type UserGroupDetailRecord = {
 
 export type FormatUserGroupDetailOptions = {
   memberWalletByUserId?: Map<string, string | null>;
+  inviteReferralCode?: string | null;
 };
 
 export function formatUserGroupDetailResponse(
@@ -79,7 +80,7 @@ export function formatUserGroupDetailResponse(
     })),
     ...(userGroup.inviteCode
       ? {
-          inviteUrl: buildLeagueInviteUrl(userGroup.inviteCode, userGroup.inviteReferrerAddress),
+          inviteUrl: buildLeagueInviteUrl(userGroup.inviteCode, options?.inviteReferralCode),
           ...(isAdmin ? { inviteCode: userGroup.inviteCode } : {}),
         }
       : {}),

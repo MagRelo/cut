@@ -31,6 +31,7 @@ model User {
   verificationCodeExpiresAt DateTime?
 
   referrerAddress       String?
+  referralCode          String?   @unique
   referralGroupId       String?
   referredByUserId      String?
   referralChainId       Int?

@@ -119,14 +119,14 @@ authRouter.post("/session", verifyPrivyJwt, async (c) => {
     }
 
     const preferredChainId = parsePreferredChainId(c);
-    const referrerRaw = c.req.header("x-cut-referrer-address")?.trim();
+    const referralCodeRaw = c.req.header("x-cut-referral-code")?.trim();
 
     const privy = getPrivyClient();
     const privyUser = await privy.users()._get(privyUserId);
     const session = await provisionUserFromPrivy(
       privyUser,
       preferredChainId,
-      referrerRaw ? { referrerAddress: referrerRaw } : undefined,
+      referralCodeRaw ? { referralCode: referralCodeRaw } : undefined,
     );
 
     const profile = await buildAuthProfile(session.userId, session.chainId, session.address);

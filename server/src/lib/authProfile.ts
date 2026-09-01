@@ -1,4 +1,5 @@
 import { prisma } from "./prisma.js";
+import { ensureUserReferralCode } from "./referralCode.js";
 
 export type AuthProfileResponse = {
   id: string;
@@ -23,6 +24,7 @@ export type AuthProfileResponse = {
   }[];
   walletAddress: string;
   chainId: number;
+  referralCode: string;
 };
 
 /** Shared GET /auth/me and POST /auth/session response body. */
@@ -43,6 +45,7 @@ export async function buildAuthProfile(userId: string, chainId: number, walletAd
   }
 
   const { userGroups, ...userInfo } = userData;
+  const referralCode = userInfo.referralCode ?? (await ensureUserReferralCode(userId));
 
   return {
     id: userInfo.id,
@@ -56,5 +59,6 @@ export async function buildAuthProfile(userId: string, chainId: number, walletAd
     userGroups,
     walletAddress,
     chainId,
+    referralCode,
   } satisfies AuthProfileResponse;
 }

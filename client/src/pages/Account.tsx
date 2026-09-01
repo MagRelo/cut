@@ -38,9 +38,9 @@ function ReferralLinkRow({
   className?: string;
   showSeparator?: boolean;
 }) {
-  const { client: smartWalletClient } = useSmartWallets();
-  const addr = smartWalletClient?.account?.address;
-  const url = addr ? `${window.location.origin}/?ref=${addr}` : null;
+  const { user } = useAuth();
+  const code = user?.referralCode;
+  const url = code ? `${window.location.origin}/?ref=${code}` : null;
   if (!url) return null;
 
   const shareRow = (

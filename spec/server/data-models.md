@@ -11,7 +11,7 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 
 ### User
 - Privy-linked (`privyUserId`), profile, `settings` JSON
-- Referral fields: `referrerAddress`, `referralGroupId`, `referredByUserId`, etc.
+- Referral fields: `referralCode` (opaque `?ref=` invite code, unique), `referrerAddress`, `referralGroupId`, `referredByUserId`, etc.
 - Relations: `lineups`, `contestLineups`, `wallets`, `userGroups`
 
 ### UserWallet

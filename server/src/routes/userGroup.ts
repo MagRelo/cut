@@ -11,6 +11,7 @@ import {
 } from "../schemas/contest.js";
 import { generateUniqueInviteCode } from "../utils/inviteCode.js";
 import { buildLeagueInviteUrl } from "../lib/appUrl.js";
+import { ensureUserReferralCode, resolveInviteReferralCode } from "../lib/referralCode.js";
 import {
   formatUserGroupDetailResponse,
   getMemberWalletByUserId,
@@ -135,7 +136,11 @@ userGroupRouter.post("/join", requireAuth, async (c) => {
       return c.json({ error: "UserGroup not found" }, 404);
     }
 
-    return c.json(formatUserGroupDetailResponse(updatedGroup, user.userId), 201);
+    const inviteReferralCode = await resolveInviteReferralCode(updatedGroup.inviteReferrerAddress);
+    return c.json(
+      formatUserGroupDetailResponse(updatedGroup, user.userId, { inviteReferralCode }),
+      201,
+    );
   } catch (error) {
     console.error("Error joining userGroup:", error);
     return c.json({ error: "Failed to join userGroup" }, 500);
@@ -170,11 +175,10 @@ userGroupRouter.get("/:id", requireAuth, requireUserGroupMember, async (c) => {
         : undefined;
 
     return c.json(
-      formatUserGroupDetailResponse(
-        userGroup,
-        user.userId,
-        memberWalletByUserId ? { memberWalletByUserId } : undefined,
-      ),
+      formatUserGroupDetailResponse(userGroup, user.userId, {
+        inviteReferralCode: await resolveInviteReferralCode(userGroup.inviteReferrerAddress),
+        ...(memberWalletByUserId ? { memberWalletByUserId } : {}),
+      }),
     );
   } catch (error) {
     console.error("Error fetching userGroup:", error);
@@ -683,7 +687,7 @@ userGroupRouter.post("/:id/invite", requireAuth, requireUserGroupAdmin, async (c
       ? pickWalletPublicKeyForChain(adminUser.wallets, chainId)
       : null;
 
-    if (!inviteReferrerAddress) {
+    if (!adminUser || !inviteReferrerAddress) {
       return c.json(
         {
           error:
@@ -694,6 +698,7 @@ userGroupRouter.post("/:id/invite", requireAuth, requireUserGroupAdmin, async (c
     }
 
     const inviteCode = await generateUniqueInviteCode();
+    const inviteReferralCode = await ensureUserReferralCode(adminUser.id);
 
     await prisma.userGroup.update({
       where: { id: userGroupId },
@@ -702,7 +707,7 @@ userGroupRouter.post("/:id/invite", requireAuth, requireUserGroupAdmin, async (c
 
     return c.json({
       inviteCode,
-      inviteUrl: buildLeagueInviteUrl(inviteCode, inviteReferrerAddress),
+      inviteUrl: buildLeagueInviteUrl(inviteCode, inviteReferralCode),
     });
   } catch (error) {
     console.error("Error generating userGroup invite:", error);

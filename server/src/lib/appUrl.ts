@@ -7,10 +7,10 @@ export function getAppPublicUrl(): string {
 
 export function buildLeagueInviteUrl(
   inviteCode: string,
-  referrerAddress?: string | null,
+  referralCode?: string | null,
 ): string {
   const base = `${getAppPublicUrl()}/leagues/join/${inviteCode}`;
-  const ref = referrerAddress?.trim().toLowerCase();
+  const ref = referralCode?.trim();
   if (!ref) return base;
   return `${base}?ref=${encodeURIComponent(ref)}`;
 }

@@ -1,25 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { isAddress } from "viem";
 import {
-  getStoredReferrerAddress,
-  setStoredReferrerAddress,
+  getStoredReferralCode,
+  parseValidRefFromSearch,
+  setStoredReferralCode,
 } from "../lib/referralCapture";
 
-/** Valid `?ref=0x…` from a location search string, lowercased, or null. */
-export function parseValidRefFromSearch(search: string): string | null {
-  const params = new URLSearchParams(search);
-  const ref = params.get("ref")?.trim();
-  if (!ref || !isAddress(ref)) return null;
-  return ref.toLowerCase();
-}
+export { parseValidRefFromSearch } from "../lib/referralCapture";
 
-/** True when a referral wallet is in the URL or was captured to sessionStorage. */
+/** True when a referral code is in the URL or was captured to sessionStorage. */
 export function useReferralCodeDetected(): boolean {
   const { search } = useLocation();
   const refFromUrl = useMemo(() => parseValidRefFromSearch(search), [search]);
   const [storedRef, setStoredRef] = useState<string | null>(() =>
-    getStoredReferrerAddress()
+    getStoredReferralCode()
   );
 
   useEffect(() => {
@@ -28,18 +22,18 @@ export function useReferralCodeDetected(): boolean {
       setStoredRef(fromUrl);
       return;
     }
-    setStoredRef(getStoredReferrerAddress());
+    setStoredRef(getStoredReferralCode());
   }, [search]);
 
   return !!(refFromUrl || storedRef);
 }
 
-/** Persist `?ref=0x…` into sessionStorage for signup (sent as `X-Cut-Referrer-Address`). */
+/** Persist `?ref=` into sessionStorage for signup (sent as `X-Cut-Referral-Code`). */
 export function useReferralCapture(): void {
   const { search } = useLocation();
   useEffect(() => {
-    const refLower = parseValidRefFromSearch(search);
-    if (!refLower) return;
-    setStoredReferrerAddress(refLower);
+    const code = parseValidRefFromSearch(search);
+    if (!code) return;
+    setStoredReferralCode(code);
   }, [search]);
 }

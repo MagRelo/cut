@@ -18,7 +18,7 @@ import { ApiError, handleApiResponse, isApiError } from "../utils/apiError";
 import { getContractAddress } from "../utils/blockchainUtils";
 import { registerAuthTokenHandlers } from "../lib/authToken";
 import { getTargetChainIdFromEnv } from "../config/targetChain";
-import { clearStoredReferrerAddress, getStoredReferrerAddress } from "../lib/referralCapture";
+import { clearStoredReferralCode, getStoredReferralCode } from "../lib/referralCapture";
 import { preloadLineups } from "../lib/preloadData";
 
 /** Membership + nested group as returned by GET /auth/me. */
@@ -46,6 +46,7 @@ export interface AuthUser {
   userGroups: AuthUserGroupMembership[];
   chainId: number;
   walletAddress: string;
+  referralCode: string | null;
   pendingTokenMint?: boolean;
   createdAt?: string;
 }
@@ -289,15 +290,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return await loadProfile();
       } catch (error) {
         if (isApiError(error) && error.statusCode === 401 && error.code === "NEEDS_PROVISIONING") {
-          const referrer = getStoredReferrerAddress();
+          const referralCode = getStoredReferralCode();
           const profile = await request<AuthUser>(
             "POST",
             "/auth/session",
             undefined,
             targetChainId,
-            referrer ? { "X-Cut-Referrer-Address": referrer } : undefined,
+            referralCode ? { "X-Cut-Referral-Code": referralCode } : undefined,
           );
-          clearStoredReferrerAddress();
+          clearStoredReferralCode();
           return profile;
         }
         if (
@@ -599,6 +600,7 @@ const storybookAuthUser: AuthUser = {
   userGroups: [],
   chainId: 84532,
   walletAddress: "0x0000000000000000000000000000000000000001",
+  referralCode: "AbCdEf23",
 };
 
 const storybookAuthContextValue: AuthContextData = {

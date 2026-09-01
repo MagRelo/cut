@@ -29,6 +29,8 @@
     "service:sync-commodities-field": "tsx src/sports/commodities/runSyncField.ts",
     "service:sync-commodities-scores": "tsx src/sports/commodities/runSyncScores.ts",
     "script:backfill-player-identity": "tsx src/scripts/backfillPlayerIdentity.ts",
+    "script:backfill-referral-codes": "tsx src/scripts/backfillReferralCodes.ts",
+    "script:reset-referral-code": "tsx src/scripts/resetReferralCode.ts",
     "service:update-contest-lineups": "tsx src/services/updateContestLineups.ts",
     "service:batch-activate-contests": "tsx src/services/batch/batchActivateContests.ts",
     "service:batch-lock-contests": "tsx src/services/batch/batchLockContests.ts",
