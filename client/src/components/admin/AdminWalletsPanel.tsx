@@ -29,7 +29,7 @@ export const AdminWalletsPanel: React.FC = () => {
           title="Operator (Oracle)"
           address={OPERATOR_ADDRESS ?? ""}
           chainId={chainId}
-          paymentTokenAddress={paymentTokenAddress}
+          paymentTokenAddress={paymentTokenAddress ?? ""}
           paymentTokenSymbol={paymentTokenSymbol}
           paymentTokenDecimals={paymentTokenDecimals}
           addressMissingMessage="VITE_OPERATOR_ADDRESS is not configured. Set it in client/.env to monitor the operator wallet."
@@ -39,7 +39,7 @@ export const AdminWalletsPanel: React.FC = () => {
           title="Deployer"
           address={DEPLOYER_ADDRESS}
           chainId={chainId}
-          paymentTokenAddress={paymentTokenAddress}
+          paymentTokenAddress={paymentTokenAddress ?? ""}
           paymentTokenSymbol={paymentTokenSymbol}
           paymentTokenDecimals={paymentTokenDecimals}
         />
@@ -48,7 +48,7 @@ export const AdminWalletsPanel: React.FC = () => {
           title="Referral Platform Root"
           address={referralPlatformRootAddress}
           chainId={chainId}
-          paymentTokenAddress={paymentTokenAddress}
+          paymentTokenAddress={paymentTokenAddress ?? ""}
           paymentTokenSymbol={paymentTokenSymbol}
           paymentTokenDecimals={paymentTokenDecimals}
           addressMissingMessage="Referral platform root address is not configured in chain contracts."

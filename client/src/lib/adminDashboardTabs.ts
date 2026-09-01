@@ -1,9 +1,10 @@
-export const ADMIN_DASHBOARD_TABS = ["users", "events", "contests", "leagues", "wallets"] as const;
+export const ADMIN_DASHBOARD_TABS = ["users", "contests", "leagues", "wallets"] as const;
 
 export type AdminDashboardTab = (typeof ADMIN_DASHBOARD_TABS)[number];
 
 export function parseAdminDashboardTab(search: string): AdminDashboardTab {
   const raw = new URLSearchParams(search).get("tab")?.trim().toLowerCase();
+  if (raw === "events") return "contests";
   return ADMIN_DASHBOARD_TABS.includes(raw as AdminDashboardTab)
     ? (raw as AdminDashboardTab)
     : "users";

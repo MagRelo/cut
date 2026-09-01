@@ -30,7 +30,6 @@ function contestsHint(count: number): string {
 
 const TAB_LABELS: Record<AdminDashboardTab, string> = {
   users: "Users",
-  events: "Events",
   contests: "Contests",
   leagues: "Leagues",
   wallets: "Wallets",
@@ -108,7 +107,7 @@ export const AdminPage: React.FC = () => {
                   variant: "info" as const,
                 },
                 {
-                  tab: "events" as const,
+                  tab: "contests" as const,
                   label: "Live events",
                   value: stats?.liveEventCount ?? 0,
                   hint: contestsHint(stats?.liveContestCount ?? 0),
@@ -128,7 +127,7 @@ export const AdminPage: React.FC = () => {
               ] as const
             ).map((card) => (
               <button
-                key={card.tab}
+                key={card.label}
                 type="button"
                 onClick={() => setTab(card.tab)}
                 className="text-left rounded-sm"
@@ -162,16 +161,22 @@ export const AdminPage: React.FC = () => {
                 <AdminUsersList />
               </TabPanel>
               <TabPanel className="focus:outline-none">
-                <AdminEventsTable
-                  events={dashboard?.events ?? []}
-                  contests={dashboard?.contests.items ?? []}
-                />
-              </TabPanel>
-              <TabPanel className="focus:outline-none">
-                <AdminContestsPanel
-                  contests={dashboard?.contests}
-                  onActionComplete={refreshAll}
-                />
+                <div className="space-y-8">
+                  <div>
+                    <h2 className="mb-3 text-lg font-semibold text-gray-900">Active events</h2>
+                    <AdminEventsTable
+                      events={dashboard?.events ?? []}
+                      contests={dashboard?.contests.items ?? []}
+                    />
+                  </div>
+                  <div>
+                    <h2 className="mb-3 text-lg font-semibold text-gray-900">Contests</h2>
+                    <AdminContestsPanel
+                      contests={dashboard?.contests}
+                      onActionComplete={refreshAll}
+                    />
+                  </div>
+                </div>
               </TabPanel>
               <TabPanel className="focus:outline-none">
                 <AdminLeaguesTable leagues={dashboard?.leagues ?? []} />
