@@ -145,13 +145,10 @@ export const ReferralRewardsTree: React.FC<ReferralRewardsTreeProps> = ({
   referralPayments,
   paymentDecimals,
 }) => {
-  const groups = useMemo(
-    () => groupReferralPayments(referralPayments),
-    [referralPayments],
-  );
+  const groups = useMemo(() => groupReferralPayments(referralPayments), [referralPayments]);
 
   if (groups.length === 0) {
-    return <p className="pl-2 text-sm text-slate-500">No rewards payouts recorded.</p>;
+    return <p className="pl-2 text-sm text-slate-500">&bull; No rewards payouts recorded</p>;
   }
 
   return (

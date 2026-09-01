@@ -77,13 +77,7 @@ function getScoresWithTies(rows: OnchainPaymentView[]): Set<number> {
   return tiedScores;
 }
 
-function PayoutAmount({
-  wei,
-  paymentDecimals,
-}: {
-  wei: bigint | null;
-  paymentDecimals: number;
-}) {
+function PayoutAmount({ wei, paymentDecimals }: { wei: bigint | null; paymentDecimals: number }) {
   if (wei === null) {
     return <span className="text-xs text-slate-400">—</span>;
   }
@@ -165,9 +159,7 @@ function WinnerPoolRows({
               ) : null}
             </div>
           }
-          right={
-            <PayoutAmount wei={parseAmountWei(row)} paymentDecimals={paymentDecimals} />
-          }
+          right={<PayoutAmount wei={parseAmountWei(row)} paymentDecimals={paymentDecimals} />}
         />
       ))}
     </ContestPayoutDividedRows>
@@ -220,7 +212,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
         }
       >
         {primary.length === 0 ? (
-          <p className="pl-2 text-sm text-slate-500">No contest payouts recorded.</p>
+          <p className="mt-1 pl-2 text-sm text-slate-500">&bull; No contest payouts recorded</p>
         ) : (
           <ContestWinnerRows rows={primary} paymentDecimals={paymentDecimals} />
         )}
