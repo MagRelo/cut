@@ -30,40 +30,18 @@ import {
   type DetailedResult,
   type ContestSnapshot,
 } from "../shared/types.js";
-import { getContract, erc20Abi } from "viem";
 import { captureContestWinPayoutRecorded } from "../analytics/posthog.js";
 import { contestLineupsInclude } from "../../utils/prismaIncludes.js";
 import { sortedPlayerLastNamesFromPicks } from "../../utils/lineupPickPresentation.js";
 import { contestLineupEntryKey, hasOnchainEscrow } from "../../utils/hasOnchainEscrow.js";
 import { tiebreakFieldsFromRankedRow } from "../../utils/contestResultTiebreakers.js";
+import {
+  captureContestSnapshot,
+  capturePreSettleSnapshot,
+} from "./captureContestSnapshot.js";
+import { waitForContestState } from "./waitForContestState.js";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
-const SETTLED_STATE_CONFIRM_RETRIES = 3;
-const SETTLED_STATE_CONFIRM_DELAY_MS = 1500;
-
-async function confirmSettledAfterReceipt(
-  contestAddress: string,
-  chainId: number,
-  receipt: TransactionReceipt,
-): Promise<void> {
-  const atReceiptBlock = await readContestState(contestAddress, chainId, receipt.blockNumber);
-  if (atReceiptBlock === ContestState.SETTLED) {
-    return;
-  }
-
-  for (let attempt = 1; attempt <= SETTLED_STATE_CONFIRM_RETRIES; attempt++) {
-    await new Promise((resolve) => setTimeout(resolve, SETTLED_STATE_CONFIRM_DELAY_MS));
-    const latest = await readContestState(contestAddress, chainId);
-    if (latest === ContestState.SETTLED) {
-      return;
-    }
-  }
-
-  const latest = await readContestState(contestAddress, chainId);
-  throw new Error(
-    `Contract state is ${latest} after settle tx ${receipt.transactionHash}; expected SETTLED (${ContestState.SETTLED})`,
-  );
-}
 
 async function findSettleTransactionReceipt(
   contestAddress: string,
@@ -211,6 +189,7 @@ export async function settleContest(contestId: string): Promise<OperationResult>
         secondarySideBalance: "0",
         totalSecondaryLiquidity: "0",
         primaryDepositSecondarySubsidyBps: 0,
+        grossTvlWei: "0",
       };
 
       const results: ContestResults = {
@@ -259,7 +238,11 @@ export async function settleContest(contestId: string): Promise<OperationResult>
           error: `Failed to lock before settle: ${lockResult.error ?? "unknown error"}`,
         };
       }
-      contractState = await readContestState(contest.address, contest.chainId);
+      contractState = await waitForContestState(
+        contest.address,
+        contest.chainId,
+        ContestState.LOCKED,
+      );
     }
 
     const awaitingOnChainSettlement = contractState === ContestState.LOCKED;
@@ -299,41 +282,7 @@ export async function settleContest(contestId: string): Promise<OperationResult>
     );
 
     const contract = getContestContract(contest.address, contest.chainId);
-
-    console.log(`[settleContest] Capturing snapshot values...`);
-    const [
-      primaryPrizePool,
-      primarySideBalance,
-      secondarySideBalance,
-      totalSecondaryLiquidity,
-      primaryDepositSecondarySubsidyBps,
-      paymentTokenAddress,
-    ] = await Promise.all([
-      contract.read.primaryPrizePool!() as Promise<bigint>,
-      contract.read.getPrimarySideBalance!() as Promise<bigint>,
-      contract.read.getSecondarySideBalance!() as Promise<bigint>,
-      contract.read.totalSecondaryLiquidity!() as Promise<bigint>,
-      contract.read.primaryDepositSecondarySubsidyBps!() as Promise<bigint>,
-      contract.read.paymentToken!() as Promise<`0x${string}`>,
-    ]);
     const publicClient = getPublicClient(contest.chainId);
-    const tokenContract = getContract({
-      address: paymentTokenAddress,
-      abi: erc20Abi,
-      client: publicClient,
-    });
-    const contractBalance = (await tokenContract.read.balanceOf([
-      contest.address as `0x${string}`,
-    ])) as bigint;
-
-    const snapshot: ContestSnapshot = {
-      contractBalance: contractBalance.toString(),
-      primaryPrizePool: primaryPrizePool.toString(),
-      primarySideBalance: primarySideBalance.toString(),
-      secondarySideBalance: secondarySideBalance.toString(),
-      totalSecondaryLiquidity: totalSecondaryLiquidity.toString(),
-      primaryDepositSecondarySubsidyBps: Number(primaryDepositSecondarySubsidyBps),
-    };
 
     const winningEntryStr = winningEntries[0];
     if (!winningEntryStr) {
@@ -369,6 +318,8 @@ export async function settleContest(contestId: string): Promise<OperationResult>
 
     let hash: `0x${string}`;
     let settleReceipt: TransactionReceipt;
+    let snapshot: ContestSnapshot;
+    let paymentTokenAddress: `0x${string}`;
 
     if (recoveringOffChainSettlement) {
       const existingReceipt = await findSettleTransactionReceipt(contest.address, contest.chainId);
@@ -385,7 +336,24 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       console.log(
         `[settleContest] Recovering off-chain settlement from existing tx: ${hash}`,
       );
+      const preSettleBlock =
+        settleReceipt.blockNumber > 0n ? settleReceipt.blockNumber - 1n : 0n;
+      console.log(
+        `[settleContest] Capturing pre-settle snapshot at block ${preSettleBlock}...`,
+      );
+      const captured = await capturePreSettleSnapshot(
+        contest.address,
+        contest.chainId,
+        settleReceipt.blockNumber,
+      );
+      snapshot = captured.snapshot;
+      paymentTokenAddress = captured.paymentTokenAddress;
     } else {
+      console.log(`[settleContest] Capturing snapshot values...`);
+      const captured = await captureContestSnapshot(contest.address, contest.chainId);
+      snapshot = captured.snapshot;
+      paymentTokenAddress = captured.paymentTokenAddress;
+
       const secondaryWinner = winningEntriesBigInt[0]!;
       hash = (await contract.write.settleContest!([
         winningEntriesBigInt,
@@ -398,7 +366,16 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       if (settleReceipt.status !== "success") {
         throw new Error(`settleContest transaction reverted: ${hash}`);
       }
-      await confirmSettledAfterReceipt(contest.address, contest.chainId, settleReceipt);
+      const settledState = await waitForContestState(
+        contest.address,
+        contest.chainId,
+        ContestState.SETTLED,
+      );
+      if (settledState !== ContestState.SETTLED) {
+        throw new Error(
+          `Contract state is ${settledState} after settle tx ${hash}; expected SETTLED (${ContestState.SETTLED})`,
+        );
+      }
     }
 
     console.log(`[settleContest] Settlement confirmed on-chain: ${hash}`);

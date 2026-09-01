@@ -237,6 +237,67 @@ describe("getContestLobby", () => {
     expect(lineup?.picks[0]?.participant.metadata).not.toHaveProperty("priceHistory");
   });
 
+  it("sets settledPot from the payment ledger on settled contests", async () => {
+    findFirst.mockResolvedValue(
+      contestRow({
+        status: "SETTLED",
+        results: {
+          snapshot: {
+            primarySideBalance: "216704880",
+            secondarySideBalance: "0",
+          },
+        },
+        onchainPayments: [
+          {
+            kind: "REFERRAL",
+            amountWei: "10500000",
+            walletAddress: "0xaaa",
+            metadata: {},
+            user: { name: "Ada", settings: {} },
+          },
+          {
+            kind: "REFERRAL",
+            amountWei: "6300000",
+            walletAddress: "0xbbb",
+            metadata: {},
+            user: { name: "Ada", settings: {} },
+          },
+          {
+            kind: "PRIMARY",
+            amountWei: "156240000",
+            walletAddress: ADDRESS,
+            metadata: { entryId: "1" },
+            user: { name: "Ada", settings: {} },
+          },
+          {
+            kind: "PRIMARY",
+            amountWei: "44640000",
+            walletAddress: ADDRESS,
+            metadata: { entryId: "2" },
+            user: { name: "Ada", settings: {} },
+          },
+          {
+            kind: "PRIMARY",
+            amountWei: "22320000",
+            walletAddress: ADDRESS,
+            metadata: { entryId: "3" },
+            user: { name: "Ada", settings: {} },
+          },
+        ],
+      }),
+    );
+
+    const lobby = await loadContestLobby(ADDRESS, null);
+    expect(lobby?.settledPot).toBe(240);
+  });
+
+  it("leaves settledPot null for open contests", async () => {
+    findFirst.mockResolvedValue(contestRow());
+
+    const lobby = await loadContestLobby(ADDRESS, null);
+    expect(lobby?.settledPot).toBeNull();
+  });
+
   it("serves a second getContestLobby call from cache", async () => {
     findFirst.mockResolvedValue(contestRow());
 

@@ -31,6 +31,7 @@ import { baseSepolia } from "viem/chains";
 import MockUSDC from "../contracts/MockUSDC.json" with { type: "json" };
 import { getOperatorAddress, getOperatorPrivateKey } from "../lib/operator.js";
 import { prisma } from "../lib/prisma.js";
+import { contestSnapshotFromBalances } from "../services/contest/captureContestSnapshot.js";
 import { getContestContract, getPublicClient } from "../services/shared/contractClient.js";
 import type {
   ContestResults,
@@ -426,14 +427,14 @@ async function simulateSettlement(contestId: string): Promise<SimulationResult> 
     );
   }
 
-  const snapshot: ContestSnapshot = {
-    contractBalance: contractTokenBalanceWei.toString(),
-    primaryPrizePool: primaryPrizePool.toString(),
-    primarySideBalance: primarySideBalance.toString(),
-    secondarySideBalance: secondarySideBalance.toString(),
-    totalSecondaryLiquidity: totalSecondaryLiquidity.toString(),
+  const snapshot: ContestSnapshot = contestSnapshotFromBalances({
+    contractBalance: contractTokenBalanceWei,
+    primaryPrizePool,
+    primarySideBalance,
+    secondarySideBalance,
+    totalSecondaryLiquidity,
     primaryDepositSecondarySubsidyBps: Number(primaryDepositSecondarySubsidyBps),
-  };
+  });
 
   return {
     contestId,

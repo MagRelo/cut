@@ -13,6 +13,10 @@ import {
   contestReferralNetworkBps,
   referralStakeForViewerByPrivyId,
 } from "../referral/referralStakeForViewer.js";
+import {
+  settledPotFromSettlement,
+  type SettledPotSnapshot,
+} from "../../utils/settledPot.js";
 
 export const CONTEST_LOBBY_CACHE_TTL_MS = 15_000;
 
@@ -256,7 +260,10 @@ function formatLobbyRow(row: ContestLobbyRow): ContestLobbyPayload {
       : formatLobbyPicks(entry.lineup),
   }));
 
-  const results = row.results as { detailedResults?: DetailedResult[] } | null;
+  const results = row.results as {
+    detailedResults?: DetailedResult[];
+    snapshot?: SettledPotSnapshot;
+  } | null;
   const contestSettings = row.settings as { operator?: string; oracle?: string } | null;
   const contestOracleAddress =
     typeof contestSettings?.operator === "string"
@@ -327,6 +334,13 @@ function formatLobbyRow(row: ContestLobbyRow): ContestLobbyPayload {
     _count: row._count,
     contestLineups,
     ...(onchainPayments ? { onchainPayments } : {}),
+    settledPot:
+      row.status === "SETTLED" || row.status === "CLOSED"
+        ? settledPotFromSettlement({
+            snapshot: results?.snapshot,
+            paymentAmountWeis: row.onchainPayments.map((payment) => payment.amountWei),
+          })
+        : null,
   };
 }
 

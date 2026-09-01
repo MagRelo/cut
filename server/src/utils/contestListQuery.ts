@@ -78,6 +78,11 @@ export const contestDirectorySelect = {
       contestLineups: true,
     },
   },
+  onchainPayments: {
+    select: {
+      amountWei: true,
+    },
+  },
   event: {
     select: {
       id: true,

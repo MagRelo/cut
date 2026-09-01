@@ -62,6 +62,7 @@ function contestRow(event: ReturnType<typeof golfEvent>, overrides: Record<strin
     results: null,
     userGroup: null,
     _count: { contestLineups: 4 },
+    onchainPayments: [],
     event,
     ...overrides,
   };
@@ -127,6 +128,52 @@ describe("listContestDirectory", () => {
     expect(contest?.settings).not.toHaveProperty("extraUnused");
     expect(contest).not.toHaveProperty("results");
     expect(contest?._count.contestLineups).toBe(4);
+    expect(contest?.settledPot).toBeNull();
+  });
+
+  it("requests payment amountWei on the directory select", async () => {
+    findMany.mockResolvedValue([contestRow(golfEvent())]);
+
+    await listContestDirectory(null, "all");
+
+    expect(findMany.mock.calls[0]?.[0]?.select.onchainPayments).toEqual({
+      select: { amountWei: true },
+    });
+  });
+
+  it("sets settledPot from the payment ledger when the snapshot is post-settle", async () => {
+    findMany.mockResolvedValue([
+      contestRow(golfEvent(), {
+        status: "SETTLED",
+        results: {
+          snapshot: {
+            primarySideBalance: "216704880",
+            secondarySideBalance: "0",
+          },
+        },
+        onchainPayments: [
+          { amountWei: "10500000" },
+          { amountWei: "6300000" },
+          { amountWei: "156240000" },
+          { amountWei: "44640000" },
+          { amountWei: "22320000" },
+        ],
+      }),
+    ]);
+
+    const directory = await listContestDirectory(null, "all");
+    expect(directory.upcoming[0]?.contests[0]?.settledPot).toBe(240);
+  });
+
+  it("does not use live payment rows for unsettled contests", async () => {
+    findMany.mockResolvedValue([
+      contestRow(golfEvent(), {
+        onchainPayments: [{ amountWei: "240000000" }],
+      }),
+    ]);
+
+    const directory = await listContestDirectory(null, "all");
+    expect(directory.upcoming[0]?.contests[0]?.settledPot).toBeNull();
   });
 
   it("serves a second getContestDirectory call from cache", async () => {
