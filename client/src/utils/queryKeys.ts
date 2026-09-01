@@ -58,8 +58,7 @@ export const queryKeys = {
   userGroups: {
     all: ["userGroups"] as const,
     byId: (id: string) => [...queryKeys.userGroups.all, id] as const,
-    contests: (id: string, chainId: number | "all") =>
-      [...queryKeys.userGroups.all, id, "contests", chainId] as const,
+    contests: (id: string) => [...queryKeys.userGroups.all, id, "contests"] as const,
     members: (id: string) => [...queryKeys.userGroups.all, id, "members"] as const,
   },
   admin: {

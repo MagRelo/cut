@@ -177,7 +177,7 @@ flowchart TB
 ```
 
 - League has **no** `sportId`
-- `GET /userGroups/:id/contests` returns contests across events with `eventSummary`
+- `GET /userGroups/:id/contests` returns contests across events with `eventSummary`, unfiltered by chain (same as the directory)
 - Client: `GroupedContestList`, `CreateContestEventPicker`
 
 ---

@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
-import { useAccount } from "wagmi";
 import {
   type UserGroupsListResponse,
   type UserGroupDetailResponse,
@@ -50,24 +49,16 @@ export function useUserGroupQuery(id: string | undefined) {
 }
 
 /**
- * Fetches members of a user group
- *
- * @param id - The user group ID
+ * Fetches all contests for a league across events.
+ * Not filtered by wallet chain — same as the contest directory.
  */
 export function useUserGroupContestsQuery(id: string | undefined) {
-  const { chainId, isConnected } = useAccount();
-
   return useQuery({
-    queryKey: queryKeys.userGroups.contests(id ?? "", chainId ?? "all"),
+    queryKey: queryKeys.userGroups.contests(id ?? ""),
     queryFn: async () => {
       if (!id) throw new Error("User group ID is required");
-      const params = new URLSearchParams();
-      if (isConnected && chainId) {
-        params.set("chainId", String(chainId));
-      }
-      const suffix = params.size > 0 ? `?${params.toString()}` : "";
       const data = await apiClient.get<{ contests: LeagueContest[] }>(
-        `/userGroups/${id}/contests${suffix}`,
+        `/userGroups/${id}/contests`,
       );
       return data.contests;
     },

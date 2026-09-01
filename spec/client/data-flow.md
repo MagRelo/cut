@@ -138,7 +138,7 @@ Order: **on-chain first**, then server indexes the entry. Server links `lineupId
 2. `useSportActiveEvent(sportId)` → `eventId`
 3. `useContestsQuery(eventId, ...)` → `GET /contests?eventId=`
 
-League detail uses `useUserGroupContestsQuery` → `GET /userGroups/:id/contests` (cross-event with `eventSummary`).
+League detail uses `useUserGroupContestsQuery` → `GET /userGroups/:id/contests` (cross-event with `eventSummary`, no chain filter).
 
 ---
 

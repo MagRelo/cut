@@ -349,16 +349,10 @@ userGroupRouter.delete("/:id", requireAuth, requireUserGroupAdmin, async (c) => 
 userGroupRouter.get("/:id/contests", requireAuth, requireUserGroupMember, async (c) => {
   try {
     const userGroupId = c.req.param("id");
-    const chainIdParam = c.req.query("chainId")?.trim();
-    const chainId = chainIdParam ? Number(chainIdParam) : undefined;
-    if (chainIdParam && !Number.isFinite(chainId)) {
-      return c.json({ error: "Invalid chainId" }, 400);
-    }
 
     const contests = await prisma.contest.findMany({
       where: {
         userGroupId,
-        chainId: chainId ?? { in: [8453, 84532] },
       },
       orderBy: [{ event: { sportId: "asc" } }, { createdAt: "desc" }],
       select: {

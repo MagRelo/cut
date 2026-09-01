@@ -8,13 +8,13 @@ import { cn } from "../../lib/tabStyles";
 import { ContestCard } from "./ContestCard";
 
 const viewButtonBaseClassName =
-  "inline-flex min-w-[88px] items-center justify-center gap-1 rounded border px-4 py-1.5 font-display text-sm transition-colors";
+  "inline-flex min-w-[88px] items-center justify-center gap-0.5 rounded border px-4 py-1.5 font-display text-sm transition-colors";
 
 const viewButtonActiveClassName =
   "border-blue-500 bg-blue-500 text-white group-hover/footer:bg-blue-600";
 
 const viewLinkPastClassName =
-  "inline-flex min-w-[88px] items-center justify-center gap-1 rounded border border-slate-300 bg-slate-200 px-4 py-1.5 font-display text-sm text-slate-800 transition-colors group-hover/footer:border-slate-500 group-hover/footer:bg-slate-300 group-hover/footer:text-slate-950";
+  "inline-flex min-w-[88px] items-center justify-center gap-0.5 rounded bg-gradient-to-b from-white to-slate-50 px-4 py-1.5 font-display text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-300/80 transition-colors group-hover/footer:from-slate-50 group-hover/footer:to-slate-100 group-hover/footer:text-slate-900 group-hover/footer:ring-slate-400";
 
 function isPastContestStatus(status: Contest["status"]): boolean {
   return status === "SETTLED" || status === "CLOSED";
@@ -127,7 +127,7 @@ export const ContestListItem = ({
           }
         >
           {actionLabel}
-          <ChevronRightIcon className="h-4 w-4 shrink-0" aria-hidden />
+          <ChevronRightIcon className="-ml-0.5 h-4 w-4 shrink-0" aria-hidden />
         </span>
       </Link>
     </div>
