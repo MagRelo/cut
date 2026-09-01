@@ -20,6 +20,7 @@ import {
 import { isStaffUserType } from "../middleware/admin.js";
 import { requireContestPrimaryActionsUnlocked } from "../middleware/contestStatus.js";
 import { formatContestResponse } from "../utils/formatContestResponse.js";
+import { settledPotForContestRow } from "../utils/settledPot.js";
 import {
   hasMinimumPlayers,
   isDuplicateInContest,
@@ -178,9 +179,13 @@ contestRouter.get("/", optionalAuth, async (c) => {
       select: contestListSelect,
     });
 
-    const formattedContests = contests.map((contest) =>
-      formatContestResponse(contest, undefined, validEventId),
-    );
+    const formattedContests = contests.map((contest) => {
+      const { onchainPayments: _onchainPayments, ...rest } = contest;
+      return {
+        ...formatContestResponse(rest, undefined, validEventId),
+        settledPot: settledPotForContestRow(contest),
+      };
+    });
 
     return c.json(formattedContests);
   } catch (error) {

@@ -22,7 +22,6 @@ export function contestSnapshotFromBalances(input: {
     secondarySideBalance: input.secondarySideBalance.toString(),
     totalSecondaryLiquidity: input.totalSecondaryLiquidity.toString(),
     primaryDepositSecondarySubsidyBps: input.primaryDepositSecondarySubsidyBps,
-    grossTvlWei: (input.primarySideBalance + input.secondarySideBalance).toString(),
   };
 }
 

@@ -72,13 +72,6 @@ export interface ContestSnapshot {
   /** @deprecated Older settlement snapshots. */
   primaryEntryInvestmentShareBps?: number;
 
-  /**
-   * Pre-settle primary + secondary side balances (gross TVL).
-   * Prefer this over live side balances after settlement (fees and subsidy
-   * repay change those views).
-   */
-  grossTvlWei?: string;
-
   /** Legacy catalytic contest snapshot fields (older settled contests). */
   primaryPrizePoolSubsidy?: string; // bigint as string
   secondaryPrizePool?: string; // bigint as string

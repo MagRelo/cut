@@ -55,6 +55,7 @@ export function contestLobbyLinkState(
           eventId: contest.eventId,
           settings: contest.settings,
           contestLineups: contest.contestLineups,
+          settledPot: contest.settledPot,
         }
       : undefined,
   };
@@ -189,6 +190,7 @@ export function placeholderContestFromNavigation(
       primaryDepositSecondarySubsidyBps: 0,
     },
     results: preview?.results,
+    settledPot: preview?.settledPot,
     createdAt: preview?.createdAt ? new Date(preview.createdAt) : new Date(0),
     updatedAt: preview?.updatedAt ? new Date(preview.updatedAt) : new Date(0),
     event: contestEventFromShell(nav.eventShell),

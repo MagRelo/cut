@@ -1,10 +1,6 @@
 import { formatUnits } from "viem";
 
-export type SettledPotSnapshot = {
-  grossTvlWei?: unknown;
-  primarySideBalance?: unknown;
-  secondarySideBalance?: unknown;
-};
+const SETTLED_POT_STATUSES = new Set(["SETTLED", "CLOSED"]);
 
 function parseWei(value: unknown): bigint | null {
   if (value == null) return null;
@@ -15,7 +11,7 @@ function parseWei(value: unknown): bigint | null {
   }
 }
 
-export function sumPaymentAmountWeis(
+function sumPaymentAmountWeis(
   amountWeis: readonly string[] | undefined,
 ): bigint | null {
   if (!amountWeis?.length) return null;
@@ -28,36 +24,30 @@ export function sumPaymentAmountWeis(
   return total;
 }
 
-export function settledPotWei(input: {
-  snapshot?: SettledPotSnapshot | null;
-  paymentAmountWeis?: readonly string[];
-}): bigint | null {
-  const gross = parseWei(input.snapshot?.grossTvlWei);
-  if (gross != null) return gross;
-
-  const payments = sumPaymentAmountWeis(input.paymentAmountWeis);
-  if (payments != null) return payments;
-
-  if (!input.snapshot) return null;
-
-  const primary = parseWei(input.snapshot.primarySideBalance ?? "0") ?? 0n;
-  const secondary = parseWei(input.snapshot.secondarySideBalance ?? "0") ?? 0n;
-  return primary + secondary;
-}
-
-/** Rounded human-token units for directory/lobby pot display (USDC = 6 decimals). */
-export function settledPotFromSettlement(
-  input: {
-    snapshot?: SettledPotSnapshot | null;
-    paymentAmountWeis?: readonly string[];
-  },
+/** Rounded payment-token units. After settle the pot is what left the contract. */
+export function settledPotFromPayments(
+  amountWeis: readonly string[] | undefined,
   decimals = 6,
 ): number | null {
-  const wei = settledPotWei(input);
-  if (wei == null) return null;
+  const wei = sumPaymentAmountWeis(amountWeis);
+  if (wei == null || wei <= 0n) return null;
   try {
     return Math.round(Number(formatUnits(wei, decimals)));
   } catch {
     return null;
   }
+}
+
+export function settledPotForContestRow(
+  row: {
+    status: string;
+    onchainPayments?: { amountWei: string }[];
+  },
+  decimals = 6,
+): number | null {
+  if (!SETTLED_POT_STATUSES.has(row.status)) return null;
+  return settledPotFromPayments(
+    row.onchainPayments?.map((payment) => payment.amountWei),
+    decimals,
+  );
 }

@@ -146,7 +146,7 @@ export interface Contest {
   _count?: {
     contestLineups: number;
   };
-  /** Settled pot in payment-token units (gross TVL / payment ledger). */
+  /** Settled pot in payment-token units (sum of on-chain payouts). */
   settledPot?: number | null;
   /** Ledger rows for settled contests (amounts from chain events). */
   onchainPayments?: OnchainPaymentView[];
@@ -263,9 +263,6 @@ export interface ContestSnapshot {
 
   /** @deprecated Older settlement snapshots used this name for the same immutable. */
   primaryEntryInvestmentShareBps?: number;
-
-  /** Pre-settle primary + secondary side balances (gross TVL). */
-  grossTvlWei?: string;
 
   /** Legacy catalytic contest snapshot fields (older settled contests). */
   primaryPrizePoolSubsidy?: string; // bigint as string

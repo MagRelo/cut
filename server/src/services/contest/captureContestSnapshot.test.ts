@@ -35,7 +35,7 @@ function mockPreSettleReads() {
 }
 
 describe("contestSnapshotFromBalances", () => {
-  it("sets grossTvlWei to primary + secondary", () => {
+  it("stores primary and secondary side balances", () => {
     const snapshot = contestSnapshotFromBalances({
       contractBalance: 240000000n,
       primaryPrizePool: 232800000n,
@@ -44,7 +44,8 @@ describe("contestSnapshotFromBalances", () => {
       totalSecondaryLiquidity: 7200000n,
       primaryDepositSecondarySubsidyBps: 300,
     });
-    expect(snapshot.grossTvlWei).toBe("240000000");
+    expect(snapshot.primarySideBalance).toBe("232800000");
+    expect(snapshot.secondarySideBalance).toBe("7200000");
   });
 });
 
@@ -63,7 +64,8 @@ describe("captureContestSnapshot", () => {
     );
 
     expect(paymentTokenAddress).toBe(TOKEN);
-    expect(snapshot.grossTvlWei).toBe("240000000");
+    expect(snapshot.primarySideBalance).toBe("232800000");
+    expect(snapshot.secondarySideBalance).toBe("7200000");
     expect(readContract).toHaveBeenCalledWith(
       expect.objectContaining({
         functionName: "getPrimarySideBalance",
@@ -87,7 +89,8 @@ describe("capturePreSettleSnapshot", () => {
 
     const { snapshot } = await capturePreSettleSnapshot(ADDRESS, 8453, SETTLE_BLOCK);
 
-    expect(snapshot.grossTvlWei).toBe("240000000");
+    expect(snapshot.primarySideBalance).toBe("232800000");
+    expect(snapshot.secondarySideBalance).toBe("7200000");
     expect(readContract).toHaveBeenCalledWith(
       expect.objectContaining({
         functionName: "getPrimarySideBalance",
@@ -108,7 +111,8 @@ describe("capturePreSettleSnapshot", () => {
     await vi.runAllTimersAsync();
     const { snapshot } = await pending;
 
-    expect(snapshot.grossTvlWei).toBe("240000000");
+    expect(snapshot.primarySideBalance).toBe("232800000");
+    expect(snapshot.secondarySideBalance).toBe("7200000");
     expect(readContract).toHaveBeenCalledWith(
       expect.objectContaining({
         functionName: "getPrimarySideBalance",

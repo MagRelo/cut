@@ -22,6 +22,7 @@ import { getRequestChainId } from "../utils/requestChainId.js";
 import { pickWalletPublicKeyForChain } from "../utils/pickWalletForChain.js";
 import { formatContestResponse } from "../utils/formatContestResponse.js";
 import { eventSummaryForContest } from "../utils/contestEventSummary.js";
+import { settledPotForContestRow } from "../utils/settledPot.js";
 
 const userGroupRouter = new Hono();
 
@@ -391,6 +392,11 @@ userGroupRouter.get("/:id/contests", requireAuth, requireUserGroupMember, async 
             name: true,
           },
         },
+        onchainPayments: {
+          select: {
+            amountWei: true,
+          },
+        },
         contestLineups: {
           select: {
             id: true,
@@ -424,10 +430,12 @@ userGroupRouter.get("/:id/contests", requireAuth, requireUserGroupMember, async 
     });
 
     const formatted = contests.map((contest) => {
-      const base = formatContestResponse(contest, undefined, contest.eventId);
+      const { onchainPayments: _onchainPayments, ...rest } = contest;
+      const base = formatContestResponse(rest, undefined, contest.eventId);
       return {
         ...base,
         eventSummary: eventSummaryForContest(contest.event),
+        settledPot: settledPotForContestRow(contest),
       };
     });
 

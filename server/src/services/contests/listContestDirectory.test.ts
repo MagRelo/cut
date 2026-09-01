@@ -141,16 +141,10 @@ describe("listContestDirectory", () => {
     });
   });
 
-  it("sets settledPot from the payment ledger when the snapshot is post-settle", async () => {
+  it("sets settledPot from the payment ledger", async () => {
     findMany.mockResolvedValue([
       contestRow(golfEvent(), {
         status: "SETTLED",
-        results: {
-          snapshot: {
-            primarySideBalance: "216704880",
-            secondarySideBalance: "0",
-          },
-        },
         onchainPayments: [
           { amountWei: "10500000" },
           { amountWei: "6300000" },

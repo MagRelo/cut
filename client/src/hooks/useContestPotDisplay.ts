@@ -8,6 +8,8 @@ import { contestPaymentDecimals } from "../lib/paymentTokenSpend";
 export function useContestPotDisplay(contest: Contest) {
   const contestPaymentToken = contest.settings?.paymentTokenAddress ?? "";
   const paymentDecimals = contestPaymentDecimals(contest.chainId, contestPaymentToken);
+  const isFinalizedContest = contest.status === "SETTLED" || contest.status === "CLOSED";
+  const chainReadsEnabled = !isFinalizedContest && Boolean(contest?.address);
 
   const {
     data: primaryPrizePool,
@@ -20,7 +22,7 @@ export function useContestPotDisplay(contest: Contest) {
     args: [],
     chainId: contest.chainId as 8453 | 84532 | undefined,
     query: {
-      enabled: !!contest?.address,
+      enabled: chainReadsEnabled,
     },
   });
 
@@ -37,37 +39,24 @@ export function useContestPotDisplay(contest: Contest) {
   } = useContestPredictionData({
     contestAddress: contest.address ?? "",
     entryIds: [],
-    enabled: Boolean(contest.address && contest.chainId),
+    enabled: chainReadsEnabled && Boolean(contest.chainId),
     chainId: contest.chainId,
     paymentTokenAddress: contestPaymentToken,
   });
 
   const rawSecondaryTotal = parseFloat(secondaryTotalFundsFormatted || "0");
   const speculatorPot = Number.isFinite(rawSecondaryTotal) ? Math.round(rawSecondaryTotal) : 0;
-  const isFinalizedContest = contest.status === "SETTLED" || contest.status === "CLOSED";
 
-  const settledTotalPot = (() => {
-    if (contest.settledPot != null) return contest.settledPot;
-    const snapshot = contest.results?.snapshot;
-    if (!snapshot) return null;
-
-    try {
-      const primaryTotal = BigInt(snapshot.primarySideBalance);
-      const secondaryTotal = BigInt(snapshot.secondarySideBalance);
-      return Math.round(Number(formatUnits(primaryTotal + secondaryTotal, paymentDecimals)));
-    } catch {
-      return null;
-    }
-  })();
-
-  const displayPot =
-    isFinalizedContest && settledTotalPot !== null ? settledTotalPot : potAmount + speculatorPot;
+  const displayPot = isFinalizedContest
+    ? (contest.settledPot ?? 0)
+    : potAmount + speculatorPot;
 
   const primaryReadFailed =
-    !!contest?.address && !isLoadingPrimaryPrizePool && isErrorPrimaryPrizePool;
+    chainReadsEnabled && !isLoadingPrimaryPrizePool && isErrorPrimaryPrizePool;
   const showLoading = !isFinalizedContest && (isPredictionDataLoading || isLoadingPrimaryPrizePool);
-  const showPotUnavailable =
-    !isFinalizedContest && !showLoading && (primaryReadFailed || contestChainReadsUnavailable);
+  const showPotUnavailable = isFinalizedContest
+    ? contest.settledPot == null
+    : !showLoading && (primaryReadFailed || contestChainReadsUnavailable);
 
   return { displayPot, showLoading, showPotUnavailable };
 }

@@ -53,6 +53,11 @@ export const contestListSelect = {
       },
     },
   },
+  onchainPayments: {
+    select: {
+      amountWei: true,
+    },
+  },
 } as const;
 
 /** Directory list: slim contest row plus event header fields. */
@@ -66,7 +71,6 @@ export const contestDirectorySelect = {
   chainId: true,
   status: true,
   settings: true,
-  results: true,
   userGroup: {
     select: {
       id: true,

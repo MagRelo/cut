@@ -11,10 +11,7 @@ import {
   type ContestDirectoryEvent,
 } from "../../utils/contestEventSummary.js";
 import { eventStatusFromMetadata } from "../../utils/eventStatus.js";
-import {
-  settledPotFromSettlement,
-  type SettledPotSnapshot,
-} from "../../utils/settledPot.js";
+import { settledPotForContestRow } from "../../utils/settledPot.js";
 
 /** Max past events shown across all sports (single timeline, not per-sport). */
 export const RECENT_PAST_EVENTS = 20;
@@ -125,13 +122,6 @@ function slimDirectorySettings(settings: unknown): Record<string, unknown> | nul
   return out;
 }
 
-function snapshotFromResults(results: unknown): SettledPotSnapshot | null {
-  if (!results || typeof results !== "object" || Array.isArray(results)) return null;
-  const snapshot = (results as { snapshot?: SettledPotSnapshot }).snapshot;
-  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) return null;
-  return snapshot;
-}
-
 function formatDirectoryContest(row: {
   id: string;
   name: string;
@@ -142,12 +132,10 @@ function formatDirectoryContest(row: {
   chainId: number;
   status: string;
   settings: unknown;
-  results: unknown;
   userGroup: { id: string; name: string } | null;
   _count: { contestLineups: number };
   onchainPayments?: { amountWei: string }[];
 }): DirectoryContest {
-  const isSettled = row.status === "SETTLED" || row.status === "CLOSED";
   return {
     id: row.id,
     name: row.name,
@@ -160,12 +148,7 @@ function formatDirectoryContest(row: {
     settings: slimDirectorySettings(row.settings),
     userGroup: row.userGroup,
     _count: row._count,
-    settledPot: isSettled
-      ? settledPotFromSettlement({
-          snapshot: snapshotFromResults(row.results),
-          paymentAmountWeis: row.onchainPayments?.map((payment) => payment.amountWei),
-        })
-      : null,
+    settledPot: settledPotForContestRow(row),
   };
 }
 

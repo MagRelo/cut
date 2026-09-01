@@ -189,7 +189,6 @@ export async function settleContest(contestId: string): Promise<OperationResult>
         secondarySideBalance: "0",
         totalSecondaryLiquidity: "0",
         primaryDepositSecondarySubsidyBps: 0,
-        grossTvlWei: "0",
       };
 
       const results: ContestResults = {

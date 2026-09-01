@@ -126,14 +126,7 @@ function ReferralNodeRow({
       >
         <TreeLevelIndicator level={node.level} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <ContestPayoutRowTitle>{node.payment.username}</ContestPayoutRowTitle>
-            {isFirst && (
-              <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
-                Direct
-              </span>
-            )}
-          </div>
+          <ContestPayoutRowTitle>{node.payment.username}</ContestPayoutRowTitle>
           <div className="mt-0.5 flex items-center gap-2">
             <ContestPayoutRowSubtitle>
               Level {node.level + 1} · {shareLabel}%
