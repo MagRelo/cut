@@ -69,7 +69,8 @@ export const ContestLobby: React.FC = () => {
     isLoading: isTimelineLoading,
     isFetching: isTimelineFetching,
   } = useContestTimelineQuery(contestAddress, contest);
-  const { viewModel } = useContestLobbyState(contest);
+  const isContestDataPending = isFetching && isPlaceholderData;
+  const { viewModel } = useContestLobbyState(contest, { isContestDataPending });
 
   const eventShell = useMemo((): CompetitionEventShell | null => {
     if (contest?.event?.sportId) {
@@ -93,7 +94,6 @@ export const ContestLobby: React.FC = () => {
     return null;
   }, [contest, location.state, contestAddress, queryClient]);
 
-  const isContestDataPending = isFetching && isPlaceholderData;
   const isTimelinePending = timelineData === undefined && (isTimelineLoading || isTimelineFetching);
 
   if (isLoading && !contest) {

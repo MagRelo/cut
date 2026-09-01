@@ -1,8 +1,16 @@
 import { useMemo } from "react";
-import type { Contest, OnchainPaymentView, DetailedResult, SecondaryPayoutResult, RewardsPayoutResult } from "../types/contest";
+import type {
+  Contest,
+  OnchainPaymentView,
+  DetailedResult,
+  SecondaryPayoutResult,
+  RewardsPayoutResult,
+} from "../types/contest";
 import { getContractConfig } from "../utils/blockchainUtils";
 
-const PLATFORM_ROOT_DISPLAY_NAME = "CutBot";
+const PLATFORM_ROOT_DISPLAY_NAME = "👤 Rich Bouquet";
+/** Tailwind slate-500 — left-border highlight for platform-root referral payouts. */
+const PLATFORM_ROOT_DISPLAY_COLOR = "#64748b";
 
 function amountWei(p: { amountWei: string }): bigint {
   try {
@@ -81,8 +89,17 @@ function labelPlatformRoot(row: OnchainPaymentView, chainId: number): OnchainPay
   if (!root || row.walletAddress.toLowerCase() !== root.toLowerCase()) {
     return row;
   }
-  if (row.username === PLATFORM_ROOT_DISPLAY_NAME) return row;
-  return { ...row, username: PLATFORM_ROOT_DISPLAY_NAME };
+  if (
+    row.username === PLATFORM_ROOT_DISPLAY_NAME &&
+    row.userColor === PLATFORM_ROOT_DISPLAY_COLOR
+  ) {
+    return row;
+  }
+  return {
+    ...row,
+    username: PLATFORM_ROOT_DISPLAY_NAME,
+    userColor: PLATFORM_ROOT_DISPLAY_COLOR,
+  };
 }
 
 export function computeContestPayoutSections(contest: Contest) {

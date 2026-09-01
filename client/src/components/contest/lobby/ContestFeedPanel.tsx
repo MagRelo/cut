@@ -21,6 +21,8 @@ export interface ContestFeedPanelProps {
   streamClient?: FeedsClient | null;
   /** Current app user — used to highlight posts that mention them. */
   currentUserId?: string;
+  /** True while placeholder lobby data is shown and the fetch is still in flight. */
+  isLoading?: boolean;
 }
 
 function reactorsFromActivity(activity: ActivityResponse): CutbotPostReactor[] {
@@ -244,6 +246,7 @@ export const ContestFeedPanel: React.FC<ContestFeedPanelProps> = ({
   contest,
   streamClient = null,
   currentUserId,
+  isLoading = false,
 }) => {
   return (
     <div className="space-y-3 font-display">
@@ -251,7 +254,11 @@ export const ContestFeedPanel: React.FC<ContestFeedPanelProps> = ({
         <h2 className="m-0 font-display text-xl font-bold uppercase tracking-[0.1em] text-slate-400 sm:text-2xl">
           Contest Updates
         </h2>
-        {streamClient ? (
+        {isLoading ? (
+          <div className="rounded-sm border border-slate-200 bg-slate-50 p-6 text-center font-display">
+            <p className="text-sm text-slate-600">Loading Cutbot updates…</p>
+          </div>
+        ) : streamClient ? (
           <StreamContestFeed
             contest={contest}
             client={streamClient}

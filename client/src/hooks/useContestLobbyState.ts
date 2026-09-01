@@ -10,13 +10,17 @@ import {
 import { useEffectiveWalletAddress } from "./useEffectiveWalletAddress";
 import { useContestEvent } from "./useContestEvent";
 
-export function useContestLobbyState(contest: Contest | undefined): {
+export function useContestLobbyState(
+  contest: Contest | undefined,
+  options: { isContestDataPending?: boolean } = {},
+): {
   viewModel: ContestLobbyViewModel | null;
   isChainStateLoading: boolean;
 } {
   const hasWallet = Boolean(useEffectiveWalletAddress());
   const contestEvent = useContestEvent(contest);
   const { periodDisplay, eventShell } = contestEvent;
+  const isContestDataPending = options.isContestDataPending ?? false;
 
   const { data: contestStateOnChain, isLoading: isChainStateLoading } = useReadContract({
     address: contest?.address as `0x${string}`,
@@ -36,6 +40,7 @@ export function useContestLobbyState(contest: Contest | undefined): {
         contestStateOnChain !== undefined ? Number(contestStateOnChain) : undefined,
       hasWallet,
       periodDisplay: periodDisplay ?? undefined,
+      isContestDataPending,
     };
 
     return deriveContestLobbyViewModel(contest, input);
@@ -45,6 +50,7 @@ export function useContestLobbyState(contest: Contest | undefined): {
     hasWallet,
     eventShell,
     periodDisplay,
+    isContestDataPending,
   ]);
 
   return { viewModel, isChainStateLoading };

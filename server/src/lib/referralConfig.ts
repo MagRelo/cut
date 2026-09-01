@@ -47,7 +47,11 @@ export function requireReferralGroupIdForSignup(): Hex {
 export function getReferralGraphAddress(chainId: number): `0x${string}` | null {
   const cfg = chainContractsForId(chainId);
   const raw = cfg?.referralGraphAddress?.trim();
-  if (!raw || !isAddress(raw) || getAddress(raw) === getAddress("0x0000000000000000000000000000000000000000")) {
+  if (
+    !raw ||
+    !isAddress(raw) ||
+    getAddress(raw) === getAddress("0x0000000000000000000000000000000000000000")
+  ) {
     return null;
   }
   return raw as `0x${string}`;
@@ -57,7 +61,11 @@ export function getReferralGraphAddress(chainId: number): `0x${string}` | null {
 export function getRewardCalculatorAddress(chainId: number): `0x${string}` | null {
   const cfg = chainContractsForId(chainId);
   const raw = cfg?.rewardCalculatorAddress?.trim();
-  if (!raw || !isAddress(raw) || getAddress(raw) === getAddress("0x0000000000000000000000000000000000000000")) {
+  if (
+    !raw ||
+    !isAddress(raw) ||
+    getAddress(raw) === getAddress("0x0000000000000000000000000000000000000000")
+  ) {
     return null;
   }
   return raw as `0x${string}`;
@@ -67,7 +75,10 @@ export function getRewardCalculatorAddress(chainId: number): `0x${string}` | nul
 export const REFERRAL_ROOT = "0x0000000000000000000000000000000000000001" as const;
 
 /** Display name for the cold platform-root wallet in referral payout UI. */
-export const PLATFORM_ROOT_DISPLAY_NAME = "CutBot";
+export const PLATFORM_ROOT_DISPLAY_NAME = "👤 Rich Bouquet";
+
+/** Left-border highlight for platform-root referral payouts (Tailwind slate-500). */
+export const PLATFORM_ROOT_DISPLAY_COLOR = "#64748b";
 
 const DEFAULT_REFERRAL_SYNC_CHAIN_ID = 84532;
 

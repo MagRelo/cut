@@ -164,7 +164,7 @@ describe("useContestPayoutSections", () => {
     expect(result.primary[1]?.prediction).toBe(10);
   });
 
-  it("labels platform-root referral payouts CutBot", () => {
+  it("labels platform-root referral payouts Rich Bouquet", () => {
     const contest = buildContest({
       chainId: 8453,
       onchainPayments: [
@@ -178,6 +178,7 @@ describe("useContestPayoutSections", () => {
     });
 
     const result = computeContestPayoutSections(contest);
-    expect(result.referral[0]?.username).toBe("CutBot");
+    expect(result.referral[0]?.username).toBe("👤 Rich Bouquet");
+    expect(result.referral[0]?.userColor).toBe("#64748b");
   });
 });

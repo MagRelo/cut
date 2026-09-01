@@ -35,9 +35,9 @@ function tabIndexFromQuery(
 ): number | null {
   if (tab === "lineups" && layout.showLineupsTab) return layout.lineupsTabIndex;
   if (tab === "contest") return layout.contestTabIndex;
+  if (tab === "pool" && layout.showPredictionsTab) return layout.predictionsTabIndex;
   if (tab === "feed" && layout.showFeedTab) return layout.feedTabIndex;
-  if (tab === "results" && layout.showResultsTab) return layout.tailTabIndex;
-  if (tab === "pool" && layout.showPredictionsTab) return layout.tailTabIndex;
+  if (tab === "results" && layout.showResultsTab) return layout.resultsTabIndex;
   return null;
 }
 
@@ -144,15 +144,6 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                     Pool
                   </Tab>
                 ) : null}
-                {viewModel.layout.showResultsTab ? (
-                  <Tab
-                    className={({ selected }: { selected: boolean }) =>
-                      tabButtonClassName(selected)
-                    }
-                  >
-                    Results
-                  </Tab>
-                ) : null}
                 {viewModel.layout.showFeedTab ? (
                   <Tab
                     className={({ selected }: { selected: boolean }) =>
@@ -171,6 +162,15 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                         <span className="sr-only">, unread mentions</span>
                       ) : null}
                     </span>
+                  </Tab>
+                ) : null}
+                {viewModel.layout.showResultsTab ? (
+                  <Tab
+                    className={({ selected }: { selected: boolean }) =>
+                      tabButtonClassName(selected)
+                    }
+                  >
+                    Results
                   </Tab>
                 ) : null}
               </TabList>
@@ -211,19 +211,20 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                 </TabPanel>
               ) : null}
 
-              {viewModel.layout.showResultsTab ? (
-                <TabPanel className="p-4 focus:outline-none">
-                  <ContestResultsPanel contest={contest} isLoading={isContestDataPending} />
-                </TabPanel>
-              ) : null}
-
               {viewModel.layout.showFeedTab ? (
                 <TabPanel className="p-4 focus:outline-none">
                   <ContestFeedPanel
                     contest={contest}
                     streamClient={streamClient}
                     currentUserId={currentUserId}
+                    isLoading={isContestDataPending}
                   />
+                </TabPanel>
+              ) : null}
+
+              {viewModel.layout.showResultsTab ? (
+                <TabPanel className="p-4 focus:outline-none">
+                  <ContestResultsPanel contest={contest} isLoading={isContestDataPending} />
                 </TabPanel>
               ) : null}
             </TabPanels>

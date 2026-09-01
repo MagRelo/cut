@@ -12,6 +12,8 @@ export interface DeriveContestLobbyViewModelInput {
   contestStateOnChain?: number;
   hasWallet?: boolean;
   periodDisplay?: string | null;
+  /** True while placeholder lobby data is shown and the fetch is still in flight. */
+  isContestDataPending?: boolean;
 }
 
 export function deriveContestLobbyPhase(contest: Contest): ContestLobbyPhase {
@@ -71,7 +73,7 @@ export function deriveContestLobbyViewModel(
   contest: Contest,
   input: DeriveContestLobbyViewModelInput = {},
 ): ContestLobbyViewModel {
-  const { contestStateOnChain, hasWallet = true } = input;
+  const { contestStateOnChain, hasWallet = true, isContestDataPending = false } = input;
   const phase = deriveContestLobbyPhase(contest);
   // Join window closed ⇒ live timeline / entry modal (leave still gated in JoinActions).
   const primaryActionsLocked = !canAddPrimaryPosition(
@@ -94,26 +96,30 @@ export function deriveContestLobbyViewModel(
   const showLineupsTab =
     Boolean(contest.event?.sportId) &&
     canAddPrimaryPosition(effectiveContestStatus(contest.status, contestStateOnChain));
-  // Live/locked contests always get Feed; settled contests keep it if history exists.
+  // Live/locked always get Feed. Settled keeps it when history exists, or while the
+  // lobby payload is still loading (placeholder data has no commentaryFeed yet).
   const showFeedTab =
-    phase === "live" || phase === "locked" || contestHasCommentaryFeedItems(contest);
+    phase === "live" ||
+    phase === "locked" ||
+    contestHasCommentaryFeedItems(contest) ||
+    (isSettled && (isContestDataPending || contest.commentaryFeed === undefined));
 
   let tabIndex = 0;
   const lineupsTabIndex = showLineupsTab ? tabIndex++ : -1;
   const contestTabIndex = tabIndex++;
-  // Predictions (live/locked) and Results (settled) share the slot before Cutbot.
+  // Pool (live/locked) then Cutbot, with Results always last when settled.
   const showPredictionsTab = hasOnchainEscrow(contest) && (phase === "live" || phase === "locked");
   const showResultsTab = isSettled;
-  const tailTabIndex =
-    showPredictionsTab || showResultsTab ? tabIndex++ : -1;
+  const predictionsTabIndex = showPredictionsTab ? tabIndex++ : -1;
   const feedTabIndex = showFeedTab ? tabIndex++ : -1;
+  const resultsTabIndex = showResultsTab ? tabIndex++ : -1;
 
   const defaultTabIndex =
     phase === "preRound" && showLineupsTab
       ? lineupsTabIndex
       : phase === "settled"
         ? showResultsTab
-          ? tailTabIndex
+          ? resultsTabIndex
           : contestTabIndex
         : contestTabIndex;
 
@@ -127,10 +133,11 @@ export function deriveContestLobbyViewModel(
       showResultsTab,
       lineupsTabIndex,
       contestTabIndex,
+      predictionsTabIndex,
       feedTabIndex,
-      tailTabIndex,
+      resultsTabIndex,
       defaultTabIndex,
-      layoutKey: `${contest.id}-${phase}`,
+      layoutKey: `${contest.id}-${phase}-feed${showFeedTab ? 1 : 0}`,
     },
     primary: {
       mode: primaryActionsLocked ? "liveTimeline" : "enterContest",

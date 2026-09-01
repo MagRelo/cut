@@ -84,7 +84,7 @@ describe("formatOnchainPaymentsForContest", () => {
     expect(result.map((r) => r.kind)).toEqual(["PRIMARY", "SECONDARY"]);
   });
 
-  it("labels the platform-root wallet CutBot when no user is joined", () => {
+  it("labels the platform-root wallet Rich Bouquet when no user is joined", () => {
     const root = "0x15c3DC71f1f7Fd975e6c82Ff84e8bcaC0E4b2acb";
     const result = formatOnchainPaymentsForContest(
       [referralRow(root, "140000", {}, null)],
@@ -94,7 +94,8 @@ describe("formatOnchainPaymentsForContest", () => {
     );
 
     expect(result).toHaveLength(1);
-    expect(result[0]?.username).toBe("CutBot");
+    expect(result[0]?.username).toBe("👤 Rich Bouquet");
+    expect(result[0]?.userColor).toBe("#64748b");
   });
 
   it("copies prediction tiebreaker fields from detailed results", () => {

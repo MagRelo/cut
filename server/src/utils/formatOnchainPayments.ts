@@ -1,6 +1,9 @@
 import type { PaymentKind } from "@prisma/client";
 import type { DetailedResult } from "../services/shared/types.js";
-import { PLATFORM_ROOT_DISPLAY_NAME } from "../lib/referralConfig.js";
+import {
+  PLATFORM_ROOT_DISPLAY_COLOR,
+  PLATFORM_ROOT_DISPLAY_NAME,
+} from "../lib/referralConfig.js";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
@@ -62,18 +65,36 @@ function isOracleReferralPayment(
   return walletAddress.toLowerCase() === contestOracleAddress.toLowerCase();
 }
 
+function isPlatformRootWallet(
+  walletAddress: string,
+  platformRootAddress: string | undefined,
+): boolean {
+  return (
+    !!platformRootAddress &&
+    walletAddress.toLowerCase() === platformRootAddress.toLowerCase()
+  );
+}
+
 function paymentUsername(
   userName: string | null | undefined,
   walletAddress: string,
   platformRootAddress: string | undefined,
 ): string {
-  if (
-    platformRootAddress &&
-    walletAddress.toLowerCase() === platformRootAddress.toLowerCase()
-  ) {
+  if (isPlatformRootWallet(walletAddress, platformRootAddress)) {
     return PLATFORM_ROOT_DISPLAY_NAME;
   }
   return userName ?? "Unknown";
+}
+
+function paymentUserColor(
+  settings: unknown,
+  walletAddress: string,
+  platformRootAddress: string | undefined,
+): string {
+  if (isPlatformRootWallet(walletAddress, platformRootAddress)) {
+    return PLATFORM_ROOT_DISPLAY_COLOR;
+  }
+  return pickUserColor(settings);
 }
 
 export function formatOnchainPaymentsForContest(
@@ -108,7 +129,7 @@ export function formatOnchainPaymentsForContest(
         amountWei: p.amountWei,
         walletAddress: p.walletAddress,
         username: paymentUsername(p.user?.name, p.walletAddress, platformRootAddress),
-        userColor: pickUserColor(p.user?.settings),
+        userColor: paymentUserColor(p.user?.settings, p.walletAddress, platformRootAddress),
         metadata: meta,
       };
       if (entryId) view.entryId = entryId;

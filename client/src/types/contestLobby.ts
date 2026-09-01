@@ -13,8 +13,9 @@ export interface ContestLobbyViewModel {
     showResultsTab: boolean;
     lineupsTabIndex: number;
     contestTabIndex: number;
+    predictionsTabIndex: number;
     feedTabIndex: number;
-    tailTabIndex: number;
+    resultsTabIndex: number;
     defaultTabIndex: number;
     layoutKey: string;
   };

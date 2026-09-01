@@ -68,3 +68,40 @@ describe("deriveContestLobbyViewModel primary gates", () => {
     expect(canRemovePrimaryPosition(status)).toBe(true);
   });
 });
+
+describe("deriveContestLobbyViewModel feed tab", () => {
+  it("shows Cutbot for settled contests while lobby data is still loading", () => {
+    const vm = deriveContestLobbyViewModel(contestFixtures.settled, {
+      isContestDataPending: true,
+    });
+    expect(vm.layout.showFeedTab).toBe(true);
+    expect(vm.layout.showResultsTab).toBe(true);
+    expect(vm.layout.resultsTabIndex).toBeGreaterThan(vm.layout.feedTabIndex);
+    expect(vm.layout.defaultTabIndex).toBe(vm.layout.resultsTabIndex);
+  });
+
+  it("shows Cutbot for settled contests when commentaryFeed is not loaded yet", () => {
+    const vm = deriveContestLobbyViewModel(contestFixtures.settled);
+    expect(contestFixtures.settled.commentaryFeed).toBeUndefined();
+    expect(vm.layout.showFeedTab).toBe(true);
+    expect(vm.layout.resultsTabIndex).toBeGreaterThan(vm.layout.feedTabIndex);
+  });
+
+  it("hides Cutbot for settled contests with a known empty feed", () => {
+    const vm = deriveContestLobbyViewModel({
+      ...contestFixtures.settled,
+      commentaryFeed: null,
+    });
+    expect(vm.layout.showFeedTab).toBe(false);
+    expect(vm.layout.resultsTabIndex).toBe(vm.layout.contestTabIndex + 1);
+  });
+
+  it("keeps Cutbot for settled contests that have feed history", () => {
+    const vm = deriveContestLobbyViewModel({
+      ...contestFixtures.settled,
+      commentaryFeed: { items: [{ id: "1", text: "hello" }] },
+    });
+    expect(vm.layout.showFeedTab).toBe(true);
+    expect(vm.layout.resultsTabIndex).toBeGreaterThan(vm.layout.feedTabIndex);
+  });
+});
