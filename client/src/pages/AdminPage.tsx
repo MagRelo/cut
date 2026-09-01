@@ -9,6 +9,7 @@ import { AdminEventsTable } from "../components/admin/AdminEventsTable";
 import { AdminLeaguesTable } from "../components/admin/AdminLeaguesTable";
 import { AdminStatCard } from "../components/admin/AdminStatCard";
 import { AdminUsersList } from "../components/admin/AdminUsersList";
+import { AdminWalletsPanel } from "../components/admin/AdminWalletsPanel";
 import { useAdminDashboardQuery } from "../hooks/useAdminDashboard";
 import {
   ADMIN_DASHBOARD_TABS,
@@ -32,6 +33,7 @@ const TAB_LABELS: Record<AdminDashboardTab, string> = {
   events: "Events",
   contests: "Contests",
   leagues: "Leagues",
+  wallets: "Wallets",
 };
 
 export const AdminPage: React.FC = () => {
@@ -173,6 +175,9 @@ export const AdminPage: React.FC = () => {
               </TabPanel>
               <TabPanel className="focus:outline-none">
                 <AdminLeaguesTable leagues={dashboard?.leagues ?? []} />
+              </TabPanel>
+              <TabPanel className="focus:outline-none">
+                <AdminWalletsPanel />
               </TabPanel>
             </div>
           </TabGroup>
