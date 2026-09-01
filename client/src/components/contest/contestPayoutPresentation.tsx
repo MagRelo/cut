@@ -44,8 +44,22 @@ export function ContestPayoutGradientMoney({
   );
 }
 
-export function ContestPayoutSubAmount({ children }: { children: ReactNode }) {
-  return <p className="mt-0.5 text-xs tabular-nums leading-tight text-slate-500">{children}</p>;
+export function ContestPayoutSubAmount({
+  children,
+  tone = "muted",
+}: {
+  children: ReactNode;
+  tone?: "muted" | "emphasis";
+}) {
+  return (
+    <p
+      className={`mt-0.5 text-xs tabular-nums leading-tight ${
+        tone === "emphasis" ? "text-slate-900" : "text-slate-500"
+      }`}
+    >
+      {children}
+    </p>
+  );
 }
 
 export function ContestPayoutSection({
