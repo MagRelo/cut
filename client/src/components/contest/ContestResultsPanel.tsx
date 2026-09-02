@@ -5,7 +5,7 @@ import type { Contest, OnchainPaymentView } from "../../types/contest";
 import { useContestPayoutSections } from "../../hooks/useContestPayoutSections";
 import { contestPaymentDecimals } from "../../lib/paymentTokenSpend";
 import { LoadingSpinner } from "../common/LoadingSpinner";
-import { formatDollarFromWei, parseAmountWei } from "./contestPayoutFormat";
+import { contestWinnerPayoutBlurb, formatDollarFromWei, parseAmountWei } from "./contestPayoutFormat";
 import {
   ContestPayoutDividedRows,
   ContestPayoutGradientMoney,
@@ -204,7 +204,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
         title="Contest Winners"
         description={
           <>
-            Contest payouts are based on final standings.{" "}
+            {contestWinnerPayoutBlurb(contest)}{" "}
             <Link to="/faq#contest-gameplay" className="text-blue-600 hover:underline">
               Learn more...
             </Link>

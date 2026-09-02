@@ -8,6 +8,7 @@ import ContestContract from "../../utils/contracts/ContestController.json";
 import { useAuth } from "../../contexts/AuthContext";
 import { defaultPaymentTokenSymbol } from "../../config/targetChain";
 import { Link } from "react-router-dom";
+import { contestWinnerPayoutBlurb } from "./contestPayoutFormat";
 import {
   ContestPayoutDividedRows,
   ContestPayoutGradientMoney,
@@ -392,7 +393,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
               title="Contest"
               description={
                 <>
-                  Payouts are based on final standings.{" "}
+                  {contestWinnerPayoutBlurb(contest)}{" "}
                   <Link to="/faq#contest-gameplay" className="text-blue-600 hover:underline">
                     Learn more...
                   </Link>

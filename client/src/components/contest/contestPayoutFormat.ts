@@ -1,5 +1,6 @@
+import { defaultPayoutVector } from "@cut/sport-sdk";
 import { formatUnits } from "viem";
-import type { OnchainPaymentView } from "../../types/contest";
+import type { Contest, OnchainPaymentView } from "../../types/contest";
 
 export function formatTokenAmount(valueWei: bigint, decimals: number, fractionDigits = 2) {
   const valueStr = formatUnits(valueWei, decimals);
@@ -20,4 +21,19 @@ export function parseAmountWei(row: OnchainPaymentView): bigint | null {
   } catch {
     return null;
   }
+}
+
+/** Winner-take-all (< 10 entries) vs 70/20/10. Prefer settled payoutBps when present. */
+export function contestWinnerPayoutBlurb(
+  contest: Pick<Contest, "results" | "_count" | "contestLineups">,
+): string {
+  const settledPaidPlaces = contest.results?.payoutBps?.filter((bps) => bps > 0).length ?? 0;
+  const paidPlaces =
+    settledPaidPlaces > 0
+      ? settledPaidPlaces
+      : defaultPayoutVector(
+          contest._count?.contestLineups ?? contest.contestLineups?.length ?? 0,
+        ).length;
+
+  return paidPlaces <= 1 ? "Winner takes all." : "Top three lineups split the pot.";
 }
