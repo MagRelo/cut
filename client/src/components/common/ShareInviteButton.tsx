@@ -8,6 +8,8 @@ interface ShareInviteButtonProps {
   shareTitle?: string;
   shareText?: string;
   ariaLabel?: string;
+  label?: string;
+  variant?: "compact" | "cta";
 }
 
 export function ShareInviteButton({
@@ -15,6 +17,8 @@ export function ShareInviteButton({
   shareTitle = BRAND_PROSE,
   shareText = `Join ${BRAND_PROSE}`,
   ariaLabel = "Share invite link",
+  label: idleLabel = "Share",
+  variant = "compact",
 }: ShareInviteButtonProps) {
   const [feedback, setFeedback] = useState<null | "shared" | "copied">(null);
 
@@ -42,15 +46,19 @@ export function ShareInviteButton({
     }
   };
 
-  const label = feedback === "shared" ? "Shared!" : feedback === "copied" ? "Copied!" : "Share";
+  const label = feedback === "shared" ? "Shared!" : feedback === "copied" ? "Copied!" : idleLabel;
   const active = feedback !== null;
+  const sizeClass =
+    variant === "cta"
+      ? "justify-center min-w-[200px] border border-blue-500 px-4 py-2"
+      : "px-3 py-1";
 
   return (
     <button
       type="button"
       onClick={() => void handleClick()}
       aria-label={active ? label : ariaLabel}
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded px-3 py-1 font-display text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded font-display text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${sizeClass} ${
         active ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"
       }`}
     >

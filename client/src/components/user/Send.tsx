@@ -161,27 +161,6 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
         ) : (
           <p className="mt-1 text-sm text-gray-600">Send {targetSymbol} to another wallet.</p>
         )}
-
-        <ul className="mt-3 space-y-2 text-xs text-gray-700">
-          <li className="flex gap-2">
-            <span className="shrink-0" aria-hidden>
-              💡
-            </span>
-            <span>
-              Tip: Send a small test transaction (say $1) to make sure the details are right. Then
-              send another transaction with the full amount.
-            </span>
-          </li>
-          <li className="flex gap-2">
-            <span className="shrink-0" aria-hidden>
-              ⚠️
-            </span>
-            <span>
-              Only send {targetSymbol} to a {networkLabel} address. Sending to an address on
-              Ethereum, Polygon, Arbitrum, or another network may result in lost funds.
-            </span>
-          </li>
-        </ul>
       </div>
 
       <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
@@ -276,6 +255,28 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
           </div>
         </>
       )}
+
+      <ul className="mt-3 space-y-2 text-xs text-gray-700">
+        <li className="flex gap-2">
+          <span className="shrink-0" aria-hidden>
+            💡
+          </span>
+          <span>
+            <span className="font-medium text-gray-900">Tip:</span> Send a small test transaction
+            (say $1) to make sure the details are right. Then send another transaction with the full
+            amount.
+          </span>
+        </li>
+        <li className="flex gap-2">
+          <span className="shrink-0" aria-hidden>
+            ⚠️
+          </span>
+          <span>
+            Only send {targetSymbol} to a {networkLabel} address. Sending to an address on Ethereum,
+            Polygon, Arbitrum, or another network may result in lost funds.
+          </span>
+        </li>
+      </ul>
 
       {(sendError || transactionError) && (
         <p className="text-sm text-red-600">{sendError || String(transactionError)}</p>

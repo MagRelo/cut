@@ -9,11 +9,7 @@ import {
   STREAM_REACTION_TYPES,
   type StreamReactionType,
 } from "../../../lib/stream/constants";
-import {
-  CutbotPost,
-  type CutbotPostReactionState,
-  type CutbotPostReactor,
-} from "./CutbotPost";
+import { CutbotPost, type CutbotPostReactionState, type CutbotPostReactor } from "./CutbotPost";
 
 export interface ContestFeedPanelProps {
   contest: Contest;
@@ -32,9 +28,7 @@ function reactorsFromActivity(activity: ActivityResponse): CutbotPostReactor[] {
   };
 
   return (activity.latest_reactions ?? [])
-    .filter((reaction) =>
-      (STREAM_REACTION_TYPES as readonly string[]).includes(reaction.type),
-    )
+    .filter((reaction) => (STREAM_REACTION_TYPES as readonly string[]).includes(reaction.type))
     .map((reaction) => ({
       type: reaction.type as StreamReactionType,
       displayName: reaction.user?.name?.trim() || "Someone",
@@ -47,9 +41,7 @@ function reactorsFromActivity(activity: ActivityResponse): CutbotPostReactor[] {
     });
 }
 
-function reactionStateFromActivity(
-  activity: ActivityResponse,
-): CutbotPostReactionState {
+function reactionStateFromActivity(activity: ActivityResponse): CutbotPostReactionState {
   const counts: Partial<Record<StreamReactionType, number>> = {};
   for (const type of STREAM_REACTION_TYPES) {
     const group = activity.reaction_groups?.[type];
@@ -73,8 +65,7 @@ function activityGeneratedAt(activity: ActivityResponse): string | Date {
 
 function activityGeneratedAtMs(activity: ActivityResponse): number {
   const value = activityGeneratedAt(activity);
-  const parsed =
-    typeof value === "string" ? Date.parse(value) : value.getTime();
+  const parsed = typeof value === "string" ? Date.parse(value) : value.getTime();
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
@@ -100,15 +91,10 @@ function activityMentionsUser(
   if (!subjects || typeof subjects !== "object") return false;
   const entryIds = (subjects as { entryIds?: unknown }).entryIds;
   if (!Array.isArray(entryIds)) return false;
-  return entryIds.some(
-    (entryId) => typeof entryId === "string" && userEntryIds.has(entryId),
-  );
+  return entryIds.some((entryId) => typeof entryId === "string" && userEntryIds.has(entryId));
 }
 
-function currentUserEntryIds(
-  contest: Contest,
-  userId: string | undefined,
-): Set<string> {
+function currentUserEntryIds(contest: Contest, userId: string | undefined): Set<string> {
   const entryIds = new Set<string>();
   if (!userId) return entryIds;
   for (const row of contest.contestLineups ?? []) {
@@ -158,10 +144,7 @@ const JsonFallbackFeed: React.FC<{
               text={item.text}
               generatedAt={item.generatedAt}
               storyType={item.storyType}
-              isMentioned={jsonItemMentionsUser(
-                item.subjects.entryIds,
-                userEntryIds,
-              )}
+              isMentioned={jsonItemMentionsUser(item.subjects.entryIds, userEntryIds)}
             />
           </li>
         ))}
@@ -191,9 +174,7 @@ const StreamContestFeed: React.FC<{
   );
 
   if (error) {
-    return (
-      <JsonFallbackFeed contest={contest} currentUserId={currentUserId} />
-    );
+    return <JsonFallbackFeed contest={contest} currentUserId={currentUserId} />;
   }
 
   if (isLoading && activities.length === 0) {
@@ -205,9 +186,7 @@ const StreamContestFeed: React.FC<{
   }
 
   if (activities.length === 0) {
-    return (
-      <JsonFallbackFeed contest={contest} currentUserId={currentUserId} />
-    );
+    return <JsonFallbackFeed contest={contest} currentUserId={currentUserId} />;
   }
 
   return (
@@ -219,21 +198,11 @@ const StreamContestFeed: React.FC<{
               text={activity.text ?? ""}
               generatedAt={activityGeneratedAt(activity)}
               storyType={activityStoryType(activity)}
-              isMentioned={activityMentionsUser(
-                activity,
-                currentUserId,
-                userEntryIds,
-              )}
-              activityId={
-                STREAM_REACTIONS_ENABLED ? activity.id : undefined
-              }
+              isMentioned={activityMentionsUser(activity, currentUserId, userEntryIds)}
+              activityId={STREAM_REACTIONS_ENABLED ? activity.id : undefined}
               streamClient={STREAM_REACTIONS_ENABLED ? client : undefined}
               canReact={STREAM_REACTIONS_ENABLED}
-              reactions={
-                STREAM_REACTIONS_ENABLED
-                  ? reactionStateFromActivity(activity)
-                  : undefined
-              }
+              reactions={STREAM_REACTIONS_ENABLED ? reactionStateFromActivity(activity) : undefined}
             />
           </li>
         ))}
@@ -252,7 +221,7 @@ export const ContestFeedPanel: React.FC<ContestFeedPanelProps> = ({
     <div className="space-y-3 font-display">
       <div className="space-y-2">
         <h2 className="m-0 font-display text-xl font-bold uppercase tracking-[0.1em] text-slate-400 sm:text-2xl">
-          Contest Updates
+          Commentary
         </h2>
         {isLoading ? (
           <div className="rounded-sm border border-slate-200 bg-slate-50 p-6 text-center font-display">

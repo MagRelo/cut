@@ -11,6 +11,7 @@ import { TokenBalances } from "../components/user/TokenBalances";
 import { useAuth } from "../contexts/AuthContext";
 import { useUserReferralSummary } from "../hooks/useUserReferralSummary";
 import { isTargetTestnet } from "../config/targetChain";
+import { LEAGUE_STARTER_GUIDE_PATH } from "./LeagueStarterGuidePage";
 
 function truncateMiddle(value: string, head = 8, tail = 6) {
   if (value.length <= head + tail + 1) return value;
@@ -45,10 +46,10 @@ function ReferralLinkRow({
   const shareRow = (
     <div className={`${referralLinkRowGridClass}${className ? ` ${className}` : ""}`}>
       <span className="shrink-0 font-display text-sm font-medium text-gray-700">
-        Share Your Invite Link
+        Share Your Referral Link
       </span>
       <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-        <ShareInviteButton url={url} ariaLabel="Share your invite link" />
+        <ShareInviteButton url={url} ariaLabel="Share your referral link" />
       </div>
     </div>
   );
@@ -65,9 +66,13 @@ function ReferralLinkRow({
 
   if (showSeparator) {
     return (
-      <div className="mt-4">
-        {shareRow}
-        {/* {copyRow} */}
+      <div className="my-4 flex justify-center">
+        <ShareInviteButton
+          url={url}
+          ariaLabel="Share your referral link"
+          label="Share Your Referral Link"
+          variant="cta"
+        />
       </div>
     );
   }
@@ -79,6 +84,30 @@ function ReferralLinkRow({
   );
 }
 
+const REFERRAL_LEVEL_ROWS = [
+  { key: "1", depth: 1, label: "Direct" },
+  { key: "2", depth: 2, label: "2nd" },
+  { key: "3", depth: 3, label: "3rd" },
+] as const;
+
+function referralDisplayLevels(
+  levels: Array<{ depth: number; count: number }> | undefined,
+): Array<{ key: string; label: string; count: number }> {
+  const levelsByDepth = new Map((levels ?? []).map((level) => [level.depth, level.count]));
+  const rows: Array<{ key: string; label: string; count: number }> = REFERRAL_LEVEL_ROWS.map(
+    (row) => ({
+      key: row.key,
+      label: row.label,
+      count: levelsByDepth.get(row.depth) ?? 0,
+    }),
+  );
+  const moreCount = (levels ?? [])
+    .filter((level) => level.depth >= 4)
+    .reduce((sum, level) => sum + level.count, 0);
+  rows.push({ key: "more", label: "4th+", count: moreCount });
+  return rows;
+}
+
 const ReferralNetworkPanel = ({
   loading,
   error,
@@ -88,32 +117,86 @@ const ReferralNetworkPanel = ({
   error: string | null;
   levels: Array<{ depth: number; count: number }> | undefined;
 }) => {
-  const totalPlayersInNetwork = (levels ?? []).reduce((sum, level) => sum + level.count, 0);
+  const displayLevels = referralDisplayLevels(levels);
 
   return (
     <PageSection>
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold text-gray-700">Your Invite Network</h2>
-        {loading ? (
-          <div className="h-7 w-10 animate-pulse rounded bg-gray-200" aria-busy="true" />
+      <h2 className="font-display text-lg font-semibold text-gray-700">Referral Rewards</h2>
+
+      <p className="mb-3 font-display text-sm text-gray-700">
+        When your friends win, you earn.{" "}
+        <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
+          Learn more ...
+        </Link>
+      </p>
+
+      <ReferralLinkRow showSeparator />
+
+      <div className="overflow-hidden rounded-sm border border-gray-200">
+        {!loading && error ? (
+          <p className="border-b border-gray-200 px-3 py-2 font-display text-sm text-red-600">
+            {error}
+          </p>
         ) : null}
-        {!loading && !error ? (
-          <span className="font-display text-lg font-semibold tabular-nums text-gray-800">
-            {totalPlayersInNetwork}
+        <table className="w-full border-collapse font-display text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-100">
+              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+                Level
+              </th>
+              <th className="w-[5.5rem] px-3 py-2 text-right text-xs font-semibold uppercase tabular-nums tracking-wide text-slate-600">
+                Players
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading
+              ? Array.from({ length: 4 }).map((_, index) => (
+                  <tr
+                    key={index}
+                    className={index > 0 ? "border-t border-slate-100" : undefined}
+                    aria-busy="true"
+                  >
+                    <td className="px-3 py-2.5">
+                      <div className="h-5 w-16 animate-pulse rounded bg-gray-200" />
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="ml-auto h-5 w-8 animate-pulse rounded bg-gray-200" />
+                    </td>
+                  </tr>
+                ))
+              : null}
+            {!loading && !error
+              ? displayLevels.map((level, index) => (
+                  <tr
+                    key={level.key}
+                    className={index > 0 ? "border-t border-slate-100" : undefined}
+                  >
+                    <td className="px-3 py-2.5 text-left text-gray-800">{level.label}</td>
+                    <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-gray-800">
+                      {level.count}
+                    </td>
+                  </tr>
+                ))
+              : null}
+          </tbody>
+        </table>
+      </div>
+
+      <aside className="mt-3 rounded-sm border border-gray-200 bg-gray-50 px-3 py-3 font-display">
+        <div className="flex gap-2 text-sm text-gray-700">
+          <span className="shrink-0" aria-hidden>
+            💡
           </span>
-        ) : null}
-      </div>
-
-      <div className="pl-3">
-        <p className="mb-3 font-display text-sm text-gray-700">
-          When they win, you earn.{" "}
-          <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
-            Learn more ...
-          </Link>
-        </p>
-
-        <ReferralLinkRow showSeparator />
-      </div>
+          <p className="leading-relaxed">
+            <span className="font-medium text-gray-900">Tip:</span> Maximize your referrals by
+            starting a league.{" "}
+            <Link to={LEAGUE_STARTER_GUIDE_PATH} className="text-blue-600 hover:underline">
+              Learn more ...
+            </Link>
+          </p>
+        </div>
+      </aside>
     </PageSection>
   );
 };
@@ -210,13 +293,13 @@ export function UserPage() {
 
       <TokenBalances />
 
-      <UserSettings />
-
       <ReferralNetworkPanel
         loading={referralLoading}
         error={referralError}
         levels={referralLevels}
       />
+
+      <UserSettings />
 
       <WalletInfo
         disconnect={logout}

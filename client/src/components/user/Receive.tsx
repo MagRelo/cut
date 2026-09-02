@@ -49,27 +49,6 @@ export const Receive = () => {
             has {tokenSymbol} and ask them to send you some.
           </p>
         )}
-
-        <ul className="space-y-2 text-xs text-gray-700">
-          <li className="flex gap-2">
-            <span className="shrink-0" aria-hidden>
-              💡
-            </span>
-            <span>
-              Tip: Send a small test transaction (say $1) to make sure the details are right. Then
-              send another transaction with the full amount.
-            </span>
-          </li>
-          <li className="flex gap-2">
-            <span className="shrink-0" aria-hidden>
-              ⚠️
-            </span>
-            <span>
-              Only send {tokenSymbol} on {networkLabel} network. Sending from Ethereum, Polygon,
-              Arbitrum, or another network may result in lost funds.
-            </span>
-          </li>
-        </ul>
       </div>
       {walletAddress ? (
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
@@ -99,6 +78,28 @@ export const Receive = () => {
               </dd>
             </div>
           </dl>
+
+          <ul className="space-y-2 text-xs text-gray-700">
+            <li className="flex gap-2">
+              <span className="shrink-0" aria-hidden>
+                💡
+              </span>
+              <span>
+                <span className="font-medium text-gray-900">Tip:</span> Send a small test
+                transaction (say $1) to make sure the details are right. Then send another
+                transaction with the full amount.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="shrink-0" aria-hidden>
+                ⚠️
+              </span>
+              <span>
+                Only send {tokenSymbol} on {networkLabel} network. Sending from Ethereum, Polygon,
+                Arbitrum, or another network may result in lost funds.
+              </span>
+            </li>
+          </ul>
         </div>
       ) : null}
 
