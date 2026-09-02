@@ -212,7 +212,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
         }
       >
         {primary.length === 0 ? (
-          <p className="mt-1 pl-2 text-sm text-slate-500">&bull; No contest payouts recorded</p>
+          <p className="mt-1 pl-2 text-sm text-slate-500">&bull; No contest payouts</p>
         ) : (
           <ContestWinnerRows rows={primary} paymentDecimals={paymentDecimals} />
         )}
@@ -230,7 +230,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
         }
       >
         {secondary.length === 0 ? (
-          <p className="mt-1 pl-2 text-sm text-slate-500">&bull; No winner pool payouts recorded</p>
+          <p className="mt-1 pl-2 text-sm text-slate-500">&bull; No winner pool payouts</p>
         ) : (
           <WinnerPoolRows rows={secondary} paymentDecimals={paymentDecimals} />
         )}

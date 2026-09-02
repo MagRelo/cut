@@ -166,7 +166,7 @@ export const ReferralRewardsTree: React.FC<ReferralRewardsTreeProps> = ({
   );
 
   if (groups.length === 0) {
-    return <p className="pl-2 text-sm text-slate-500">&bull; No rewards payouts recorded</p>;
+    return <p className="pl-2 text-sm text-slate-500">&bull; No rewards payouts</p>;
   }
 
   return (
