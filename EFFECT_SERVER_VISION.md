@@ -1,6 +1,6 @@
 # Play The Cut Server: Effect Vision
 
-> A comprehensive look at how Effect-TS would transform the server architecture, with particular focus on the data ingestion (Extract-Data-Load) pipelines.
+> A comprehensive look at how Effect-TS would transform the server architecture, with particular focus on the data ingestion (Extract-Transform-Load) pipelines.
 
 ## Table of Contents
 
@@ -9,7 +9,7 @@
 3. [Current vs Effect Architecture](#current-vs-effect-architecture)
 4. [Typed Errors](#typed-errors)
 5. [Dependency Injection via Layers](#dependency-injection-via-layers)
-6. [Data Ingestion Pipelines (EDL)](#data-ingestion-pipelines-edl)
+6. [Data Ingestion Pipelines (ETL)](#data-ingestion-pipelines-edl)
 7. [Sport Plugin Architecture](#sport-plugin-architecture)
 8. [API Layer](#api-layer)
 9. [Observability & Tracing](#observability--tracing)
@@ -579,7 +579,7 @@ export const TestLive = Layer.mergeAll(
 
 ---
 
-## Data Ingestion Pipelines (EDL)
+## Data Ingestion Pipelines (ETL)
 
 This is where Effect really shines. The current cron scheduler has manual error handling, no structured concurrency, and implicit dependencies.
 
@@ -1781,7 +1781,7 @@ Effect would bring several key improvements to the Play The Cut server:
 | **Logging** | console.log scattered | Structured, contextual, traceable |
 | **Testing** | Mock everything manually | Swap layers, deterministic |
 
-The data ingestion pipeline would benefit most dramatically - the EDL operations currently have:
+The data ingestion pipeline would benefit most dramatically - the ETL operations currently have:
 - Implicit error handling (catch-all or ignore)
 - No structured concurrency limits
 - Manual caching
