@@ -1,13 +1,13 @@
 # Drive Play The Cut referrals
 
-You can earn invite-network rewards by sending people to Play The Cut with **your invite code in the URL**. Register a Play The Cut account first, then share the invite link from Account Settings so new signups attach to you in the invite tree.
+You can earn invite-network rewards by sending people to Play The Cut with **your invite code in the URL**. Register a Play The Cut account first, then share your referral link from Account Settings so new signups attach to you in the invite tree.
 
 On-chain `ReferralGraph` registration is separate: cron registers invitees after the inviter is on-chain. Signup does not wait for that.
 
 ## Register first
 
 1. Open https://playthecut.com and create an account (Sign in / Create Account).
-2. After signup, open **Account Settings** and copy **Share Your Invite Link**. That URL includes your opaque referral code (`User.referralCode`).
+2. After signup, open **Account Settings** and copy **Share Your Referral Link**. That URL includes your opaque referral code (`User.referralCode`).
 
 If you share a `?ref=` link before your Cut account exists, the visitor still gets an account (organic, under the platform root). They are not attached to you.
 

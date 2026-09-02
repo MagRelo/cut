@@ -693,7 +693,7 @@ userGroupRouter.post("/:id/invite", requireAuth, requireUserGroupAdmin, async (c
       return c.json(
         {
           error:
-            "Connect your wallet on this network before generating an invite link.",
+            "Connect your wallet on this network before generating a referral link.",
         },
         400,
       );
@@ -713,7 +713,7 @@ userGroupRouter.post("/:id/invite", requireAuth, requireUserGroupAdmin, async (c
     });
   } catch (error) {
     console.error("Error generating userGroup invite:", error);
-    return c.json({ error: "Failed to generate invite link" }, 500);
+    return c.json({ error: "Failed to generate referral link" }, 500);
   }
 });
 

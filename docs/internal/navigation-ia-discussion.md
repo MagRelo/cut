@@ -95,7 +95,7 @@ Play The Cut is **both**. The invite → league → contest → lineup path is l
 
 | | **Jordan** — League member | **Sam** — Public player |
 |---|---|---|
-| How they arrive | Friend’s invite link | Search, social, word of mouth |
+| How they arrive | Friend’s referral link | Search, social, word of mouth |
 | Primary question | “What do I need to do for our pool this week?” | “What contests can I enter right now?” |
 | Social context | Strong — league name, rivals | Weak — strangers, public lobby |
 | Sport awareness | Low — “it’s the Masters pool” | Higher — “I want golf this week” |

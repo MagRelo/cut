@@ -16,7 +16,7 @@ export function ShareInviteButton({
   url,
   shareTitle = BRAND_PROSE,
   shareText = `Join ${BRAND_PROSE}`,
-  ariaLabel = "Share invite link",
+  ariaLabel = "Share referral link",
   label: idleLabel = "Share",
   variant = "compact",
 }: ShareInviteButtonProps) {

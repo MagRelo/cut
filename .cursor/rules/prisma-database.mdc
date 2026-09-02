@@ -57,7 +57,7 @@ flowchart TB
 
 - Users belong to many leagues through `UserGroupMember`.
 - League creator is `ADMIN`; other members are `MEMBER`.
-- Admins manage members (today: add by wallet address; planned: invite links — see `PRIVATE_LEAGUES.md`).
+- Admins manage members (today: add by wallet address; planned: referral links — see `PRIVATE_LEAGUES.md`).
 
 ### Lineups and contests
 

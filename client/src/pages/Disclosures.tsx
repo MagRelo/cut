@@ -212,7 +212,7 @@ export const Disclosures: React.FC = () => {
           <p className="mb-2 font-medium text-gray-900">League and Private Contests</p>
           <p>
             Contest Creators may designate contests as private or league-scoped and restrict
-            participation via invite links or membership. The Platform does not control or curate
+            participation via referral links or membership. The Platform does not control or curate
             private contest participants and is not responsible for disputes among participants.
           </p>
         </LegalSubsection>

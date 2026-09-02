@@ -10,7 +10,6 @@ import { UserSettings } from "../components/user/UserSettings";
 import { TokenBalances } from "../components/user/TokenBalances";
 import { useAuth } from "../contexts/AuthContext";
 import { useUserReferralSummary } from "../hooks/useUserReferralSummary";
-import { isTargetTestnet } from "../config/targetChain";
 import { LEAGUE_STARTER_GUIDE_PATH } from "./LeagueStarterGuidePage";
 
 function truncateMiddle(value: string, head = 8, tail = 6) {
@@ -56,7 +55,7 @@ function ReferralLinkRow({
 
   const copyRow = (
     <div className={`${referralLinkRowGridClass} mt-3`}>
-      <span className="shrink-0 font-display text-sm font-medium text-gray-700">Invite Link</span>
+      <span className="shrink-0 font-display text-sm font-medium text-gray-700">Referral Link</span>
       <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
         <ReferralUrlPreview url={url} />
         <CopyButton text={url} />
@@ -87,7 +86,6 @@ function ReferralLinkRow({
 const REFERRAL_LEVEL_ROWS = [
   { key: "1", depth: 1, label: "Direct" },
   { key: "2", depth: 2, label: "2nd" },
-  { key: "3", depth: 3, label: "3rd" },
 ] as const;
 
 function referralDisplayLevels(
@@ -102,9 +100,9 @@ function referralDisplayLevels(
     }),
   );
   const moreCount = (levels ?? [])
-    .filter((level) => level.depth >= 4)
+    .filter((level) => level.depth >= 3)
     .reduce((sum, level) => sum + level.count, 0);
-  rows.push({ key: "more", label: "4th+", count: moreCount });
+  rows.push({ key: "more", label: "3+", count: moreCount });
   return rows;
 }
 
@@ -151,7 +149,7 @@ const ReferralNetworkPanel = ({
           </thead>
           <tbody>
             {loading
-              ? Array.from({ length: 4 }).map((_, index) => (
+              ? Array.from({ length: 3 }).map((_, index) => (
                   <tr
                     key={index}
                     className={index > 0 ? "border-t border-slate-100" : undefined}
@@ -181,22 +179,21 @@ const ReferralNetworkPanel = ({
               : null}
           </tbody>
         </table>
-      </div>
-
-      <aside className="mt-3 rounded-sm border border-gray-200 bg-gray-50 px-3 py-3 font-display">
-        <div className="flex gap-2 text-sm text-gray-700">
-          <span className="shrink-0" aria-hidden>
-            💡
-          </span>
-          <p className="leading-relaxed">
-            <span className="font-medium text-gray-900">Tip:</span> Maximize your referrals by
-            starting a league.{" "}
-            <Link to={LEAGUE_STARTER_GUIDE_PATH} className="text-blue-600 hover:underline">
-              Learn more ...
-            </Link>
-          </p>
+        <div className="border-t border-gray-200 bg-gray-50 px-3 py-3 font-display">
+          <div className="flex gap-2 text-sm text-gray-700">
+            <span className="shrink-0" aria-hidden>
+              💡
+            </span>
+            <p className="leading-relaxed">
+              <span className="font-medium text-gray-900">Tip:</span> Referrals can be used to fund
+              a league.{" "}
+              <Link to={LEAGUE_STARTER_GUIDE_PATH} className="text-blue-600 hover:underline">
+                Learn more ...
+              </Link>
+            </p>
+          </div>
         </div>
-      </aside>
+      </div>
     </PageSection>
   );
 };
@@ -243,17 +240,12 @@ const WalletInfo = ({
                 <CopyButton text={accountIdAddress} />
               </div>
             </div>
-            <p className="mt-1 font-display text-xs text-gray-500">
-              {isTargetTestnet()
-                ? "Use this to add funds from another player."
-                : "Use this to add funds from Coinbase, Robinhood, or another wallet."}
-            </p>
           </div>
         ) : null}
       </div>
 
       {canSignOut && (
-        <div className="mt-4 flex justify-center border-t border-gray-200 pt-4">
+        <div className="mt-4 flex justify-center pt-4">
           <button
             type="button"
             className="min-w-[120px] rounded border border-blue-500 bg-blue-500 px-4 py-1 font-display text-sm text-white transition-colors hover:bg-blue-600"

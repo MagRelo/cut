@@ -50,7 +50,7 @@ export const UserGroupInvitePanel = ({
           {isManageVariant ? (
             <div className={inviteLinkRowGridClass}>
               <span className="shrink-0 font-display text-sm font-medium text-gray-700">
-                Invite link
+                Referral link
               </span>
               <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
                 <span
@@ -65,13 +65,13 @@ export const UserGroupInvitePanel = ({
           ) : (
             <div className={inviteLinkRowGridClass}>
               <span className="shrink-0 font-display text-sm font-medium text-gray-700">
-                League Invite Link
+                League Referral Link
               </span>
               <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
                 <ShareInviteButton
                   url={activeInviteUrl}
                   shareText={`Join my league on ${BRAND_PROSE}`}
-                  ariaLabel="Share league invite link"
+                  ariaLabel="Share league referral link"
                 />
               </div>
             </div>
@@ -83,8 +83,8 @@ export const UserGroupInvitePanel = ({
       ) : (
         <p className="text-sm text-gray-600">
           {isManageVariant
-            ? "No invite link yet. Generate one to share."
-            : "No invite link yet. Ask a league admin to generate one on the Manage tab."}
+            ? "No referral link yet. Generate one to share."
+            : "No referral link yet. Ask a league admin to generate one on the Manage tab."}
         </p>
       )}
 
@@ -97,7 +97,7 @@ export const UserGroupInvitePanel = ({
             className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
           >
             {generateInviteMutation.isPending && <LoadingSpinnerSmall />}
-            {activeInviteUrl ? "Rotate invite link" : "Generate invite link"}
+            {activeInviteUrl ? "Rotate referral link" : "Generate referral link"}
           </button>
         </div>
       ) : null}

@@ -379,7 +379,7 @@ export function OnboardingPage() {
             </p>
 
             <p className="text-gray-700 leading-relaxed font-display mb-6">
-              You can find your personal invite link on the account page - share it with your
+              You can find your personal referral link on the account page - share it with your
               friends!
             </p>
 

@@ -46,7 +46,7 @@ export const UserGroupJoinPage = () => {
   if (!code) {
     return (
       <>
-        <ErrorMessage message="Invalid invite link" />
+        <ErrorMessage message="Invalid referral link" />
         <Link to="/leagues" className="text-sm text-blue-600 hover:text-blue-700 font-display">
           Go to Leagues
         </Link>
@@ -68,7 +68,7 @@ export const UserGroupJoinPage = () => {
   if (isError) {
     const message =
       error && isApiError(error) && error.statusCode === 404
-        ? "Invite link not found or expired"
+        ? "Referral link not found or expired"
         : error instanceof Error
           ? error.message
           : "Failed to join league";

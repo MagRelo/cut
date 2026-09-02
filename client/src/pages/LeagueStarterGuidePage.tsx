@@ -79,12 +79,14 @@ export const LeagueStarterGuidePage: React.FC = () => {
                 <CurrencyDollarIcon className="h-5 w-5" aria-hidden />
               </span>
               <div className="min-w-0">
-                <h3 className="font-display text-base font-semibold text-gray-900">You get paid</h3>
+                <h3 className="font-display text-base font-semibold text-gray-900">
+                  Generate referral rewards
+                </h3>
                 <p className="mt-1 text-sm leading-relaxed text-gray-700">
-                  You get paid whenever someone you invited wins - if you invite the whole league
-                  then you're guaranteed a payout from every contest.{" "}
+                  When players in your network win, referral rewards can flow back to you. Onboard
+                  the whole league and every contest is another chance to generate rewards.{" "}
                   <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
-                    Learn more about the invite network...
+                    Learn more about referral rewards...
                   </Link>
                 </p>
               </div>
@@ -114,10 +116,10 @@ export const LeagueStarterGuidePage: React.FC = () => {
               </span>
               <div className="min-w-0">
                 <h3 className="font-display text-base font-semibold text-gray-900">
-                  Invite Rewards %
+                  Referral Rewards %
                 </h3>
                 <p className="mt-1 text-sm leading-relaxed text-gray-700">
-                  Amount of the pot that pays out to the invite network
+                  Amount of the pot that pays out as referral rewards
                 </p>
               </div>
             </li>
@@ -125,10 +127,10 @@ export const LeagueStarterGuidePage: React.FC = () => {
         </PageSection>
 
         <PageSection id="invite" className="scroll-mt-4">
-          <h2 className="mb-4 font-display text-2xl font-bold text-gray-900">League Invite Link</h2>
+          <h2 className="mb-4 font-display text-2xl font-bold text-gray-900">League Referral Link</h2>
           <p>
             One link does two jobs: it adds someone to your league and sets you as their referrer
-            for invite rewards when they sign up. Share it when onboarding new players.
+            for referral rewards when they sign up. Share it when onboarding new players.
           </p>
         </PageSection>
 
@@ -153,7 +155,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
               </span>
               <div className="min-w-0">
                 <h3 className="font-display text-base font-semibold text-gray-900">
-                  Share the invite link
+                  Share the referral link
                 </h3>
                 <p className="mt-1 text-sm leading-relaxed text-gray-700">
                   Share via email, text, iMessage, etc.
@@ -196,7 +198,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
               Frequently Asked Questions
             </Link>
             <Link to="/faq#referral-network" className="font-medium text-blue-600 hover:underline">
-              Invite network deep dive
+              Referral rewards deep dive
             </Link>
             <Link to="/leagues/create" className="font-medium text-blue-600 hover:underline">
               Create a league
