@@ -19,6 +19,7 @@ function statusBadgeClass(status: string): string {
     case "LOCKED":
       return "bg-amber-100 text-amber-800";
     case "SETTLED":
+      return "bg-emerald-100 text-emerald-800";
     case "CLOSED":
       return "bg-gray-100 text-gray-700";
     default:

@@ -13,7 +13,7 @@ export function contestStatusValueClass(status: ContestStatus): string {
     case "LOCKED":
       return "text-amber-600";
     case "SETTLED":
-      return "text-gray-600";
+      return "text-emerald-600";
     case "CLOSED":
       return "text-gray-600";
     case "CANCELLED":
