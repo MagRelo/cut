@@ -33,10 +33,6 @@ function contestListActionLabel(variant: ContestListItemVariant): string {
   return variant === "upcoming" ? "Join" : "View";
 }
 
-function isLeagueContest(contest: Contest): boolean {
-  return Boolean(contest.userGroup?.name || contest.userGroupId);
-}
-
 export type ContestListItemVariant = "default" | "upcoming" | "past";
 
 function formatBuyInValue(primaryDeposit: number | undefined): string {
@@ -93,7 +89,9 @@ export const ContestListItem = ({
     contest._count?.contestLineups ?? contest.contestLineups?.length ?? 0;
   const buyInValue = formatBuyInValue(contest.settings?.primaryDeposit);
   const actionLabel = contestListActionLabel(variant);
-  const isPrivate = isLeagueContest(contest);
+  // Show locked state if user doesn't have access (hasAccess === false)
+  // Default to accessible for backwards compatibility (hasAccess undefined)
+  const isLocked = contest.hasAccess === false;
 
   const footerContent = (
     <>
@@ -108,14 +106,14 @@ export const ContestListItem = ({
       </div>
       <span
         className={
-          isPrivate
+          isLocked
             ? cn(viewButtonBaseClassName, viewButtonDisabledClassName)
             : isPastViewButton(contest, variant)
               ? viewLinkPastClassName
               : cn(viewButtonBaseClassName, viewButtonActiveClassName)
         }
       >
-        {isPrivate ? (
+        {isLocked ? (
           <>
             <LockClosedIcon className="h-4 w-4 shrink-0" aria-hidden />
             Private
@@ -134,7 +132,7 @@ export const ContestListItem = ({
     <div
       className={cn(
         "group min-w-0 overflow-hidden rounded-md border border-slate-500 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow] duration-200",
-        !isPrivate && "hover:border-blue-200 hover:shadow-md",
+        !isLocked && "hover:border-blue-200 hover:shadow-md",
         className,
       )}
     >
@@ -142,7 +140,7 @@ export const ContestListItem = ({
         <ContestCard contest={contest} />
       </div>
 
-      {isPrivate ? (
+      {isLocked ? (
         <div
           aria-label={`Private contest: ${contest.name}`}
           className={cn(
