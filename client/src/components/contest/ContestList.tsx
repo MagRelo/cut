@@ -15,7 +15,7 @@ interface ContestListProps {
 }
 
 export function ContestListConnectHint({
-  message = "to see private contests",
+  message = "to see league contests",
   className = "mt-6 text-center",
 }: {
   message?: string;
@@ -62,7 +62,7 @@ export const ContestList = ({
         }
       >
         <p className="mb-1 font-display text-base font-semibold text-gray-900">
-          Contests coming soon...
+          New contests coming soon!
         </p>
         <p className="font-display text-sm text-gray-600">
           New contests will show up here when they open. Check back soon.

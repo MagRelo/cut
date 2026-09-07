@@ -3,6 +3,7 @@ import { createTtlCache } from "../../lib/ttlCache.js";
 import {
   contestDirectoryEventSelect,
   contestDirectorySelect,
+  contestPrivyVisibilityOr,
 } from "../../utils/contestListQuery.js";
 import {
   directoryEventFromRecord,
@@ -36,8 +37,6 @@ type DirectoryContest = {
   userGroup: { id: string; name: string } | null;
   _count: { contestLineups: number };
   settledPot: number | null;
-  /** True if the user has access to view this contest (public or member of league). */
-  hasAccess: boolean;
 };
 
 export type EventContestGroup = {
@@ -124,27 +123,20 @@ function slimDirectorySettings(settings: unknown): Record<string, unknown> | nul
   return out;
 }
 
-function formatDirectoryContest(
-  row: {
-    id: string;
-    name: string;
-    eventId: string;
-    userGroupId: string | null;
-    endTime: Date;
-    address: string | null;
-    chainId: number;
-    status: string;
-    settings: unknown;
-    userGroup: { id: string; name: string } | null;
-    _count: { contestLineups: number };
-    onchainPayments?: { amountWei: string }[];
-  },
-  memberGroupIds: Set<string>,
-): DirectoryContest {
-  // Public contests (no userGroupId) are always accessible.
-  // League contests are accessible if user is a member of that league.
-  const hasAccess = row.userGroupId === null || memberGroupIds.has(row.userGroupId);
-
+function formatDirectoryContest(row: {
+  id: string;
+  name: string;
+  eventId: string;
+  userGroupId: string | null;
+  endTime: Date;
+  address: string | null;
+  chainId: number;
+  status: string;
+  settings: unknown;
+  userGroup: { id: string; name: string } | null;
+  _count: { contestLineups: number };
+  onchainPayments?: { amountWei: string }[];
+}): DirectoryContest {
   return {
     id: row.id,
     name: row.name,
@@ -158,7 +150,6 @@ function formatDirectoryContest(
     userGroup: row.userGroup,
     _count: row._count,
     settledPot: settledPotForContestRow(row),
-    hasAccess,
   };
 }
 
@@ -222,10 +213,10 @@ export async function listContestDirectory(
     ...eventWindow,
   };
 
-  // Fetch all contests (not filtered by visibility) plus user's league memberships
-  const [rows, eventRows, membershipRows] = await Promise.all([
+  const [rows, eventRows] = await Promise.all([
     prisma.contest.findMany({
       where: {
+        OR: contestPrivyVisibilityOr(privyUserId),
         event: eventWhere,
       },
       select: contestDirectorySelect,
@@ -234,19 +225,7 @@ export async function listContestDirectory(
       where: eventWhere,
       select: contestDirectoryEventSelect,
     }),
-    // Get the user's league memberships to compute hasAccess
-    privyUserId
-      ? prisma.userGroupMember.findMany({
-          where: {
-            user: { privyUserId },
-          },
-          select: { userGroupId: true },
-        })
-      : Promise.resolve([]),
   ]);
-
-  // Build a set of group IDs the user is a member of
-  const memberGroupIds = new Set(membershipRows.map((m) => m.userGroupId));
 
   const eventsById = new Map<string, EventWithSport>();
   for (const event of eventRows) {
@@ -256,7 +235,7 @@ export async function listContestDirectory(
   const contestsByEventId = new Map<string, DirectoryContest[]>();
 
   for (const row of rows) {
-    const formatted = formatDirectoryContest(row, memberGroupIds);
+    const formatted = formatDirectoryContest(row);
     const existing = contestsByEventId.get(row.eventId) ?? [];
     existing.push(formatted);
     contestsByEventId.set(row.eventId, existing);

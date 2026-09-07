@@ -165,8 +165,6 @@ export interface Contest {
     /** Invite / network rewards payout rows (optional; populated when settlement exposes them). */
     rewardsPayouts?: RewardsPayoutResult[];
   };
-  /** True if the current user has access to view this contest (public or member of league). */
-  hasAccess?: boolean;
 }
 
 export type OnchainPaymentView = {
