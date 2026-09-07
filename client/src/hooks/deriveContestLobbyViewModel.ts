@@ -114,11 +114,13 @@ export function deriveContestLobbyViewModel(
   const feedTabIndex = showFeedTab ? tabIndex++ : -1;
   const resultsTabIndex = showResultsTab ? tabIndex++ : -1;
 
+  // Free contests default to contest tab when settled; paid contests default to results tab.
+  const isFreeContest = !hasOnchainEscrow(contest);
   const defaultTabIndex =
     phase === "preRound" && showLineupsTab
       ? lineupsTabIndex
       : phase === "settled"
-        ? showResultsTab
+        ? showResultsTab && !isFreeContest
           ? resultsTabIndex
           : contestTabIndex
         : contestTabIndex;
