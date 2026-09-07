@@ -31,7 +31,7 @@ export const Contests: React.FC = () => {
       {showUpcomingSection ? (
         <>
           <div className="mb-3">
-            <ListHeader title="🚩 Upcoming Events" tone="upcoming" />
+            <ListHeader title={" 🚩\u00A0 Upcoming Events"} tone="upcoming" />
           </div>
           <GroupedContestList
             groups={upcoming}
@@ -48,10 +48,7 @@ export const Contests: React.FC = () => {
               tone="live"
               title={
                 <>
-                  <span
-                    className="h-2 w-2 shrink-0 rounded-full bg-green-500"
-                    aria-hidden="true"
-                  />
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-green-500" aria-hidden="true" />
                   In Progress
                 </>
               }
