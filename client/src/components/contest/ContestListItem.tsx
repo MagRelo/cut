@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { CompetitionEventShell } from "@cut/sport-sdk";
-import { ChevronRightIcon } from "@heroicons/react/24/outline";
+import { ChevronRightIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 import { type Contest } from "../../types/contest";
 import { contestLobbyLinkState } from "../../lib/contestNavigation";
 import { formatContestStatus, contestStatusValueClass } from "../../lib/contestStatus";
@@ -75,6 +75,9 @@ interface ContestListItemProps {
   variant?: ContestListItemVariant;
 }
 
+const viewButtonDisabledClassName =
+  "border-slate-300 bg-slate-100 text-slate-400 cursor-not-allowed";
+
 export const ContestListItem = ({
   contest,
   to,
@@ -86,11 +89,50 @@ export const ContestListItem = ({
     contest._count?.contestLineups ?? contest.contestLineups?.length ?? 0;
   const buyInValue = formatBuyInValue(contest.settings?.primaryDeposit);
   const actionLabel = contestListActionLabel(variant);
+  // Show locked state if user doesn't have access (hasAccess === false)
+  // Default to accessible for backwards compatibility (hasAccess undefined)
+  const isLocked = contest.hasAccess === false;
+
+  const footerContent = (
+    <>
+      <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
+        <ContestListStat value={buyInValue} label="Buy-in" />
+        <ContestListStat value={entryCount} label="Entries" />
+        <ContestListStat
+          value={formatContestStatus(contest.status)}
+          label="Status"
+          valueClassName={contestStatusValueClass(contest.status)}
+        />
+      </div>
+      <span
+        className={
+          isLocked
+            ? cn(viewButtonBaseClassName, viewButtonDisabledClassName)
+            : isPastViewButton(contest, variant)
+              ? viewLinkPastClassName
+              : cn(viewButtonBaseClassName, viewButtonActiveClassName)
+        }
+      >
+        {isLocked ? (
+          <>
+            <LockClosedIcon className="h-4 w-4 shrink-0" aria-hidden />
+            Private
+          </>
+        ) : (
+          <>
+            {actionLabel}
+            <ChevronRightIcon className="-ml-0.5 h-4 w-4 shrink-0" aria-hidden />
+          </>
+        )}
+      </span>
+    </>
+  );
 
   return (
     <div
       className={cn(
-        "group min-w-0 overflow-hidden rounded-md border border-slate-500 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow] duration-200 hover:border-blue-200 hover:shadow-md",
+        "group min-w-0 overflow-hidden rounded-md border border-slate-500 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow] duration-200",
+        !isLocked && "hover:border-blue-200 hover:shadow-md",
         className,
       )}
     >
@@ -98,38 +140,32 @@ export const ContestListItem = ({
         <ContestCard contest={contest} />
       </div>
 
-      <Link
-        to={to}
-        state={eventShell ? contestLobbyLinkState(eventShell, contest) : undefined}
-        aria-label={`${actionLabel} ${contest.name} contest`}
-        className={cn(
-          "group/footer flex items-center gap-3 border-t p-2 pt-2.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]",
-          contestListFooterClass(contest.status),
-          isPastViewButton(contest, variant)
-            ? "hover:bg-slate-200 focus-visible:outline-slate-500"
-            : "hover:bg-blue-100 focus-visible:outline-blue-500",
-        )}
-      >
-        <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
-          <ContestListStat value={buyInValue} label="Buy-in" />
-          <ContestListStat value={entryCount} label="Entries" />
-          <ContestListStat
-            value={formatContestStatus(contest.status)}
-            label="Status"
-            valueClassName={contestStatusValueClass(contest.status)}
-          />
-        </div>
-        <span
-          className={
-            isPastViewButton(contest, variant)
-              ? viewLinkPastClassName
-              : cn(viewButtonBaseClassName, viewButtonActiveClassName)
-          }
+      {isLocked ? (
+        <div
+          aria-label={`Private contest: ${contest.name}`}
+          className={cn(
+            "group/footer flex items-center gap-3 border-t p-2 pt-2.5",
+            "border-slate-200 bg-slate-50",
+          )}
         >
-          {actionLabel}
-          <ChevronRightIcon className="-ml-0.5 h-4 w-4 shrink-0" aria-hidden />
-        </span>
-      </Link>
+          {footerContent}
+        </div>
+      ) : (
+        <Link
+          to={to}
+          state={eventShell ? contestLobbyLinkState(eventShell, contest) : undefined}
+          aria-label={`${actionLabel} ${contest.name} contest`}
+          className={cn(
+            "group/footer flex items-center gap-3 border-t p-2 pt-2.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]",
+            contestListFooterClass(contest.status),
+            isPastViewButton(contest, variant)
+              ? "hover:bg-slate-200 focus-visible:outline-slate-500"
+              : "hover:bg-blue-100 focus-visible:outline-blue-500",
+          )}
+        >
+          {footerContent}
+        </Link>
+      )}
     </div>
   );
 };
