@@ -66,3 +66,4 @@ Production is **Base** (`8453`) with **canonical USDC**. Players add and withdra
 | [product-growth-funnel.md](internal/product-growth-funnel.md) | AARRR funnel definitions |
 | [navigation-ia-discussion.md](internal/navigation-ia-discussion.md) | Multi-sport nav draft |
 | [drive-referrals.md](internal/drive-referrals.md) | Agent brief: register, then share `?ref=` invite URLs |
+| [effect-server-vision.md](internal/effect-server-vision.md) | **Future / not a spec** — Effect-TS server sketch |
