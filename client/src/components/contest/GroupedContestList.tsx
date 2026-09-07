@@ -1,10 +1,10 @@
 import { type ReactNode } from "react";
-import { DEFAULT_EVENT_HERO_OVERLAY_CLASSNAME } from "@cut/sport-sdk/ui";
 import type { ContestDirectoryEvent, EventContestGroup } from "../../types/contest";
 import { formatTournamentDateRange } from "../../lib/contestCreation";
 import { eventShellFromDirectoryEvent } from "../../lib/contestNavigation";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSportUIPlugin } from "../../hooks/useSportUI";
+import { cn } from "../../lib/tabStyles";
 import { SportEventHeader } from "../platform/SportEventHeader";
 import { ContestList, ContestListConnectHint } from "./ContestList";
 import type { ContestListItemVariant } from "./ContestListItem";
@@ -23,6 +23,13 @@ function eventSublabel(event: ContestDirectoryEvent): string | null {
   return event.externalId;
 }
 
+function directoryHeroOverlayClass(variant: ContestListItemVariant): string {
+  if (variant === "past") {
+    return "bg-gradient-to-b from-black/40 via-black/15 to-black/5";
+  }
+  return "bg-gradient-to-b from-black/35 via-black/10 to-transparent";
+}
+
 function GroupedContestSection({
   group,
   variant = "default",
@@ -37,20 +44,16 @@ function GroupedContestSection({
 
   if (hasHeroPanel) {
     const heroImageClassName = plugin?.eventHeroImageClassName;
-    const heroOverlayClassName =
-      plugin?.eventHeroOverlayClassName ?? DEFAULT_EVENT_HERO_OVERLAY_CLASSNAME;
     return (
-      <section className="overflow-hidden rounded-md border border-slate-300 shadow-md">
+      <section className="overflow-hidden rounded-2xl shadow-xl shadow-slate-900/25">
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 overflow-hidden" aria-hidden>
             <div
-              className={["absolute inset-0 bg-cover bg-center", heroImageClassName]
-                .filter(Boolean)
-                .join(" ")}
+              className={cn("absolute inset-0 bg-cover bg-center", heroImageClassName)}
               style={{ backgroundImage: `url(${heroImage})` }}
             />
           </div>
-          <div className={["absolute inset-0", heroOverlayClassName].join(" ")} aria-hidden />
+          <div className={cn("absolute inset-0", directoryHeroOverlayClass(variant))} aria-hidden />
           <div className="relative z-10">
             <SportEventHeader
               sportId={group.event.sportId}
@@ -58,14 +61,23 @@ function GroupedContestSection({
               variant="standalone"
               summarySurface="content"
             />
-            <div className="p-3 pt-1">
-              <ContestList
-                contests={group.contests}
-                loading={false}
-                error={null}
-                eventShell={eventShell}
-                variant={variant}
-              />
+            <div className="px-3 pb-3.5 pt-1">
+              <div
+                className={cn(
+                  "rounded-xl p-2.5",
+                  group.contests.length > 0 &&
+                    "bg-black/40 ring-1 ring-white/15 backdrop-blur-[2px]",
+                )}
+              >
+                <ContestList
+                  contests={group.contests}
+                  loading={false}
+                  error={null}
+                  eventShell={eventShell}
+                  variant={variant}
+                  nest="hero"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -74,7 +86,7 @@ function GroupedContestSection({
   }
 
   return (
-    <section className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/10">
       {group.event.sportId ? (
         <SportEventHeader sportId={group.event.sportId} event={eventShell} variant="standalone" />
       ) : (
@@ -114,7 +126,7 @@ export const GroupedContestList = ({
   // Prefer existing groups over the spinner so refetches don't rip hero images out.
   if (groups.length > 0) {
     listContent = (
-      <div className="space-y-4">
+      <div className="space-y-5">
         {groups.map((group) => (
           <GroupedContestSection key={group.event.id} group={group} variant={variant} />
         ))}

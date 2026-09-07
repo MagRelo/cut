@@ -19,6 +19,27 @@ export const Default: Story = {
   },
 };
 
+export const Upcoming: Story = {
+  args: {
+    title: "Upcoming Events",
+    tone: "upcoming",
+  },
+};
+
+export const Live: Story = {
+  args: {
+    title: "In Progress",
+    tone: "live",
+  },
+};
+
+export const Past: Story = {
+  args: {
+    title: "Past Events",
+    tone: "past",
+  },
+};
+
 export const LongTitle: Story = {
   args: {
     title: "Past Events",

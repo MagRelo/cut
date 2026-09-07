@@ -7,26 +7,32 @@ import { formatContestStatus, contestStatusValueClass } from "../../lib/contestS
 import { cn } from "../../lib/tabStyles";
 import { ContestCard } from "./ContestCard";
 
-const viewButtonBaseClassName =
-  "inline-flex min-w-[88px] items-center justify-center gap-0.5 rounded border px-4 py-1.5 font-display text-sm transition-colors";
+const ctaBaseClassName =
+  "inline-flex h-10 min-w-[5.5rem] shrink-0 items-center justify-center gap-0.5 rounded-full px-4 font-display text-sm font-semibold transition-colors";
 
-const viewButtonActiveClassName =
-  "border-blue-500 bg-blue-500 text-white group-hover/footer:bg-blue-600";
+const ctaJoinClassName =
+  "bg-emerald-600 text-white group-hover/footer:bg-emerald-700";
 
-const viewLinkPastClassName =
-  "inline-flex min-w-[88px] items-center justify-center gap-0.5 rounded bg-gradient-to-b from-white to-slate-50 px-4 py-1.5 font-display text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-300/80 transition-colors group-hover/footer:from-slate-50 group-hover/footer:to-slate-100 group-hover/footer:text-slate-900 group-hover/footer:ring-slate-400";
+const ctaPastClassName = "bg-blue-500 text-white group-hover/footer:bg-blue-600";
+
+const ctaLockedClassName = "cursor-not-allowed bg-slate-200 text-slate-400";
 
 function isPastContestStatus(status: Contest["status"]): boolean {
   return status === "SETTLED" || status === "CLOSED";
 }
 
-function contestListFooterClass(status: Contest["status"]): string {
-  if (status === "OPEN" || status === "ACTIVE") return "border-blue-200 bg-blue-50";
-  return "border-slate-300 bg-slate-100";
-}
-
 function isPastViewButton(contest: Contest, variant: ContestListItemVariant): boolean {
   return variant === "past" || isPastContestStatus(contest.status);
+}
+
+function contestListFooterClass(
+  contest: Contest,
+  variant: ContestListItemVariant,
+  isLocked: boolean,
+): string {
+  if (isLocked) return "border-slate-100 bg-slate-50";
+  if (isPastViewButton(contest, variant)) return "border-slate-100 bg-slate-50";
+  return "border-emerald-100 bg-emerald-50/80";
 }
 
 function contestListActionLabel(variant: ContestListItemVariant): string {
@@ -47,11 +53,11 @@ function ContestListStat({
   valueClassName,
 }: {
   value: string | number;
-  label: string;
   valueClassName?: string;
+  label: string;
 }) {
   return (
-    <div className="min-w-0 text-center">
+    <div className="min-w-0 text-left">
       <div
         className={cn(
           "font-display text-sm font-bold tabular-nums leading-none",
@@ -60,7 +66,7 @@ function ContestListStat({
       >
         {value}
       </div>
-      <div className="mt-1 text-[9px] font-semibold uppercase leading-none tracking-wide text-gray-500">
+      <div className="mt-1 text-[11px] font-semibold uppercase leading-none tracking-wide text-slate-500">
         {label}
       </div>
     </div>
@@ -74,9 +80,6 @@ interface ContestListItemProps {
   eventShell?: CompetitionEventShell;
   variant?: ContestListItemVariant;
 }
-
-const viewButtonDisabledClassName =
-  "border-slate-300 bg-slate-100 text-slate-400 cursor-not-allowed";
 
 export const ContestListItem = ({
   contest,
@@ -92,6 +95,7 @@ export const ContestListItem = ({
   // Show locked state if user doesn't have access (hasAccess === false)
   // Default to accessible for backwards compatibility (hasAccess undefined)
   const isLocked = contest.hasAccess === false;
+  const pastAction = isPastViewButton(contest, variant);
 
   const footerContent = (
     <>
@@ -105,13 +109,10 @@ export const ContestListItem = ({
         />
       </div>
       <span
-        className={
-          isLocked
-            ? cn(viewButtonBaseClassName, viewButtonDisabledClassName)
-            : isPastViewButton(contest, variant)
-              ? viewLinkPastClassName
-              : cn(viewButtonBaseClassName, viewButtonActiveClassName)
-        }
+        className={cn(
+          ctaBaseClassName,
+          isLocked ? ctaLockedClassName : pastAction ? ctaPastClassName : ctaJoinClassName,
+        )}
       >
         {isLocked ? (
           <>
@@ -131,12 +132,12 @@ export const ContestListItem = ({
   return (
     <div
       className={cn(
-        "group min-w-0 overflow-hidden rounded-md border border-slate-500 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow] duration-200",
-        !isLocked && "hover:border-blue-200 hover:shadow-md",
+        "group min-w-0 overflow-hidden rounded-xl bg-white shadow-md shadow-slate-900/10 ring-1 ring-black/5 transition-shadow duration-200",
+        !isLocked && "hover:shadow-lg",
         className,
       )}
     >
-      <div className="p-2 pt-3">
+      <div className="p-2.5 pt-3">
         <ContestCard contest={contest} />
       </div>
 
@@ -144,8 +145,8 @@ export const ContestListItem = ({
         <div
           aria-label={`Private contest: ${contest.name}`}
           className={cn(
-            "group/footer flex items-center gap-3 border-t p-2 pt-2.5",
-            "border-slate-200 bg-slate-50",
+            "group/footer flex items-center gap-3 border-t px-3 py-2.5",
+            contestListFooterClass(contest, variant, true),
           )}
         >
           {footerContent}
@@ -156,11 +157,12 @@ export const ContestListItem = ({
           state={eventShell ? contestLobbyLinkState(eventShell, contest) : undefined}
           aria-label={`${actionLabel} ${contest.name} contest`}
           className={cn(
-            "group/footer flex items-center gap-3 border-t p-2 pt-2.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]",
-            contestListFooterClass(contest.status),
-            isPastViewButton(contest, variant)
-              ? "hover:bg-slate-200 focus-visible:outline-slate-500"
-              : "hover:bg-blue-100 focus-visible:outline-blue-500",
+            "group/footer flex items-center gap-3 border-t px-3 py-2.5 transition-colors",
+            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]",
+            contestListFooterClass(contest, variant, false),
+            pastAction
+              ? "hover:bg-slate-100 focus-visible:outline-blue-500"
+              : "hover:bg-emerald-50 focus-visible:outline-emerald-600",
           )}
         >
           {footerContent}

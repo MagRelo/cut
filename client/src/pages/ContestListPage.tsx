@@ -31,7 +31,7 @@ export const Contests: React.FC = () => {
       {showUpcomingSection ? (
         <>
           <div className="mb-3">
-            <ListHeader title="🚩 Upcoming Events" />
+            <ListHeader title="🚩 Upcoming Events" tone="upcoming" />
           </div>
           <GroupedContestList
             groups={upcoming}
@@ -43,10 +43,9 @@ export const Contests: React.FC = () => {
       ) : null}
       {showLiveSection ? (
         <>
-          {showUpcomingSection ? <hr className="my-5 border-gray-200" /> : null}
-
-          <div className="mb-3">
+          <div className={showUpcomingSection ? "mb-3 mt-8" : "mb-3"}>
             <ListHeader
+              tone="live"
               title={
                 <>
                   <span
@@ -63,11 +62,8 @@ export const Contests: React.FC = () => {
       ) : null}
       {showPastSection ? (
         <>
-          {showUpcomingSection || showLiveSection ? (
-            <hr className="mb-5 mt-4 border-gray-200" />
-          ) : null}
-          <div className="mb-3">
-            <ListHeader title="Past Events" />
+          <div className={showUpcomingSection || showLiveSection ? "mb-3 mt-8" : "mb-3"}>
+            <ListHeader title="Past Events" tone="past" />
           </div>
           <GroupedContestList groups={past} loading={false} error={null} variant="past" />
         </>

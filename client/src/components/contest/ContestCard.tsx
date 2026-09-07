@@ -39,14 +39,14 @@ export const ContestCard = ({
         <h3 className="truncate font-display text-xl font-bold leading-tight text-gray-900">
           {contest.name}
         </h3>
-        <p className="mt-0.5 flex min-w-0 items-center gap-1 truncate font-display text-sm font-medium text-slate-400">
+        <p className="mt-0.5 flex min-w-0 items-center gap-1 truncate font-display text-sm font-medium text-slate-600">
           {contest.userGroup?.name ? (
             <>
               <UserGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
               {linkUserGroup && (contest.userGroup.id || contest.userGroupId) ? (
                 <Link
                   to={`/leagues/${contest.userGroup.id ?? contest.userGroupId}`}
-                  className="truncate hover:text-slate-500 hover:underline focus:outline-none focus-visible:underline"
+                  className="truncate hover:text-slate-800 hover:underline focus:outline-none focus-visible:underline"
                 >
                   {contest.userGroup.name}
                 </Link>

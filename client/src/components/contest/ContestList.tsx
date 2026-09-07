@@ -11,6 +11,7 @@ interface ContestListProps {
   error: string | null;
   eventShell?: CompetitionEventShell;
   variant?: ContestListItemVariant;
+  nest?: "default" | "hero";
 }
 
 export function ContestListConnectHint({
@@ -36,6 +37,7 @@ export const ContestList = ({
   error,
   eventShell,
   variant = "default",
+  nest = "default",
 }: ContestListProps) => {
   if (loading) {
     return (
@@ -52,7 +54,13 @@ export const ContestList = ({
 
   const listContent =
     contests.length === 0 ? (
-      <div className="rounded-md border border-slate-200 bg-white p-3 shadow-sm">
+      <div
+        className={
+          nest === "hero"
+            ? "rounded-xl border border-white/50 bg-white/95 p-4 shadow-lg shadow-black/20 backdrop-blur-md"
+            : "rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm"
+        }
+      >
         <p className="mb-1 font-display text-base font-semibold text-gray-900">
           Contests coming soon...
         </p>
