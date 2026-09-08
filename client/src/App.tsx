@@ -21,6 +21,8 @@ import {
 import { Home } from "./pages/Home";
 import { ConnectPage } from "./pages/ConnectPage";
 import { UserPage } from "./pages/Account";
+import { AccountActivityPage } from "./pages/AccountActivityPage";
+import { AccountReferralsPage } from "./pages/AccountReferralsPage";
 import { TransferFundsPage } from "./pages/AccountTransferFundsPage";
 
 import { SportHubPage } from "./pages/SportHubPage";
@@ -118,7 +120,23 @@ const AppShell: React.FC = () => {
             />
             <Route
               path="/account/history"
-              element={<Navigate to="/account/funds?tab=activity" replace />}
+              element={<Navigate to="/account/activity" replace />}
+            />
+            <Route
+              path="/account/activity"
+              element={
+                <ProtectedRoute>
+                  <AccountActivityPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/account/referrals"
+              element={
+                <ProtectedRoute>
+                  <AccountReferralsPage />
+                </ProtectedRoute>
+              }
             />
             <Route
               path="/account/funds"

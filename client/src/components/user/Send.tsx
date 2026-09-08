@@ -21,6 +21,9 @@ function truncateMiddle(value: string, head = 8, tail = 6) {
   return `${value.slice(0, head)}…${value.slice(-tail)}`;
 }
 
+const fieldClassName =
+  "min-h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100";
+
 export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendProps) => {
   const { isConnected } = useAccount();
   const {
@@ -147,35 +150,33 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
   })();
 
   const reviewRowClass =
-    "grid grid-cols-[9rem_minmax(0,1fr)] items-center gap-x-3 px-3 py-2.5 text-sm";
+    "grid grid-cols-[7.5rem_minmax(0,1fr)] items-start gap-x-3 py-2.5 text-sm";
 
   return (
-    <div className="space-y-4 font-display">
+    <div className="space-y-6 font-display">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900">Send {targetSymbol}</h3>
         {showCexOfframp ? (
-          <p className="mt-1 text-sm text-gray-600">
-            Send {targetSymbol} to another wallet or withdraw to your Coinbase or Robinhood{" "}
-            {BLOCKCHAIN_NETWORK} {targetSymbol} address.
+          <p className="text-sm leading-relaxed text-gray-700">
+            Send {targetSymbol} to another wallet, an exchange, or another player.
           </p>
         ) : (
-          <p className="mt-1 text-sm text-gray-600">Send {targetSymbol} to another wallet.</p>
+          <p className="text-sm leading-relaxed text-gray-700">
+            Send {targetSymbol} to another wallet.
+          </p>
         )}
       </div>
 
-      <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Available</span>
-          <span className="font-semibold tabular-nums text-gray-900">
-            {balancesUnavailable ? "—" : `$${formattedBalance(paymentBalance)} ${targetSymbol}`}
-          </span>
-        </div>
+      <div>
+        <p className="text-sm text-gray-600">Available</p>
+        <p className="mt-0.5 text-lg font-semibold tabular-nums text-gray-900">
+          {balancesUnavailable ? "—" : `$${formattedBalance(paymentBalance)} ${targetSymbol}`}
+        </p>
       </div>
 
       {isReviewing ? (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <div>
           <p className="mb-3 text-sm font-medium text-gray-900">Review send</p>
-          <dl className="mb-3 divide-y divide-gray-200 overflow-hidden rounded-md border border-gray-200 bg-white">
+          <dl className="divide-y divide-gray-200 border-y border-gray-200">
             <div className={reviewRowClass}>
               <dt className="font-medium text-gray-600">Amount</dt>
               <dd className="min-w-0 font-semibold tabular-nums text-gray-900">
@@ -189,7 +190,7 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
             <div className={reviewRowClass}>
               <dt className="font-medium text-gray-600">To</dt>
               <dd
-                className="min-w-0 truncate font-mono text-xs text-gray-900"
+                className="min-w-0 break-all font-mono text-sm text-gray-900"
                 title={recipientAddress.trim()}
               >
                 {truncateMiddle(recipientAddress.trim())}
@@ -202,15 +203,15 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
               </div>
             ) : null}
           </dl>
-          <p className="text-sm text-gray-600">
+          <p className="mt-3 text-sm leading-relaxed text-gray-600">
             Check the address and network carefully. Once sent, this transfer usually can&apos;t be
             reversed.
           </p>
         </div>
       ) : (
-        <>
+        <div className="space-y-5">
           <div>
-            <label htmlFor="recipient" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="recipient" className="mb-1.5 block text-sm font-medium text-gray-700">
               Wallet address
             </label>
             <input
@@ -222,13 +223,13 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
                 setSendError(null);
               }}
               readOnly={lockRecipient}
-              className="w-full rounded-md border p-2 font-mono text-sm disabled:bg-gray-100"
+              className={`${fieldClassName} font-mono`}
               placeholder={`0x… ${networkLabel} ${targetSymbol} address`}
             />
           </div>
 
           <div>
-            <label htmlFor="send-amount" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="send-amount" className="mb-1.5 block text-sm font-medium text-gray-700">
               Amount ({targetSymbol})
             </label>
             <div className="flex gap-2">
@@ -242,41 +243,19 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
                   setAmount(e.target.value);
                   setSendError(null);
                 }}
-                className="flex-1 rounded-md border p-2"
+                className={fieldClassName}
               />
               <button
                 type="button"
                 onClick={handleMaxSend}
-                className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+                className="min-h-11 shrink-0 rounded-md border border-gray-300 px-4 text-sm font-medium text-gray-800 hover:bg-gray-50"
               >
                 Max
               </button>
             </div>
           </div>
-        </>
+        </div>
       )}
-
-      <ul className="mt-3 space-y-2 text-xs text-gray-700">
-        <li className="flex gap-2">
-          <span className="shrink-0" aria-hidden>
-            💡
-          </span>
-          <span>
-            <span className="font-medium text-gray-900">Tip:</span> Send a small test transaction
-            (say $1) to make sure the details are right. Then send another transaction with the full
-            amount.
-          </span>
-        </li>
-        <li className="flex gap-2">
-          <span className="shrink-0" aria-hidden>
-            ⚠️
-          </span>
-          <span>
-            Only send {targetSymbol} to a {networkLabel} address. Sending to an address on Ethereum,
-            Polygon, Arbitrum, or another network may result in lost funds.
-          </span>
-        </li>
-      </ul>
 
       {(sendError || transactionError) && (
         <p className="text-sm text-red-600">{sendError || String(transactionError)}</p>
@@ -297,7 +276,7 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
             type="button"
             onClick={() => void handleSend()}
             disabled={!isConnected || isProcessing || balancesUnavailable}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 text-white hover:bg-blue-700 disabled:opacity-50 sm:w-auto sm:min-w-[10rem]"
           >
             {(isSending || isProcessing) && <LoadingSpinnerSmall />}
             {isConfirmed ? "Sent!" : isFailed ? "Failed — try again" : `Send ${targetSymbol}`}
@@ -309,7 +288,7 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
               setSendError(null);
             }}
             disabled={isProcessing}
-            className="w-full rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="min-h-11 w-full rounded-md border border-gray-300 px-4 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 sm:w-auto sm:min-w-[10rem]"
           >
             Back
           </button>
@@ -319,7 +298,7 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
           type="button"
           onClick={handleReview}
           disabled={!isConnected || isProcessing || balancesUnavailable}
-          className="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-4 text-white hover:bg-blue-700 disabled:opacity-50 sm:w-auto sm:min-w-[10rem]"
         >
           Review send
         </button>

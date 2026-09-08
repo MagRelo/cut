@@ -1,3 +1,4 @@
+import { ClockIcon, Cog6ToothIcon, UserGroupIcon, WalletIcon } from "@heroicons/react/24/outline";
 import type { Location } from "react-router-dom";
 import { adminMatch, contestsMatch, leaguesMatch, userGroupsMatch } from "./navRoutes";
 
@@ -13,14 +14,31 @@ export type NavTab = {
 
 export const ACCOUNT_FUNDS_LINK = {
   to: "/account/funds",
-  label: "Manage Funds",
-  match: (pathname: string) => pathname === "/account/funds" || pathname === "/account/history",
+  label: "Wallet",
+  match: (pathname: string) => pathname === "/account/funds",
+  Icon: WalletIcon,
 } as const;
 
 export const ACCOUNT_HOME_LINK = {
   to: "/account",
-  label: "Account Settings",
+  label: "Settings",
   match: (pathname: string) => pathname === "/account",
+  Icon: Cog6ToothIcon,
+} as const;
+
+export const ACCOUNT_ACTIVITY_LINK = {
+  to: "/account/activity",
+  label: "Activity",
+  match: (pathname: string) =>
+    pathname === "/account/activity" || pathname === "/account/history",
+  Icon: ClockIcon,
+} as const;
+
+export const ACCOUNT_REFERRALS_LINK = {
+  to: "/account/referrals",
+  label: "Referrals",
+  match: (pathname: string) => pathname === "/account/referrals",
+  Icon: UserGroupIcon,
 } as const;
 
 export const LEAGUES_TAB: NavTab = {
@@ -32,8 +50,10 @@ export const LEAGUES_TAB: NavTab = {
 
 /** Account links shown under Account in nav menus. */
 export const ACCOUNT_SUB_LINKS = [
-  ACCOUNT_HOME_LINK,
   ACCOUNT_FUNDS_LINK,
+  ACCOUNT_REFERRALS_LINK,
+  ACCOUNT_ACTIVITY_LINK,
+  ACCOUNT_HOME_LINK,
 ] as const;
 
 export type LeagueNavItem = {

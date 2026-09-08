@@ -31,8 +31,7 @@ Authentication → Advanced → Enable test accounts**.
 
 ## Chrome login
 
-Requires Chrome / chrome-devtools MCP (this skill is the exception to
-no-chrome-unless-asked). App must be running (`pnpm dev`, client :5173).
+Requires Chrome / chrome-devtools MCP. App must be running (`pnpm dev`, client :5173).
 
 1. Run the credentials script. Keep email and OTP in tool results only.
 2. Navigate to `http://localhost:5173/connect` (or the protected URL; it

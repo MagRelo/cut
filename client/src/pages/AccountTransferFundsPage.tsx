@@ -1,77 +1,62 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { ExclamationTriangleIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { Receive } from "../components/user/Receive.tsx";
 import { Send } from "../components/user/Send.tsx";
-import { UserActivityPanel } from "../components/user/UserActivityPanel";
-import { isTargetTestnet } from "../config/targetChain";
+import { FundingWalletPanel } from "../components/user/funds/FundingWalletPanel";
+import { useAuth } from "../contexts/AuthContext";
+import { defaultPaymentTokenSymbol, isTargetTestnet } from "../config/targetChain";
+import { BLOCKCHAIN_NETWORK } from "../lib/legalPlaceholders";
 import { tabButtonClassName, tabListClassName } from "../lib/tabStyles";
-import { fundPageTabIndex, parseFundPageSearchParams } from "../lib/fundLinks";
+import {
+  fundPageTabFromIndex,
+  fundPageTabIndex,
+  parseFundPageSearchParams,
+} from "../lib/fundLinks";
 
 export function TransferFundsPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { tab, recipient } = useMemo(
     () => parseFundPageSearchParams(searchParams.toString()),
     [searchParams],
   );
   const initialIndex = fundPageTabIndex(tab);
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
+  const { paymentTokenSymbol } = useAuth();
   const showTestnetWarning = isTargetTestnet();
+  const tokenSymbol = paymentTokenSymbol ?? defaultPaymentTokenSymbol();
+  const networkLabel = showTestnetWarning ? "Base Sepolia" : BLOCKCHAIN_NETWORK;
 
   useEffect(() => {
     setSelectedIndex(fundPageTabIndex(tab));
   }, [tab]);
 
+  const handleTabChange = (index: number) => {
+    setSelectedIndex(index);
+    const nextTab = fundPageTabFromIndex(index);
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", nextTab);
+    setSearchParams(next, { replace: true });
+  };
+
+  if (tab === "activity") {
+    return <Navigate to="/account/activity" replace />;
+  }
+
   return (
     <>
       <Breadcrumbs
-        items={[{ label: "Account", path: "/account" }, { label: "Manage Funds" }]}
-        className="mb-3"
+        items={[{ label: "Account", path: "/account" }, { label: "Wallet" }]}
+        className="mb-2"
       />
+      <h1 className="mb-2 flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
+        <WalletIcon className="h-6 w-6 shrink-0" aria-hidden />
+        Wallet
+      </h1>
 
       <div className="space-y-4">
-        <div className="rounded-sm border border-gray-200">
-          <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-            <TabList className={tabListClassName()}>
-              <Tab
-                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-              >
-                Add Funds
-              </Tab>
-              <Tab
-                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-              >
-                Send
-              </Tab>
-              <Tab
-                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-              >
-                Activity
-              </Tab>
-            </TabList>
-            <div className="px-4 py-2">
-              <TabPanel>
-                <div className="py-2">
-                  <Receive />
-                </div>
-              </TabPanel>
-              <TabPanel>
-                <div className="py-2">
-                  <Send
-                    initialRecipientAddress={recipient ?? undefined}
-                    lockRecipient={Boolean(recipient)}
-                  />
-                </div>
-              </TabPanel>
-              <TabPanel>
-                <UserActivityPanel />
-              </TabPanel>
-            </div>
-          </TabGroup>
-        </div>
-
         {showTestnetWarning ? (
           <div
             className="overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-tl from-amber-100 via-amber-50 to-white shadow-sm"
@@ -92,6 +77,55 @@ export function TransferFundsPage() {
             </div>
           </div>
         ) : null}
+
+        <div>
+          <div className="space-y-3 pb-4 font-display">
+            <p className="text-sm leading-relaxed text-gray-700">
+              Your account comes with a wallet that belongs to you, secured by your email. Play The
+              Cut never holds your funds, so you can add money, play in contests, or withdraw
+              anytime.
+            </p>
+            {showTestnetWarning ? null : (
+              <>
+                <h2 className="font-medium text-gray-900">{tokenSymbol}</h2>
+                <p className="text-sm leading-relaxed text-gray-700">
+                  Play The Cut uses {tokenSymbol} on {networkLabel}. Buy {tokenSymbol} through an
+                  app such as Coinbase, Kraken, or Robinhood, then send it to this wallet on the
+                  Base network.
+                </p>
+              </>
+            )}
+            <FundingWalletPanel tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
+          </div>
+
+          <div className="rounded-sm border border-gray-200">
+            <TabGroup selectedIndex={selectedIndex} onChange={handleTabChange}>
+              <TabList className={tabListClassName()}>
+                <Tab
+                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                >
+                  Receive / Deposit
+                </Tab>
+                <Tab
+                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                >
+                  Send / Withdraw
+                </Tab>
+              </TabList>
+              <div className="px-4 py-4">
+                <TabPanel>
+                  <Receive />
+                </TabPanel>
+                <TabPanel>
+                  <Send
+                    initialRecipientAddress={recipient ?? undefined}
+                    lockRecipient={Boolean(recipient)}
+                  />
+                </TabPanel>
+              </div>
+            </TabGroup>
+          </div>
+        </div>
       </div>
     </>
   );

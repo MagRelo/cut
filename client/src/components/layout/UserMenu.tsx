@@ -6,6 +6,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { accountMatch } from "../../lib/navRoutes";
 import { BrandLogo } from "../common/BrandLogo";
 import {
+  ACCOUNT_FUNDS_LINK,
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
   LEAGUES_TAB,
@@ -50,10 +51,10 @@ export const UserMenu: React.FC = () => {
         aria-label="My Account menu"
       >
         {totalBalance !== null ? (
-          <span className="tabular-nums tracking-normal">${totalBalance}</span>
+          <span className="font-normal tabular-nums tracking-normal">${totalBalance}</span>
         ) : (
           <span
-            className="tabular-nums tracking-normal text-amber-800"
+            className="font-normal tabular-nums tracking-normal text-amber-800"
             title="Could not load balance from the network"
           >
             —
@@ -130,11 +131,26 @@ export const UserMenu: React.FC = () => {
               {({ close }) => (
                 <Link
                   to={link.to}
-                  className={active ? menuItemActiveClass : menuItemClass}
+                  className={`${active ? menuItemActiveClass : menuItemClass} inline-flex w-full items-center gap-2`}
                   aria-current={active ? "page" : undefined}
                   onClick={close}
                 >
-                  {link.label}
+                  <link.Icon className="h-4 w-4 shrink-0" aria-hidden />
+                  <span className="min-w-0 flex-1">{link.label}</span>
+                  {link.to === ACCOUNT_FUNDS_LINK.to ? (
+                    totalBalance !== null ? (
+                      <span className="shrink-0 font-normal tabular-nums tracking-normal">
+                        ${totalBalance}
+                      </span>
+                    ) : (
+                      <span
+                        className="shrink-0 font-normal tabular-nums tracking-normal text-amber-800"
+                        title="Could not load balance from the network"
+                      >
+                        —
+                      </span>
+                    )
+                  ) : null}
                 </Link>
               )}
             </MenuItem>

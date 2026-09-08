@@ -2,14 +2,20 @@ import { isAddress } from "viem";
 
 export type FundPageTab = "send" | "deposit" | "activity";
 
-const TAB_INDEX: Record<FundPageTab, number> = {
+const TAB_INDEX: Record<Exclude<FundPageTab, "activity">, number> = {
   deposit: 0,
   send: 1,
-  activity: 2,
 };
 
+const TAB_BY_INDEX: Array<Exclude<FundPageTab, "activity">> = ["deposit", "send"];
+
 export function fundPageTabIndex(tab: FundPageTab): number {
+  if (tab === "activity") return 0;
   return TAB_INDEX[tab];
+}
+
+export function fundPageTabFromIndex(index: number): FundPageTab {
+  return TAB_BY_INDEX[index] ?? "deposit";
 }
 
 export function buildFundSendUrl(
@@ -24,8 +30,7 @@ export function buildFundSendUrl(
 export function buildFundActivityUrl(
   origin: string = typeof window !== "undefined" ? window.location.origin : "",
 ): string {
-  const params = new URLSearchParams({ tab: "activity" });
-  return `${origin}/account/funds?${params.toString()}`;
+  return `${origin}/account/activity`;
 }
 
 export function parseFundPageSearchParams(search: string): {

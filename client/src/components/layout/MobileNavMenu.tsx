@@ -7,7 +7,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { BRAND_PROSE, BRAND_WORDMARK } from "../../lib/brand";
 import { signInReturnFrom } from "../../lib/navRoutes";
 import {
-  ACCOUNT_HOME_LINK,
+  ACCOUNT_FUNDS_LINK,
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
   LEAGUES_TAB,
@@ -39,11 +39,6 @@ function mobileSubItemClass(active: boolean) {
 }
 
 const mobileInsetListClass = "ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2";
-
-const mobileAccountHeaderClass = [
-  mobileNavItemBase,
-  "inline-flex items-center justify-between gap-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900",
-].join(" ");
 
 export const MobileNavMenu: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -183,22 +178,9 @@ export const MobileNavMenu: React.FC = () => {
                             </div>
 
                             <div className="flex flex-col">
-                              <Link
-                                to={ACCOUNT_HOME_LINK.to}
-                                onClick={closeMenu}
-                                className={mobileAccountHeaderClass}
-                              >
-                                <span>Account</span>
-                                {totalBalance !== null ? (
-                                  <span className="font-semibold normal-case tabular-nums tracking-normal">
-                                    ${totalBalance}
-                                  </span>
-                                ) : (
-                                  <span className="normal-case tabular-nums tracking-normal text-amber-800">
-                                    —
-                                  </span>
-                                )}
-                              </Link>
+                              <p className="px-3 py-2 text-sm font-medium font-display uppercase tracking-wider text-slate-500">
+                                Account
+                              </p>
 
                               <div className={mobileInsetListClass}>
                                 {ACCOUNT_SUB_LINKS.map((link) => (
@@ -209,9 +191,21 @@ export const MobileNavMenu: React.FC = () => {
                                     aria-current={
                                       link.match(location.pathname) ? "page" : undefined
                                     }
-                                    className={mobileSubItemClass(link.match(location.pathname))}
+                                    className={`${mobileSubItemClass(link.match(location.pathname))} inline-flex w-full items-center gap-2`}
                                   >
-                                    {link.label}
+                                    <link.Icon className="h-4 w-4 shrink-0" aria-hidden />
+                                    <span className="min-w-0 flex-1">{link.label}</span>
+                                    {link.to === ACCOUNT_FUNDS_LINK.to ? (
+                                      totalBalance !== null ? (
+                                        <span className="shrink-0 font-normal tabular-nums tracking-normal">
+                                          ${totalBalance}
+                                        </span>
+                                      ) : (
+                                        <span className="shrink-0 font-normal tabular-nums tracking-normal text-amber-800">
+                                          —
+                                        </span>
+                                      )
+                                    ) : null}
                                   </Link>
                                 ))}
                               </div>

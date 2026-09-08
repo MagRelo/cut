@@ -632,7 +632,7 @@ export const FAQPage: React.FC = () => {
               <li>
                 Add or send {tokenLabel} from{" "}
                 <Link to="/account/funds" className="text-blue-600 hover:underline">
-                  Account → Manage funds
+                  Account → Wallet
                 </Link>
               </li>
             </ul>
@@ -659,7 +659,7 @@ export const FAQPage: React.FC = () => {
                 <li>
                   Get or move xUSDC from{" "}
                   <Link to="/account/funds" className="text-blue-600 hover:underline">
-                    Account → Manage funds
+                    Account → Wallet
                   </Link>
                 </li>
               </ul>
@@ -675,7 +675,7 @@ export const FAQPage: React.FC = () => {
               <p className="text-gray-700">
                 Add or send USDC from{" "}
                 <Link to="/account/funds" className="text-blue-600 hover:underline">
-                  Account → Manage funds
+                  Account → Wallet
                 </Link>
                 . See{" "}
                 <a href="#funds" className="text-blue-600 hover:underline">
@@ -701,7 +701,7 @@ export const FAQPage: React.FC = () => {
                 <p className="mb-2 text-gray-700">
                   This environment is Base Sepolia testnet. Share your funding link from{" "}
                   <Link to="/account/funds" className="text-blue-600 hover:underline">
-                    Account → Manage funds
+                    Account → Wallet
                   </Link>{" "}
                   with someone who already has xUSDC. Do not send mainnet USDC here—deposits will
                   not land and may be lost.
@@ -710,7 +710,7 @@ export const FAQPage: React.FC = () => {
               <div>
                 <h3 className="mb-2 text-lg font-semibold text-gray-900">How do I send funds?</h3>
                 <p className="text-gray-700">
-                  Open Manage funds → Send, paste a recipient wallet address, and transfer xUSDC.
+                  Open Wallet → Send, paste a recipient wallet address, and transfer xUSDC.
                 </p>
               </div>
             </>
@@ -722,16 +722,17 @@ export const FAQPage: React.FC = () => {
                   Play The Cut uses <strong>USDC</strong> on <strong>the Base network</strong>. Copy
                   your wallet address from{" "}
                   <Link to="/account/funds" className="text-blue-600 hover:underline">
-                    Account → Manage funds
+                    Account → Wallet
                   </Link>{" "}
                   and send USDC to it. Match token, network, and wallet address before you send.
                 </p>
                 <p className="mb-2 text-gray-700">
-                  If you don&apos;t already have USDC, use <strong>Coinbase</strong> or{" "}
-                  <strong>Robinhood</strong>:
+                  If you don&apos;t already have USDC, buy it in a wallet or exchange app, then
+                  send it here. Coinbase and Robinhood are two apps that sell USDC and can send it
+                  on the Base network:
                 </p>
                 <ol className="mb-2 list-decimal space-y-1 pl-6 text-gray-700">
-                  <li>Get the Coinbase or Robinhood app.</li>
+                  <li>Open an app that sells USDC (Coinbase, Robinhood, and others).</li>
                   <li>Buy USDC.</li>
                   <li>
                     Send USDC on <strong>the Base network</strong> to your wallet address.
@@ -739,7 +740,7 @@ export const FAQPage: React.FC = () => {
                 </ol>
                 <p className="text-gray-700">
                   Anyone with USDC on the Base network can also send to your wallet address,
-                  including another player. Share the funding link on Manage funds if you want them
+                  including another player. Share the funding link on Wallet if you want them
                   to transfer from the app.
                 </p>
               </div>
@@ -748,11 +749,11 @@ export const FAQPage: React.FC = () => {
                 <p className="mb-2 text-gray-700">
                   Open{" "}
                   <Link to="/account/funds?tab=send" className="text-blue-600 hover:underline">
-                    Manage funds → Send
+                    Wallet → Send
                   </Link>
-                  , paste your Coinbase or Robinhood{" "}
-                  <strong>USDC wallet address on the Base network</strong>, and send USDC. You can
-                  also send to another player&apos;s wallet address.
+                  , paste the <strong>USDC wallet address on the Base network</strong> from your
+                  wallet or exchange app, and send USDC. Coinbase and Robinhood both show a Base
+                  address for USDC. You can also send to another player&apos;s wallet address.
                 </p>
               </div>
               <div>
@@ -761,7 +762,7 @@ export const FAQPage: React.FC = () => {
                 </h3>
                 <p className="text-gray-700">
                   Match all three: <strong>token</strong> (USDC only), <strong>network</strong> (the
-                  Base network only), and <strong>wallet address</strong> (from Manage funds).
+                  Base network only), and <strong>wallet address</strong> (from Wallet).
                   Sending a different token, using another network (Ethereum, Solana, and so on), or
                   the wrong address can lose funds.
                 </p>

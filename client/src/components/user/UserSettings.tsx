@@ -69,7 +69,7 @@ export function UserSettings() {
 
   return (
     <PageSection>
-      <h2 className="mb-3 font-display text-lg font-semibold text-gray-700">User Settings</h2>
+      <h2 className="mb-3 font-display text-lg font-semibold text-gray-700">User Display</h2>
 
       <form onSubmit={handleSubmit} className="space-y-8 pl-3">
         <div className="space-y-4">

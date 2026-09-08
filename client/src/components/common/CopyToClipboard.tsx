@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 
 interface CopyToClipboardProps {
   text: string;
@@ -100,9 +101,13 @@ export function CopyToClipboard({
 export function CopyButton({
   text,
   className = "",
+  variant = "primary",
+  idleLabel = "Copy",
 }: {
   text: string;
   className?: string;
+  variant?: "primary" | "cta";
+  idleLabel?: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -116,16 +121,24 @@ export function CopyButton({
     }
   };
 
+  const variantClass =
+    variant === "cta"
+      ? `inline-flex w-full min-h-11 items-center justify-center gap-1.5 border border-blue-500 px-4 text-white sm:w-auto ${
+          copied ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"
+        }`
+      : `shrink-0 px-3 py-1 text-white ${copied ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"}`;
+
   return (
     <button
       type="button"
       onClick={handleCopy}
-      aria-label={copied ? "Copied" : "Copy to clipboard"}
-      className={`shrink-0 rounded px-3 py-1 text-sm font-medium text-white font-display transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-        copied ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"
-      } ${className}`}
+      aria-label={copied ? "Copied" : idleLabel}
+      className={`rounded font-display text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${variantClass} ${className}`}
     >
-      {copied ? "Copied!" : "Copy"}
+      {copied ? "Copied!" : idleLabel}
+      {variant === "cta" ? (
+        <DocumentDuplicateIcon className="h-4 w-4 shrink-0" aria-hidden />
+      ) : null}
     </button>
   );
 }

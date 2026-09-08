@@ -379,8 +379,8 @@ export function OnboardingPage() {
             </p>
 
             <p className="text-gray-700 leading-relaxed font-display mb-6">
-              You can find your personal referral link on the account page - share it with your
-              friends!
+              You can find your personal referral link under Account → Referrals — share it with
+              your friends!
             </p>
 
             <StepActions>
@@ -409,22 +409,23 @@ export function OnboardingPage() {
               <>
                 <p className="text-gray-700 leading-relaxed font-display mb-3">
                   You&apos;ll need <strong>USDC</strong> on <strong>the Base network</strong> in
-                  your account to compete. Add it yourself from{" "}
-                  <strong>Coinbase</strong> or <strong>Robinhood</strong> if you don&apos;t already
-                  have crypto:
+                  your account to compete. Buy USDC in a wallet or exchange app if you don&apos;t
+                  already have it, then send it here:
                 </p>
                 <ol className="mb-4 list-decimal list-outside space-y-2 pl-6 font-display text-gray-700 leading-relaxed marker:font-semibold marker:text-gray-900 sm:pl-8">
-                  <li className="pl-1">Get the Coinbase or Robinhood app.</li>
+                  <li className="pl-1">
+                    Open an app that sells USDC. Coinbase and Robinhood are two that work.
+                  </li>
                   <li className="pl-1">Buy USDC.</li>
                   <li className="pl-1">
                     Send USDC on <strong>the Base network</strong> to your wallet address (copy it
-                    from Account → Manage funds).
+                    from Account → Wallet).
                   </li>
                 </ol>
                 <p className="text-gray-700 leading-relaxed font-display mb-6">
                   Anyone with USDC on the Base network can also send to your wallet address,
-                  including the person who referred you. To send funds out, use Manage funds → Send
-                  to your Coinbase or Robinhood USDC address on the Base network.
+                  including the person who referred you. To send funds out, use Wallet → Send
+                  to the USDC address your wallet or exchange app shows for the Base network.
                 </p>
               </>
             )}
