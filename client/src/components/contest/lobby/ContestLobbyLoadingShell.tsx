@@ -43,7 +43,7 @@ export function ContestLobbyLoadingShell({
   return (
     <div aria-busy="true" aria-label="Loading contest">
       {eventShell ? (
-        <SportEventHeader sportId={eventShell.sportId} event={eventShell} variant="context" />
+        <SportEventHeader sportId={eventShell.sportId} event={eventShell} />
       ) : null}
       <div>
         <div className="px-3 pb-2 pt-4">

@@ -100,7 +100,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
           </div>
         ) : null}
         {fieldSportId && eventShell ? (
-          <SportEventHeader sportId={fieldSportId} event={eventShell} variant="context" />
+          <SportEventHeader sportId={fieldSportId} event={eventShell} />
         ) : null}
         <div>
           <div className="px-3 pb-2 pt-4">

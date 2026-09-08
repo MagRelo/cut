@@ -24,7 +24,7 @@ graph TB
 | `GlobalErrorProvider` | App-wide error surfacing |
 | `AuthProvider` | Cut user from `/auth/me`, balances, connect flow |
 
-Event and sport scope are provided at **page boundaries** — `ContestEventScopeProvider` on contest lobby; leaderboard passes `sportId` from the URL into `useSportActiveEvent` directly (no scope provider).
+Event and sport scope are provided at **page boundaries** — `ContestEventScopeProvider` on contest lobby; leaderboard takes `sportId` and `eventId` from the URL (no scope provider).
 
 ---
 
@@ -33,16 +33,15 @@ Event and sport scope are provided at **page boundaries** — `ContestEventScope
 ```mermaid
 flowchart LR
   ROOT["/"] --> CONTESTS["/contests"]
-  HUB["/sports/:sportId"] --> HUB_LIST[Active-event contest list]
   LOBBY["/contest/:address"] --> CONTEST[Contest lobby + Lineups tab]
   LEAGUES["/leagues/:id"] --> LEAGUE[League + cross-event contests]
+  FIELD["/sports/:sportId/events/:eventId/leaderboard"] --> BOARD[Event field]
 ```
 
 - **Default home** (`/contests`) — multi-sport live contests hub.
-- **Sport hub** (`SportHubPage`) — contest list for the active event of `sportId` in the URL.
 - **Contest lobby** is keyed by **contract address**; lineups are managed on the lobby **Lineups** tab (no `/lineups` route).
 - **Leagues** are sport-agnostic; each contest carries `eventId` → sport via server.
-- Legacy `/user-groups/*` and `/sports/:sportId/contests/:id` redirect to canonical paths.
+- Legacy `/user-groups/*`, `/sports/:sportId`, `/sports/:sportId/leaderboard`, and `/sports/:sportId/contests/:id` redirect to canonical paths.
 
 ---
 
@@ -50,11 +49,11 @@ flowchart LR
 
 **Sport** — explicit at route boundary:
 
-- `/sports/:sportId/*` → `useParams().sportId`
+- `/sports/:sportId/events/:eventId/*` → `useParams().sportId`
 - `/contest/:address` → `contest.event.sportId` via `ContestEventScopeProvider`
-- Create-contest forms → first enabled sport from `GET /sports` (local form state)
+- Create-contest forms → first upcoming/live directory event’s sport, else user selection (local form state)
 
-**Event** — `useSportActiveEvent(sportId)` or `useContestEvent(contest)`; see [README](README.md).
+**Event** — URL `eventId`, directory group, or `useContestEvent(contest)`; staff create uses `useActiveEventQuery` after sport selection. See [README](README.md).
 
 Plugin hooks (`useSportUIPlugin`) resolve `sportId` from an explicit argument or `EventScopeContext`.
 

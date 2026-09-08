@@ -17,7 +17,7 @@ Architecture and behavior documentation for the **v4 platform** (`v4` branch). T
 | Contest entry FK | `tournamentLineupId` | `lineupId` |
 | APIs | `/api/tournaments`, `/api/lineup` | `/api/sports`, `/api/lineups` |
 | Sport logic | Inline PGA services | `SportModule` plugins |
-| Client routing | Tournament-centric home | `/sports/:sportId`, `/leagues/*` |
+| Client routing | Tournament-centric home | `/contests`, `/leagues/*` |
 
 Legacy routes `/api/tournaments` and `/api/lineup` return **501** on v4.
 

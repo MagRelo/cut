@@ -2,7 +2,11 @@ import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { PageSection } from "../components/layout/PageSection";
-import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
+import { useActiveEventQuery, useEventCandidatesQuery } from "../hooks/useSportData";
+import {
+  eventDisplayNameFromMetadata,
+  periodDisplayFromMetadata,
+} from "../lib/eventMetadata";
 import { useAccount } from "wagmi";
 
 export const DebugPage: React.FC = () => {
@@ -10,7 +14,9 @@ export const DebugPage: React.FC = () => {
   const auth = useAuth();
   const [searchParams] = useSearchParams();
   const debugSportId = searchParams.get("sportId") ?? undefined;
-  const sportActive = useSportActiveEvent(debugSportId ?? "");
+  const activeQuery = useActiveEventQuery(debugSportId ?? "");
+  const eventId = activeQuery.data?.event.id;
+  const candidatesQuery = useEventCandidatesQuery(debugSportId, eventId);
 
   return (
     <>
@@ -102,33 +108,35 @@ export const DebugPage: React.FC = () => {
       {debugSportId ? (
         <PageSection>
           <h2 className="text-lg font-semibold mb-3 text-purple-600">
-            Sport active event (useSportActiveEvent)
+            Sport active event (useActiveEventQuery)
           </h2>
           <div className="space-y-2 text-sm">
             <div>
-              <strong>Loading:</strong> {sportActive.isLoading ? "true" : "false"}
+              <strong>Loading:</strong> {activeQuery.isLoading ? "true" : "false"}
             </div>
             <div>
               <strong>Error:</strong>{" "}
-              {sportActive.error ? String(sportActive.error.message) : "None"}
+              {activeQuery.error ? String(activeQuery.error.message) : "None"}
             </div>
             <div>
-              <strong>Sport ID:</strong> {sportActive.sportId}
+              <strong>Sport ID:</strong> {debugSportId}
             </div>
             <div>
-              <strong>Event ID:</strong> {sportActive.eventId ?? "—"}
+              <strong>Event ID:</strong> {eventId ?? "—"}
             </div>
             <div>
-              <strong>Event name:</strong> {sportActive.eventName ?? "—"}
+              <strong>Event name:</strong>{" "}
+              {eventDisplayNameFromMetadata(activeQuery.data?.event.metadata, "—")}
             </div>
             <div>
-              <strong>Status:</strong> {sportActive.status ?? "—"}
+              <strong>Status:</strong> {activeQuery.data?.status ?? "—"}
             </div>
             <div>
-              <strong>Period:</strong> {sportActive.periodDisplay ?? "—"}
+              <strong>Period:</strong>{" "}
+              {periodDisplayFromMetadata(activeQuery.data?.event.metadata) ?? "—"}
             </div>
             <div>
-              <strong>Candidates count:</strong> {sportActive.candidates.length}
+              <strong>Candidates count:</strong> {candidatesQuery.data?.length ?? 0}
             </div>
           </div>
         </PageSection>

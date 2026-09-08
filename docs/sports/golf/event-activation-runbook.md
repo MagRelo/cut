@@ -96,7 +96,7 @@ Optional: `pnpm run service:sync-event-metadata <eventId>` or `pnpm run service:
 
 ### 4. Verify in app
 
-- [ ] Sport hub (`/sports/pga-golf`) shows correct event name and dates
+- [ ] Contests hub (`/contests`) shows the event name and dates
 - [ ] Event summary modal matches reviewed copy (if summary was written)
 - [ ] Player field looks complete (spot-check favorites, WDs)
 - [ ] Admin dashboard shows active event and ops hints

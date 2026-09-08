@@ -8,26 +8,18 @@ Play The Cut is a single multi-sport competition platform. One app, one database
 
 ```mermaid
 flowchart TB
-  User --> Nav[Sport picker]
+  User --> Contests["/contests"]
   User --> Leagues["/leagues/:id"]
-  Nav --> Golf["/sports/pga-golf"]
-  Nav --> NFL["/sports/nfl-fantasy"]
-  Golf --> GolfEvent[Active golf event]
-  NFL --> NFLEvent[Active NFL slate]
-  GolfEvent --> GolfLineups[Golf lineups]
-  NFLEvent --> NFLLineups[NFL lineups]
-  Leagues --> GolfContest[Golf contest]
-  Leagues --> NFLContest[NFL contest]
-  GolfLineups --> GolfContest
-  NFLLineups --> NFLContest
-  GolfContest --> Core[Shared contests, wallets, settlement]
-  NFLContest --> Core
+  Contests --> Event[CompetitionEvent groups]
+  Event --> Contest[Contests]
+  Leagues --> Contest
+  Contest --> Core[Shared contests, wallets, settlement]
 ```
 
 | Concern | How it works |
 |---------|--------------|
-| **Sports** | Each sport is a registered plugin (PGA Golf, NFL Fantasy, etc.). The platform lists enabled sports; users switch via a sport picker in the nav. |
-| **Active event** | One active event per sport at a time (e.g. this week's PGA tournament, this week's NFL slate). |
+| **Sports** | Each sport is a registered plugin (PGA Golf, F1, Commodities, etc.). The platform lists enabled sports; contest cards and event groups show sport. |
+| **Active event** | One active event per sport at a time (e.g. this week's PGA tournament, this week's NFL slate). Ops/cron pointer — not a browse route. |
 | **Lineups** | Event-scoped. A user builds a roster from that event's candidate pool, then enters it into one or more contests for that event. |
 | **Contests** | Paid competitions tied to a single event, or $0 contests with no on-chain escrow. Lifecycle: `OPEN → ACTIVE → LOCKED → SETTLED → CLOSED`. Paid contests deploy via `ContestFactory` / `ContestController`. $0 contests are database-only (no wallet, no Winner Pool). |
 | **Leagues** | Cross-sport social groups (`UserGroup`). No sport field on the league—a single league can host golf and NFL contests simultaneously. Sport is determined per contest via the event. |
@@ -130,7 +122,7 @@ Leagues are sport-neutral containers. A friends group can run a golf pool and an
 - Each contest binds to exactly one `CompetitionEvent`; the event's `sportId` determines which sport plugin handles scoring and roster rules.
 - Entering a contest requires a lineup for **that contest's event**—there is no cross-sport lineup.
 - Creating a league contest: admin picks sport → event → contest settings. Paid contests deploy on-chain; $0 contests are created in the database only.
-- League detail UI groups contests by sport or event, with a sport badge on each contest card. Entry CTAs deep-link to `/sports/:sportId/lineup` for the relevant event.
+- League detail UI groups contests by sport or event, with a sport badge on each contest card. Entry CTAs deep-link to the contest lobby for the relevant event.
 
 ---
 
@@ -237,15 +229,16 @@ Core platform endpoints:
 | Route | Scope |
 |-------|-------|
 | `/contests` | Multi-sport live contests hub |
-| `/sports/:sportId` | Sport home — active event contest list (`SportHubPage`) |
-| `/sports/:sportId/leaderboard` | Leaderboard + `SportEventHeader` |
+| `/sports/:sportId` | Redirect → `/contests` |
+| `/sports/:sportId/events/:eventId/leaderboard` | Event field + `SportEventHeader` |
+| `/sports/:sportId/leaderboard` | Redirect → event-id leaderboard (or `/contests`) |
 | `/contest/:address` | Contest lobby (on-chain address or database id in URL) |
 | `/leagues/:id` | Cross-sport league — contests grouped by event |
 | `/account` | Wallet, referrals, settings (sport-neutral) |
 
 `/sports/:sportId/contests/:id` redirects to `/contest/:address`. Legacy `/user-groups/*` redirects to `/leagues/*`. No legacy `/leaderboard` or `/lineups` routes.
 
-**Sport scope** — explicit at route boundary: `useParams().sportId` on sport routes, `contest.event.sportId` via `ContestEventScopeProvider` on contest lobby, `useFirstEnabledSportId()` on create forms. **Event scope** — `useSportActiveEvent(sportId)` or `useContestEvent(contest)`. Plugin hooks resolve via `useSportUIPlugin(sportId?)`.
+**Sport scope** — explicit at route boundary: `useParams().sportId` on field leaderboard, `contest.event.sportId` via `ContestEventScopeProvider` on contest lobby, directory upcoming/live sport on staff create forms. **Event scope** — URL `eventId`, directory group, or `useContestEvent(contest)`. Plugin hooks resolve via `useSportUIPlugin(sportId?)`.
 
 ### Component layers
 

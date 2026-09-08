@@ -13,8 +13,7 @@ flowchart TB
   User --> Contests["/contests"]
   User --> Leagues["/leagues/:id"]
   Contests --> Live[Live contests across sports]
-  User --> Hub["/sports/:sportId"]
-  Hub --> Event[Active CompetitionEvent]
+  Live --> Event[CompetitionEvent]
   Event --> Lineup[Lineup + picks]
   Lineup --> Contest[Contest entries]
   Leagues --> Contest
@@ -119,14 +118,15 @@ Details: [server/cron.md](../server/cron.md)
 |-------|---------|
 | `/` | Redirect → `/contests` |
 | `/contests` | Multi-sport live contests hub |
-| `/sports/:sportId` | Sport hub — active-event contest list |
-| `/sports/:sportId/leaderboard` | Sport leaderboard + event header |
+| `/sports/:sportId` | Redirect → `/contests` |
+| `/sports/:sportId/events/:eventId/leaderboard` | Event field leaderboard |
+| `/sports/:sportId/leaderboard` | Redirect → event-id leaderboard (or `/contests`) |
 | `/contest/:address` | Contest lobby (on-chain address in URL) |
 | `/leagues/*` | League list, detail, create, join |
 | `/user-groups/*` | Redirect → `/leagues/*` |
 | `/account` | Wallet, referrals, settings |
 
-`sportId` is explicit per route: URL param on sport pages, `contest.event.sportId` on contest lobby, or first enabled sport on create forms. No global `SportProvider`.
+`sportId` is explicit per route: URL param on field leaderboard, `contest.event.sportId` on contest lobby, or the first upcoming/live directory event on staff create forms. No global `SportProvider`.
 
 Details: [client/architecture.md](../client/architecture.md)
 

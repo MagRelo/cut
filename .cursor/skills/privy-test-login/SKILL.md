@@ -21,13 +21,18 @@ From the repo root:
 
 ```sh
 node .cursor/skills/privy-test-login/scripts/get-test-credentials.mjs
+node .cursor/skills/privy-test-login/scripts/get-test-credentials.mjs --all
 ```
 
-Prints `{ "email": "test-…@privy.io", "otpCode": "……" }`.
+Default prints `{ "email": "test-…@privy.io", "otpCode": "……" }` (first account).
+`--all` prints `{ "accounts": [{ "email", "otpCode" }, ...] }` and exits non-zero
+if fewer than four accounts (referral signup-tree e2e). Keep credentials in
+tool results only.
 
 The script reads `PRIVY_APP_ID` / `PRIVY_APP_SECRET` from the environment, then
 `server/.env`. Test accounts must be enabled in Privy: **User management →
-Authentication → Advanced → Enable test accounts**.
+Authentication → Advanced → Enable test accounts**. Multi-user runs need at
+least four static test emails.
 
 ## Chrome login
 

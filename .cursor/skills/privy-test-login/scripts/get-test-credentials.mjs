@@ -4,9 +4,11 @@
  *
  * Usage (from repo root or anywhere):
  *   node .cursor/skills/privy-test-login/scripts/get-test-credentials.mjs
+ *   node .cursor/skills/privy-test-login/scripts/get-test-credentials.mjs --all
  *
  * Reads PRIVY_APP_ID / PRIVY_APP_SECRET from the environment, then server/.env.
- * Prints JSON: { "email": "...", "otpCode": "......" }
+ * Default: { "email": "...", "otpCode": "......" }
+ * --all:   { "accounts": [{ "email", "otpCode" }, ...] }  (fails if fewer than 4)
  */
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -73,19 +75,22 @@ async function loadPrivyEnv() {
   return { appId: fromFileId, appSecret: fromFileSecret };
 }
 
-function firstAccount(payload) {
+function parseAccounts(payload) {
   const list = payload?.data ?? payload?.test_accounts ?? payload;
-  const accounts = Array.isArray(list) ? list : [];
-  const account = accounts[0];
-  if (!account?.email || !account?.otp_code) {
+  const raw = Array.isArray(list) ? list : [];
+  const accounts = raw
+    .filter((a) => a?.email && a?.otp_code)
+    .map((a) => ({ email: a.email, otpCode: a.otp_code }));
+  if (accounts.length === 0) {
     throw new Error(
       "No Privy test accounts returned. Enable test accounts in the Privy Dashboard (User management → Authentication → Advanced).",
     );
   }
-  return { email: account.email, otpCode: account.otp_code };
+  return accounts;
 }
 
 async function main() {
+  const wantAll = process.argv.includes("--all");
   const { appId, appSecret } = await loadPrivyEnv();
   const basic = Buffer.from(`${appId}:${appSecret}`).toString("base64");
   const res = await fetch(`${PRIVY_API}/v1/apps/${appId}/test_credentials`, {
@@ -99,8 +104,17 @@ async function main() {
   if (!res.ok) {
     throw new Error(`Privy test_credentials failed (${res.status}): ${body.slice(0, 300)}`);
   }
-  const creds = firstAccount(JSON.parse(body));
-  process.stdout.write(`${JSON.stringify(creds)}\n`);
+  const accounts = parseAccounts(JSON.parse(body));
+  if (wantAll) {
+    if (accounts.length < 4) {
+      throw new Error(
+        `Need at least 4 Privy test accounts for multi-user e2e; API returned ${accounts.length}.`,
+      );
+    }
+    process.stdout.write(`${JSON.stringify({ accounts })}\n`);
+    return;
+  }
+  process.stdout.write(`${JSON.stringify(accounts[0])}\n`);
 }
 
 main().catch((err) => {

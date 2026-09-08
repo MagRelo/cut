@@ -43,9 +43,9 @@ export const SportParticipantDetailModal: React.FC<SportParticipantDetailModalPr
     if (typeof window === "undefined") return;
 
     const shareUrl = new URL(window.location.href);
-    shareUrl.pathname = resolvedEventId
-      ? leaderboardPath(sportId, resolvedEventId)
-      : `/sports/${sportId}/leaderboard`;
+    if (resolvedEventId) {
+      shareUrl.pathname = leaderboardPath(sportId, resolvedEventId);
+    }
     shareUrl.searchParams.set("playerId", String(targetCandidate.participantId));
     shareUrl.searchParams.delete("pgaTourId");
 

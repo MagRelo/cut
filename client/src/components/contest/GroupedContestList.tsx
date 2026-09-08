@@ -61,7 +61,6 @@ function GroupedContestSection({
             <SportEventHeader
               sportId={group.event.sportId}
               event={eventShell}
-              variant="standalone"
               summarySurface="content"
             />
             <div className="px-3 pb-3.5 pt-1">
@@ -92,7 +91,7 @@ function GroupedContestSection({
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/10">
       {group.event.sportId ? (
-        <SportEventHeader sportId={group.event.sportId} event={eventShell} variant="standalone" />
+        <SportEventHeader sportId={group.event.sportId} event={eventShell} />
       ) : (
         <header className="border-b border-slate-100 px-4 py-3">
           <h4 className="font-display text-base font-semibold text-gray-900">

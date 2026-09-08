@@ -106,7 +106,7 @@ Pure logic only — no Prisma, no `fetch`, no env vars.
 - [ ] `ParticipantRow.tsx` — leaderboard / lineup slot row (live + complete)
 - [ ] `ParticipantDetail.tsx` — detail modal content
 - [ ] `PredictionField.tsx` — tie-break slider using `useSportPredictionRules(sportId)`
-- [ ] `EventSummary.tsx` (+ optional `EventDetails.tsx`, `eventMedia.ts`) — sport hub and contest hero UI (not editorial Cutbot commentary)
+- [ ] `EventSummary.tsx` (+ optional `EventDetails.tsx`, `eventMedia.ts`) — contest and field leaderboard hero UI (not editorial Cutbot commentary)
 - [ ] Import `*CandidateSortConfig` from the sport package; attach to the UI plugin
 - [ ] Register in `client/src/sports/registry.ts`
 - [ ] Add `@cut/sport-<id>` to `client/package.json`

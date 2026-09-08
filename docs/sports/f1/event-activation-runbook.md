@@ -25,7 +25,7 @@ Run server commands from repo root with `pnpm --filter server run …` or from `
 | **Score sync** | Not part of init — cron or `service:sync-f1-scores` |
 | **Dry run** | `pnpm --filter server run script:f1-dry-run 9558` |
 | **Data spike** | `pnpm --filter server run script:f1-data-spike 9558` |
-| **Sport hub** | `/sports/f1` |
+| **Browse** | `/contests` (event groups) |
 | **Admin dashboard** | `GET /api/admin/dashboard` (pass `eventId` if needed) |
 
 ---
@@ -143,7 +143,7 @@ pnpm --filter server run service:sync-f1-scores
 
 ### 4. Verify in app
 
-- [ ] Sport hub (`/sports/f1`) shows correct race name and start time
+- [ ] Contests hub (`/contests`) shows the correct race name and start time
 - [ ] Driver field ~20 entries (spot-check favorites, numbers)
 - [ ] Lineups can be created — 4 drivers + `winningLineupTotal` prediction (1–120)
 - [ ] Admin dashboard shows active F1 event

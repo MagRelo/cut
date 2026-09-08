@@ -12,7 +12,7 @@ How the v4 client splits **platform shell** (sport-agnostic) from **sport UI plu
 flowchart LR
   subgraph platform [Platform shell]
     Page[Pages / feature components]
-    Hook[useSportActiveEvent / useContestEvent + useSportUI]
+    Hook[useContestEvent / useEventCandidatesQuery + useSportUI]
     Shell[SportParticipantRow, CandidatePicker, ...]
   end
   subgraph plugin [Sport UI plugin]
@@ -82,7 +82,7 @@ Location: [`client/src/components/platform/`](../../client/src/components/platfo
 | [`SportLineupPickRow`](../../client/src/components/platform/SportLineupPickRow.tsx) | `SportParticipantRow` → `ParticipantRow` | Editable lineup slots on `LineupContestCard` |
 | [`CandidatePicker`](../../client/src/components/platform/CandidatePicker.tsx) | `CandidateRow` | `LineupContestCard` slot editor |
 | [`SportPredictionField`](../../client/src/components/platform/SportPredictionField.tsx) | `PredictionField` | `LineupContestCard` winning-score slider |
-| [`SportEventHeader`](../../client/src/components/platform/SportEventHeader.tsx) | `EventSummary` | Leaderboard page only (`sportId` prop → `useSportActiveEvent`) |
+| [`SportEventHeader`](../../client/src/components/platform/SportEventHeader.tsx) | `EventSummary` | Leaderboard and contest directory heroes (`sportId` + event shell) |
 
 Contest lobby renders plugin `EventSummary` directly in [`ContestLobbyView`](../../client/src/components/contest/lobby/ContestLobbyView.tsx) — not via `AppLayout`.
 
@@ -90,7 +90,7 @@ Hooks:
 
 | Hook | Role |
 |------|------|
-| [`useSportActiveEvent`](../../client/src/hooks/useSportActiveEvent.ts) | Sport-scoped active event — hub, leaderboard, onboarding |
+| [`useActiveEventQuery`](../../client/src/hooks/useSportData.ts) | Sport’s `isActive` event — staff create, debug, event-less leaderboard redirect |
 | [`useContestEvent`](../../client/src/hooks/useContestEvent.ts) | Contest-scoped event — lobby via `ContestEventScopeProvider` |
 | [`useSportUIPlugin`](../../client/src/hooks/useSportUI.ts) | Resolve `SportUIPlugin` from explicit `sportId` or `EventScopeContext` |
 | [`useCandidateSort`](../../client/src/hooks/useCandidateSort.ts) | Sort `Candidate[]` via plugin `candidateSortConfig` + `@cut/sport-sdk` `sortCandidates` |
@@ -125,7 +125,7 @@ Golf `ParticipantRow` uses `parseGolfEventMetadata(eventMetadata).roundDisplay` 
 
 | UI surface | Row component | Data source |
 |------------|---------------|-------------|
-| [`LeaderboardPage`](../../client/src/pages/LeaderboardPage.tsx) | `SportParticipantRow` | `useSportActiveEvent(sportId).candidates` |
+| [`LeaderboardPage`](../../client/src/pages/LeaderboardPage.tsx) | `SportParticipantRow` | `useEventFieldLeaderboard(sportId, eventId)` |
 | [`LineupContestCard`](../../client/src/components/lineup/LineupContestCard.tsx) — view | `SportParticipantRow` | `lineup.picks` → `candidatesForPlatformLineup` |
 | [`LineupContestCard`](../../client/src/components/lineup/LineupContestCard.tsx) — edit | `SportLineupPickRow` | `useLineupSlotEditor` slots (`Candidate[]`) |
 | [`LineupContestCard`](../../client/src/components/lineup/LineupContestCard.tsx) — picker | `CandidatePicker` → `CandidateRow` | contest event candidates |
@@ -156,7 +156,7 @@ Lineup header PTS: [`lineupDisplayScore`](../../client/src/lib/lineupScore.ts) f
 
 ## Conventions for new code
 
-1. **Fetch candidates once** per surface: `useSportActiveEvent(sportId)`, `useContestEvent(contest)`, or `useEventCandidatesQuery(sportId, eventId)`.
+1. **Fetch candidates once** per surface: `useContestEvent(contest)` or `useEventCandidatesQuery(sportId, eventId)`.
 2. **Pass `status`** into `SportParticipantRow` — required; parent already has it from the event hook.
 3. **Pass `eventMetadata`** when the parent has it; `SportParticipantRow` falls back to `EventScopeContext` on contest lobby.
 4. **Contest lineups:** use `lineup.lineup.picks`. Use `contestLineupDisplayName(lineup)` for names.
@@ -174,7 +174,7 @@ Golf-specific logic still in platform code. **Do not extend**; migrate when addi
 | Item | Location | Notes |
 |------|----------|-------|
 | Lineup total prediction | `lib/sportPrediction.ts`, `useSportPredictionRules`, `SportPredictionField` | Plugin wraps slider; platform owns canonical JSON shape |
-| Event round display | `useSportActiveEvent` exposes `roundDisplay` | Golf metadata field on platform hook |
+| Event round display | Golf plugin reads `roundDisplay` from `eventMetadata` | Not a platform hook field |
 | Home demo | `InfoScorecard` imports plugin `ScoreDisplay` | Marketing-only cross-boundary import |
 
 ---

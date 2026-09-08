@@ -7,7 +7,7 @@ import { contestLobbyPath } from "../../utils/contestRoutes";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useAuth } from "../../contexts/AuthContext";
 import { defaultPaymentTokenSymbol, getTargetChainIdFromEnv } from "../../config/targetChain";
-import { useFirstEnabledSportId } from "../../hooks/useSportData";
+import { useContestDirectory } from "../../hooks/useContestDirectory";
 import {
   CreateContestEventPicker,
   useSelectedSportEvent,
@@ -27,14 +27,21 @@ export const CreateContestForm = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const lockedUserGroupId = searchParams.get("userGroupId") ?? undefined;
-  const firstSportId = useFirstEnabledSportId();
+  const { data: directory } = useContestDirectory("all");
   const [sportId, setSportId] = useState("");
+  const { selection: selectedEvent, sports } = useSelectedSportEvent(sportId);
   useEffect(() => {
-    if (!sportId && firstSportId) {
-      setSportId(firstSportId);
+    if (sportId) return;
+    const fromDirectory =
+      directory?.upcoming[0]?.event.sportId ?? directory?.live[0]?.event.sportId;
+    if (fromDirectory) {
+      setSportId(fromDirectory);
+      return;
     }
-  }, [firstSportId, sportId]);
-  const { selection: selectedEvent } = useSelectedSportEvent(sportId);
+    if (sports.length === 1) {
+      setSportId(sports[0].id);
+    }
+  }, [directory, sportId, sports]);
   const { paymentTokenSymbol, paymentTokenAddress } = useAuth();
   const { data: userGroupsData } = useUserGroupsQuery();
   const chainId = useChainId();

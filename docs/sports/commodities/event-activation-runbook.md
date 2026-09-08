@@ -28,7 +28,7 @@ Pass script arguments **directly** — do **not** insert `--` before them. Use `
 | **Data spike** | `pnpm --filter server run script:commodities-data-spike 2026-W27` |
 | **Dry run** | `pnpm --filter server run script:commodities-dry-run 2026-W27` |
 | **Local eval** | `pnpm --filter server run script:commodities-local-eval` |
-| **Sport hub** | `/sports/commodities` |
+| **Browse** | `/contests` (event groups) |
 
 ---
 

@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAccount } from "wagmi";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import { type Contest, type ContestStatus } from "../types/contest";
@@ -65,45 +64,5 @@ export function useContestQuery(contestAddress: string | undefined) {
     // Safe with 5-min staleTime — wallet popups return before data goes stale.
     refetchOnWindowFocus: true,
     retry: 1,
-  });
-}
-
-interface UseContestsQueryOptions {
-  userGroupId?: string;
-}
-
-/**
- * Fetches contests for a tournament. When signed in, the server merges public contests
- * with league contests for groups the user belongs to.
- */
-export function useContestsQuery(
-  eventId: string | undefined,
-  chainId: number | undefined,
-  options?: UseContestsQueryOptions,
-) {
-  const { user } = useAuth();
-  const { isConnected } = useAccount();
-  const userGroupId = options?.userGroupId;
-  const userId = user?.id ?? null;
-
-  return useQuery({
-    queryKey: queryKeys.contests.byEvent(eventId ?? "", chainId ?? "all", userId, userGroupId),
-    queryFn: async () => {
-      if (!eventId) throw new Error("Event ID is required");
-      const params = new URLSearchParams({ eventId });
-      if (isConnected && chainId) {
-        params.set("chainId", String(chainId));
-      }
-      if (userGroupId) {
-        params.set("userGroupId", userGroupId);
-      }
-      return await apiClient.get<Contest[]>(`/contests?${params.toString()}`);
-    },
-    enabled: !!eventId,
-    staleTime: userGroupId ? 2 * 60 * 1000 : Infinity,
-    gcTime: 12 * 60 * 60 * 1000,
-    refetchOnWindowFocus: !!userGroupId,
-    retry: 1,
-    placeholderData: userGroupId ? undefined : (previousData) => previousData,
   });
 }

@@ -67,3 +67,9 @@ Production is **Base** (`8453`) with **canonical USDC**. Players add and withdra
 | [navigation-ia-discussion.md](internal/navigation-ia-discussion.md) | Multi-sport nav draft |
 | [drive-referrals.md](internal/drive-referrals.md) | Agent brief: register, then share `?ref=` invite URLs |
 | [effect-server-vision.md](internal/effect-server-vision.md) | **Future / not a spec** — Effect-TS server sketch |
+
+## Testing
+
+| Doc | Purpose |
+|-----|---------|
+| [referral-e2e.md](testing/referral-e2e.md) | Signup invite-tree e2e runbook (Privy test users, Chrome) |

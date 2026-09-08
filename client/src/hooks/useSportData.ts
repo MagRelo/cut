@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { SportSummary } from "@cut/sport-sdk";
 import type { Candidate } from "@cut/sport-sdk";
@@ -17,11 +16,6 @@ export function useSportsQuery() {
     queryFn: () => apiClient.get<SportSummary[]>("/sports"),
     staleTime: SPORTS_STALE_MS,
   });
-}
-
-export function useFirstEnabledSportId(): string | undefined {
-  const { data: sports = [] } = useSportsQuery();
-  return useMemo(() => sports.find((sport) => sport.isEnabled)?.id, [sports]);
 }
 
 export function useActiveEventQuery(sportId: string) {

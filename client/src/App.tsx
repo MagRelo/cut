@@ -25,10 +25,10 @@ import { ActivityPage } from "./pages/account/ActivityPage";
 import { ReferralsPage } from "./pages/account/ReferralsPage";
 import { WalletPage } from "./pages/account/WalletPage";
 
-import { SportHubPage } from "./pages/SportHubPage";
 import { ContestLobby } from "./pages/ContestLobbyPage";
 import { Contests } from "./pages/ContestListPage";
 import {
+  ActiveEventLeaderboardRedirect,
   SportContestRedirect,
   UserGroupToLeagueRedirect,
 } from "./components/routing/LegacyRedirects";
@@ -90,9 +90,9 @@ const AppShell: React.FC = () => {
         <OnboardingRedirectGate>
           <Routes>
             <Route path="/" element={<Navigate to="/contests" replace />} />
-            <Route path="/sports/:sportId" element={<SportHubPage />} />
+            <Route path="/sports/:sportId" element={<Navigate to="/contests" replace />} />
             <Route path="/sports/:sportId/events/:eventId/leaderboard" element={<LeaderboardPage />} />
-            <Route path="/sports/:sportId/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/sports/:sportId/leaderboard" element={<ActiveEventLeaderboardRedirect />} />
             <Route path="/sports/:sportId/contests/:id" element={<SportContestRedirect />} />
             <Route path="/home" element={<Home />} />
             <Route path="/terms" element={<TermsOfService />} />

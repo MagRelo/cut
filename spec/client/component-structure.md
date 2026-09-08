@@ -12,7 +12,7 @@ Sport-agnostic building blocks. They accept platform types (`Candidate`, `EventS
 
 | Component | Purpose |
 |-----------|---------|
-| `SportEventHeader` | Event hero on leaderboard — `sportId` prop → `useSportActiveEvent` → plugin `EventSummary` |
+| `SportEventHeader` | Event hero — `sportId` + required `event` shell → plugin `EventSummary` |
 | `SportParticipantRow` | Wrapper → plugin `ParticipantRow` (`status` required; `eventMetadata` optional) |
 | `SportParticipantDetailModal` | Dialog chrome → plugin `ParticipantDetail` (scorecard modal) |
 | `SportLineupPickRow` | Thin wrapper around `SportParticipantRow` for editable lineup slots |
@@ -58,7 +58,7 @@ Plugin interface: `packages/sport-sdk/src/sport-ui-plugin.ts` (`SportUIPlugin`).
 | `EventLineupsPanel` | Contest lobby lineups tab — create/copy/enter via `LineupContestCard` |
 | Contest cards, timeline, secondary market UI | Lobby sub-components |
 
-Pages: `ContestListPage` (`/contests`), `SportHubPage`, `ContestLobbyPage`, `ContestCreatePage`.
+Pages: `ContestListPage` (`/contests`), `ContestLobbyPage`, `ContestCreatePage`.
 
 ---
 

@@ -60,7 +60,7 @@ Registers Privy token getter with `apiClient` on mount.
 |-------|--------|
 | `sportId`, `eventId`, `metadata`, `status`, `candidates` | `ContestEventScopeProvider` → `useContestEvent(contest)` |
 
-Used on `/contest/:address` so deep lobby trees (`ContestEntryList`, lineup mutations, plugin hooks) share one contest-scoped event. **Not** app-wide; leaderboard uses `useSportActiveEvent(sportId)` from the URL directly.
+Used on `/contest/:address` so deep lobby trees (`ContestEntryList`, lineup mutations, plugin hooks) share one contest-scoped event. **Not** app-wide; leaderboard uses URL `sportId` + `eventId` and directory/nav cache for the hero.
 
 ### GlobalErrorContext
 
@@ -74,9 +74,9 @@ App-level error message queue for non-field errors (failed loads, unexpected API
 
 | Surface | Source |
 |---------|--------|
-| `/sports/:sportId/*` | `useParams().sportId` |
+| `/sports/:sportId/events/:eventId/*` | `useParams().sportId` |
 | Contest lobby | `contest.event.sportId` via `ContestEventScopeProvider` |
-| Create-contest forms | First enabled sport from `GET /sports` (local form state) |
+| Create-contest forms | First upcoming/live directory event’s sport, else user selection (local form state) |
 | Plugin hooks | `useSportUIPlugin(sportId?)` — explicit arg or `EventScopeContext` |
 
 There is no `SportProvider` and no default sport constant.

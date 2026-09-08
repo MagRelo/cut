@@ -1,8 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { useSportActiveEvent } from "../hooks/useSportActiveEvent";
-import { useFirstEnabledSportId } from "../hooks/useSportData";
 import { BrandLogo } from "../components/common/BrandLogo";
 import { BRAND_PROSE, BRAND_WORDMARK } from "../lib/brand";
 import { ONBOARDING_DISMISSED_KEY } from "../lib/onboardingSettings";
@@ -44,10 +42,6 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, updateUser, updateUserSettings } = useAuth();
-  const onboardingSportId = useFirstEnabledSportId();
-  const { isEventEditable } = useSportActiveEvent(onboardingSportId ?? "");
-  /** Lineup create/edit closed (event in progress or completed). */
-  const editingNotAllowed = !isEventEditable;
   const [step, setStep] = useState(0);
   const [displayName, setDisplayName] = useState("");
   const [accentColor, setAccentColor] = useState(ACCENT_COLORS[0]);
@@ -548,7 +542,7 @@ export function OnboardingPage() {
                 disabled={saving}
                 className={primaryBtn}
               >
-                {editingNotAllowed ? "View contests" : "Create a lineup"}
+                View contests
               </button>
             </StepActions>
           </>

@@ -48,7 +48,7 @@ export function useSelectedSportEvent(sportId: string): {
 
   return {
     selection,
-    isLoading: sportsLoading || eventLoading,
+    isLoading: sportsLoading || (Boolean(sportId) && eventLoading),
     sports: sports.map((sport) => ({ id: sport.id, name: sport.name })),
   };
 }
@@ -59,7 +59,7 @@ export const CreateContestEventPicker = ({
   disabled = false,
 }: CreateContestEventPickerProps) => {
   const { selection, isLoading, sports } = useSelectedSportEvent(sportId);
-  const showSportPicker = sports.length > 1;
+  const showSportPicker = sports.length > 1 || !sportId;
 
   return (
     <div className="rounded-sm border border-blue-200 bg-blue-50 px-4 py-3 shadow-inner ring-1 ring-inset ring-blue-100">
@@ -72,6 +72,11 @@ export const CreateContestEventPicker = ({
             disabled={disabled}
             className="w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm text-blue-950"
           >
+            {!sportId ? (
+              <option value="" disabled>
+                Select a sport
+              </option>
+            ) : null}
             {sports.map((sport) => (
               <option key={sport.id} value={sport.id}>
                 {sport.name}
@@ -83,6 +88,10 @@ export const CreateContestEventPicker = ({
 
       {isLoading ? (
         <p className="font-display text-sm text-blue-800/80">Loading active event…</p>
+      ) : !sportId ? (
+        <p className="font-display text-sm text-blue-800/80">
+          Select a sport to load its active event.
+        </p>
       ) : !selection ? (
         <p className="font-display text-sm text-blue-800/80">
           No active event is available for this sport.

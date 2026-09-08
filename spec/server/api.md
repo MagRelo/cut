@@ -204,7 +204,6 @@ Staff only (`requireAdmin`).
 | `useSportsQuery` | `GET /sports` |
 | `useActiveEventQuery` | `GET /sports/:sportId/events/active` |
 | `useEventCandidatesQuery` | `GET /sports/.../candidates` |
-| `useContestsQuery` | `GET /contests?eventId=` |
 | `useUserGroupContestsQuery` | `GET /userGroups/:id/contests` |
 | Lineup save | `POST /lineups/:eventId` (create) or `PUT /lineups/:lineupId` (update) |
 | `useAuth` bootstrap | `GET /auth/me`, then `POST /auth/session` if `NEEDS_PROVISIONING` |
