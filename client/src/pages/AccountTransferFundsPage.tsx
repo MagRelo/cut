@@ -79,21 +79,21 @@ export function TransferFundsPage() {
         ) : null}
 
         <div>
-          <div className="space-y-3 pb-4 font-display">
+          <div className="space-y-4 pb-6 font-display">
             <p className="text-sm leading-relaxed text-gray-700">
               Your account comes with a wallet that belongs to you, secured by your email. Play The
               Cut never holds your funds, so you can add money, play in contests, or withdraw
               anytime.
             </p>
             {showTestnetWarning ? null : (
-              <>
-                <h2 className="font-medium text-gray-900">{tokenSymbol}</h2>
+              <div>
+                <h2 className="font-medium text-gray-900">Enter contests with {tokenSymbol}</h2>
                 <p className="text-sm leading-relaxed text-gray-700">
-                  Play The Cut uses {tokenSymbol} on {networkLabel}. Buy {tokenSymbol} through an
-                  app such as Coinbase, Kraken, or Robinhood, then send it to this wallet on the
-                  Base network.
+                  Play The Cut uses {tokenSymbol} on {networkLabel} network. Buy {tokenSymbol}{" "}
+                  through an app such as Coinbase, Kraken, or Robinhood, then send it to this wallet
+                  on the Base network.
                 </p>
-              </>
+              </div>
             )}
             <FundingWalletPanel tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
           </div>
