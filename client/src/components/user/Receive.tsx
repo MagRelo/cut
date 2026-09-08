@@ -1,9 +1,9 @@
 import { useAccount, useChainId } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
-import { ShareInviteButton } from "../common/ShareInviteButton";
+// import { ShareInviteButton } from "../common/ShareInviteButton";
 import { useAuth } from "../../contexts/AuthContext";
 import { getContractAddress, useTokenSymbol } from "../../utils/blockchainUtils";
-import { buildFundSendUrl } from "../../lib/fundLinks";
+// import { buildFundSendUrl } from "../../lib/fundLinks";
 import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../config/targetChain";
 import { BLOCKCHAIN_NETWORK } from "../../lib/legalPlaceholders";
 import { FundingAssetChips } from "./funds/FundingAssetChips";
@@ -18,7 +18,7 @@ export const Receive = () => {
   const { paymentTokenSymbol } = useAuth();
   const { data: paymentSymbolData } = useTokenSymbol(paymentTokenAddress ?? undefined);
   const tokenSymbol = paymentSymbolData ?? paymentTokenSymbol ?? defaultPaymentTokenSymbol();
-  const fundShareUrl = walletAddress ? buildFundSendUrl(walletAddress) : null;
+  // const fundShareUrl = walletAddress ? buildFundSendUrl(walletAddress) : null;
   const showCexOnramp = !isTargetTestnet();
   const networkLabel = showCexOnramp ? BLOCKCHAIN_NETWORK : "Base Sepolia";
 
@@ -41,7 +41,7 @@ export const Receive = () => {
         <FundingAssetChips tokenSymbol={tokenSymbol} networkLabel={networkLabel} stacked />
         {walletAddress ? <WalletAddressCopy address={walletAddress} /> : null}
       </div>
-
+      {/* 
       {fundShareUrl ? (
         <section className="border-t border-gray-200 pt-6">
           <h3 className="text-sm font-medium text-gray-900">
@@ -65,7 +65,7 @@ export const Receive = () => {
         </section>
       ) : (
         <p className="text-sm text-gray-500">Sign in to add funds.</p>
-      )}
+      )} */}
     </div>
   );
 };

@@ -87,11 +87,11 @@ export function TransferFundsPage() {
             </p>
             {showTestnetWarning ? null : (
               <div>
-                <h2 className="font-medium text-gray-900">Enter contests with {tokenSymbol}</h2>
+                <h2 className="font-medium text-gray-900">Play with {tokenSymbol}</h2>
                 <p className="text-sm leading-relaxed text-gray-700">
-                  Play The Cut uses {tokenSymbol} on {networkLabel} network. Buy {tokenSymbol}{" "}
-                  through an app such as Coinbase, Kraken, or Robinhood, then send it to this wallet
-                  on the Base network.
+                  Play The Cut uses {tokenSymbol} to power its contests. Buy {tokenSymbol} through
+                  an app such as Coinbase, Kraken, or Robinhood, then send it to this wallet on the
+                  Base network.
                 </p>
               </div>
             )}

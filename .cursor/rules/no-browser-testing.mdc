@@ -1,0 +1,17 @@
+---
+description: Do not drive Chrome or browser tools to test UI unless asked or troubleshooting a hard issue.
+alwaysApply: true
+---
+
+# No Browser Testing
+
+Do not use Chrome, browser MCP tools, or other browser automation to click through the app and verify rendering.
+
+After UI, layout, styling, routing, or copy changes: implement the change, then stop. The user tests rendering themselves.
+
+Use Chrome only when:
+
+1. The user explicitly asks to test in the browser, Chrome, or a UI review
+2. You are troubleshooting a difficult issue that cannot reasonably be diagnosed from code, logs, or tests alone
+
+Do not navigate pages, take screenshots, or exercise flows in a browser as a routine verification step.

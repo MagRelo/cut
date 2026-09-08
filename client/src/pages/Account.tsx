@@ -3,6 +3,7 @@ import { useAccount } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 
 import { CopyButton } from "../components/common/CopyToClipboard";
+import { Breadcrumbs } from "../components/common/Breadcrumbs";
 import { PageSection } from "../components/layout/PageSection";
 import { UserSettings } from "../components/user/UserSettings";
 import { useAuth } from "../contexts/AuthContext";
@@ -82,7 +83,11 @@ export function UserPage() {
 
   return (
     <>
-      <h1 className="flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
+      <Breadcrumbs
+        items={[{ label: "Account", path: "/account" }, { label: "Settings" }]}
+        className="mb-2"
+      />
+      <h1 className="mb-2 flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
         <Cog6ToothIcon className="h-6 w-6 shrink-0" aria-hidden />
         Settings
       </h1>
