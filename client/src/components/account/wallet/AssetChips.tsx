@@ -1,23 +1,37 @@
 import usdcIcon from "../../../assets/funds/usdc.svg";
 import baseIcon from "../../../assets/funds/base.svg";
 
+export const walletSpecLabelClassName =
+  "text-[11px] font-medium uppercase tracking-[0.12em] text-gray-600";
+
 function AssetSpec({
   label,
   iconSrc,
   title,
   padded = true,
+  large = false,
 }: {
   label: string;
   iconSrc: string;
   title: string;
   padded?: boolean;
+  large?: boolean;
 }) {
+  const iconPx = large ? 20 : 16;
+
   return (
     <div className={padded ? "px-4 py-3" : undefined}>
-      <p className="text-xs font-medium text-gray-600">{label}</p>
-      <div className="mt-1.5 flex items-center gap-1.5">
-        <img src={iconSrc} alt="" width={16} height={16} className="h-4 w-4 shrink-0" aria-hidden />
-        <p className="font-display text-sm font-semibold leading-none text-gray-900">{title}</p>
+      <p className={walletSpecLabelClassName}>{label}</p>
+      <div className={`mt-1 flex items-center ${large ? "gap-2" : "gap-1.5"}`}>
+        <img
+          src={iconSrc}
+          alt=""
+          width={iconPx}
+          height={iconPx}
+          className={`${large ? "h-5 w-5" : "h-4 w-4"} shrink-0`}
+          aria-hidden
+        />
+        <p className="font-display text-sm font-medium leading-none text-gray-900">{title}</p>
       </div>
     </div>
   );
@@ -26,16 +40,31 @@ function AssetSpec({
 export function AssetChips({
   tokenSymbol,
   networkLabel,
-  stacked = false,
+  flush = false,
 }: {
   tokenSymbol: string;
   networkLabel: string;
-  stacked?: boolean;
+  /** Specs without card padding or a divider — used in the receive panel. */
+  flush?: boolean;
 }) {
   return (
-    <div className={stacked ? "flex flex-col gap-3" : "grid grid-cols-2 divide-x divide-gray-100"}>
-      <AssetSpec label="Token" iconSrc={usdcIcon} title={tokenSymbol} padded={!stacked} />
-      <AssetSpec label="Network" iconSrc={baseIcon} title={networkLabel} padded={!stacked} />
+    <div
+      className={flush ? "flex flex-col gap-4" : "grid grid-cols-2 divide-x divide-gray-100"}
+    >
+      <AssetSpec
+        label="Token"
+        iconSrc={usdcIcon}
+        title={tokenSymbol}
+        padded={!flush}
+        large={flush}
+      />
+      <AssetSpec
+        label="Network"
+        iconSrc={baseIcon}
+        title={networkLabel}
+        padded={!flush}
+        large={flush}
+      />
     </div>
   );
 }

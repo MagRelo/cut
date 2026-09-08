@@ -80,22 +80,25 @@ export function WalletPage() {
 
         <div>
           <div className="space-y-4 pb-6 font-display">
-            <p className="text-sm leading-relaxed text-gray-700">
-              Your account comes with a wallet that belongs to you, secured by your email. Play The
-              Cut never holds your funds, so you can add money, play in contests, or withdraw
-              anytime.
-            </p>
+            <WalletBalancePanel tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
+            <div>
+              <h2 className="font-medium text-gray-900">Secure Wallet</h2>
+              <p className="text-sm leading-relaxed text-gray-700">
+                Your account comes with a wallet that belongs to you, secured with your email. Play
+                The Cut never holds your funds, so you can add money, play in contests, or withdraw
+                anytime.
+              </p>
+            </div>
             {showTestnetWarning ? null : (
               <div>
-                <h2 className="font-medium text-gray-900">Play with {tokenSymbol}</h2>
+                <h2 className="font-medium text-gray-900">Powered by {tokenSymbol}</h2>
                 <p className="text-sm leading-relaxed text-gray-700">
-                  Play The Cut uses {tokenSymbol} to power its contests. Buy {tokenSymbol} through
-                  an app such as Coinbase, Kraken, or Robinhood, then send it to this wallet on the
-                  Base network.
+                  Play The Cut uses {tokenSymbol} as the currency for contests. Buy {tokenSymbol}{" "}
+                  through an app such as Coinbase, Kraken, or Robinhood, then send it to your
+                  account wallet.
                 </p>
               </div>
             )}
-            <WalletBalancePanel tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
           </div>
 
           <div className="rounded-sm border border-gray-200">
@@ -104,12 +107,12 @@ export function WalletPage() {
                 <Tab
                   className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
                 >
-                  Receive / Deposit
+                  Receive
                 </Tab>
                 <Tab
                   className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
                 >
-                  Send / Withdraw
+                  Send
                 </Tab>
               </TabList>
               <div className="px-4 py-4">

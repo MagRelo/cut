@@ -123,7 +123,7 @@ export function CopyButton({
 
   const variantClass =
     variant === "cta"
-      ? `inline-flex w-full min-h-11 items-center justify-center gap-1.5 border border-blue-500 px-4 text-white sm:w-auto ${
+      ? `inline-flex w-full min-h-11 items-center justify-center gap-1.5 border border-blue-500 px-4 text-white ${
           copied ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"
         }`
       : `shrink-0 px-3 py-1 text-white ${copied ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"}`;

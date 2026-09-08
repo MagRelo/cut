@@ -6,6 +6,7 @@ import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../../config/targ
 import { BLOCKCHAIN_NETWORK } from "../../../lib/legalPlaceholders";
 import { AssetChips } from "./AssetChips";
 import { WalletAddressCopy } from "./WalletAddressCopy";
+import { WalletSpecPanel } from "./WalletSpecPanel";
 
 export const Receive = () => {
   const chainId = useChainId();
@@ -21,23 +22,28 @@ export const Receive = () => {
 
   return (
     <div className="space-y-3 font-display">
-      <div>
-        {showCexOnramp ? (
-          <p className="text-sm leading-relaxed text-gray-700">
-            Send {tokenSymbol} on {networkLabel} to this wallet address.
-          </p>
-        ) : (
-          <p className="text-sm leading-relaxed text-gray-700">
-            Balances are funded player-to-player. Share your funding link with someone who already
-            has {tokenSymbol} and ask them to send you some.
-          </p>
-        )}
-      </div>
+      {showCexOnramp ? null : (
+        <p className="text-sm leading-relaxed text-gray-700">
+          Balances are funded player-to-player. Share your funding link with someone who already has{" "}
+          {tokenSymbol} and ask them to send you some.
+        </p>
+      )}
 
-      <div className="flex flex-col gap-3">
-        <AssetChips tokenSymbol={tokenSymbol} networkLabel={networkLabel} stacked />
-        {walletAddress ? <WalletAddressCopy address={walletAddress} /> : null}
-      </div>
+      <WalletSpecPanel
+        headingId="deposit-match-heading"
+        heading={`Account Wallet Details`}
+        description={`Only send ${tokenSymbol} on the Base network to this address.`}
+      >
+        <div className="px-4 py-3">
+          <AssetChips tokenSymbol={tokenSymbol} networkLabel={networkLabel} flush />
+        </div>
+
+        {walletAddress ? (
+          <div className="px-4 py-3">
+            <WalletAddressCopy address={walletAddress} />
+          </div>
+        ) : null}
+      </WalletSpecPanel>
     </div>
   );
 };
