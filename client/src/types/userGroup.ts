@@ -63,6 +63,11 @@ export interface UserGroupMemberResponse {
   joinedAt: Date;
   /** Present for league admins only (Settings tab funding). */
   walletAddress?: string | null;
+  /**
+   * Present for league admins when this member is in the viewer's invite tree
+   * (depth 1–10). Same overlay as contest lineup lists.
+   */
+  referralStake?: { depth: number } | null;
 }
 
 // Import these types from their respective files

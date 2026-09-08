@@ -47,6 +47,8 @@ type UserGroupDetailRecord = {
 export type FormatUserGroupDetailOptions = {
   memberWalletByUserId?: Map<string, string | null>;
   inviteReferralCode?: string | null;
+  /** Viewer-relative invite-tree depths (admin member list). */
+  referralDepthByUserId?: Map<string, number>;
 };
 
 export function formatUserGroupDetailResponse(
@@ -68,16 +70,20 @@ export function formatUserGroupDetailResponse(
     contestCount: userGroup._count.contests,
     currentUserRole: currentUserMembership?.role ?? null,
     isMember: true,
-    members: userGroup.members.map((member) => ({
-      id: member.id,
-      userId: member.userId,
-      user: member.user,
-      role: member.role,
-      joinedAt: member.joinedAt,
-      ...(isAdmin && memberWalletByUserId
-        ? { walletAddress: memberWalletByUserId.get(member.userId) ?? null }
-        : {}),
-    })),
+    members: userGroup.members.map((member) => {
+      const depth = isAdmin ? options?.referralDepthByUserId?.get(member.userId) : undefined;
+      return {
+        id: member.id,
+        userId: member.userId,
+        user: member.user,
+        role: member.role,
+        joinedAt: member.joinedAt,
+        ...(isAdmin && memberWalletByUserId
+          ? { walletAddress: memberWalletByUserId.get(member.userId) ?? null }
+          : {}),
+        ...(depth != null ? { referralStake: { depth } } : {}),
+      };
+    }),
     ...(userGroup.inviteCode
       ? {
           inviteUrl: buildLeagueInviteUrl(userGroup.inviteCode, options?.inviteReferralCode),

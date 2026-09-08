@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { referralStakeLabel } from "./referralStake";
+import { inviteNetworkLabel, referralStakeLabel } from "./referralStake";
+
+describe("inviteNetworkLabel", () => {
+  it("names a direct invite vs nested network depth", () => {
+    expect(inviteNetworkLabel(1)).toBe("You invited this player.");
+    expect(inviteNetworkLabel(3)).toBe("In your invite network (level 3).");
+  });
+});
 
 describe("referralStakeLabel", () => {
   it("explains a direct invite vs nested network depth", () => {

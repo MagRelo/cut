@@ -23,6 +23,7 @@ import { pickWalletPublicKeyForChain } from "../utils/pickWalletForChain.js";
 import { formatContestResponse } from "../utils/formatContestResponse.js";
 import { eventSummaryForContest } from "../utils/contestEventSummary.js";
 import { settledPotForContestRow } from "../utils/settledPot.js";
+import { referralStakeForViewer } from "../services/referral/referralStakeForViewer.js";
 
 const userGroupRouter = new Hono();
 
@@ -167,18 +168,20 @@ userGroupRouter.get("/:id", requireAuth, requireUserGroupMember, async (c) => {
       (m) => m.userId === user.userId && m.role === "ADMIN",
     );
     const chainId = getRequestChainId(c);
+    const memberIds = userGroup.members.map((m) => m.userId);
     const memberWalletByUserId =
-      isAdmin && chainId !== null
-        ? await getMemberWalletByUserId(
-            userGroup.members.map((m) => m.userId),
-            chainId,
-          )
-        : undefined;
+      isAdmin && chainId !== null ? await getMemberWalletByUserId(memberIds, chainId) : undefined;
+    const referralDepthByUserId = isAdmin
+      ? await referralStakeForViewer(user.userId, memberIds)
+      : undefined;
 
     return c.json(
       formatUserGroupDetailResponse(userGroup, user.userId, {
         inviteReferralCode: await resolveInviteReferralCode(userGroup.inviteReferrerAddress),
         ...(memberWalletByUserId ? { memberWalletByUserId } : {}),
+        ...(referralDepthByUserId && referralDepthByUserId.size > 0
+          ? { referralDepthByUserId }
+          : {}),
       }),
     );
   } catch (error) {

@@ -6,6 +6,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { Modal } from "../common/Modal";
+import { ReferralStakeIcon } from "../contest/ReferralStakeIcon";
+import { inviteNetworkLabel } from "../../lib/referralStake";
 import { buildFundSendUrl } from "../../lib/fundLinks";
 import {
   walletSpecCtaClassName,
@@ -217,6 +219,9 @@ export const UserGroupMemberManagement = ({
           const isLastAdmin = member.role === "ADMIN" && adminCount === 1;
           const canRemove = !isLastAdmin;
           const showSendFunds = Boolean(member.walletAddress) && !isYou;
+          const referralDepth = member.referralStake?.depth;
+          const showReferralStake = referralDepth != null && referralDepth >= 1;
+          const networkLabel = showReferralStake ? inviteNetworkLabel(referralDepth) : null;
 
           return (
             <li key={member.id} className="flex items-center justify-between gap-3 py-3">
@@ -225,10 +230,20 @@ export const UserGroupMemberManagement = ({
                   <span className="font-medium text-gray-900">{member.user.name}</span>
                   {isYou ? <span className={chipClassName}>You</span> : null}
                   {member.role === "ADMIN" ? <span className={chipClassName}>Admin</span> : null}
+                  {showReferralStake ? (
+                    <ReferralStakeIcon
+                      depth={referralDepth}
+                      className="h-4 w-4"
+                      label={networkLabel ?? undefined}
+                    />
+                  ) : null}
                 </div>
                 <p className="mt-0.5 text-xs text-gray-600">
                   Joined {new Date(member.joinedAt).toLocaleDateString()}
                 </p>
+                {networkLabel ? (
+                  <p className="mt-0.5 text-xs text-emerald-800">{networkLabel}</p>
+                ) : null}
                 {canRemove ? (
                   <button
                     type="button"

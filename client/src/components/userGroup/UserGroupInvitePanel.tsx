@@ -7,7 +7,6 @@ import { ShareInviteButton } from "../common/ShareInviteButton";
 import { useGenerateLeagueInvite } from "../../hooks/useUserGroupMutations";
 import { BRAND_PROSE } from "../../lib/brand";
 import { walletSpecLabelClassName } from "../account/wallet/AssetChips";
-import { walletAddressWellClassName } from "../account/wallet/WalletAddressCopy";
 import {
   walletSpecCtaClassName,
   walletSpecSecondaryClassName,
@@ -71,7 +70,7 @@ export const UserGroupInvitePanel = ({
             <div className="px-4 pt-4">
               <p className={walletSpecLabelClassName}>Invite link</p>
               <p
-                className={`mt-1.5 break-all ${walletAddressWellClassName}`}
+                className="mt-1.5 select-all break-all rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-relaxed text-gray-600"
                 aria-label={activeInviteUrl}
               >
                 {activeInviteUrl}
@@ -82,11 +81,11 @@ export const UserGroupInvitePanel = ({
                 url={activeInviteUrl}
                 shareText={`Join my league on ${BRAND_PROSE}`}
                 ariaLabel="Share league invite"
-                label="Share invite"
+                label="Share Invite Link"
                 variant="cta"
                 className="min-h-11 w-full"
               />
-              <CopyButton text={activeInviteUrl} variant="secondary" idleLabel="Copy link" />
+              <CopyButton text={activeInviteUrl} variant="secondary" idleLabel="Copy Invite Link" />
               <button
                 type="button"
                 onClick={() => setShowRotateConfirm(true)}
