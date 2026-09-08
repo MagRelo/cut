@@ -155,23 +155,8 @@ export const LeagueCreateContestForm = ({
       {!isFreeContest ? (
         <>
           <DiscreteValueSlider
-            id="league-primary-subsidy"
-            label="Winner Pool Subsidy"
-            description="Share of each entry fee sent to the Winner Pool—jumpstarts the pool so predictions are more fun from the start"
-            valueIndex={primarySubsidyIndex}
-            valueCount={LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length}
-            displayValue={formatPrimarySubsidyPercent(primarySubsidyPercent)}
-            minLabel={formatPrimarySubsidyPercent(LEAGUE_PRIMARY_SUBSIDY_PERCENTS[0])}
-            maxLabel={formatPrimarySubsidyPercent(
-              LEAGUE_PRIMARY_SUBSIDY_PERCENTS[LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length - 1],
-            )}
-            onChange={setPrimarySubsidyIndex}
-            disabled={!canCreateContest || isProcessing}
-          />
-
-          <DiscreteValueSlider
             id="league-invite-rewards"
-            label="Invite Rewards"
+            label="Invite Rewards %"
             description={
               <>
                 Share of contest pool paid to the invite network.{" "}
@@ -188,6 +173,21 @@ export const LeagueCreateContestForm = ({
               LEAGUE_INVITE_REWARD_PERCENTS[LEAGUE_INVITE_REWARD_PERCENTS.length - 1],
             )}
             onChange={setInviteRewardIndex}
+            disabled={!canCreateContest || isProcessing}
+          />
+
+          <DiscreteValueSlider
+            id="league-primary-subsidy"
+            label="Winner Pool Subsidy %"
+            description="Share of each entry fee sent to the Winner Pool—jumpstarts the pool so predictions are more fun from the start"
+            valueIndex={primarySubsidyIndex}
+            valueCount={LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length}
+            displayValue={formatPrimarySubsidyPercent(primarySubsidyPercent)}
+            minLabel={formatPrimarySubsidyPercent(LEAGUE_PRIMARY_SUBSIDY_PERCENTS[0])}
+            maxLabel={formatPrimarySubsidyPercent(
+              LEAGUE_PRIMARY_SUBSIDY_PERCENTS[LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length - 1],
+            )}
+            onChange={setPrimarySubsidyIndex}
             disabled={!canCreateContest || isProcessing}
           />
         </>
