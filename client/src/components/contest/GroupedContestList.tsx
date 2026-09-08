@@ -14,6 +14,7 @@ interface GroupedContestListProps {
   loading: boolean;
   error: string | null;
   variant?: ContestListItemVariant;
+  createContestToForEvent?: (event: ContestDirectoryEvent) => string | undefined;
 }
 
 function eventSublabel(event: ContestDirectoryEvent): string | null {
@@ -33,9 +34,11 @@ function directoryHeroOverlayClass(variant: ContestListItemVariant): string {
 function GroupedContestSection({
   group,
   variant = "default",
+  createContestTo,
 }: {
   group: EventContestGroup;
   variant?: ContestListItemVariant;
+  createContestTo?: string;
 }) {
   const plugin = useSportUIPlugin(group.event.sportId);
   const eventShell = eventShellFromDirectoryEvent(group.event);
@@ -76,6 +79,7 @@ function GroupedContestSection({
                   eventShell={eventShell}
                   variant={variant}
                   nest="hero"
+                  createContestTo={createContestTo}
                 />
               </div>
             </div>
@@ -106,6 +110,7 @@ function GroupedContestSection({
           error={null}
           eventShell={eventShell}
           variant={variant}
+          createContestTo={createContestTo}
         />
       </div>
     </section>
@@ -117,6 +122,7 @@ export const GroupedContestList = ({
   loading,
   error,
   variant = "default",
+  createContestToForEvent,
 }: GroupedContestListProps) => {
   const { user } = useAuth();
   const showConnectHint = !user && !loading && !error;
@@ -128,7 +134,12 @@ export const GroupedContestList = ({
     listContent = (
       <div className="space-y-5">
         {groups.map((group) => (
-          <GroupedContestSection key={group.event.id} group={group} variant={variant} />
+          <GroupedContestSection
+            key={group.event.id}
+            group={group}
+            variant={variant}
+            createContestTo={createContestToForEvent?.(group.event)}
+          />
         ))}
       </div>
     );

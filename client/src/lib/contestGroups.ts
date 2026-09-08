@@ -1,10 +1,12 @@
 import type {
   Contest,
   ContestDirectoryEvent,
+  ContestDirectoryResponse,
   ContestEventSummary,
   EventContestGroup,
   LeagueContest,
 } from "../types/contest";
+import { eventStatusFromMetadata } from "./eventMetadata";
 
 export function sortContestsByEntryFee(contests: Contest[]): Contest[] {
   return [...contests].sort((a, b) => {
@@ -98,4 +100,68 @@ export function flattenContestGroups(groups: EventContestGroup[]): LeagueContest
       },
     })),
   );
+}
+
+function bucketDirectoryEvent(event: ContestDirectoryEvent): keyof ContestDirectoryResponse {
+  const status = eventStatusFromMetadata(event.metadata);
+  if (status === "LIVE") return "live";
+  if (status === "COMPLETE") return "past";
+  return "upcoming";
+}
+
+/**
+ * League contest tab: directory event panels, with that league's contests overlaid.
+ * Upcoming events stay visible when empty so admins can create a contest there.
+ */
+export function overlayLeagueContestsOnDirectory(
+  directory: ContestDirectoryResponse | undefined,
+  leagueContests: LeagueContest[],
+): ContestDirectoryResponse {
+  const leftoverByEventId = new Map(
+    groupContestsByEvent(leagueContests).map((group) => [group.event.id, group]),
+  );
+
+  const overlaySection = (
+    groups: EventContestGroup[],
+    keepEmpty: boolean,
+  ): EventContestGroup[] => {
+    const result: EventContestGroup[] = [];
+    for (const group of groups) {
+      const league = leftoverByEventId.get(group.event.id);
+      leftoverByEventId.delete(group.event.id);
+      const contests = league?.contests ?? [];
+      if (!keepEmpty && contests.length === 0) continue;
+      result.push({ event: group.event, contests });
+    }
+    return result;
+  };
+
+  const upcoming = overlaySection(directory?.upcoming ?? [], true);
+  const live = overlaySection(directory?.live ?? [], false);
+  const past = overlaySection(directory?.past ?? [], false);
+
+  for (const leftover of leftoverByEventId.values()) {
+    const bucket = bucketDirectoryEvent(leftover.event);
+    if (bucket === "live") live.push(leftover);
+    else if (bucket === "past") past.push(leftover);
+    else upcoming.push(leftover);
+  }
+
+  return { upcoming, live, past };
+}
+
+export function findDirectoryEvent(
+  directory: ContestDirectoryResponse | undefined,
+  eventId: string,
+): ContestDirectoryEvent | null {
+  if (!directory) return null;
+  for (const section of ["upcoming", "live", "past"] as const) {
+    const match = directory[section].find((group) => group.event.id === eventId);
+    if (match) return match.event;
+  }
+  return null;
+}
+
+export function leagueCreateContestPath(leagueId: string, eventId: string): string {
+  return `/leagues/${leagueId}/contests/create?eventId=${encodeURIComponent(eventId)}`;
 }

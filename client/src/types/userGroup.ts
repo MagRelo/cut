@@ -61,7 +61,7 @@ export interface UserGroupMemberResponse {
   };
   role: UserGroupRole;
   joinedAt: Date;
-  /** Present for league admins only (Manage tab funding). */
+  /** Present for league admins only (Settings tab funding). */
   walletAddress?: string | null;
 }
 

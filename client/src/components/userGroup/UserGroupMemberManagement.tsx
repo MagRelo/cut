@@ -2,10 +2,15 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { type UserGroupMemberResponse, type AddUserGroupMemberInput } from "../../types/userGroup";
 import { useAddUserGroupMember, useRemoveUserGroupMember } from "../../hooks/useUserGroupMutations";
+import { useAuth } from "../../contexts/AuthContext";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { Modal } from "../common/Modal";
 import { buildFundSendUrl } from "../../lib/fundLinks";
+import {
+  walletSpecCtaClassName,
+  walletSpecSecondaryClassName,
+} from "../account/wallet/WalletSpecPanel";
 
 interface UserGroupMemberManagementProps {
   userGroupId: string;
@@ -14,12 +19,26 @@ interface UserGroupMemberManagementProps {
   onMemberRemoved?: () => void;
 }
 
+const fieldClassName =
+  "min-h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100";
+
+const memberActionClassName =
+  "inline-flex min-h-11 items-center justify-center rounded border border-gray-300 px-3 font-display text-sm font-medium text-gray-700 hover:bg-gray-50";
+
+const memberDangerClassName =
+  "inline-flex min-h-11 items-center justify-center rounded px-3 font-display text-sm font-medium text-red-700 hover:bg-red-50";
+
+const chipClassName =
+  "rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-gray-700";
+
 export const UserGroupMemberManagement = ({
   userGroupId,
   members,
   onMemberAdded,
   onMemberRemoved,
 }: UserGroupMemberManagementProps) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id;
   const [showAddModal, setShowAddModal] = useState(false);
   const [walletAddress, setWalletAddress] = useState("");
   const [role, setRole] = useState<"MEMBER" | "ADMIN">("MEMBER");
@@ -27,9 +46,16 @@ export const UserGroupMemberManagement = ({
 
   const addMemberMutation = useAddUserGroupMember();
   const removeMemberMutation = useRemoveUserGroupMember();
+  const adminCount = members.filter((member) => member.role === "ADMIN").length;
 
   const isValidWalletAddress = (address: string): boolean => {
     return /^0x[a-fA-F0-9]{40}$/.test(address);
+  };
+
+  const closeAddModal = () => {
+    setShowAddModal(false);
+    setWalletAddress("");
+    setRole("MEMBER");
   };
 
   const handleAddMember = async (e: React.FormEvent) => {
@@ -51,12 +77,10 @@ export const UserGroupMemberManagement = ({
       { id: userGroupId, data },
       {
         onSuccess: () => {
-          setWalletAddress("");
-          setRole("MEMBER");
-          setShowAddModal(false);
+          closeAddModal();
           onMemberAdded?.();
         },
-      }
+      },
     );
   };
 
@@ -68,7 +92,7 @@ export const UserGroupMemberManagement = ({
           setRemoveConfirmUserId(null);
           onMemberRemoved?.();
         },
-      }
+      },
     );
   };
 
@@ -84,26 +108,25 @@ export const UserGroupMemberManagement = ({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">Members</h3>
+    <div className="space-y-3 font-display">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="font-medium text-gray-900">
+          Members{" "}
+          <span className="font-normal tabular-nums text-gray-600">({members.length})</span>
+        </h3>
         <button
+          type="button"
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+          className="inline-flex min-h-11 shrink-0 items-center rounded border border-gray-300 px-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
-          Add Member
+          Add by wallet
         </button>
       </div>
 
-      {/* Add Member Modal */}
       <Modal
         isOpen={showAddModal}
-        onClose={() => {
-          setShowAddModal(false);
-          setWalletAddress("");
-          setRole("MEMBER");
-        }}
-        title="Add Member"
+        onClose={closeAddModal}
+        title="Add by wallet"
         maxWidth="md"
       >
         <form onSubmit={handleAddMember} className="space-y-4 p-4">
@@ -115,9 +138,14 @@ export const UserGroupMemberManagement = ({
             />
           )}
 
-          <div className="space-y-2">
+          <p className="text-sm leading-relaxed text-gray-700">
+            Use this only if someone already has a Play The Cut wallet. The invite link is the usual
+            way to add players.
+          </p>
+
+          <div>
             <label htmlFor="walletAddress" className="block text-sm font-medium text-gray-700">
-              Wallet Address <span className="text-red-500">*</span>
+              Wallet address <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -125,31 +153,27 @@ export const UserGroupMemberManagement = ({
               value={walletAddress}
               onChange={(e) => setWalletAddress(e.target.value)}
               required
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm ${
+              className={`${fieldClassName} mt-1.5 font-mono ${
                 walletAddress.trim() && !isValidWalletAddress(walletAddress.trim())
                   ? "border-red-300 bg-red-50"
-                  : "border-gray-300"
+                  : ""
               }`}
               placeholder="0x..."
               disabled={addMemberMutation.isPending}
             />
             {walletAddress.trim() && !isValidWalletAddress(walletAddress.trim()) && (
-              <p className="text-xs text-red-600">
-                Please enter a valid Ethereum wallet address (0x followed by 40 hex characters)
+              <p className="mt-1 text-xs text-red-600">
+                Enter a valid wallet address (0x followed by 40 hex characters).
               </p>
             )}
-            {walletAddress.trim() && isValidWalletAddress(walletAddress.trim()) && (
-              <p className="text-xs text-green-600">Valid wallet address</p>
-            )}
-            {!walletAddress.trim() && (
-              <p className="text-xs text-gray-500">
-                Enter the wallet address (public address) of the person you want to add to this
-                league
+            {!walletAddress.trim() ? (
+              <p className="mt-1 text-xs text-gray-600">
+                Public address of the person you want to add.
               </p>
-            )}
+            ) : null}
           </div>
 
-          <div className="space-y-2">
+          <div>
             <label htmlFor="role" className="block text-sm font-medium text-gray-700">
               Role
             </label>
@@ -157,7 +181,7 @@ export const UserGroupMemberManagement = ({
               id="role"
               value={role}
               onChange={(e) => setRole(e.target.value as "MEMBER" | "ADMIN")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className={`${fieldClassName} mt-1.5`}
               disabled={addMemberMutation.isPending}
             >
               <option value="MEMBER">Member</option>
@@ -165,19 +189,7 @@ export const UserGroupMemberManagement = ({
             </select>
           </div>
 
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setShowAddModal(false);
-                setWalletAddress("");
-                setRole("MEMBER");
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-              disabled={addMemberMutation.isPending}
-            >
-              Cancel
-            </button>
+          <div className="flex flex-col gap-2">
             <button
               type="submit"
               disabled={
@@ -185,75 +197,95 @@ export const UserGroupMemberManagement = ({
                 !walletAddress.trim() ||
                 !isValidWalletAddress(walletAddress.trim())
               }
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              className={walletSpecCtaClassName}
             >
-              {addMemberMutation.isPending && <LoadingSpinnerSmall />}
-              Add Member
+              {addMemberMutation.isPending ? <LoadingSpinnerSmall /> : null}
+              Add member
+            </button>
+            <button
+              type="button"
+              onClick={closeAddModal}
+              className={walletSpecSecondaryClassName}
+              disabled={addMemberMutation.isPending}
+            >
+              Cancel
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* Members List */}
-      <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
-        {members.map((member) => (
-          <li key={member.id} className="px-3 py-3">
-            <div className="font-medium text-gray-900">{member.user.name}</div>
-            <div className="mt-0.5 text-xs text-gray-400">
-              Joined {new Date(member.joinedAt).toLocaleDateString()}
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-              {member.walletAddress ? (
-                <Link
-                  to={buildFundSendUrl(member.walletAddress)}
-                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  Send funds
-                </Link>
+      <ul className="divide-y divide-gray-100">
+        {members.map((member) => {
+          const isYou = member.userId === currentUserId;
+          const isLastAdmin = member.role === "ADMIN" && adminCount === 1;
+          const canRemove = !isLastAdmin;
+          const showSendFunds = Boolean(member.walletAddress) && !isYou;
+
+          return (
+            <li key={member.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-medium text-gray-900">{member.user.name}</span>
+                  {isYou ? <span className={chipClassName}>You</span> : null}
+                  {member.role === "ADMIN" ? <span className={chipClassName}>Admin</span> : null}
+                </div>
+                <p className="mt-0.5 text-xs text-gray-600">
+                  Joined {new Date(member.joinedAt).toLocaleDateString()}
+                </p>
+              </div>
+              {showSendFunds || canRemove ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  {showSendFunds && member.walletAddress ? (
+                    <Link to={buildFundSendUrl(member.walletAddress)} className={memberActionClassName}>
+                      Send funds
+                    </Link>
+                  ) : null}
+                  {canRemove ? (
+                    <button
+                      type="button"
+                      onClick={() => setRemoveConfirmUserId(member.userId)}
+                      className={memberDangerClassName}
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
-              <button
-                type="button"
-                onClick={() => setRemoveConfirmUserId(member.userId)}
-                className="font-medium text-red-600 hover:text-red-800 hover:underline"
-              >
-                Remove
-              </button>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
 
-      {/* Remove Confirmation Modal */}
       <Modal
         isOpen={removeConfirmUserId !== null}
         onClose={() => setRemoveConfirmUserId(null)}
-        title="Remove Member"
+        title="Remove member"
         maxWidth="md"
       >
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 p-4 font-display">
           {removeMemberMutation.error && <ErrorMessage message={getRemoveError()} />}
 
-          <p className="text-gray-700">
-            Are you sure you want to remove this member from the league? This action cannot be
-            undone.
+          <p className="text-sm leading-relaxed text-gray-700">
+            Remove this member from the league? They will need a new invite to join again.
           </p>
 
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => removeConfirmUserId && handleRemoveMember(removeConfirmUserId)}
+              disabled={removeMemberMutation.isPending}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded border border-red-600 bg-red-600 px-4 font-display text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            >
+              {removeMemberMutation.isPending ? <LoadingSpinnerSmall /> : null}
+              Remove member
+            </button>
             <button
               type="button"
               onClick={() => setRemoveConfirmUserId(null)}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+              className={walletSpecSecondaryClassName}
               disabled={removeMemberMutation.isPending}
             >
               Cancel
-            </button>
-            <button
-              onClick={() => removeConfirmUserId && handleRemoveMember(removeConfirmUserId)}
-              disabled={removeMemberMutation.isPending}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-            >
-              {removeMemberMutation.isPending && <LoadingSpinnerSmall />}
-              Remove Member
             </button>
           </div>
         </div>

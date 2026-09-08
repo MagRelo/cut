@@ -1,36 +1,40 @@
+import { useState } from "react";
 import { CopyButton } from "../common/CopyToClipboard";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { Modal } from "../common/Modal";
 import { ShareInviteButton } from "../common/ShareInviteButton";
 import { useGenerateLeagueInvite } from "../../hooks/useUserGroupMutations";
 import { BRAND_PROSE } from "../../lib/brand";
-
-const inviteLinkRowGridClass = "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4";
+import { walletSpecLabelClassName } from "../account/wallet/AssetChips";
+import { walletAddressWellClassName } from "../account/wallet/WalletAddressCopy";
+import {
+  WalletSpecPanel,
+  walletSpecCtaClassName,
+  walletSpecSecondaryClassName,
+} from "../account/wallet/WalletSpecPanel";
 
 interface UserGroupInvitePanelProps {
   userGroupId: string;
   inviteCode?: string | null;
   inviteUrl?: string | null;
   onInviteUpdated?: () => void;
-  /** Share: copy link only. Manage: generate/rotate link. */
-  variant?: "share" | "manage";
 }
 
 export const UserGroupInvitePanel = ({
   userGroupId,
-  inviteCode,
   inviteUrl,
   onInviteUpdated,
-  variant = "manage",
 }: UserGroupInvitePanelProps) => {
   const generateInviteMutation = useGenerateLeagueInvite();
+  const [showRotateConfirm, setShowRotateConfirm] = useState(false);
 
   const activeInviteUrl = generateInviteMutation.data?.inviteUrl ?? inviteUrl ?? null;
-  const activeInviteCode = generateInviteMutation.data?.inviteCode ?? inviteCode ?? null;
 
   const handleGenerate = () => {
     generateInviteMutation.mutate(userGroupId, {
       onSuccess: () => {
+        setShowRotateConfirm(false);
         onInviteUpdated?.();
       },
     });
@@ -39,68 +43,103 @@ export const UserGroupInvitePanel = ({
   const errorMessage =
     generateInviteMutation.error instanceof Error ? generateInviteMutation.error.message : null;
 
-  const isManageVariant = variant === "manage";
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 font-display">
+      <p className="text-sm leading-relaxed text-gray-700">
+        One link adds someone to this league and sets you as their referrer.
+      </p>
       {errorMessage ? <ErrorMessage message={errorMessage} /> : null}
 
-      {activeInviteUrl ? (
-        <div className="space-y-3">
-          {isManageVariant ? (
-            <div className={inviteLinkRowGridClass}>
-              <span className="shrink-0 font-display text-sm font-medium text-gray-700">
-                Referral link
-              </span>
-              <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-                <span
-                  className="min-w-0 max-w-full truncate text-right font-display text-xs text-gray-800"
-                  title={activeInviteUrl}
-                >
-                  {activeInviteUrl}
+      <WalletSpecPanel
+        headingId="league-invite-heading"
+        heading="League invite"
+        description={
+          activeInviteUrl
+            ? "Share by text or email, or copy the URL."
+            : "Generate a link, then share it with anyone you want in the league."
+        }
+      >
+        {activeInviteUrl ? (
+          <>
+            <div className="px-4 py-3">
+              <p className={walletSpecLabelClassName}>Invite link</p>
+              <p
+                className={`mt-1.5 break-all ${walletAddressWellClassName}`}
+                aria-label={activeInviteUrl}
+              >
+                {activeInviteUrl}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 px-4 py-3">
+              <ShareInviteButton
+                url={activeInviteUrl}
+                shareText={`Join my league on ${BRAND_PROSE}`}
+                ariaLabel="Share league invite"
+                label="Share invite"
+                variant="cta"
+                className="w-full min-h-11"
+              />
+              <CopyButton text={activeInviteUrl} variant="secondary" idleLabel="Copy link" />
+              <button
+                type="button"
+                onClick={() => setShowRotateConfirm(true)}
+                disabled={generateInviteMutation.isPending}
+                className="flex min-h-11 w-full items-center justify-center text-center text-sm text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                Old links still out there?{" "}
+                <span className="ml-1 font-medium text-gray-800 underline decoration-gray-300 underline-offset-2">
+                  Rotate this one
                 </span>
-                <CopyButton text={activeInviteUrl} />
-              </div>
+              </button>
             </div>
-          ) : (
-            <div className={inviteLinkRowGridClass}>
-              <span className="shrink-0 font-display text-sm font-medium text-gray-700">
-                League Referral Link
-              </span>
-              <div className="flex min-w-0 flex-nowrap items-center justify-end gap-3">
-                <ShareInviteButton
-                  url={activeInviteUrl}
-                  shareText={`Join my league on ${BRAND_PROSE}`}
-                  ariaLabel="Share league referral link"
-                />
-              </div>
-            </div>
-          )}
-          {isManageVariant && activeInviteCode ? (
-            <p className="text-xs text-gray-500">Code: {activeInviteCode}</p>
-          ) : null}
-        </div>
-      ) : (
-        <p className="text-sm text-gray-600">
-          {isManageVariant
-            ? "No referral link yet. Generate one to share."
-            : "No referral link yet. Ask a league admin to generate one on the Manage tab."}
-        </p>
-      )}
+          </>
+        ) : (
+          <div className="flex flex-col gap-2 px-4 py-3">
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={generateInviteMutation.isPending}
+              className={walletSpecCtaClassName}
+            >
+              {generateInviteMutation.isPending ? <LoadingSpinnerSmall /> : null}
+              Generate invite
+            </button>
+          </div>
+        )}
+      </WalletSpecPanel>
 
-      {isManageVariant ? (
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={generateInviteMutation.isPending}
-            className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-          >
-            {generateInviteMutation.isPending && <LoadingSpinnerSmall />}
-            {activeInviteUrl ? "Rotate referral link" : "Generate referral link"}
-          </button>
+      <Modal
+        isOpen={showRotateConfirm}
+        onClose={() => setShowRotateConfirm(false)}
+        title="Rotate invite link"
+        maxWidth="md"
+      >
+        <div className="space-y-4 p-4 font-display">
+          <p className="text-sm leading-relaxed text-gray-700">
+            This creates a new invite link. The current link will stop working, so anyone who still
+            has the old one will not be able to join.
+          </p>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={generateInviteMutation.isPending}
+              className={walletSpecCtaClassName}
+            >
+              {generateInviteMutation.isPending ? <LoadingSpinnerSmall /> : null}
+              Rotate link
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowRotateConfirm(false)}
+              disabled={generateInviteMutation.isPending}
+              className={walletSpecSecondaryClassName}
+            >
+              Keep current link
+            </button>
+          </div>
         </div>
-      ) : null}
+      </Modal>
     </div>
   );
 };

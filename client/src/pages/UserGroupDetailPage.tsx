@@ -6,9 +6,12 @@ import { PageSection } from "../components/layout/PageSection";
 import { UserGroupSettings } from "../components/userGroup/UserGroupSettings";
 import { UserGroupMemberManagement } from "../components/userGroup/UserGroupMemberManagement";
 import { UserGroupInvitePanel } from "../components/userGroup/UserGroupInvitePanel";
-import { LeagueCreateContestForm } from "../components/userGroup/LeagueCreateContestForm";
-import { GroupedContestList } from "../components/contest/GroupedContestList";
-import { groupContestsByEvent } from "../lib/contestGroups";
+import { ContestDirectorySections } from "../components/contest/ContestDirectorySections";
+import {
+  leagueCreateContestPath,
+  overlayLeagueContestsOnDirectory,
+} from "../lib/contestGroups";
+import { useContestDirectory } from "../hooks/useContestDirectory";
 import { useUserGroupQuery, useUserGroupContestsQuery } from "../hooks/useUserGroupQuery";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
@@ -24,8 +27,9 @@ export const UserGroupDetailPage = () => {
     data: leagueContests,
     isLoading: isContestsLoading,
     error: contestsError,
-    refetch: refetchContests,
   } = useUserGroupContestsQuery(id);
+  const { data: directory, isLoading: isDirectoryLoading, error: directoryError } =
+    useContestDirectory("all");
 
   const errorMessage =
     error && isApiError(error) && error.statusCode === 404
@@ -36,9 +40,17 @@ export const UserGroupDetailPage = () => {
           ? String(error)
           : null;
 
-  const contestsErrorMessage = contestsError instanceof Error ? contestsError.message : null;
+  const contestsErrorMessage =
+    contestsError instanceof Error
+      ? contestsError.message
+      : directoryError instanceof Error
+        ? directoryError.message
+        : null;
 
-  const contestGroups = useMemo(() => groupContestsByEvent(leagueContests ?? []), [leagueContests]);
+  const directorySections = useMemo(
+    () => overlayLeagueContestsOnDirectory(directory, leagueContests ?? []),
+    [directory, leagueContests],
+  );
 
   const isAdmin = userGroup?.currentUserRole === "ADMIN";
 
@@ -58,20 +70,35 @@ export const UserGroupDetailPage = () => {
     return <ErrorMessage message={errorMessage || "Failed to load league"} />;
   }
 
-  const contestContent = (
-    <div className="space-y-4">
-      <div>
-        <GroupedContestList
-          groups={contestGroups}
-          loading={isContestsLoading}
-          error={contestsErrorMessage}
-        />
-      </div>
+  const showInitialLoading = (isDirectoryLoading && !directory) || (isContestsLoading && !leagueContests);
+
+  const contestContent = showInitialLoading ? (
+    <div className="min-h-[80px] py-8 text-center">
+      <p className="mb-4 font-display font-semibold text-gray-400">Loading Events</p>
+      <LoadingSpinner />
     </div>
+  ) : (
+    <ContestDirectorySections
+      upcoming={directorySections.upcoming}
+      live={directorySections.live}
+      past={directorySections.past}
+      error={contestsErrorMessage}
+      createContestToForEvent={
+        isAdmin
+          ? (event) => leagueCreateContestPath(userGroup.id, event.id)
+          : undefined
+      }
+    />
   );
 
   const membersContent = (
-    <div className="-m-2 bg-gray-100 p-4">
+    <div className="space-y-5">
+      <UserGroupInvitePanel
+        userGroupId={userGroup.id}
+        inviteCode={userGroup.inviteCode}
+        inviteUrl={userGroup.inviteUrl}
+        onInviteUpdated={() => refetch()}
+      />
       <PageSection variant="card">
         <UserGroupMemberManagement
           userGroupId={userGroup.id}
@@ -83,43 +110,18 @@ export const UserGroupDetailPage = () => {
     </div>
   );
 
-  const manageContent = (
-    <div className="-m-2 bg-gray-100 p-4">
-      <div className="space-y-5">
-        <PageSection variant="card">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">Create contest</h3>
-          <LeagueCreateContestForm
-            userGroupId={userGroup.id}
-            onContestCreated={() => {
-              void refetch();
-              void refetchContests();
-            }}
-          />
-        </PageSection>
-
-        <PageSection variant="card">
-          <UserGroupInvitePanel
-            userGroupId={userGroup.id}
-            inviteCode={userGroup.inviteCode}
-            inviteUrl={userGroup.inviteUrl}
-            onInviteUpdated={() => refetch()}
-            variant="manage"
-          />
-        </PageSection>
-
-        <PageSection variant="card">
-          <UserGroupSettings
-            userGroupId={userGroup.id}
-            initialData={{
-              name: userGroup.name,
-              description: userGroup.description,
-            }}
-            onUpdated={() => refetch()}
-            onDeleted={handleDeleted}
-          />
-        </PageSection>
-      </div>
-    </div>
+  const settingsContent = (
+    <PageSection variant="card">
+      <UserGroupSettings
+        userGroupId={userGroup.id}
+        initialData={{
+          name: userGroup.name,
+          description: userGroup.description,
+        }}
+        onUpdated={() => refetch()}
+        onDeleted={handleDeleted}
+      />
+    </PageSection>
   );
 
   return (
@@ -145,17 +147,6 @@ export const UserGroupDetailPage = () => {
           </div>
         </header>
 
-        {userGroup.inviteUrl ? (
-          <div className="px-2 pb-4">
-            <PageSection variant="card" className="bg-gray-50">
-              <UserGroupInvitePanel
-                userGroupId={userGroup.id}
-                inviteUrl={userGroup.inviteUrl}
-                variant="share"
-              />
-            </PageSection>
-          </div>
-        ) : null}
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <div className="px-2">
             <TabList className={tabListClassName()}>
@@ -172,7 +163,7 @@ export const UserGroupDetailPage = () => {
                   <Tab
                     className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
                   >
-                    Manage
+                    Settings
                   </Tab>
                 </>
               ) : null}
@@ -183,7 +174,7 @@ export const UserGroupDetailPage = () => {
             {isAdmin ? (
               <>
                 <TabPanel className="focus:outline-none">{membersContent}</TabPanel>
-                <TabPanel className="focus:outline-none">{manageContent}</TabPanel>
+                <TabPanel className="focus:outline-none">{settingsContent}</TabPanel>
               </>
             ) : null}
           </div>

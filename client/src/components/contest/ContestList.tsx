@@ -1,4 +1,5 @@
 import type { CompetitionEventShell } from "@cut/sport-sdk";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import { type Contest } from "../../types/contest";
 import { contestLobbyPath } from "../../utils/contestRoutes";
 import { Link } from "react-router-dom";
@@ -12,6 +13,7 @@ interface ContestListProps {
   eventShell?: CompetitionEventShell;
   variant?: ContestListItemVariant;
   nest?: "default" | "hero";
+  createContestTo?: string;
 }
 
 export function ContestListConnectHint({
@@ -31,6 +33,27 @@ export function ContestListConnectHint({
   );
 }
 
+function emptySlotClassName(nest: "default" | "hero"): string {
+  return nest === "hero"
+    ? "rounded-xl border border-white/50 bg-white/95 p-4 shadow-lg shadow-black/20 backdrop-blur-md"
+    : "rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm";
+}
+
+function CreateContestSlot({ to, nest }: { to: string; nest: "default" | "hero" }) {
+  return (
+    <Link
+      to={to}
+      className={`${emptySlotClassName(nest)} flex min-h-[7.5rem] flex-col items-center justify-center gap-2 text-center transition-colors hover:border-blue-400 hover:bg-blue-50`}
+    >
+      <span className="inline-flex items-center gap-1.5 font-display text-sm font-semibold text-blue-700">
+        <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
+        Create Contest
+      </span>
+      <span className="font-display text-sm text-gray-600">No contest for this event yet.</span>
+    </Link>
+  );
+}
+
 export const ContestList = ({
   contests,
   loading,
@@ -38,6 +61,7 @@ export const ContestList = ({
   eventShell,
   variant = "default",
   nest = "default",
+  createContestTo,
 }: ContestListProps) => {
   if (loading) {
     return (
@@ -52,15 +76,12 @@ export const ContestList = ({
     return <div className="text-center font-display text-sm text-red-500">{error}</div>;
   }
 
-  const listContent =
-    contests.length === 0 ? (
-      <div
-        className={
-          nest === "hero"
-            ? "rounded-xl border border-white/50 bg-white/95 p-4 shadow-lg shadow-black/20 backdrop-blur-md"
-            : "rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm"
-        }
-      >
+  if (contests.length === 0) {
+    if (createContestTo) {
+      return <CreateContestSlot to={createContestTo} nest={nest} />;
+    }
+    return (
+      <div className={emptySlotClassName(nest)}>
         <p className="mb-1 font-display text-base font-semibold text-gray-900">
           New contests coming soon!
         </p>
@@ -68,19 +89,21 @@ export const ContestList = ({
           New contests will show up here when they open. Check back soon.
         </p>
       </div>
-    ) : (
-      <div className="grid gap-3 md:grid-cols-2">
-        {contests.map((contest) => (
-          <ContestListItem
-            key={contest.id}
-            contest={contest}
-            to={contestLobbyPath(contest)}
-            eventShell={eventShell}
-            variant={variant}
-          />
-        ))}
-      </div>
     );
+  }
 
-  return listContent;
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {contests.map((contest) => (
+        <ContestListItem
+          key={contest.id}
+          contest={contest}
+          to={contestLobbyPath(contest)}
+          eventShell={eventShell}
+          variant={variant}
+        />
+      ))}
+      {createContestTo ? <CreateContestSlot to={createContestTo} nest={nest} /> : null}
+    </div>
+  );
 };

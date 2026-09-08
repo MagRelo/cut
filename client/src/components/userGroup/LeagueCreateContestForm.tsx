@@ -1,16 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useChainId } from "wagmi";
 
 import { DiscreteValueSlider } from "../common/DiscreteValueSlider";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
-import {
-  CreateContestEventPicker,
-  useSelectedSportEvent,
-} from "../contest/CreateContestEventPicker";
 import { useAuth } from "../../contexts/AuthContext";
 import { defaultPaymentTokenSymbol } from "../../config/targetChain";
-import { useFirstEnabledSportId } from "../../hooks/useSportData";
 import {
   getCreateContestStatusMessage,
   useCreateContestSubmission,
@@ -18,6 +13,7 @@ import {
 import {
   buildContestSettings,
   computeExpiryTimestampFromTournamentEnd,
+  formatTournamentDateRange,
 } from "../../lib/contestCreation";
 import {
   formatInviteRewardPercent,
@@ -33,25 +29,27 @@ import {
 import { contestLobbyPath } from "../../utils/contestRoutes";
 import { getTargetChainIdFromEnv } from "../../config/targetChain";
 
+export interface LeagueCreateContestEvent {
+  eventId: string;
+  eventName: string;
+  startDate: string;
+  endDate: string;
+  isEditable: boolean;
+}
+
 interface LeagueCreateContestFormProps {
   userGroupId: string;
+  event: LeagueCreateContestEvent;
   onContestCreated?: () => void;
 }
 
 export const LeagueCreateContestForm = ({
   userGroupId,
+  event,
   onContestCreated,
 }: LeagueCreateContestFormProps) => {
   const navigate = useNavigate();
   const chainId = useChainId();
-  const firstSportId = useFirstEnabledSportId();
-  const [sportId, setSportId] = useState("");
-  useEffect(() => {
-    if (!sportId && firstSportId) {
-      setSportId(firstSportId);
-    }
-  }, [firstSportId, sportId]);
-  const { selection: selectedEvent } = useSelectedSportEvent(sportId);
   const { paymentTokenSymbol, paymentTokenAddress } = useAuth();
 
   const [entryFeeIndex, setEntryFeeIndex] = useState(LEAGUE_ENTRY_FEE_OPTIONS.indexOf(20));
@@ -82,15 +80,15 @@ export const LeagueCreateContestForm = ({
     },
   });
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleSubmit = async (formEvent: React.FormEvent) => {
+    formEvent.preventDefault();
 
-    if (!selectedEvent?.eventId || !selectedEvent.isEditable) {
+    if (!event.eventId || !event.isEditable) {
       return;
     }
 
     const resolvedChainId = chainId || getTargetChainIdFromEnv();
-    const expiryTimestamp = computeExpiryTimestampFromTournamentEnd(selectedEvent.endDate);
+    const expiryTimestamp = computeExpiryTimestampFromTournamentEnd(event.endDate);
     const baseSettings = buildContestSettings(
       resolvedChainId,
       paymentTokenAddress || "",
@@ -98,9 +96,9 @@ export const LeagueCreateContestForm = ({
     );
 
     await submitContest({
-      name: selectedEvent.eventName,
+      name: event.eventName,
       chainId: resolvedChainId,
-      eventId: selectedEvent.eventId,
+      eventId: event.eventId,
       userGroupId,
       settings: {
         ...baseSettings,
@@ -117,15 +115,26 @@ export const LeagueCreateContestForm = ({
     });
   };
 
-  const canCreateContest = Boolean(selectedEvent?.eventId && selectedEvent.isEditable);
+  const canCreateContest = Boolean(event.eventId && event.isEditable);
+  const dateRange =
+    event.startDate && event.endDate
+      ? formatTournamentDateRange(event.startDate, event.endDate)
+      : null;
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="space-y-5">
-      <CreateContestEventPicker
-        sportId={sportId}
-        onSportIdChange={setSportId}
-        disabled={isProcessing}
-      />
+    <form onSubmit={(formEvent) => void handleSubmit(formEvent)} className="space-y-5">
+      <div>
+        <p className="font-display text-sm font-medium text-gray-500">Event</p>
+        <p className="mt-0.5 font-display text-lg font-semibold text-gray-900">{event.eventName}</p>
+        {dateRange ? (
+          <p className="mt-0.5 font-display text-sm text-gray-600">{dateRange}</p>
+        ) : null}
+        {!event.isEditable ? (
+          <p className="mt-2 font-display text-sm text-amber-800">
+            This event has started or finished — new contests cannot be created.
+          </p>
+        ) : null}
+      </div>
 
       <DiscreteValueSlider
         id="league-entry-fee"

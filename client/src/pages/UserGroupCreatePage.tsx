@@ -27,8 +27,7 @@ export const UserGroupCreatePage = () => {
       />
       <h1 className="mb-2 font-display text-xl font-semibold text-gray-900">Create League</h1>
       <p className="mb-4 font-display text-sm leading-relaxed text-gray-600">
-        Set a name and optional description—then invite friends and create contests from the Manage
-        tab.{" "}
+        Set a name and optional description—then invite friends and create contests.{" "}
         <Link to="/guides/start-a-league" className="text-blue-600 hover:text-blue-700">
           Full league starter guide
         </Link>

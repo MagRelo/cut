@@ -106,7 +106,7 @@ export function CopyButton({
 }: {
   text: string;
   className?: string;
-  variant?: "primary" | "cta";
+  variant?: "primary" | "cta" | "secondary";
   idleLabel?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -126,7 +126,13 @@ export function CopyButton({
       ? `inline-flex w-full min-h-11 items-center justify-center gap-1.5 border border-blue-500 px-4 text-white ${
           copied ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"
         }`
-      : `shrink-0 px-3 py-1 text-white ${copied ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"}`;
+      : variant === "secondary"
+        ? `inline-flex w-full min-h-11 items-center justify-center gap-1.5 border px-4 ${
+            copied
+              ? "border-gray-400 bg-gray-50 text-gray-900"
+              : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+          }`
+        : `shrink-0 px-3 py-1 text-white ${copied ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"}`;
 
   return (
     <button
@@ -136,7 +142,7 @@ export function CopyButton({
       className={`rounded font-display text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${variantClass} ${className}`}
     >
       {copied ? "Copied!" : idleLabel}
-      {variant === "cta" ? (
+      {variant === "cta" || variant === "secondary" ? (
         <DocumentDuplicateIcon className="h-4 w-4 shrink-0" aria-hidden />
       ) : null}
     </button>

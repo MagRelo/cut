@@ -55,6 +55,7 @@ import { AdminRoute } from "./components/common/AdminRoute";
 import { UserGroupListPage } from "./pages/UserGroupListPage";
 import { UserGroupDetailPage } from "./pages/UserGroupDetailPage";
 import { UserGroupCreatePage } from "./pages/UserGroupCreatePage";
+import { UserGroupCreateContestPage } from "./pages/UserGroupCreateContestPage";
 import { UserGroupJoinPage } from "./pages/UserGroupJoinPage";
 import { DebugPage } from "./pages/DebugPage";
 import { CommodityIconPreviewPage } from "./pages/dev/CommodityIconPreviewPage";
@@ -184,6 +185,14 @@ const AppShell: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <UserGroupJoinPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leagues/:id/contests/create"
+              element={
+                <ProtectedRoute>
+                  <UserGroupCreateContestPage />
                 </ProtectedRoute>
               }
             />
