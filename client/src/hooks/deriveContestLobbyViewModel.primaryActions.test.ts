@@ -105,3 +105,22 @@ describe("deriveContestLobbyViewModel feed tab", () => {
     expect(vm.layout.resultsTabIndex).toBeGreaterThan(vm.layout.feedTabIndex);
   });
 });
+
+describe("deriveContestLobbyViewModel default tab for settled contests", () => {
+  it("defaults to results tab for paid settled contests", () => {
+    const vm = deriveContestLobbyViewModel(contestFixtures.settled);
+    expect(contestFixtures.settled.address).toBeTruthy();
+    expect(vm.layout.defaultTabIndex).toBe(vm.layout.resultsTabIndex);
+  });
+
+  it("defaults to contest tab for free settled contests (no on-chain escrow)", () => {
+    const freeSettledContest = {
+      ...contestFixtures.settled,
+      address: null,
+      settings: { ...contestFixtures.settled.settings, primaryDeposit: 0 },
+    };
+    const vm = deriveContestLobbyViewModel(freeSettledContest);
+    expect(vm.layout.showResultsTab).toBe(true);
+    expect(vm.layout.defaultTabIndex).toBe(vm.layout.contestTabIndex);
+  });
+});
