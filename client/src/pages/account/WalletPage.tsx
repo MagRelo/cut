@@ -92,16 +92,17 @@ export function WalletPage() {
             {showTestnetWarning ? null : (
               <div>
                 <h2 className="font-medium text-gray-900">Powered by {tokenSymbol}</h2>
+
                 <p className="text-sm leading-relaxed text-gray-700">
-                  Play The Cut uses {tokenSymbol} as the currency for contests. Buy {tokenSymbol}{" "}
-                  through an app such as Coinbase, Kraken, or Robinhood, then send it to your
-                  account wallet.
+                  Play The Cut uses {tokenSymbol} for contests. You can buy {tokenSymbol} through an
+                  app such as Coinbase, Kraken, or Robinhood, then send {tokenSymbol} to your Play
+                  The Cut wallet.
                 </p>
               </div>
             )}
           </div>
 
-          <div className="rounded-sm border border-gray-200">
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md shadow-slate-900/10 ring-1 ring-black/5">
             <TabGroup selectedIndex={selectedIndex} onChange={handleTabChange}>
               <TabList className={tabListClassName()}>
                 <Tab

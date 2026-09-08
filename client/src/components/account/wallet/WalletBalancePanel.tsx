@@ -1,7 +1,7 @@
 import { formatUnits } from "viem";
 import { useAuth } from "../../../contexts/AuthContext";
 import { PAYMENT_TOKEN_DECIMALS } from "../../../lib/paymentTokenSpend";
-import { AssetChips } from "./AssetChips";
+import { AssetChips, walletSpecLabelClassName } from "./AssetChips";
 
 export function WalletBalancePanel({
   tokenSymbol,
@@ -16,9 +16,9 @@ export function WalletBalancePanel({
   const formatted = Number(formatUnits(paymentTokenBalance ?? 0n, decimals)).toFixed(2);
 
   return (
-    <div className="max-w-md overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div className="max-w-md overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-tl from-slate-100 via-white to-white shadow-md shadow-slate-900/10 ring-1 ring-black/5">
       <div className="px-4 py-3">
-        <p className="text-xs font-medium text-gray-600">Wallet Balance</p>
+        <p className={walletSpecLabelClassName}>Balance</p>
         {balancesUnavailable ? (
           <button
             type="button"
@@ -34,7 +34,7 @@ export function WalletBalancePanel({
           </p>
         )}
       </div>
-      <div className="border-t border-gray-100">
+      <div className="border-t border-slate-100 bg-white/70">
         <AssetChips tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
       </div>
     </div>
