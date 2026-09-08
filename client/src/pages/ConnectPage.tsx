@@ -1,6 +1,6 @@
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
-import { Connect } from "../components/user/Connect";
+import { Connect } from "../components/auth/Connect";
 import { BrandLogo } from "../components/common/BrandLogo";
 import { BRAND_WORDMARK } from "../lib/brand";
 import { useAuth } from "../contexts/AuthContext";

@@ -17,7 +17,7 @@ import { canEditLineupForContest } from "../../lib/lineupEditable";
 import ContestContract from "../../utils/contracts/ContestController.json";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { PageSection } from "../layout/PageSection";
-import { SignInPrompt } from "../user/SignInPrompt";
+import { SignInPrompt } from "../auth/SignInPrompt";
 import { LineupContestCard, LineupContestCardLoading } from "../lineup/LineupContestCard";
 import { GuestLineupPicker } from "../lineup/GuestLineupPicker";
 import { ContestLineupJoinActions } from "../contest/ContestLineupJoinActions";

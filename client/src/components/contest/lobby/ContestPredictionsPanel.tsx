@@ -4,7 +4,7 @@ import { ContestEventScopeProvider } from "../../../contexts/EventScopeContext";
 import { type Contest } from "../../../types/contest";
 import { type PredictionsPanelMode } from "../../../types/contestLobby";
 import { tabButtonClassName, tabListClassName } from "../../../lib/tabStyles";
-import { SignInPrompt } from "../../user/SignInPrompt";
+import { SignInPrompt } from "../../auth/SignInPrompt";
 import { PredictionLineupsList } from "../PredictionLineupsList";
 import { PredictionPositionsList } from "../PredictionPositionsList";
 import { PredictionClaimPanel } from "../PredictionClaimPanel";

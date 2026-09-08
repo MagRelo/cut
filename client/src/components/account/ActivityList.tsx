@@ -96,7 +96,7 @@ function ActivityRow({ txn }: { txn: UserTransaction }) {
 }
 
 /** Activity / transaction list. */
-export function UserActivityPanel() {
+export function ActivityList() {
   const { data: transactions, isLoading, error } = useUserTransactions();
 
   if (isLoading) {

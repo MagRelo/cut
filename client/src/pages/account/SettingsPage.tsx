@@ -2,18 +2,18 @@ import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { useAccount } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 
-import { CopyButton } from "../components/common/CopyToClipboard";
-import { Breadcrumbs } from "../components/common/Breadcrumbs";
-import { PageSection } from "../components/layout/PageSection";
-import { UserSettings } from "../components/user/UserSettings";
-import { useAuth } from "../contexts/AuthContext";
+import { CopyButton } from "../../components/common/CopyToClipboard";
+import { Breadcrumbs } from "../../components/common/Breadcrumbs";
+import { PageSection } from "../../components/layout/PageSection";
+import { DisplaySettings } from "../../components/account/DisplaySettings";
+import { useAuth } from "../../contexts/AuthContext";
 
 function truncateMiddle(value: string, head = 8, tail = 6) {
   if (value.length <= head + tail + 1) return value;
   return `${value.slice(0, head)}…${value.slice(-tail)}`;
 }
 
-const WalletInfo = ({
+const AccountInfo = ({
   disconnect,
   canSignOut,
   userEmail,
@@ -75,7 +75,7 @@ const WalletInfo = ({
   );
 };
 
-export function UserPage() {
+export function SettingsPage() {
   const { logout, user } = useAuth();
   const { address } = useAccount();
   const { client: smartWalletClient } = useSmartWallets();
@@ -92,9 +92,9 @@ export function UserPage() {
         Settings
       </h1>
 
-      <UserSettings />
+      <DisplaySettings />
 
-      <WalletInfo
+      <AccountInfo
         disconnect={logout}
         canSignOut={!!address || !!smartWalletAddress}
         userEmail={user?.email}

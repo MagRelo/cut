@@ -7,7 +7,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { BRAND_PROSE, BRAND_WORDMARK } from "../../lib/brand";
 import { signInReturnFrom } from "../../lib/navRoutes";
 import {
-  ACCOUNT_FUNDS_LINK,
+  ACCOUNT_WALLET_LINK,
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
   LEAGUES_TAB,
@@ -195,7 +195,7 @@ export const MobileNavMenu: React.FC = () => {
                                   >
                                     <link.Icon className="h-4 w-4 shrink-0" aria-hidden />
                                     <span className="min-w-0 flex-1">{link.label}</span>
-                                    {link.to === ACCOUNT_FUNDS_LINK.to ? (
+                                    {link.to === ACCOUNT_WALLET_LINK.to ? (
                                       totalBalance !== null ? (
                                         <span className="shrink-0 font-normal tabular-nums tracking-normal">
                                           ${totalBalance}

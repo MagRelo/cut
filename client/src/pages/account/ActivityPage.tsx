@@ -1,8 +1,8 @@
 import { ClockIcon } from "@heroicons/react/24/outline";
-import { Breadcrumbs } from "../components/common/Breadcrumbs";
-import { UserActivityPanel } from "../components/user/UserActivityPanel";
+import { Breadcrumbs } from "../../components/common/Breadcrumbs";
+import { ActivityList } from "../../components/account/ActivityList";
 
-export function AccountActivityPage() {
+export function ActivityPage() {
   return (
     <>
       <Breadcrumbs
@@ -14,7 +14,7 @@ export function AccountActivityPage() {
         Activity
       </h1>
       <div className="rounded-sm border border-gray-200 px-4 py-4">
-        <UserActivityPanel />
+        <ActivityList />
       </div>
     </>
   );

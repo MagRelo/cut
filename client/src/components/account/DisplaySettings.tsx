@@ -18,7 +18,7 @@ function draftFromUser(
   return { name, settings, originalName: name, originalSettings: settings };
 }
 
-export function UserSettings() {
+export function DisplaySettings() {
   const { user, updateUser, updateUserSettings } = useAuth();
   const [draft, setDraft] = useState<DraftState>(() => draftFromUser(user));
   const [isLoading, setIsLoading] = useState(false);

@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { formatUnits, isAddress, parseUnits } from "viem";
-import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
-import { useTransferTokens } from "../../hooks/useTokenOperations";
-import { useAuth } from "../../contexts/AuthContext";
-import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../config/targetChain";
-import { PAYMENT_TOKEN_DECIMALS } from "../../lib/paymentTokenSpend";
-import { BLOCKCHAIN_NETWORK } from "../../lib/legalPlaceholders";
-import { getSmartWalletsPaymasterConfig } from "../../lib/privySmartWalletPaymaster";
+import { LoadingSpinnerSmall } from "../../common/LoadingSpinnerSmall";
+import { useTransferTokens } from "../../../hooks/useTokenOperations";
+import { useAuth } from "../../../contexts/AuthContext";
+import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../../config/targetChain";
+import { PAYMENT_TOKEN_DECIMALS } from "../../../lib/paymentTokenSpend";
+import { BLOCKCHAIN_NETWORK } from "../../../lib/legalPlaceholders";
+import { getSmartWalletsPaymasterConfig } from "../../../lib/privySmartWalletPaymaster";
 
 export type SendProps = {
   /** Pre-fill recipient (e.g. admin support: target user wallet). */

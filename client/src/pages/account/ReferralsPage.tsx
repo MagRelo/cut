@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import { UserGroupIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
-import { CopyButton } from "../components/common/CopyToClipboard";
-import { ShareInviteButton } from "../components/common/ShareInviteButton";
-import { Breadcrumbs } from "../components/common/Breadcrumbs";
-import { useAuth } from "../contexts/AuthContext";
-import { useUserReferralSummary } from "../hooks/useUserReferralSummary";
-import { LEAGUE_STARTER_GUIDE_PATH } from "./LeagueStarterGuidePage";
+import { CopyButton } from "../../components/common/CopyToClipboard";
+import { ShareInviteButton } from "../../components/common/ShareInviteButton";
+import { Breadcrumbs } from "../../components/common/Breadcrumbs";
+import { useAuth } from "../../contexts/AuthContext";
+import { useUserReferralSummary } from "../../hooks/useUserReferralSummary";
+import { LEAGUE_STARTER_GUIDE_PATH } from "../LeagueStarterGuidePage";
 
 function truncateMiddle(value: string, head = 8, tail = 6) {
   if (value.length <= head + tail + 1) return value;
@@ -192,7 +192,7 @@ function ReferralNetworkPanel({
   );
 }
 
-export function AccountReferralsPage() {
+export function ReferralsPage() {
   const { user } = useAuth();
   const {
     data: referralSummary,

@@ -12,17 +12,17 @@ export type NavTab = {
   liveDot?: boolean;
 };
 
-export const ACCOUNT_FUNDS_LINK = {
+export const ACCOUNT_WALLET_LINK = {
   to: "/account/funds",
   label: "Wallet",
   match: (pathname: string) => pathname === "/account/funds",
   Icon: WalletIcon,
 } as const;
 
-export const ACCOUNT_HOME_LINK = {
-  to: "/account",
+export const ACCOUNT_SETTINGS_LINK = {
+  to: "/account/settings",
   label: "Settings",
-  match: (pathname: string) => pathname === "/account",
+  match: (pathname: string) => pathname === "/account/settings",
   Icon: Cog6ToothIcon,
 } as const;
 
@@ -50,10 +50,10 @@ export const LEAGUES_TAB: NavTab = {
 
 /** Account links shown under Account in nav menus. */
 export const ACCOUNT_SUB_LINKS = [
-  ACCOUNT_FUNDS_LINK,
+  ACCOUNT_WALLET_LINK,
   ACCOUNT_REFERRALS_LINK,
   ACCOUNT_ACTIVITY_LINK,
-  ACCOUNT_HOME_LINK,
+  ACCOUNT_SETTINGS_LINK,
 ] as const;
 
 export type LeagueNavItem = {

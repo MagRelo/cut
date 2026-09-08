@@ -625,7 +625,7 @@ export const FAQPage: React.FC = () => {
             <ul className="list-disc space-y-1 pl-6 text-gray-700">
               <li>
                 View your wallet address on{" "}
-                <Link to="/account" className="text-blue-600 hover:underline">
+                <Link to="/account/settings" className="text-blue-600 hover:underline">
                   Account
                 </Link>
               </li>

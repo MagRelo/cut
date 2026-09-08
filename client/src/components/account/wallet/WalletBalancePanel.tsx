@@ -1,9 +1,9 @@
 import { formatUnits } from "viem";
 import { useAuth } from "../../../contexts/AuthContext";
 import { PAYMENT_TOKEN_DECIMALS } from "../../../lib/paymentTokenSpend";
-import { FundingAssetChips } from "./FundingAssetChips";
+import { AssetChips } from "./AssetChips";
 
-export function FundingWalletPanel({
+export function WalletBalancePanel({
   tokenSymbol,
   networkLabel,
 }: {
@@ -35,7 +35,7 @@ export function FundingWalletPanel({
         )}
       </div>
       <div className="border-t border-gray-100">
-        <FundingAssetChips tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
+        <AssetChips tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
       </div>
     </div>
   );

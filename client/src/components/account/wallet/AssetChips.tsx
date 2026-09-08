@@ -23,7 +23,7 @@ function AssetSpec({
   );
 }
 
-export function FundingAssetChips({
+export function AssetChips({
   tokenSymbol,
   networkLabel,
   stacked = false,

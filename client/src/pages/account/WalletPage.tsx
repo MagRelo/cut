@@ -2,21 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { ExclamationTriangleIcon, WalletIcon } from "@heroicons/react/24/outline";
-import { Breadcrumbs } from "../components/common/Breadcrumbs";
-import { Receive } from "../components/user/Receive.tsx";
-import { Send } from "../components/user/Send.tsx";
-import { FundingWalletPanel } from "../components/user/funds/FundingWalletPanel";
-import { useAuth } from "../contexts/AuthContext";
-import { defaultPaymentTokenSymbol, isTargetTestnet } from "../config/targetChain";
-import { BLOCKCHAIN_NETWORK } from "../lib/legalPlaceholders";
-import { tabButtonClassName, tabListClassName } from "../lib/tabStyles";
+import { Breadcrumbs } from "../../components/common/Breadcrumbs";
+import { Receive } from "../../components/account/wallet/Receive";
+import { Send } from "../../components/account/wallet/Send";
+import { WalletBalancePanel } from "../../components/account/wallet/WalletBalancePanel";
+import { useAuth } from "../../contexts/AuthContext";
+import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../config/targetChain";
+import { BLOCKCHAIN_NETWORK } from "../../lib/legalPlaceholders";
+import { tabButtonClassName, tabListClassName } from "../../lib/tabStyles";
 import {
   fundPageTabFromIndex,
   fundPageTabIndex,
   parseFundPageSearchParams,
-} from "../lib/fundLinks";
+} from "../../lib/fundLinks";
 
-export function TransferFundsPage() {
+export function WalletPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { tab, recipient } = useMemo(
     () => parseFundPageSearchParams(searchParams.toString()),
@@ -95,7 +95,7 @@ export function TransferFundsPage() {
                 </p>
               </div>
             )}
-            <FundingWalletPanel tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
+            <WalletBalancePanel tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
           </div>
 
           <div className="rounded-sm border border-gray-200">

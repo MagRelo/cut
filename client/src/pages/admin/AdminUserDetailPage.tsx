@@ -2,7 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { useChainId } from "wagmi";
 import { getContractAddress } from "../../utils/blockchainUtils";
 import { WalletTokenBalancesCard } from "../../components/admin/WalletTokenBalancesCard";
-import { Send } from "../../components/user/Send";
+import { Send } from "../../components/account/wallet/Send";
 import { PageSection } from "../../components/layout/PageSection";
 import { LoadingSpinner } from "../../components/common/LoadingSpinner";
 import { ErrorMessage } from "../../components/common/ErrorMessage";

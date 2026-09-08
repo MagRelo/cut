@@ -2,7 +2,7 @@
 
 Production runs on **Base** (`8453`) with **canonical USDC**. Staging runs on **Base Sepolia** (`84532`) with **MockUSDC (xUSDC)**.
 
-Players add and withdraw USDC themselves (Coinbase or Robinhood if they do not already have crypto). See in-app [FAQ → Adding & withdrawing funds](client/src/pages/FAQPage.tsx) and [Manage funds](client/src/pages/AccountTransferFundsPage.tsx).
+Players add and withdraw USDC themselves (Coinbase or Robinhood if they do not already have crypto). See in-app [FAQ → Adding & withdrawing funds](client/src/pages/FAQPage.tsx) and [Manage funds](client/src/pages/account/WalletPage.tsx).
 
 Related:
 

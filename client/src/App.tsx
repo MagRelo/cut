@@ -20,10 +20,10 @@ import {
 
 import { Home } from "./pages/Home";
 import { ConnectPage } from "./pages/ConnectPage";
-import { UserPage } from "./pages/Account";
-import { AccountActivityPage } from "./pages/AccountActivityPage";
-import { AccountReferralsPage } from "./pages/AccountReferralsPage";
-import { TransferFundsPage } from "./pages/AccountTransferFundsPage";
+import { SettingsPage } from "./pages/account/SettingsPage";
+import { ActivityPage } from "./pages/account/ActivityPage";
+import { ReferralsPage } from "./pages/account/ReferralsPage";
+import { WalletPage } from "./pages/account/WalletPage";
 
 import { SportHubPage } from "./pages/SportHubPage";
 import { ContestLobby } from "./pages/ContestLobbyPage";
@@ -112,9 +112,13 @@ const AppShell: React.FC = () => {
             <Route path="/contracts" element={<ContractsPage />} />
             <Route
               path="/account"
+              element={<Navigate to="/account/settings" replace />}
+            />
+            <Route
+              path="/account/settings"
               element={
                 <ProtectedRoute>
-                  <UserPage />
+                  <SettingsPage />
                 </ProtectedRoute>
               }
             />
@@ -126,7 +130,7 @@ const AppShell: React.FC = () => {
               path="/account/activity"
               element={
                 <ProtectedRoute>
-                  <AccountActivityPage />
+                  <ActivityPage />
                 </ProtectedRoute>
               }
             />
@@ -134,7 +138,7 @@ const AppShell: React.FC = () => {
               path="/account/referrals"
               element={
                 <ProtectedRoute>
-                  <AccountReferralsPage />
+                  <ReferralsPage />
                 </ProtectedRoute>
               }
             />
@@ -142,7 +146,7 @@ const AppShell: React.FC = () => {
               path="/account/funds"
               element={
                 <ProtectedRoute>
-                  <TransferFundsPage />
+                  <WalletPage />
                 </ProtectedRoute>
               }
             />
