@@ -7,10 +7,7 @@ import { UserGroupSettings } from "../components/userGroup/UserGroupSettings";
 import { UserGroupMemberManagement } from "../components/userGroup/UserGroupMemberManagement";
 import { UserGroupInvitePanel } from "../components/userGroup/UserGroupInvitePanel";
 import { ContestDirectorySections } from "../components/contest/ContestDirectorySections";
-import {
-  leagueCreateContestPath,
-  overlayLeagueContestsOnDirectory,
-} from "../lib/contestGroups";
+import { leagueCreateContestPath, overlayLeagueContestsOnDirectory } from "../lib/contestGroups";
 import { useContestDirectory } from "../hooks/useContestDirectory";
 import { useUserGroupQuery, useUserGroupContestsQuery } from "../hooks/useUserGroupQuery";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
@@ -28,8 +25,11 @@ export const UserGroupDetailPage = () => {
     isLoading: isContestsLoading,
     error: contestsError,
   } = useUserGroupContestsQuery(id);
-  const { data: directory, isLoading: isDirectoryLoading, error: directoryError } =
-    useContestDirectory("all");
+  const {
+    data: directory,
+    isLoading: isDirectoryLoading,
+    error: directoryError,
+  } = useContestDirectory("all");
 
   const errorMessage =
     error && isApiError(error) && error.statusCode === 404
@@ -70,7 +70,8 @@ export const UserGroupDetailPage = () => {
     return <ErrorMessage message={errorMessage || "Failed to load league"} />;
   }
 
-  const showInitialLoading = (isDirectoryLoading && !directory) || (isContestsLoading && !leagueContests);
+  const showInitialLoading =
+    (isDirectoryLoading && !directory) || (isContestsLoading && !leagueContests);
 
   const contestContent = showInitialLoading ? (
     <div className="min-h-[80px] py-8 text-center">
@@ -84,9 +85,7 @@ export const UserGroupDetailPage = () => {
       past={directorySections.past}
       error={contestsErrorMessage}
       createContestToForEvent={
-        isAdmin
-          ? (event) => leagueCreateContestPath(userGroup.id, event.id)
-          : undefined
+        isAdmin ? (event) => leagueCreateContestPath(userGroup.id, event.id) : undefined
       }
     />
   );
@@ -95,6 +94,7 @@ export const UserGroupDetailPage = () => {
     <div className="space-y-5">
       <UserGroupInvitePanel
         userGroupId={userGroup.id}
+        leagueName={userGroup.name}
         inviteCode={userGroup.inviteCode}
         inviteUrl={userGroup.inviteUrl}
         onInviteUpdated={() => refetch()}
@@ -150,18 +150,24 @@ export const UserGroupDetailPage = () => {
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <div className="px-2">
             <TabList className={tabListClassName()}>
-              <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
+              <Tab
+                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+              >
                 Contests
               </Tab>
               {isAdmin ? (
                 <>
                   <Tab
-                    className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                    className={({ selected }: { selected: boolean }) =>
+                      tabButtonClassName(selected)
+                    }
                   >
-                    Invites
+                    Invite players
                   </Tab>
                   <Tab
-                    className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                    className={({ selected }: { selected: boolean }) =>
+                      tabButtonClassName(selected)
+                    }
                   >
                     Settings
                   </Tab>
