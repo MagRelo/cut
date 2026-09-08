@@ -45,20 +45,25 @@ export const UserGroupInvitePanel = ({
 
   return (
     <div className="space-y-3 font-display">
-      <p className="text-sm leading-relaxed text-gray-700">
-        One link adds someone to this league and sets you as their referrer.
-      </p>
       {errorMessage ? <ErrorMessage message={errorMessage} /> : null}
 
       <WalletSpecPanel
         headingId="league-invite-heading"
-        heading="League invite"
+        heading="League invite link"
         description={
           activeInviteUrl
             ? "Share by text or email, or copy the URL."
             : "Generate a link, then share it with anyone you want in the league."
         }
       >
+        <div className="px-4 py-3">
+          <p className="text-sm leading-relaxed text-gray-700">When someone follows this link:</p>
+          <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-gray-700">
+            <li>They will be prompted to create an account (if needed)</li>
+            <li>You are set as their referrer</li>
+            <li>They are added to the league</li>
+          </ol>
+        </div>
         {activeInviteUrl ? (
           <>
             <div className="px-4 py-3">
@@ -70,14 +75,14 @@ export const UserGroupInvitePanel = ({
                 {activeInviteUrl}
               </p>
             </div>
-            <div className="flex flex-col gap-2 px-4 py-3">
+            <div className="flex flex-col gap-2 px-4 py-3 pt-0">
               <ShareInviteButton
                 url={activeInviteUrl}
                 shareText={`Join my league on ${BRAND_PROSE}`}
                 ariaLabel="Share league invite"
                 label="Share invite"
                 variant="cta"
-                className="w-full min-h-11"
+                className="min-h-11 w-full"
               />
               <CopyButton text={activeInviteUrl} variant="secondary" idleLabel="Copy link" />
               <button

@@ -22,11 +22,8 @@ interface UserGroupMemberManagementProps {
 const fieldClassName =
   "min-h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100";
 
-const memberActionClassName =
-  "inline-flex min-h-11 items-center justify-center rounded border border-gray-300 px-3 font-display text-sm font-medium text-gray-700 hover:bg-gray-50";
-
-const memberDangerClassName =
-  "inline-flex min-h-11 items-center justify-center rounded px-3 font-display text-sm font-medium text-red-700 hover:bg-red-50";
+const sendFundsClassName =
+  "inline-flex min-h-11 shrink-0 items-center justify-center rounded border border-blue-500 bg-blue-500 px-4 font-display text-sm font-medium text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2";
 
 const chipClassName =
   "rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-gray-700";
@@ -222,7 +219,7 @@ export const UserGroupMemberManagement = ({
           const showSendFunds = Boolean(member.walletAddress) && !isYou;
 
           return (
-            <li key={member.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <li key={member.id} className="flex items-center justify-between gap-3 py-3">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="font-medium text-gray-900">{member.user.name}</span>
@@ -232,24 +229,20 @@ export const UserGroupMemberManagement = ({
                 <p className="mt-0.5 text-xs text-gray-600">
                   Joined {new Date(member.joinedAt).toLocaleDateString()}
                 </p>
+                {canRemove ? (
+                  <button
+                    type="button"
+                    onClick={() => setRemoveConfirmUserId(member.userId)}
+                    className="mt-1 inline-flex min-h-9 items-center text-sm font-medium text-red-700 hover:text-red-800"
+                  >
+                    Remove
+                  </button>
+                ) : null}
               </div>
-              {showSendFunds || canRemove ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  {showSendFunds && member.walletAddress ? (
-                    <Link to={buildFundSendUrl(member.walletAddress)} className={memberActionClassName}>
-                      Send funds
-                    </Link>
-                  ) : null}
-                  {canRemove ? (
-                    <button
-                      type="button"
-                      onClick={() => setRemoveConfirmUserId(member.userId)}
-                      className={memberDangerClassName}
-                    >
-                      Remove
-                    </button>
-                  ) : null}
-                </div>
+              {showSendFunds && member.walletAddress ? (
+                <Link to={buildFundSendUrl(member.walletAddress)} className={sendFundsClassName}>
+                  Send funds
+                </Link>
               ) : null}
             </li>
           );

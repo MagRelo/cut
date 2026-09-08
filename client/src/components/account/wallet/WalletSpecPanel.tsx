@@ -17,14 +17,14 @@ export function WalletSpecPanel({
       role="group"
       aria-labelledby={headingId}
     >
-      <div className="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
+      <div className="border-b border-slate-200 bg-slate-100 px-4 py-2.5">
         <p
           id={headingId}
-          className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-600"
+          className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600"
         >
           {heading}
         </p>
-        <p className="mt-1 text-sm leading-snug text-gray-700">{description}</p>
+        <p className="mt-1 text-sm leading-snug text-slate-800">{description}</p>
       </div>
       {children}
     </div>

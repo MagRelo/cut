@@ -158,7 +158,7 @@ export const UserGroupDetailPage = () => {
                   <Tab
                     className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
                   >
-                    Members
+                    Invites
                   </Tab>
                   <Tab
                     className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
