@@ -146,7 +146,6 @@ League contests return **404** to non-members.
 | DELETE | `/:id` | ✅ admin | Delete league |
 | GET | `/:id/contests` | ✅ member | All league contests across events (no chain filter, same as directory) |
 | GET | `/:id/members` | ✅ member | Member list |
-| POST | `/:id/members` | ✅ admin | Add member |
 | DELETE | `/:id/members/:userId` | ✅ | Remove member |
 | POST | `/:id/invite` | ✅ admin | Generate invite code |
 

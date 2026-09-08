@@ -103,7 +103,6 @@ export const UserGroupDetailPage = () => {
         <UserGroupMemberManagement
           userGroupId={userGroup.id}
           members={userGroup.members}
-          onMemberAdded={() => refetch()}
           onMemberRemoved={() => refetch()}
         />
       </PageSection>

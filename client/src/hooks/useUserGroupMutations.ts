@@ -5,7 +5,6 @@ import apiClient from "../utils/apiClient";
 import {
   type CreateUserGroupInput,
   type UpdateUserGroupInput,
-  type AddUserGroupMemberInput,
   type JoinUserGroupInput,
   type LeagueInviteResponse,
   type UserGroupDetailResponse,
@@ -125,34 +124,6 @@ export function useDeleteUserGroup() {
 }
 
 /**
- * Mutation hook for adding a member to a user group
- *
- * Features:
- * - Optimistic updates
- * - Automatic cache invalidation on success
- */
-export function useAddUserGroupMember() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: AddUserGroupMemberInput }) => {
-      return await apiClient.post<UserGroupMemberResponse>(`/userGroups/${id}/members`, data);
-    },
-
-    onSuccess: (_data, { id }) => {
-      // Invalidate members query
-      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.members(id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.byId(id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
-    },
-
-    onError: (err) => {
-      console.error("Failed to add member to user group:", err);
-    },
-  });
-}
-
-/**
  * Mutation hook for removing a member from a user group
  *
  * Features:
@@ -257,16 +228,4 @@ export function useJoinLeague() {
       console.error("Failed to join league:", err);
     },
   });
-}
-
-// Type for the member response from add member endpoint
-interface UserGroupMemberResponse {
-  id: string;
-  userId: string;
-  user: {
-    id: string;
-    name: string;
-  };
-  role: "ADMIN" | "MEMBER";
-  joinedAt: Date;
 }

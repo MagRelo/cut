@@ -6,7 +6,6 @@ import { requireUserGroupAdmin, requireUserGroupMember } from "../middleware/use
 import {
   createUserGroupSchema,
   updateUserGroupSchema,
-  addUserGroupMemberSchema,
   joinUserGroupSchema,
 } from "../schemas/contest.js";
 import { generateUniqueInviteCode } from "../utils/inviteCode.js";
@@ -473,104 +472,6 @@ userGroupRouter.get("/:id/members", requireAuth, requireUserGroupMember, async (
   } catch (error) {
     console.error("Error fetching userGroup members:", error);
     return c.json({ error: "Failed to fetch userGroup members" }, 500);
-  }
-});
-
-// Add member to userGroup (ADMIN only)
-userGroupRouter.post("/:id/members", requireAuth, requireUserGroupAdmin, async (c) => {
-  try {
-    const userGroupId = c.req.param("id");
-    const body = await c.req.json();
-
-    // Validate request body
-    const validation = addUserGroupMemberSchema.safeParse(body);
-    if (!validation.success) {
-      return c.json(
-        {
-          error: "Invalid request body",
-          details: validation.error.errors,
-        },
-        400,
-      );
-    }
-
-    const { walletAddress, role } = validation.data;
-
-    // Verify userGroup exists
-    const userGroup = await prisma.userGroup.findUnique({
-      where: { id: userGroupId },
-      select: { id: true },
-    });
-
-    if (!userGroup) {
-      return c.json({ error: "UserGroup not found" }, 404);
-    }
-
-    // Find user by wallet address
-    const userWallet = await prisma.userWallet.findFirst({
-      where: {
-        publicKey: walletAddress.toLowerCase(),
-      },
-      include: {
-        user: true,
-      },
-      orderBy: {
-        isPrimary: "desc", // Prefer primary wallet
-      },
-    });
-
-    if (!userWallet || !userWallet.user) {
-      return c.json(
-        {
-          error:
-            "User not found. Please ensure the wallet address is correct and the user has signed in at least once.",
-        },
-        404,
-      );
-    }
-
-    const userId = userWallet.user.id;
-
-    // Check if user is already a member
-    const existingMember = await prisma.userGroupMember.findUnique({
-      where: {
-        userId_userGroupId: {
-          userId,
-          userGroupId,
-        },
-      },
-    });
-
-    if (existingMember) {
-      return c.json({ error: "User is already a member of this userGroup" }, 400);
-    }
-
-    const member = await prisma.userGroupMember.create({
-      data: {
-        userId,
-        userGroupId,
-        role: role || "MEMBER",
-      },
-      include: {
-        user: {
-          select: userGroupMemberUserSelect,
-        },
-      },
-    });
-
-    return c.json(
-      {
-        id: member.id,
-        userId: member.userId,
-        user: member.user,
-        role: member.role,
-        joinedAt: member.joinedAt,
-      },
-      201,
-    );
-  } catch (error) {
-    console.error("Error adding member to userGroup:", error);
-    return c.json({ error: "Failed to add member to userGroup" }, 500);
   }
 });
 

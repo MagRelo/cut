@@ -86,12 +86,6 @@ export interface UpdateUserGroupInput {
   description?: string;
 }
 
-// Optional: Create a type for adding a member to a user group
-export interface AddUserGroupMemberInput {
-  walletAddress: string;
-  role?: UserGroupRole;
-}
-
 export interface JoinUserGroupInput {
   inviteCode: string;
 }

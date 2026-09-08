@@ -79,7 +79,7 @@ export const UserGroupForm = ({
           name="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          rows={4}
+          rows={8}
           className={fieldClass}
           placeholder="Enter league description (optional)"
           disabled={isLoading}

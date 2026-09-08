@@ -48,12 +48,6 @@ export const updateUserGroupSchema = z.object({
   description: z.string().max(DESCRIPTION_MAX_LENGTH).optional(),
 });
 
-// Schema for user group member operations
-export const addUserGroupMemberSchema = z.object({
-  walletAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid wallet address"),
-  role: z.enum(["MEMBER", "ADMIN"]).default("MEMBER"),
-});
-
 export const joinUserGroupSchema = z.object({
   inviteCode: z
     .string()
@@ -192,7 +186,6 @@ export const contestDirectoryQuerySchema = z.object({
 // Types derived from schemas
 export type CreateUserGroupBody = z.infer<typeof createUserGroupSchema>;
 export type UpdateUserGroupBody = z.infer<typeof updateUserGroupSchema>;
-export type AddUserGroupMemberBody = z.infer<typeof addUserGroupMemberSchema>;
 export type JoinUserGroupBody = z.infer<typeof joinUserGroupSchema>;
 export type CreateContestBody = z.infer<typeof createContestSchema>;
 export type UpdateContestBody = z.infer<typeof updateContestSchema>;
