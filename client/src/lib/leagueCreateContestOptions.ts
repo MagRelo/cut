@@ -20,9 +20,9 @@ export function formatInviteRewardPercent(percent: number): string {
   return Number.isInteger(percent) ? `${percent}%` : `${percent}%`;
 }
 
-export function formatLeagueEntryFee(fee: LeagueEntryFee, tokenSymbol: string): string {
+export function formatLeagueEntryFee(fee: LeagueEntryFee): string {
   if (fee === 0) return "Free";
-  return `${fee} ${tokenSymbol}`;
+  return `$${fee}`;
 }
 
 /** Primary deposit → secondary subsidy % for `_primaryDepositSecondarySubsidyBps` (0%–10%). */

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useChainId } from "wagmi";
+import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
 import { DiscreteValueSlider } from "../common/DiscreteValueSlider";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
@@ -124,13 +126,15 @@ export const LeagueCreateContestForm = ({
 
   return (
     <form onSubmit={(formEvent) => void handleSubmit(formEvent)} className="space-y-5">
+      {/* Event Details */}
       <div>
-        <p className="block font-display text-base font-semibold text-gray-900">Event</p>
-        <div className="mt-3 rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-white px-4 py-3">
-          <p className="font-display text-sm font-medium text-slate-600">{event.sportName}</p>
-          <p className="mt-0.5 font-display text-lg font-semibold text-gray-900">{event.eventName}</p>
+        <div className="mt-3 overflow-hidden rounded-lg border border-blue-200 bg-gradient-to-tl from-blue-100 via-blue-50 to-white px-4 py-3">
+          <p className="font-display text-sm font-medium text-blue-800">{event.sportName}</p>
+          <p className="mt-0.5 font-display text-lg font-semibold text-gray-900">
+            {event.eventName}
+          </p>
           {dateRange ? (
-            <p className="mt-0.5 font-display text-sm text-gray-600">{dateRange}</p>
+            <p className="mt-0.5 font-display text-sm text-blue-900/70">{dateRange}</p>
           ) : null}
           {!event.isEditable ? (
             <p className="mt-2 font-display text-sm text-amber-800">
@@ -143,15 +147,14 @@ export const LeagueCreateContestForm = ({
       <div>
         <DiscreteValueSlider
           id="league-entry-fee"
-          label="Entry Fee"
-          description="What each lineup pays to enter."
+          label="Buy-In"
+          description="What each lineup pays to enter the contest."
           valueIndex={entryFeeIndex}
           valueCount={LEAGUE_ENTRY_FEE_OPTIONS.length}
-          displayValue={formatLeagueEntryFee(entryFee, tokenSymbol)}
-          minLabel={formatLeagueEntryFee(LEAGUE_ENTRY_FEE_OPTIONS[0], tokenSymbol)}
+          displayValue={formatLeagueEntryFee(entryFee)}
+          minLabel={formatLeagueEntryFee(LEAGUE_ENTRY_FEE_OPTIONS[0])}
           maxLabel={formatLeagueEntryFee(
             LEAGUE_ENTRY_FEE_OPTIONS[LEAGUE_ENTRY_FEE_OPTIONS.length - 1],
-            tokenSymbol,
           )}
           onChange={setEntryFeeIndex}
           disabled={!canCreateContest || isProcessing}
@@ -164,70 +167,95 @@ export const LeagueCreateContestForm = ({
       </div>
 
       {!isFreeContest ? (
-        <>
-          <DiscreteValueSlider
-            id="league-invite-rewards"
-            label="Invite Rewards %"
-            description={
-              <>
-                Share of the pot paid to the winner&apos;s invite chain.Higher % rewards growth.{" "}
-                <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
-                  Learn more...
-                </Link>
-              </>
-            }
-            valueIndex={inviteRewardIndex}
-            valueCount={LEAGUE_INVITE_REWARD_PERCENTS.length}
-            displayValue={formatInviteRewardPercent(inviteRewardPercent)}
-            minLabel={formatInviteRewardPercent(LEAGUE_INVITE_REWARD_PERCENTS[0])}
-            maxLabel={formatInviteRewardPercent(
-              LEAGUE_INVITE_REWARD_PERCENTS[LEAGUE_INVITE_REWARD_PERCENTS.length - 1],
-            )}
-            onChange={setInviteRewardIndex}
-            disabled={!canCreateContest || isProcessing}
-          />
+        <Disclosure as="div">
+          <DisclosureButton className="group inline-flex items-center gap-1.5 rounded-md py-1 text-left font-display text-base font-semibold text-gray-900">
+            Advanced controls
+            <ChevronDownIcon
+              className="h-4 w-4 shrink-0 text-gray-900 transition-transform group-data-[open]:rotate-180"
+              aria-hidden
+            />
+          </DisclosureButton>
+          <DisclosurePanel className="mt-4 space-y-5">
+            <DiscreteValueSlider
+              id="league-invite-rewards"
+              label="Invite Rewards %"
+              description={
+                <>
+                  Share of the pot paid to the winner&apos;s invite chain. Higher % rewards growth.{" "}
+                  <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
+                    Learn more...
+                  </Link>
+                </>
+              }
+              valueIndex={inviteRewardIndex}
+              valueCount={LEAGUE_INVITE_REWARD_PERCENTS.length}
+              displayValue={formatInviteRewardPercent(inviteRewardPercent)}
+              minLabel={formatInviteRewardPercent(LEAGUE_INVITE_REWARD_PERCENTS[0])}
+              maxLabel={formatInviteRewardPercent(
+                LEAGUE_INVITE_REWARD_PERCENTS[LEAGUE_INVITE_REWARD_PERCENTS.length - 1],
+              )}
+              onChange={setInviteRewardIndex}
+              disabled={!canCreateContest || isProcessing}
+            />
 
-          <DiscreteValueSlider
-            id="league-primary-subsidy"
-            label="Winner Pool Subsidy %"
-            description={
-              <>
-                Seed the Winner Pool to jump-start Winner Pool betting. Higher % makes that market
-                more fun sooner.{" "}
-                <Link to="/faq#winner-pool-subsidy" className="text-blue-600 hover:underline">
-                  Learn more...
-                </Link>
-              </>
-            }
-            valueIndex={primarySubsidyIndex}
-            valueCount={LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length}
-            displayValue={formatPrimarySubsidyPercent(primarySubsidyPercent)}
-            minLabel={formatPrimarySubsidyPercent(LEAGUE_PRIMARY_SUBSIDY_PERCENTS[0])}
-            maxLabel={formatPrimarySubsidyPercent(
-              LEAGUE_PRIMARY_SUBSIDY_PERCENTS[LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length - 1],
-            )}
-            onChange={setPrimarySubsidyIndex}
-            disabled={!canCreateContest || isProcessing}
-          />
-        </>
+            <DiscreteValueSlider
+              id="league-primary-subsidy"
+              label="Winner Pool Subsidy %"
+              description={
+                <>
+                  Seed the Winner Pool to jump-start betting. Higher % makes that market more fun
+                  sooner.{" "}
+                  <Link to="/faq#winner-pool-subsidy" className="text-blue-600 hover:underline">
+                    Learn more...
+                  </Link>
+                </>
+              }
+              valueIndex={primarySubsidyIndex}
+              valueCount={LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length}
+              displayValue={formatPrimarySubsidyPercent(primarySubsidyPercent)}
+              minLabel={formatPrimarySubsidyPercent(LEAGUE_PRIMARY_SUBSIDY_PERCENTS[0])}
+              maxLabel={formatPrimarySubsidyPercent(
+                LEAGUE_PRIMARY_SUBSIDY_PERCENTS[LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length - 1],
+              )}
+              onChange={setPrimarySubsidyIndex}
+              disabled={!canCreateContest || isProcessing}
+            />
+          </DisclosurePanel>
+        </Disclosure>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={!canCreateContest || loading || isProcessing}
-        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-      >
-        {loading || isProcessing ? (
-          <span className="flex items-center gap-2">
-            <LoadingSpinnerSmall />
-            {getCreateContestStatusMessage(isSending, isConfirming) === "idle"
-              ? "Creating…"
-              : getCreateContestStatusMessage(isSending, isConfirming)}
-          </span>
-        ) : (
-          "Create Contest"
-        )}
-      </button>
+      <hr className="my-6 border-slate-200" />
+
+      {/* send email checkbox */}
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="send-email"
+          className="h-4 w-4 rounded border border-slate-300 text-blue-600 focus:ring-blue-500"
+        />
+        <label htmlFor="send-email" className="font-display text-sm text-gray-900">
+          Email contest to league members
+        </label>
+      </div>
+
+      <div className="flex sm:justify-end">
+        <button
+          type="submit"
+          disabled={!canCreateContest || loading || isProcessing}
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300 sm:min-h-0 sm:w-auto sm:py-2"
+        >
+          {loading || isProcessing ? (
+            <span className="flex items-center gap-2">
+              <LoadingSpinnerSmall />
+              {getCreateContestStatusMessage(isSending, isConfirming) === "idle"
+                ? "Creating…"
+                : getCreateContestStatusMessage(isSending, isConfirming)}
+            </span>
+          ) : (
+            "Create Contest"
+          )}
+        </button>
+      </div>
 
       {(transactionError || isFailed || error) && (
         <p className="font-display text-sm text-red-600" role="alert">
