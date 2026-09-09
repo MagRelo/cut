@@ -279,7 +279,7 @@ adminRouter.post("/test-email", requireAuth, requireAdmin, async (c) => {
 
     const rawMode = typeof body?.mode === "string" ? body.mode.trim() : "minimal";
     const mode: PreviewKind =
-      rawMode === "preview" ? "new-tournament" : (rawMode as PreviewKind) || "minimal";
+      rawMode === "preview" ? "contest-announcement" : (rawMode as PreviewKind) || "minimal";
     if (!PREVIEW_KINDS.includes(mode)) {
       return c.json(
         { error: `Invalid "mode"; use: ${PREVIEW_KINDS.join(", ")} or preview` },

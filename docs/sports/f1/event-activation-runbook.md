@@ -203,21 +203,17 @@ pnpm --filter server run script:f1-dry-run -- --cleanup
 
 ---
 
-### 7. Email blast (optional)
+### 7. Contest announcement email
 
-Email templates are **golf-oriented** today (`course`, `city`, `state` in metadata). F1 activation does not require email.
-
-If sending a race-week blast anyway:
+Init prepares `CompetitionEvent.metadata.emailAnnouncement` (GP name, circuit, race dates). League admins send it when they create a contest with **Email contest to league members** checked.
 
 ```bash
-EVENT_ID=<f1-event-cuid> pnpm --filter server run script:email-preview new-tournament open
-EVENT_ID=<f1-event-cuid> pnpm --filter server run script:send-blast new-tournament --dry-run
+EVENT_ID=<f1-event-cuid> pnpm --filter server run script:email-preview contest-announcement open
 ```
 
-- [ ] Preview reviewed — expect sparse location/subtitle for F1 until sport-specific email work lands
-- [ ] `EVENT_ID` set explicitly (defaults to active **golf** event if omitted)
+- [ ] Preview reviewed
+- [ ] `EVENT_ID` set explicitly (defaults to the active **golf** event if omitted)
 
-Future: F1-specific blast copy and metadata mapping — tracked as optional in expansion checklist.
 
 ---
 
@@ -235,6 +231,7 @@ Pipeline order (same as golf):
 2. **`batchActivateContests`** — `OPEN` → `ACTIVE` when event is `LIVE`
 3. **`batchSettleContests`** — when event is `COMPLETE`
 4. **`batchSyncReferralGraph`**
+5. **`flushPendingContestAnnouncementEmails`**
 
 **Post-expiry escape hatch:** If the operator never settles, permissionless `cancelExpired()` unlocks after `expiryTimestamp + SETTLEMENT_GRACE_PERIOD` (1 day). See [wallet-roles-cashflows.md](../../operations/wallet-roles-cashflows.md).
 

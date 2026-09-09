@@ -77,10 +77,10 @@ Middleware: `middleware/auth.ts`
 
 | Path | Purpose |
 |------|---------|
-| `lib/email/` | Templates, blasts, dedupe via `EmailSendLog.eventId` |
-| `lib/email/data/event.ts` | Load active event for email content |
+| `lib/email/` | Contest announcement + player-withdrawal templates; `EmailSendLog` outbox |
+| `lib/email/data/event.ts` | Load event for announcement snapshot / preview |
 
-Scripts: `scripts/sendBlastEmail.ts`, `scripts/emailPreview.ts`
+Scripts: `scripts/emailPreview.ts`, `scripts/sendTestEmail.ts`
 
 ---
 

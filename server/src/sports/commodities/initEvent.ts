@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { COMMODITIES_SPORT_ID } from "@cut/sport-commodities";
+import { prepareEventAnnouncementEmailSafe } from "../../lib/email/prepareEventAnnouncement.js";
 import { parseCommoditiesSessionExternalId, resolveWeekAnchorDates } from "./externalId.js";
 import {
   formatSessionDisplayName,
@@ -75,6 +76,8 @@ export async function initCommoditiesEvent(
     where: { id: event.id },
     data: { isActive: true },
   });
+
+  await prepareEventAnnouncementEmailSafe(event.id);
 
   console.log(`[commodities] Initialized event ${event.id} (${sessionWeek})`);
   console.log(`[commodities] Field size: ${fieldSnapshot.length} contracts`);

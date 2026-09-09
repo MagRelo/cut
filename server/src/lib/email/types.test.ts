@@ -2,23 +2,19 @@ import { describe, expect, it } from "vitest";
 import { buildDedupeKey, EmailKind } from "./types.js";
 
 describe("buildDedupeKey", () => {
-  it("builds welcome key", () => {
-    expect(buildDedupeKey(EmailKind.WELCOME, { userId: "u1" })).toBe("WELCOME:u1");
-  });
-
-  it("builds reminder key with eventId", () => {
+  it("builds contest announcement key with contestId and userId", () => {
     expect(
-      buildDedupeKey(EmailKind.REMINDER_NO_CONTEST, {
-        eventId: "e1",
+      buildDedupeKey(EmailKind.CONTEST_ANNOUNCEMENT, {
+        contestId: "c1",
         userId: "u1",
       }),
-    ).toBe("REMINDER_NO_CONTEST:e1:u1");
+    ).toBe("CONTEST_ANNOUNCEMENT:c1:u1");
   });
 
-  it("builds recap key with eventId", () => {
-    expect(
-      buildDedupeKey(EmailKind.TOURNAMENT_RECAP, { eventId: "e1", userId: "u1" }),
-    ).toBe("TOURNAMENT_RECAP:e1:u1");
+  it("requires contestId and userId for contest announcement", () => {
+    expect(() =>
+      buildDedupeKey(EmailKind.CONTEST_ANNOUNCEMENT, { contestId: "c1" }),
+    ).toThrow("CONTEST_ANNOUNCEMENT requires contestId and userId");
   });
 
   it("builds player withdrawal key", () => {

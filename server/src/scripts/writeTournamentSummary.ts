@@ -9,6 +9,7 @@
 import { readFile } from "node:fs/promises";
 import { prisma } from "../lib/prisma.js";
 import { PGA_GOLF_SPORT_ID, parseSummarySections } from "@cut/sport-pga-golf";
+import { prepareEventAnnouncementEmailSafe } from "../lib/email/prepareEventAnnouncement.js";
 
 async function readJsonInput(source: string): Promise<unknown> {
   const raw =
@@ -73,6 +74,8 @@ async function writeSummary(externalId: string, source: string) {
       },
     },
   });
+
+  await prepareEventAnnouncementEmailSafe(event.id);
 
   console.log(
     `Wrote summarySections (${sections.length} sections) to event ${event.id} (${externalId})`,

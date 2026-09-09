@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { F1_SPORT_ID } from "@cut/sport-f1";
+import { prepareEventAnnouncementEmailSafe } from "../../lib/email/prepareEventAnnouncement.js";
 import { resolveRaceContext } from "./openf1Client.js";
 import { mergeF1EventMetadata } from "./metadataMerge.js";
 import { syncF1EventMetadata } from "./syncMetadata.js";
@@ -54,6 +55,8 @@ export async function initF1Event(externalId: string) {
     where: { id: event.id },
     data: { isActive: true },
   });
+
+  await prepareEventAnnouncementEmailSafe(event.id);
 
   console.log(`[f1] Initialized event ${event.id} (${normalizedExternalId})`);
 }

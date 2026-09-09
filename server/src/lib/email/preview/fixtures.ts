@@ -1,63 +1,24 @@
-import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
+import { appPath } from "../appUrl.js";
 import { resolveEventIdForEmail } from "../data/event.js";
-import { loadNewEventEmailData } from "../data/newTournament.js";
-import type { NewTournamentEmailData } from "../emails/newTournament.js";
-import type { ReminderNoContestEmailData } from "../emails/reminderNoContest.js";
-import type { TournamentRecapEmailData } from "../emails/tournamentRecap.js";
+import { loadContestAnnouncementSource } from "../data/contestAnnouncement.js";
+import type { ContestAnnouncementEmailData } from "../emails/contestAnnouncement.js";
 import type { PlayerWithdrawalEmailData } from "../emails/playerWithdrawal.js";
-import type { WelcomeEmailData } from "../emails/welcome.js";
-import type { BehindTheScenesEmailData } from "../emails/behindTheScenes.js";
-import { DEFAULT_BTS_PARAGRAPHS } from "../emails/behindTheScenes.js";
 
-export async function fixtureNewTournament(): Promise<NewTournamentEmailData> {
-  const eventId = await resolveEventIdForEmail(PGA_GOLF_SPORT_ID);
-  const data = await loadNewEventEmailData(eventId);
+const PREVIEW_DEFAULT_SPORT_ID = "pga-golf";
+
+export async function fixtureContestAnnouncement(): Promise<ContestAnnouncementEmailData> {
+  const eventId = await resolveEventIdForEmail(PREVIEW_DEFAULT_SPORT_ID);
+  const data = await loadContestAnnouncementSource(eventId);
   if (!data) {
     throw new Error(`Event not found: ${eventId}`);
   }
 
-  return data;
-}
-
-export function fixtureWelcome(): WelcomeEmailData {
   return {
-    tournamentName: "Charles Schwab Challenge",
-  };
-}
-
-export function fixtureReminder(): ReminderNoContestEmailData {
-  return {
-    userName: "Alex",
-    tournamentName: "Charles Schwab Challenge",
-    lockLabel: "Thursday, May 22 at 7:00 AM EDT",
-    groupNames: ["Sunday Swings"],
-    openContests: [
-      { name: "Main Event", buyInLabel: "$10 buy-in" },
-      { name: "Friends League", buyInLabel: "$5 buy-in", groupName: "Sunday Swings" },
-    ],
-  };
-}
-
-export function fixtureRecap(): TournamentRecapEmailData {
-  return {
-    tournamentName: "Charles Schwab Challenge",
-    subtitle: "Colonial Country Club · Fort Worth, Texas",
-    highlights: [
-      { label: "Main Event", value: "Winner: Jordan T." },
-      { label: "Field", value: "Cut at +2" },
-    ],
-    personalResults: [
-      { label: "Main Event", value: "#4 · 142 pts" },
-      { label: "Friends League", value: "#1 · 156 pts" },
-    ],
-    nextWeekTeaser: "Next week's tournament opens soon on Play The Cut.",
-  };
-}
-
-export function fixtureBehindTheScenes(): BehindTheScenesEmailData {
-  return {
-    campaignLabel: "2026-05",
-    bodyParagraphs: DEFAULT_BTS_PARAGRAPHS,
+    eventName: data.eventName,
+    leagueName: "Sunday Swings",
+    buyInLabel: "$20",
+    contestHref: appPath("/contest/preview"),
+    announcement: data.announcement,
   };
 }
 
@@ -69,21 +30,10 @@ export function fixturePlayerWithdrawal(): PlayerWithdrawalEmailData {
   };
 }
 
-export type PreviewKind =
-  | "welcome"
-  | "new-tournament"
-  | "reminder"
-  | "recap"
-  | "behind-the-scenes"
-  | "player-withdrawal"
-  | "minimal";
+export type PreviewKind = "contest-announcement" | "player-withdrawal" | "minimal";
 
 export const PREVIEW_KINDS: PreviewKind[] = [
-  "welcome",
-  "new-tournament",
-  "reminder",
-  "recap",
-  "behind-the-scenes",
+  "contest-announcement",
   "player-withdrawal",
   "minimal",
 ];

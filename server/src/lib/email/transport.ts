@@ -93,9 +93,9 @@ export async function sendTestEmail(to: string): Promise<void> {
   });
 }
 
-/** Full new-tournament preview HTML (summary sections). */
+/** Full contest-announcement preview HTML (summary sections). */
 export async function sendPreviewEmail(to: string): Promise<void> {
-  await sendSampleEmail(to, "new-tournament");
+  await sendSampleEmail(to, "contest-announcement");
 }
 
 /**

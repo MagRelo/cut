@@ -20,8 +20,8 @@ Pass script arguments **directly** — do **not** insert `--` before them. In th
 | **Init command** | `pnpm run service:init-event pga-golf R2026033` |
 | **Active flag** | `CompetitionEvent.isActive = true` (set by init) |
 | **Admin dashboard** | `GET /api/admin/dashboard` (accepts `eventId` or `tournamentId` alias) |
-| **Email preview** | `pnpm --filter server run script:email-preview new-tournament open` |
-| **Email send** | `pnpm --filter server run script:send-blast new-tournament [--dry-run]` |
+| **Email preview** | `pnpm --filter server run script:email-preview contest-announcement open` |
+| **Email send** | League admin creates a contest with **Email contest to league members** checked |
 
 ---
 
@@ -67,7 +67,8 @@ Generate a tournament summary for R__________
 ```
 
 Writes `summarySections` onto the event's DB metadata (announcement card + in-app
-preview + new-tournament email). Not required for field/scoring.
+preview + contest announcement email) and refreshes `metadata.emailAnnouncement`.
+Not required for field/scoring.
 
 - [ ] Summary validated and written via `script:write-tournament-summary`
 - [ ] In-app preview / email preview reviewed
@@ -117,21 +118,19 @@ Not part of init — handle when the week opens.
 
 ---
 
-### 6. Preview & send New Event email
+### 6. Contest announcement email
 
-Uses the active `CompetitionEvent` (same as production send). Override with `EVENT_ID` env if needed.
+Init prepares `CompetitionEvent.metadata.emailAnnouncement`. League admins send it
+when they create a contest (checkbox default on). Preview the prepared copy:
 
 ```bash
-pnpm --filter server run script:email-preview new-tournament open
-pnpm --filter server run script:send-blast new-tournament --dry-run
-pnpm --filter server run script:send-blast new-tournament
+pnpm --filter server run script:email-preview contest-announcement open
 ```
 
-- [ ] Preview reviewed (subject, summary sections, dates, CTA links)
-- [ ] Dry-run recipient count looks right
-- [ ] Live send completed (if sending today)
+- [ ] Preview reviewed (subject uses a fixture league name; live send uses the real league)
+- [ ] MailerSend configured on the environment that will create contests
 
-`EmailSendLog` records `eventId` for idempotency.
+`EmailSendLog` records `CONTEST_ANNOUNCEMENT:{contestId}:{userId}`.
 
 ---
 
@@ -151,19 +150,13 @@ Pipeline order:
 2. **`batchActivateContests`** — `OPEN` → `ACTIVE`
 3. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED`
 4. **`batchSyncReferralGraph`**
+5. **`flushPendingContestAnnouncementEmails`** — retries leftover league contest announcement sends
 
 **Post-expiry escape hatch:** If the operator never settles, permissionless `cancelExpired()` unlocks after `expiryTimestamp + SETTLEMENT_GRACE_PERIOD` (1 day). See [wallet-roles-cashflows.md](../../operations/wallet-roles-cashflows.md).
 
 **Admin only (not cron):** `batchLockContests` (`ACTIVE` → `LOCKED`).
 
 Full spec: [`spec/server/cron.md`](../../../spec/server/cron.md). Status: `GET /api/cron/status`.
-
-**Later in the week (manual emails):**
-
-| Target | Command |
-|--------|---------|
-| Wednesday reminder | `script:send-blast reminder` |
-| Sunday recap | `script:send-blast recap` |
 
 ---
 

@@ -21,7 +21,7 @@ Production is **Base** (`8453`) with **canonical USDC**. Players add and withdra
 | [wallet-roles-cashflows.md](operations/wallet-roles-cashflows.md) | Platform wallet roles, funding, contest cashflows. Prod is Base + USDC (self-serve on/off-ramp; Coinbase/Robinhood recommended). |
 | [database-connections.md](operations/database-connections.md) | Connection budget, PgBouncer pooling, pooled vs direct URLs |
 | [cron-pi.md](operations/cron-pi.md) | Raspberry Pi cron host (Tailscale, deploy, PM2) |
-| [email-program.md](operations/email-program.md) | Email cadence and audiences |
+| [email-program.md](operations/email-program.md) | Contest announcement email and unsubscribe |
 | [email-implementation.md](operations/email-implementation.md) | MailerSend engineering companion |
 
 ## Competitions

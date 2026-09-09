@@ -44,7 +44,6 @@
     "script:send-test-email": "tsx src/scripts/sendTestEmail.ts",
     "script:email-preview": "tsx src/scripts/emailPreview.ts",
     "script:write-tournament-summary": "tsx src/scripts/writeTournamentSummary.ts",
-    "script:send-blast": "tsx src/scripts/sendBlastEmail.ts",
     "script:migrate-from-legacy": "tsx src/scripts/migrate-from-legacy.ts",
     "script:f1-data-spike": "tsx src/scripts/f1DataSpike.ts",
     "script:f1-list-races": "tsx src/scripts/f1ListRaces.ts",

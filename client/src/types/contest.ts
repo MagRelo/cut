@@ -197,6 +197,8 @@ export interface CreateContestInput {
   settings: ContestSettings;
   description?: string;
   userGroupId?: string;
+  /** League contests only. Server ignores this for public contests. */
+  notifyLeagueMembers?: boolean;
 }
 
 /** Secondary (winner pool) payout row; ticket owner identity, not primary lineup owner. */

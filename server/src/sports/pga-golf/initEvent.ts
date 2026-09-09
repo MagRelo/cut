@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { prisma } from "../../lib/prisma.js";
 import { getTournament } from "../../lib/pgaTournament.js";
 import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
+import { prepareEventAnnouncementEmailSafe } from "../../lib/email/prepareEventAnnouncement.js";
 import { syncGolfEventMetadata } from "./syncMetadata.js";
 import { syncGolfParticipantField } from "./syncField.js";
 
@@ -77,6 +78,8 @@ export async function initGolfEvent(externalId: string) {
     where: { id: event.id },
     data: { isActive: true },
   });
+
+  await prepareEventAnnouncementEmailSafe(event.id);
 
   console.log(`[pga-golf] Initialized event ${event.id} (${pgaTourId})`);
 }

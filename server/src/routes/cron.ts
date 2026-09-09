@@ -10,6 +10,7 @@ const PIPELINE_STEPS = [
   "batchActivateContests",
   "batchSettleContests",
   "batchSyncReferralGraph",
+  "flushPendingContestAnnouncementEmails",
   "overviewPipeline (*/20 * * * *) → refreshContestOverviews + refreshCommoditiesContestOverviews",
   "feedWorker (in-process; CommentaryFeedJob queue, concurrency 1)",
 ] as const;

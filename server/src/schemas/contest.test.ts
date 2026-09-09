@@ -78,4 +78,22 @@ describe("createContestSchema", () => {
     );
     expect(parsed.success).toBe(false);
   });
+
+  it("accepts notifyLeagueMembers", () => {
+    const parsed = createContestSchema.safeParse(
+      baseBody({ transactionHash: TX, notifyLeagueMembers: true }),
+    );
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.notifyLeagueMembers).toBe(true);
+    }
+  });
+
+  it("omits notifyLeagueMembers when not sent", () => {
+    const parsed = createContestSchema.safeParse(baseBody({ transactionHash: TX }));
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.notifyLeagueMembers).toBeUndefined();
+    }
+  });
 });

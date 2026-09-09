@@ -18,7 +18,7 @@ Produce a **casual-fan tournament preview** for a PGA Tour event and write it to
 
 Content appears in the **announcement card** (Event Blurb + event header) and under
 **from the 19th hole:** in both the in-app tournament preview
-and the **New Tournament email**. The **CutBot quote** is the lead voice —
+and in the **contest announcement email**. The **CutBot quote** is the lead voice —
 evocative, engaging, and sets the tone for the week. User quotes (added manually)
 can be spikier; CutBot should feel like a welcoming column intro. Light betting
 angles are fine; save odds boards and the full field for **Best Players and Odds**.
@@ -235,7 +235,7 @@ pnpm run script:write-tournament-summary R2026023 /tmp/R2026023-summary.json
 
 ## CutBot quote voice
 
-The CutBot quote sits under **from the 19th hole:** in the New Tournament email
+The CutBot quote sits under **from the 19th hole:** in the contest announcement email
 and in-app preview — after the announcement card. It should pull readers into the
 week: evocative place, real stakes, forward momentum. Save contrarian/spiky takes
 for user quotes later in the block.
@@ -295,7 +295,7 @@ After the user picks a direction, apply it to the full summary or run
 Preview in email chrome after writing to DB:
 
 ```bash
-pnpm --filter server run script:email-preview new-tournament open
+pnpm --filter server run script:email-preview contest-announcement open
 ```
 
 ### Odds blurbs

@@ -28,6 +28,7 @@ import {
 } from "../utils/lineupValidation.js";
 import { canAccessLeagueContest, isUserGroupAdmin } from "../utils/userGroup.js";
 import { getContestTimelineData } from "../utils/contestTimeline.js";
+import { scheduleContestAnnouncementEmails } from "../lib/email/send/contestAnnouncement.js";
 import { queueVerifyContestContract } from "../services/contest/verifyContestContract.js";
 import { verifyFactoryContestCreation } from "../services/contest/verifyFactoryContestCreation.js";
 import { resolveContestDbId } from "../utils/contestRouteParam.js";
@@ -382,6 +383,7 @@ contestRouter.post("/", requireAuth, async (c) => {
       chainId,
       settings,
       transactionHash,
+      notifyLeagueMembers,
     } = validation.data;
 
     const user = c.get("user");
@@ -429,6 +431,12 @@ contestRouter.post("/", requireAuth, async (c) => {
       });
       invalidateContestDirectory();
       invalidateContestLobby(contest);
+      await scheduleContestAnnouncementEmails({
+        contestId: contest.id,
+        eventId: contest.eventId,
+        userGroupId: contest.userGroupId,
+        notifyLeagueMembers,
+      });
       return c.json(contest, 201);
     }
 
@@ -529,6 +537,12 @@ contestRouter.post("/", requireAuth, async (c) => {
       });
     }
 
+    await scheduleContestAnnouncementEmails({
+      contestId: contest.id,
+      eventId: contest.eventId,
+      userGroupId: contest.userGroupId,
+      notifyLeagueMembers,
+    });
     return c.json(contest, 201);
   } catch (error) {
     console.error("Error creating contest:", error);

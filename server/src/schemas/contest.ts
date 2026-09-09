@@ -76,6 +76,8 @@ export const createContestSchema = z.object({
   transactionId: z.string().regex(TX_HASH_REGEX, "Invalid transaction hash").optional(),
   status: z.enum(["OPEN", "ACTIVE", "LOCKED", "SETTLED", "CANCELLED", "CLOSED"]).default("OPEN"),
   settings: contestSettingsSchema,
+  /** League contests only. Ignored for public contests. */
+  notifyLeagueMembers: z.boolean().optional(),
 })
   .superRefine((data, ctx) => {
     const deposit = data.settings?.primaryDeposit;

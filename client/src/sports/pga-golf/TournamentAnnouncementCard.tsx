@@ -27,8 +27,8 @@ function formatDateRange(startDate?: string | null, endDate?: string | null): st
 }
 
 /**
- * Shared announcement card for the tournament preview modal and (via email HTML) the
- * new-tournament blast — name, course · place, dates, Event Blurb prose.
+ * Shared announcement card for the tournament preview modal and the contest
+ * announcement email — name, course · place, dates, Event Blurb prose.
  */
 export function TournamentAnnouncementCard({
   tournamentName,

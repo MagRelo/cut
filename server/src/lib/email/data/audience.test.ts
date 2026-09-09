@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isMarketingUnsubscribed } from "./audience.js";
+import { isMarketingUnsubscribed, toMarketingEmailRecipients } from "./audience.js";
 
 describe("isMarketingUnsubscribed", () => {
   it("returns false when settings are missing", () => {
@@ -20,5 +20,17 @@ describe("isMarketingUnsubscribed", () => {
   it("returns true only when marketingUnsubscribed is true", () => {
     expect(isMarketingUnsubscribed({ marketingUnsubscribed: true })).toBe(true);
     expect(isMarketingUnsubscribed({ marketingUnsubscribed: "true" })).toBe(false);
+  });
+});
+
+describe("toMarketingEmailRecipients", () => {
+  it("drops opted-out and missing-email users", () => {
+    const recipients = toMarketingEmailRecipients([
+      { id: "1", email: "a@example.com", name: "A", settings: {} },
+      { id: "2", email: "b@example.com", name: "B", settings: { marketingUnsubscribed: true } },
+      { id: "3", email: "  ", name: "C", settings: {} },
+      { id: "4", email: null, name: "D", settings: {} },
+    ]);
+    expect(recipients).toEqual([{ id: "1", email: "a@example.com", name: "A" }]);
   });
 });

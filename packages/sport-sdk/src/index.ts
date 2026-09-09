@@ -48,7 +48,6 @@ export type {
   EmailAnnouncementSection,
   EmailAnnouncementSectionItem,
   EmailEventShell,
-  EmailEventSubtitleInput,
   SportEmailContent,
 } from "./sport-email-content.js";
 

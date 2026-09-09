@@ -1,6 +1,6 @@
 # Email implementation
 
-Engineering companion to [email-program.md](./email-program.md). Product cadence, audiences, and content live in that spec.
+Engineering companion to [email-program.md](./email-program.md). Product trigger, audience, and copy live in that spec.
 
 ---
 
@@ -9,12 +9,11 @@ Engineering companion to [email-program.md](./email-program.md). Product cadence
 | Area | Status |
 |------|--------|
 | Provider | **MailerSend** — `server/src/lib/email/transport.ts` |
-| Idempotency | **`EmailSendLog`** — `dedupeKey` per send / blast |
-| Composers | **5 email kinds** under `server/src/lib/email/emails/` |
-| Data loaders | `server/src/lib/email/data/` (Prisma; no HTML) |
-| Send orchestration | `server/src/lib/email/send/` + `script:send-blast` |
-| Welcome | **Manual** — `script:send-blast welcome` |
-| Cron | **Deferred** — manual sends only in v1 |
+| Live send | League contest announcement via `POST /api/contests` + `notifyLeagueMembers` |
+| Idempotency | **`EmailSendLog`** — `CONTEST_ANNOUNCEMENT:{contestId}:{userId}` |
+| Outbox | PENDING rows flushed after create; cron retries leftovers |
+| Prepare | Snapshot on `CompetitionEvent.metadata` at init-event and summary write |
+| Player withdrawal | Template + preview only |
 
 ---
 
@@ -22,30 +21,22 @@ Engineering companion to [email-program.md](./email-program.md). Product cadence
 
 ```
 server/src/lib/email/
-  index.ts                 # public exports
+  index.ts
   transport.ts             # MailerSend
-  templates.ts             # wrapEmailHtml, buildTestEmailHtml
-  escape.ts, styles.ts, appUrl.ts
+  templates.ts             # wrapEmailHtml
+  unsubscribe.ts
   types.ts                 # EmailKind, buildDedupeKey
-  sendLog.ts               # sendIfNotLogged, hasBroadcastBeenSent
-
-  blocks/
-    summary.ts             # tournament summarySections
-    cta.ts, contestList.ts, lockCountdown.ts, resultsTable.ts
-
+  sendLog.ts
+  prepareEventAnnouncement.ts
   emails/
-    welcome.ts
-    newTournament.ts
-    reminderNoContest.ts
-    tournamentRecap.ts
-    behindTheScenes.ts
-
+    contestAnnouncement.ts
+    playerWithdrawal.ts
   data/                    # Prisma loaders (no HTML)
-  send/                    # manual blast orchestration
-  preview/                 # fixtures + buildPreviewHtmlByKind
-
-server/src/lib/tournamentSummary.ts
+  send/contestAnnouncement.ts
+  preview/
 ```
+
+Sport adapters: `server/src/sports/emailContentRegistry.ts` — PGA, F1, and commodities are registered. Unregistered sports use `platformEmailContent` (event name, optional top-level `startDate`/`endDate`, no venue line).
 
 ---
 
@@ -53,61 +44,33 @@ server/src/lib/tournamentSummary.ts
 
 | Kind | Key pattern |
 |------|-------------|
-| `WELCOME` | `WELCOME:{userId}` |
-| `NEW_TOURNAMENT` | `NEW_TOURNAMENT:{tournamentId}` (one blast marker) |
-| `REMINDER_NO_CONTEST` | `REMINDER_NO_CONTEST:{tournamentId}:{userId}` |
-| `TOURNAMENT_RECAP` | per user `…:{tournamentId}:{userId}` + blast `…:{tournamentId}` |
-| `BEHIND_THE_SCENES` | `BEHIND_THE_SCENES:{YYYY-MM}` |
+| `CONTEST_ANNOUNCEMENT` | `CONTEST_ANNOUNCEMENT:{contestId}:{userId}` |
+| `PLAYER_WITHDRAWAL` | `PLAYER_WITHDRAWAL:{eventId}:{userId}:{playerId}` |
+
+`EmailSendLog.status`: `PENDING` \| `SENT` \| `FAILED` \| `SKIPPED`.
 
 ---
 
 ## Preview
 
 ```bash
-pnpm --filter server run script:email-preview new-tournament
-pnpm --filter server run script:email-preview open reminder
+pnpm --filter server run script:email-preview contest-announcement
+pnpm --filter server run script:email-preview contest-announcement open
 ```
 
-Kinds: `welcome` | `new-tournament` | `reminder` | `recap` | `behind-the-scenes` | `minimal`
+Kinds: `contest-announcement` \| `player-withdrawal` \| `minimal`
 
 ---
 
-## Manual sends
+## Test send (one address)
+
+Does **not** write `EmailSendLog`.
 
 ```bash
-pnpm --filter server run script:send-blast welcome --dry-run
-
-# Tournament-scoped (uses manualActive tournament unless TOURNAMENT_ID is set)
-pnpm --filter server run script:send-blast new-tournament --dry-run
-pnpm --filter server run script:send-blast reminder --dry-run
-pnpm --filter server run script:send-blast recap --dry-run
-
-# Monthly digest
-pnpm --filter server run script:send-blast behind-the-scenes --dry-run
+pnpm --filter server run script:send-test-email you@example.com contest-announcement
 ```
 
-Add `--force` to bypass blast-level idempotency for `new-tournament`, `recap`, `behind-the-scenes`.
-
-### One address (verify MailerSend)
-
-Sends a **real** message via MailerSend. Does **not** write `EmailSendLog` (repeat as needed).
-
-**Welcome** (fixture copy):
-
-```bash
-pnpm --filter server run script:send-test-email you@example.com welcome
-```
-
-**Other kinds:** `new-tournament` | `reminder` | `recap` | `behind-the-scenes` | `minimal` (default)
-
-```bash
-pnpm --filter server run script:send-test-email you@example.com
-pnpm --filter server run script:send-test-email you@example.com new-tournament
-```
-
-Or: `TO=you@example.com pnpm --filter server run script:send-test-email welcome`
-
-**Admin API** (same kinds as `mode`): `POST /api/admin/test-email` with `{ "to": "you@example.com", "mode": "welcome" }`. Default `mode` is `minimal`.
+**Admin API:** `POST /api/admin/test-email` with `{ "to": "you@example.com", "mode": "contest-announcement" }`. `mode: "preview"` aliases contest-announcement. Default `mode` is `minimal`.
 
 ---
 
@@ -119,15 +82,14 @@ Or: `TO=you@example.com pnpm --filter server run script:send-test-email welcome`
 | `MAILERSEND_FROM_EMAIL` | Verified sender |
 | `MAILERSEND_FROM_NAME` | Display name |
 | `APP_PUBLIC_URL` / `PUBLIC_APP_URL` | Logo + link base |
-| `TOURNAMENT_ID` | Override tournament for blast scripts |
-| `BTS_EMAIL_BODY_HTML` | Optional raw HTML body for Behind the scenes |
+| `EVENT_ID` / `TOURNAMENT_ID` | Override event for preview |
+| `JWT_SECRET` | Unsubscribe HMAC (falls back to API key) |
 
 ---
 
-## Deferred (phase 2)
+## Ops sequence
 
-- [ ] Cron scheduling (Wednesday / Sunday / monthly)
-- [ ] Admin UI for blasts and BTS editor
-- [ ] Unsubscribe / preferences
-
-See [email-program.md — Open decisions](./email-program.md#open-decisions).
+1. `pnpm run service:init-event pga-golf R{pgaTourId}` — field + announcement snapshot
+2. Optional: tournament-summary skill / `script:write-tournament-summary` — refreshes snapshot
+3. League admin creates a contest with the email checkbox on
+4. Members receive the contest announcement

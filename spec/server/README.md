@@ -17,7 +17,7 @@ Node.js backend (Hono + Prisma + PostgreSQL) for the v4 platform.
 | `src/sports/` | `SportModule` registry, golf handlers |
 | `src/middleware/` | Auth, admin, event editable, league membership |
 | `src/cron/` | `scheduler.ts` — 5-minute pipeline |
-| `src/lib/email/` | Email templates + blasts (`eventId`) |
+| `src/lib/email/` | Contest announcement + MailerSend |
 | `packages/sport-pga-golf/` | Golf plugin (workspace package) |
 
 ---

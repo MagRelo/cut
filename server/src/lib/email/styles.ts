@@ -29,7 +29,7 @@ export const BODY_TITLE_H1_STYLE = `margin:0 0 4px;font-family:${FONT_DISPLAY};f
 
 export const BODY_SUBTITLE_STYLE = `margin:0 0 18px;font-family:${FONT_DISPLAY};font-size:13px;font-weight:600;color:#52525b;line-height:1.35;`;
 
-/** Course · place row under the event title (new-tournament header). */
+/** Date range row under course/place. */
 export const BODY_META_LINE_STYLE = `margin:0 0 2px;font-family:${FONT_DISPLAY};font-size:13px;font-weight:600;color:#52525b;line-height:1.35;`;
 
 /** Date range row under course/place. */

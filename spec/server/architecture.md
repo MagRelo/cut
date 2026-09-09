@@ -94,8 +94,8 @@ HTML is never cached so crawlers and share unfurls pick up the rewrite on the ne
 
 ### Email
 
-- `lib/email/` — templates keyed by `eventId` in `EmailSendLog`
-- Blasts: `scripts/sendBlastEmail.ts`
+- `lib/email/` — contest announcement outbox (`EmailSendLog` per contest + user)
+- Preview / test: `scripts/emailPreview.ts`, `scripts/sendTestEmail.ts`
 
 ### Legacy
 

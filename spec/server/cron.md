@@ -7,7 +7,7 @@ Schedules:
 
 | Job | Cron | Purpose |
 | --- | --- | --- |
-| `scorePipeline` | `*/5 * * * *` | Scores, contest lifecycle, referral sync |
+| `scorePipeline` | `*/5 * * * *` | Scores, contest lifecycle, referral sync, contest announcement email retry |
 | `overviewPipeline` | `*/20 * * * *` | Legacy PGA `Contest.commentary` overview refresh |
 | `feedWorker` | in-process loop | Drain `CommentaryFeedJob` queue (concurrency 1) |
 
@@ -24,7 +24,8 @@ flowchart TD
   D --> F[batchActivateContests]
   F --> G[batchSettleContests]
   G --> H[batchSyncReferralGraph]
-  H --> K[Done]
+  H --> I[flushPendingContestAnnouncementEmails]
+  I --> K[Done]
 ```
 
 ### 1. Sport event pipeline
@@ -83,6 +84,10 @@ Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event statu
 
 `batchSyncReferralGraph` — registers pending users on ReferralGraph. Invitees wait until their inviter is on-chain; organics register under the platform root. Signup already stored the Postgres invite edge; this job does not create accounts.
 
+### 4. Contest announcement emails
+
+`flushPendingContestAnnouncementEmails` — retries `EmailSendLog` rows in `PENDING` or `FAILED` with attempts remaining. Primary send is in-process after league contest create.
+
 ---
 
 ## Overview pipeline (`*/20`)
@@ -128,7 +133,7 @@ Detect path (`detectAndEnqueueContestFeed`) advances `lastHoleState` / `lastCont
 | Init commodities event     | `pnpm run service:init-event commodities 2026-W27`          |
 | Sync commodities (manual)  | `service:sync-commodities-metadata` · `-field` · `-scores`  |
 | Lock contests              | `POST /api/admin/contests/:contestId/lock` or `POST /api/admin/contests/lock-eligible` |
-| Email blast                | `pnpm --filter server run script:send-blast new-tournament` |
+| Flush contest announcement emails | 5-minute score pipeline retries `EmailSendLog` PENDING/FAILED |
 
 See [docs/sports/golf/event-activation-runbook.md](../../docs/sports/golf/event-activation-runbook.md).
 

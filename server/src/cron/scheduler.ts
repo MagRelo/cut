@@ -10,6 +10,7 @@ import {
   startCommentaryFeedWorker,
   stopCommentaryFeedWorker,
 } from "../sports/pga-golf/commentary/feedWorker.js";
+import { flushPendingContestAnnouncementEmails } from "../lib/email/send/contestAnnouncement.js";
 import {
   formatErrorForHeartbeat,
   reportBetterStackHeartbeatFailure,
@@ -119,6 +120,16 @@ class CronScheduler {
       await this.executeWithErrorHandling(
         "Sync Referral Graph",
         batchSyncReferralGraph,
+        pipelineErrors,
+      );
+      await this.executeWithErrorHandling(
+        "Flush contest announcement emails",
+        async () => {
+          const result = await flushPendingContestAnnouncementEmails();
+          console.log(
+            `[CRON] Contest announcement emails — sent ${result.sent}, failed ${result.failed}, skipped ${result.skipped}`,
+          );
+        },
         pipelineErrors,
       );
 

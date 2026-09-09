@@ -141,13 +141,20 @@ Contest lobby renders plugin `EventSummary` in `ContestLobbyView` (not in `AppLa
 ```typescript
 interface SportEmailContent {
   readonly sportId: string;
-  formatEventSubtitle(input): string;
-  loadAnnouncementContent(event): Promise<EmailAnnouncementContent>;
+  formatEventSubtitle(event: EmailEventShell): string;
+  loadAnnouncementContent(event: EmailEventShell): Promise<EmailAnnouncementContent>;
   welcomeProductBlurb?(ctx: { eventName?: string }): string | null;
 }
+
+type EmailEventShell = {
+  sportId: string;
+  externalId: string;
+  name: string;
+  metadata: unknown; // raw CompetitionEvent.metadata
+};
 ```
 
-Platform owns MailerSend transport, unsubscribe, audience, and blast scripts. Sports own announcement sections, event subtitle formatting, and welcome product copy. `getActiveEventId(sportId)` requires an explicit sport — no PGA default.
+Platform owns MailerSend transport, unsubscribe, league contest announcement send, and the generic announcement fallback (name + optional top-level `startDate`/`endDate`; empty venue line). Sports own the meta line (course, circuit, session), date formatting from nested metadata, and announcement sections. PGA, F1, and commodities are registered. `getActiveEventId(sportId)` requires an explicit sport — no PGA default. Nested venue or dates that are not top-level `startDate`/`endDate` require a `SportEmailContent` adapter.
 
 ---
 

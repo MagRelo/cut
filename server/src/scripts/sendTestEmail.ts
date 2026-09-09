@@ -2,10 +2,9 @@
  * Send one real MailerSend message to an address (no EmailSendLog).
  *
  *   pnpm --filter server run script:send-test-email you@example.com
- *   pnpm --filter server run script:send-test-email you@example.com welcome
- *   pnpm --filter server run script:send-test-email you@example.com new-tournament
+ *   pnpm --filter server run script:send-test-email you@example.com contest-announcement
  *
- * Kinds: minimal (default) | welcome | new-tournament | reminder | recap | behind-the-scenes | player-withdrawal
+ * Kinds: minimal (default) | contest-announcement | player-withdrawal
  */
 
 import "dotenv/config";

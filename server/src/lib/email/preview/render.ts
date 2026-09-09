@@ -1,19 +1,11 @@
 import { buildTestEmailHtml } from "../templates.js";
-import { renderBehindTheScenesEmail } from "../emails/behindTheScenes.js";
-import { renderNewTournamentEmail } from "../emails/newTournament.js";
-import { renderReminderNoContestEmail } from "../emails/reminderNoContest.js";
-import { renderTournamentRecapEmail } from "../emails/tournamentRecap.js";
+import { renderContestAnnouncementEmail } from "../emails/contestAnnouncement.js";
 import { renderPlayerWithdrawalEmail } from "../emails/playerWithdrawal.js";
-import { renderWelcomeEmail } from "../emails/welcome.js";
 import type { RenderedEmail } from "../types.js";
 import { appendUnsubscribeFooter } from "../unsubscribe.js";
 import {
-  fixtureBehindTheScenes,
-  fixtureNewTournament,
-  fixtureRecap,
+  fixtureContestAnnouncement,
   fixturePlayerWithdrawal,
-  fixtureReminder,
-  fixtureWelcome,
   type PreviewKind,
 } from "./fixtures.js";
 
@@ -24,22 +16,16 @@ const PREVIEW_EMAIL = "preview@playthecut.com";
 
 export async function renderPreviewEmailByKind(kind: PreviewKind): Promise<RenderedEmail> {
   switch (kind) {
-    case "welcome":
-      return renderWelcomeEmail(fixtureWelcome());
-    case "new-tournament":
-      return renderNewTournamentEmail(await fixtureNewTournament());
-    case "reminder":
-      return renderReminderNoContestEmail(fixtureReminder());
-    case "recap":
-      return renderTournamentRecapEmail(fixtureRecap());
-    case "behind-the-scenes":
-      return renderBehindTheScenesEmail(fixtureBehindTheScenes());
+    case "contest-announcement":
+      return renderContestAnnouncementEmail(await fixtureContestAnnouncement());
     case "player-withdrawal":
       return renderPlayerWithdrawalEmail(fixturePlayerWithdrawal());
     case "minimal":
       return { subject: TEST_EMAIL_SUBJECT, html: buildTestEmailHtml() };
-    default:
-      throw new Error(`Unknown preview kind: ${kind}`);
+    default: {
+      const _exhaustive: never = kind;
+      throw new Error(`Unknown kind: ${_exhaustive}`);
+    }
   }
 }
 

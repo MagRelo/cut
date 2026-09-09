@@ -66,31 +66,39 @@ describe("golf email announcement → summary HTML", () => {
   it("renders quote blocks from announcement sections", async () => {
     const adapter = createPgaGolfEmailContent();
     const content = await adapter.loadAnnouncementContent({
+      sportId: "pga-golf",
       externalId: "R9999999",
       name: "Test",
-      course: "TPC",
-      city: "Blaine",
-      state: "MN",
-      startDate: new Date("2026-05-22"),
-      endDate: new Date("2026-05-25"),
-      summarySections: [
-        {
-          title: "From the 19th Hole",
-          items: [
-            { body: "Opening paragraph text.", attribution: "CutBot", color: "#3b82f6" },
-            {
-              body: "Second hot take.",
-              attribution: "Anthony Kim's Nose",
-              color: "#00abb8",
-            },
-          ],
-        },
-        {
-          title: "Best Players and Odds",
-          items: [{ label: "Player:", body: "Odds note." }],
-        },
-      ],
+      metadata: {
+        name: "Test",
+        status: "UPCOMING",
+        course: "TPC",
+        city: "Blaine",
+        state: "MN",
+        startDate: "2026-05-22T16:00:00.000Z",
+        endDate: "2026-05-25T16:00:00.000Z",
+        summarySections: [
+          {
+            title: "From the 19th Hole",
+            items: [
+              { body: "Opening paragraph text.", attribution: "CutBot", color: "#3b82f6" },
+              {
+                body: "Second hot take.",
+                attribution: "Anthony Kim's Nose",
+                color: "#00abb8",
+              },
+            ],
+          },
+          {
+            title: "Best Players and Odds",
+            items: [{ label: "Player:", body: "Odds note." }],
+          },
+        ],
+      },
     });
+
+    expect(content.courseLine).toContain("TPC");
+    expect(content.dateLine).toContain("May 22");
 
     const html = renderSummarySectionsEmailHtml([
       ...content.leadSections,

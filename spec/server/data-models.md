@@ -116,7 +116,8 @@ See [consensus-axis.md](../../docs/platform/consensus-axis.md) for shape and cro
 ### EmailSendLog
 - `dedupeKey` unique — idempotency
 - `eventId` optional FK (was `tournamentId` in legacy)
-- `kind`: `WELCOME`, `NEW_TOURNAMENT`, `REMINDER_NO_CONTEST`, etc.
+- `kind`: `CONTEST_ANNOUNCEMENT`, `PLAYER_WITHDRAWAL`
+- `contestId` optional FK; `status` `PENDING` \| `SENT` \| `FAILED` \| `SKIPPED`
 
 ---
 

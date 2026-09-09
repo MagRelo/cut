@@ -60,6 +60,7 @@ export const LeagueCreateContestForm = ({
     LEAGUE_INVITE_REWARD_PERCENTS.indexOf(LEAGUE_DEFAULT_INVITE_REWARD_PERCENT),
   );
   const [primarySubsidyIndex, setPrimarySubsidyIndex] = useState(3);
+  const [notifyLeagueMembers, setNotifyLeagueMembers] = useState(true);
 
   const tokenSymbol = paymentTokenSymbol ?? defaultPaymentTokenSymbol();
   const entryFee = LEAGUE_ENTRY_FEE_OPTIONS[entryFeeIndex];
@@ -103,6 +104,7 @@ export const LeagueCreateContestForm = ({
       chainId: resolvedChainId,
       eventId: event.eventId,
       userGroupId,
+      notifyLeagueMembers,
       settings: {
         ...baseSettings,
         primaryDeposit: entryFee,
@@ -159,17 +161,31 @@ export const LeagueCreateContestForm = ({
           onChange={setEntryFeeIndex}
           disabled={!canCreateContest || isProcessing}
         />
-        {isFreeContest ? (
-          <p className="mt-2 font-display text-xs leading-relaxed text-gray-600">
-            Free contests skip the wallet, invite rewards, and Winner Pool.
-          </p>
-        ) : null}
+      </div>
+
+      <div>
+        <p className="block font-display text-base font-semibold text-gray-900">
+          Email Notification
+        </p>
+        <label htmlFor="send-email" className="mt-3 flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="send-email"
+            checked={notifyLeagueMembers}
+            onChange={(changeEvent) => setNotifyLeagueMembers(changeEvent.target.checked)}
+            disabled={!canCreateContest || isProcessing}
+            className="h-4 w-4 rounded border border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+          <span className="font-display text-xs leading-relaxed text-gray-600">
+            Send email to league members about the new contest
+          </span>
+        </label>
       </div>
 
       {!isFreeContest ? (
         <Disclosure as="div">
           <DisclosureButton className="group inline-flex items-center gap-1.5 rounded-md py-1 text-left font-display text-base font-semibold text-gray-900">
-            Advanced controls
+            Advanced Settings
             <ChevronDownIcon
               className="h-4 w-4 shrink-0 text-gray-900 transition-transform group-data-[open]:rotate-180"
               aria-hidden
@@ -225,18 +241,6 @@ export const LeagueCreateContestForm = ({
       ) : null}
 
       <hr className="my-6 border-slate-200" />
-
-      {/* send email checkbox */}
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="send-email"
-          className="h-4 w-4 rounded border border-slate-300 text-blue-600 focus:ring-blue-500"
-        />
-        <label htmlFor="send-email" className="font-display text-sm text-gray-900">
-          Email contest to league members
-        </label>
-      </div>
 
       <div className="flex sm:justify-end">
         <button

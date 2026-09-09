@@ -1,9 +1,7 @@
-import { formatInTimeZone } from "date-fns-tz";
 import type {
   EmailAnnouncementContent,
   EmailAnnouncementSection,
   EmailEventShell,
-  EmailEventSubtitleInput,
   SportEmailContent,
 } from "@cut/sport-sdk";
 import {
@@ -11,19 +9,13 @@ import {
   getEventBlurb,
   getNormalizedQuotes,
   isQuotesSection,
+  parseGolfEventMetadata,
   PGA_GOLF_SPORT_ID,
   QUOTES_SECTION_DISPLAY_TITLE,
   type TournamentSummarySections,
 } from "@cut/sport-pga-golf";
+import { EMAIL_TZ_ET, formatEmailDateRange, parseEmailDate } from "../emailDateFormat.js";
 import { resolveSummarySectionsForEvent } from "./tournamentSummaryIO.js";
-
-const ET = "America/New_York";
-
-function formatEventDateRange(startDate: Date, endDate: Date): string {
-  const start = formatInTimeZone(startDate, ET, "MMM d");
-  const end = formatInTimeZone(endDate, ET, "MMM d, yyyy");
-  return `${start}–${end}`;
-}
 
 function toEmailSections(sections: TournamentSummarySections): EmailAnnouncementSection[] {
   return sections.map((section) => {
@@ -60,24 +52,31 @@ const GOLF_BODY_SECTION_KEYS = [
   "Broadcast Information",
 ] as const;
 
+function golfHeader(event: EmailEventShell): { courseLine: string; dateLine: string } {
+  const golf = parseGolfEventMetadata(event.metadata);
+  const courseLine = formatEventCourseLine(golf?.course, golf?.city, golf?.state);
+  const dateLine = formatEmailDateRange(
+    parseEmailDate(golf?.startDate),
+    parseEmailDate(golf?.endDate),
+    EMAIL_TZ_ET,
+  );
+  return { courseLine, dateLine };
+}
+
 export function createPgaGolfEmailContent(): SportEmailContent {
   return {
     sportId: PGA_GOLF_SPORT_ID,
 
-    formatEventSubtitle(input: EmailEventSubtitleInput): string {
-      const courseLine = formatEventCourseLine(
-        typeof input.course === "string" ? input.course : "",
-        typeof input.city === "string" ? input.city : "",
-        typeof input.state === "string" ? input.state : "",
-      );
-      const dates = formatEventDateRange(input.startDate, input.endDate);
-      return [courseLine, dates].filter(Boolean).join(" — ");
+    formatEventSubtitle(event: EmailEventShell): string {
+      const { courseLine, dateLine } = golfHeader(event);
+      return [courseLine, dateLine].filter(Boolean).join(" — ");
     },
 
     async loadAnnouncementContent(event: EmailEventShell): Promise<EmailAnnouncementContent> {
+      const golf = parseGolfEventMetadata(event.metadata);
       const summarySections = await resolveSummarySectionsForEvent(
         event.externalId,
-        event.summarySections,
+        golf?.summarySections ?? null,
       );
       const allSections = summarySections ? toEmailSections(summarySections) : [];
       const leadSections = allSections.filter((s) => s.kind === "quotes");
@@ -85,10 +84,11 @@ export function createPgaGolfEmailContent(): SportEmailContent {
       const bodySections = GOLF_BODY_SECTION_KEYS.map((key) => byKey.get(key.toLowerCase())).filter(
         (s): s is EmailAnnouncementSection => Boolean(s) && s!.kind !== "quotes",
       );
+      const { courseLine, dateLine } = golfHeader(event);
 
       return {
-        courseLine: formatEventCourseLine(event.course, event.city, event.state),
-        dateLine: formatEventDateRange(event.startDate, event.endDate),
+        courseLine,
+        dateLine,
         blurb: getEventBlurb(summarySections),
         leadSections,
         bodySections,
@@ -103,5 +103,3 @@ export function createPgaGolfEmailContent(): SportEmailContent {
     },
   };
 }
-
-export { formatEventCourseLine };

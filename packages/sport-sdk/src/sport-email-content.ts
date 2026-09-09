@@ -28,24 +28,12 @@ export type EmailAnnouncementContent = {
   bodySections: EmailAnnouncementSection[];
 };
 
-export type EmailEventSubtitleInput = {
-  course?: string;
-  city?: string;
-  state?: string;
-  startDate: Date;
-  endDate: Date;
-  [key: string]: unknown;
-};
-
 export type EmailEventShell = {
+  sportId: string;
   externalId: string;
   name: string;
-  course: string;
-  city: string;
-  state: string;
-  startDate: Date;
-  endDate: Date;
-  summarySections: unknown;
+  /** Raw CompetitionEvent.metadata — sports parse their own nested blocks */
+  metadata: unknown;
 };
 
 export interface SportEmailContent {
@@ -54,10 +42,10 @@ export interface SportEmailContent {
   /**
    * Single-line subtitle for recap / reminder-style meta rows.
    */
-  formatEventSubtitle(input: EmailEventSubtitleInput): string;
+  formatEventSubtitle(event: EmailEventShell): string;
 
   /**
-   * Full announcement payload for new-event email (and announcement card).
+   * Full announcement payload for contest-announcement email.
    */
   loadAnnouncementContent(event: EmailEventShell): Promise<EmailAnnouncementContent>;
 

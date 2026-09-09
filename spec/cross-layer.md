@@ -186,12 +186,12 @@ flowchart TB
 
 | Trigger | Data source |
 |---------|-------------|
-| Welcome, reminders, blasts | `lib/email/*` |
-| Event context | `lib/email/data/event.ts` → active `CompetitionEvent` |
-| Dedupe | `EmailSendLog.dedupeKey` + `eventId` |
+| League contest create (`notifyLeagueMembers`) | `lib/email/send/contestAnnouncement.ts` |
+| Event announcement copy | `CompetitionEvent.metadata.emailAnnouncement` (prepared at init / summary write) |
+| Dedupe | `EmailSendLog.dedupeKey` = `CONTEST_ANNOUNCEMENT:{contestId}:{userId}` |
 
-Admin test: `POST /api/admin/email/test`.  
-Scripts: `pnpm --filter server run script:send-blast ...`
+Admin test: `POST /api/admin/test-email`.  
+Preview: `pnpm --filter server run script:email-preview contest-announcement`
 
 ---
 

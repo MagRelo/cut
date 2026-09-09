@@ -239,6 +239,7 @@ model Contest {
   onchainPayments       OnchainPayment[]
   timelines             ContestLineupTimeline[]
   commentaryFeedJobs    CommentaryFeedJob[]
+  emailSendLogs         EmailSendLog[]
 
   @@index([eventId])
   @@index([userGroupId])
@@ -372,20 +373,29 @@ model ContestSecondaryParticipant {
 // ---------------------------------------------------------------------------
 
 model EmailSendLog {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   kind           String
-  dedupeKey      String   @unique
+  dedupeKey      String    @unique
   recipientEmail String
   userId         String?
   eventId        String?
+  contestId      String?
   campaignId     String?
-  sentAt         DateTime @default(now())
+  /// PENDING | SENT | FAILED | SKIPPED
+  status         String    @default("SENT")
+  attempts       Int       @default(0)
+  lastError      String?
+  sentAt         DateTime?
 
-  user  User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
-  event CompetitionEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  user    User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  event   CompetitionEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  contest Contest?          @relation(fields: [contestId], references: [id], onDelete: SetNull)
 
   @@index([kind])
   @@index([userId])
   @@index([eventId])
+  @@index([contestId])
   @@index([campaignId])
+  @@index([status])
+  @@index([kind, status])
 }

@@ -131,7 +131,7 @@ Verify the new sport works through shared platform paths (pass `sportId` from `E
 
 Optional, separate track:
 
-- [ ] `SportEmailContent` in `server/src/sports/<id>/emailContent.ts` + register in `server/src/sports/emailContentRegistry.ts`
+- [ ] Optional: `SportEmailContent` in `server/src/sports/<id>/emailContent.ts` + register in `server/src/sports/emailContentRegistry.ts`. Unregistered sports get name + optional top-level `startDate`/`endDate` (no venue line). Nested venue or dates need an adapter.
 
 ---
 

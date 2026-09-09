@@ -3,12 +3,12 @@
  *
  *   pnpm --filter server run script:email-preview
  *   pnpm --filter server run script:email-preview open
- *   pnpm --filter server run script:email-preview new-tournament
+ *   pnpm --filter server run script:email-preview contest-announcement
  *
- * new-tournament uses the active pga-golf event (same as production blasts).
+ * contest-announcement uses the active pga-golf event (fixture league/contest CTA).
  * Override with EVENT_ID or SPORT_ID.
  *
- * Kinds: welcome | new-tournament | reminder | recap | behind-the-scenes | player-withdrawal | minimal
+ * Kinds: contest-announcement | player-withdrawal | minimal
  */
 
 import "dotenv/config";
@@ -27,7 +27,7 @@ const outPath = join(serverRoot, "tmp/email-preview.html");
 
 function parseKind(argv: string[]): PreviewKind {
   const arg = argv.find((a) => !a.startsWith("-") && a !== "open");
-  if (!arg) return "new-tournament";
+  if (!arg) return "contest-announcement";
   if (PREVIEW_KINDS.includes(arg as PreviewKind)) return arg as PreviewKind;
   console.error(`Unknown kind "${arg}". Use: ${PREVIEW_KINDS.join(" | ")}`);
   process.exit(1);
