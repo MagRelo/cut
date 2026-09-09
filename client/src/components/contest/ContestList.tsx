@@ -45,7 +45,7 @@ function CreateContestSlot({ to, nest }: { to: string; nest: "default" | "hero" 
       to={to}
       className={`${emptySlotClassName(nest)} group flex min-h-[7.5rem] flex-col items-center justify-center gap-2 text-center transition-colors hover:border-blue-400 hover:bg-blue-50`}
     >
-      <span className="mb-2 inline-flex items-center gap-1 font-display text-xs text-gray-500">
+      <span className="mb-2 inline-flex items-center gap-1 font-display text-xs text-gray-700">
         <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-500" aria-hidden />
         No active contests
       </span>
