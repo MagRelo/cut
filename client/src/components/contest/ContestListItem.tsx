@@ -10,8 +10,7 @@ import { ContestCard } from "./ContestCard";
 const ctaBaseClassName =
   "inline-flex h-10 min-w-[5.5rem] shrink-0 items-center justify-center gap-0.5 rounded px-4 font-display text-sm font-semibold transition-colors";
 
-const ctaJoinClassName =
-  "bg-emerald-600 text-white group-hover/footer:bg-emerald-700";
+const ctaJoinClassName = "bg-emerald-600 text-white group-hover/footer:bg-emerald-700";
 
 const ctaPastClassName = "bg-blue-500 text-white group-hover/footer:bg-blue-600";
 
@@ -81,8 +80,7 @@ export const ContestListItem = ({
   eventShell,
   variant = "default",
 }: ContestListItemProps) => {
-  const entryCount =
-    contest._count?.contestLineups ?? contest.contestLineups?.length ?? 0;
+  const entryCount = contest._count?.contestLineups ?? contest.contestLineups?.length ?? 0;
   const buyInValue = formatBuyInValue(contest.settings?.primaryDeposit);
   const actionLabel = contestListActionLabel(variant);
   const pastAction = isPastViewButton(contest, variant);
@@ -103,7 +101,7 @@ export const ContestListItem = ({
         state={eventShell ? contestLobbyLinkState(eventShell, contest) : undefined}
         aria-label={`${actionLabel} ${contest.name} contest`}
         className={cn(
-          "group/footer flex items-center gap-3 border-t px-3 py-2.5 transition-colors",
+          "group/footer flex items-center gap-3 border-t p-2 transition-colors",
           "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]",
           contestListFooterClass(contest, variant),
           pastAction
