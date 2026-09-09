@@ -32,6 +32,7 @@ import { getTargetChainIdFromEnv } from "../../config/targetChain";
 export interface LeagueCreateContestEvent {
   eventId: string;
   eventName: string;
+  sportName: string;
   startDate: string;
   endDate: string;
   isEditable: boolean;
@@ -124,33 +125,43 @@ export const LeagueCreateContestForm = ({
   return (
     <form onSubmit={(formEvent) => void handleSubmit(formEvent)} className="space-y-5">
       <div>
-        <p className="font-display text-sm font-medium text-gray-500">Event</p>
-        <p className="mt-0.5 font-display text-lg font-semibold text-gray-900">{event.eventName}</p>
-        {dateRange ? (
-          <p className="mt-0.5 font-display text-sm text-gray-600">{dateRange}</p>
-        ) : null}
-        {!event.isEditable ? (
-          <p className="mt-2 font-display text-sm text-amber-800">
-            This event has started or finished — new contests cannot be created.
+        <p className="block font-display text-base font-semibold text-gray-900">Event</p>
+        <div className="mt-3 rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-white px-4 py-3">
+          <p className="font-display text-sm font-medium text-slate-600">{event.sportName}</p>
+          <p className="mt-0.5 font-display text-lg font-semibold text-gray-900">{event.eventName}</p>
+          {dateRange ? (
+            <p className="mt-0.5 font-display text-sm text-gray-600">{dateRange}</p>
+          ) : null}
+          {!event.isEditable ? (
+            <p className="mt-2 font-display text-sm text-amber-800">
+              This event has started or finished — new contests cannot be created.
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <div>
+        <DiscreteValueSlider
+          id="league-entry-fee"
+          label="Entry Fee"
+          description="What each lineup pays to enter."
+          valueIndex={entryFeeIndex}
+          valueCount={LEAGUE_ENTRY_FEE_OPTIONS.length}
+          displayValue={formatLeagueEntryFee(entryFee, tokenSymbol)}
+          minLabel={formatLeagueEntryFee(LEAGUE_ENTRY_FEE_OPTIONS[0], tokenSymbol)}
+          maxLabel={formatLeagueEntryFee(
+            LEAGUE_ENTRY_FEE_OPTIONS[LEAGUE_ENTRY_FEE_OPTIONS.length - 1],
+            tokenSymbol,
+          )}
+          onChange={setEntryFeeIndex}
+          disabled={!canCreateContest || isProcessing}
+        />
+        {isFreeContest ? (
+          <p className="mt-2 font-display text-xs leading-relaxed text-gray-600">
+            Free contests skip the wallet, invite rewards, and Winner Pool.
           </p>
         ) : null}
       </div>
-
-      <DiscreteValueSlider
-        id="league-entry-fee"
-        label="Entry Fee"
-        description="Entry fee per lineup"
-        valueIndex={entryFeeIndex}
-        valueCount={LEAGUE_ENTRY_FEE_OPTIONS.length}
-        displayValue={formatLeagueEntryFee(entryFee, tokenSymbol)}
-        minLabel={formatLeagueEntryFee(LEAGUE_ENTRY_FEE_OPTIONS[0], tokenSymbol)}
-        maxLabel={formatLeagueEntryFee(
-          LEAGUE_ENTRY_FEE_OPTIONS[LEAGUE_ENTRY_FEE_OPTIONS.length - 1],
-          tokenSymbol,
-        )}
-        onChange={setEntryFeeIndex}
-        disabled={!canCreateContest || isProcessing}
-      />
 
       {!isFreeContest ? (
         <>
@@ -159,7 +170,7 @@ export const LeagueCreateContestForm = ({
             label="Invite Rewards %"
             description={
               <>
-                Share of contest pool paid to the invite network.{" "}
+                Share of the pot paid to the winner&apos;s invite chain.Higher % rewards growth.{" "}
                 <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
                   Learn more...
                 </Link>
@@ -179,7 +190,15 @@ export const LeagueCreateContestForm = ({
           <DiscreteValueSlider
             id="league-primary-subsidy"
             label="Winner Pool Subsidy %"
-            description="Share of each entry fee sent to the Winner Pool—jumpstarts the pool so predictions are more fun from the start"
+            description={
+              <>
+                Seed the Winner Pool to jump-start Winner Pool betting. Higher % makes that market
+                more fun sooner.{" "}
+                <Link to="/faq#winner-pool-subsidy" className="text-blue-600 hover:underline">
+                  Learn more...
+                </Link>
+              </>
+            }
             valueIndex={primarySubsidyIndex}
             valueCount={LEAGUE_PRIMARY_SUBSIDY_PERCENTS.length}
             displayValue={formatPrimarySubsidyPercent(primarySubsidyPercent)}

@@ -8,7 +8,7 @@ import { cn } from "../../lib/tabStyles";
 import { ContestCard } from "./ContestCard";
 
 const ctaBaseClassName =
-  "inline-flex h-10 min-w-[5.5rem] shrink-0 items-center justify-center gap-0.5 rounded-full px-4 font-display text-sm font-semibold transition-colors";
+  "inline-flex h-10 min-w-[5.5rem] shrink-0 items-center justify-center gap-0.5 rounded px-4 font-display text-sm font-semibold transition-colors";
 
 const ctaJoinClassName =
   "bg-emerald-600 text-white group-hover/footer:bg-emerald-700";
@@ -50,7 +50,7 @@ function ContestListStat({
   label: string;
 }) {
   return (
-    <div className="min-w-0 text-left">
+    <div className="min-w-0 text-center">
       <div
         className={cn(
           "font-display text-sm font-bold tabular-nums leading-none",
@@ -90,7 +90,7 @@ export const ContestListItem = ({
   return (
     <div
       className={cn(
-        "group min-w-0 overflow-hidden rounded-xl bg-white shadow-md shadow-slate-900/10 ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-lg",
+        "group min-w-0 overflow-hidden rounded bg-white shadow-md shadow-slate-900/10 ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-lg",
         className,
       )}
     >

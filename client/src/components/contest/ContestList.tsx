@@ -35,8 +35,8 @@ export function ContestListConnectHint({
 
 function emptySlotClassName(nest: "default" | "hero"): string {
   return nest === "hero"
-    ? "rounded-xl border border-white/50 bg-white/95 p-4 shadow-lg shadow-black/20 backdrop-blur-md"
-    : "rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm";
+    ? "rounded-lg border border-white/50 bg-white/95 p-4 shadow-lg shadow-black/20 backdrop-blur-md"
+    : "rounded-lg border border-slate-200 bg-white p-3.5 shadow-sm";
 }
 
 function CreateContestSlot({ to, nest }: { to: string; nest: "default" | "hero" }) {

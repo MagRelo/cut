@@ -10,6 +10,7 @@ import { isEventEditableFromMetadata } from "../lib/eventMetadata";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { isApiError } from "../utils/apiError";
+import { LEAGUE_STARTER_GUIDE_PATH } from "./LeagueStarterGuidePage";
 
 export const UserGroupCreateContestPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +29,7 @@ export const UserGroupCreateContestPage = () => {
     return {
       eventId: directoryEvent.id,
       eventName: directoryEvent.name,
+      sportName: directoryEvent.sportName,
       startDate: directoryEvent.startDate ?? "",
       endDate: directoryEvent.endDate ?? "",
       isEditable: isEventEditableFromMetadata(directoryEvent.metadata),
@@ -106,8 +108,17 @@ export const UserGroupCreateContestPage = () => {
           { label: "Create Contest", path: createPath },
         ]}
       />
-      <h1 className="mb-3 font-display text-xl font-semibold text-gray-900">Create Contest</h1>
-      <PageSection variant="card">
+      <PageSection variant="card" className="!shadow">
+        <h1 className="mb-1 font-display text-xl font-semibold text-gray-900">Create Contest</h1>
+        <p className="mb-5 max-w-prose font-display text-sm leading-relaxed text-gray-600">
+          Set the buy-in and how this contest pays out.{" "}
+          <Link
+            to={`${LEAGUE_STARTER_GUIDE_PATH}#admin`}
+            className="text-blue-600 hover:text-blue-700"
+          >
+            How contest settings work
+          </Link>
+        </p>
         <LeagueCreateContestForm userGroupId={userGroup.id} event={lockedEvent} />
       </PageSection>
     </>

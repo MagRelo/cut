@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import {
+  ChartBarIcon,
   CurrencyDollarIcon,
   LockClosedIcon,
   TicketIcon,
@@ -97,7 +98,11 @@ export const LeagueStarterGuidePage: React.FC = () => {
         <PageSection id="admin" className="scroll-mt-4">
           <h2 className="mb-2 font-display text-2xl font-bold text-gray-900">Create Contests</h2>
 
-          <p className="mb-2">You&apos;re in control:</p>
+          <p className="mb-2">
+            You&apos;re in control. These choices lock when you create the contest. Higher values
+            usually make a livelier contest—bigger prize pool, more invite payout, a Winner Pool
+            that is fun from the first lineup—but you set what fits your group.
+          </p>
           <ul>
             <li className="flex gap-3 p-4 sm:gap-4 sm:px-5 sm:py-4">
               <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-700">
@@ -106,7 +111,8 @@ export const LeagueStarterGuidePage: React.FC = () => {
               <div className="min-w-0">
                 <h3 className="font-display text-base font-semibold text-gray-900">Entry Fee</h3>
                 <p className="mt-1 text-sm leading-relaxed text-gray-700">
-                  Cost to enter a lineup in the contest.
+                  What each lineup pays to enter. Free contests skip the wallet, invite rewards, and
+                  Winner Pool.
                 </p>
               </div>
             </li>
@@ -116,10 +122,32 @@ export const LeagueStarterGuidePage: React.FC = () => {
               </span>
               <div className="min-w-0">
                 <h3 className="font-display text-base font-semibold text-gray-900">
-                  Referral Rewards %
+                  Invite Rewards %
                 </h3>
                 <p className="mt-1 text-sm leading-relaxed text-gray-700">
-                  Amount of the pot that pays out as referral rewards
+                  Share of the full pot paid at settlement to the winner&apos;s invite chain. Higher
+                  % rewards the people who grew your league.{" "}
+                  <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
+                    Learn more about invite rewards...
+                  </Link>
+                </p>
+              </div>
+            </li>
+            <li className="flex gap-3 p-4 sm:gap-4 sm:px-5 sm:py-4">
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-700">
+                <ChartBarIcon className="h-5 w-5" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <h3 className="font-display text-base font-semibold text-gray-900">
+                  Winner Pool Subsidy %
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed text-gray-700">
+                  Share of each paid entry that seeds the Winner Pool when someone joins, so
+                  predictions have money in them from the first lineup. This is a slice of each
+                  entry—not the same as invite rewards, which come off the full pot at settlement.{" "}
+                  <Link to="/faq#winner-pool-subsidy" className="text-blue-600 hover:underline">
+                    Learn more about Winner Pool subsidy...
+                  </Link>
                 </p>
               </div>
             </li>
@@ -127,7 +155,9 @@ export const LeagueStarterGuidePage: React.FC = () => {
         </PageSection>
 
         <PageSection id="invite" className="scroll-mt-4">
-          <h2 className="mb-4 font-display text-2xl font-bold text-gray-900">League Referral Link</h2>
+          <h2 className="mb-4 font-display text-2xl font-bold text-gray-900">
+            League Referral Link
+          </h2>
           <p>
             One link does two jobs: it adds someone to your league and sets you as their referrer
             for referral rewards when they sign up. Share it when onboarding new players.
@@ -198,7 +228,13 @@ export const LeagueStarterGuidePage: React.FC = () => {
               Frequently Asked Questions
             </Link>
             <Link to="/faq#referral-network" className="font-medium text-blue-600 hover:underline">
-              Referral rewards deep dive
+              Invite rewards deep dive
+            </Link>
+            <Link
+              to="/faq#winner-pool-subsidy"
+              className="font-medium text-blue-600 hover:underline"
+            >
+              Winner Pool subsidy
             </Link>
             <Link to="/leagues/create" className="font-medium text-blue-600 hover:underline">
               Create a league

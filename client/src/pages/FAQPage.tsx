@@ -254,8 +254,12 @@ export const FAQPage: React.FC = () => {
             <h3 className="mb-2 text-lg font-semibold text-gray-900">Are there any fees?</h3>
             <p className="mb-2 text-gray-700">
               Play The Cut does not take platform fees. A portion of each pot (typically 7%) goes to
-              the invite network to grow the game and reward the community. Learn more about the
-              invite network{" "}
+              the invite network to grow the game and reward the community. League admins set that
+              invite percentage—and an optional{" "}
+              <a href="#winner-pool-subsidy" className="text-blue-600 hover:underline">
+                Winner Pool subsidy
+              </a>
+              —when they create a contest. Learn more about the invite network{" "}
               <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
                 here
               </Link>
@@ -299,6 +303,34 @@ export const FAQPage: React.FC = () => {
               participate—anyone with available funds can join the Winner Pool and place a wager on
               a lineup.
             </p>
+          </div>
+
+          <div id="winner-pool-subsidy" className="scroll-mt-4">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">
+              What is the Winner Pool Subsidy?
+            </h3>
+            <p className="mb-2 text-gray-700">
+              When someone creates a contest, they can send a share of each paid entry into the
+              Winner Pool as soon as that lineup joins. That seed means the side market is not empty
+              until someone places a wager.
+            </p>
+            <ul className="list-disc space-y-1 pl-6 text-gray-700">
+              <li>
+                Typical range is 0–10% of each entry fee. The setting is locked on-chain when the
+                contest is created.
+              </li>
+              <li>
+                Free ($0) contests have no wallet and no Winner Pool, so there is no subsidy.
+              </li>
+              <li>
+                Subsidy is a slice of each entry at join.{" "}
+                <a href="#referral-network" className="text-blue-600 hover:underline">
+                  Invite rewards
+                </a>{" "}
+                are a separate percentage of the full pot, paid at settlement to the winner&apos;s
+                invite chain.
+              </li>
+            </ul>
           </div>
 
           <div>

@@ -66,7 +66,7 @@ function GroupedContestSection({
             <div className="px-3 pb-3.5 pt-1">
               <div
                 className={cn(
-                  "rounded-xl p-2.5",
+                  "rounded-lg p-2.5",
                   group.contests.length > 0 &&
                     "bg-black/40 ring-1 ring-white/15 backdrop-blur-[2px]",
                 )}
