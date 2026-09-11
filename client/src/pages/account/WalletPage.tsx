@@ -80,7 +80,7 @@ export function WalletPage() {
 
         <div>
           <div className="space-y-4 pb-6 font-display">
-            <div className="my-6">
+            <div className="my-4">
               <WalletBalancePanel tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
             </div>
 
