@@ -85,11 +85,11 @@ export function WalletPage() {
             </div>
 
             <div>
-              <h2 className="font-medium text-gray-900">Personal Wallet</h2>
+              <h2 className="font-medium text-gray-900"> Wallet</h2>
               <p className="text-sm leading-relaxed text-gray-700">
                 Your account comes with a wallet that belongs to you, secured with your email. Play
                 The Cut never holds your funds, so you can add money, play in contests, or withdraw
-                anytime.
+                funds at any time.
               </p>
             </div>
             {showTestnetWarning ? null : (

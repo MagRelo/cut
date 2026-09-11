@@ -53,45 +53,31 @@ function ReferralNetworkPanel({
           </div>
           {referralUrl ? (
             <div className="border-t border-slate-100 bg-white/70">
-              <div className="grid grid-cols-2 divide-x divide-gray-100">
-                <div className="p-3">
-                  <CopyButton text={referralUrl} variant="secondary" idleLabel="Copy Link" />
-                </div>
-                <div className="p-3">
-                  <ShareInviteButton
-                    url={referralUrl}
-                    ariaLabel="Share your referral link"
-                    label="Share Link"
-                    variant="success"
-                  />
-                </div>
+              <p className={`${walletSpecLabelClassName} px-4 pt-3`}>Referral Link:</p>
+              <div className="grid grid-cols-2 gap-2 p-3 pt-2">
+                <CopyButton text={referralUrl} variant="secondary" idleLabel="Copy Link" />
+                <ShareInviteButton
+                  url={referralUrl}
+                  ariaLabel="Share your referral link"
+                  label="Share Link"
+                  variant="success"
+                />
               </div>
             </div>
           ) : null}
         </div>
       ) : null}
 
-      <div className="mb-4">
-        <h2 className="mb-1 flex items-center gap-2 font-display text-base font-semibold text-gray-900">
-          <TreeIcon className="h-5 w-5 shrink-0 text-green-700" aria-hidden />
-          Referral Rewards
-        </h2>
-        <p className="mb-3 font-display text-sm text-gray-700">
-          Play The Cut has partnered with <b>Incentive Exchange</b> to provide verifiable rewards
-          for your referrals. <b>Invite friends and when they win, you win</b>.{" "}
-          <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
-            Learn how referral earnings work…
-          </Link>
-        </p>
-      </div>
-
       <h2 className="mb-1 flex items-center gap-2 font-display text-base font-semibold text-gray-900">
         <TreeIcon className="h-5 w-5 shrink-0 text-green-700" aria-hidden />
-        Track Your Network
+        Your Referral Network
       </h2>
       <p className="mb-3 font-display text-sm text-gray-700">
-        Invite friends and grow your network over time. Whenever your friends win a contest (or
-        their friends win a contest), referral bonuses flow back to you:
+        Play The Cut has integrated referral rewards into the contests in order to turbocharge
+        growth. Play in contests with referral rewards and when your friends win, you win.{" "}
+        <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
+          Learn how referral earnings work…
+        </Link>
       </p>
 
       {/* referral tree */}
