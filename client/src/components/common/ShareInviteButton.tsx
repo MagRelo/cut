@@ -9,7 +9,7 @@ interface ShareInviteButtonProps {
   shareText?: string;
   ariaLabel?: string;
   label?: string;
-  variant?: "compact" | "cta" | "secondary" | "link";
+  variant?: "compact" | "cta" | "secondary" | "link" | "success";
   className?: string;
 }
 
@@ -61,16 +61,24 @@ export function ShareInviteButton({
         ? `justify-center min-w-[200px] border border-blue-500 px-4 py-2 text-white ${
             active ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"
           }`
-        : variant === "link"
-          ? `px-0 py-0 text-base font-semibold ${active ? "text-blue-800" : "text-blue-600 hover:underline"}`
-          : `px-3 py-1 text-white ${active ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"}`;
+        : variant === "success"
+          ? `w-full min-h-11 justify-center border px-4 ${
+              active
+                ? "border-green-700 bg-green-700 text-white"
+                : "border-green-600 bg-green-600 text-white hover:bg-green-700"
+            }`
+          : variant === "link"
+            ? `px-0 py-0 text-base font-semibold ${active ? "text-blue-800" : "text-blue-600 hover:underline"}`
+            : `px-3 py-1 text-white ${active ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"}`;
 
   return (
     <button
       type="button"
       onClick={() => void handleClick()}
       aria-label={active ? label : ariaLabel}
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded font-display text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${variantClass} ${className}`}
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded font-display text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+        variant === "success" ? "focus:ring-green-600" : "focus:ring-blue-500"
+      } ${variantClass} ${className}`}
     >
       {label}
       <ArrowTopRightOnSquareIcon className="h-4 w-4 shrink-0" aria-hidden />

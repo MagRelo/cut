@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { CopyButton } from "../../components/common/CopyToClipboard";
 import { ShareInviteButton } from "../../components/common/ShareInviteButton";
 import { Breadcrumbs } from "../../components/common/Breadcrumbs";
 import { TreeIcon } from "../../components/common/TreeIcon";
@@ -9,8 +10,6 @@ import {
   useUserReferralSummary,
   type ReferralSummaryNode,
 } from "../../hooks/useUserReferralSummary";
-import { resolveUserBorderColor } from "../../lib/lineupDisplay";
-
 function formatEarned(amount: number): string {
   if (amount > 0 && amount < 0.01) return "<$0.01";
   return `$${amount.toLocaleString(undefined, {
@@ -32,20 +31,9 @@ function ReferralNetworkPanel({
 }) {
   const earnedClass = totalEarned > 0 ? "text-green-700" : "text-gray-900";
   const { user } = useAuth();
-  const viewerColor = resolveUserBorderColor(
-    typeof user?.settings?.color === "string" ? user.settings.color : undefined,
-  );
   const referralUrl = user?.referralCode
     ? `${window.location.origin}/?ref=${user.referralCode}`
     : null;
-  const shareButton = referralUrl ? (
-    <ShareInviteButton
-      url={referralUrl}
-      ariaLabel="Share your referral link"
-      label="Share Link"
-      variant="cta"
-    />
-  ) : null;
 
   return (
     <>
@@ -63,6 +51,23 @@ function ReferralNetworkPanel({
               </p>
             )}
           </div>
+          {referralUrl ? (
+            <div className="border-t border-slate-100 bg-white/70">
+              <div className="grid grid-cols-2 divide-x divide-gray-100">
+                <div className="p-3">
+                  <CopyButton text={referralUrl} variant="secondary" idleLabel="Copy Link" />
+                </div>
+                <div className="p-3">
+                  <ShareInviteButton
+                    url={referralUrl}
+                    ariaLabel="Share your referral link"
+                    label="Share Link"
+                    variant="success"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -80,42 +85,31 @@ function ReferralNetworkPanel({
         </p>
       </div>
 
-      {/* how it works */}
-      <div className="mb-4">
-        <h2 className="mb-1 font-display text-base font-semibold text-gray-900">
-          Share Your Link!
-        </h2>
-        <p className="mb-3 font-display text-sm text-gray-700">
-          Share your referral link using email, text, or social media. Make sure your friends use
-          your referral link to sign up - <b>when they win, you earn</b>:
-        </p>
-      </div>
-
-      {shareButton ? <div className="my-6 mb-8 flex justify-center">{shareButton}</div> : null}
-
       <h2 className="mb-1 flex items-center gap-2 font-display text-base font-semibold text-gray-900">
         <TreeIcon className="h-5 w-5 shrink-0 text-green-700" aria-hidden />
         Your Network
       </h2>
       <p className="mb-3 font-display text-sm text-gray-700">
-        Invite friends and grow your network over time. Whenever these players win a contest,
-        referral bonuses flow back to you:
+        Invite friends and grow your network over time. Whenever your friends win a contest (or
+        their friends win a contest), referral bonuses flow back to you:
       </p>
 
       {/* referral tree */}
-      <div className="rounded-sm border border-slate-200 bg-slate-50 p-3 shadow-inner ring-1 ring-inset ring-slate-100">
+      <div className="rounded-sm border border-slate-200 bg-slate-50 px-4 py-4 shadow-inner ring-1 ring-inset ring-slate-100">
         {!loading && error ? (
           <p className="font-display text-sm text-red-600">{error}</p>
         ) : loading ? (
-          <div className="space-y-2 py-1" aria-busy="true">
-            <div className="h-10 rounded-sm border border-gray-200 bg-gray-100" />
-            <div className="ml-4 space-y-2 border-l border-slate-200 pl-3">
+          <div aria-busy="true">
+            <div className="flex w-6 -translate-x-[10px] flex-col items-center">
+              <span className="h-6 w-6 rounded-full border border-gray-200 bg-white" />
+              <span className="h-2 w-px bg-slate-300" />
+            </div>
+            <div className="relative pl-4">
               <div className="h-10 rounded-sm border border-gray-200 bg-gray-100" />
-              <div className="h-10 rounded-sm border border-gray-200 bg-gray-50" />
             </div>
           </div>
         ) : (
-          <ReferralTree people={tree} viewerColor={viewerColor} shareUrl={referralUrl} />
+          <ReferralTree people={tree} />
         )}
       </div>
     </>

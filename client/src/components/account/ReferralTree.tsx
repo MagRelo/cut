@@ -1,62 +1,36 @@
 import type { ReferralSummaryNode } from "../../hooks/useUserReferralSummary";
-import { ShareInviteButton } from "../common/ShareInviteButton";
+import { TreeIcon } from "../common/TreeIcon";
 import { resolveUserBorderColor } from "../../lib/lineupDisplay";
 import { buildReferralDisplayTree, type ReferralDisplayNode } from "../../lib/referralDisplayTree";
 
-function NodePanel({ node, shareUrl }: { node: ReferralDisplayNode; shareUrl?: string | null }) {
-  if (node.empty) {
-    return (
-      <div
-        className="rounded-sm border border-gray-200 bg-white px-3 py-2 font-display shadow-sm"
-        style={{
-          borderLeftColor: resolveUserBorderColor(undefined),
-          borderLeftWidth: "5px",
-          borderLeftStyle: "solid",
-        }}
-      >
-        {shareUrl ? (
-          <ShareInviteButton
-            url={shareUrl}
-            ariaLabel="Share your referral link"
-            label={node.label}
-            variant="link"
-          />
-        ) : (
-          <span className="text-base font-semibold leading-tight text-blue-600">{node.label}</span>
-        )}
-      </div>
-    );
-  }
-
+function NodePanel({ node }: { node: ReferralDisplayNode }) {
   return (
     <div
-      className="rounded-sm border border-gray-200 bg-white px-3 py-2 font-display shadow-sm"
+      className="rounded-sm border border-gray-200 bg-white px-3 py-4 font-display shadow-sm"
       style={{
         borderLeftColor: resolveUserBorderColor(node.color),
         borderLeftWidth: "5px",
         borderLeftStyle: "solid",
       }}
     >
-      <p className="truncate text-base font-semibold leading-tight text-gray-900" title={node.label}>
+      <p
+        className="truncate text-base font-semibold leading-tight text-gray-900"
+        title={node.label}
+      >
         {node.label}
       </p>
     </div>
   );
 }
 
-function TreeRows({
-  nodes,
-  shareUrl,
-}: {
-  nodes: ReferralDisplayNode[];
-  shareUrl?: string | null;
-}) {
+function TreeRows({ nodes }: { nodes: ReferralDisplayNode[] }) {
   if (nodes.length === 0) return null;
 
   return (
-    <ul className="ml-4 mt-2 space-y-2 border-l border-slate-200 pl-3">
-      {nodes.map((node) => (
-        <TreeItem key={node.key} node={node} branched shareUrl={shareUrl} />
+    <ul className="relative mt-2 space-y-2 pl-4">
+      <span className="absolute -top-2 left-[2px] h-2 w-px bg-slate-300" aria-hidden />
+      {nodes.map((node, index) => (
+        <TreeItem key={node.key} node={node} branched isLast={index === nodes.length - 1} />
       ))}
     </ul>
   );
@@ -65,42 +39,55 @@ function TreeRows({
 function TreeItem({
   node,
   branched = false,
-  shareUrl,
+  isLast = false,
 }: {
   node: ReferralDisplayNode;
   branched?: boolean;
-  shareUrl?: string | null;
+  isLast?: boolean;
 }) {
   return (
-    <li>
+    <li className="relative">
+      {branched && !isLast ? (
+        <span className="absolute -bottom-2 -left-[14px] top-0 w-px bg-slate-300" aria-hidden />
+      ) : null}
       <div className="relative">
+        {branched && isLast ? (
+          <span className="absolute -left-[14px] top-0 h-1/2 w-px bg-slate-300" aria-hidden />
+        ) : null}
         {branched ? (
           <span
-            className="absolute -left-3 top-1/2 h-px w-3 -translate-y-1/2 bg-slate-200"
+            className="absolute -left-3.5 top-1/2 h-px w-3.5 -translate-y-1/2 bg-slate-300"
             aria-hidden
           />
         ) : null}
-        <NodePanel node={node} shareUrl={shareUrl} />
+        <NodePanel node={node} />
       </div>
-      <TreeRows nodes={node.children} shareUrl={shareUrl} />
+      <TreeRows nodes={node.children} />
     </li>
   );
 }
 
-export function ReferralTree({
-  people,
-  viewerColor,
-  shareUrl,
-}: {
-  people: ReferralSummaryNode[];
-  viewerColor?: string;
-  shareUrl?: string | null;
-}) {
-  const root = buildReferralDisplayTree(people, viewerColor);
+export function ReferralTree({ people }: { people: ReferralSummaryNode[] }) {
+  const referrals = buildReferralDisplayTree(people);
 
   return (
-    <ul className="space-y-2" aria-label="Your referral tree">
-      <TreeItem node={root} shareUrl={shareUrl} />
-    </ul>
+    <div aria-label="Your referral tree">
+      <div className="flex w-6 -translate-x-[10px] flex-col items-center">
+        <span
+          className="flex h-6 w-6 items-center justify-center rounded-full border border-green-600 bg-white shadow-sm"
+          aria-label="Part of the referral tree"
+        >
+          <TreeIcon className="h-3.5 w-3.5 text-green-700" aria-hidden />
+        </span>
+        {referrals.length > 0 ? <span className="h-2 w-px bg-slate-300" aria-hidden /> : null}
+      </div>
+      {referrals.length > 0 ? (
+        <ul className="relative space-y-2 pl-4">
+          {referrals.map((node, index) => (
+            <TreeItem key={node.key} node={node} branched isLast={index === referrals.length - 1} />
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
