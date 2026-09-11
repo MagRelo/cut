@@ -4,6 +4,12 @@ import baseIcon from "../../../assets/funds/base.svg";
 export const walletSpecLabelClassName =
   "text-[11px] font-medium uppercase tracking-[0.12em] text-gray-600";
 
+export const walletSpecCtaClassName =
+  "inline-flex w-full min-h-11 items-center justify-center gap-2 rounded border border-blue-500 bg-blue-500 px-4 font-display text-sm font-medium text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50";
+
+export const walletSpecSecondaryClassName =
+  "min-h-11 w-full rounded border border-gray-300 px-4 font-display text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50";
+
 function AssetSpec({
   label,
   iconSrc,
@@ -44,7 +50,7 @@ export function AssetChips({
 }: {
   tokenSymbol: string;
   networkLabel: string;
-  /** Specs without card padding or a divider — used in the receive panel. */
+  /** Specs without card padding or a divider — used in send/receive. */
   flush?: boolean;
 }) {
   return (

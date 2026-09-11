@@ -9,7 +9,7 @@ import { Modal } from "../common/Modal";
 import { ReferralStakeIcon } from "../contest/ReferralStakeIcon";
 import { inviteNetworkLabel } from "../../lib/referralStake";
 import { buildFundSendUrl } from "../../lib/fundLinks";
-import { walletSpecSecondaryClassName } from "../account/wallet/WalletSpecPanel";
+import { walletSpecSecondaryClassName } from "../account/wallet/AssetChips";
 
 interface UserGroupMemberManagementProps {
   userGroupId: string;

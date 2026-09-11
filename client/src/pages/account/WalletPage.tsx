@@ -80,9 +80,12 @@ export function WalletPage() {
 
         <div>
           <div className="space-y-4 pb-6 font-display">
-            <WalletBalancePanel tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
+            <div className="my-6">
+              <WalletBalancePanel tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
+            </div>
+
             <div>
-              <h2 className="font-medium text-gray-900">Secure Wallet</h2>
+              <h2 className="font-medium text-gray-900">Personal Wallet</h2>
               <p className="text-sm leading-relaxed text-gray-700">
                 Your account comes with a wallet that belongs to you, secured with your email. Play
                 The Cut never holds your funds, so you can add money, play in contests, or withdraw
@@ -94,9 +97,9 @@ export function WalletPage() {
                 <h2 className="font-medium text-gray-900">Powered by {tokenSymbol}</h2>
 
                 <p className="text-sm leading-relaxed text-gray-700">
-                  Play The Cut uses {tokenSymbol} for contests. You can buy {tokenSymbol} through an
-                  app such as Coinbase, Kraken, or Robinhood, then send {tokenSymbol} to your Play
-                  The Cut wallet.
+                  Play The Cut uses {tokenSymbol} for contests. You can buy and sell {tokenSymbol}{" "}
+                  through an app such as Coinbase, Kraken, or Robinhood, then send {tokenSymbol} to
+                  your Play The Cut wallet.
                 </p>
               </div>
             )}
@@ -129,6 +132,8 @@ export function WalletPage() {
               </div>
             </TabGroup>
           </div>
+
+          <div className="mt-6"></div>
         </div>
       </div>
     </>

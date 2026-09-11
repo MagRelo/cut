@@ -8,13 +8,13 @@ import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../../config/targ
 import { PAYMENT_TOKEN_DECIMALS } from "../../../lib/paymentTokenSpend";
 import { BLOCKCHAIN_NETWORK } from "../../../lib/legalPlaceholders";
 import { getSmartWalletsPaymasterConfig } from "../../../lib/privySmartWalletPaymaster";
-import { AssetChips, walletSpecLabelClassName } from "./AssetChips";
-import { formatAddressForDisplay, walletAddressWellClassName } from "./WalletAddressCopy";
 import {
-  WalletSpecPanel,
+  AssetChips,
   walletSpecCtaClassName,
+  walletSpecLabelClassName,
   walletSpecSecondaryClassName,
-} from "./WalletSpecPanel";
+} from "./AssetChips";
+import { formatAddressForDisplay, walletAddressWellClassName } from "./WalletAddressCopy";
 
 export type SendProps = {
   /** Pre-fill recipient (e.g. admin support: target user wallet). */
@@ -163,143 +163,137 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
   const trimmedRecipient = recipientAddress.trim();
 
   return (
-    <div className="space-y-3 font-display">
-      <WalletSpecPanel
-        headingId={isReviewing ? "send-review-heading" : "send-details-heading"}
-        heading={isReviewing ? "Review send" : "Check destination wallet"}
-        description={
-          isReviewing
-            ? "Check the address and network carefully. Once sent, this transfer usually can't be reversed."
-            : `Make sure the destination wallet supports receiving ${targetSymbol} on ${networkLabel}.`
-        }
-      >
-        {isReviewing ? (
-          <div className="flex flex-col gap-4 px-4 py-3">
-            <AssetChips tokenSymbol={targetSymbol} networkLabel={networkLabel} flush />
-            <SendSpec label="Amount">
-              <p className="font-display text-sm font-medium tabular-nums leading-none text-gray-900">
-                ${formattedAmount} {targetSymbol}
+    <div className="space-y-4 font-display">
+      <p className="text-sm leading-relaxed text-gray-700">
+        Send {targetSymbol} to another player, wallet or exchange.
+      </p>
+
+      {isReviewing ? (
+        <div className="flex flex-col gap-4">
+          <AssetChips tokenSymbol={targetSymbol} networkLabel={networkLabel} flush />
+          <SendSpec label="Amount">
+            <p className="font-display text-sm font-medium tabular-nums leading-none text-gray-900">
+              ${formattedAmount} {targetSymbol}
+            </p>
+          </SendSpec>
+          <SendSpec label="To">
+            <p className={walletAddressWellClassName} aria-label={trimmedRecipient}>
+              {formatAddressForDisplay(trimmedRecipient)}
+            </p>
+          </SendSpec>
+          {gasSponsored ? (
+            <SendSpec label="Network fee">
+              <p className="font-display text-sm font-medium leading-none text-gray-900">
+                No network fee
               </p>
             </SendSpec>
-            <SendSpec label="To">
-              <p className={walletAddressWellClassName} aria-label={trimmedRecipient}>
-                {formatAddressForDisplay(trimmedRecipient)}
-              </p>
-            </SendSpec>
-            {gasSponsored ? (
-              <SendSpec label="Network fee">
-                <p className="font-display text-sm font-medium leading-none text-gray-900">
-                  No network fee
-                </p>
-              </SendSpec>
-            ) : null}
+          ) : null}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <AssetChips tokenSymbol={targetSymbol} networkLabel={networkLabel} flush />
+
+          <SendSpec label="Available">
+            <p className="font-display text-sm font-medium tabular-nums leading-none text-gray-900">
+              {balancesUnavailable ? "—" : `$${formattedBalance(paymentBalance)} ${targetSymbol}`}
+            </p>
+          </SendSpec>
+
+          <div>
+            <label htmlFor="recipient" className={`${walletSpecLabelClassName} block`}>
+              Wallet address
+            </label>
+            <input
+              id="recipient"
+              type="text"
+              value={recipientAddress}
+              onChange={(e) => {
+                setRecipientAddress(e.target.value);
+                setSendError(null);
+              }}
+              readOnly={lockRecipient}
+              className={`${fieldClassName} mt-1.5 font-mono ${lockRecipient ? "bg-gray-50" : ""}`}
+              placeholder={`0x… ${networkLabel} ${targetSymbol} address`}
+            />
           </div>
-        ) : (
-          <div className="flex flex-col gap-4 px-4 py-3">
-            <AssetChips tokenSymbol={targetSymbol} networkLabel={networkLabel} flush />
 
-            <SendSpec label="Available">
-              <p className="font-display text-sm font-medium tabular-nums leading-none text-gray-900">
-                {balancesUnavailable ? "—" : `$${formattedBalance(paymentBalance)} ${targetSymbol}`}
-              </p>
-            </SendSpec>
-
-            <div>
-              <label htmlFor="recipient" className={`${walletSpecLabelClassName} block`}>
-                Wallet address
-              </label>
+          <div>
+            <label htmlFor="send-amount" className={`${walletSpecLabelClassName} block`}>
+              Amount ({targetSymbol})
+            </label>
+            <div className="mt-1.5 flex gap-2">
               <input
-                id="recipient"
-                type="text"
-                value={recipientAddress}
+                id="send-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={amount}
                 onChange={(e) => {
-                  setRecipientAddress(e.target.value);
+                  setAmount(e.target.value);
                   setSendError(null);
                 }}
-                readOnly={lockRecipient}
-                className={`${fieldClassName} mt-1.5 font-mono ${lockRecipient ? "bg-gray-50" : ""}`}
-                placeholder={`0x… ${networkLabel} ${targetSymbol} address`}
+                className={fieldClassName}
               />
-            </div>
-
-            <div>
-              <label htmlFor="send-amount" className={`${walletSpecLabelClassName} block`}>
-                Amount ({targetSymbol})
-              </label>
-              <div className="mt-1.5 flex gap-2">
-                <input
-                  id="send-amount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => {
-                    setAmount(e.target.value);
-                    setSendError(null);
-                  }}
-                  className={fieldClassName}
-                />
-                <button
-                  type="button"
-                  onClick={handleMaxSend}
-                  className="min-h-11 shrink-0 rounded-md border border-gray-300 px-4 text-sm font-medium text-gray-800 hover:bg-gray-50"
-                >
-                  Max
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleMaxSend}
+                className="min-h-11 shrink-0 rounded-md border border-gray-300 px-4 text-sm font-medium text-gray-800 hover:bg-gray-50"
+              >
+                Max
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {(sendError || transactionError) && (
-          <p className="px-4 text-sm text-red-600">{sendError || String(transactionError)}</p>
-        )}
+      {(sendError || transactionError) && (
+        <p className="text-sm text-red-600">{sendError || String(transactionError)}</p>
+      )}
 
-        {balancesUnavailable && (
-          <p className="px-4 text-sm text-amber-800">
-            Could not load balance.{" "}
-            <button type="button" className="underline" onClick={() => void refetchBalances()}>
-              Retry
-            </button>
-          </p>
-        )}
+      {balancesUnavailable && (
+        <p className="text-sm text-amber-800">
+          Could not load balance.{" "}
+          <button type="button" className="underline" onClick={() => void refetchBalances()}>
+            Retry
+          </button>
+        </p>
+      )}
 
-        <div className="flex flex-col gap-2 px-4 py-3">
-          {isReviewing ? (
-            <>
-              <button
-                type="button"
-                onClick={() => void handleSend()}
-                disabled={!isConnected || isProcessing || balancesUnavailable}
-                className={walletSpecCtaClassName}
-              >
-                {(isSending || isProcessing) && <LoadingSpinnerSmall />}
-                {isConfirmed ? "Sent!" : isFailed ? "Failed — try again" : `Send ${targetSymbol}`}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsReviewing(false);
-                  setSendError(null);
-                }}
-                disabled={isProcessing}
-                className={walletSpecSecondaryClassName}
-              >
-                Back
-              </button>
-            </>
-          ) : (
+      <div className="flex flex-col gap-2">
+        {isReviewing ? (
+          <>
             <button
               type="button"
-              onClick={handleReview}
+              onClick={() => void handleSend()}
               disabled={!isConnected || isProcessing || balancesUnavailable}
               className={walletSpecCtaClassName}
             >
-              Review send
+              {(isSending || isProcessing) && <LoadingSpinnerSmall />}
+              {isConfirmed ? "Sent!" : isFailed ? "Failed — try again" : `Send ${targetSymbol}`}
             </button>
-          )}
-        </div>
-      </WalletSpecPanel>
+            <button
+              type="button"
+              onClick={() => {
+                setIsReviewing(false);
+                setSendError(null);
+              }}
+              disabled={isProcessing}
+              className={walletSpecSecondaryClassName}
+            >
+              Back
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={handleReview}
+            disabled={!isConnected || isProcessing || balancesUnavailable}
+            className={walletSpecCtaClassName}
+          >
+            Review send
+          </button>
+        )}
+      </div>
     </div>
   );
 };

@@ -6,11 +6,11 @@ import { Modal } from "../common/Modal";
 import { ShareInviteButton } from "../common/ShareInviteButton";
 import { useGenerateLeagueInvite } from "../../hooks/useUserGroupMutations";
 import { BRAND_PROSE } from "../../lib/brand";
-import { walletSpecLabelClassName } from "../account/wallet/AssetChips";
 import {
   walletSpecCtaClassName,
+  walletSpecLabelClassName,
   walletSpecSecondaryClassName,
-} from "../account/wallet/WalletSpecPanel";
+} from "../account/wallet/AssetChips";
 
 interface UserGroupInvitePanelProps {
   userGroupId: string;

@@ -17,7 +17,7 @@ export function WalletBalancePanel({
 
   return (
     <div className="max-w-md overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-tl from-slate-100 via-white to-white shadow-md shadow-slate-900/10 ring-1 ring-black/5">
-      <div className="px-4 py-3">
+      <div className="px-4 py-4">
         <p className={walletSpecLabelClassName}>Balance</p>
         {balancesUnavailable ? (
           <button
@@ -30,7 +30,7 @@ export function WalletBalancePanel({
           </button>
         ) : (
           <p className="mt-1 font-display text-xl font-semibold tabular-nums leading-none text-gray-900">
-            ${formatted} {tokenSymbol}
+            ${formatted}
           </p>
         )}
       </div>

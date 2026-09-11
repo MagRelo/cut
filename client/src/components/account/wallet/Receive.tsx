@@ -6,7 +6,6 @@ import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../../config/targ
 import { BLOCKCHAIN_NETWORK } from "../../../lib/legalPlaceholders";
 import { AssetChips } from "./AssetChips";
 import { WalletAddressCopy } from "./WalletAddressCopy";
-import { WalletSpecPanel } from "./WalletSpecPanel";
 
 export const Receive = () => {
   const chainId = useChainId();
@@ -21,7 +20,7 @@ export const Receive = () => {
   const networkLabel = showCexOnramp ? BLOCKCHAIN_NETWORK : "Base Sepolia";
 
   return (
-    <div className="space-y-3 font-display">
+    <div className="space-y-4 font-display">
       {showCexOnramp ? null : (
         <p className="text-sm leading-relaxed text-gray-700">
           Balances are funded player-to-player. Share your funding link with someone who already has{" "}
@@ -29,21 +28,13 @@ export const Receive = () => {
         </p>
       )}
 
-      <WalletSpecPanel
-        headingId="deposit-match-heading"
-        heading={`Account Wallet Details`}
-        description={`Only send ${tokenSymbol} on the Base network to this address.`}
-      >
-        <div className="px-4 py-3">
-          <AssetChips tokenSymbol={tokenSymbol} networkLabel={networkLabel} flush />
-        </div>
+      <p className="text-sm leading-relaxed text-gray-700">
+        To receive {tokenSymbol} in this wallet, make sure these three details match exactly:
+      </p>
 
-        {walletAddress ? (
-          <div className="px-4 py-3">
-            <WalletAddressCopy address={walletAddress} />
-          </div>
-        ) : null}
-      </WalletSpecPanel>
+      <AssetChips tokenSymbol={tokenSymbol} networkLabel={networkLabel} flush />
+
+      {walletAddress ? <WalletAddressCopy address={walletAddress} /> : null}
     </div>
   );
 };

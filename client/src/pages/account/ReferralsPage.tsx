@@ -76,7 +76,7 @@ function ReferralNetworkPanel({
       {loading || !error ? (
         <div className="mb-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Earned</p>
-          <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+          <div className="mt-1">
             {loading ? (
               <div className="h-8 w-28 animate-pulse rounded bg-gray-200" aria-busy="true" />
             ) : (
@@ -86,11 +86,8 @@ function ReferralNetworkPanel({
                 {formatEarned(totalEarned)}
               </p>
             )}
-            {shareButton}
           </div>
         </div>
-      ) : shareButton ? (
-        <div className="mb-4">{shareButton}</div>
       ) : null}
 
       <h2 className="mb-2 font-display text-base font-semibold text-gray-900">Your Referrals</h2>
@@ -159,6 +156,8 @@ function ReferralNetworkPanel({
           </p>
         </div>
       </div>
+
+      {shareButton ? <div className="mt-6 flex justify-center">{shareButton}</div> : null}
     </>
   );
 }
