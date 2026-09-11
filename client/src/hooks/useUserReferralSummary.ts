@@ -13,6 +13,7 @@ export interface ReferralSummaryResponse {
   maxDepth: number;
   levels: ReferralSummaryLevel[];
   grandTotal: number;
+  totalEarned: number;
 }
 
 /**

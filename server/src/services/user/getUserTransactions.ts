@@ -1,6 +1,5 @@
-import { formatUnits } from "viem";
 import { prisma } from "../../lib/prisma.js";
-import { getPaymentTokenAddress } from "../../lib/contractAddresses.js";
+import { humanFromWei, roundMoney } from "../../utils/paymentAmount.js";
 
 export type UserTxnType =
   | "CONTEST_ENTRY"
@@ -22,36 +21,6 @@ export type UserTransaction = {
   chainId?: number;
   txHash?: string | null;
 };
-
-const PAYMENT_TOKEN_DECIMALS = 6;
-const LEGACY_TOKEN_DECIMALS = 18;
-
-function paymentDecimals(chainId: number, tokenAddress: string | null | undefined): number {
-  if (!tokenAddress) return PAYMENT_TOKEN_DECIMALS;
-  const configured = getPaymentTokenAddress(chainId);
-  if (configured && configured.toLowerCase() === tokenAddress.toLowerCase()) {
-    return PAYMENT_TOKEN_DECIMALS;
-  }
-  return LEGACY_TOKEN_DECIMALS;
-}
-
-function humanFromWei(
-  amountWei: string | null | undefined,
-  chainId: number,
-  tokenAddress?: string | null,
-): number | null {
-  if (amountWei == null || amountWei === "") return null;
-  try {
-    const decimals = paymentDecimals(chainId, tokenAddress);
-    return Number(formatUnits(BigInt(amountWei), decimals));
-  } catch {
-    return null;
-  }
-}
-
-function roundMoney(n: number): number {
-  return Math.round(n * 100) / 100;
-}
 
 export async function getUserTransactions(userId: string): Promise<UserTransaction[]> {
   const [lineups, predictions, payments] = await Promise.all([

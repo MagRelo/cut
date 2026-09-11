@@ -9,7 +9,7 @@ This run does **not** cover league join dual-capture, contest lobby stake icons,
 - A new Cut user opened with a valid `?ref=` attaches to the inviter (`User.referredByUserId`, `referrerAddress`).
 - Organic signup (missing, invalid, `0x`, or unknown code) still creates an account and does not fail `POST /auth/session`.
 - Existing Cut users are not re-parented if they later open someone else's link.
-- Account → Referrals shows Direct / 2nd / 3+ counts from `GET /auth/referrals/summary`.
+- Account → Referrals shows Direct / 2nd / 3+ counts and total earned from `GET /auth/referrals/summary`.
 - Connect shows **Referral link detected** only when a valid 8-character invite code is in the URL or `sessionStorage` (`cut_referral_code`).
 
 ## Code paths
@@ -34,7 +34,7 @@ flowchart LR
 | Banner on Sign in / Create Account | `client/src/components/auth/Connect.tsx` |
 | Header only on first Cut user create (`NEEDS_PROVISIONING` → `POST /auth/session`) | `client/src/contexts/AuthContext.tsx` |
 | Best-effort resolve; never blocks after valid JWT | `server/src/lib/referralCode.ts`, `server/src/lib/privyUserProvisioning.ts` |
-| Tree counts | `GET /auth/referrals/summary` in `server/src/routes/auth.ts` |
+| Tree counts + earned | `GET /auth/referrals/summary` (`getReferralSummary.ts`) |
 
 Attachment is write-once at `User` create. `sessionStorage` is cleared after a successful session POST, not on logout.
 
@@ -44,7 +44,7 @@ Attachment is write-once at `User` create. `sessionStorage` is cleared after a s
 |---------|-------|----------|
 | Connect banner | `/connect` | Yes |
 | Onboarding (`Skip for now`) | `/onboarding` | Gate only |
-| Share link + Direct / 2nd / 3+ table | `/account/referrals` | Yes |
+| Share link + Direct / 2nd / 3+ table + earned | `/account/referrals` | Yes |
 | FAQ invite-network copy | `/faq#referral-network` | No |
 | League invite URL `?ref=` + admin member icon | `/leagues/...` | No |
 | Contest lobby / entry stake icon | contest lobby | No |

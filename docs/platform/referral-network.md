@@ -63,7 +63,7 @@ netPools    = gross * (1 - referralNetworkBps / 10_000)
 | `PlatformRoot → Alice → Winner` | Alice + platform root (geometric decay) |
 | Deeper invite chains | Referrers + platform-root ancestor slice |
 
-Indexing: `OnchainPayment` rows with type `REFERRAL` ([`recordSettlementReferralPayments.ts`](../../server/src/services/contest/recordSettlementReferralPayments.ts)). Results UI: `GET /contests/:id` → `onchainPayments`.
+Indexing: `OnchainPayment` rows with type `REFERRAL` ([`recordSettlementReferralPayments.ts`](../../server/src/services/contest/recordSettlementReferralPayments.ts)). Results UI: `GET /contests/:id` → `onchainPayments`. Account referrals: `GET /auth/referrals/summary` returns downline counts plus `totalEarned` (sum of that user's `REFERRAL` rows).
 
 ---
 
@@ -160,6 +160,7 @@ Setup services expose `platformRoot` (the cold platform-root address).
 | Platform root env (deploy only) | `contracts/env.example` / forge `ReferralDeployGuard` |
 | Graph setup / rematerialize | `server/src/services/referral/` |
 | Settlement indexing | `server/src/services/contest/recordSettlementReferralPayments.ts` |
+| Account referral summary | `server/src/services/referral/getReferralSummary.ts` |
 
 ### Checklist
 

@@ -132,59 +132,47 @@ export const UserGroupDetailPage = () => {
         ]}
       />
 
-      <PageSection variant="default" className="overflow-hidden !border-b-0 !p-0 !pb-0">
-        <header className="px-2 pb-4 pt-2">
-          <div>
-            <h1 className="mb-1 font-display text-2xl font-bold leading-tight tracking-tight text-gray-900 sm:text-3xl">
-              {userGroup.name}
-            </h1>
-            {userGroup.description ? (
-              <p className="max-w-prose whitespace-pre-wrap font-display text-sm leading-relaxed text-gray-600 sm:text-base">
-                {userGroup.description}
-              </p>
-            ) : null}
-          </div>
-        </header>
+      <header className="pb-4">
+        <h1 className="mb-1 font-display text-2xl font-bold leading-tight tracking-tight text-gray-900 sm:text-3xl">
+          {userGroup.name}
+        </h1>
+        {userGroup.description ? (
+          <p className="max-w-prose whitespace-pre-wrap font-display text-sm leading-relaxed text-gray-600 sm:text-base">
+            {userGroup.description}
+          </p>
+        ) : null}
+      </header>
 
-        <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-          <div className="px-2">
-            <TabList className={tabListClassName()}>
+      <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+        <TabList className={tabListClassName()}>
+          <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
+            Contests
+          </Tab>
+          {isAdmin ? (
+            <>
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
               >
-                Contests
+                Invite players
               </Tab>
-              {isAdmin ? (
-                <>
-                  <Tab
-                    className={({ selected }: { selected: boolean }) =>
-                      tabButtonClassName(selected)
-                    }
-                  >
-                    Invite players
-                  </Tab>
-                  <Tab
-                    className={({ selected }: { selected: boolean }) =>
-                      tabButtonClassName(selected)
-                    }
-                  >
-                    Settings
-                  </Tab>
-                </>
-              ) : null}
-            </TabList>
-          </div>
-          <div className="px-2 py-4">
-            <TabPanel className="focus:outline-none">{contestContent}</TabPanel>
-            {isAdmin ? (
-              <>
-                <TabPanel className="focus:outline-none">{membersContent}</TabPanel>
-                <TabPanel className="focus:outline-none">{settingsContent}</TabPanel>
-              </>
-            ) : null}
-          </div>
-        </TabGroup>
-      </PageSection>
+              <Tab
+                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+              >
+                Settings
+              </Tab>
+            </>
+          ) : null}
+        </TabList>
+        <div className="pt-4">
+          <TabPanel className="focus:outline-none">{contestContent}</TabPanel>
+          {isAdmin ? (
+            <>
+              <TabPanel className="focus:outline-none">{membersContent}</TabPanel>
+              <TabPanel className="focus:outline-none">{settingsContent}</TabPanel>
+            </>
+          ) : null}
+        </div>
+      </TabGroup>
     </>
   );
 };
