@@ -109,7 +109,7 @@ function ReferralNetworkPanel({
             </div>
           </div>
         ) : (
-          <ReferralTree people={tree} />
+          <ReferralTree people={tree} shareUrl={referralUrl} />
         )}
       </div>
     </>

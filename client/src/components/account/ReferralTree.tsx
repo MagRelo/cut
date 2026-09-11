@@ -1,9 +1,41 @@
 import type { ReferralSummaryNode } from "../../hooks/useUserReferralSummary";
+import { ShareInviteButton } from "../common/ShareInviteButton";
 import { TreeIcon } from "../common/TreeIcon";
 import { resolveUserBorderColor } from "../../lib/lineupDisplay";
 import { buildReferralDisplayTree, type ReferralDisplayNode } from "../../lib/referralDisplayTree";
 
-function NodePanel({ node }: { node: ReferralDisplayNode }) {
+const ghostInvite: ReferralDisplayNode = {
+  key: "ghost-invite",
+  label: "Share your link!",
+  invite: true,
+  children: [],
+};
+
+function NodePanel({ node, shareUrl }: { node: ReferralDisplayNode; shareUrl?: string | null }) {
+  if (node.invite) {
+    return (
+      <div
+        className="rounded-sm border border-dashed border-gray-300 bg-white/80 px-3 py-4 font-display"
+        style={{
+          borderLeftColor: resolveUserBorderColor(undefined),
+          borderLeftWidth: "5px",
+          borderLeftStyle: "solid",
+        }}
+      >
+        {shareUrl ? (
+          <ShareInviteButton
+            url={shareUrl}
+            ariaLabel="Share your referral link"
+            label={node.label}
+            variant="link"
+          />
+        ) : (
+          <span className="text-base font-semibold leading-tight text-blue-600">{node.label}</span>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       className="rounded-sm border border-gray-200 bg-white px-3 py-4 font-display shadow-sm"
@@ -23,14 +55,26 @@ function NodePanel({ node }: { node: ReferralDisplayNode }) {
   );
 }
 
-function TreeRows({ nodes }: { nodes: ReferralDisplayNode[] }) {
+function TreeRows({
+  nodes,
+  shareUrl,
+}: {
+  nodes: ReferralDisplayNode[];
+  shareUrl?: string | null;
+}) {
   if (nodes.length === 0) return null;
 
   return (
     <ul className="relative mt-2 space-y-2 pl-4">
       <span className="absolute -top-2 left-[2px] h-2 w-px bg-slate-300" aria-hidden />
       {nodes.map((node, index) => (
-        <TreeItem key={node.key} node={node} branched isLast={index === nodes.length - 1} />
+        <TreeItem
+          key={node.key}
+          node={node}
+          branched
+          isLast={index === nodes.length - 1}
+          shareUrl={shareUrl}
+        />
       ))}
     </ul>
   );
@@ -40,10 +84,12 @@ function TreeItem({
   node,
   branched = false,
   isLast = false,
+  shareUrl,
 }: {
   node: ReferralDisplayNode;
   branched?: boolean;
   isLast?: boolean;
+  shareUrl?: string | null;
 }) {
   return (
     <li className="relative">
@@ -60,15 +106,22 @@ function TreeItem({
             aria-hidden
           />
         ) : null}
-        <NodePanel node={node} />
+        <NodePanel node={node} shareUrl={shareUrl} />
       </div>
-      <TreeRows nodes={node.children} />
+      <TreeRows nodes={node.children} shareUrl={shareUrl} />
     </li>
   );
 }
 
-export function ReferralTree({ people }: { people: ReferralSummaryNode[] }) {
+export function ReferralTree({
+  people,
+  shareUrl,
+}: {
+  people: ReferralSummaryNode[];
+  shareUrl?: string | null;
+}) {
   const referrals = buildReferralDisplayTree(people);
+  const rows = referrals.length > 0 ? referrals : [ghostInvite];
 
   return (
     <div aria-label="Your referral tree">
@@ -79,15 +132,19 @@ export function ReferralTree({ people }: { people: ReferralSummaryNode[] }) {
         >
           <TreeIcon className="h-3.5 w-3.5 text-green-700" aria-hidden />
         </span>
-        {referrals.length > 0 ? <span className="h-2 w-px bg-slate-300" aria-hidden /> : null}
+        <span className="h-2 w-px bg-slate-300" aria-hidden />
       </div>
-      {referrals.length > 0 ? (
-        <ul className="relative space-y-2 pl-4">
-          {referrals.map((node, index) => (
-            <TreeItem key={node.key} node={node} branched isLast={index === referrals.length - 1} />
-          ))}
-        </ul>
-      ) : null}
+      <ul className="relative space-y-2 pl-4">
+        {rows.map((node, index) => (
+          <TreeItem
+            key={node.key}
+            node={node}
+            branched
+            isLast={index === rows.length - 1}
+            shareUrl={shareUrl}
+          />
+        ))}
+      </ul>
     </div>
   );
 }

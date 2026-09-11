@@ -10,6 +10,7 @@ export type ReferralDisplayNode = {
   key: string;
   label: string;
   color?: string;
+  invite?: boolean;
   children: ReferralDisplayNode[];
 };
 
