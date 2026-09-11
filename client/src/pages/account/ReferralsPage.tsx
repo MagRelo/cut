@@ -3,6 +3,7 @@ import { UserGroupIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import { ShareInviteButton } from "../../components/common/ShareInviteButton";
 import { Breadcrumbs } from "../../components/common/Breadcrumbs";
+import { walletSpecLabelClassName } from "../../components/account/wallet/AssetChips";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUserReferralSummary } from "../../hooks/useUserReferralSummary";
 import { LEAGUE_STARTER_GUIDE_PATH } from "../LeagueStarterGuidePage";
@@ -59,29 +60,22 @@ function ReferralNetworkPanel({
     <ShareInviteButton
       url={referralUrl}
       ariaLabel="Share your referral link"
-      label="Share Your Referral Link"
+      label="Share Link"
       variant="cta"
     />
   ) : null;
 
   return (
     <>
-      <p className="mb-3 font-display text-sm text-gray-700">
-        When your friends win, you earn.{" "}
-        <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
-          Learn more ...
-        </Link>
-      </p>
-
       {loading || !error ? (
-        <div className="mb-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Earned</p>
-          <div className="mt-1">
+        <div className="mb-6 max-w-md overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-tl from-slate-100 via-white to-white shadow-md shadow-slate-900/10 ring-1 ring-black/5">
+          <div className="px-4 py-4">
+            <p className={walletSpecLabelClassName}>Referral Earnings</p>
             {loading ? (
-              <div className="h-8 w-28 animate-pulse rounded bg-gray-200" aria-busy="true" />
+              <div className="mt-1 h-6 w-24 animate-pulse rounded bg-gray-200" aria-busy="true" />
             ) : (
               <p
-                className={`font-display text-3xl font-semibold tabular-nums leading-none ${earnedClass}`}
+                className={`mt-1 font-display text-xl font-semibold tabular-nums leading-none ${earnedClass}`}
               >
                 {formatEarned(totalEarned)}
               </p>
@@ -90,7 +84,49 @@ function ReferralNetworkPanel({
         </div>
       ) : null}
 
-      <h2 className="mb-2 font-display text-base font-semibold text-gray-900">Your Referrals</h2>
+      <div className="mb-4">
+        <h2 className="mb-1 font-display text-base font-semibold text-gray-900">
+          The Future of Fantasy Sports
+        </h2>
+        <p className="mb-3 font-display text-sm text-gray-700">
+          What makes Play The Cut different? Instead of fees, ads, or sponsors, we’re powered by{" "}
+          <b>players supporting players</b>. Invite friends for free, build your referral tree, and
+          earn when your community wins.{" "}
+          <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
+            Learn how to earn using referrals...
+          </Link>
+        </p>
+      </div>
+
+      {/* how it works */}
+      <div className="mb-4">
+        <h2 className="mb-1 font-display text-base font-semibold text-gray-900">
+          Share Your Link!
+        </h2>
+        <p className="mb-3 font-display text-sm text-gray-700">
+          Share your referral link using email, text, or social media. Make sure your friends use
+          your referral link to sign up - when they win, you earn.
+        </p>
+      </div>
+
+      {shareButton ? <div className="my-6 flex justify-center">{shareButton}</div> : null}
+
+      <h2 className="mb-1 font-display text-base font-semibold text-gray-900">Start a League</h2>
+      <p className="mb-3 font-display text-sm text-gray-700">
+        Start a league to maximize your referrals.{" "}
+        <Link to={LEAGUE_STARTER_GUIDE_PATH} className="text-blue-600 hover:underline">
+          Learn how to start a league...
+        </Link>
+      </p>
+
+      <h2 className="mb-1 font-display text-base font-semibold text-gray-900">
+        Your Referral Tree
+      </h2>
+      <p className="mb-3 font-display text-sm text-gray-700">
+        Your referral tree shows how many players you've invited and how many levels deep you are.
+      </p>
+
+      {/* referral tree */}
       <div className="overflow-hidden rounded-sm border border-gray-200">
         {!loading && error ? (
           <p className="border-b border-gray-200 px-3 py-2 font-display text-sm text-red-600">
@@ -156,8 +192,6 @@ function ReferralNetworkPanel({
           </p>
         </div>
       </div>
-
-      {shareButton ? <div className="mt-6 flex justify-center">{shareButton}</div> : null}
     </>
   );
 }
