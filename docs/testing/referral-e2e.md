@@ -9,7 +9,7 @@ This run does **not** cover league join dual-capture, contest lobby stake icons,
 - A new Cut user opened with a valid `?ref=` attaches to the inviter (`User.referredByUserId`, `referrerAddress`).
 - Organic signup (missing, invalid, `0x`, or unknown code) still creates an account and does not fail `POST /auth/session`.
 - Existing Cut users are not re-parented if they later open someone else's link.
-- Account → Referrals shows the viewer's named downline tree (not emails) and total earned from `GET /auth/referrals/summary`.
+- Referral Network shows the viewer's named downline tree (not emails) and total earned from `GET /auth/referrals/summary`.
 - Connect shows **Referral link detected** only when a valid 8-character invite code is in the URL or `sessionStorage` (`cut_referral_code`).
 
 ## Code paths
@@ -44,7 +44,7 @@ Attachment is write-once at `User` create. `sessionStorage` is cleared after a s
 |---------|-------|----------|
 | Connect banner | `/connect` | Yes |
 | Onboarding (`Skip for now`) | `/onboarding` | Gate only |
-| Share link + named downline tree + earned | `/account/referrals` | Yes |
+| Share link + named downline tree + earned | `/referrals` | Yes |
 | FAQ invite-network copy | `/faq#referral-network` | No |
 | League invite URL `?ref=` + admin member icon | `/leagues/...` | No |
 | Contest lobby / entry stake icon | contest lobby | No |
@@ -78,7 +78,7 @@ Prerequisite: **User management → Authentication → Advanced → Enable test 
 ## Scenarios
 
 1. **Capture (logged out).** `?ref=short`, `?ref=0x…`, missing `ref` → no banner. Valid-looking unknown 8-char code → banner.
-2. **A organic.** Login A with no stored code → skip onboarding → `/account/referrals` → `referredByUserId` null; record A's `referralCode`.
+2. **A organic.** Login A with no stored code → skip onboarding → `/referrals` → `referredByUserId` null; record A's `referralCode`.
 3. **B invited.** Logout → `/?ref={A}` → banner → login B → skip onboarding → B parented to A; A's Referrals tree shows B's name as a direct node.
 4. **C nested.** Logout → `/?ref={B}` → login C → A's tree shows B under You and C under B; B's tree shows C as a direct node.
 5. **D unknown code.** Logout → `/?ref=` plus a valid-alphabet code that is not A/B/C → login D → organic.

@@ -234,7 +234,8 @@ Core platform endpoints:
 | `/sports/:sportId/leaderboard` | Redirect → event-id leaderboard (or `/contests`) |
 | `/contest/:address` | Contest lobby (on-chain address or database id in URL) |
 | `/leagues/:id` | Cross-sport league — contests grouped by event |
-| `/account` | Wallet, referrals, settings (sport-neutral) |
+| `/account` | Wallet, settings, activity (sport-neutral) |
+| `/referrals` | Referral network (sport-neutral) |
 
 `/sports/:sportId/contests/:id` redirects to `/contest/:address`. Legacy `/user-groups/*` redirects to `/leagues/*`. No legacy `/leaderboard` or `/lineups` routes.
 

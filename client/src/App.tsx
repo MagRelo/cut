@@ -137,6 +137,10 @@ const AppShell: React.FC = () => {
             />
             <Route
               path="/account/referrals"
+              element={<Navigate to="/referrals" replace />}
+            />
+            <Route
+              path="/referrals"
               element={
                 <ProtectedRoute>
                   <ReferralsPage />

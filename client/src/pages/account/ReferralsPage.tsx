@@ -72,13 +72,13 @@ function ReferralNetworkPanel({
       ) : null}
 
       <div className="mb-4">
-        <h2 className="mb-1 font-display text-base font-semibold text-gray-900">
-          The Future of Fantasy Sports
+        <h2 className="mb-1 flex items-center gap-2 font-display text-base font-semibold text-gray-900">
+          <TreeIcon className="h-5 w-5 shrink-0 text-green-700" aria-hidden />
+          Referral Rewards
         </h2>
         <p className="mb-3 font-display text-sm text-gray-700">
-          What makes Play The Cut different? Instead of fees, ads, or sponsors, we’re powered by{" "}
-          <b>players supporting players</b>. Invite friends for free, grow your referral tree, and
-          earn when your community wins.{" "}
+          Play The Cut has partnered with <b>Incentive Exchange</b> to provide verifiable rewards
+          for your referrals. <b>Invite friends and when they win, you win</b>.{" "}
           <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
             Learn how referral earnings work…
           </Link>
@@ -87,7 +87,7 @@ function ReferralNetworkPanel({
 
       <h2 className="mb-1 flex items-center gap-2 font-display text-base font-semibold text-gray-900">
         <TreeIcon className="h-5 w-5 shrink-0 text-green-700" aria-hidden />
-        Your Network
+        Track Your Network
       </h2>
       <p className="mb-3 font-display text-sm text-gray-700">
         Invite friends and grow your network over time. Whenever your friends win a contest (or
@@ -127,10 +127,7 @@ export function ReferralsPage() {
 
   return (
     <>
-      <Breadcrumbs
-        items={[{ label: "Account", path: "/account" }, { label: "Referral Network" }]}
-        className="mb-2"
-      />
+      <Breadcrumbs items={[{ label: "Referral Network" }]} className="mb-2" />
       <h1 className="mb-4 flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
         <TreeIcon className="h-6 w-6 shrink-0 text-green-700" aria-hidden />
         Referral Network

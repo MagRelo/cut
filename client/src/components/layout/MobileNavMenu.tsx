@@ -8,6 +8,7 @@ import { BRAND_PROSE, BRAND_WORDMARK } from "../../lib/brand";
 import { signInReturnFrom } from "../../lib/navRoutes";
 import {
   ACCOUNT_WALLET_LINK,
+  ACCOUNT_REFERRALS_LINK,
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
   LEAGUES_TAB,
@@ -232,6 +233,20 @@ export const MobileNavMenu: React.FC = () => {
                                   </Link>
                                 ))
                               : null}
+
+                            <Link
+                              to={ACCOUNT_REFERRALS_LINK.to}
+                              onClick={closeMenu}
+                              aria-current={
+                                ACCOUNT_REFERRALS_LINK.match(location.pathname) ? "page" : undefined
+                              }
+                              className={`${mobileNavItemClass(
+                                ACCOUNT_REFERRALS_LINK.match(location.pathname),
+                              )} inline-flex items-center gap-2`}
+                            >
+                              <ACCOUNT_REFERRALS_LINK.Icon className="h-4 w-4 shrink-0" aria-hidden />
+                              {ACCOUNT_REFERRALS_LINK.label}
+                            </Link>
 
                             <a
                               href="https://playthecut.printful.me/?sort=price"

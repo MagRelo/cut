@@ -36,9 +36,9 @@ export const ACCOUNT_ACTIVITY_LINK = {
 } as const;
 
 export const ACCOUNT_REFERRALS_LINK = {
-  to: "/account/referrals",
+  to: "/referrals",
   label: "Referral Network",
-  match: (pathname: string) => pathname === "/account/referrals",
+  match: (pathname: string) => pathname === "/referrals",
   Icon: TreeIcon,
 } as const;
 
@@ -52,7 +52,6 @@ export const LEAGUES_TAB: NavTab = {
 /** Account links shown under Account in nav menus. */
 export const ACCOUNT_SUB_LINKS = [
   ACCOUNT_WALLET_LINK,
-  ACCOUNT_REFERRALS_LINK,
   ACCOUNT_ACTIVITY_LINK,
   ACCOUNT_SETTINGS_LINK,
 ] as const;
