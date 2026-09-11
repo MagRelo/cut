@@ -16,12 +16,26 @@ vi.mock("../../lib/prisma.js", () => ({
 }));
 
 import { getPaymentTokenAddress } from "../../lib/contractAddresses.js";
-import { getReferralSummary, MAX_REFERRAL_SUMMARY_DEPTH } from "./getReferralSummary.js";
+import {
+  getReferralSummary,
+  MAX_REFERRAL_SUMMARY_DEPTH,
+  publicReferralName,
+} from "./getReferralSummary.js";
 
 const USER_ID = "user-1";
 const GROUP = "0x" + "ab".repeat(32);
 const SEPOLIA = 84532;
 const SEPOLIA_TOKEN = getPaymentTokenAddress(SEPOLIA)!;
+
+describe("publicReferralName", () => {
+  it("keeps a display name", () => {
+    expect(publicReferralName(" Alice ")).toBe("Alice");
+  });
+
+  it("does not leak an email-shaped name", () => {
+    expect(publicReferralName("eve@example.com")).toBe("Player");
+  });
+});
 
 describe("getReferralSummary", () => {
   beforeEach(() => {
@@ -41,20 +55,23 @@ describe("getReferralSummary", () => {
       groupId: null,
       maxDepth: MAX_REFERRAL_SUMMARY_DEPTH,
       levels: [],
+      tree: [],
       grandTotal: 0,
       totalEarned: 4,
     });
     expect(queryRaw).not.toHaveBeenCalled();
   });
 
-  it("includes tree counts and referral payout total", async () => {
+  it("includes named tree nodes, derived counts, and referral payout total", async () => {
     findUnique.mockResolvedValue({ referralChainId: SEPOLIA, referralGroupId: GROUP });
     findMany.mockResolvedValue([
       { amountWei: "10500000", chainId: SEPOLIA, tokenAddress: SEPOLIA_TOKEN },
     ]);
     queryRaw.mockResolvedValue([
-      { depth: 1, count: 3 },
-      { depth: 2, count: 1 },
+      { id: "a", name: "Alice", parentId: null, depth: 1, settings: { color: "#10B981" } },
+      { id: "b", name: "Bob", parentId: null, depth: 1, settings: null },
+      { id: "d", name: "eve@example.com", parentId: null, depth: 1, settings: { color: "nope" } },
+      { id: "c", name: "Cara", parentId: "a", depth: 2, settings: { color: "#3B82F6" } },
     ]);
 
     await expect(getReferralSummary(USER_ID)).resolves.toEqual({
@@ -64,6 +81,12 @@ describe("getReferralSummary", () => {
       levels: [
         { depth: 1, count: 3 },
         { depth: 2, count: 1 },
+      ],
+      tree: [
+        { id: "a", name: "Alice", parentId: null, depth: 1, color: "#10B981" },
+        { id: "b", name: "Bob", parentId: null, depth: 1, color: "#9CA3AF" },
+        { id: "d", name: "Player", parentId: null, depth: 1, color: "#9CA3AF" },
+        { id: "c", name: "Cara", parentId: "a", depth: 2, color: "#3B82F6" },
       ],
       grandTotal: 4,
       totalEarned: 10.5,
@@ -79,5 +102,6 @@ describe("getReferralSummary", () => {
     const result = await getReferralSummary(USER_ID);
     expect(result.totalEarned).toBe(0);
     expect(result.grandTotal).toBe(0);
+    expect(result.tree).toEqual([]);
   });
 });

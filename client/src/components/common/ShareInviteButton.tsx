@@ -9,7 +9,7 @@ interface ShareInviteButtonProps {
   shareText?: string;
   ariaLabel?: string;
   label?: string;
-  variant?: "compact" | "cta" | "secondary";
+  variant?: "compact" | "cta" | "secondary" | "link";
   className?: string;
 }
 
@@ -52,7 +52,7 @@ export function ShareInviteButton({
   const active = feedback !== null;
   const variantClass =
     variant === "secondary"
-        ? `w-full min-h-11 justify-center border px-4 sm:w-auto ${
+      ? `w-full min-h-11 justify-center border px-4 sm:w-auto ${
           active
             ? "border-gray-400 bg-gray-50 text-gray-900"
             : "border-gray-300 bg-white text-gray-800 hover:bg-gray-50"
@@ -61,7 +61,9 @@ export function ShareInviteButton({
         ? `justify-center min-w-[200px] border border-blue-500 px-4 py-2 text-white ${
             active ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"
           }`
-        : `px-3 py-1 text-white ${active ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"}`;
+        : variant === "link"
+          ? `px-0 py-0 text-base font-semibold ${active ? "text-blue-800" : "text-blue-600 hover:underline"}`
+          : `px-3 py-1 text-white ${active ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"}`;
 
   return (
     <button

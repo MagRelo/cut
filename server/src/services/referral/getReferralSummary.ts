@@ -8,15 +8,71 @@ export type ReferralSummaryLevel = {
   count: number;
 };
 
+export type ReferralSummaryNode = {
+  id: string;
+  name: string;
+  parentId: string | null;
+  depth: number;
+  /** User accent color from settings; gray fallback when missing/invalid. */
+  color: string;
+};
+
 export type ReferralSummary = {
   chainId: number | null;
   groupId: string | null;
   maxDepth: number;
   levels: ReferralSummaryLevel[];
+  tree: ReferralSummaryNode[];
   grandTotal: number;
   /** Settled referral-network payouts credited to this user (USD, 2 decimals). */
   totalEarned: number;
 };
+
+type ReferralTreeRow = {
+  id: string;
+  name: string;
+  parentId: string | null;
+  depth: number;
+  settings: unknown;
+};
+
+const DEFAULT_USER_COLOR = "#9CA3AF";
+
+export function publicReferralName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed || trimmed.includes("@")) return "Player";
+  return trimmed;
+}
+
+function referralNodeColor(settings: unknown): string {
+  if (typeof settings !== "object" || settings === null) return DEFAULT_USER_COLOR;
+  const maybeColor = (settings as { color?: unknown }).color;
+  if (typeof maybeColor !== "string") return DEFAULT_USER_COLOR;
+  const color = maybeColor.trim();
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color) ? color : DEFAULT_USER_COLOR;
+}
+
+function emptySummary(totalEarned: number): ReferralSummary {
+  return {
+    chainId: null,
+    groupId: null,
+    maxDepth: MAX_REFERRAL_SUMMARY_DEPTH,
+    levels: [],
+    tree: [],
+    grandTotal: 0,
+    totalEarned,
+  };
+}
+
+function levelsFromTree(tree: ReferralSummaryNode[]): ReferralSummaryLevel[] {
+  const counts = new Map<number, number>();
+  for (const node of tree) {
+    counts.set(node.depth, (counts.get(node.depth) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([depth, count]) => ({ depth, count }));
+}
 
 export async function getReferralSummary(userId: string): Promise<ReferralSummary> {
   const [user, payments] = await Promise.all([
@@ -61,20 +117,16 @@ export async function getReferralSummary(userId: string): Promise<ReferralSummar
   }
 
   if (chainId == null || !groupId) {
-    return {
-      chainId: null,
-      groupId: null,
-      maxDepth: MAX_REFERRAL_SUMMARY_DEPTH,
-      levels: [],
-      grandTotal: 0,
-      totalEarned,
-    };
+    return emptySummary(totalEarned);
   }
 
-  const levels = await prisma.$queryRaw<ReferralSummaryLevel[]>`
+  const rows = await prisma.$queryRaw<ReferralTreeRow[]>`
     WITH RECURSIVE referral_tree AS (
       SELECT
         u.id,
+        u.name,
+        u.settings,
+        NULL::text AS "parentId",
         1::int AS depth,
         ARRAY[u.id]::text[] AS path
       FROM "User" u
@@ -87,6 +139,9 @@ export async function getReferralSummary(userId: string): Promise<ReferralSummar
 
       SELECT
         child.id,
+        child.name,
+        child.settings,
+        rt.id AS "parentId",
         rt.depth + 1,
         rt.path || child.id
       FROM "User" child
@@ -98,21 +153,31 @@ export async function getReferralSummary(userId: string): Promise<ReferralSummar
         AND NOT child.id = ANY(rt.path)
     )
     SELECT
-      depth::int AS depth,
-      COUNT(*)::int AS count
+      id,
+      name,
+      settings,
+      "parentId",
+      depth::int AS depth
     FROM referral_tree
-    GROUP BY depth
-    ORDER BY depth ASC
+    ORDER BY depth ASC, name ASC
   `;
 
-  const grandTotal = levels.reduce((sum, level) => sum + level.count, 0);
+  const tree: ReferralSummaryNode[] = rows.map((row) => ({
+    id: row.id,
+    name: publicReferralName(row.name),
+    parentId: row.parentId ?? null,
+    depth: Number(row.depth),
+    color: referralNodeColor(row.settings),
+  }));
+  const levels = levelsFromTree(tree);
 
   return {
     chainId,
     groupId,
     maxDepth: MAX_REFERRAL_SUMMARY_DEPTH,
     levels,
-    grandTotal,
+    tree,
+    grandTotal: tree.length,
     totalEarned,
   };
 }

@@ -7,11 +7,20 @@ export interface ReferralSummaryLevel {
   count: number;
 }
 
+export interface ReferralSummaryNode {
+  id: string;
+  name: string;
+  parentId: string | null;
+  depth: number;
+  color: string;
+}
+
 export interface ReferralSummaryResponse {
   chainId: number | null;
   groupId: string | null;
   maxDepth: number;
   levels: ReferralSummaryLevel[];
+  tree: ReferralSummaryNode[];
   grandTotal: number;
   totalEarned: number;
 }

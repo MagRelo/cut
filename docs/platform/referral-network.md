@@ -63,7 +63,7 @@ netPools    = gross * (1 - referralNetworkBps / 10_000)
 | `PlatformRoot → Alice → Winner` | Alice + platform root (geometric decay) |
 | Deeper invite chains | Referrers + platform-root ancestor slice |
 
-Indexing: `OnchainPayment` rows with type `REFERRAL` ([`recordSettlementReferralPayments.ts`](../../server/src/services/contest/recordSettlementReferralPayments.ts)). Results UI: `GET /contests/:id` → `onchainPayments`. Account referrals: `GET /auth/referrals/summary` returns downline counts plus `totalEarned` (sum of that user's `REFERRAL` rows).
+Indexing: `OnchainPayment` rows with type `REFERRAL` ([`recordSettlementReferralPayments.ts`](../../server/src/services/contest/recordSettlementReferralPayments.ts)). Results UI: `GET /contests/:id` → `onchainPayments`. Account referrals: `GET /auth/referrals/summary` returns the viewer's own named downline (`tree`: id, display name, parent, depth, accent color — never email), level counts, and `totalEarned` (sum of that user's `REFERRAL` rows). The Referrals page renders that tree (plus empty growth nodes). The lobby overlay still does not expose a named downline to other players.
 
 ---
 

@@ -1,35 +1,15 @@
-import { useMemo } from "react";
 import { UserGroupIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import { ShareInviteButton } from "../../components/common/ShareInviteButton";
 import { Breadcrumbs } from "../../components/common/Breadcrumbs";
 import { walletSpecLabelClassName } from "../../components/account/wallet/AssetChips";
+import { ReferralTree } from "../../components/account/ReferralTree";
 import { useAuth } from "../../contexts/AuthContext";
-import { useUserReferralSummary } from "../../hooks/useUserReferralSummary";
-import { LEAGUE_STARTER_GUIDE_PATH } from "../LeagueStarterGuidePage";
-
-const REFERRAL_LEVEL_ROWS = [
-  { key: "1", depth: 1, label: "Direct" },
-  { key: "2", depth: 2, label: "2nd" },
-] as const;
-
-function referralDisplayLevels(
-  levels: Array<{ depth: number; count: number }> | undefined,
-): Array<{ key: string; label: string; count: number }> {
-  const levelsByDepth = new Map((levels ?? []).map((level) => [level.depth, level.count]));
-  const rows: Array<{ key: string; label: string; count: number }> = REFERRAL_LEVEL_ROWS.map(
-    (row) => ({
-      key: row.key,
-      label: row.label,
-      count: levelsByDepth.get(row.depth) ?? 0,
-    }),
-  );
-  const moreCount = (levels ?? [])
-    .filter((level) => level.depth >= 3)
-    .reduce((sum, level) => sum + level.count, 0);
-  rows.push({ key: "more", label: "3+", count: moreCount });
-  return rows;
-}
+import {
+  useUserReferralSummary,
+  type ReferralSummaryNode,
+} from "../../hooks/useUserReferralSummary";
+import { resolveUserBorderColor } from "../../lib/lineupDisplay";
 
 function formatEarned(amount: number): string {
   if (amount > 0 && amount < 0.01) return "<$0.01";
@@ -42,17 +22,19 @@ function formatEarned(amount: number): string {
 function ReferralNetworkPanel({
   loading,
   error,
-  levels,
+  tree,
   totalEarned,
 }: {
   loading: boolean;
   error: string | null;
-  levels: Array<{ depth: number; count: number }> | undefined;
+  tree: ReferralSummaryNode[];
   totalEarned: number;
 }) {
-  const displayLevels = referralDisplayLevels(levels);
   const earnedClass = totalEarned > 0 ? "text-green-700" : "text-gray-900";
   const { user } = useAuth();
+  const viewerColor = resolveUserBorderColor(
+    typeof user?.settings?.color === "string" ? user.settings.color : undefined,
+  );
   const referralUrl = user?.referralCode
     ? `${window.location.origin}/?ref=${user.referralCode}`
     : null;
@@ -91,10 +73,7 @@ function ReferralNetworkPanel({
         <p className="mb-3 font-display text-sm text-gray-700">
           What makes Play The Cut different? Instead of fees, ads, or sponsors, we’re powered by{" "}
           <b>players supporting players</b>. Invite friends for free, build your referral tree, and
-          earn when your community wins.{" "}
-          <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
-            Learn how to earn using referrals...
-          </Link>
+          earn when your community wins.
         </p>
       </div>
 
@@ -105,92 +84,38 @@ function ReferralNetworkPanel({
         </h2>
         <p className="mb-3 font-display text-sm text-gray-700">
           Share your referral link using email, text, or social media. Make sure your friends use
-          your referral link to sign up - when they win, you earn.
+          your referral link to sign up - <b>when they win, you earn</b>:
         </p>
       </div>
 
       {shareButton ? <div className="my-6 flex justify-center">{shareButton}</div> : null}
 
-      <h2 className="mb-1 font-display text-base font-semibold text-gray-900">Start a League</h2>
+      <h2 className="mb-1 font-display text-base font-semibold text-gray-900">
+        Your Referral Network
+      </h2>
       <p className="mb-3 font-display text-sm text-gray-700">
-        Start a league to maximize your referrals.{" "}
-        <Link to={LEAGUE_STARTER_GUIDE_PATH} className="text-blue-600 hover:underline">
-          Learn how to start a league...
+        Invite friends and grow your network over time. When your friends—and the players they
+        invite—win, referral bonuses flow back to you.{" "}
+        <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
+          Learn how referral earnings work…
         </Link>
       </p>
 
-      <h2 className="mb-1 font-display text-base font-semibold text-gray-900">
-        Your Referral Tree
-      </h2>
-      <p className="mb-3 font-display text-sm text-gray-700">
-        Your referral tree shows how many players you've invited and how many levels deep you are.
-      </p>
-
       {/* referral tree */}
-      <div className="overflow-hidden rounded-sm border border-gray-200">
+      <div className="rounded-sm border border-slate-200 bg-slate-50 p-3 shadow-inner ring-1 ring-inset ring-slate-100">
         {!loading && error ? (
-          <p className="border-b border-gray-200 px-3 py-2 font-display text-sm text-red-600">
-            {error}
-          </p>
-        ) : null}
-        <table className="w-full border-collapse font-display text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 bg-slate-100">
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                Level
-              </th>
-              <th className="w-[5.5rem] px-3 py-2 text-right text-xs font-semibold uppercase tabular-nums tracking-wide text-slate-600">
-                Players
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading
-              ? Array.from({ length: 3 }).map((_, index) => (
-                  <tr
-                    key={index}
-                    className={index > 0 ? "border-t border-slate-100" : undefined}
-                    aria-busy="true"
-                  >
-                    <td className="px-3 py-2.5">
-                      <div className="h-5 w-16 animate-pulse rounded bg-gray-200" />
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div className="ml-auto h-5 w-8 animate-pulse rounded bg-gray-200" />
-                    </td>
-                  </tr>
-                ))
-              : null}
-            {!loading && !error
-              ? displayLevels.map((level, index) => (
-                  <tr
-                    key={level.key}
-                    className={index > 0 ? "border-t border-slate-100" : undefined}
-                  >
-                    <td className="px-3 py-2.5 text-left text-gray-800">{level.label}</td>
-                    <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-gray-800">
-                      {level.count}
-                    </td>
-                  </tr>
-                ))
-              : null}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="mt-4 rounded-sm border border-gray-200 bg-gray-50 px-3 py-3 font-display">
-        <div className="flex gap-2 text-sm text-gray-700">
-          <span className="shrink-0" aria-hidden>
-            💡
-          </span>
-          <p className="leading-relaxed">
-            <span className="font-medium text-gray-900">Tip:</span> Referrals can be used to fund a
-            league.{" "}
-            <Link to={LEAGUE_STARTER_GUIDE_PATH} className="text-blue-600 hover:underline">
-              Learn more ...
-            </Link>
-          </p>
-        </div>
+          <p className="font-display text-sm text-red-600">{error}</p>
+        ) : loading ? (
+          <div className="space-y-2 py-1" aria-busy="true">
+            <div className="h-10 rounded-sm border border-gray-200 bg-gray-100" />
+            <div className="ml-4 space-y-2 border-l border-slate-200 pl-3">
+              <div className="h-10 rounded-sm border border-gray-200 bg-gray-100" />
+              <div className="h-10 rounded-sm border border-gray-200 bg-gray-50" />
+            </div>
+          </div>
+        ) : (
+          <ReferralTree people={tree} viewerColor={viewerColor} shareUrl={referralUrl} />
+        )}
       </div>
     </>
   );
@@ -203,11 +128,6 @@ export function ReferralsPage() {
     isLoading: referralLoading,
     error: referralQueryError,
   } = useUserReferralSummary(user?.id);
-  const referralLevels = useMemo(() => {
-    if (!referralSummary?.levels) return [];
-    const maxDepth = Math.max(1, referralSummary.maxDepth || 10);
-    return referralSummary.levels.filter((level) => level.depth <= maxDepth);
-  }, [referralSummary]);
   const referralError = referralQueryError ? "Could not load referral stats." : null;
 
   return (
@@ -223,7 +143,7 @@ export function ReferralsPage() {
       <ReferralNetworkPanel
         loading={referralLoading}
         error={referralError}
-        levels={referralLevels}
+        tree={referralSummary?.tree ?? []}
         totalEarned={referralSummary?.totalEarned ?? 0}
       />
     </>
