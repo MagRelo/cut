@@ -373,7 +373,7 @@ export function OnboardingPage() {
             </p>
 
             <p className="text-gray-700 leading-relaxed font-display mb-6">
-              You can find your personal referral link under Account → Referrals — share it with
+              You can find your personal referral link under Account → Referral Network — share it with
               your friends!
             </p>
 

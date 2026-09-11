@@ -1,4 +1,5 @@
-import { ClockIcon, Cog6ToothIcon, UserGroupIcon, WalletIcon } from "@heroicons/react/24/outline";
+import { ClockIcon, Cog6ToothIcon, WalletIcon } from "@heroicons/react/24/outline";
+import { TreeIcon } from "../components/common/TreeIcon";
 import type { Location } from "react-router-dom";
 import { adminMatch, contestsMatch, leaguesMatch, userGroupsMatch } from "./navRoutes";
 
@@ -36,9 +37,9 @@ export const ACCOUNT_ACTIVITY_LINK = {
 
 export const ACCOUNT_REFERRALS_LINK = {
   to: "/account/referrals",
-  label: "Referrals",
+  label: "Referral Network",
   match: (pathname: string) => pathname === "/account/referrals",
-  Icon: UserGroupIcon,
+  Icon: TreeIcon,
 } as const;
 
 export const LEAGUES_TAB: NavTab = {

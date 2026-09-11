@@ -1,7 +1,7 @@
-import { UserGroupIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import { ShareInviteButton } from "../../components/common/ShareInviteButton";
 import { Breadcrumbs } from "../../components/common/Breadcrumbs";
+import { TreeIcon } from "../../components/common/TreeIcon";
 import { walletSpecLabelClassName } from "../../components/account/wallet/AssetChips";
 import { ReferralTree } from "../../components/account/ReferralTree";
 import { useAuth } from "../../contexts/AuthContext";
@@ -72,8 +72,11 @@ function ReferralNetworkPanel({
         </h2>
         <p className="mb-3 font-display text-sm text-gray-700">
           What makes Play The Cut different? Instead of fees, ads, or sponsors, we’re powered by{" "}
-          <b>players supporting players</b>. Invite friends for free, build your referral tree, and
-          earn when your community wins.
+          <b>players supporting players</b>. Invite friends for free, grow your referral tree, and
+          earn when your community wins.{" "}
+          <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
+            Learn how referral earnings work…
+          </Link>
         </p>
       </div>
 
@@ -88,17 +91,15 @@ function ReferralNetworkPanel({
         </p>
       </div>
 
-      {shareButton ? <div className="my-6 flex justify-center">{shareButton}</div> : null}
+      {shareButton ? <div className="my-6 mb-8 flex justify-center">{shareButton}</div> : null}
 
-      <h2 className="mb-1 font-display text-base font-semibold text-gray-900">
-        Your Referral Network
+      <h2 className="mb-1 flex items-center gap-2 font-display text-base font-semibold text-gray-900">
+        <TreeIcon className="h-5 w-5 shrink-0 text-green-700" aria-hidden />
+        Your Network
       </h2>
       <p className="mb-3 font-display text-sm text-gray-700">
-        Invite friends and grow your network over time. When your friends—and the players they
-        invite—win, referral bonuses flow back to you.{" "}
-        <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
-          Learn how referral earnings work…
-        </Link>
+        Invite friends and grow your network over time. Whenever these players win a contest,
+        referral bonuses flow back to you:
       </p>
 
       {/* referral tree */}
@@ -133,12 +134,12 @@ export function ReferralsPage() {
   return (
     <>
       <Breadcrumbs
-        items={[{ label: "Account", path: "/account" }, { label: "Referrals" }]}
+        items={[{ label: "Account", path: "/account" }, { label: "Referral Network" }]}
         className="mb-2"
       />
       <h1 className="mb-4 flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
-        <UserGroupIcon className="h-6 w-6 shrink-0" aria-hidden />
-        Referrals
+        <TreeIcon className="h-6 w-6 shrink-0 text-green-700" aria-hidden />
+        Referral Network
       </h1>
       <ReferralNetworkPanel
         loading={referralLoading}
