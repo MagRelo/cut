@@ -7,7 +7,6 @@ import { accountMatch } from "../../lib/navRoutes";
 import { BrandLogo } from "../common/BrandLogo";
 import {
   ACCOUNT_WALLET_LINK,
-  ACCOUNT_REFERRALS_LINK,
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
   LEAGUES_TAB,
@@ -183,23 +182,6 @@ export const UserMenu: React.FC = () => {
         ) : null}
 
         <div className="my-1 border-t border-slate-100" role="separator" />
-
-        <MenuItem>
-          {({ close }) => {
-            const active = ACCOUNT_REFERRALS_LINK.match(location.pathname);
-            return (
-              <Link
-                to={ACCOUNT_REFERRALS_LINK.to}
-                className={`${active ? menuItemActiveClass : menuItemClass} inline-flex items-center gap-2`}
-                aria-current={active ? "page" : undefined}
-                onClick={close}
-              >
-                <ACCOUNT_REFERRALS_LINK.Icon className="h-4 w-4 shrink-0" aria-hidden />
-                {ACCOUNT_REFERRALS_LINK.label}
-              </Link>
-            );
-          }}
-        </MenuItem>
 
         <MenuItem>
           {({ close }) => (

@@ -44,7 +44,7 @@ Attachment is write-once at `User` create. `sessionStorage` is cleared after a s
 |---------|-------|----------|
 | Connect banner | `/connect` | Yes |
 | Onboarding (`Skip for now`) | `/onboarding` | Gate only |
-| Share link + named downline tree + earned | `/referrals` | Yes |
+| Share link + named downline tree + earned | `/account/referrals` | Yes |
 | FAQ invite-network copy | `/faq#referral-network` | No |
 | League invite URL `?ref=` + admin member icon | `/leagues/...` | No |
 | Contest lobby / entry stake icon | contest lobby | No |
@@ -78,7 +78,7 @@ Prerequisite: **User management → Authentication → Advanced → Enable test 
 ## Scenarios
 
 1. **Capture (logged out).** `?ref=short`, `?ref=0x…`, missing `ref` → no banner. Valid-looking unknown 8-char code → banner.
-2. **A organic.** Login A with no stored code → skip onboarding → `/referrals` → `referredByUserId` null; record A's `referralCode`.
+2. **A organic.** Login A with no stored code → skip onboarding → `/account/referrals` → `referredByUserId` null; record A's `referralCode`.
 3. **B invited.** Logout → `/?ref={A}` → banner → login B → skip onboarding → B parented to A; A's Referrals tree shows B's name as a direct node.
 4. **C nested.** Logout → `/?ref={B}` → login C → A's tree shows B under You and C under B; B's tree shows C as a direct node.
 5. **D unknown code.** Logout → `/?ref=` plus a valid-alphabet code that is not A/B/C → login D → organic.

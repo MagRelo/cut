@@ -32,6 +32,7 @@ export const leaderboardMatch = (pathname: string) =>
 
 export const accountMatch = (pathname: string) =>
   pathname.startsWith("/account") ||
+  pathname === "/referrals" ||
   pathname === "/connect" ||
   leaguesMatch(pathname) ||
   userGroupsMatch(pathname);

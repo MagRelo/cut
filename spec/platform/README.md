@@ -124,8 +124,7 @@ Details: [server/cron.md](../server/cron.md)
 | `/contest/:address` | Contest lobby (on-chain address in URL) |
 | `/leagues/*` | League list, detail, create, join |
 | `/user-groups/*` | Redirect → `/leagues/*` |
-| `/account` | Wallet, settings, activity |
-| `/referrals` | Referral network |
+| `/account` | Wallet, settings, activity, referral network |
 
 `sportId` is explicit per route: URL param on field leaderboard, `contest.event.sportId` on contest lobby, or the first upcoming/live directory event on staff create forms. No global `SportProvider`.
 
