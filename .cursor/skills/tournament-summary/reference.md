@@ -12,8 +12,7 @@ pnpm run script:write-tournament-summary R2026023 --dump
 ```
 
 Event must exist (`service:init-event`) before write. In-app and email read
-metadata from the DB. Legacy `server/src/tournamentSummaries/*.json` files are
-optional seed/fallback only — do not create new ones.
+metadata from the DB.
 
 ## How content is presented
 

@@ -16,6 +16,7 @@ export async function fixtureContestAnnouncement(): Promise<ContestAnnouncementE
   return {
     eventName: data.eventName,
     leagueName: "Sunday Swings",
+    memberCount: 12,
     buyInLabel: "$20",
     contestHref: appPath("/contest/preview"),
     announcement: data.announcement,

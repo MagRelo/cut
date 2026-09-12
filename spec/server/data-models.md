@@ -154,4 +154,4 @@ Stored on `CompetitionEvent.metadata` and `Participant.metadata`:
 | `pgaTourId` | External id alias |
 | Participant `pga_firstName` / rankings | Candidate display |
 
-Tournament summary files: `server/src/tournamentSummaries/{externalId}.json`
+Tournament preview: `CompetitionEvent.metadata.summarySections` (written by `script:write-tournament-summary`).

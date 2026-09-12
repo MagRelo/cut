@@ -135,7 +135,7 @@ Start with **F1** — smallest server IO surface, self-contained `openf1Client.t
 
 ## Out of scope (for now)
 
-- Tournament summary JSON (`server/src/tournamentSummaries/`) — editorial content; optional later move to `packages/sport-pga-golf/summaries/`
+- Tournament preview copy (`CompetitionEvent.metadata.summarySections`) — editorial content; stays on the event row
 - Cron timing and concurrency
 - Prisma schema (stays platform-owned; repository shields packages from churn)
 

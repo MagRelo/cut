@@ -221,7 +221,6 @@ From `server/` (uses `server/.env` / `DATABASE_URL`):
 pnpm run script:write-tournament-summary R2026023 /tmp/R2026023-summary.json
 ```
 
-Do **not** write `server/src/tournamentSummaries/*.json` — that path is legacy.
 In-app and email read `summarySections` from event metadata.
 
 For **quote only**: dump existing copy, replace only the first CutBot quote item,
@@ -317,14 +316,7 @@ or with major wins. **Do not** invent win counts or venue lore.
 
 ## Style reference
 
-Gold-standard examples (legacy JSON still in repo for tone/format only):
-
-- `server/src/tournamentSummaries/R2026525.json` — Event Blurb + announcement card layout
-- `server/src/tournamentSummaries/R2026541.json` — CutBot quote tone + multi-quote layout
-- `server/src/tournamentSummaries/R2026021.json` — odds section format
-
-Older files may use `Tournament History` (labeled bullets) or `Summary`; **prefer
-the Event Blurb + R2026541 quote layout** for new summaries.
+Gold-standard tone/format: Event Blurb + CutBot quote layout in [reference.md](reference.md).
 
 ## Additional resources
 

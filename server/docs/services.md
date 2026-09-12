@@ -19,7 +19,7 @@ Common behavior:
 - Sync participant field and profiles
 - Set `isActive=true` on this event (clears other active events for the sport)
 
-Golf-only: optional legacy `tournamentSummaries/{externalId}.json` seed into metadata; DataGolf rankings.
+Golf-only: DataGolf rankings. Tournament preview copy is written to event metadata separately (`script:write-tournament-summary`).
 
 ### Admin / CLI contest ops
 

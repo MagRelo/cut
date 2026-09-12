@@ -41,4 +41,10 @@ export const BODY_DATE_LINE_TIGHT_STYLE = `margin:0;font-family:${FONT_DISPLAY};
 /** Short description under the announcement header (Event Blurb prose). */
 export const ANNOUNCEMENT_DESCRIPTION_STYLE = `margin:12px 0 0;font-family:${FONT_DISPLAY};font-size:13px;font-weight:400;color:#52525b;line-height:1.45;`;
 
+/** Label above a contest fact (League, Members, Buy-in). */
+export const CONTEST_META_LABEL_STYLE = `margin:0 0 3px;font-family:${FONT_DISPLAY};font-size:11px;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:0.04em;line-height:1.3;`;
+
+/** Value under a contest fact label. */
+export const CONTEST_META_VALUE_STYLE = `margin:0;font-family:${FONT_DISPLAY};font-size:13px;font-weight:600;color:#18181b;line-height:1.35;`;
+
 export const EMPTY_SUMMARY_STYLE = `font-family:${FONT_BODY};font-size:14px;color:#71717a;margin:0;`;

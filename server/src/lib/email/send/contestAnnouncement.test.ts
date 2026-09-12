@@ -62,7 +62,7 @@ describe("flushPendingContestAnnouncementEmails", () => {
         address: null,
         settings: { primaryDeposit: 20 },
         eventId: "event-1",
-        userGroup: { name: "Sunday Swings" },
+        userGroup: { name: "Sunday Swings", _count: { members: 12 } },
       },
     ]);
     update.mockResolvedValue({});

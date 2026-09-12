@@ -129,7 +129,7 @@ export async function flushPendingContestAnnouncementEmails(
       address: true,
       settings: true,
       eventId: true,
-      userGroup: { select: { name: true } },
+      userGroup: { select: { name: true, _count: { select: { members: true } } } },
     },
   });
 
@@ -144,6 +144,7 @@ export async function flushPendingContestAnnouncementEmails(
       renderContestAnnouncementEmail({
         eventName: source.eventName,
         leagueName,
+        memberCount: contest.userGroup?._count.members,
         buyInLabel: formatContestBuyIn(contest.settings),
         contestHref: contestLobbyHref(contest),
         announcement: source.announcement,

@@ -5,19 +5,17 @@ import {
   announcementDataFromContent,
   renderEventAnnouncementHtml,
 } from "../blocks/eventAnnouncement.js";
-import { renderProseBlock } from "../blocks/resultsTable.js";
 import {
   renderBodySummarySectionsHtml,
   renderLeadSummarySectionsHtml,
 } from "../blocks/summary.js";
-import { escapeHtml } from "../escape.js";
-import { SECTION_TITLE_STYLE } from "../styles.js";
 import { wrapEmailHtml } from "../templates.js";
 import type { RenderedEmail } from "../types.js";
 
 export type ContestAnnouncementEmailData = {
   eventName: string;
   leagueName: string;
+  memberCount?: number;
   buyInLabel: string;
   contestHref: string;
   announcement: EmailAnnouncementContent;
@@ -27,24 +25,20 @@ export function contestAnnouncementSubject(data: ContestAnnouncementEmailData): 
   return `${data.leagueName}: ${data.eventName}`;
 }
 
-function renderContestHeaderHtml(data: ContestAnnouncementEmailData): string {
-  return `<div style="margin:0 0 24px;">
-<h2 style="${SECTION_TITLE_STYLE}">${escapeHtml(data.leagueName)} opened a contest</h2>
-${renderProseBlock(`Buy-in: ${data.buyInLabel}`)}
-</div>`;
-}
-
 export function buildContestAnnouncementBodyHtml(data: ContestAnnouncementEmailData): string {
   const announcementHtml = renderEventAnnouncementHtml(
-    announcementDataFromContent(data.eventName, data.announcement),
+    announcementDataFromContent(data.eventName, data.announcement, {
+      leagueName: data.leagueName,
+      memberCount: data.memberCount,
+      buyInLabel: data.buyInLabel,
+    }),
   );
   const leadHtml = renderLeadSummarySectionsHtml(data.announcement.leadSections);
   const bodySections = data.announcement.bodySections;
   const topSectionsHtml = renderBodySummarySectionsHtml(bodySections.slice(0, 1));
   const bottomSectionsHtml = renderBodySummarySectionsHtml(bodySections.slice(1));
 
-  return `${renderContestHeaderHtml(data)}
-${announcementHtml}
+  return `${announcementHtml}
 ${leadHtml}
 ${topSectionsHtml}
 ${renderCtaBlock({ label: "Open contest", href: data.contestHref }, { margin: "24px 0 36px" })}

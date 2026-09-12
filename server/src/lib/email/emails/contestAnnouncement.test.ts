@@ -25,6 +25,7 @@ describe("contestAnnouncement email", () => {
   const data = {
     eventName: "Charles Schwab Challenge",
     leagueName: "Sunday Swings",
+    memberCount: 12,
     buyInLabel: "$20",
     contestHref: "https://playthecut.com/contest/abc",
     announcement,
@@ -36,8 +37,15 @@ describe("contestAnnouncement email", () => {
 
   it("includes league header, buy-in, announcement, and contest CTA", () => {
     const html = buildContestAnnouncementHtml(data);
-    expect(html).toContain("Sunday Swings opened a contest");
-    expect(html).toContain("Buy-in: $20");
+    expect(html).toContain("New contest");
+    expect(html).toContain("Sunday Swings");
+    expect(html).toContain("League");
+    expect(html).toContain("Members");
+    expect(html).toContain("Buy-in");
+    expect(html).toContain("12");
+    expect(html).toContain("$20");
+    expect(html).not.toContain("opened a contest");
+    expect(html).not.toContain("New event available");
     expect(html).toContain("Charles Schwab Challenge");
     expect(html).toContain("A classic mid-week stop.");
     expect(html).toContain("Scottie Scheffler is the favorite.");

@@ -97,7 +97,7 @@ pnpm --filter server run script:f1-list-races 2026
 pnpm --filter server run script:f1-data-spike 9558
 ```
 
-**Event preview JSON (optional, not in v1):** Golf loads `server/src/tournamentSummaries/{externalId}.json` at init. F1 has no equivalent pipeline yet — event name, dates, and circuit come from OpenF1/Jolpica metadata.
+**Event preview (optional, not in v1):** Golf writes `CompetitionEvent.metadata.summarySections` after init. F1 has no equivalent pipeline yet — event name, dates, and circuit come from OpenF1/Jolpica metadata.
 
 ---
 

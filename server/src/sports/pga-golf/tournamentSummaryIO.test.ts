@@ -8,7 +8,7 @@ import { createPgaGolfEmailContent } from "./emailContent.js";
 import { renderSummarySectionsEmailHtml } from "../../lib/email/blocks/summary.js";
 
 describe("resolveSummarySectionsForEvent", () => {
-  it("prefers DB metadata over tournamentSummaries file", async () => {
+  it("returns parsed DB metadata", async () => {
     const fromDb = parseSummarySections([
       { title: "From the 19th Hole", items: [{ body: "DB copy wins." }] },
     ]);
@@ -16,14 +16,8 @@ describe("resolveSummarySectionsForEvent", () => {
     expect(resolved?.[0]?.items[0]?.body).toBe("DB copy wins.");
   });
 
-  it("falls back to file when DB has no summary", async () => {
+  it("returns null when DB has no summary", async () => {
     const resolved = await resolveSummarySectionsForEvent("R2026541", null);
-    const quotesSection = resolved?.find((section) => isQuotesSection(section));
-    expect(quotesSection?.items[0]?.body).toBeTruthy();
-  });
-
-  it("returns null when neither DB nor file has summary", async () => {
-    const resolved = await resolveSummarySectionsForEvent("R9999999", null);
     expect(resolved).toBeNull();
   });
 });
