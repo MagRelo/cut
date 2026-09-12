@@ -7,12 +7,14 @@ import { accountMatch } from "../../lib/navRoutes";
 import { BrandLogo } from "../common/BrandLogo";
 import {
   ACCOUNT_WALLET_LINK,
+  ACCOUNT_REFERRALS_LINK,
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
   LEAGUES_TAB,
   LEFT_TABS,
   leagueNavItemsFromAuth,
 } from "../../lib/navTabs";
+import { ReferralMenuTotal } from "../account/ReferralMenuTotal";
 
 const menuItemClass =
   "block w-full px-4 py-2 text-left text-sm font-display text-slate-700 data-[focus]:bg-slate-50";
@@ -150,6 +152,8 @@ export const UserMenu: React.FC = () => {
                         —
                       </span>
                     )
+                  ) : link.to === ACCOUNT_REFERRALS_LINK.to ? (
+                    <ReferralMenuTotal />
                   ) : null}
                 </Link>
               )}

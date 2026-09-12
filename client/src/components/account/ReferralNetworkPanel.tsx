@@ -8,17 +8,10 @@ import {
   useUserReferralSummary,
   type ReferralSummaryNode,
 } from "../../hooks/useUserReferralSummary";
+import { formatReferralEarned } from "../../lib/formatReferralEarned";
 
 const cardClassName =
   "max-w-md overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-tl from-slate-100 via-white to-white shadow-md shadow-slate-900/10 ring-1 ring-black/5";
-
-function formatEarned(amount: number): string {
-  if (amount > 0 && amount < 0.01) return "<$0.01";
-  return `$${amount.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return <p className={`${walletSpecLabelClassName} px-4 pt-3`}>{children}</p>;
@@ -29,14 +22,14 @@ function EarningsSection({ loading, totalEarned }: { loading: boolean; totalEarn
 
   return (
     <div className="px-4 py-4">
-      <p className={walletSpecLabelClassName}>Referral Earnings</p>
+      <p className={walletSpecLabelClassName}>Referral Rewards</p>
       {loading ? (
         <div className="mt-1 h-6 w-24 animate-pulse rounded bg-gray-200" aria-busy="true" />
       ) : (
         <p
           className={`mt-1 font-display text-xl font-semibold tabular-nums leading-none ${earnedClass}`}
         >
-          {formatEarned(totalEarned)}
+          {formatReferralEarned(totalEarned)}
         </p>
       )}
     </div>
@@ -101,6 +94,30 @@ function NetworkSection({
   );
 }
 
+export type ReferralNetworkPanelViewProps = {
+  loading?: boolean;
+  error?: string | null;
+  tree?: ReferralSummaryNode[];
+  totalEarned?: number;
+  referralUrl?: string | null;
+};
+
+export function ReferralNetworkPanelView({
+  loading = false,
+  error = null,
+  tree = [],
+  totalEarned = 0,
+  referralUrl = null,
+}: ReferralNetworkPanelViewProps) {
+  return (
+    <div className={cardClassName}>
+      <EarningsSection loading={loading} totalEarned={totalEarned} />
+      {referralUrl ? <LinkSection url={referralUrl} /> : null}
+      <NetworkSection loading={loading} error={error} tree={tree} shareUrl={referralUrl} />
+    </div>
+  );
+}
+
 export function ReferralNetworkPanel() {
   const { user } = useAuth();
   const { data, isLoading, error } = useUserReferralSummary(user?.id);
@@ -109,15 +126,12 @@ export function ReferralNetworkPanel() {
     : null;
 
   return (
-    <div className={cardClassName}>
-      <EarningsSection loading={isLoading} totalEarned={data?.totalEarned ?? 0} />
-      {referralUrl ? <LinkSection url={referralUrl} /> : null}
-      <NetworkSection
-        loading={isLoading}
-        error={error ? "Could not load referral stats." : null}
-        tree={data?.tree ?? []}
-        shareUrl={referralUrl}
-      />
-    </div>
+    <ReferralNetworkPanelView
+      loading={isLoading}
+      error={error ? "Could not load referral stats." : null}
+      tree={data?.tree ?? []}
+      totalEarned={data?.totalEarned ?? 0}
+      referralUrl={referralUrl}
+    />
   );
 }

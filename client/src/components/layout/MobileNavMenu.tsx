@@ -8,12 +8,14 @@ import { BRAND_PROSE, BRAND_WORDMARK } from "../../lib/brand";
 import { signInReturnFrom } from "../../lib/navRoutes";
 import {
   ACCOUNT_WALLET_LINK,
+  ACCOUNT_REFERRALS_LINK,
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
   LEAGUES_TAB,
   LEFT_TABS,
   leagueNavItemsFromAuth,
 } from "../../lib/navTabs";
+import { ReferralMenuTotal } from "../account/ReferralMenuTotal";
 import { BrandLogo } from "../common/BrandLogo";
 import { StagingBadge } from "./StagingBadge";
 
@@ -205,6 +207,8 @@ export const MobileNavMenu: React.FC = () => {
                                           —
                                         </span>
                                       )
+                                    ) : link.to === ACCOUNT_REFERRALS_LINK.to ? (
+                                      <ReferralMenuTotal />
                                     ) : null}
                                   </Link>
                                 ))}

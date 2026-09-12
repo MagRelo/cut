@@ -37,7 +37,7 @@ export const ACCOUNT_ACTIVITY_LINK = {
 
 export const ACCOUNT_REFERRALS_LINK = {
   to: "/account/referrals",
-  label: "Referral Network",
+  label: "Referral Rewards",
   match: (pathname: string) =>
     pathname === "/account/referrals" || pathname === "/referrals",
   Icon: TreeIcon,
