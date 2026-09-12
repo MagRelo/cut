@@ -35,9 +35,9 @@ export function announcementDataFromContent(
     courseLine: content.courseLine,
     dateLine: content.dateLine,
     blurb: content.blurb,
-    leagueName: contest?.leagueName,
-    memberCount: contest?.memberCount,
-    buyInLabel: contest?.buyInLabel,
+    ...(contest?.leagueName !== undefined ? { leagueName: contest.leagueName } : {}),
+    ...(contest?.memberCount !== undefined ? { memberCount: contest.memberCount } : {}),
+    ...(contest?.buyInLabel !== undefined ? { buyInLabel: contest.buyInLabel } : {}),
   };
 }
 

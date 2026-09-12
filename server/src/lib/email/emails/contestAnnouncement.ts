@@ -29,8 +29,8 @@ export function buildContestAnnouncementBodyHtml(data: ContestAnnouncementEmailD
   const announcementHtml = renderEventAnnouncementHtml(
     announcementDataFromContent(data.eventName, data.announcement, {
       leagueName: data.leagueName,
-      memberCount: data.memberCount,
       buyInLabel: data.buyInLabel,
+      ...(data.memberCount !== undefined ? { memberCount: data.memberCount } : {}),
     }),
   );
   const leadHtml = renderLeadSummarySectionsHtml(data.announcement.leadSections);

@@ -139,15 +139,16 @@ export async function flushPendingContestAnnouncementEmails(
     const source = await loadContestAnnouncementSource(contest.eventId);
     if (!source) continue;
     const leagueName = contest.userGroup?.name?.trim() || "Your league";
+    const memberCount = contest.userGroup?._count.members;
     renderedByContest.set(
       contest.id,
       renderContestAnnouncementEmail({
         eventName: source.eventName,
         leagueName,
-        memberCount: contest.userGroup?._count.members,
         buyInLabel: formatContestBuyIn(contest.settings),
         contestHref: contestLobbyHref(contest),
         announcement: source.announcement,
+        ...(memberCount !== undefined ? { memberCount } : {}),
       }),
     );
   }

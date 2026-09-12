@@ -22,7 +22,7 @@ function EarningsSection({ loading, totalEarned }: { loading: boolean; totalEarn
 
   return (
     <div className="px-4 py-4">
-      <p className={walletSpecLabelClassName}>Referral Rewards</p>
+      <p className={walletSpecLabelClassName}>Lifetime Referral Earnings</p>
       {loading ? (
         <div className="mt-1 h-6 w-24 animate-pulse rounded bg-gray-200" aria-busy="true" />
       ) : (
