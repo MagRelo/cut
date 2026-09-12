@@ -38,9 +38,8 @@ function ReferralNetworkPanel({
   return (
     <>
       <p className="mb-4 font-display text-sm text-gray-700">
-        Build your network and turn Play The Cut into a team sport. Invite friends early: as they
-        invite friends, your network grows—and when players across it win contests, you earn rewards
-        too.{" "}
+        Build your network and turn Play The Cut into a team sport. As friends invite friends, your
+        network grows—and when players across it win contests, you earn rewards too.{" "}
         <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
           Learn how referral earnings work…
         </Link>
