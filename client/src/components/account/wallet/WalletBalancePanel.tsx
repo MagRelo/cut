@@ -10,31 +10,40 @@ export function WalletBalancePanel({
   tokenSymbol: string;
   networkLabel: string;
 }) {
-  const { paymentTokenBalance, paymentTokenDecimals, balancesUnavailable, refetchBalances } =
+  const { user, paymentTokenBalance, paymentTokenDecimals, balancesUnavailable, refetchBalances } =
     useAuth();
   const decimals = paymentTokenDecimals ?? PAYMENT_TOKEN_DECIMALS;
   const formatted = Number(formatUnits(paymentTokenBalance ?? 0n, decimals)).toFixed(2);
+  const email = user?.email;
 
   return (
-    <div className="max-w-md overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-tl from-slate-100 via-white to-white shadow-md shadow-slate-900/10 ring-1 ring-black/5">
-      <div className="px-4 py-4">
+    <div className="max-w-md overflow-hidden rounded-lg border border-blue-200 bg-gradient-to-tl from-blue-100 via-blue-50 to-white shadow-md shadow-blue-950/10 ring-1 ring-blue-900/5">
+      <div className="px-4 py-5">
         <p className={walletSpecLabelClassName}>Balance</p>
         {balancesUnavailable ? (
           <button
             type="button"
             onClick={() => void refetchBalances()}
-            className="mt-1 font-display text-xl font-semibold tabular-nums text-amber-800 underline-offset-2 hover:underline"
+            className="mt-1.5 font-display text-2xl font-semibold tabular-nums text-amber-800 underline-offset-2 hover:underline"
             title="Could not load balance. Tap to retry."
           >
             —
           </button>
         ) : (
-          <p className="mt-1 font-display text-xl font-semibold tabular-nums leading-none text-gray-900">
+          <p className="mt-1.5 font-display text-2xl font-semibold tabular-nums leading-none text-gray-900">
             ${formatted}
           </p>
         )}
+        {email ? (
+          <div className="mt-6">
+            <p className={walletSpecLabelClassName}>Secured by</p>
+            <p className="mt-1 font-display text-sm font-medium leading-none text-gray-900">
+              {email}
+            </p>
+          </div>
+        ) : null}
       </div>
-      <div className="border-t border-slate-100 bg-white/70">
+      <div className="border-t border-blue-100/80 bg-white/55">
         <AssetChips tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
       </div>
     </div>
