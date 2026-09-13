@@ -143,36 +143,28 @@ export const UserGroupDetailPage = () => {
         ) : null}
       </header>
 
-      <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-        <TabList className={tabListClassName()}>
-          <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
-            Contests
-          </Tab>
-          {isAdmin ? (
-            <>
-              <Tab
-                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-              >
-                Invite players
-              </Tab>
-              <Tab
-                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-              >
-                Settings
-              </Tab>
-            </>
-          ) : null}
-        </TabList>
-        <div className="pt-4">
-          <TabPanel className="focus:outline-none">{contestContent}</TabPanel>
-          {isAdmin ? (
-            <>
-              <TabPanel className="focus:outline-none">{membersContent}</TabPanel>
-              <TabPanel className="focus:outline-none">{settingsContent}</TabPanel>
-            </>
-          ) : null}
-        </div>
-      </TabGroup>
+      {isAdmin ? (
+        <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+          <TabList className={tabListClassName()}>
+            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
+              Contests
+            </Tab>
+            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
+              Invite players
+            </Tab>
+            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
+              Settings
+            </Tab>
+          </TabList>
+          <div className="pt-4">
+            <TabPanel className="focus:outline-none">{contestContent}</TabPanel>
+            <TabPanel className="focus:outline-none">{membersContent}</TabPanel>
+            <TabPanel className="focus:outline-none">{settingsContent}</TabPanel>
+          </div>
+        </TabGroup>
+      ) : (
+        contestContent
+      )}
     </>
   );
 };
