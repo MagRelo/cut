@@ -84,8 +84,7 @@ export function WalletPage() {
               {/* <h2 className="font-medium text-gray-900">Account Wallet</h2> */}
               <p className="text-sm leading-relaxed text-gray-700">
                 Your account includes a wallet that belongs to you and is secured by your email.
-                Play The Cut never holds or has access to your funds. Deposit USDC, enter contests,
-                and withdraw whenever you want.
+                Play The Cut never holds or has access to your funds.
               </p>
             </div>
 
