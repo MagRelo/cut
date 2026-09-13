@@ -34,18 +34,16 @@ export function ContestListConnectHint({
 }
 
 function emptySlotClassName(nest: "default" | "hero"): string {
-  return nest === "hero"
-    ? "rounded-lg border border-white/50 bg-white/95 p-4 shadow-lg shadow-black/20 backdrop-blur-md"
-    : "rounded-lg border border-slate-200 bg-white p-3.5 shadow-sm";
+  return nest === "hero" ? "rounded-lg  bg-transparent p-4" : "rounded-lg bg-transparent p-3.5";
 }
 
 function CreateContestSlot({ to, nest }: { to: string; nest: "default" | "hero" }) {
   return (
     <Link
       to={to}
-      className={`${emptySlotClassName(nest)} group flex min-h-[7.5rem] flex-col items-center justify-center gap-2 text-center transition-colors hover:border-blue-400 hover:bg-blue-50`}
+      className={`${emptySlotClassName(nest)} group flex min-h-[5.5rem] flex-col items-center justify-center gap-2 text-center`}
     >
-      <span className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2.5 font-display text-sm font-medium text-white group-hover:bg-blue-700">
+      <span className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2.5 font-display text-sm font-medium text-white">
         <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
         Create Contest
       </span>

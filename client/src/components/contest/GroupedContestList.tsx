@@ -48,7 +48,7 @@ function GroupedContestSection({
   if (hasHeroPanel) {
     const heroImageClassName = plugin?.eventHeroImageClassName;
     return (
-      <section className="overflow-hidden rounded-2xl shadow-xl shadow-slate-900/25">
+      <section className="overflow-hidden rounded-xl shadow-xl shadow-slate-900/25">
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 overflow-hidden" aria-hidden>
             <div
@@ -89,7 +89,7 @@ function GroupedContestSection({
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/10">
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-900/10">
       {group.event.sportId ? (
         <SportEventHeader sportId={group.event.sportId} event={eventShell} />
       ) : (
