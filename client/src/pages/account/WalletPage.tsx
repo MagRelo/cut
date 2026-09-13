@@ -51,10 +51,15 @@ export function WalletPage() {
         items={[{ label: "Account", path: "/account" }, { label: "Account Wallet" }]}
         className="mb-2"
       />
-      <h1 className="mb-2 flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
+      <h1 className="mb-1 flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
         <WalletIcon className="h-6 w-6 shrink-0" aria-hidden />
         Account Wallet
       </h1>
+
+      <p className="mb-4 font-display text-sm leading-relaxed text-gray-700">
+        Your account includes a wallet that belongs to you and is secured by your email. Play The
+        Cut never holds or has access to your funds.
+      </p>
 
       <div className="space-y-4">
         {showTestnetWarning ? (
@@ -78,64 +83,56 @@ export function WalletPage() {
           </div>
         ) : null}
 
-        <div>
-          <div className="space-y-4 pb-6 font-display">
-            <div>
-              {/* <h2 className="font-medium text-gray-900">Account Wallet</h2> */}
-              <p className="text-sm leading-relaxed text-gray-700">
-                Your account includes a wallet that belongs to you and is secured by your email.
-                Play The Cut never holds or has access to your funds.
-              </p>
-            </div>
+        <div className="space-y-6 font-display">
+          <WalletBalancePanel tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
 
-            <div className="my-4">
-              <WalletBalancePanel tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
-            </div>
+          <div>
+            <h2 className="font-medium text-gray-900">Powered by {tokenSymbol}</h2>
 
-            {showTestnetWarning ? null : (
-              <div>
-                <h2 className="font-medium text-gray-900">Powered by {tokenSymbol}</h2>
-
-                <p className="text-sm leading-relaxed text-gray-700">
-                  Play The Cut uses {tokenSymbol} - a digital dollar - for all contest entries and
-                  payouts. You can buy {tokenSymbol} through Coinbase, Kraken, Robinhood, and other
-                  supported exchanges and wallets.
-                </p>
-              </div>
-            )}
+            <p className="text-sm leading-relaxed text-gray-700">
+              Play The Cut uses {tokenSymbol} - a digital dollar - for all contest entries and
+              payouts. You can buy {tokenSymbol} through Coinbase, Kraken, Robinhood, and other
+              supported exchanges and wallets.
+            </p>
           </div>
 
-          <h2 className="font-medium text-gray-900">Send and Receive {tokenSymbol}</h2>
-          <p className="mb-2 font-display text-sm leading-relaxed text-gray-700">
-            You can send and receive {tokenSymbol} to and from your account wallet.
-          </p>
+          <div>
+            <h2 className="font-medium text-gray-900">Send and Receive {tokenSymbol}</h2>
+            <p className="mb-2 font-display text-sm leading-relaxed text-gray-700">
+              You can send and receive {tokenSymbol} to and from your account wallet.
+            </p>
 
-          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md shadow-slate-900/10 ring-1 ring-black/5">
-            <TabGroup selectedIndex={selectedIndex} onChange={handleTabChange}>
-              <TabList className={tabListClassName()}>
-                <Tab
-                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-                >
-                  Receive
-                </Tab>
-                <Tab
-                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
-                >
-                  Send
-                </Tab>
-              </TabList>
-              <div className="px-4 py-4">
-                <TabPanel>
-                  <Receive />
-                </TabPanel>
-                <TabPanel>
-                  <Send
-                    initialRecipientAddress={recipient ?? undefined}
-                    lockRecipient={Boolean(recipient)}
-                  />
-                </TabPanel>
-              </div>
-            </TabGroup>
+            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md shadow-slate-900/10 ring-1 ring-black/5">
+              <TabGroup selectedIndex={selectedIndex} onChange={handleTabChange}>
+                <TabList className={tabListClassName()}>
+                  <Tab
+                    className={({ selected }: { selected: boolean }) =>
+                      tabButtonClassName(selected)
+                    }
+                  >
+                    Receive
+                  </Tab>
+                  <Tab
+                    className={({ selected }: { selected: boolean }) =>
+                      tabButtonClassName(selected)
+                    }
+                  >
+                    Send
+                  </Tab>
+                </TabList>
+                <div className="px-4 py-4">
+                  <TabPanel>
+                    <Receive />
+                  </TabPanel>
+                  <TabPanel>
+                    <Send
+                      initialRecipientAddress={recipient ?? undefined}
+                      lockRecipient={Boolean(recipient)}
+                    />
+                  </TabPanel>
+                </div>
+              </TabGroup>
+            </div>
           </div>
 
           <div className="mt-6"></div>
