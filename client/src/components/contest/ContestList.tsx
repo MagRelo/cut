@@ -1,5 +1,5 @@
 import type { CompetitionEventShell } from "@cut/sport-sdk";
-import { ExclamationTriangleIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import { type Contest } from "../../types/contest";
 import { contestLobbyPath } from "../../utils/contestRoutes";
 import { Link } from "react-router-dom";
@@ -45,10 +45,6 @@ function CreateContestSlot({ to, nest }: { to: string; nest: "default" | "hero" 
       to={to}
       className={`${emptySlotClassName(nest)} group flex min-h-[7.5rem] flex-col items-center justify-center gap-2 text-center transition-colors hover:border-blue-400 hover:bg-blue-50`}
     >
-      <span className="mb-2 inline-flex items-center gap-1 font-display text-xs text-gray-700">
-        <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-amber-500" aria-hidden />
-        No active contests
-      </span>
       <span className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2.5 font-display text-sm font-medium text-white group-hover:bg-blue-700">
         <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
         Create Contest

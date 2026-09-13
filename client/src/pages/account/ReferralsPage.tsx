@@ -15,9 +15,8 @@ export function ReferralsPage() {
         Referral Rewards
       </h1>
       <p className="mb-4 font-display text-sm text-gray-700">
-        Play The Cut is different—<b>no hidden fees, no ads, no sponsors</b>. It grows through the
-        players who believe in it. Invite your people, help build a stronger community, and share in
-        the rewards.
+        Play The Cut is different—<b>no fees, no ads, no middlemen</b>. We grow through referrals,
+        so when you bring in new players, you earn Referral Rewards.
       </p>
       <p className="mb-4 font-display text-sm text-gray-700">
         <b>Referral Rewards</b> make Play The Cut a team sport. As friends invite friends, your
