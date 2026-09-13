@@ -19,7 +19,7 @@ export function ReferralsPage() {
         so when you bring in new players, you earn Referral Rewards.
       </p>
       <p className="mb-4 font-display text-sm text-gray-700">
-        <b>Referral Rewards</b> make Play The Cut a team sport. As friends invite friends, your
+        Referral rewards turn Play The Cut into a team sport. As friends invite friends, your
         network grows—and <b>when they win, you win too</b>. Share your referral link to start
         building you team!
       </p>
