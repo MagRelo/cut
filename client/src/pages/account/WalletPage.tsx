@@ -48,12 +48,12 @@ export function WalletPage() {
   return (
     <>
       <Breadcrumbs
-        items={[{ label: "Account", path: "/account" }, { label: "Account Wallet" }]}
+        items={[{ label: "Account", path: "/account" }, { label: "Wallet" }]}
         className="mb-2"
       />
       <h1 className="mb-1 flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
         <WalletIcon className="h-6 w-6 shrink-0" aria-hidden />
-        Account Wallet
+        Wallet
       </h1>
 
       <p className="mb-4 font-display text-sm leading-relaxed text-gray-700">
