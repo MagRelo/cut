@@ -1,6 +1,11 @@
 export const BRAND_PROSE = "Play The Cut";
 export const BRAND_WORDMARK = "PLAYTHECUT";
 export const BRAND_URL = "https://playthecut.com";
+export const DISCORD_INVITE_URL = "https://discord.gg/8g7gyMY6jj";
+export const DISCORD_LABEL = "JOIN THE DISCORD";
+export const DISCORD_TAGLINE = "talk sports, find leagues, share feedback";
+export const STORE_LABEL = "PRO SHOP";
+export const STORE_TAGLINE = "sick merch. watch for limited edition drops";
 export const BRAND_TAGLINE = "Play The Cut Fantasy Golf";
 /** In-app / email mark. Do not use as favicon — browsers fetch that in parallel with `<img>`. */
 export const BRAND_LOGO_SRC = "/logo-transparent.png";

@@ -4,7 +4,15 @@ import { Fragment, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { formatUnits } from "viem";
 import { useAuth } from "../../contexts/AuthContext";
-import { BRAND_PROSE, BRAND_WORDMARK } from "../../lib/brand";
+import {
+  BRAND_PROSE,
+  BRAND_WORDMARK,
+  DISCORD_INVITE_URL,
+  DISCORD_LABEL,
+  DISCORD_TAGLINE,
+  STORE_LABEL,
+  STORE_TAGLINE,
+} from "../../lib/brand";
 import { signInReturnFrom } from "../../lib/navRoutes";
 import {
   ACCOUNT_WALLET_LINK,
@@ -17,6 +25,7 @@ import {
 } from "../../lib/navTabs";
 import { ReferralMenuTotal } from "../account/ReferralMenuTotal";
 import { BrandLogo } from "../common/BrandLogo";
+import { DiscordIcon } from "../common/DiscordIcon";
 import { StagingBadge } from "./StagingBadge";
 
 const mobileNavItemBase =
@@ -215,8 +224,51 @@ export const MobileNavMenu: React.FC = () => {
                               </div>
                             </div>
 
-                            {showAdminNav
-                              ? ADMIN_MENU_LINKS.map((link) => (
+                            <hr className="my-1 border-slate-200" />
+                            <a
+                              href="https://playthecut.printful.me/?sort=price"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={closeMenu}
+                              className={`${mobileNavItemClass(false)} flex flex-col items-start`}
+                              aria-label="Cut Store"
+                            >
+                              <span className="inline-flex items-center gap-1.5">
+                                <BrandLogo className="h-5 w-auto shrink-0" />
+                                {STORE_LABEL}
+                                <ArrowTopRightOnSquareIcon
+                                  className="h-3.5 w-3.5 shrink-0"
+                                  aria-hidden
+                                />
+                              </span>
+                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-500">
+                                {STORE_TAGLINE}
+                              </span>
+                            </a>
+                            <a
+                              href={DISCORD_INVITE_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={closeMenu}
+                              className={`${mobileNavItemClass(false)} flex flex-col items-start`}
+                            >
+                              <span className="inline-flex items-center gap-1.5">
+                                <DiscordIcon className="h-4 w-4 shrink-0" />
+                                <span className="normal-case tracking-normal">{DISCORD_LABEL}</span>
+                                <ArrowTopRightOnSquareIcon
+                                  className="h-3.5 w-3.5 shrink-0"
+                                  aria-hidden
+                                />
+                              </span>
+                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-500">
+                                {DISCORD_TAGLINE}
+                              </span>
+                            </a>
+
+                            {showAdminNav ? (
+                              <>
+                                <hr className="my-1 border-slate-200" />
+                                {ADMIN_MENU_LINKS.map((link) => (
                                   <Link
                                     key={link.to}
                                     to={link.to}
@@ -234,42 +286,12 @@ export const MobileNavMenu: React.FC = () => {
                                   >
                                     {link.label}
                                   </Link>
-                                ))
-                              : null}
-
-                            <a
-                              href="https://playthecut.printful.me/?sort=price"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={closeMenu}
-                              className={`${mobileNavItemClass(false)} inline-flex items-center gap-1.5`}
-                              aria-label="Cut Store"
-                            >
-                              <BrandLogo className="h-5 w-auto shrink-0" />
-                              STORE
-                              <ArrowTopRightOnSquareIcon
-                                className="h-3.5 w-3.5 shrink-0"
-                                aria-hidden
-                              />
-                            </a>
+                                ))}
+                              </>
+                            ) : null}
                           </>
                         ) : (
                           <>
-                            <a
-                              href="https://playthecut.printful.me/?sort=price"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={closeMenu}
-                              className={`${mobileNavItemClass(false)} inline-flex items-center gap-1.5`}
-                              aria-label="Cut Store"
-                            >
-                              <BrandLogo className="h-5 w-auto shrink-0" />
-                              STORE
-                              <ArrowTopRightOnSquareIcon
-                                className="h-3.5 w-3.5 shrink-0"
-                                aria-hidden
-                              />
-                            </a>
                             <Link
                               to="/connect"
                               state={{ from: signInReturnFrom }}
@@ -279,6 +301,46 @@ export const MobileNavMenu: React.FC = () => {
                             >
                               Sign In
                             </Link>
+                            <hr className="my-1 border-slate-200" />
+                            <a
+                              href="https://playthecut.printful.me/?sort=price"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={closeMenu}
+                              className={`${mobileNavItemClass(false)} flex flex-col items-start`}
+                              aria-label="Cut Store"
+                            >
+                              <span className="inline-flex items-center gap-1.5">
+                                <BrandLogo className="h-5 w-auto shrink-0" />
+                                {STORE_LABEL}
+                                <ArrowTopRightOnSquareIcon
+                                  className="h-3.5 w-3.5 shrink-0"
+                                  aria-hidden
+                                />
+                              </span>
+                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-500">
+                                {STORE_TAGLINE}
+                              </span>
+                            </a>
+                            <a
+                              href={DISCORD_INVITE_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={closeMenu}
+                              className={`${mobileNavItemClass(false)} flex flex-col items-start`}
+                            >
+                              <span className="inline-flex items-center gap-1.5">
+                                <DiscordIcon className="h-4 w-4 shrink-0" />
+                                <span className="normal-case tracking-normal">{DISCORD_LABEL}</span>
+                                <ArrowTopRightOnSquareIcon
+                                  className="h-3.5 w-3.5 shrink-0"
+                                  aria-hidden
+                                />
+                              </span>
+                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-500">
+                                {DISCORD_TAGLINE}
+                              </span>
+                            </a>
                           </>
                         )}
                       </div>

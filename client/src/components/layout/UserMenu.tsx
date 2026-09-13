@@ -4,7 +4,15 @@ import { formatUnits } from "viem";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { accountMatch } from "../../lib/navRoutes";
+import {
+  DISCORD_INVITE_URL,
+  DISCORD_LABEL,
+  DISCORD_TAGLINE,
+  STORE_LABEL,
+  STORE_TAGLINE,
+} from "../../lib/brand";
 import { BrandLogo } from "../common/BrandLogo";
+import { DiscordIcon } from "../common/DiscordIcon";
 import {
   ACCOUNT_WALLET_LINK,
   ACCOUNT_REFERRALS_LINK,
@@ -161,6 +169,47 @@ export const UserMenu: React.FC = () => {
           );
         })}
 
+        <div className="my-1 border-t border-slate-100" role="separator" />
+
+        <MenuItem>
+          {({ close }) => (
+            <a
+              href="https://playthecut.printful.me/?sort=price"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${menuItemClass} flex flex-col items-start`}
+              onClick={close}
+              aria-label="Cut Store"
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <BrandLogo className="h-5 w-auto shrink-0" />
+                {STORE_LABEL}
+                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              </span>
+              <span className="mt-0.5 text-xs font-normal text-slate-500">{STORE_TAGLINE}</span>
+            </a>
+          )}
+        </MenuItem>
+
+        <MenuItem>
+          {({ close }) => (
+            <a
+              href={DISCORD_INVITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${menuItemClass} flex flex-col items-start`}
+              onClick={close}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <DiscordIcon className="h-4 w-4 shrink-0" />
+                {DISCORD_LABEL}
+                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              </span>
+              <span className="mt-0.5 text-xs font-normal text-slate-500">{DISCORD_TAGLINE}</span>
+            </a>
+          )}
+        </MenuItem>
+
         {showAdminNav ? (
           <>
             <div className="my-1 border-t border-slate-100" role="separator" />
@@ -184,25 +233,6 @@ export const UserMenu: React.FC = () => {
             })}
           </>
         ) : null}
-
-        <div className="my-1 border-t border-slate-100" role="separator" />
-
-        <MenuItem>
-          {({ close }) => (
-            <a
-              href="https://playthecut.printful.me/?sort=price"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${menuItemClass} inline-flex items-center gap-1.5`}
-              onClick={close}
-              aria-label="Cut Store"
-            >
-              <BrandLogo className="h-5 w-auto shrink-0" />
-              STORE
-              <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            </a>
-          )}
-        </MenuItem>
       </MenuItems>
     </Menu>
   );

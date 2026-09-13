@@ -3,9 +3,16 @@ import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { signInReturnFrom } from "../../lib/navRoutes";
-import { BRAND_PROSE, BRAND_WORDMARK } from "../../lib/brand";
+import {
+  BRAND_PROSE,
+  BRAND_WORDMARK,
+  DISCORD_INVITE_URL,
+  DISCORD_LABEL,
+  STORE_LABEL,
+} from "../../lib/brand";
 import { LEFT_TABS } from "../../lib/navTabs";
 import { BrandLogo } from "../common/BrandLogo";
+import { DiscordIcon } from "../common/DiscordIcon";
 import { MobileNavMenu } from "./MobileNavMenu";
 import { StagingBadge } from "./StagingBadge";
 import { UserMenu } from "./UserMenu";
@@ -78,7 +85,7 @@ export const TopNav: React.FC = () => {
                 aria-label="Cut Store"
               >
                 <BrandLogo className="h-5 w-auto shrink-0" />
-                STORE
+                {STORE_LABEL}
                 <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
               </a>
               <Link
@@ -88,6 +95,16 @@ export const TopNav: React.FC = () => {
               >
                 Sign In
               </Link>
+              <a
+                href={DISCORD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${tabLinkClass(false)} inline-flex items-center gap-1`}
+              >
+                <DiscordIcon className="h-4 w-4 shrink-0" />
+                <span className="normal-case tracking-normal">{DISCORD_LABEL}</span>
+                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              </a>
             </>
           )}
         </nav>

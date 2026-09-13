@@ -143,8 +143,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
                 </h3>
                 <p className="mt-1 text-sm leading-relaxed text-gray-700">
                   Share of each paid entry that seeds the Winner Pool when someone joins, so
-                  predictions have money in them from the first lineup. This is a slice of each
-                  entry—not the same as invite rewards, which come off the full pot at settlement.{" "}
+                  predictions have money in them from the first lineup.{" "}
                   <Link to="/faq#winner-pool-subsidy" className="text-blue-600 hover:underline">
                     Learn more about Winner Pool subsidy...
                   </Link>
