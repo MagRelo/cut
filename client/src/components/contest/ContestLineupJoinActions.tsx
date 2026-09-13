@@ -4,14 +4,17 @@ import type { Contest } from "../../types/contest";
 import { canAddPrimaryPosition, canRemovePrimaryPosition } from "../../types/contest";
 import { effectiveContestStatus } from "../../lib/lineupEditable";
 import type { useContestLineupEntry } from "../../hooks/useContestLineupEntry";
-import { CheckIcon } from "@heroicons/react/20/solid";
+import { CheckIcon } from "@heroicons/react/24/outline";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 const joinActionsFooterClassName = "border-t border-gray-200 bg-slate-50 px-3 py-2.5 font-display";
 
 const EnteredInContestLabel = () => (
-  <div className="flex items-center justify-center gap-1.5 text-sm font-medium text-emerald-600">
-    <CheckIcon className="h-4 w-4 shrink-0" aria-hidden />
+  <div
+    role="status"
+    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-200 px-4 py-2.5 font-display text-sm font-semibold text-slate-800"
+  >
+    <CheckIcon className="h-5 w-5 shrink-0 text-emerald-600" strokeWidth={2.5} aria-hidden />
     Entered in this contest
   </div>
 );
@@ -43,14 +46,14 @@ export const ContestLineupJoinActions: React.FC<ContestLineupJoinActionsProps> =
   if (isEntered) {
     footer = (
       <div className={joinActionsFooterClassName}>
-        <div className="space-y-2.5">
+        <div className="mt-1 space-y-2.5">
           <EnteredInContestLabel />
           {canLeave ? (
             <button
               type="button"
               onClick={() => void entry.handleLeaveContest(lineupId)}
               disabled={isProcessing}
-              className="w-full rounded-lg border border-gray-400/50 bg-gray-200 px-4 py-2.5 font-display text-sm font-medium text-gray-600 shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+              className="mx-auto block py-1 font-display text-sm font-medium text-slate-600 underline-offset-2 hover:text-slate-900 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isProcessing ? (
                 <span className="flex items-center justify-center gap-2">

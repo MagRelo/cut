@@ -1,0 +1,22 @@
+---
+description: Avoid washed SaaS UI cliches; prefer high-contrast ink/white status.
+alwaysApply: true
+---
+
+# No SaaS Cliches
+
+Do not use washed “product UI” patterns to signal status or success.
+
+Canonical example to avoid: the **pale emerald success panel** — `bg-emerald-50` / `bg-green-50` banners, mint chips, and faded “you’re in” strips (`border-emerald-200` + thin green text). That reads as generic SaaS, not confirmation.
+
+Also avoid:
+
+- Grey-on-grey secondary fills (`bg-gray-200 text-gray-600` on `bg-slate-50`)
+- Pastel status strips used as meaning (`sky-50`, `amber-50`, `emerald-50`)
+- Badge-soup confirmations (pills stacked on a tinted banner)
+
+Prefer:
+
+- High-contrast ink/white
+- Status as a completed CTA with the same weight as the action it replaced (solid `slate-900` / existing primary fill, not a tint)
+- Solid color only when it carries meaning; never a washed tint as the message
