@@ -6,6 +6,13 @@ import { generateUniqueReferralCode } from "../utils/inviteCode.js";
 import { tryResolveReferralForNewUser, type ResolvedSignupReferral } from "./referralCode.js";
 import { parseReferralGroupIdFromEnv } from "./referralConfig.js";
 
+/** Privy dashboard test accounts are `test-XXXX@privy.io`. */
+const PRIVY_TEST_EMAIL = /^test-[a-z0-9]+@privy\.io$/i;
+
+export function isPrivyTestEmail(email: string | null | undefined): boolean {
+  return Boolean(email && PRIVY_TEST_EMAIL.test(email.trim()));
+}
+
 /** JWT valid but no Cut user row — client should POST /auth/session. */
 export class AuthNeedsProvisioningError extends Error {
   readonly code = "NEEDS_PROVISIONING" as const;
@@ -168,11 +175,13 @@ export async function resolveSessionUser(
 ): Promise<CutAuthUser | null> {
   const user = await prisma.user.findUnique({
     where: { privyUserId },
-    select: { id: true, userType: true },
+    select: { id: true, userType: true, email: true },
   });
   if (!user) {
     return null;
   }
+
+  const userType = await promotePrivyTestUserType(user.id, user.email, user.userType);
 
   const wallet = await prisma.userWallet.findFirst({
     where: { userId: user.id, chainId, isPrimary: true },
@@ -186,7 +195,7 @@ export async function resolveSessionUser(
       userId: user.id,
       address: "",
       chainId,
-      userType: user.userType,
+      userType,
     };
   }
 
@@ -194,8 +203,22 @@ export async function resolveSessionUser(
     userId: user.id,
     address: wallet.publicKey,
     chainId,
-    userType: user.userType,
+    userType,
   };
+}
+
+/** Upgrade `USER` → `TEST` when the email is a Privy dashboard test account. Staff types stay put. */
+export async function promotePrivyTestUserType(
+  userId: string,
+  email: string | null | undefined,
+  currentUserType: string,
+): Promise<string> {
+  if (currentUserType !== "USER" || !isPrivyTestEmail(email)) return currentUserType;
+  await prisma.user.updateMany({
+    where: { id: userId, userType: "USER" },
+    data: { userType: "TEST" },
+  });
+  return "TEST";
 }
 
 /**
@@ -320,7 +343,7 @@ export async function syncExistingUserFromPrivy(
 
   const byPrivy = await prisma.user.findUnique({
     where: { privyUserId: privyId },
-    select: { id: true },
+    select: { id: true, userType: true, email: true },
   });
   if (!byPrivy) {
     throw new AuthNeedsProvisioningError();
@@ -331,6 +354,7 @@ export async function syncExistingUserFromPrivy(
     await syncEmailFromPrivy(byPrivy.id, email);
   }
 
+  await promotePrivyTestUserType(byPrivy.id, email ?? byPrivy.email, byPrivy.userType);
   await syncUserWalletsForPrivyUser(byPrivy.id, privyUser, preferredChainId);
   return sessionUserAfterProvision(privyId, chainId);
 }
@@ -367,6 +391,7 @@ export async function provisionUserFromPrivy(
       await syncEmailFromPrivy(byPrivy.id, email);
     }
 
+    await promotePrivyTestUserType(byPrivy.id, email ?? byPrivy.email, byPrivy.userType);
     await syncUserWalletsForPrivyUser(byPrivy.id, privyUser, preferredChainId);
     return sessionUserAfterProvision(privyId, chainId);
   }
@@ -393,6 +418,11 @@ export async function provisionUserFromPrivy(
       await syncEmailFromPrivy(existingWallet.userId, email);
     }
 
+    await promotePrivyTestUserType(
+      existingWallet.userId,
+      email ?? existingWallet.user.email,
+      existingWallet.user.userType,
+    );
     await syncUserWalletsForPrivyUser(existingWallet.userId, privyUser, preferredChainId);
     return sessionUserAfterProvision(privyId, chainId);
   }
@@ -424,12 +454,13 @@ export async function provisionUserFromPrivy(
   }
 
   const referralCode = await generateUniqueReferralCode();
+  const userType = isPrivyTestEmail(email) ? "TEST" : "USER";
 
   await prisma.user.create({
     data: {
       privyUserId: privyId,
       name: `User ${address.slice(0, 6)}`,
-      userType: "USER",
+      userType,
       settings: {
         onboardingDismissed: false,
       },

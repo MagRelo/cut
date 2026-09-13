@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_SMART_CHAIN,
+  isPrivyTestEmail,
   pickEvmWallet,
   resolveChainId,
   WalletConflictError,
@@ -13,6 +14,7 @@ const prismaMock = vi.hoisted(() => ({
     findUniqueOrThrow: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
   },
   userWallet: {
     findFirst: vi.fn(),
@@ -26,6 +28,20 @@ const prismaMock = vi.hoisted(() => ({
 vi.mock("./prisma.js", () => ({
   prisma: prismaMock,
 }));
+
+describe("isPrivyTestEmail", () => {
+  it("matches Privy dashboard test emails", () => {
+    expect(isPrivyTestEmail("test-abcd@privy.io")).toBe(true);
+    expect(isPrivyTestEmail("TEST-AB12@PRIVY.IO")).toBe(true);
+  });
+
+  it("rejects other emails", () => {
+    expect(isPrivyTestEmail("new@example.com")).toBe(false);
+    expect(isPrivyTestEmail("tester@privy.io")).toBe(false);
+    expect(isPrivyTestEmail("test@privy.io")).toBe(false);
+    expect(isPrivyTestEmail(null)).toBe(false);
+  });
+});
 
 describe("resolveChainId", () => {
   it("defaults to Base Sepolia", () => {
@@ -106,6 +122,40 @@ describe("resolveSessionUser", () => {
     await expect(
       resolveSessionUser("did:privy:1", 84532, { requireWallet: true }),
     ).rejects.toBeInstanceOf(WalletNotProvisionedError);
+  });
+
+  it("promotes an existing USER with a Privy test email to TEST", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      userType: "USER",
+      email: "test-abcd@privy.io",
+    });
+    prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.userWallet.findFirst.mockResolvedValue({
+      publicKey: "0xcccccccccccccccccccccccccccccccccccccccc",
+    });
+    const { resolveSessionUser } = await import("./privyUserProvisioning.js");
+
+    const result = await resolveSessionUser("did:privy:1", 84532);
+    expect(result?.userType).toBe("TEST");
+    expect(prismaMock.user.updateMany).toHaveBeenCalledWith({
+      where: { id: "user-1", userType: "USER" },
+      data: { userType: "TEST" },
+    });
+  });
+});
+
+describe("promotePrivyTestUserType", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("does not change staff user types", async () => {
+    const { promotePrivyTestUserType } = await import("./privyUserProvisioning.js");
+    await expect(promotePrivyTestUserType("admin-1", "test-abcd@privy.io", "ADMIN")).resolves.toBe(
+      "ADMIN",
+    );
+    expect(prismaMock.user.updateMany).not.toHaveBeenCalled();
   });
 });
 
@@ -335,6 +385,28 @@ describe("provisionUserFromPrivy referral", () => {
           referredByUserId: "inviter",
           referrerAddress: INVITER,
           referralCode: expect.any(String),
+        }),
+      }),
+    );
+  });
+
+  it("creates Privy dashboard test emails as userType TEST", async () => {
+    const testPrivyUser = {
+      ...privyUser,
+      linked_accounts: [
+        { type: "smart_wallet", address: INVITEE },
+        { type: "email", address: "test-abcd@privy.io" },
+      ],
+    } as typeof privyUser;
+
+    const { provisionUserFromPrivy } = await import("./privyUserProvisioning.js");
+    await provisionUserFromPrivy(testPrivyUser, 84532);
+
+    expect(prismaMock.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          email: "test-abcd@privy.io",
+          userType: "TEST",
         }),
       }),
     );

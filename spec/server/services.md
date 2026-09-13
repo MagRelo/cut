@@ -66,7 +66,7 @@ Orchestrated by `cron/scheduler.ts`.
 
 | Service | Purpose |
 |---------|---------|
-| `lib/privyUserProvisioning.ts` | User + wallet from Privy. Signup referral is best-effort (never blocks after JWT). |
+| `lib/privyUserProvisioning.ts` | User + wallet from Privy. Signup referral is best-effort (never blocks after JWT). `test-…@privy.io` emails set `userType=TEST`. |
 | `batch/batchSyncReferralGraph.ts` | On-chain referral graph sync |
 
 Middleware: `middleware/auth.ts`

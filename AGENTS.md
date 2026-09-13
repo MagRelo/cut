@@ -47,7 +47,8 @@ so real inbox access is normally needed. For automated/dev login, use Privy **te
    `privy.apps().getTestCredentials(appId)`), authenticating with `PRIVY_APP_ID` /
    `PRIVY_APP_SECRET` from `server/.env`.
 3. Log in through the UI by entering that test email and OTP in the Privy modal. The first
-   successful login creates the Privy user + the Cut user record.
+   successful login creates the Privy user + the Cut user record with `userType=TEST`
+   (`test-…@privy.io`).
 
 Note: the Node SDK's `getTestAccessToken()` (headless token) is rejected here because the app has
 `allowed_domains` configured, so use the UI OTP flow above rather than the headless token.

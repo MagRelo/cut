@@ -74,6 +74,7 @@ sequenceDiagram
 - **Authoritative user record:** Postgres (`User`, `UserWallet`)
 - **Session wallet:** DB `UserWallet.isPrimary` for `X-Cut-Chain-Id` (not Privy pick on every request)
 - **Staff:** `userType` on user → `AdminRoute` / `/api/admin`
+- **Test accounts:** Privy dashboard emails (`test-…@privy.io`) are stored as `userType=TEST` and excluded from marketing email (`userType=USER` only)
 - **Signup referral:** `X-Cut-Referral-Code` attaches `referredByUserId` when the opaque code matches `User.referralCode`. Wallet `0x…` values are ignored. It does not require the inviter to be on ReferralGraph. After Privy email OTP, session create must not fail because referral could not be applied. Cron registers invitees on-chain once the parent is registered.
 
 ---
