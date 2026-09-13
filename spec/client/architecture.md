@@ -116,7 +116,7 @@ Some query keys and admin types still expose `tournamentId` aliases; new code sh
 
 `useAppLoadingGate` + `GlobalLoadingOverlay` block the shell until Privy auth settles, reducing flash of empty state on first paint.
 
-`OnboardingRedirectGate` sends new users through `/onboarding` when settings indicate incomplete onboarding.
+`OnboardingRedirectGate` sends authenticated users through `/onboarding` when `settings.onboardingDismissed === false`. Copy and screen map: [onboarding-content-plan.md](../onboarding-content-plan.md).
 
 ---
 

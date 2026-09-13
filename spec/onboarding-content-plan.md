@@ -1,158 +1,164 @@
----
-# Onboarding content — tracked in repo (implementation todos for reference)
-name: Onboarding content sketch
-overview: 'A stepped, one-primary-action-per-screen onboarding narrative for Play The Cut: draft headlines, body copy, and CTAs aligned with existing FAQ/product terms (Stableford, lineups, contests, winner pool / secondary market, USDC on the Base network, Privy).'
-todos:
-  - id: lock-terminology
-    content: 'Step 2 framing: “How you’ll show up” (display name + color; lineup labels programmatic)'
-    status: completed
-  - id: trim-scope
-    content: 'v1: 8 screens; winner pool (secondary market) after contests; lifecycle included; leagues deferred'
-    status: completed
-  - id: fund-cta
-    content: Pick final CTA targets for last step (Account vs Connect vs both)
-    status: pending
-  - id: implement-followup
-    content: 'Implementation: routes, persistence, AuthContext/settings flag'
-    status: pending
----
+# Onboarding
 
-# Onboarding flow — content sketch and screen map
+Canonical copy and screen map for `/onboarding` ([`OnboardingPage`](../client/src/pages/OnboardingPage.tsx)).
 
-**Canonical copy (git):** this file, [`spec/onboarding-content-plan.md`](onboarding-content-plan.md). A Cursor Plans mirror may exist at `~/.cursor/plans/onboarding_content_sketch_10bab010.plan.md`—edit **this** file when you want the repo to stay authoritative.
+Tone in the live flow: short product sentences, informal primary CTAs (`next`, `ok`, `got it`, `nice`, `sweet`). Chrome is shared: **Step N of 10**, a progress bar, and **Exit** on every screen.
 
-## Product alignment (so copy stays honest)
+## Gate
 
-- **Display identity**: [`DisplaySettings`](../client/src/components/account/DisplaySettings.tsx) edits **display name** and **accent color** (`user.settings.color`). Contests and leaderboards show you as _name + color_ (see [`ContestEntryList`](../client/src/components/contest/ContestEntryList.tsx)).
-- **Lineups**: A **lineup** is a set of **4 golfers** for a **specific tournament** ([`TournamentLineup`](../server/prisma/schema.prisma)). Lineup labels are assigned programmatically for now. You can have **multiple lineups**; each can be entered into contests ([FAQ](../client/src/pages/FAQPage.tsx)).
-- **Contests**: Tournament-scoped competitions; **entry fees in USDC on the Base network**; **primary prize pool** for lineup finishers; lineups **lock when the tournament starts**. **v1 onboarding** includes a **winner pool** screen after contests—the **secondary prediction market** on which lineup wins (UI: “Winner Pool” in e.g. [`ContestResultsPanel`](../client/src/components/contest/ContestResultsPanel.tsx)), not a tutorial on **primary payout tiers** (those stay in [FAQ](../client/src/pages/FAQPage.tsx)). Then **contest lifecycle** (OPEN → ACTIVE → LOCKED → SETTLED → CLOSED) ties together lineup locks and when the prediction market is open; see [FAQ contest-status section](../client/src/pages/FAQPage.tsx).
-- **Funding last**: Tie to **Privy + Account** and **USDC on the Base network** for entries/prizes ([FAQ Adding & withdrawing funds](../client/src/pages/FAQPage.tsx)). Coinbase or Robinhood if the player does not already have crypto.
+New accounts are created with `user.settings.onboardingDismissed: false` ([`privyUserProvisioning`](../server/src/lib/privyUserProvisioning.ts)). [`OnboardingRedirectGate`](../client/src/components/common/OnboardingRedirectGate.tsx) sends an authenticated user to `/onboarding` when that flag is exactly `false`. `/onboarding` and `/connect` are excluded so login and the flow itself still work.
 
-**Step 2 framing (locked)**: **“How you’ll show up”**—display **name** + **accent color** (`User.name`, `user.settings.color`). No “team name” in onboarding; lineup labels stay programmatic.
+**Skip for now**, **Exit**, and the final **View contests** action set `onboardingDismissed: true` via `updateUserSettings`. There is no stored step index; a return visit starts at step 1.
 
----
+After dismiss, navigation is:
 
-## Suggested flow (8 screens for v1)
+1. The `from` location passed into the gate (the page they were heading to), if present
+2. Else a pending league invite → `/leagues/join/:code`
+3. Else `/`
 
-One **primary action** per screen; everything else is **skippable** or **Continue** only if you want low friction.
+The final button label is **View contests**; it uses that same dismiss path, not a hard link to `/contests`.
 
-**Leagues** ship via referral links ([`PRIVATE_LEAGUES.md`](../../PRIVATE_LEAGUES.md)). A dedicated onboarding screen for “Play with friends” remains optional post-core; v1 onboarding still ends at fund account.
+## Flow
 
 ```mermaid
 flowchart LR
   welcome[Welcome]
-  identity["How you'll show up"]
-  scoring[Scoring basics]
-  lineups[Lineups]
-  contests[Contests]
-  winnerPool[Winner pool]
-  lifecycle[Contest lifecycle]
-  fund[Fund account]
-  welcome --> identity --> scoring --> lineups --> contests
-  contests --> winnerPool --> lifecycle --> fund
+  lineups[Build Lineups]
+  contests[Enter Contests]
+  scoring[How scoring works]
+  winnerPool[Winner Pool]
+  referrals[Referral Rewards]
+  funds[Account Wallet]
+  teamName[Team name]
+  teamColor[Team color]
+  done[Done]
+  welcome --> lineups --> contests --> scoring --> winnerPool
+  winnerPool --> referrals --> funds --> teamName --> teamColor --> done
 ```
 
-**Winner pool** (#6)—the **secondary prediction market**—sits **after contests** so “enter a lineup” and “predict the winning lineup” stay distinct before lifecycle timing. **Contest lifecycle** (#7) is **in v1**—not optional to cut.
+Identity (name + color) is two screens near the end. Name writes `User.name`. Color writes `user.settings.color` from the same ten swatches as Account → User Display.
 
 ---
 
-## Screen-by-screen draft copy
+## Screen-by-screen copy
 
-Tone: short sentences, one idea per paragraph, friendly—not legalistic. Adjust brand voice as you like.
+Copy below is what the UI shows today.
 
 ### 1. Welcome
 
-- **Headline**: Welcome to Play The Cut
-- **Body**: Pick four PGA Tour players each week, score using Modified Stableford, and compete in contests with real stakes. This short tour shows you how it works—a few minutes.
+- **Headline**: PLAYTHECUT / Fantasy Golf (logo + wordmark)
+- **Body**: Welcome to **Play The Cut**! Let's get started...
 - **Primary CTA**: Start
 - **Secondary**: Skip for now
 
-### 2. How you’ll show up (display name + color)
+### 2. Build Lineups
 
-- **Headline**: How you’ll show up
-- **Body**: This is how other players see you on leaderboards and results: your **name** and a **color** accent. You can change these anytime in Account settings.
-- **Action**: Single field **Display name** + **Color** picker (reuse patterns from [`DisplaySettings`](../client/src/components/account/DisplaySettings.tsx)).
-- **Primary CTA**: Save and continue
-- **Microcopy (helper)**: Pick a color you’ll recognize in a crowded leaderboard.
+- **Headline**: Build Lineups
+- **Body**: For each tournament, you build a lineup of **four golfers**. You can choose any four golfers from the field - no salary caps or restrictions.
+- **Primary CTA**: next
+- **Secondary**: Back
 
-### 3. Scoring (context only, or tiny quiz optional)
+### 3. Enter Contests
+
+- **Headline**: Enter Contests
+- **Body**: A **contest** is a fantasy competition for a single tournament. Each lineup you enter is a separate buy-in; those fees build the **prize pool**. When the event wraps, **payouts** go to the best-scoring lineups.
+- **Body (2)**: You can join **multiple contests** in a week and enter **more than one lineup** in the same contest.
+- **Primary CTA**: ok
+- **Secondary**: Back
+
+### 4. How scoring works
 
 - **Headline**: How scoring works
-- **Body**: Each golfer earns **Modified Stableford** points per hole (birdies up, bogeys down—eagles and doubles matter a lot). **Bonuses** apply for making the cut and top finishes. Your **lineup score** is the **sum of all four players’** points for the week.
-- **Optional one-liner**: Rankings update regularly while tournaments are live.
-- **Primary CTA**: Got it
+- **Body**: Golfers earn points based on their performance on each hole:
 
-_(Optional v2: single multiple-choice “What counts toward your score?”—not required for v1.)_
+| Result | Points |
+| --- | --- |
+| Hole-in-one | +10 |
+| Double Eagle or better | +15 |
+| Eagle | +5 |
+| Birdie | +2 |
+| Par | 0 |
+| Bogey | −1 |
+| Double bogey or worse | −3 |
 
-### 4. Lineups
+- **Body (2)**: There are also bonus points:
 
-- **Headline**: Your lineup is your team for the week
-- **Body**: For each tournament, you build a **lineup** of **four golfers**. You can create **more than one** lineup—useful when you join multiple contests or want different strategies. **Save before tee-off**; after the tournament starts, that lineup is **locked**.
-- **Primary CTA**: Continue
-- **Secondary CTA (strong)**: **Create a lineup** → deep-link to Lineups page (only if you want an action here; otherwise keep this screen explain-only to preserve “one concept per step”).
+| Bonus | Points |
+| --- | --- |
+| Making the cut | +3 |
+| 1st place finish | +10 |
+| 2nd place finish | +5 |
+| 3rd place finish | +3 |
 
-### 5. Contests
+- **Primary CTA**: got it
+- **Secondary**: Back
 
-- **Headline**: Contests are where you compete
-- **Body**: A **contest** is tied to **one tournament**. You **enter with a lineup** and pay an **entry fee in USDC**. Everyone’s entries feed the **primary prize pool** for the **fantasy competition**—**highest lineup scores** win that pool; **ties split** their share. (How that pool is split by place is in the FAQ.)
-- **Primary CTA**: Continue
-- **Link text**: Learn more → FAQ “Contests” / “How are winners determined?” / “Payout structure”
+### 5. Winner Pool
 
-### 6. Winner pool (secondary prediction market)
+- **Headline**: the Winner Pool
+- **Body**: Each contest also contains a **Winner Pool**, a parimutuel market where you can back **the lineup you think will win**. Odds move as money enters each lineup.
+- **Primary CTA**: nice
+- **Secondary**: Back
 
-- **Headline**: The winner pool
-- **Body**: Each contest also runs a **winner pool**—a **secondary prediction market** on **which lineup** will win the contest. You’re not swapping golfers here; you’re taking **positions** (shares) on entries you think will finish on top. **Prices move** as the tournament and sentiment change. When the contest **settles**, holders of the **winning prediction** can claim **winner pool** payouts—separate from **primary** lineup prizes. **When you can buy, sell, or only buy** follows contest status (next screen).
-- **Primary CTA**: Continue
-- **Link text**: Learn more → FAQ “Contest Status & Timeline” / prediction-market bullets
+### 6. Referral Rewards
 
-_(Stay conceptual on this screen; no LMSR math. Primary payout tiers are FAQ-only—not this step.)_
+Same framing as [`ReferralsPage`](../client/src/pages/account/ReferralsPage.tsx).
 
-### 7. Contest lifecycle
+- **Headline**: Referral Rewards
+- **Body**: Play The Cut is different—**no fees, no ads, no middlemen**. We grow through referrals, so when you bring in new players, you earn Referral Rewards.
+- **Body (2)**: **Referral Rewards** make Play The Cut a team sport. As friends invite friends, your network grows—and **when they win, you win too**. Share your referral link under Referral Network to start building your team!
+- **Primary CTA**: sweet
+- **Secondary**: Back
 
-- **Headline**: What “Open” and “Locked” mean
-- **Body**: While a contest is **Open**, you can usually join, adjust lineups, and use the prediction market. When things **lock**, entries and lineups freeze and you’re racing the live leaderboard. **Settled** means results are final and winners can **claim**.
-- **Primary CTA**: Continue
+### 7. Account Wallet
 
-_(Pull exact status names from your UI; FAQ table is the source of truth.)_
+- **Headline**: Account Wallet
+- **Body**: Your Play The Cut wallet is yours—you stay in control of your funds. Contests use **USDC**, a digital dollar, on the Base network. Add USDC when you’re ready to play, and send it out anytime.
+- **Primary CTA**: nice
+- **Secondary**: Back
 
-### 8. Fund your account (last)
+### 8. Team name
 
-- **Headline**: You’re ready—add funds when you want to play for stakes
-- **Body**: Sign-in uses **Privy** (email, phone, or wallet—however the app is set up). **USDC on the Base network** is what you use for **entries** and what you **win**. If you don’t already have crypto, use **Coinbase** or **Robinhood**: buy USDC, then send it on the Base network to your Account ID (Manage funds). Anyone with USDC on the Base network can also send to that address. Cash out from Manage funds → Send to a Coinbase or Robinhood USDC deposit address on the Base network. You can explore lineups and contests first.
-- **Primary CTA**: Go to Manage funds _(e.g. [`WalletPage`](../client/src/pages/account/WalletPage.tsx))_
-- **Secondary**: Finish and go home
+- **Headline**: Your team name
+- **Body**: This is the name other players see on leaderboards and results. You can change it anytime in Account settings.
+- **Field label**: TEAM NAME
+- **Placeholder**: Enter your team name
+- **Primary CTA**: Save & Continue
+- **Secondary**: Back
 
-### Deferred (not in v1): Leagues / private groups
+Saves `User.name` (trim; empty keeps the current name). Account settings label the same field **Name**, not team name.
 
-_Saved for a later iteration._
+### 9. Team color
 
-- **Headline**: Play with your crew
-- **Body**: Some contests are for **everyone**; others are for a **league or group** you’re invited to. Same rules—just a smaller table of rivals.
-- **Primary CTA**: Continue
+- **Headline**: Your team color
+- **Body**: Pick an accent color that appears next to your team name so you're easy to spot on leaderboards.
+- **Action**: Ten-swatch color picker (`user.settings.color`)
+- **Primary CTA**: Save & Continue
+- **Secondary**: Back
+
+### 10. Done
+
+- **Headline**: Done!
+- **Body**: You're ready to play. Build a lineup for this week's tournament whenever you want—then enter contests when you have funds in your account.
+- **Primary CTA**: View contests
+- **Secondary**: Back
 
 ---
 
-## Content principles to carry into implementation
+## Implementation
 
-- **One job per screen**: headline states the job; body is 2–4 short bullets or one short paragraph.
-- **Defer money**: no wallet pressure until the last step; earlier steps build competence and motivation.
-- **Reuse FAQ**: link “Learn more” to [FAQ](../client/src/pages/FAQPage.tsx) sections instead of duplicating long tables (payout %, full status matrix).
-- **Persist progress**: if you store `onboardingStep` or `onboardingCompletedAt` on the user, users can resume; optional for v1.
+| Piece | Behavior |
+| --- | --- |
+| Route | `/onboarding` behind `ProtectedRoute` |
+| Persistence | `settings.onboardingDismissed` only; no resume-at-step |
+| Identity writes | `updateUser({ name })`, `updateUserSettings({ color })` |
+| League invites | Captured before auth; applied on dismiss if no `from` location |
+| Sports | Welcome subtitle is **Fantasy Golf**; later screens are golf-framed (four golfers, Stableford table) |
 
----
+Leagues are not a dedicated onboarding screen. Invitees land on `/leagues/join/:code` after they finish or skip.
 
-## Open choices (no blocker—pick when you implement)
+## Open decisions
 
-| Choice       | Options                                                          |
-| ------------ | ---------------------------------------------------------------- |
-| Lineups step | Explain-only vs **CTA → Lineups** (second action on that screen) |
-
-**Decided**: **8 screens** for v1 (**winner pool** / secondary market **after contests**; lifecycle **included**; leagues deferred). Step 2 framing: **“How you’ll show up”**.
-
----
-
-## Implementation preview (for a follow-up plan, not this doc)
-
-- New route(s) e.g. `/onboarding` with a small step machine; gate with `user.settings.onboardingComplete` or similar after you add schema/API.
-- Reuse `updateUser` / `updateUserSettings` from [`AuthContext`](../client/src/contexts/AuthContext.tsx) for the identity step.
-- No new markdown task files unless you ask for them.
+- Whether identity should say **name** / **color** (Account settings) or **team name** / **team color**.
+- Whether the last CTA should go to `/contests` or keep the dismiss-resume path.
+- Whether primary CTAs stay informal and lowercase.

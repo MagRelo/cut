@@ -5,7 +5,6 @@ import { BrandLogo } from "../components/common/BrandLogo";
 import { BRAND_PROSE, BRAND_WORDMARK } from "../lib/brand";
 import { ONBOARDING_DISMISSED_KEY } from "../lib/onboardingSettings";
 import { getPendingLeagueInviteCode } from "../lib/leagueInviteCapture";
-import { isTargetTestnet } from "../config/targetChain";
 
 const ACCENT_COLORS = [
   "#0a73eb",
@@ -249,7 +248,9 @@ export function OnboardingPage() {
                 </thead>
                 <tbody>
                   {[
-                    ["Eagle or better", "+5"],
+                    ["Hole-in-one", "+10"],
+                    ["Double Eagle or better", "+15"],
+                    ["Eagle", "+5"],
                     ["Birdie", "+2"],
                     ["Par", "0"],
                     ["Bogey", "−1"],
@@ -296,10 +297,10 @@ export function OnboardingPage() {
                 </thead>
                 <tbody>
                   {[
-                    ["1st place position", "+10"],
-                    ["2nd place position", "+5"],
-                    ["3rd place position", "+3"],
                     ["Making the cut", "+3"],
+                    ["1st place finish", "+10"],
+                    ["2nd place finish", "+5"],
+                    ["3rd place finish", "+3"],
                   ].map(([label, pts], i) => {
                     const tone = pts.startsWith("+") ? "good" : pts === "0" ? "neutral" : "bad";
                     const valueClass =
@@ -343,9 +344,7 @@ export function OnboardingPage() {
             <p className="text-gray-700 leading-relaxed font-display mb-6">
               Each contest also contains a <strong> Winner Pool</strong>, a parimutuel market where
               you can back <strong>the lineup you think will win</strong>. Odds move as money enters
-              each lineup, and the display uses projected English odds. The market{" "}
-              <strong>locks at the start of round 4</strong> - monitor the contest to optimize your
-              wagering strategy.
+              each lineup.
             </p>
 
             <StepActions>
@@ -362,19 +361,17 @@ export function OnboardingPage() {
         {step === 5 && (
           <>
             <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
-              Referral bonuses
+              Referral Rewards
             </h1>
             <p className="text-gray-700 leading-relaxed font-display mb-5">
-              When you win a contest, a portion of the prize pool is directed to your referral
-              network. <strong> The more people you refer, the more you earn.</strong> These bonuses
-              travel up to <strong>10 levels deep</strong>, so if you invite three people, and they
-              invite three people - and so on - you could easily have hundreds of people paying you
-              bonuses.
+              Play The Cut is different—
+              <strong>no fees, no ads, no middlemen</strong>. We grow through referrals, so when you
+              bring in new players, you earn Referral Rewards.
             </p>
-
             <p className="text-gray-700 leading-relaxed font-display mb-6">
-              You can find your personal referral link under Referral Network — share it with
-              your friends!
+              <strong>Referral Rewards</strong> make Play The Cut a team sport. As friends invite
+              friends, your network grows—and <strong>when they win, you win too</strong>. Share
+              your referral link under Referral Network to start building your team!
             </p>
 
             <StepActions>
@@ -391,38 +388,13 @@ export function OnboardingPage() {
         {step === 6 && (
           <>
             <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
-              Add funds to your account
+              Account Wallet
             </h1>
-            {isTargetTestnet() ? (
-              <p className="text-gray-700 leading-relaxed font-display mb-6">
-                You&apos;ll need funds in your account to compete in contests. Most people get funds
-                from other players—share your wallet address with whoever referred you to receive a
-                transfer.
-              </p>
-            ) : (
-              <>
-                <p className="text-gray-700 leading-relaxed font-display mb-3">
-                  You&apos;ll need <strong>USDC</strong> on <strong>the Base network</strong> in
-                  your account to compete. Buy USDC in a wallet or exchange app if you don&apos;t
-                  already have it, then send it here:
-                </p>
-                <ol className="mb-4 list-decimal list-outside space-y-2 pl-6 font-display text-gray-700 leading-relaxed marker:font-semibold marker:text-gray-900 sm:pl-8">
-                  <li className="pl-1">
-                    Open an app that sells USDC. Coinbase and Robinhood are two that work.
-                  </li>
-                  <li className="pl-1">Buy USDC.</li>
-                  <li className="pl-1">
-                    Send USDC on <strong>the Base network</strong> to your wallet address (copy it
-                    from Account → Wallet).
-                  </li>
-                </ol>
-                <p className="text-gray-700 leading-relaxed font-display mb-6">
-                  Anyone with USDC on the Base network can also send to your wallet address,
-                  including the person who referred you. To send funds out, use Wallet → Send
-                  to the USDC address your wallet or exchange app shows for the Base network.
-                </p>
-              </>
-            )}
+            <p className="text-gray-700 leading-relaxed font-display mb-6">
+              Your Play The Cut wallet is yours—you stay in control of your funds. Contests use{" "}
+              <strong>USDC</strong>, a digital dollar, on the Base network. Add USDC when
+              you&apos;re ready to play, and send it out anytime.
+            </p>
 
             <StepActions>
               <button type="button" onClick={goBack} className={ghostLink}>
