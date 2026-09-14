@@ -51,15 +51,10 @@ export function WalletPage() {
         items={[{ label: "Account", path: "/account" }, { label: "Wallet" }]}
         className="mb-2"
       />
-      <h1 className="mb-1 flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
+      <h1 className="mb-2 flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
         <WalletIcon className="h-6 w-6 shrink-0" aria-hidden />
         Wallet
       </h1>
-
-      <p className="mb-4 font-display text-sm leading-relaxed text-gray-700">
-        Your account includes a wallet that belongs to you and is secured by your email. Play The
-        Cut never holds or has access to your funds.
-      </p>
 
       <div className="space-y-4">
         {showTestnetWarning ? (
@@ -84,7 +79,13 @@ export function WalletPage() {
         ) : null}
 
         <div className="space-y-6 font-display">
-          <WalletBalancePanel tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
+          <div>
+            <p className="mb-3 font-display text-sm leading-relaxed text-gray-700">
+              Your wallet belongs to you and is secured by your email. Play The Cut never holds or
+              has access to your funds.
+            </p>
+            <WalletBalancePanel tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
+          </div>
 
           <div>
             <h2 className="font-medium text-gray-900">Powered by {tokenSymbol}</h2>
@@ -97,9 +98,9 @@ export function WalletPage() {
           </div>
 
           <div>
-            <h2 className="font-medium text-gray-900">Send and Receive {tokenSymbol}</h2>
+            <h2 className="font-medium text-gray-900">Receive and Send {tokenSymbol}</h2>
             <p className="mb-2 font-display text-sm leading-relaxed text-gray-700">
-              You can send and receive {tokenSymbol} to and from your account wallet.
+              You can receive and send {tokenSymbol} to and from your account wallet.
             </p>
 
             <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md shadow-slate-900/10 ring-1 ring-black/5">

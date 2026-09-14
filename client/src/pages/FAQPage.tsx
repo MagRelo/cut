@@ -897,7 +897,7 @@ export const FAQPage: React.FC = () => {
           <p>
             Play The Cut&apos;s invite network runs on{" "}
             <a
-              href="https://referraltree.mattlovan.dev/"
+              href="https://exchange.mattlovan.dev/implementations/play-the-cut"
               target="_blank"
               rel="noreferrer"
               className="font-medium text-blue-600 hover:underline"
@@ -911,7 +911,7 @@ export const FAQPage: React.FC = () => {
             <figcaption className="font-display text-xs font-semibold uppercase tracking-[0.12em] text-emerald-900">
               From{" "}
               <a
-                href="https://referraltree.mattlovan.dev/"
+                href="https://exchange.mattlovan.dev/implementations/play-the-cut"
                 target="_blank"
                 rel="noreferrer"
                 className="text-emerald-800 underline-offset-2 hover:underline"

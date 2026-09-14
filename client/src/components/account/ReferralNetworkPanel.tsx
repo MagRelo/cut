@@ -83,6 +83,7 @@ function NetworkSection({
   return (
     <div className="border-t border-slate-100 bg-slate-50 pb-6">
       <SectionLabel>Your Referral Network</SectionLabel>
+
       <div className="pl-8 pr-6 pt-2">
         {!loading && error ? (
           <p className="font-display text-sm text-red-600">{error}</p>
