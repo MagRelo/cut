@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import type { Candidate } from "@cut/sport-sdk";
 import type { EventStatus } from "../../types/event";
@@ -7,10 +7,17 @@ import { SportLineupPickRow } from "../platform/SportLineupPickRow";
 import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
 import { useEventCandidatesQuery } from "../../hooks/useSportData";
 import { useSportRosterRules } from "../../hooks/useSportRosterRules";
+import {
+  PICKER_LEAVE_MS,
+  PICKER_LOCAL_SAVE_MS,
+  PICKER_SAVED_FLASH_MS,
+} from "../../lib/candidatePickerTiming";
 import { LineupPlayerSlotLoading } from "./LineupPlayerSlotLoading";
 import { LineupEmptySlotLabel, LineupSlotShell } from "./LineupSlotShell";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
+
+type SaveStatus = "idle" | "saving" | "saved";
 
 function padToSlots(candidates: Candidate[], slotCount: number): Array<Candidate | null> {
   const slots: Array<Candidate | null> = [...candidates];
@@ -18,6 +25,12 @@ function padToSlots(candidates: Candidate[], slotCount: number): Array<Candidate
     slots.push(null);
   }
   return slots.slice(0, slotCount);
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
 
 export interface GuestLineupPickerProps {
@@ -37,45 +50,80 @@ export const GuestLineupPicker: React.FC<GuestLineupPickerProps> = ({
   initialCandidates = [],
 }) => {
   const rosterRules = useSportRosterRules(sportId);
-  const { data: fieldCandidates = [] } = useEventCandidatesQuery(sportId, eventId);
+  const { data: fieldCandidates = [], isLoading: isCandidatesLoading } = useEventCandidatesQuery(
+    sportId,
+    eventId,
+  );
   const [picks, setPicks] = useState<Candidate[]>(initialCandidates);
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [savingEventParticipantId, setSavingEventParticipantId] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const slotCount = rosterRules?.slotCount ?? 0;
   const slots = padToSlots(picks, slotCount);
   const selectedEventParticipantIds = picks.map((candidate) => candidate.eventParticipantId);
+  const showFieldLoading =
+    !rosterRules || (isCandidatesLoading && picks.length === 0 && initialCandidates.length === 0);
+  const slotPlaceholders = slotCount > 0 ? slotCount : 1;
 
   const openSlot = (index: number) => {
+    if (saveStatus !== "idle") return;
     setSelectedSlotIndex(index);
   };
 
   const closeSlot = () => {
+    if (saveStatus !== "idle") return;
     setSelectedSlotIndex(null);
   };
 
   const handlePlayerSelect = useCallback(
-    (eventParticipantId: string | null) => {
-      if (selectedSlotIndex === null) return;
+    async (eventParticipantId: string | null) => {
+      if (selectedSlotIndex === null || saveStatus !== "idle") return;
+
+      setSavingEventParticipantId(eventParticipantId);
+      setSaveStatus("saving");
 
       const nextSlots = [...slots];
       if (eventParticipantId) {
         const selectedCandidate = fieldCandidates.find(
           (candidate) => candidate.eventParticipantId === eventParticipantId,
         );
-        if (!selectedCandidate) return;
+        if (!selectedCandidate) {
+          setSaveStatus("idle");
+          setSavingEventParticipantId(null);
+          return;
+        }
         nextSlots[selectedSlotIndex] = selectedCandidate;
       } else {
         nextSlots.splice(selectedSlotIndex, 1);
       }
 
       setPicks(nextSlots.filter((candidate): candidate is Candidate => candidate !== null));
+
+      await delay(PICKER_LOCAL_SAVE_MS);
+      if (!mountedRef.current) return;
+      setSaveStatus("saved");
+      await delay(PICKER_SAVED_FLASH_MS);
+      if (!mountedRef.current) return;
       setSelectedSlotIndex(null);
+      await delay(PICKER_LEAVE_MS);
+      if (!mountedRef.current) return;
+      setSaveStatus("idle");
+      setSavingEventParticipantId(null);
     },
-    [fieldCandidates, selectedSlotIndex, slots],
+    [fieldCandidates, saveStatus, selectedSlotIndex, slots],
   );
 
-  if (!rosterRules) {
+  if (showFieldLoading) {
     return (
       <div className="bg-white">
         <div
@@ -95,9 +143,11 @@ export const GuestLineupPicker: React.FC<GuestLineupPickerProps> = ({
         </div>
         <div className="px-3 pb-3 pt-0">
           <div className="mb-4 mt-3 space-y-6">
-            <div className="px-3">
-              <LineupPlayerSlotLoading />
-            </div>
+            {Array.from({ length: slotPlaceholders }, (_, index) => (
+              <div key={`guest-loading-slot-${index}`} className="px-3">
+                <LineupPlayerSlotLoading />
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -191,9 +241,12 @@ export const GuestLineupPicker: React.FC<GuestLineupPickerProps> = ({
         eventId={eventId}
         isOpen={selectedSlotIndex !== null}
         onClose={closeSlot}
-        onSelect={handlePlayerSelect}
-        onClearSlot={() => handlePlayerSelect(null)}
+        onSelect={(eventParticipantId) => void handlePlayerSelect(eventParticipantId)}
+        onClearSlot={() => void handlePlayerSelect(null)}
         selectedEventParticipantIds={selectedEventParticipantIds}
+        isSaving={saveStatus === "saving"}
+        isSaved={saveStatus === "saved"}
+        savingEventParticipantId={savingEventParticipantId}
       />
 
       <SportParticipantDetailModal

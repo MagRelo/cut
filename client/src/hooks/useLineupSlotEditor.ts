@@ -8,9 +8,7 @@ import {
   platformLineupPrediction,
 } from "../lib/lineupUtils";
 import { lineupsInSameContestScope } from "../lib/lineupContestScope";
-
-const SAVED_FLASH_MS = 450;
-const PICKER_LEAVE_MS = 200;
+import { PICKER_LEAVE_MS, PICKER_SAVED_FLASH_MS } from "../lib/candidatePickerTiming";
 
 type SaveStatus = "idle" | "saving" | "saved";
 
@@ -243,7 +241,7 @@ export function useLineupSlotEditor({
       }
 
       setSaveStatus("saved");
-      await delay(SAVED_FLASH_MS);
+      await delay(PICKER_SAVED_FLASH_MS);
       if (!mountedRef.current) return;
       setSelectedSlotIndex(null);
       await delay(PICKER_LEAVE_MS);
