@@ -20,8 +20,8 @@ export function ReferralsPage() {
       </p>
       <p className="mb-4 font-display text-sm leading-relaxed text-gray-700">
         Referrals turn contests into a team sport - <b>when your friends win, you win</b>. As your
-        friends invite their friends, your network grows. Share your referral link to start building
-        your team!
+        friends invite friends, your network grows. Share your referral link to start building your
+        team!
       </p>
       <p className="mb-6 font-display text-sm text-gray-700">
         <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
