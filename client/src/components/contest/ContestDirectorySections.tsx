@@ -44,8 +44,8 @@ export function ContestDirectorySections({
               tone="live"
               title={
                 <>
-                  <span className="h-2 w-2 shrink-0 rounded-full bg-green-500" aria-hidden="true" />
-                  In Progress
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-hidden="true" />
+                  Live Events
                 </>
               }
             />

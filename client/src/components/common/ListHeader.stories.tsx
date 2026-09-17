@@ -28,7 +28,12 @@ export const Upcoming: Story = {
 
 export const Live: Story = {
   args: {
-    title: "In Progress",
+    title: (
+      <>
+        <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-hidden="true" />
+        Live Events
+      </>
+    ),
     tone: "live",
   },
 };
@@ -48,7 +53,7 @@ export const LongTitle: Story = {
 
 export const WithActions: Story = {
   args: {
-    title: "In Progress",
+    title: "Live Events",
     actions: (
       <button
         type="button"

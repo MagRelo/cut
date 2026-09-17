@@ -48,7 +48,7 @@ function GroupedContestSection({
   if (hasHeroPanel) {
     const heroImageClassName = plugin?.eventHeroImageClassName;
     return (
-      <section className="overflow-hidden rounded-xl shadow-xl shadow-slate-900/25">
+      <section className="overflow-hidden rounded-none sm:rounded-xl">
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 overflow-hidden" aria-hidden>
             <div
@@ -89,7 +89,7 @@ function GroupedContestSection({
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-900/10">
+    <section className="overflow-hidden rounded-none border-y border-slate-200 bg-white sm:rounded-xl sm:border">
       {group.event.sportId ? (
         <SportEventHeader sportId={group.event.sportId} event={eventShell} />
       ) : (
@@ -131,7 +131,7 @@ export const GroupedContestList = ({
   // Prefer existing groups over the spinner so refetches don't rip hero images out.
   if (groups.length > 0) {
     listContent = (
-      <div className="space-y-5">
+      <div className="-mx-4 space-y-5">
         {groups.map((group) => (
           <GroupedContestSection
             key={group.event.id}
