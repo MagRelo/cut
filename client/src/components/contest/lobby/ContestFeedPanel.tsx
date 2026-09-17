@@ -221,7 +221,7 @@ export const ContestFeedPanel: React.FC<ContestFeedPanelProps> = ({
     <div className="space-y-3 font-display">
       <div className="space-y-2">
         <h2 className="m-0 font-display text-xl font-bold uppercase tracking-[0.1em] text-slate-400 sm:text-2xl">
-          Commentary
+          Live Updates
         </h2>
         {isLoading ? (
           <div className="rounded-sm border border-slate-200 bg-slate-50 p-6 text-center font-display">
