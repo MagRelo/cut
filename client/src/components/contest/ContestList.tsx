@@ -22,15 +22,14 @@ export function ContestListConnectHint({ className = "mt-6" }: { className?: str
   return (
     <div
       className={cn(
-        "overflow-hidden rounded border border-blue-200 bg-gradient-to-tl from-blue-100 via-blue-50 to-white p-4 text-center font-display shadow-md shadow-blue-950/10",
+        "overflow-hidden rounded border border-blue-200 bg-gradient-to-br from-blue-200 via-blue-50 to-slate-100 p-4 text-center font-display shadow-md shadow-blue-950/10",
         className,
       )}
     >
       <p className="text-base font-semibold text-gray-900">
-        <BanknotesIcon
-          className="mr-1.5 inline h-5 w-5 -translate-y-px text-emerald-600"
-          aria-hidden
-        />
+        <span className="mr-1.5 inline-flex h-8 w-8 -translate-y-px items-center justify-center rounded-full border border-emerald-600 bg-white align-middle">
+          <BanknotesIcon className="h-3.5 w-3.5 text-emerald-700" aria-hidden />
+        </span>
         Real money contests available in private leagues
       </p>
       <p className="mt-1 text-sm text-gray-600">Sign in to see leagues you’re in, or start one.</p>
@@ -42,7 +41,7 @@ export function ContestListConnectHint({ className = "mt-6" }: { className?: str
       </Link>
       <p className="mt-2.5 text-sm text-gray-600">
         <Link to={LEAGUE_STARTER_GUIDE_PATH} className="text-blue-600 hover:text-blue-700">
-          How leagues work
+          How leagues work →
         </Link>
       </p>
     </div>
