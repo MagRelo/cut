@@ -1,8 +1,10 @@
 import type { CompetitionEventShell } from "@cut/sport-sdk";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { BanknotesIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { type Contest } from "../../types/contest";
 import { contestLobbyPath } from "../../utils/contestRoutes";
 import { Link } from "react-router-dom";
+import { cn } from "../../lib/tabStyles";
+import { LEAGUE_STARTER_GUIDE_PATH } from "../../pages/LeagueStarterGuidePage";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ContestListItem, type ContestListItemVariant } from "./ContestListItem";
 
@@ -16,20 +18,34 @@ interface ContestListProps {
   createContestTo?: string;
 }
 
-export function ContestListConnectHint({
-  message = "to see league contests",
-  className = "mt-6 text-center",
-}: {
-  message?: string;
-  className?: string;
-}) {
+export function ContestListConnectHint({ className = "mt-6" }: { className?: string }) {
   return (
-    <p className={`font-display text-sm text-gray-600 ${className}`}>
-      <Link to="/connect" className="font-semibold text-blue-600 hover:text-blue-700">
+    <div
+      className={cn(
+        "overflow-hidden rounded border border-blue-200 bg-gradient-to-tl from-blue-100 via-blue-50 to-white p-4 text-center font-display shadow-md shadow-blue-950/10",
+        className,
+      )}
+    >
+      <p className="text-base font-semibold text-gray-900">
+        <BanknotesIcon
+          className="mr-1.5 inline h-5 w-5 -translate-y-px text-emerald-600"
+          aria-hidden
+        />
+        Real money contests available in private leagues
+      </p>
+      <p className="mt-1 text-sm text-gray-600">Sign in to see leagues you’re in, or start one.</p>
+      <Link
+        to="/leagues"
+        className="mt-3 inline-flex h-10 min-w-[5.5rem] items-center justify-center rounded bg-blue-500 px-4 font-display text-sm font-semibold text-white transition-colors hover:bg-blue-600"
+      >
         Sign in
-      </Link>{" "}
-      {message}
-    </p>
+      </Link>
+      <p className="mt-2.5 text-sm text-gray-600">
+        <Link to={LEAGUE_STARTER_GUIDE_PATH} className="text-blue-600 hover:text-blue-700">
+          How leagues work
+        </Link>
+      </p>
+    </div>
   );
 }
 

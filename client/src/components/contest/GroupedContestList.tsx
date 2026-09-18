@@ -15,6 +15,7 @@ interface GroupedContestListProps {
   error: string | null;
   variant?: ContestListItemVariant;
   createContestToForEvent?: (event: ContestDirectoryEvent) => string | undefined;
+  showConnectHint?: boolean;
 }
 
 function eventSublabel(event: ContestDirectoryEvent): string | null {
@@ -122,9 +123,10 @@ export const GroupedContestList = ({
   error,
   variant = "default",
   createContestToForEvent,
+  showConnectHint = false,
 }: GroupedContestListProps) => {
   const { user } = useAuth();
-  const showConnectHint = !user && !loading && !error;
+  const renderConnectHint = showConnectHint && !user && !loading && !error;
 
   let listContent: ReactNode;
 
@@ -153,7 +155,7 @@ export const GroupedContestList = ({
   return (
     <>
       {listContent}
-      {showConnectHint ? <ContestListConnectHint /> : null}
+      {renderConnectHint ? <ContestListConnectHint /> : null}
     </>
   );
 };

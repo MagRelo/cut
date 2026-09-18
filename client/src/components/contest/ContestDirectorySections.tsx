@@ -20,6 +20,13 @@ export function ContestDirectorySections({
   const showUpcomingSection = upcoming.length > 0;
   const showLiveSection = live.length > 0;
   const showPastSection = past.length > 0;
+  const connectHintSection = showUpcomingSection
+    ? "upcoming"
+    : showLiveSection
+      ? "live"
+      : showPastSection
+        ? "past"
+        : null;
 
   return (
     <div className="mb-4">
@@ -34,6 +41,7 @@ export function ContestDirectorySections({
             error={error}
             variant="upcoming"
             createContestToForEvent={createContestToForEvent}
+            showConnectHint={connectHintSection === "upcoming"}
           />
         </>
       ) : null}
@@ -50,7 +58,12 @@ export function ContestDirectorySections({
               }
             />
           </div>
-          <GroupedContestList groups={live} loading={false} error={null} />
+          <GroupedContestList
+            groups={live}
+            loading={false}
+            error={null}
+            showConnectHint={connectHintSection === "live"}
+          />
         </>
       ) : null}
       {showPastSection ? (
@@ -58,7 +71,13 @@ export function ContestDirectorySections({
           <div className={showUpcomingSection || showLiveSection ? "mb-3 mt-8" : "mb-3"}>
             <ListHeader title="Past Events" tone="past" />
           </div>
-          <GroupedContestList groups={past} loading={false} error={null} variant="past" />
+          <GroupedContestList
+            groups={past}
+            loading={false}
+            error={null}
+            variant="past"
+            showConnectHint={connectHintSection === "past"}
+          />
         </>
       ) : null}
     </div>
