@@ -58,7 +58,7 @@ COPY client/dist/ ./server/public/
 
 WORKDIR /app/server
 
-EXPOSE 4000
+EXPOSE 3000
 
 # Set last so changing GIT_SHA does not bust dependency install cache layers.
 ARG GIT_SHA=unknown

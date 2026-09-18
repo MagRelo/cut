@@ -43,7 +43,7 @@ async function startServer() {
 
   const port = process.env.PORT || 3000;
 
-  serve({
+  const server = serve({
     fetch: app.fetch,
     port: Number(port),
   });
@@ -51,9 +51,18 @@ async function startServer() {
   console.log(`[SERVER] Server running on port ${port}`);
   console.log(`[SERVER] Environment: ${process.env.NODE_ENV || "development"}`);
 
+  let shuttingDown = false;
   const shutdown = () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
     cronScheduler?.stop();
-    process.exit(0);
+    server.close((error) => {
+      if (error) {
+        console.error("[SERVER] Error closing HTTP server:", error);
+        process.exit(1);
+      }
+      process.exit(0);
+    });
   };
 
   process.on("SIGTERM", () => {

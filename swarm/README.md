@@ -206,10 +206,19 @@ Verify: `curl -s https://base-sepolia.playthecut.com/health` · history: `ssh ro
 
 `pnpm run launch` (prod) re-deploys the stack but **preserves** the current `cut_web-staging` image.
 
-## 8. Operations cheatsheet
+## 8. Rolling updates
+
+Prod (`cut_web`) runs **2 replicas**; staging (`cut_web-staging`) runs **1**. Both roll with Swarm `start-first`: the new task must pass `GET /health` before the old task stops. Parallelism is 1 (one task at a time). Swarm starts the next replica as soon as the current one is healthy. Restart policy and stop grace are Swarm defaults (`any` / unlimited; 10s). The app closes the HTTP server on SIGTERM so in-flight requests can finish within that grace period.
+
+Healthcheck: every **10s**, **5s** timeout, **3** retries, **30s** start period. `/health` means the process is accepting traffic (it does not probe Postgres).
+
+Nginx stays **1 replica**. [`stack.yml`](stack.yml) and nginx templates live on the manager at `/opt/cut/swarm/`. After changing those files locally, **rsync `swarm/` to the droplet** before `pnpm run launch` — launch deploys whatever spec is already on the manager.
+
+## 9. Operations cheatsheet
 
 | Action | Command / note |
 |--------|------------------|
+| Sync stack / nginx spec | From repo root: `rsync -avz ./swarm/ root@157.230.6.6:/opt/cut/swarm/` then launch |
 | Deploy / update prod | `pnpm run launch` (after `pnpm run deploy`), or `export CUT_APP_IMAGE=…` then `docker stack deploy -c swarm/stack.yml cut` from **repo root** |
 | Deploy / update staging | `pnpm run deploy:staging` then `pnpm run launch:staging` |
 | Push prod DB → staging | `pnpm run db:push-staging` |
@@ -221,7 +230,7 @@ Verify: `curl -s https://base-sepolia.playthecut.com/health` · history: `ssh ro
 | Logs | `docker service logs -f cut_web` / `cut_web-staging` / `cut_nginx` |
 | Remove stack | `docker stack rm cut` (does not delete named volumes `cut_certbot-www`, `cut_letsencrypt` unless you prune) |
 
-## 9. Relationship to `docker/`
+## 10. Relationship to `docker/`
 
 - [`docker/docker-compose.yml`](../docker/docker-compose.yml) remains for **local Postgres** during development.
 - [`docker/Dockerfile`](../docker/Dockerfile) is the **source** for prod (`cut-v4`) and staging (`cut-v4-staging`) images referenced by this stack.
