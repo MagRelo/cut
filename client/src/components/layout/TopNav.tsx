@@ -1,5 +1,6 @@
 import React from "react";
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
+import { ArrowTopRightOnSquareIcon, Bars3Icon } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { signInReturnFrom } from "../../lib/navRoutes";
@@ -8,7 +9,9 @@ import {
   BRAND_WORDMARK,
   DISCORD_INVITE_URL,
   DISCORD_LABEL,
+  DISCORD_TAGLINE,
   STORE_LABEL,
+  STORE_TAGLINE,
 } from "../../lib/brand";
 import { LEFT_TABS } from "../../lib/navTabs";
 import { BrandLogo } from "../common/BrandLogo";
@@ -46,6 +49,64 @@ function NavTabLink({ tab, pathname }: { tab: (typeof LEFT_TABS)[number]; pathna
   );
 }
 
+const overflowItemClass =
+  "block w-full px-4 py-2 text-left text-sm font-display text-slate-700 data-[focus]:bg-slate-50";
+
+function DesktopOverflowMenu() {
+  return (
+    <Menu as="div" className="relative shrink-0">
+      <MenuButton
+        className="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+        aria-label="More"
+      >
+        <Bars3Icon className="h-5 w-5" aria-hidden />
+      </MenuButton>
+      <MenuItems
+        anchor="bottom end"
+        className="z-50 mt-1 min-w-[14rem] rounded-md border border-slate-200 bg-white py-1 shadow-lg focus:outline-none"
+      >
+        <MenuItem>
+          {({ close }) => (
+            <a
+              href={DISCORD_INVITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${overflowItemClass} flex flex-col items-start`}
+              onClick={close}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <DiscordIcon className="h-4 w-4 shrink-0" />
+                {DISCORD_LABEL}
+                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              </span>
+              <span className="mt-0.5 text-xs font-normal text-slate-500">{DISCORD_TAGLINE}</span>
+            </a>
+          )}
+        </MenuItem>
+        <MenuItem>
+          {({ close }) => (
+            <a
+              href="https://playthecut.printful.me/?sort=price"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${overflowItemClass} flex flex-col items-start`}
+              onClick={close}
+              aria-label="Cut Store"
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <BrandLogo className="h-5 w-auto shrink-0" />
+                {STORE_LABEL}
+                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              </span>
+              <span className="mt-0.5 text-xs font-normal text-slate-500">{STORE_TAGLINE}</span>
+            </a>
+          )}
+        </MenuItem>
+      </MenuItems>
+    </Menu>
+  );
+}
+
 export const TopNav: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
@@ -77,17 +138,6 @@ export const TopNav: React.FC = () => {
             <UserMenu />
           ) : (
             <>
-              <a
-                href="https://playthecut.printful.me/?sort=price"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${tabLinkClass(false)} inline-flex items-center gap-1`}
-                aria-label="Cut Store"
-              >
-                <BrandLogo className="h-5 w-auto shrink-0" />
-                {STORE_LABEL}
-                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              </a>
               <Link
                 to="/connect"
                 state={{ from: signInReturnFrom }}
@@ -95,16 +145,7 @@ export const TopNav: React.FC = () => {
               >
                 Sign In
               </Link>
-              <a
-                href={DISCORD_INVITE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${tabLinkClass(false)} inline-flex items-center gap-1`}
-              >
-                <DiscordIcon className="h-4 w-4 shrink-0" />
-                <span className="normal-case tracking-normal">{DISCORD_LABEL}</span>
-                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              </a>
+              <DesktopOverflowMenu />
             </>
           )}
         </nav>

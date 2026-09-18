@@ -174,6 +174,25 @@ export const UserMenu: React.FC = () => {
         <MenuItem>
           {({ close }) => (
             <a
+              href={DISCORD_INVITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${menuItemClass} flex flex-col items-start`}
+              onClick={close}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <DiscordIcon className="h-4 w-4 shrink-0" />
+                {DISCORD_LABEL}
+                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              </span>
+              <span className="mt-0.5 text-xs font-normal text-slate-500">{DISCORD_TAGLINE}</span>
+            </a>
+          )}
+        </MenuItem>
+
+        <MenuItem>
+          {({ close }) => (
+            <a
               href="https://playthecut.printful.me/?sort=price"
               target="_blank"
               rel="noopener noreferrer"
@@ -187,25 +206,6 @@ export const UserMenu: React.FC = () => {
                 <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
               </span>
               <span className="mt-0.5 text-xs font-normal text-slate-500">{STORE_TAGLINE}</span>
-            </a>
-          )}
-        </MenuItem>
-
-        <MenuItem>
-          {({ close }) => (
-            <a
-              href={DISCORD_INVITE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${menuItemClass} flex flex-col items-start`}
-              onClick={close}
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <DiscordIcon className="h-4 w-4 shrink-0" />
-                {DISCORD_LABEL}
-                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              </span>
-              <span className="mt-0.5 text-xs font-normal text-slate-500">{DISCORD_TAGLINE}</span>
             </a>
           )}
         </MenuItem>

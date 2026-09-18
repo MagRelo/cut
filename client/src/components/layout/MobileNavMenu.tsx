@@ -226,6 +226,25 @@ export const MobileNavMenu: React.FC = () => {
 
                             <hr className="my-1 border-slate-200" />
                             <a
+                              href={DISCORD_INVITE_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={closeMenu}
+                              className={`${mobileNavItemClass(false)} flex flex-col items-start`}
+                            >
+                              <span className="inline-flex items-center gap-1.5">
+                                <DiscordIcon className="h-4 w-4 shrink-0" />
+                                <span className="normal-case tracking-normal">{DISCORD_LABEL}</span>
+                                <ArrowTopRightOnSquareIcon
+                                  className="h-3.5 w-3.5 shrink-0"
+                                  aria-hidden
+                                />
+                              </span>
+                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-500">
+                                {DISCORD_TAGLINE}
+                              </span>
+                            </a>
+                            <a
                               href="https://playthecut.printful.me/?sort=price"
                               target="_blank"
                               rel="noopener noreferrer"
@@ -243,25 +262,6 @@ export const MobileNavMenu: React.FC = () => {
                               </span>
                               <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-500">
                                 {STORE_TAGLINE}
-                              </span>
-                            </a>
-                            <a
-                              href={DISCORD_INVITE_URL}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={closeMenu}
-                              className={`${mobileNavItemClass(false)} flex flex-col items-start`}
-                            >
-                              <span className="inline-flex items-center gap-1.5">
-                                <DiscordIcon className="h-4 w-4 shrink-0" />
-                                <span className="normal-case tracking-normal">{DISCORD_LABEL}</span>
-                                <ArrowTopRightOnSquareIcon
-                                  className="h-3.5 w-3.5 shrink-0"
-                                  aria-hidden
-                                />
-                              </span>
-                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-500">
-                                {DISCORD_TAGLINE}
                               </span>
                             </a>
 
@@ -303,6 +303,25 @@ export const MobileNavMenu: React.FC = () => {
                             </Link>
                             <hr className="my-1 border-slate-200" />
                             <a
+                              href={DISCORD_INVITE_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={closeMenu}
+                              className={`${mobileNavItemClass(false)} flex flex-col items-start`}
+                            >
+                              <span className="inline-flex items-center gap-1.5">
+                                <DiscordIcon className="h-4 w-4 shrink-0" />
+                                <span className="normal-case tracking-normal">{DISCORD_LABEL}</span>
+                                <ArrowTopRightOnSquareIcon
+                                  className="h-3.5 w-3.5 shrink-0"
+                                  aria-hidden
+                                />
+                              </span>
+                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-500">
+                                {DISCORD_TAGLINE}
+                              </span>
+                            </a>
+                            <a
                               href="https://playthecut.printful.me/?sort=price"
                               target="_blank"
                               rel="noopener noreferrer"
@@ -320,25 +339,6 @@ export const MobileNavMenu: React.FC = () => {
                               </span>
                               <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-500">
                                 {STORE_TAGLINE}
-                              </span>
-                            </a>
-                            <a
-                              href={DISCORD_INVITE_URL}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={closeMenu}
-                              className={`${mobileNavItemClass(false)} flex flex-col items-start`}
-                            >
-                              <span className="inline-flex items-center gap-1.5">
-                                <DiscordIcon className="h-4 w-4 shrink-0" />
-                                <span className="normal-case tracking-normal">{DISCORD_LABEL}</span>
-                                <ArrowTopRightOnSquareIcon
-                                  className="h-3.5 w-3.5 shrink-0"
-                                  aria-hidden
-                                />
-                              </span>
-                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-500">
-                                {DISCORD_TAGLINE}
                               </span>
                             </a>
                           </>

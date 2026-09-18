@@ -35,7 +35,7 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest,
         ) : (
           <>
             <p className="text-sm leading-relaxed text-slate-600">
-              Live prediction market on the winner of the contest - bet on which lineup will win.
+              Live prediction market - predict the winner of the contest.
             </p>
             <Link to="/faq#winner-pool" className="text-sm font-medium text-blue-500">
               How it works →

@@ -20,7 +20,7 @@ export const Footer: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <footer className="w-full shrink-0 border-t border-gray-200 bg-gray-100">
+    <footer className="w-full shrink-0 border-t border-gray-200 bg-white">
       <div className="mx-auto flex max-w-shell flex-col items-end gap-2 px-4 py-3">
         <Link
           to="/faq"

@@ -12,7 +12,7 @@ export const PagePanel: React.FC<PagePanelProps> = ({ children, variant = "defau
   return (
     <div
       className={[
-        "bg-white border-b border-gray-200 shadow-sm rounded-b-lg min-h-[4rem] md:border-x",
+        "bg-white min-h-[4rem]",
         variant === "default" ? "p-4" : "",
         className,
       ]
