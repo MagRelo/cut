@@ -64,7 +64,7 @@ function GroupedContestSection({
               event={eventShell}
               summarySurface="content"
             />
-            <div className="px-3 pb-3.5 pt-1">
+            <div className="px-3 pb-5 pt-1">
               <ContestList
                 contests={group.contests}
                 loading={false}
