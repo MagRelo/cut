@@ -65,22 +65,24 @@ function GroupedContestSection({
               summarySurface="content"
             />
             <div className="px-3 pb-3.5 pt-1">
-              <div
-                className={cn(
-                  "rounded-lg p-2.5",
-                  group.contests.length > 0 &&
-                    "bg-black/40 ring-1 ring-white/15 backdrop-blur-[2px]",
-                )}
-              >
-                <ContestList
-                  contests={group.contests}
-                  loading={false}
-                  error={null}
-                  eventShell={eventShell}
-                  variant={variant}
-                  nest="hero"
-                  createContestTo={createContestTo}
-                />
+              <div className="relative p-2.5">
+                {group.contests.length > 0 ? (
+                  <div
+                    className="pointer-events-none absolute inset-0 rounded-lg bg-black/50 blur-md"
+                    aria-hidden
+                  />
+                ) : null}
+                <div className="relative">
+                  <ContestList
+                    contests={group.contests}
+                    loading={false}
+                    error={null}
+                    eventShell={eventShell}
+                    variant={variant}
+                    nest="hero"
+                    createContestTo={createContestTo}
+                  />
+                </div>
               </div>
             </div>
           </div>
