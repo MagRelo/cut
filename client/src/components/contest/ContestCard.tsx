@@ -19,19 +19,19 @@ interface ContestCardProps {
 
 const titleToneClassName: Record<ContestCardTone, string> = {
   paper: "text-gray-900",
-  live: "text-blue-900",
+  live: "text-slate-900",
   past: "text-slate-900",
 };
 
 const groupToneClassName: Record<ContestCardTone, string> = {
   paper: "text-slate-600",
-  live: "text-blue-900",
+  live: "text-slate-900",
   past: "text-slate-900",
 };
 
 const groupLinkHoverClassName: Record<ContestCardTone, string> = {
   paper: "hover:text-slate-800",
-  live: "hover:text-blue-950",
+  live: "hover:text-slate-950",
   past: "hover:text-slate-950",
 };
 

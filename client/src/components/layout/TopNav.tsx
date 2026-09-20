@@ -112,7 +112,7 @@ export const TopNav: React.FC = () => {
   const location = useLocation();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm">
+    <header className="sticky top-0 z-40 border-b border-slate-300 bg-white shadow-sm">
       <div className="flex h-14 min-w-0 items-center gap-3 px-4">
         <Link
           to="/"

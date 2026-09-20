@@ -48,7 +48,7 @@ function ContestListStat({
   );
 }
 
-const liveHeaderClassName = "border-b border-blue-300 bg-blue-100";
+const liveHeaderClassName = "border-b border-blue-300 bg-blue-50";
 const pastHeaderClassName = "border-b border-slate-300 bg-slate-100";
 const liveEdgeClassName = "bg-gradient-to-b from-blue-200 via-blue-400 to-blue-600";
 const pastEdgeClassName = "bg-gradient-to-b from-slate-200 via-slate-400 to-slate-600";
