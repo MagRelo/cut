@@ -2,6 +2,9 @@ import { Link } from "react-router-dom";
 import { type Contest } from "../../types/contest";
 import { useContestPotDisplay } from "../../hooks/useContestPotDisplay";
 import { Cog6ToothIcon, UserGroupIcon } from "@heroicons/react/24/outline";
+import { cn } from "../../lib/tabStyles";
+
+export type ContestCardTone = "paper" | "live" | "past";
 
 interface ContestCardProps {
   contest: Contest;
@@ -10,13 +13,34 @@ interface ContestCardProps {
   /** Settings gear beside pot — contest lobby only, not list rows. */
   showPotIcon?: boolean;
   linkUserGroup?: boolean;
+  /** Directory list rows only. Lobby stays paper. */
+  tone?: ContestCardTone;
 }
+
+const titleToneClassName: Record<ContestCardTone, string> = {
+  paper: "text-gray-900",
+  live: "text-blue-900",
+  past: "text-slate-900",
+};
+
+const groupToneClassName: Record<ContestCardTone, string> = {
+  paper: "text-slate-600",
+  live: "text-blue-900",
+  past: "text-slate-900",
+};
+
+const groupLinkHoverClassName: Record<ContestCardTone, string> = {
+  paper: "hover:text-slate-800",
+  live: "hover:text-blue-950",
+  past: "hover:text-slate-950",
+};
 
 export const ContestCard = ({
   contest,
   onPotClick,
   showPotIcon = false,
   linkUserGroup = false,
+  tone = "paper",
 }: ContestCardProps) => {
   const { displayPot, showLoading, showPotUnavailable } = useContestPotDisplay(contest);
   const isFreeContest = (contest.settings?.primaryDeposit ?? 0) === 0;
@@ -36,17 +60,30 @@ export const ContestCard = ({
   return (
     <div className="flex w-full min-w-0 items-center justify-between gap-2.5">
       <div className="min-w-0 flex-1 overflow-hidden pl-2">
-        <h3 className="truncate font-display text-xl font-bold leading-tight text-gray-900">
+        <h3
+          className={cn(
+            "truncate font-display text-xl font-bold leading-tight",
+            titleToneClassName[tone],
+          )}
+        >
           {contest.name}
         </h3>
-        <p className="mt-0.5 flex min-w-0 items-center gap-1 truncate font-display text-sm font-medium text-slate-600">
+        <p
+          className={cn(
+            "mt-0.5 flex min-w-0 items-center gap-1 truncate font-display text-sm font-medium",
+            groupToneClassName[tone],
+          )}
+        >
           {contest.userGroup?.name ? (
             <>
               <UserGroupIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
               {linkUserGroup && (contest.userGroup.id || contest.userGroupId) ? (
                 <Link
                   to={`/leagues/${contest.userGroup.id ?? contest.userGroupId}`}
-                  className="truncate hover:text-slate-800 hover:underline focus:outline-none focus-visible:underline"
+                  className={cn(
+                    "truncate hover:underline focus:outline-none focus-visible:underline",
+                    groupLinkHoverClassName[tone],
+                  )}
                 >
                   {contest.userGroup.name}
                 </Link>

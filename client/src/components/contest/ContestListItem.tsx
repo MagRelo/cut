@@ -10,8 +10,6 @@ import { ContestCard } from "./ContestCard";
 const ctaBaseClassName =
   "inline-flex h-10 min-w-[5.5rem] shrink-0 items-center justify-center gap-0.5 rounded px-4 font-display text-sm font-semibold transition-colors";
 
-const ctaClassName = "bg-blue-500 text-white group-hover/footer:bg-blue-600";
-
 function contestListActionLabel(variant: ContestListItemVariant): string {
   return variant === "upcoming" ? "Join" : "View";
 }
@@ -50,6 +48,11 @@ function ContestListStat({
   );
 }
 
+const liveHeaderClassName = "border-b border-blue-300 bg-blue-100";
+const pastHeaderClassName = "border-b border-slate-300 bg-slate-100";
+const liveEdgeClassName = "bg-gradient-to-b from-blue-200 via-blue-400 to-blue-600";
+const pastEdgeClassName = "bg-gradient-to-b from-slate-200 via-slate-400 to-slate-600";
+
 interface ContestListItemProps {
   contest: Contest;
   to: string;
@@ -68,16 +71,24 @@ export const ContestListItem = ({
   const entryCount = contest._count?.contestLineups ?? contest.contestLineups?.length ?? 0;
   const buyInValue = formatBuyInValue(contest.settings?.primaryDeposit);
   const actionLabel = contestListActionLabel(variant);
+  const isPast = variant === "past";
 
   return (
     <div
       className={cn(
-        "group min-w-0 overflow-hidden rounded bg-white shadow-md shadow-slate-900/10 ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-lg",
+        "group relative min-w-0 overflow-hidden rounded bg-slate-50 shadow-md shadow-slate-900/10 ring-1 ring-black/5 transition-shadow duration-200 hover:shadow-lg",
         className,
       )}
     >
-      <div className="p-2.5 pt-3">
-        <ContestCard contest={contest} />
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-y-0 left-0 w-1.5",
+          isPast ? pastEdgeClassName : liveEdgeClassName,
+        )}
+        aria-hidden
+      />
+      <div className={cn("p-2.5 pl-4 pt-3", isPast ? pastHeaderClassName : liveHeaderClassName)}>
+        <ContestCard contest={contest} tone={isPast ? "past" : "live"} />
       </div>
 
       <Link
@@ -85,7 +96,7 @@ export const ContestListItem = ({
         state={eventShell ? contestLobbyLinkState(eventShell, contest) : undefined}
         aria-label={`${actionLabel} ${contest.name} contest`}
         className={cn(
-          "group/footer flex items-center gap-3 border-t border-slate-100 bg-slate-50 p-2 transition-colors",
+          "group/footer flex items-center gap-3 bg-slate-50 p-2 pl-4 transition-colors",
           "hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-500",
         )}
       >
@@ -98,7 +109,7 @@ export const ContestListItem = ({
             valueClassName={contestStatusValueClass(contest.status)}
           />
         </div>
-        <span className={cn(ctaBaseClassName, ctaClassName)}>
+        <span className={cn(ctaBaseClassName, "bg-blue-500 text-white group-hover/footer:bg-blue-600")}>
           {actionLabel}
           <ChevronRightIcon className="-ml-0.5 h-4 w-4 shrink-0" aria-hidden />
         </span>
