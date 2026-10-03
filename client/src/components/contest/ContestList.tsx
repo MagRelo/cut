@@ -49,7 +49,10 @@ export function ContestListConnectHint({ className = "mt-6" }: { className?: str
 }
 
 function emptySlotClassName(nest: "default" | "hero"): string {
-  return nest === "hero" ? "rounded-lg  bg-transparent p-4" : "rounded-lg bg-transparent p-3.5";
+  return cn(
+    "rounded-lg bg-slate-50 shadow-md shadow-slate-900/10 ring-1 ring-black/5",
+    nest === "hero" ? "p-4" : "p-3.5",
+  );
 }
 
 function CreateContestSlot({ to, nest }: { to: string; nest: "default" | "hero" }) {

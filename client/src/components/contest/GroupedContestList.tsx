@@ -25,13 +25,6 @@ function eventSublabel(event: ContestDirectoryEvent): string | null {
   return event.externalId;
 }
 
-function directoryHeroOverlayClass(variant: ContestListItemVariant): string {
-  if (variant === "past") {
-    return "bg-gradient-to-b from-black/40 via-black/15 to-black/5";
-  }
-  return "bg-gradient-to-b from-black/35 via-black/10 to-transparent";
-}
-
 function GroupedContestSection({
   group,
   variant = "default",
@@ -57,7 +50,7 @@ function GroupedContestSection({
               style={{ backgroundImage: `url(${heroImage})` }}
             />
           </div>
-          <div className={cn("absolute inset-0", directoryHeroOverlayClass(variant))} aria-hidden />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-black/10" aria-hidden />
           <div className="relative z-10">
             <SportEventHeader
               sportId={group.event.sportId}
