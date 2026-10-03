@@ -8,6 +8,8 @@ import ContestContract from "../../utils/contracts/ContestController.json";
 import { useAuth } from "../../contexts/AuthContext";
 import { defaultPaymentTokenSymbol } from "../../config/targetChain";
 import { Link } from "react-router-dom";
+import { contestStatusValueClass, formatContestStatus } from "../../lib/contestStatus";
+import { effectiveContestStatus } from "../../lib/lineupEditable";
 import { contestWinnerPayoutBlurb } from "./contestPayoutFormat";
 import {
   ContestPayoutDividedRows,
@@ -153,31 +155,7 @@ function ContestContractDetailsSection({ contest, isOpen }: { contest: Contest; 
     return "—";
   };
 
-  const getStatusLabel = (state: number | undefined) => {
-    if (state === undefined) return "Unknown";
-    const statusMap: { [key: number]: string } = {
-      0: "Open",
-      1: "Active",
-      2: "Locked",
-      3: "Settled",
-      4: "Cancelled",
-      5: "Closed",
-    };
-    return statusMap[state] || "Unknown";
-  };
-
-  const getStatusColor = (state: number | undefined) => {
-    if (state === undefined) return "text-gray-600";
-    const colorMap: { [key: number]: string } = {
-      0: "text-green-700 font-semibold",
-      1: "text-blue-700 font-semibold",
-      2: "text-yellow-700 font-semibold",
-      3: "text-emerald-700 font-semibold",
-      4: "text-red-700 font-semibold",
-      5: "text-gray-700 font-semibold",
-    };
-    return colorMap[state] || "text-gray-600";
-  };
+  const displayedStatus = effectiveContestStatus(contest.status, contractState);
 
   return (
     <section className="px-4 pb-4">
@@ -187,7 +165,9 @@ function ContestContractDetailsSection({ contest, isOpen }: { contest: Contest; 
       <div className="flex flex-col gap-1.5 text-xs">
         <div className="flex items-center justify-between">
           <span className="text-gray-600">Current State</span>
-          <span className={getStatusColor(contractState)}>{getStatusLabel(contractState)}</span>
+          <span className={`font-semibold ${contestStatusValueClass(displayedStatus)}`}>
+            {formatContestStatus(displayedStatus)}
+          </span>
         </div>
 
         <div className="flex items-center justify-between">
