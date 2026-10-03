@@ -5,6 +5,12 @@ import { BrandLogo } from "../components/common/BrandLogo";
 import { BRAND_PROSE, BRAND_WORDMARK } from "../lib/brand";
 import { ONBOARDING_DISMISSED_KEY } from "../lib/onboardingSettings";
 import { getPendingLeagueInviteCode } from "../lib/leagueInviteCapture";
+import {
+  ODDS_FORMAT_OPTIONS,
+  ODDS_FORMAT_SETTING_KEY,
+  parseOddsDisplayFormat,
+} from "../lib/oddsSettings";
+import type { OddsDisplayFormat } from "../lib/oddsFormat";
 
 const ACCENT_COLORS = [
   "#0a73eb",
@@ -19,7 +25,7 @@ const ACCENT_COLORS = [
   "#00B86B",
 ];
 
-const STEP_COUNT = 10;
+const STEP_COUNT = 7;
 
 function StepActions({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
@@ -44,6 +50,7 @@ export function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [displayName, setDisplayName] = useState("");
   const [accentColor, setAccentColor] = useState(ACCENT_COLORS[0]);
+  const [oddsFormat, setOddsFormat] = useState<OddsDisplayFormat>("american");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -53,6 +60,7 @@ export function OnboardingPage() {
     if (typeof c === "string" && ACCENT_COLORS.includes(c)) {
       setAccentColor(c);
     }
+    setOddsFormat(parseOddsDisplayFormat(user.settings));
   }, [user]);
 
   const navigateAfterDismiss = () => {
@@ -105,12 +113,12 @@ export function OnboardingPage() {
     }
   };
 
-  const handleCompleteCreateLineup = async () => {
+  const handleSaveOddsContinue = async () => {
     if (!user) return;
     setSaving(true);
     try {
-      await updateUserSettings({ [ONBOARDING_DISMISSED_KEY]: true });
-      navigateAfterDismiss();
+      await updateUserSettings({ [ODDS_FORMAT_SETTING_KEY]: oddsFormat });
+      setStep((s) => Math.min(s + 1, STEP_COUNT - 1));
     } finally {
       setSaving(false);
     }
@@ -152,9 +160,6 @@ export function OnboardingPage() {
               <BrandLogo decorative={false} className="h-28 w-auto flex-shrink-0 sm:h-36 md:h-44" />
               <h1 className="min-w-0 text-left text-4xl sm:text-5xl md:text-6xl font-bold text-black">
                 {BRAND_WORDMARK}
-                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-400">
-                  Fantasy Golf{" "}
-                </div>
               </h1>
             </div>
 
@@ -162,7 +167,7 @@ export function OnboardingPage() {
               Welcome to <strong>{BRAND_PROSE}</strong>!
             </p>
             <p className="text-gray-700 leading-relaxed font-display text-lg sm:text-xl text-center">
-              Let's get started...
+              Let&apos;s set up your account.
             </p>
             <StepActions>
               <button
@@ -183,18 +188,39 @@ export function OnboardingPage() {
         {step === 1 && (
           <>
             <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
-              Build Lineups
+              Your name
             </h1>
-            <p className="text-gray-700 leading-relaxed font-display mb-4">
-              For each tournament, you build a lineup of <strong>four golfers</strong>. You can
-              choose any four golfers from the field - no salary caps or restrictions.
+            <p className="text-gray-700 leading-relaxed font-display mb-6">
+              This is the name other players see on leaderboards and results. You can change it
+              anytime in Account settings.
             </p>
+            <div>
+              <label
+                htmlFor="onboarding-display-name"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Name
+              </label>
+              <input
+                id="onboarding-display-name"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Enter your name"
+                className="mt-1 block w-full rounded-sm border border-gray-300 bg-white py-2.5 px-3 text-base focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              />
+            </div>
             <StepActions>
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
-                next
+              <button
+                type="button"
+                onClick={() => void handleSaveNameContinue()}
+                disabled={saving}
+                className={primaryBtn}
+              >
+                Save & Continue
               </button>
             </StepActions>
           </>
@@ -203,24 +229,45 @@ export function OnboardingPage() {
         {step === 2 && (
           <>
             <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
-              Enter Contests
+              Your color
             </h1>
-            <p className="text-gray-700 leading-relaxed font-display mb-4">
-              A <strong>contest</strong> is a fantasy competition for a single tournament. Each
-              lineup you enter is a separate buy-in; those fees build the{" "}
-              <strong>prize pool</strong>. When the event wraps, <strong>payouts</strong> go to the
-              best-scoring lineups.
+            <p className="text-gray-700 leading-relaxed font-display mb-2">
+              Pick an accent color that appears next to your name so you&apos;re easy to spot on
+              leaderboards.
             </p>
-            <p className="text-gray-700 leading-relaxed font-display mb-6">
-              You can join <strong>multiple contests</strong> in a week and enter{" "}
-              <strong>more than one lineup</strong> in the same contest.
-            </p>
+            <div>
+              <div className="grid grid-cols-5 gap-3 mt-3">
+                {ACCENT_COLORS.map((color) => (
+                  <label key={color} className="flex flex-col items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="onboarding-color"
+                      value={color}
+                      checked={accentColor === color}
+                      onChange={() => setAccentColor(color)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={`h-8 w-8 rounded-full border-4 ${
+                        accentColor === color ? "border-white ring-2 ring-gray-400" : "border-white"
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
             <StepActions>
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
-                ok
+              <button
+                type="button"
+                onClick={() => void handleSaveColorContinue()}
+                disabled={saving}
+                className={primaryBtn}
+              >
+                Save & Continue
               </button>
             </StepActions>
           </>
@@ -228,109 +275,70 @@ export function OnboardingPage() {
 
         {step === 3 && (
           <>
-            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-2">
-              How scoring works
+            <h1
+              id="onboarding-odds-format"
+              className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3"
+            >
+              Odds format
             </h1>
-            <p className="text-gray-700 leading-relaxed font-display mb-3">
-              Golfers earn points based on their performance on each hole:
+            <p className="text-gray-700 leading-relaxed font-display mb-6">
+              Choose how odds are shown on your account. You can change this anytime in Account
+              settings.
             </p>
-            <div className="rounded-sm border border-gray-200">
-              <table className="w-full border-collapse text-sm font-display">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-100">
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                      Result
-                    </th>
-                    <th className="w-[5.5rem] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-600 tabular-nums">
-                      Points
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ["Hole-in-one", "+10"],
-                    ["Double Eagle or better", "+15"],
-                    ["Eagle", "+5"],
-                    ["Birdie", "+2"],
-                    ["Par", "0"],
-                    ["Bogey", "−1"],
-                    ["Double bogey or worse", "−3"],
-                  ].map(([label, pts], i) => {
-                    const tone = pts.startsWith("+") ? "good" : pts === "0" ? "neutral" : "bad";
-                    const valueClass =
-                      tone === "good"
-                        ? "text-emerald-600"
-                        : tone === "bad"
-                          ? "text-red-600"
-                          : "text-gray-700";
-                    return (
-                      <tr key={label} className={i > 0 ? "border-t border-slate-100" : undefined}>
-                        <td className="px-3 py-2.5 text-left leading-snug text-gray-800">
-                          {label}
-                        </td>
-                        <td
-                          className={`px-3 py-2.5 text-right font-medium tabular-nums ${valueClass}`}
-                        >
-                          {pts}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <p className="text-gray-700 leading-relaxed font-display text-base mt-4 mb-3">
-              There are also bonus points:
-            </p>
-            <div className="mb-4 rounded-sm border border-gray-200">
-              <table className="w-full border-collapse text-sm font-display">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-100">
-                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                      Bonus
-                    </th>
-                    <th className="w-[5.5rem] px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-600 tabular-nums">
-                      Points
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ["Making the cut", "+3"],
-                    ["1st place finish", "+10"],
-                    ["2nd place finish", "+5"],
-                    ["3rd place finish", "+3"],
-                  ].map(([label, pts], i) => {
-                    const tone = pts.startsWith("+") ? "good" : pts === "0" ? "neutral" : "bad";
-                    const valueClass =
-                      tone === "good"
-                        ? "text-emerald-600"
-                        : tone === "bad"
-                          ? "text-red-600"
-                          : "text-gray-700";
-                    return (
-                      <tr key={label} className={i > 0 ? "border-t border-slate-100" : undefined}>
-                        <td className="px-3 py-2.5 text-left leading-snug text-gray-800">
-                          {label}
-                        </td>
-                        <td
-                          className={`px-3 py-2.5 text-right font-medium tabular-nums ${valueClass}`}
-                        >
-                          {pts}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div
+              className="grid grid-cols-3 gap-4 p-1"
+              role="radiogroup"
+              aria-labelledby="onboarding-odds-format"
+            >
+              {ODDS_FORMAT_OPTIONS.map((option) => {
+                const selected = oddsFormat === option.value;
+                return (
+                  <label key={option.value} className="cursor-pointer">
+                    <input
+                      type="radio"
+                      name="onboarding-odds-format"
+                      value={option.value}
+                      checked={selected}
+                      onChange={() => setOddsFormat(option.value)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={`flex min-h-[2.75rem] w-full flex-col items-center justify-center rounded-md border px-1 py-1.5 text-center font-display shadow-sm transition-colors ${
+                        selected
+                          ? "border-white bg-blue-500 text-white ring-2 ring-gray-400 ring-offset-4"
+                          : "border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span
+                        className={`text-sm font-medium leading-tight ${
+                          selected ? "text-white" : "text-gray-900"
+                        }`}
+                      >
+                        {option.label}
+                      </span>
+                      <span
+                        className={`mt-0.5 text-xs tabular-nums ${
+                          selected ? "text-blue-100" : "text-gray-500"
+                        }`}
+                      >
+                        {option.example}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
             </div>
             <StepActions>
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
-                got it
+              <button
+                type="button"
+                onClick={() => void handleSaveOddsContinue()}
+                disabled={saving}
+                className={primaryBtn}
+              >
+                Save & Continue
               </button>
             </StepActions>
           </>
@@ -339,12 +347,12 @@ export function OnboardingPage() {
         {step === 4 && (
           <>
             <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
-              the Winner Pool
+              Account Wallet
             </h1>
             <p className="text-gray-700 leading-relaxed font-display mb-6">
-              Each contest also contains a <strong> Winner Pool</strong>, a parimutuel market where
-              you can back <strong>the lineup you think will win</strong>. Odds move as money enters
-              each lineup.
+              Your Play The Cut wallet is yours—you stay in control of your funds. Contests use{" "}
+              <strong>USDC</strong>, a digital dollar, on the Base network. Add USDC when
+              you&apos;re ready to play, and send it out anytime.
             </p>
 
             <StepActions>
@@ -388,121 +396,10 @@ export function OnboardingPage() {
         {step === 6 && (
           <>
             <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
-              Account Wallet
-            </h1>
-            <p className="text-gray-700 leading-relaxed font-display mb-6">
-              Your Play The Cut wallet is yours—you stay in control of your funds. Contests use{" "}
-              <strong>USDC</strong>, a digital dollar, on the Base network. Add USDC when
-              you&apos;re ready to play, and send it out anytime.
-            </p>
-
-            <StepActions>
-              <button type="button" onClick={goBack} className={ghostLink}>
-                Back
-              </button>
-              <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
-                nice
-              </button>
-            </StepActions>
-          </>
-        )}
-
-        {step === 7 && (
-          <>
-            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
-              Your team name
-            </h1>
-            <p className="text-gray-700 leading-relaxed font-display mb-6">
-              This is the name other players see on leaderboards and results. You can change it
-              anytime in Account settings.
-            </p>
-            <div>
-              <label
-                htmlFor="onboarding-display-name"
-                className="block text-sm font-medium text-gray-700"
-              >
-                TEAM NAME
-              </label>
-              <input
-                id="onboarding-display-name"
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Enter your team name"
-                className="mt-1 block w-full rounded-sm border border-gray-300 bg-white py-2.5 px-3 text-base focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              />
-            </div>
-            <StepActions>
-              <button type="button" onClick={goBack} className={ghostLink}>
-                Back
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleSaveNameContinue()}
-                disabled={saving}
-                className={primaryBtn}
-              >
-                Save & Continue
-              </button>
-            </StepActions>
-          </>
-        )}
-
-        {step === 8 && (
-          <>
-            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
-              Your team color
-            </h1>
-            <p className="text-gray-700 leading-relaxed font-display mb-2">
-              Pick an accent color that appears next to your team name so you&apos;re easy to spot
-              on leaderboards.
-            </p>
-            <div>
-              <div className="grid grid-cols-5 gap-3 mt-3">
-                {ACCENT_COLORS.map((color) => (
-                  <label key={color} className="flex flex-col items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="onboarding-color"
-                      value={color}
-                      checked={accentColor === color}
-                      onChange={() => setAccentColor(color)}
-                      className="sr-only"
-                    />
-                    <span
-                      className={`h-8 w-8 rounded-full border-4 ${
-                        accentColor === color ? "border-white ring-2 ring-gray-400" : "border-white"
-                      }`}
-                      style={{ backgroundColor: color }}
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
-            <StepActions>
-              <button type="button" onClick={goBack} className={ghostLink}>
-                Back
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleSaveColorContinue()}
-                disabled={saving}
-                className={primaryBtn}
-              >
-                Save & Continue
-              </button>
-            </StepActions>
-          </>
-        )}
-
-        {step === 9 && (
-          <>
-            <h1 className="text-2xl md:text-3xl font-display font-semibold text-gray-900 mb-3">
               Done!
             </h1>
             <p className="text-gray-700 leading-relaxed font-display mb-6">
-              You&apos;re ready to play. Build a lineup for this week&apos;s tournament whenever you
-              want—then enter contests when you have funds in your account.
+              Your account is ready.
             </p>
             <StepActions>
               <button type="button" onClick={goBack} className={ghostLink}>
@@ -510,11 +407,11 @@ export function OnboardingPage() {
               </button>
               <button
                 type="button"
-                onClick={() => void handleCompleteCreateLineup()}
+                onClick={() => void dismissOnboarding()}
                 disabled={saving}
                 className={primaryBtn}
               >
-                View contests
+                Continue
               </button>
             </StepActions>
           </>
