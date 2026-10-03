@@ -12,6 +12,7 @@ Scheduled background work for Play The Cut. The scheduler lives in `scheduler.ts
 | ---------------------------- | ---------------------- | ------------------------------------------------------------------------- |
 | `ENABLE_CRON`                | `true`                 | Scheduler runs                                                            |
 | `ENABLE_CRON`                | unset or anything else | Scheduler off                                                             |
+| `AUTO_INIT_EVENTS`           | `false`                | Skip Saturday/Monday event init; score pipeline still runs                |
 | `CONTEST_COMMENTARY_ENABLED` | `true`                 | Enables PGA feed detect/enqueue + overview, commodities daily overview, and feed worker when `CURSOR_API_KEY` is configured |
 
 ### Entry points
@@ -31,8 +32,9 @@ Graceful shutdown: SIGTERM / SIGINT stop all scheduled tasks and request feed wo
 
 | Job | Cadence | Notes |
 | --- | --- | --- |
-| `scorePipeline` | `*/5 * * * *` | Scores, activate/settle, referral |
+| `scorePipeline` | `*/5 * * * *` | Promote prepared golf, scores, activate/settle, referral |
 | `overviewPipeline` | `*/20 * * * *` | PGA continuous + commodities day-settle `Contest.commentary` refresh |
+| `eventInitPipeline` | `0 10 * * *` America/New_York | Saturday commodities week; Monday next PGA event. `AUTO_INIT_EVENTS=false` skips |
 | `feedWorker` | in-process | Drains `CommentaryFeedJob` (concurrency 1; PGA feed stories) |
 
 Separate running flags skip a tick if that pipeline is still in progress.
@@ -41,8 +43,9 @@ Separate running flags skip a tick if that pipeline is still in progress.
 
 ## Score pipeline sequence
 
-1. **`getActiveEvents`** — all `CompetitionEvent` rows with `isActive=true`
-2. **`runSportEventPipeline`** — once per active event (sport plugin):
+1. **`maybePromotePreparedGolfEvent`** — if active golf is COMPLETE, activate a later prepared golf event
+2. **`getActiveEvents`** — all `CompetitionEvent` rows with `isActive=true`
+3. **`runSportEventPipeline`** — once per active event (sport plugin):
    - `syncEventMetadata`
    - `syncParticipantField`
    - `handleWithdrawals` (if the plugin implements it)
@@ -50,9 +53,9 @@ Separate running flags skip a tick if that pipeline is still in progress.
      - `syncLiveScores`
      - `updateContestLineupsForEvent`
      - `afterLiveScoreSync` (golf: classify + enqueue feed jobs)
-3. **`batchActivateContests`** — `OPEN` → `ACTIVE` when the sport says the event is live
-4. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED` when the event is complete
-5. **`batchSyncReferralGraph`** — push pending referral registrations on-chain
+4. **`batchActivateContests`** — `OPEN` → `ACTIVE` when the sport says the event is live
+5. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED` when the event is complete
+6. **`batchSyncReferralGraph`** — push pending referral registrations on-chain
 
 Terminal on-chain states are `SETTLED` and `CANCELLED`. Permissionless `cancelExpired()` unlocks after `expiryTimestamp + SETTLEMENT_GRACE_PERIOD` (1 day) if the operator never settles.
 
@@ -81,6 +84,7 @@ Better Stack heartbeat reports on the **score** pipeline only.
 | Task                              | Command                                                                                            |
 | --------------------------------- | -------------------------------------------------------------------------------------------------- |
 | Init event                        | `pnpm run service:init-event pga-golf R2026033`                                                    |
+| Init next event                   | `pnpm run service:init-next-event [pga-golf\|commodities\|all] [--dry-run] [--skip-summary]`         |
 | Sync metadata                     | `pnpm run service:sync-event-metadata`                                                             |
 | Sync field                        | `pnpm run service:sync-event-field`                                                                |
 | Sync scores                       | `pnpm run service:sync-event-scores`                                                               |

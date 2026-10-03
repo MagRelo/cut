@@ -16,7 +16,7 @@ Pass script arguments **directly** — do **not** insert `--` before them. Use `
 |------|--------|
 | **Sport** | `commodities` |
 | **externalId** | ISO week `YYYY-Www` — e.g. `2026-W27` |
-| **Init command** | `pnpm --filter server run service:init-event commodities 2026-W27` |
+| **Init command** | Auto: Saturday 10:00 ET via cron. Manual: `pnpm --filter server run service:init-next-event commodities` or `pnpm --filter server run service:init-event commodities 2026-W27` |
 | **Custom window** | `… commodities 2026-W27 --open +2m --close +62m` (local eval) |
 | **Local cleanup** | `pnpm --filter server run script:commodities-cleanup-local` |
 | **Enable sport** | Seed sets `isEnabled: false`; flip in Prisma Studio or use `script:commodities-local-eval` |
@@ -47,9 +47,10 @@ Pass script arguments **directly** — do **not** insert `--` before them. Use `
 | `COMMODITIES_SESSION_TZ` | `America/New_York` | Default session timezone when init omits `--open`/`--close` |
 | `COMMODITIES_SESSION_OPEN` | `12:00` | Default SCHEDULED → LIVE time (time-only, session TZ) |
 | `COMMODITIES_SESSION_CLOSE` | `16:30` | Default Friday close (time-only, session TZ) |
-| `ENABLE_CRON` | — | `true` on cron worker for 5-minute pipeline + overview pipeline |
+| `ENABLE_CRON` | — | `true` on cron worker for score, overview, and Saturday auto-init |
+| `AUTO_INIT_EVENTS` | on | `false` disables weekly event init without stopping the score pipeline |
 | `CONTEST_COMMENTARY_ENABLED` | — | `true` to enable daily contest overview commentary |
-| `CURSOR_API_KEY` | — | Required when commentary is enabled |
+| `CURSOR_API_KEY` | — | Required for commentary and golf preview copy |
 | `DATABASE_URL` | — | Verify before every init |
 
 ---
@@ -76,13 +77,9 @@ pnpm --filter server run db:seed   # idempotent upsert
 
 ### 2. Pick session week
 
-Use the **current ISO week** in `America/New_York` as `externalId`:
+Saturday auto-init uses the **ISO week of the coming Monday** in `America/New_York` (weekend of W40 → `2026-W41`). Manual init still takes an explicit `YYYY-Www`.
 
-```
-2026-W27
-```
-
-Week runs Monday 12:00 PM ET through Friday 4:30 PM ET.
+Week runs Monday 12:00 PM ET through Friday 4:30 PM ET. Init skips if that week already exists, or if the active commodities event is still LIVE.
 
 ### 3. Optional — data spike
 
@@ -157,7 +154,7 @@ Optional `eventId` as final argument on each command.
 
 ### 6. Next trading week
 
-Run init with the new ISO week key (`YYYY-Www`). Init deactivates the previous commodities event automatically.
+Saturday 10:00 ET auto-init creates the next ISO week (skips if the row already exists). Manual: `pnpm --filter server run service:init-next-event commodities` or `service:init-event commodities YYYY-Www`. Init deactivates the previous commodities event when it activates the new one.
 
 ---
 

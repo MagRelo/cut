@@ -7,8 +7,9 @@ Schedules:
 
 | Job | Cron | Purpose |
 | --- | --- | --- |
-| `scorePipeline` | `*/5 * * * *` | Scores, contest lifecycle, referral sync, contest announcement email retry |
+| `scorePipeline` | `*/5 * * * *` | Promote prepared golf events, scores, contest lifecycle, referral sync, contest announcement email retry |
 | `overviewPipeline` | `*/20 * * * *` | Legacy PGA `Contest.commentary` overview refresh |
+| `eventInitPipeline` | `0 10 * * *` America/New_York | Saturday: next commodities ISO week. Monday: next PGA event (field published). `AUTO_INIT_EVENTS=false` skips. |
 | `feedWorker` | in-process loop | Drain `CommentaryFeedJob` queue (concurrency 1) |
 
 ---
@@ -19,7 +20,8 @@ Schedules:
 flowchart TD
   A[Start scorePipeline] --> B{Already running?}
   B -->|yes| Z[Skip]
-  B -->|no| C[getActiveEvents]
+  B -->|no| P[maybePromotePreparedGolfEvent]
+  P --> C[getActiveEvents]
   C --> D[For each event: runSportEventPipeline]
   D --> F[batchActivateContests]
   F --> G[batchSettleContests]
@@ -27,6 +29,10 @@ flowchart TD
   H --> I[flushPendingContestAnnouncementEmails]
   I --> K[Done]
 ```
+
+### 0. Promote prepared golf event
+
+`maybePromotePreparedGolfEvent`: if the active golf event is `COMPLETE` and a later non-complete golf `CompetitionEvent` exists (created with `activate: false` during a live round), flip `isActive` to that prepared row and refresh the email announcement snapshot.
 
 ### 1. Sport event pipeline
 
@@ -119,9 +125,31 @@ Detect path (`detectAndEnqueueContestFeed`) advances `lastHoleState` / `lastCont
 
 ## Concurrency
 
-- `scorePipelineRunning` / `overviewPipelineRunning` prevent overlapping runs of each pipeline
-- Commentary LLM mutex prevents concurrent Cursor calls (overview vs feed worker)
+- `scorePipelineRunning` / `overviewPipelineRunning` / `eventInitPipelineRunning` prevent overlapping runs of each pipeline
+- Commentary LLM mutex prevents concurrent Cursor calls (overview vs feed worker vs golf event summary)
 - On DB connection errors (`P2037`), waits 30s before the wrapper returns
+
+---
+
+## Event init pipeline
+
+`eventInitPipeline` runs daily at **10:00 America/New_York**. It only mutates on Saturday (commodities) and Monday (golf). Kill switch: `AUTO_INIT_EVENTS=false`.
+
+| Weekday | Sport | Target |
+| --- | --- | --- |
+| Saturday | commodities | ISO week of the coming Monday (`getUpcomingCommoditiesWeekExternalId`). Skips if that week already exists or the active commodities event is LIVE. |
+| Monday | pga-golf | Next upcoming PGA Tour event with a published field. If the active golf event is still LIVE or SCHEDULED, init with `activate: false`. Score pipeline promotes that row when the current event is COMPLETE. |
+| Other days | — | No-op |
+
+After a successful golf init, the job writes `CompetitionEvent.metadata.summarySections` when copy is missing, using the Cursor SDK (`CURSOR_API_KEY`) plus DataGolf sportsbook win outrights when the board event name matches. Init succeeds even if copy generation fails.
+
+CLI (same resolver; ignores weekday):
+
+```bash
+pnpm --filter server run service:init-next-event [pga-golf|commodities|all] [--dry-run] [--skip-summary]
+```
+
+Explicit ids still use `service:init-event`.
 
 ---
 
@@ -131,6 +159,7 @@ Detect path (`detectAndEnqueueContestFeed`) advances `lastHoleState` / `lastCont
 | -------------------------- | ----------------------------------------------------------- |
 | Init golf event            | `pnpm run service:init-event pga-golf R2026033`             |
 | Init commodities event     | `pnpm run service:init-event commodities 2026-W27`          |
+| Init next event (auto)     | `pnpm --filter server run service:init-next-event [pga-golf\|commodities\|all] [--dry-run] [--skip-summary]` |
 | Sync commodities (manual)  | `service:sync-commodities-metadata` · `-field` · `-scores`  |
 | Lock contests              | `POST /api/admin/contests/:contestId/lock` or `POST /api/admin/contests/lock-eligible` |
 | Flush contest announcement emails | 5-minute score pipeline retries `EmailSendLog` PENDING/FAILED |
@@ -147,7 +176,7 @@ See [docs/sports/golf/event-activation-runbook.md](../../docs/sports/golf/event-
 {
   "enabled": true,
   "status": "active",
-  "activeJobs": ["scorePipeline", "overviewPipeline"],
+  "activeJobs": ["scorePipeline", "overviewPipeline", "eventInitPipeline"],
   "pipelineSteps": ["scorePipeline (*/5 * * * *)", "..."]
 }
 ```

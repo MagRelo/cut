@@ -5,13 +5,19 @@ import { prepareEventAnnouncementEmailSafe } from "../../lib/email/prepareEventA
 import { syncGolfEventMetadata } from "./syncMetadata.js";
 import { syncGolfParticipantField } from "./syncField.js";
 
-export async function initGolfEvent(externalId: string) {
+export type InitGolfEventOptions = {
+  /** Default true. False prepares the event without flipping `isActive`. */
+  activate?: boolean;
+};
+
+export async function initGolfEvent(externalId: string, options?: InitGolfEventOptions) {
   const pgaTourId = externalId.trim();
   if (!pgaTourId) {
     throw new Error("externalId (PGA tournament id) is required");
   }
 
   const tournamentData = await getTournament(pgaTourId);
+  const activate = options?.activate !== false;
 
   let event = await prisma.competitionEvent.findFirst({
     where: { sportId: PGA_GOLF_SPORT_ID, externalId: pgaTourId },
@@ -35,17 +41,22 @@ export async function initGolfEvent(externalId: string) {
   await syncGolfEventMetadata(event.id, { seedBeautyImage: true });
   await syncGolfParticipantField(event.id);
 
-  await prisma.competitionEvent.updateMany({
-    where: { sportId: PGA_GOLF_SPORT_ID, isActive: true },
-    data: { isActive: false },
-  });
+  if (activate) {
+    await prisma.competitionEvent.updateMany({
+      where: { sportId: PGA_GOLF_SPORT_ID, isActive: true },
+      data: { isActive: false },
+    });
 
-  await prisma.competitionEvent.update({
-    where: { id: event.id },
-    data: { isActive: true },
-  });
+    await prisma.competitionEvent.update({
+      where: { id: event.id },
+      data: { isActive: true },
+    });
+  }
 
   await prepareEventAnnouncementEmailSafe(event.id);
 
-  console.log(`[pga-golf] Initialized event ${event.id} (${pgaTourId})`);
+  console.log(
+    `[pga-golf] Initialized event ${event.id} (${pgaTourId})${activate ? "" : " (prepared, not active)"}`,
+  );
+  return { id: event.id, externalId: pgaTourId, activated: activate };
 }

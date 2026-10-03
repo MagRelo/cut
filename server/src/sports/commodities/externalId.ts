@@ -1,4 +1,13 @@
-import { addDays, format, getISOWeek, getISOWeekYear, setISOWeek, setISOWeekYear, startOfISOWeek } from "date-fns";
+import {
+  addDays,
+  format,
+  getISODay,
+  getISOWeek,
+  getISOWeekYear,
+  setISOWeek,
+  setISOWeekYear,
+  startOfISOWeek,
+} from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
 const DEFAULT_TZ = "America/New_York";
@@ -56,11 +65,36 @@ export function resolveWeekAnchorDates(weekKey: string): WeekAnchorDates {
   return resolveWeekAnchorDatesInternal(weekYear, weekNumber);
 }
 
+function zonedNoonReference(
+  now: Date,
+  tz: string,
+): Date {
+  const zonedDate = formatInTimeZone(now, tz, "yyyy-MM-dd");
+  return new Date(`${zonedDate}T12:00:00Z`);
+}
+
 export function getCurrentCommoditiesWeekExternalId(
   now: Date = new Date(),
   tz: string = process.env.COMMODITIES_SESSION_TZ?.trim() || DEFAULT_TZ,
 ): string {
-  const zonedDate = formatInTimeZone(now, tz, "yyyy-MM-dd");
-  const reference = new Date(`${zonedDate}T12:00:00Z`);
+  const reference = zonedNoonReference(now, tz);
+  return formatCommoditiesWeekExternalId(getISOWeekYear(reference), getISOWeek(reference));
+}
+
+/**
+ * ISO week for the next commodities session.
+ * Sat/Sun (session TZ) → the week that opens the coming Monday; Mon–Fri → current ISO week.
+ */
+export function getUpcomingCommoditiesWeekExternalId(
+  now: Date = new Date(),
+  tz: string = process.env.COMMODITIES_SESSION_TZ?.trim() || DEFAULT_TZ,
+): string {
+  const reference = zonedNoonReference(now, tz);
+  const isoDay = getISODay(reference);
+  if (isoDay === 6 || isoDay === 7) {
+    const daysUntilMonday = isoDay === 6 ? 2 : 1;
+    const nextMonday = addDays(reference, daysUntilMonday);
+    return formatCommoditiesWeekExternalId(getISOWeekYear(nextMonday), getISOWeek(nextMonday));
+  }
   return formatCommoditiesWeekExternalId(getISOWeekYear(reference), getISOWeek(reference));
 }

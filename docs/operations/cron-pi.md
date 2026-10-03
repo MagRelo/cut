@@ -38,6 +38,7 @@ Minimum:
 - `PRISMA_SOCKET_TIMEOUT=60` (or higher) — required for Pi → managed Postgres RTT; default in code is 60
 - `OPERATOR_PK` (contest + referral oracle; address derived from the key)
 - `BETTERSTACK_HEARTBEAT_URL` (recommended)
+- `AUTO_INIT_EVENTS=false` to disable Saturday/Monday event init without stopping the score pipeline
 
 Add `PGA_API_KEY`, `DATAGOLF_API_KEY`, RPC URLs as needed.
 
@@ -94,6 +95,7 @@ Expect `CRON-ONLY APPLICATION`, `Cron Enabled: true`, and `[CRON]` lines every ~
 
 ```bash
 cd ~/node/cut-v2/server && pnpm run service:init-event pga-golf R2026033
+cd ~/node/cut-v2/server && pnpm run service:init-next-event all --dry-run
 ```
 
 Scripts load `server/.env` via `dotenv`. No `--` after `pnpm run`. Full list: [`spec/server/cron.md`](../../spec/server/cron.md).

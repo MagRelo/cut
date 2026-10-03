@@ -13,6 +13,7 @@ Business logic under `server/src/services/`, grouped by domain. Cron and routes 
 | `events/getEventCandidates.ts` | Candidate pool via sport plugin |
 | `sports/listEnabledSports.ts` | `GET /sports` |
 | `initEvent.ts` | CLI: `service:init-event` |
+| `autoInitEvents.ts` | Cron/CLI next-event resolver (`service:init-next-event`) |
 
 Golf sync handlers: `server/src/sports/pga-golf/` (`initEvent`, `syncMetadata`, `syncField`, `syncLiveScores`)
 

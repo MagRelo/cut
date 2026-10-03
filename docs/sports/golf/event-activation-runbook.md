@@ -16,9 +16,9 @@ Pass script arguments **directly** — do **not** insert `--` before them. In th
 |------|--------|
 | **Sport** | `pga-golf` (first plugin) |
 | **externalId** | PGA Tour id — e.g. `R2026033` (`R{year}{event#}`) |
-| **Summary** | `CompetitionEvent.metadata.summarySections` (via tournament-summary skill) |
-| **Init command** | `pnpm run service:init-event pga-golf R2026033` |
-| **Active flag** | `CompetitionEvent.isActive = true` (set by init) |
+| **Summary** | `CompetitionEvent.metadata.summarySections` (auto after Monday init; skill rewrite optional) |
+| **Init command** | Auto: Monday 10:00 ET via cron. Manual: `pnpm run service:init-next-event pga-golf` or `pnpm run service:init-event pga-golf R2026033` |
+| **Active flag** | `CompetitionEvent.isActive = true` (set by init unless `activate: false`) |
 | **Admin dashboard** | `GET /api/admin/dashboard` (accepts `eventId` or `tournamentId` alias) |
 | **Email preview** | `pnpm --filter server run script:email-preview contest-announcement open` |
 | **Email send** | League admin creates a contest with **Email contest to league members** checked |
@@ -27,20 +27,32 @@ Pass script arguments **directly** — do **not** insert `--` before them. In th
 
 ## Prerequisites
 
-- [ ] **externalId** confirmed from [PGA Tour schedule](https://www.pgatour.com/schedule)
-- [ ] **PGA field published** — init pulls the field from PGA; thin field if too early
-- [ ] **DataGolf API key** in server env (rankings + tee times during init)
-- [ ] **Local DB** running (`pnpm run db:start`) with platform schema migrated
+- [ ] Cron host has `ENABLE_CRON=true` (weekly Monday auto-init) or operator will run CLI
+- [ ] **PGA field published** for the upcoming event — auto-init skips an empty field
+- [ ] **DataGolf API key** in server env (rankings, tee times, sportsbook outrights for preview copy)
+- [ ] `CURSOR_API_KEY` on the cron host if auto preview copy should write
+- [ ] **Local DB** running (`pnpm run db:start`) with platform schema migrated when testing locally
 - [ ] **MailerSend** configured only if sending email today
 
 ---
 
-## Activation steps
+## Activation
 
-### 1. Run `service:init-event`
+### Auto-init (default)
+
+Monday **10:00 America/New_York**, `eventInitPipeline` resolves the next PGA Tour event with a published field and runs `initGolfEvent`.
+
+- If the active golf event is still **LIVE** or **SCHEDULED**, the next event is created with `activate: false` so the hub is not yanked. The 5-minute score pipeline promotes the prepared row when the live/current event is **COMPLETE** (Monday playoff or delayed finish).
+- After init, missing `summarySections` are generated from event metadata, field, and DataGolf win outrights (no invented odds). Existing copy is left alone.
+- Dry-run: `pnpm --filter server run service:init-next-event pga-golf --dry-run`
+
+Kill switch: `AUTO_INIT_EVENTS=false`.
+
+### Manual override
 
 ```bash
 pnpm run service:init-event pga-golf R__________
+pnpm --filter server run service:init-next-event pga-golf
 ```
 
 **What init does (PGA golf plugin):**
@@ -51,16 +63,16 @@ pnpm run service:init-event pga-golf R__________
 | Metadata | Name, dates, course, status via PGA APIs |
 | Field | `EventParticipant` rows + participant profiles |
 | Rankings | DataGolf rankings where configured |
-| **isActive** | Clears other active events for the sport; sets this event active |
+| **isActive** | Default: clears other active golf events and sets this event active. `activate: false` prepares the row without flipping a LIVE or SCHEDULED event. |
 
 - [ ] Init completed without errors
 - [ ] Log shows expected field size
 
 ---
 
-### 2. Generate event summary (golf, optional)
+### Generate event summary (optional rewrite)
 
-Use the Cursor **tournament-summary** skill with the PGA external id (after init):
+Auto-init writes a CutBot preview when `CURSOR_API_KEY` is set. For a researched rewrite (broadcast windows, extra quotes), use the Cursor **tournament-summary** skill:
 
 ```
 Generate a tournament summary for R__________
@@ -140,17 +152,19 @@ Requires `ENABLE_CRON=true` on the API server or a dedicated `cron-app` process 
 
 | Cadence | What runs |
 |---------|-----------|
-| Every 5 min | `scorePipeline` in `server/src/cron/scheduler.ts` |
+| Every 5 min | `scorePipeline` in `server/src/cron/scheduler.ts` (promotes a prepared golf event when the active one is COMPLETE) |
+| Daily 10:00 ET | `eventInitPipeline` — Monday next PGA event |
 | Every 20 min | `overviewPipeline` (golf commentary snapshot) |
 | Continuous | `feedWorker` drains `CommentaryFeedJob` when commentary enabled |
 
 Pipeline order:
 
-1. **`runSportEventPipeline`** per `CompetitionEvent` with `isActive=true` — metadata, field, withdrawals; live scores + lineup updates when the sport says the event is live
-2. **`batchActivateContests`** — `OPEN` → `ACTIVE`
-3. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED`
-4. **`batchSyncReferralGraph`**
-5. **`flushPendingContestAnnouncementEmails`** — retries leftover league contest announcement sends
+1. **`maybePromotePreparedGolfEvent`** — if active golf is COMPLETE, activate a later prepared event
+2. **`runSportEventPipeline`** per `CompetitionEvent` with `isActive=true` — metadata, field, withdrawals; live scores + lineup updates when the sport says the event is live
+3. **`batchActivateContests`** — `OPEN` → `ACTIVE`
+4. **`batchSettleContests`** — `ACTIVE` / `LOCKED` → `SETTLED`
+5. **`batchSyncReferralGraph`**
+6. **`flushPendingContestAnnouncementEmails`** — retries leftover league contest announcement sends
 
 **Post-expiry escape hatch:** If the operator never settles, permissionless `cancelExpired()` unlocks after `expiryTimestamp + SETTLEMENT_GRACE_PERIOD` (1 day). See [wallet-roles-cashflows.md](../../operations/wallet-roles-cashflows.md).
 

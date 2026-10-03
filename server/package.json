@@ -19,6 +19,7 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "db:seed": "pnpm run prisma:seed",
     "service:init-event": "tsx src/services/initEvent.ts",
+    "service:init-next-event": "tsx src/services/initNextEvent.ts",
     "service:sync-event-metadata": "tsx src/sports/pga-golf/runSyncMetadata.ts",
     "service:sync-event-field": "tsx src/sports/pga-golf/runSyncField.ts",
     "service:sync-event-scores": "tsx src/sports/pga-golf/runSyncScores.ts",

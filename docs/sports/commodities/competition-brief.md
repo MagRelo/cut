@@ -30,12 +30,12 @@ Pick three commodities for the trading week; your lineup scores the sum of their
 | **Active events** | One active commodities event at a time (`CompetitionEvent.isActive`) |
 | **SCHEDULED → LIVE** | Cron sets `metadata.commodities.sessionStarted` when `now >= sessionOpen` (same pipeline pass activates contests) |
 | **LIVE → COMPLETE** | Cron sets `metadata.commodities.sessionComplete` when `now >= sessionClose` (same pass settles contests) |
-| **Init defaults** | Env `COMMODITIES_SESSION_TZ/OPEN/CLOSE` (Mon 12:00 – Fri 16:30 America/New_York) |
+| **Init defaults** | Env `COMMODITIES_SESSION_TZ/OPEN/CLOSE` (Mon 12:00 – Fri 16:30 America/New_York). Saturday 10:00 ET cron inits the coming Monday’s ISO week. |
 | **Init overrides** | `service:init-event commodities 2026-W27 --open +2m --close +62m` (or ISO datetimes) |
 
 **Scoring:** Five daily legs from Hyperliquid marks/candles (see [data-sources.md](./data-sources.md)).
 
-**Out of scope:** Equities, prop bets, automated weekly init cron, rolling Cutbot feed stories (Phase 2).
+**Out of scope:** Equities, prop bets, rolling Cutbot feed stories (Phase 2).
 
 **In scope commentary:** Daily contest overview snapshots (`Contest.commentary`) after each trading day settles — see [`packages/sport-commodities/CONTEST_COMMENTARY.md`](../../../packages/sport-commodities/CONTEST_COMMENTARY.md).
 
@@ -127,7 +127,7 @@ Static allowlist in `packages/sport-commodities/src/catalog.ts`. Hyperliquid res
 
 ## Out of scope (v1)
 
-- Prop bets, automated weekly init cron
+- Prop bets
 - Crypto, equities, sector roster constraints
 - Sub-minute quotes
 - Rolling Cutbot feed / Stream story dual-write (Phase 2 — documented in package commentary doc)

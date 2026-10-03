@@ -11,6 +11,8 @@ import {
   stopCommentaryFeedWorker,
 } from "../sports/pga-golf/commentary/feedWorker.js";
 import { flushPendingContestAnnouncementEmails } from "../lib/email/send/contestAnnouncement.js";
+import { isAutoInitEventsEnabled, runAutoInitEvents } from "../services/autoInitEvents.js";
+import { maybePromotePreparedGolfEvent } from "../sports/pga-golf/promotePreparedGolfEvent.js";
 import {
   formatErrorForHeartbeat,
   reportBetterStackHeartbeatFailure,
@@ -23,6 +25,7 @@ class CronScheduler {
   private isEnabled: boolean;
   private scorePipelineRunning = false;
   private overviewPipelineRunning = false;
+  private eventInitPipelineRunning = false;
 
   constructor(enabled: boolean = true) {
     this.isEnabled = enabled;
@@ -101,6 +104,12 @@ class CronScheduler {
     const pipelineErrors: string[] = [];
 
     try {
+      await this.executeWithErrorHandling(
+        "Promote prepared golf event",
+        maybePromotePreparedGolfEvent,
+        pipelineErrors,
+      );
+
       const events = await getActiveEvents();
 
       for (const event of events) {
@@ -209,6 +218,59 @@ class CronScheduler {
     }
   }
 
+  private async runEventInitPipeline(): Promise<void> {
+    if (!isAutoInitEventsEnabled()) {
+      console.log("[CRON] Event Init Pipeline - Skipped: AUTO_INIT_EVENTS=false");
+      return;
+    }
+    if (this.eventInitPipelineRunning) {
+      console.log("[CRON] Event Init Pipeline - Skipped: already running");
+      return;
+    }
+
+    this.eventInitPipelineRunning = true;
+    const startTime = Date.now();
+    console.log(
+      `[CRON] ========== Starting Event Init Pipeline (${new Date().toISOString()}) ==========`,
+    );
+
+    const pipelineErrors: string[] = [];
+    try {
+      await this.executeWithErrorHandling(
+        "Auto-init next events",
+        async () => {
+          const results = await runAutoInitEvents({ respectWeekday: true });
+          console.log(`[CRON] Auto-init results: ${JSON.stringify(results)}`);
+          if (results.some((r) => r.action === "failed")) {
+            throw new Error(
+              results
+                .filter((r) => r.action === "failed")
+                .map((r) => `${r.sportId}: ${r.reason ?? "failed"}`)
+                .join("; "),
+            );
+          }
+        },
+        pipelineErrors,
+      );
+
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      if (pipelineErrors.length > 0) {
+        console.error(
+          `[CRON] ========== Event Init Pipeline Finished With Errors (${duration}s) ==========`,
+        );
+        for (const issue of pipelineErrors) {
+          console.error(`[CRON] Issue:\n${issue}`);
+        }
+        return;
+      }
+      console.log(`[CRON] ========== Event Init Pipeline Complete (${duration}s) ==========`);
+    } catch (error) {
+      console.error("[CRON] Event init pipeline error:", error);
+    } finally {
+      this.eventInitPipelineRunning = false;
+    }
+  }
+
   public start(): void {
     if (!this.isEnabled) {
       return;
@@ -225,6 +287,15 @@ class CronScheduler {
       void this.runOverviewPipeline();
     });
     this.jobs.set("overviewPipeline", overviewPipelineJob);
+
+    const eventInitPipelineJob = cron.schedule(
+      "0 10 * * *",
+      () => {
+        void this.runEventInitPipeline();
+      },
+      { timezone: "America/New_York" },
+    );
+    this.jobs.set("eventInitPipeline", eventInitPipelineJob);
 
     startCommentaryFeedWorker();
 

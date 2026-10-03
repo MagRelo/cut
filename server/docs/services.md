@@ -17,9 +17,13 @@ Common behavior:
 
 - Upsert event row and metadata from external APIs
 - Sync participant field and profiles
-- Set `isActive=true` on this event (clears other active events for the sport)
+- Set `isActive=true` on this event (clears other active events for the sport). Golf auto-init uses `activate: false` when the current event is still LIVE or SCHEDULED.
 
-Golf-only: DataGolf rankings. Tournament preview copy is written to event metadata separately (`script:write-tournament-summary`).
+Golf-only: DataGolf rankings. Tournament preview copy is written after auto-init when `CURSOR_API_KEY` is set (`summarySections`); operators can still run `script:write-tournament-summary` or the tournament-summary skill.
+
+### `service:init-next-event [pga-golf|commodities|all] [--dry-run] [--skip-summary]`
+
+Resolves the next commodities ISO week or PGA event with a published field, then runs the same init plugins as `service:init-event`. Cron uses this path on Saturday/Monday at 10:00 ET.
 
 ### Admin / CLI contest ops
 
@@ -36,8 +40,11 @@ Golf-only: DataGolf rankings. Tournament preview copy is written to event metada
 
 Every 5 minutes — single pipeline in `src/cron/scheduler.ts`:
 
-1. Per active event: metadata, field, withdrawals, live scores (when live), contest lineup updates
-2. Batch activate / settle contests
-3. Referral graph sync
+1. Promote a prepared golf event if the active golf event is COMPLETE
+2. Per active event: metadata, field, withdrawals, live scores (when live), contest lineup updates
+3. Batch activate / settle contests
+4. Referral graph sync
+
+Daily 10:00 America/New_York — `eventInitPipeline`: Saturday commodities week, Monday PGA event (field + LIVE/SCHEDULED guards). Kill switch: `AUTO_INIT_EVENTS=false`.
 
 See [`spec/server/cron.md`](../../spec/server/cron.md) for the full sequence.

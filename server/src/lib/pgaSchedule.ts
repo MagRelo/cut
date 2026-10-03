@@ -16,17 +16,24 @@ interface PGAScheduleResponse {
 }
 
 const PGA_SCHEDULE_URL = "https://orchestrator.pgatour.com/graphql";
-const PGA_API_KEY = process.env.PGA_API_KEY || "da2-gsrx5bibzbb4njvhl7t37wqyl4";
+
+function getPgaApiKey(): string {
+  return process.env.PGA_API_KEY || "da2-gsrx5bibzbb4njvhl7t37wqyl4";
+}
+
+export type PgaScheduleTournament = PGATournament;
 
 /**
  * Fetches the PGA Tour schedule and returns a flat list of upcoming tournaments.
- * @returns Promise containing a flat array of tournaments
  */
-export async function fetchPgaSchedule() {
+export async function fetchPgaSchedule(
+  year: string | number = new Date().getUTCFullYear(),
+): Promise<PgaScheduleTournament[]> {
   try {
+    const seasonYear = String(year);
     const query = `
       query {
-        schedule(tourCode: "R", year: "2026") {
+        schedule(tourCode: "R", year: "${seasonYear}") {
           seasonYear
           upcoming {
             tournaments {
@@ -43,7 +50,7 @@ export async function fetchPgaSchedule() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-API-Key": PGA_API_KEY,
+        "X-API-Key": getPgaApiKey(),
       },
       body: JSON.stringify({ query }),
     });
@@ -59,8 +66,7 @@ export async function fetchPgaSchedule() {
       throw new Error("Invalid schedule data format");
     }
 
-    // Flatten tournaments into a single list
-    const flatList: PGATournament[] = [];
+    const flatList: PgaScheduleTournament[] = [];
     for (const item of upcoming) {
       if (Array.isArray(item.tournaments)) {
         for (const tourney of item.tournaments) {
