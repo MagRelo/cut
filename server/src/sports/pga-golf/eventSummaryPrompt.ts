@@ -17,10 +17,10 @@ export type EventSummaryPlayer = {
 
 export type EventSummaryContext = {
   eventName: string;
-  course?: string;
-  city?: string;
-  state?: string;
-  displayDates?: string;
+  course?: string | undefined;
+  city?: string | undefined;
+  state?: string | undefined;
+  displayDates?: string | undefined;
   purse?: number | null;
   format?: string | null;
   fieldSize: number;

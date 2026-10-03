@@ -13,7 +13,7 @@ export type SourcedPlayerOdds = {
 
 export type DataGolfOutrightsBoard = {
   eventName: string;
-  eventId?: number | string;
+  eventId?: number | string | undefined;
   players: SourcedPlayerOdds[];
 };
 

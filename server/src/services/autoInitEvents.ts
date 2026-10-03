@@ -28,11 +28,11 @@ export type AutoInitOptions = {
 export type AutoInitResult = {
   sportId: AutoInitSport;
   action: "inited" | "prepared" | "skipped" | "failed";
-  reason?: string;
-  externalId?: string;
-  eventId?: string;
-  fieldSize?: number;
-  activate?: boolean;
+  reason?: string | undefined;
+  externalId?: string | undefined;
+  eventId?: string | undefined;
+  fieldSize?: number | undefined;
+  activate?: boolean | undefined;
 };
 
 export function isAutoInitEventsEnabled(): boolean {

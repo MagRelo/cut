@@ -8,7 +8,7 @@ import { pickNextGolfEvent, type NextGolfEventPick } from "./pickNextGolfEvent.j
 const MAX_SCHEDULE_ITEMS = 20;
 
 export type ResolveNextGolfEventOptions = {
-  now?: Date;
+  now?: Date | undefined;
   currentExternalId?: string | null;
   fetchSchedule?: (year: number) => Promise<PgaScheduleTournament[]>;
   fetchTournament?: (id: string) => Promise<{

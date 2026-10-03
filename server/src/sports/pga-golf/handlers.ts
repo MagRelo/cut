@@ -9,7 +9,9 @@ import { syncGolfLiveScores } from "./syncLiveScores.js";
 
 export function createPgaGolfHandlers(): PgaGolfHandlers {
   return {
-    initEvent: initGolfEvent,
+    initEvent: async (externalId) => {
+      await initGolfEvent(externalId);
+    },
     syncEventMetadata: syncGolfEventMetadata,
     syncParticipantField: syncGolfParticipantField,
     syncLiveScores: syncGolfLiveScores,
