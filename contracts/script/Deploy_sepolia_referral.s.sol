@@ -23,6 +23,9 @@ contract DeploySepoliaReferral is ReferralDeployGuard {
         RewardCalculator rewardCalculator = new RewardCalculator();
         console2.log("RewardCalculator deployed to:", address(rewardCalculator));
 
+        referralGraph.setRewardCalculator(address(rewardCalculator));
+        console2.log("RewardCalculator set on ReferralGraph");
+
         vm.stopBroadcast();
 
         registerPlatformRoot(referralGraph, platformRoot, referralGroupId, operatorPk, deployerPrivateKey);

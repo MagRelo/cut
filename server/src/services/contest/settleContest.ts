@@ -4,14 +4,15 @@
  * Calculates winners and payouts via the sport plugin, then calls settleContest()
  * on-chain. On-chain settlement requires LOCKED; if the contract is still ACTIVE,
  * this service locks first so cron/admin settle cannot front-run the secondary market.
- * Primary/secondary prize transfers happen later via push*; referral network fees
- * are paid from contest balance during settlement.
+ * Primary/secondary prize transfers happen later via push*. Referral fees are paid
+ * when the contest calls ReferralGraph.rewardRoots. The operator signs that payload;
+ * the contest is the payer.
  */
 
 import { defaultPayoutVector } from "@cut/sport-sdk";
 import { prisma } from "../../lib/prisma.js";
 import { requireSportModule } from "../../sports/registry.js";
-import type { TransactionReceipt } from "viem";
+import { getAddress, type TransactionReceipt } from "viem";
 import ContestController from "../../contracts/ContestController.json" with { type: "json" };
 import {
   getContestContract,
@@ -20,7 +21,14 @@ import {
   readContestState,
 } from "../shared/contractClient.js";
 import { executeContestPayoutPushes } from "./pushContestPayouts.js";
+import { getReferralGraphAddress } from "../../lib/referralConfig.js";
 import { assertWinnerRegisteredOnReferralGraph } from "../referral/assertWinnerRegisteredOnGraph.js";
+import {
+  buildReferralSettleAuth,
+  primaryWinnerEntryId,
+  quoteReferralFee,
+  REFERRAL_REWARD_DEADLINE_SECONDS,
+} from "../referral/referralGraph.js";
 import { recordSettlementReferralPayments } from "./recordSettlementReferralPayments.js";
 import { lockContest } from "./lockContest.js";
 import {
@@ -283,8 +291,8 @@ export async function settleContest(contestId: string): Promise<OperationResult>
     const contract = getContestContract(contest.address, contest.chainId);
     const publicClient = getPublicClient(contest.chainId);
 
-    const winningEntryStr = winningEntries[0];
-    if (!winningEntryStr) {
+    const primaryEntryId = primaryWinnerEntryId(winningEntries, payoutBps);
+    if (!primaryEntryId) {
       return {
         success: false,
         contestId,
@@ -295,7 +303,7 @@ export async function settleContest(contestId: string): Promise<OperationResult>
     const referralNetworkBps = (await contract.read.referralNetworkBps!()) as bigint;
     const referralGroupId = (await contract.read.referralGroupId!()) as `0x${string}`;
     const winnerOwner = (await contract.read.entryOwner!([
-      BigInt(winningEntryStr),
+      BigInt(primaryEntryId),
     ])) as `0x${string}`;
 
     const winnerCheck = await assertWinnerRegisteredOnReferralGraph({
@@ -354,10 +362,42 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       paymentTokenAddress = captured.paymentTokenAddress;
 
       const secondaryWinner = winningEntriesBigInt[0]!;
+      const primaryPrizePool = (await contract.read.primaryPrizePool!()) as bigint;
+      const totalSecondaryLiquidity = (await contract.read.totalSecondaryLiquidity!()) as bigint;
+      const referralFee = quoteReferralFee(
+        primaryPrizePool,
+        totalSecondaryLiquidity,
+        referralNetworkBps,
+      );
+      const block = await publicClient.getBlock();
+      const authResult = await buildReferralSettleAuth({
+        chainId: contest.chainId,
+        contestAddress: getAddress(contest.address),
+        graphAddress: getReferralGraphAddress(contest.chainId),
+        groupId: referralGroupId,
+        winner: getAddress(winnerOwner),
+        token: paymentTokenAddress,
+        referralFee,
+        deadline: block.timestamp + REFERRAL_REWARD_DEADLINE_SECONDS,
+      });
+      if (!authResult.ok) {
+        return {
+          success: false,
+          contestId,
+          error: authResult.error,
+        };
+      }
+      const { referralNonce, referralDeadline, referralOracle, referralSignature } =
+        authResult.auth;
+
       hash = (await contract.write.settleContest!([
         winningEntriesBigInt,
         payoutBpsBigInt,
         secondaryWinner,
+        referralNonce,
+        referralDeadline,
+        referralOracle,
+        referralSignature,
       ])) as `0x${string}`;
 
       console.log(`[settleContest] Transaction submitted: ${hash}`);

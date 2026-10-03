@@ -1,6 +1,6 @@
 # Referral network (on-chain)
 
-Contest **referral network fees** (typically 7% of gross TVL at settlement, `referralNetworkBps = 700`) are deducted once during `settleContest`. `ContestController` resolves the winning entry owner's referrer chain via `ReferralGraph` + `RewardCalculator` and transfers the fee from contest balance, or restores unallocated fee proportionally to the primary and secondary prize pools when no payable referrer exists.
+Contest **referral network fees** (typically 7% of gross TVL at settlement, `referralNetworkBps = 700`) are deducted once during `settleContest`. The operator signs an EIP-712 `RewardRoots` payload. The contest submits it to `ReferralGraph.rewardRoots`, which pulls the fee from the contest and pays the primary winner's ancestors, or the contest restores the fee proportionally to the primary and secondary prize pools when no payable ancestor exists.
 
 Contract design: [`contracts/lib/contestCatalyst/docs/ReferralNetworkIntegration.md`](../../contracts/lib/contestCatalyst/docs/ReferralNetworkIntegration.md). Cron: [`spec/server/cron.md`](../../spec/server/cron.md).
 
@@ -8,7 +8,7 @@ Contract design: [`contracts/lib/contestCatalyst/docs/ReferralNetworkIntegration
 
 ## Tree policy
 
-The **cold referral platform root** (`referralPlatformRootAddress` in chain JSON) registers once under `REFERRAL_ROOT` (`0x0000000000000000000000000000000000000001`). It is **not** a contest role. The hot **operator** (`OPERATOR_PK`) signs `register` / `batchRegister` and acts as ContestFactory `operator`, but is **not** a graph ancestor.
+The **cold referral platform root** (`referralPlatformRootAddress` in chain JSON) registers once under `REFERRAL_ROOT` (`0x0000000000000000000000000000000000000001`). It is **not** a contest role. The hot **operator** (`OPERATOR_PK`) signs `register` / `batchRegister` and the `RewardRoots` payload for settlement, and acts as ContestFactory `operator`, but is **not** a graph ancestor.
 
 **Invariant:** platform root ≠ operator. Settlement referral-network fees credit the platform root when it is on the payout chain. The operator key lives on web and cron; those funds must not land on that hot wallet. Forge deploys (`ReferralDeployGuard`) revert if `REFERRAL_PLATFORM_ROOT_ADDRESS` is missing, zero, or equal to the operator, then register the root on-chain and write it to client/server JSON.
 
@@ -20,17 +20,18 @@ The **cold referral platform root** (`referralPlatformRootAddress` in chain JSON
 
 **Signup vs graph:** Postgres stores the invite at `POST /auth/session` when `X-Cut-Referral-Code` matches `User.referralCode`, even when the inviter is not yet `isRegistered` on ReferralGraph. Cron registers the invitee only after the parent is on-chain. A missing, invalid, or `0x` `ref` does not block account creation.
 
-**Settlement:** `getReferrer(winner, groupId)` must be non-zero and not `REFERRAL_ROOT` for a payable chain. The server blocks settle if the winner is not `isRegistered` when `referralNetworkBps > 0`. The contest calls `getPayoutChain(payoutAnchor, groupId, 10)` and `RewardCalculator.calculateRewards`, then transfers each share (geometric split; the winner is never a fee recipient). The platform root is always an ancestor for organics in this model.
+**Settlement:** The signed user is the primary winner (largest `payoutBps`; a tie keeps the earlier winning entry). `payer` is the contest. `totalAmount` is the gross referral fee. `rewardId` is `keccak256(abi.encode("contest-catalyst", contest, nonce))` with nonce `0`. The server blocks settle if that winner is not `isRegistered` when `referralNetworkBps > 0`. `rewardRoots` pays `getPayoutAncestors` (ancestors above the winner). An empty ancestor chain restores the fee to the prize pools and ignores the signature. `InvalidSigner`, `SignatureExpired`, `RewardIdUsed`, and `RewardCalculatorNotSet` revert settlement. The platform root is always an ancestor for organics in this model.
 
 **Settlement events:**
 
 | Event | Meaning |
 |-------|---------|
-| `ReferralNetworkFeeDistributed` | Wallet transfer to a referrer in the payout chain (indexed as `OnchainPayment` kind `REFERRAL`) |
+| `RootsRewarded` | Wallet transfers to ancestors, emitted by ReferralGraph (indexed as `OnchainPayment` kind `REFERRAL`) |
+| `ReferralNetworkFeeDistributed` | Contest mirror of the same payout. Not indexed |
 | `ReferralNetworkFeeToPrimary` | Unallocated referral fee restored to prize pools — not a wallet payment |
 | `UnallocatedBalanceAllocated` | Push-batch dust credited into winner pools — not a referral fee |
 
-`ReferralNetworkFeeToPrimary` is the contract safety net for an unregistered winner / empty chain and must not occur in normal operation.
+`ReferralNetworkFeeToPrimary` is the contract safety net for an unregistered winner / empty ancestor chain and must not occur in normal operation.
 
 ```mermaid
 flowchart TB
@@ -39,7 +40,7 @@ flowchart TB
   Organic[Organic user]
   Invited[Invited user]
   Settle[settleContest]
-  Fee[ReferralNetworkFeeDistributed]
+  Fee[RootsRewarded]
 
   ROOT --> PlatformRoot
   PlatformRoot --> Organic

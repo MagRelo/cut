@@ -2,19 +2,21 @@
  * Index referral-network payouts from the settleContest transaction receipt.
  * Referral fees are distributed at settlement (not on pushPrimary/Secondary).
  *
- * Indexes `ReferralNetworkFeeDistributed` recipients (including the cold referral platform
- * root when it appears in the payout chain). `ReferralNetworkFeeToPrimary` spills unallocated
- * referral fee back into prize pools — not a wallet payment. Push-batch dust is credited via
+ * Indexes `RootsRewarded` recipients on ReferralGraph (ancestors above the primary
+ * winner, including the cold platform root when it is on that chain). The contest
+ * also emits `ReferralNetworkFeeDistributed` as a mirror; those amounts can be empty
+ * if the follow-up calculator call reverts, so that event is not indexed.
+ * `ReferralNetworkFeeToPrimary` spills an unallocated referral fee back into prize
+ * pools — not a wallet payment. Push-batch dust is credited via
  * `UnallocatedBalanceAllocated` into winner pools and is not ledgered here.
  */
 
 import type { Abi, TransactionReceipt } from "viem";
-import { getAddress, parseEventLogs } from "viem";
-import ContestController from "../../contracts/ContestController.json" with { type: "json" };
-import { parseReferralGroupIdFromEnv } from "../../lib/referralConfig.js";
+import { parseEventLogs } from "viem";
+import ReferralGraph from "../../contracts/ReferralGraph.json" with { type: "json" };
 import { insertOnchainPaymentRow, resolveUserIdForWallet } from "./onchainPayment.js";
 
-const contestAbi = ContestController.abi as Abi;
+const graphAbi = ReferralGraph.abi as Abi;
 
 export type RecordSettlementReferralPaymentsInput = {
   contestId: string;
@@ -27,37 +29,29 @@ export type RecordSettlementReferralPaymentsInput = {
 export async function recordSettlementReferralPayments(
   input: RecordSettlementReferralPaymentsInput,
 ): Promise<{ referralRowCount: number }> {
-  const {
-    contestId,
-    chainId,
-    contestAddress,
-    paymentTokenAddress,
-    settleReceipt,
-  } = input;
-
-  const contestAddr = getAddress(contestAddress);
-  const groupIdFromEnv = parseReferralGroupIdFromEnv();
+  const { contestId, chainId, paymentTokenAddress, settleReceipt } = input;
 
   let referralRowCount = 0;
 
-  const distributedLogs = parseEventLogs({
-    abi: contestAbi,
-    eventName: "ReferralNetworkFeeDistributed",
+  const rewardedLogs = parseEventLogs({
+    abi: graphAbi,
+    eventName: "RootsRewarded",
     logs: settleReceipt.logs,
   });
 
-  for (const log of distributedLogs) {
-    if (getAddress(log.address) !== contestAddr) continue;
+  for (const log of rewardedLogs) {
     const args = log.args as {
-      winner: `0x${string}`;
-      payoutAnchor: `0x${string}`;
-      amount: bigint;
+      groupId: `0x${string}`;
+      rewardId: `0x${string}`;
+      triggerUser: `0x${string}`;
+      distributedAmount: bigint;
       recipients: readonly `0x${string}`[];
       amounts: readonly bigint[];
     };
     const recipients = args.recipients ?? [];
     const amounts = args.amounts ?? [];
     const len = Math.min(recipients.length, amounts.length);
+    const payoutAnchor = recipients[0];
 
     for (let i = 0; i < len; i++) {
       const recipient = recipients[i];
@@ -75,18 +69,17 @@ export async function recordSettlementReferralPayments(
         transactionHash: settleReceipt.transactionHash,
         logIndex: Number(log.logIndex),
         metadata: {
-          winner: args.winner,
-          payoutAnchor: args.payoutAnchor,
+          winner: args.triggerUser,
+          ...(payoutAnchor ? { payoutAnchor } : {}),
           recipientIndex: i,
-          totalFee: args.amount.toString(),
-          ...(groupIdFromEnv ? { groupId: groupIdFromEnv } : {}),
+          totalFee: args.distributedAmount.toString(),
+          rewardId: args.rewardId,
+          groupId: args.groupId,
         },
       });
       referralRowCount += 1;
     }
   }
-
-  // ReferralNetworkFeeToPrimary / UnallocatedBalanceAllocated: pool credits, not wallet transfers.
 
   return { referralRowCount };
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { TransactionReceipt } from "viem";
-import { encodeEventTopics, encodeAbiParameters, parseAbiParameters } from "viem";
+import { encodeAbiParameters, encodeEventTopics, parseAbiParameters } from "viem";
+import ReferralGraph from "../../contracts/ReferralGraph.json" with { type: "json" };
 import { recordSettlementReferralPayments } from "./recordSettlementReferralPayments.js";
 
 const insertMock = vi.fn().mockResolvedValue(undefined);
@@ -9,10 +10,6 @@ const resolveUserMock = vi.fn().mockResolvedValue("user-1");
 vi.mock("./onchainPayment.js", () => ({
   insertOnchainPaymentRow: (...args: unknown[]) => insertMock(...args),
   resolveUserIdForWallet: (...args: unknown[]) => resolveUserMock(...args),
-}));
-
-vi.mock("../../lib/referralConfig.js", () => ({
-  parseReferralGroupIdFromEnv: () => "0x" + "ab".repeat(32),
 }));
 
 function makeReceipt(logs: TransactionReceipt["logs"]): TransactionReceipt {
@@ -40,14 +37,30 @@ describe("recordSettlementReferralPayments", () => {
     resolveUserMock.mockClear();
   });
 
-  it("records one row per ReferralNetworkFeeDistributed recipient", async () => {
+  it("records one row per RootsRewarded recipient and ignores the contest mirror", async () => {
     const contest = "0x6666666666666666666666666666666666666666";
+    const graph = "0x9999999999999999999999999999999999999999";
     const winner = "0x8888888888888888888888888888888888888888";
     const payoutAnchor = "0x3333333333333333333333333333333333333333";
-    const ref0 = "0x4444444444444444444444444444444444444444";
     const ref1 = "0x5555555555555555555555555555555555555555";
+    const groupId = `0x${"ab".repeat(32)}` as const;
+    const rewardId = `0x${"cd".repeat(32)}` as const;
 
-    const topics = encodeEventTopics({
+    const rootsTopics = encodeEventTopics({
+      abi: ReferralGraph.abi,
+      eventName: "RootsRewarded",
+      args: {
+        groupId,
+        rewardId,
+        triggerUser: winner as `0x${string}`,
+      },
+    });
+    const rootsData = encodeAbiParameters(
+      parseAbiParameters("address, uint256, address[], uint256[]"),
+      [contest as `0x${string}`, 1000n, [payoutAnchor, ref1, winner], [600n, 400n, 0n]],
+    );
+
+    const mirrorTopics = encodeEventTopics({
       abi: [
         {
           type: "event",
@@ -67,18 +80,28 @@ describe("recordSettlementReferralPayments", () => {
         payoutAnchor: payoutAnchor as `0x${string}`,
       },
     });
-
-    const data = encodeAbiParameters(parseAbiParameters("uint256, address[], uint256[]"), [
+    const mirrorData = encodeAbiParameters(parseAbiParameters("uint256, address[], uint256[]"), [
       1000n,
-      [ref0, ref1],
+      [payoutAnchor, ref1],
       [600n, 400n],
     ]);
 
     const receipt = makeReceipt([
       {
+        address: graph as `0x${string}`,
+        topics: rootsTopics as [`0x${string}`, ...`0x${string}`[]],
+        data: rootsData as `0x${string}`,
+        blockHash: `0x${"00".repeat(32)}`,
+        blockNumber: 1n,
+        logIndex: 4,
+        transactionHash: `0x${"aa".repeat(32)}`,
+        transactionIndex: 0,
+        removed: false,
+      },
+      {
         address: contest as `0x${string}`,
-        topics: topics as [`0x${string}`, ...`0x${string}`[]],
-        data: data as `0x${string}`,
+        topics: mirrorTopics as [`0x${string}`, ...`0x${string}`[]],
+        data: mirrorData as `0x${string}`,
         blockHash: `0x${"00".repeat(32)}`,
         blockNumber: 1n,
         logIndex: 5,
@@ -100,13 +123,15 @@ describe("recordSettlementReferralPayments", () => {
     expect(insertMock).toHaveBeenCalledTimes(2);
     expect(insertMock.mock.calls[0]?.[0]).toMatchObject({
       kind: "REFERRAL",
-      walletAddress: ref0,
+      walletAddress: payoutAnchor,
       amountWei: "600",
-      logIndex: 5,
+      logIndex: 4,
       metadata: expect.objectContaining({
         winner,
         payoutAnchor,
         recipientIndex: 0,
+        rewardId,
+        groupId,
       }),
     });
   });

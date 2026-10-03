@@ -28,6 +28,9 @@ contract DeploySepolia is ReferralDeployGuard {
         RewardCalculator rewardCalculator = new RewardCalculator();
         console2.log("RewardCalculator deployed to:", address(rewardCalculator));
 
+        referralGraph.setRewardCalculator(address(rewardCalculator));
+        console2.log("RewardCalculator set on ReferralGraph");
+
         ContestFactory contestFactory = new ContestFactory(
             address(usdc),
             operator,

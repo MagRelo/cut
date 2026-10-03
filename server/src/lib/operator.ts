@@ -5,7 +5,8 @@ import { privateKeyToAccount } from "viem/accounts";
  * Hot operational operator.
  *
  * One EOA is ContestFactory `operator` (activate / lock / settle / cancel / push)
- * and the ReferralGraph authorized oracle for `REFERRAL_GROUP_ID` (`register` / `batchRegister`).
+ * and the ReferralGraph authorized oracle for `REFERRAL_GROUP_ID`
+ * (`register` / `batchRegister`, and the `RewardRoots` signature passed into `settleContest`).
  * It is not a referral-tree ancestor — organics hang under the cold platform root
  * recorded in chain JSON as `referralPlatformRootAddress` at contract deploy.
  * Address is derived from `OPERATOR_PK` unless `OPERATOR_ADDRESS` is set.
