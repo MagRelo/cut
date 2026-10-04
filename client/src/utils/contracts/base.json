@@ -1,7 +1,7 @@
 {
   "paymentTokenAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-  "contestFactoryAddress": "0x605E97360f6f8e2bB327331A0452aC9A6f32e265",
-  "referralGraphAddress": "0x3dcF689FE19941eA24e52F89E74B617939459d61",
-  "rewardCalculatorAddress": "0x0Dde8b39B100124E74b62195031F1C937b9795a3",
+  "contestFactoryAddress": "0x01664eA6Bde9E119B5Ec916Aa78FAfF9aeEffd1b",
+  "referralGraphAddress": "0xfFE5ab468Feb2CcD02f3A96d3e750d451e115E4d",
+  "rewardCalculatorAddress": "0x9a06c026E59B7559cC6323F8Dbf3b1d5ff440e1C",
   "referralPlatformRootAddress": "0x15c3DC71f1f7Fd975e6c82Ff84e8bcaC0E4b2acb"
 }

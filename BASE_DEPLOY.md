@@ -45,12 +45,12 @@ Addresses live in `client` + `server` `base.json`. Only contests created against
 | Contract                     | Address                                      |
 | ---------------------------- | -------------------------------------------- |
 | USDC (`paymentTokenAddress`) | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
-| ContestFactory               | `0x605E97360f6f8e2bB327331A0452aC9A6f32e265` |
-| ReferralGraph                | `0x3dcF689FE19941eA24e52F89E74B617939459d61` |
-| RewardCalculator             | `0x0Dde8b39B100124E74b62195031F1C937b9795a3` |
+| ContestFactory               | `0x01664eA6Bde9E119B5Ec916Aa78FAfF9aeEffd1b` |
+| ReferralGraph                | `0xfFE5ab468Feb2CcD02f3A96d3e750d451e115E4d` |
+| RewardCalculator             | `0x9a06c026E59B7559cC6323F8Dbf3b1d5ff440e1C` |
 | Platform root                | `0x15c3DC71f1f7Fd975e6c82Ff84e8bcaC0E4b2acb` |
 
-`ReferralGraph.owner` = deployer `0x853C54FB2e9d674A9a158B7F6e8F323d023f03c8`. Factory `operator` and authorized `oracle` = `0x3f76535570b1Bb18D454bC7A8B76f2dEE1726AA5`. Blockscout: [factory](https://base.blockscout.com/address/0x605E97360f6f8e2bB327331A0452aC9A6f32e265), [graph](https://base.blockscout.com/address/0x3dcF689FE19941eA24e52F89E74B617939459d61), [calculator](https://base.blockscout.com/address/0x0Dde8b39B100124E74b62195031F1C937b9795a3).
+`ReferralGraph.owner` = deployer `0x853C54FB2e9d674A9a158B7F6e8F323d023f03c8`. Factory `operator` and authorized `oracle` = `0x3f76535570b1Bb18D454bC7A8B76f2dEE1726AA5`. Blockscout: [factory](https://base.blockscout.com/address/0x01664eA6Bde9E119B5Ec916Aa78FAfF9aeEffd1b), [graph](https://base.blockscout.com/address/0xfFE5ab468Feb2CcD02f3A96d3e750d451e115E4d), [calculator](https://base.blockscout.com/address/0x9a06c026E59B7559cC6323F8Dbf3b1d5ff440e1C).
 
 Tree: platform root → organics under root → invitees under inviter **primary** smart wallet. Never register invitees under the referral root.
 
@@ -58,14 +58,14 @@ Tree: platform root → organics under root → invitees under inviter **primary
 
 ## Staging Sepolia addresses (`84532`)
 
-Keep MockUSDC. ContestFactory was deployed against the soak graph (do **not** run `deploy:contracts:sepolia` — that redeploys MockUSDC).
+Keep MockUSDC. Do **not** run `deploy:contracts:sepolia` — that redeploys MockUSDC.
 
 | Contract                         | Address                                      |
 | -------------------------------- | -------------------------------------------- |
 | MockUSDC (`paymentTokenAddress`) | `0x6662473494b64c6aec18E703E839AF26d371f570` |
-| ContestFactory                   | `0x6e5cC151E1271eD82cdf39B431B18Cd02cEFA016` |
-| ReferralGraph                    | `0x820bDEe2FB655eFCfaF82971F7e827a5141417bB` |
-| RewardCalculator                 | `0xE2E7184C7Fc5A35Be22c23A87Ca2d7f6E2d6B72c` |
+| ContestFactory                   | `0xfFE5ab468Feb2CcD02f3A96d3e750d451e115E4d` |
+| ReferralGraph                    | `0x3dcF689FE19941eA24e52F89E74B617939459d61` |
+| RewardCalculator                 | `0x0Dde8b39B100124E74b62195031F1C937b9795a3` |
 
 Same values in `client/src/utils/contracts/sepolia.json` and `server/src/contracts/sepolia.json`.
 
