@@ -77,8 +77,8 @@ ${playersBlock(ctx)}
 RULES:
 - Canonical sections in this order when you have facts: "From the 19th Hole", "Event Blurb", "Best Players and Odds", "Course and Format".
 - Omit "Broadcast Information" unless TV windows are in FACTS (they are not).
-- From the 19th Hole: exactly one quote item. body = 3 short sentences. Place/atmosphere first, week stakes, at most 2 player names, forward hook. attribution "${DEFAULT_CUTBOT_ATTRIBUTION}", color "${DEFAULT_QUOTE_COLOR}". No American odds in the quote. No invented defending champ or win counts.
-- Event Blurb: exactly one item, body only (no label). Two short sentences: course character + one notable beat from FACTS. Do not repeat course/city/dates already listed as header facts.
+- From the 19th Hole: exactly one quote item. This is the advertisement, not a fact sheet. body = 3 short sentences. Place and feeling first, week stakes, at most 2 player names. attribution "${DEFAULT_CUTBOT_ATTRIBUTION}", color "${DEFAULT_QUOTE_COLOR}". No American odds in the quote. No invented defending champ or win counts. Do not restate the Event Blurb.
+- Event Blurb: exactly one item, body only (no label). Two sentences in PGA TOUR press-office pamphlet voice, using only FACTS. Sentence one: the tour is traveling to the place for this field (size, and no-cut only if FACTS say so) at the course. Sentence two: one concrete course note from FACTS and who headlines the field from the player list. Official and plain. Not a sales line. Not the same point as the quote. A shared name is fine. A shared sentence is not.
 - Best Players and Odds: 8–10 items from the list above. label must be exactly the "Name:" or "Name (+x):" / "Name (+low to +high):" prefix shown. body = one plain sentence, opinion/course-fit only — no invented history, majors, or odds.
 - Course and Format: bullets only from FACTS (Course, Dates, Purse, Format, field size). Skip unknown fields.
 - Never invent American odds, TV times, defending champion, season win counts, or venue lore.

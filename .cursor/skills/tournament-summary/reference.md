@@ -69,7 +69,7 @@ Replace `{...}` placeholders. Keep valid JSON.
     "title": "Event Blurb",
     "items": [
       {
-        "body": "{2 short sentences for the announcement card: course character + one notable beat (tradition, defending champ, FedExCup context). No labels. Do not repeat the course/city/date already shown in the card header.}"
+        "body": "{2 sentences, PGA TOUR press-office pamphlet: the tour is traveling to this place; one concrete course note; the field (size, cut or no cut, who headlines). Official, not a sales line, and not the same point as the CutBot quote.}"
       }
     ]
   },
@@ -153,16 +153,24 @@ Check **5–10 sources** per event for storylines, odds, and course context.
 
 ### Writing style
 
-**Audience:** golf fans on a betting platform — they want a quick, enticing read
-with real context, not a press release or odds terminal.
+**Audience:** golf fans on a betting platform. The card is the pamphlet. The
+quote is the ad. The odds section is the board. Do not write all three in the
+same voice.
 
 **Event Blurb (announcement card):**
 
+Tour press-office copy, as if it were the short blurb in a tournament pamphlet.
+Two sentences. Say the tour is traveling to the place, say something concrete
+about the course, and say who is playing (field size, cut or no cut, the
+headliner). The header already shows the name and dates; the blurb still names
+the course and the trip.
+
 | Do | Don't |
 |----|--------|
-| 2 short sentences | Bullet lists or Venue:/Established: labels |
-| Course character + one notable beat | Repeat course/city/dates from the card header |
-| Tradition, defending champ, or week stakes | Dense fact stacks (purse, yardage — use Course and Format) |
+| 2 sentences, pamphlet voice | A sales line ("worth building a lineup") |
+| The trip, the course, the field | A mood poem or the CutBot quote's angle |
+| Name the course and where the tour is going | Purse, payout tables, or a full odds board |
+| Official and plain | The same sentence the quote uses |
 
 **CutBot quote (From the 19th Hole):**
 
@@ -181,8 +189,9 @@ with real context, not a press release or odds terminal.
 factual claims against this event's past results** — see SKILL.md Step 4. Prefer
 course-fit opinion over unverified history.
 
-**Other sections:** factual and scannable (Course, Broadcast). Personality lives in
-From the 19th Hole (CutBot + user quotes); context teaser lives in Event Blurb.
+**Other sections:** factual and scannable (Course, Broadcast). The pamphlet lives
+in Event Blurb. The advertisement lives in From the 19th Hole. They must not
+repeat each other: a shared name is fine, a shared sentence is not.
 
 **Tense:** present tense for upcoming events.
 

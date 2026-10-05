@@ -18,10 +18,14 @@ Produce a **casual-fan tournament preview** for a PGA Tour event and write it to
 
 Content appears in the **announcement card** (Event Blurb + event header) and under
 **from the 19th hole:** in both the in-app tournament preview
-and in the **contest announcement email**. The **CutBot quote** is the lead voice —
-evocative, engaging, and sets the tone for the week. User quotes (added manually)
-can be spikier; CutBot should feel like a welcoming column intro. Light betting
-angles are fine; save odds boards and the full field for **Best Players and Odds**.
+and in the **contest announcement email**. They sit one after the other and must
+not say the same thing.
+
+- **Event Blurb** is the pamphlet line from the tour press office: where the tour
+  is traveling, what the course is, and who is in the field.
+- **CutBot quote** is the advertisement: evocative, appealing, not a fact sheet.
+  User quotes (added manually) can be spikier. Light betting angles are fine in
+  the quote; save odds boards for **Best Players and Odds**.
 
 ## Quick prompt (user copy-paste)
 
@@ -95,7 +99,7 @@ standard preview.
 | Section | What to find |
 |--------|----------------|
 | From the 19th Hole | **CutBot quote** — place/vibe first, week stakes, max 2 names; user quotes added manually |
-| Event Blurb | **Announcement card prose** — 2 sentences: course character + one notable beat (not a fact list) |
+| Event Blurb | **Press-office pamphlet** — 2 sentences: the trip, the course, the field |
 | Best Players and Odds | 8–10 contenders; include American odds **only** when sourced from books |
 | Course and Format | Course name, dates, purse, format, yardage/par profile |
 | Broadcast Information | TV/streaming windows (Golf Channel, CBS, ESPN, etc.) |
@@ -125,20 +129,27 @@ Rules:
   - `body` — **3 short sentences** (see CutBot quote voice below)
   - `attribution` — `"CutBot"` for the skill quote
   - `color` — `#3b82f6` (Tailwind blue-500 / primary button) for CutBot unless told otherwise
-- **Event Blurb**: exactly **one** item, `body` only (no `label`). **Two short
-  sentences** for the announcement card — course character + one notable beat
-  (tradition, defending champ, FedExCup context). Do **not** repeat course/city/dates
-  already shown in the card header from event metadata.
+- **Event Blurb**: exactly **one** item, `body` only (no `label`). **Two sentences**
+  in PGA TOUR press-office pamphlet voice. Cover three things:
+  1. The tour is traveling there (the place, not a mood line).
+  2. Something concrete about the course (what it is, how it plays, or how new it is to this event).
+  3. The field (size, cut or no cut, and who headlines).
+  Plain and official, the way a tournament pamphlet reads. Not a sales line
+  ("worth building a lineup"), not a poem, and not the same point as the CutBot quote.
+  The card header already shows the name and dates; the blurb still names the
+  course and the trip, because a pamphlet sentence that omits them does not read.
 - **Best Players and Odds**: 8–10 players; body is **one plain sentence** — why
   fans should care this week. Label format:
   - With sourced odds: `"Player Name (+low to +high):"`
   - Without posted odds: `"Player Name:"` (no `+` numbers — never invent)
   **Verify every factual claim** (see Step 4); prefer course fit over
   unverified history.
-- **CutBot voice:** evocative and week-setting — place and atmosphere first,
-  what's at stake this week, **at most 2 player names**. Warm and inviting, not
-  oppositional or contrarian. A light betting read (“tops the board,” “defends”)
-  is welcome; **no American odds** in the quote.
+- **CutBot voice:** the advertisement under the card. Evocative and appealing —
+  place and feeling first, what's at stake, **at most 2 player names**. Warm and
+  inviting, not a fact sheet and not oppositional. A light betting read (“tops
+  the board,” “the man to beat”) is welcome; **no American odds** in the quote.
+  Do not restate the pamphlet (the trip, the course specs, the field size, the
+  defending-champ headline). A shared name is fine. A shared sentence is not.
 - Use straight apostrophes in JSON (`'` inside strings is fine; avoid smart
   quotes that break JSON).
 
@@ -257,7 +268,7 @@ for user quotes later in the block.
 - **Max 2 player names.** If you need a third storyline, describe it without a name.
 - **Light betting flavor** — “tops the board,” “defends,” “favorite” in plain English.
   No American odds, no market recap.
-- **No stat density** — yardage, par, purse, field size belong in Course and Format.
+- **No stat density** — the trip, course specs, and field size belong in the Event Blurb. Yardage, par, and purse belong in Course and Format.
 - Present tense for upcoming events. No markdown inside JSON strings.
 
 ### Avoid in CutBot quotes
@@ -267,16 +278,24 @@ for user quotes later in the block.
 - Contrarian or dunking tone — that's for user quotes.
 - Odds-terminal jargon (“profiles well,” “market rank,” “co-favorite at +X”).
 - Opening with dry history or venue facts before atmosphere.
+- Restating the Event Blurb. The card already said where the tour is going, what the course is, and who headlines. The quote sells the week instead.
 
-### Gold-standard CutBot quote
+### Gold-standard pair
 
-Genesis Scottish Open (R2026541) — evocative, tight, week-setting:
+Baycurrent Classic (R2026527). The card is the pamphlet. The quote is the ad.
+They share a week and do not share a sentence.
 
-> North Berwick in July is links golf at its best — wind off the Firth, firm
-> fescue, and a field that feels like a major dress rehearsal. Scheffler tops
-> the board, McIlroy loves this stretch of coast, and Gotterup defends after
-> winning in Silvis on Sunday. The last big tune-up before the year's third major:
-> the British Open at Royal Birkdale.
+Event Blurb:
+
+> The PGA TOUR travels to Japan for a 72-player field with no cut at Yokohama
+> Country Club. The par-71 hill course is hosting the event for only the second
+> year, and defending champion Xander Schauffele headlines the week.
+
+CutBot quote:
+
+> Yokohama in October is the getaway the golf calendar actually got right.
+> Schauffele is the man to beat, back on a course that already chose him. Clark
+> is the reason the favorite should not sleep easy.
 
 ### Calibrating tone (`quote variants`)
 
