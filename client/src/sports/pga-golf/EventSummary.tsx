@@ -20,6 +20,7 @@ export const GolfEventSummary: React.FC<EventSummaryProps> = ({ event, surface =
   const details = (
     <GolfEventDetails
       event={event}
+      tone={surface === "content" ? "paper" : "hero"}
       hasSummary={hasSummary}
       onOpenSummary={hasSummary ? () => setIsSummaryOpen(true) : undefined}
     />

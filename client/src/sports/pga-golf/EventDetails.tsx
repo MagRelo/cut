@@ -8,25 +8,32 @@ import {
   shouldShowEventCountdown,
 } from "../../components/platform/EventCountdownLine";
 import { formatGolfEventStatus, parseGolfEventMetadata } from "./utils";
+import {
+  eventHeaderActionLinkClassName,
+  eventHeaderMetaRowClassName,
+  eventHeaderPrimaryLineClassName,
+  eventHeaderSecondaryLineClassName,
+  eventHeaderSeparatorClassName,
+  eventHeaderSuspendedClassName,
+  eventHeaderTitleClassName,
+  eventHeaderTitleLinkClassName,
+  type EventHeaderTone,
+} from "../../components/platform/eventHeaderTone";
 
 interface GolfEventDetailsProps {
   event: CompetitionEventShell;
   className?: string;
   hasSummary?: boolean;
   onOpenSummary?: () => void;
+  tone?: EventHeaderTone;
 }
-
-const metaRowClassName =
-  "mt-1 flex w-full flex-wrap items-center gap-x-2 gap-y-0.5 font-medium text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]";
-
-const actionLinkClassName =
-  "inline-flex items-center gap-0.5 rounded-sm text-white/90 underline-offset-2 hover:text-white hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80";
 
 export function GolfEventDetails({
   event,
   className = "",
   hasSummary = false,
   onOpenSummary,
+  tone = "hero",
 }: GolfEventDetailsProps) {
   const meta = parseGolfEventMetadata(event.metadata);
   const name = meta.name ?? event.externalId;
@@ -42,19 +49,20 @@ export function GolfEventDetails({
   const leaderboardState = leaderboardLinkState(event);
 
   const detailSeparator = (
-    <span className="text-[9px] leading-none text-white/60" aria-hidden>
+    <span className={eventHeaderSeparatorClassName(tone)} aria-hidden>
       ●
     </span>
   );
+  const suspendedClassName = eventHeaderSuspendedClassName(tone);
 
   return (
     <div className={["font-display text-sm leading-snug", className].filter(Boolean).join(" ")}>
-      <h1 className="font-display text-2xl font-bold leading-snug tracking-tight text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_40%)] sm:text-3xl">
+      <h1 className={eventHeaderTitleClassName(tone)}>
         {showLeaderboard ? (
           <Link
             to={leaderboardTo}
             state={leaderboardState}
-            className="rounded-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+            className={eventHeaderTitleLinkClassName(tone)}
           >
             {name}
           </Link>
@@ -66,31 +74,27 @@ export function GolfEventDetails({
       {meta.course || locationLine ? (
         <div className="mt-1 flex w-full flex-wrap items-center gap-x-2 gap-y-0.5">
           {meta.course ? (
-            <span className="font-medium text-white/95 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
-              {meta.course}
-            </span>
+            <span className={eventHeaderPrimaryLineClassName(tone)}>{meta.course}</span>
           ) : null}
           {meta.course && locationLine ? detailSeparator : null}
           {locationLine ? (
-            <span className="text-white/80 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]">
-              {locationLine}
-            </span>
+            <span className={eventHeaderSecondaryLineClassName(tone)}>{locationLine}</span>
           ) : null}
         </div>
       ) : null}
 
-      <div className={metaRowClassName}>
+      <div className={eventHeaderMetaRowClassName(tone)}>
         {showCountdown ? (
-          <EventCountdownLine metadata={event.metadata} />
+          <EventCountdownLine metadata={event.metadata} tone={tone} />
         ) : (
           <>
             {periodDisplay}
             {detailSeparator}
             <span>
               {isSuspended ? (
-                <span className="inline-flex items-center gap-1 text-yellow-300">
+                <span className={`inline-flex items-center gap-1 ${suspendedClassName}`}>
                   <ExclamationTriangleIcon
-                    className="h-3.5 w-3.5 shrink-0 text-yellow-300"
+                    className={`h-3.5 w-3.5 shrink-0 ${suspendedClassName}`}
                     aria-hidden
                   />
                   <span>{periodStatusDisplay}</span>
@@ -104,14 +108,22 @@ export function GolfEventDetails({
       </div>
 
       {showPreview || showLeaderboard ? (
-        <div className={metaRowClassName}>
+        <div className={eventHeaderMetaRowClassName(tone)}>
           {showLeaderboard ? (
-            <Link to={leaderboardTo} state={leaderboardState} className={actionLinkClassName}>
+            <Link
+              to={leaderboardTo}
+              state={leaderboardState}
+              className={eventHeaderActionLinkClassName(tone)}
+            >
               View Leaderboard
               <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
             </Link>
           ) : (
-            <button type="button" onClick={onOpenSummary} className={actionLinkClassName}>
+            <button
+              type="button"
+              onClick={onOpenSummary}
+              className={eventHeaderActionLinkClassName(tone)}
+            >
               Tournament Preview
               <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
             </button>

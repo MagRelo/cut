@@ -15,7 +15,7 @@ export const CommodityEventSummary: React.FC<EventSummaryProps> = ({ event, surf
   if (surface === "content" || !headerImageUrl) {
     return (
       <div className="px-4 py-3">
-        <CommodityEventDetails event={event} />
+        <CommodityEventDetails event={event} tone="paper" />
       </div>
     );
   }
