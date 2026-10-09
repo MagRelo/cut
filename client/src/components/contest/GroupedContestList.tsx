@@ -25,9 +25,9 @@ function eventSublabel(event: ContestDirectoryEvent): string | null {
   return event.externalId;
 }
 
-const imageFrameClassName = "overflow-hidden rounded-t-xl border-x border-t border-slate-500";
+const imageFrameClassName = "overflow-hidden rounded-t-md border-x border-t border-slate-500";
 const listFrameClassName =
-  "overflow-hidden rounded-b-xl border-x border-b border-slate-400/80 bg-white";
+  "overflow-hidden rounded-b-md border-x border-b border-slate-300 bg-white";
 
 function GroupedContestSection({
   group,
