@@ -1,5 +1,4 @@
 import { type ReactNode } from "react";
-import type { CompetitionEventShell } from "@cut/sport-sdk";
 import type { ContestDirectoryEvent, EventContestGroup } from "../../types/contest";
 import { formatTournamentDateRange } from "../../lib/contestCreation";
 import { eventShellFromDirectoryEvent } from "../../lib/contestNavigation";
@@ -26,19 +25,9 @@ function eventSublabel(event: ContestDirectoryEvent): string | null {
   return event.externalId;
 }
 
-function EventImageBand({ sportId, event }: { sportId: string; event: CompetitionEventShell }) {
-  const plugin = useSportUIPlugin(sportId);
-  const heroImage = plugin?.resolveEventHeroImage ? plugin.resolveEventHeroImage(event) : null;
-  if (!heroImage) return null;
-
-  return (
-    <div
-      className={cn("h-36 bg-cover bg-center sm:h-44", plugin?.eventHeroImageClassName)}
-      style={{ backgroundImage: `url(${heroImage})` }}
-      aria-hidden
-    />
-  );
-}
+const imageFrameClassName = "overflow-hidden rounded-t-xl border-x border-t border-slate-600";
+const listFrameClassName =
+  "overflow-hidden rounded-b-xl border-x border-b border-slate-400/80 bg-white";
 
 function GroupedContestSection({
   group,
@@ -51,22 +40,32 @@ function GroupedContestSection({
 }) {
   const eventShell = eventShellFromDirectoryEvent(group.event);
   const sublabel = eventSublabel(group.event);
+  const plugin = useSportUIPlugin(group.event.sportId);
+  const heroImage =
+    group.event.sportId && plugin?.resolveEventHeroImage
+      ? plugin.resolveEventHeroImage(eventShell)
+      : null;
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-400/60 bg-white shadow-sm">
-      {group.event.sportId ? (
-        <>
-          <EventImageBand sportId={group.event.sportId} event={eventShell} />
-          <div className="border-b border-slate-200">
-            <SportEventHeader
-              sportId={group.event.sportId}
-              event={eventShell}
-              summarySurface="content"
-            />
-          </div>
-        </>
+    <section className="shadow-sm">
+      {heroImage ? (
+        <div className={imageFrameClassName}>
+          <div
+            className={cn("h-36 bg-cover bg-center sm:h-44", plugin?.eventHeroImageClassName)}
+            style={{ backgroundImage: `url(${heroImage})` }}
+            aria-hidden
+          />
+        </div>
+      ) : group.event.sportId ? (
+        <div className={cn(imageFrameClassName, "bg-white")}>
+          <SportEventHeader
+            sportId={group.event.sportId}
+            event={eventShell}
+            summarySurface="content"
+          />
+        </div>
       ) : (
-        <header className="border-b border-slate-200 px-4 py-3">
+        <header className={cn(imageFrameClassName, "bg-white px-4 py-3")}>
           <h4 className="font-display text-2xl font-bold leading-snug tracking-tight text-gray-900 sm:text-3xl">
             {group.event.sportName} · {group.event.name}
           </h4>
@@ -75,14 +74,25 @@ function GroupedContestSection({
           ) : null}
         </header>
       )}
-      <ContestList
-        contests={group.contests}
-        loading={false}
-        error={null}
-        eventShell={eventShell}
-        variant={variant}
-        createContestTo={createContestTo}
-      />
+      <div className={listFrameClassName}>
+        {heroImage && group.event.sportId ? (
+          <div className="border-b border-slate-200">
+            <SportEventHeader
+              sportId={group.event.sportId}
+              event={eventShell}
+              summarySurface="content"
+            />
+          </div>
+        ) : null}
+        <ContestList
+          contests={group.contests}
+          loading={false}
+          error={null}
+          eventShell={eventShell}
+          variant={variant}
+          createContestTo={createContestTo}
+        />
+      </div>
     </section>
   );
 }
