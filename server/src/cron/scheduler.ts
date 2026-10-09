@@ -18,6 +18,7 @@ import {
   reportBetterStackHeartbeatFailure,
   reportBetterStackHeartbeatSuccess,
 } from "../services/observability/betterStackHeartbeat.js";
+import { retryOnceOnDbConnectivity } from "./dbConnectivity.js";
 import type { BatchOperationResult } from "../services/shared/types.js";
 
 class CronScheduler {
@@ -45,7 +46,10 @@ class CronScheduler {
   ): Promise<void> {
     try {
       console.log(`[CRON] ${jobName} - Starting...`);
-      const result = await task();
+      const result = await retryOnceOnDbConnectivity(task, async () => {
+        console.log(`[CRON] ${jobName} - Database unreachable, retrying once in 30 seconds`);
+        await new Promise((resolve) => setTimeout(resolve, 30_000));
+      });
 
       if (result && typeof result === "object" && "total" in result) {
         const batch = result as BatchOperationResult & {
@@ -78,14 +82,6 @@ class CronScheduler {
     } catch (error) {
       console.error(`[CRON] ${jobName} - Error:`, error);
       pipelineErrors.push(`${jobName}: ${formatErrorForHeartbeat(error)}`);
-
-      if (
-        (error as { code?: string })?.code === "P2037" ||
-        (error as Error)?.message?.includes("connection")
-      ) {
-        console.log(`[CRON] ${jobName} - Connection error, waiting 30 seconds before next attempt`);
-        await new Promise((resolve) => setTimeout(resolve, 30000));
-      }
     }
   }
 
@@ -142,36 +138,37 @@ class CronScheduler {
         pipelineErrors,
       );
 
-      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-
-      if (pipelineErrors.length > 0) {
-        console.error(
-          `[CRON] ========== Score Pipeline Finished With Errors (${duration}s, ${pipelineErrors.length} issue(s)) ==========`,
-        );
-        for (const issue of pipelineErrors) {
-          console.error(`[CRON] Issue:\n${issue}`);
-        }
-        await reportBetterStackHeartbeatFailure({
-          exitCode: 1,
-          context: `Score pipeline finished with ${pipelineErrors.length} error(s) in ${duration}s`,
-          output: pipelineErrors.join("\n\n"),
-        });
-        return;
-      }
-
-      console.log(`[CRON] ========== Score Pipeline Complete (${duration}s) ==========`);
-      await reportBetterStackHeartbeatSuccess();
     } catch (error) {
-      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
       console.error("[CRON] Score pipeline error:", error);
-      await reportBetterStackHeartbeatFailure({
-        exitCode: 1,
-        context: `Score pipeline failed after ${duration}s`,
-        output: formatErrorForHeartbeat(error),
-      });
+      pipelineErrors.push(`Score pipeline: ${formatErrorForHeartbeat(error)}`);
+    }
+
+    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+    try {
+      await this.finishScorePipeline(duration, pipelineErrors);
     } finally {
       this.scorePipelineRunning = false;
     }
+  }
+
+  private async finishScorePipeline(duration: string, issues: string[]): Promise<void> {
+    if (issues.length === 0) {
+      console.log(`[CRON] ========== Score Pipeline Complete (${duration}s) ==========`);
+      await reportBetterStackHeartbeatSuccess();
+      return;
+    }
+
+    console.error(
+      `[CRON] ========== Score Pipeline Finished With Errors (${duration}s, ${issues.length} issue(s)) ==========`,
+    );
+    for (const issue of issues) {
+      console.error(`[CRON] Issue:\n${issue}`);
+    }
+    await reportBetterStackHeartbeatFailure({
+      exitCode: 1,
+      context: `Score pipeline finished with ${issues.length} error(s) in ${duration}s`,
+      output: issues.join("\n\n"),
+    });
   }
 
   private async runOverviewPipeline(): Promise<void> {

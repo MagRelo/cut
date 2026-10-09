@@ -38,28 +38,73 @@ export function formatErrorForHeartbeat(error: unknown): string {
   return String(error);
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function sendHeartbeatRequest(
   url: string,
   options?: { method?: "GET" | "POST"; body?: string },
 ): Promise<void> {
   const method = options?.method ?? "GET";
 
-  try {
-    const init: RequestInit = {
-      method,
-      signal: AbortSignal.timeout(HEARTBEAT_TIMEOUT_MS),
-    };
-    if (options?.body !== undefined) {
-      init.headers = { "Content-Type": "text/plain; charset=utf-8" };
-      init.body = options.body;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const init: RequestInit = {
+        method,
+        signal: AbortSignal.timeout(HEARTBEAT_TIMEOUT_MS),
+      };
+      if (options?.body !== undefined) {
+        init.headers = { "Content-Type": "text/plain; charset=utf-8" };
+        init.body = options.body;
+      }
+      const response = await fetch(url, init);
+      if (!response.ok) {
+        console.warn(
+          `[CRON] Better Stack heartbeat request failed: HTTP ${response.status} (${url})`,
+        );
+      }
+      return;
+    } catch (error) {
+      if (attempt === 1) {
+        await sleep(1_000);
+        continue;
+      }
+      console.warn("[CRON] Better Stack heartbeat request failed:", error);
     }
-    const response = await fetch(url, init);
-    if (!response.ok) {
-      console.warn(`[CRON] Better Stack heartbeat request failed: HTTP ${response.status} (${url})`);
-    }
-  } catch (error) {
-    console.warn("[CRON] Better Stack heartbeat request failed:", error);
   }
+}
+
+function errorText(error: unknown, depth = 0): string {
+  if (depth > 5 || error == null) {
+    return "";
+  }
+  if (typeof error === "string") {
+    return error;
+  }
+  if (error instanceof Error) {
+    const extra = error as { code?: unknown; rawMessage?: unknown; cause?: unknown };
+    return [
+      error.name,
+      error.message,
+      extra.code,
+      extra.rawMessage,
+      errorText(extra.cause, depth + 1),
+    ]
+      .filter((part) => part != null && part !== "")
+      .join(" ");
+  }
+  return String(error);
+}
+
+/**
+ * Dropped connections and timeouts that clear on their own.
+ * These must not exit the cron process or open a heartbeat incident.
+ */
+export function isTransientProcessError(error: unknown): boolean {
+  return /\b(?:ECONNRESET|ECONNREFUSED|EAI_AGAIN|ETIMEDOUT|EPIPE|UND_ERR_\w*|AbortError|TimeoutError)\b|socket hang up|The operation was aborted/i.test(
+    errorText(error),
+  );
 }
 
 /** Ping after a fully successful pipeline run. */
@@ -110,10 +155,18 @@ export function registerBetterStackCronProcessMonitoring(): void {
   };
 
   process.on("uncaughtException", (error) => {
+    if (isTransientProcessError(error)) {
+      console.error("[CRON] Transient uncaught exception (process kept alive):", error);
+      return;
+    }
     reportFatalAndExit("[CRON] Uncaught exception", error, 1);
   });
 
   process.on("unhandledRejection", (reason) => {
+    if (isTransientProcessError(reason)) {
+      console.error("[CRON] Transient unhandled rejection (process kept alive):", reason);
+      return;
+    }
     reportFatalAndExit("[CRON] Unhandled rejection", reason, 1);
   });
 }

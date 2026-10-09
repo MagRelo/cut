@@ -5,6 +5,7 @@
 import { createPublicClient, createWalletClient, http, getContract, type WalletClient } from "viem";
 import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import { getChainConfig } from "../../lib/chainConfig.js";
+import { retryOnceOnRpcBlockNotFound } from "../../utils/rpcBlockNotFound.js";
 import { getOperatorAddress, getOperatorPrivateKey } from "../../lib/operator.js";
 import ContestController from "../../contracts/ContestController.json" with { type: "json" };
 
@@ -80,11 +81,13 @@ export async function readContestState(
   blockNumber?: bigint,
 ): Promise<number> {
   const publicClient = getPublicClient(chainId);
-  const state = (await publicClient.readContract({
-    address: contestAddress as `0x${string}`,
-    abi: ContestController.abi,
-    functionName: "state",
-    ...(blockNumber !== undefined ? { blockNumber } : {}),
-  })) as bigint;
+  const state = (await retryOnceOnRpcBlockNotFound(() =>
+    publicClient.readContract({
+      address: contestAddress as `0x${string}`,
+      abi: ContestController.abi,
+      functionName: "state",
+      ...(blockNumber !== undefined ? { blockNumber } : {}),
+    }),
+  )) as bigint;
   return Number(state);
 }

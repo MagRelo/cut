@@ -75,9 +75,9 @@ export async function fetchScorecardRaw(
     return validated.data.scorecardV2;
   } catch (error) {
     if (error instanceof Error) {
-      console.error("Error fetching scorecard:", error.message);
+      console.warn("Error fetching scorecard:", error.message);
     } else {
-      console.error("Unknown error:", error);
+      console.warn("Unknown error:", error);
     }
     return null;
   }

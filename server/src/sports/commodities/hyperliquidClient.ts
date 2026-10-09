@@ -60,7 +60,9 @@ function markCacheMs(): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_MARK_CACHE_MS;
 }
 
-async function postInfo<T>(body: Record<string, unknown>): Promise<T> {
+const RETRYABLE_INFO_STATUSES = new Set([502, 503, 504]);
+
+async function postInfoOnce<T>(body: Record<string, unknown>): Promise<T> {
   const response = await fetch(getInfoUrl(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -69,10 +71,24 @@ async function postInfo<T>(body: Record<string, unknown>): Promise<T> {
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
-    throw new Error(`Hyperliquid info API ${response.status}: ${text.slice(0, 200)}`);
+    const error = new Error(`Hyperliquid info API ${response.status}: ${text.slice(0, 200)}`);
+    (error as { status?: number }).status = response.status;
+    throw error;
   }
 
   return (await response.json()) as T;
+}
+
+async function postInfo<T>(body: Record<string, unknown>): Promise<T> {
+  try {
+    return await postInfoOnce(body);
+  } catch (error) {
+    const status = (error as { status?: number }).status;
+    if (status == null || !RETRYABLE_INFO_STATUSES.has(status)) {
+      throw error;
+    }
+    return postInfoOnce(body);
+  }
 }
 
 export function parseHlCoin(hlCoin: string): { hlDex: string; ticker: string } | null {

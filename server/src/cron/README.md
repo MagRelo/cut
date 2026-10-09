@@ -68,8 +68,11 @@ Better Stack heartbeat reports on the **score** pipeline only.
 ## Error handling
 
 - Each step is wrapped in `executeWithErrorHandling`; one failure does not stop later steps.
-- DB connection errors (`P2037`) wait 30 seconds before the wrapper returns.
 - Logs use the `[CRON]` prefix.
+- Upstream blips are tried once more in the same run. That covers Hyperliquid 502/503/504, a PGA field response that is truncated or the wrong shape, a thrown database connectivity error (`P1001`, `P1017`, `P2024`, `P2037`, pool timeout, socket timeout), and an `eth_call` whose block the RPC has not indexed yet. The retry is the read or the thrown task, not a batch that already returned per-contest failures.
+- Anything still failing after that pages Better Stack on that run. Stuck cases page immediately: oracle mismatch, a missing referral or emergency-recovery address, a winner not on ReferralGraph, a contest whose chain state will not lock, an activate client bug, and a missing table.
+- PGA scorecard and player-profile misses are logged as warnings and skipped. They do not fail the pipeline. Commentary failures stay on the overview worker and do not fail the score heartbeat.
+- Dropped connections and timeouts (including commentary-client `ECONNRESET`) are logged and do not exit the process. The Better Stack ping itself retries once.
 
 ---
 

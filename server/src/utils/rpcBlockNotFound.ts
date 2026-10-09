@@ -22,6 +22,18 @@ function errorText(error: unknown): string {
   return String(error);
 }
 
+/** Read again when Coinbase has not indexed the block yet. Writes are not retried. */
+export async function retryOnceOnRpcBlockNotFound<T>(read: () => Promise<T>): Promise<T> {
+  try {
+    return await read();
+  } catch (error) {
+    if (!isRpcBlockNotFoundError(error)) {
+      throw error;
+    }
+    return read();
+  }
+}
+
 /** Coinbase / viem historical eth_call before the RPC has indexed the block. */
 export function isRpcBlockNotFoundError(error: unknown): boolean {
   const haystack = errorText(error).toLowerCase();

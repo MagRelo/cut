@@ -5,6 +5,24 @@ import {
   hyperliquidCandleCacheSize,
 } from "./hyperliquidClient.js";
 
+function jsonResponse(body: unknown) {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => body,
+    text: async () => "",
+  };
+}
+
+function statusResponse(status: number) {
+  return {
+    ok: false,
+    status,
+    json: async () => ({}),
+    text: async () => "bad gateway",
+  };
+}
+
 function candlePayload(t: number) {
   return [
     {
@@ -59,5 +77,50 @@ describe("fetchCandles cache", () => {
     await fetchCandles("xyz:GOLD", "5m", 1, 2);
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(hyperliquidCandleCacheSize()).toBe(1);
+  });
+});
+
+describe("Hyperliquid info retries", () => {
+  beforeEach(() => {
+    clearHyperliquidClientCache();
+  });
+
+  afterEach(() => {
+    clearHyperliquidClientCache();
+    vi.unstubAllGlobals();
+  });
+
+  it("retries a 504 once and returns the next payload", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(statusResponse(504))
+      .mockResolvedValueOnce(jsonResponse(candlePayload(1)));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const candles = await fetchCandles("xyz:GOLD", "5m", 1, 2);
+
+    expect(candles).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws when a 502 is still failing", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(statusResponse(502)),
+    );
+
+    await expect(fetchCandles("xyz:GOLD", "5m", 1, 2)).rejects.toThrow(
+      "Hyperliquid info API 502",
+    );
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry a 400", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(statusResponse(400)));
+
+    await expect(fetchCandles("xyz:GOLD", "5m", 1, 2)).rejects.toThrow(
+      "Hyperliquid info API 400",
+    );
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 });

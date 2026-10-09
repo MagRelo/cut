@@ -126,7 +126,7 @@ async function fetchPlayerProfileData(playerId: string, currentTour = "R"): Prom
 
   if (!response.ok) {
     const responseText = await response.text();
-    console.error(`HTTP error! status: ${response.status}`, {
+    console.warn(`HTTP error! status: ${response.status}`, {
       statusText: response.statusText,
       headers: Object.fromEntries(response.headers.entries()),
       body: responseText,
@@ -142,12 +142,12 @@ async function fetchPlayerProfileData(playerId: string, currentTour = "R"): Prom
   };
 
   if (data.errors) {
-    console.error(`API error for player ${playerId}:`, data.errors);
+    console.warn(`API error for player ${playerId}:`, data.errors);
     throw new Error(`API error: ${data.errors[0]?.message || "Unknown error"}`);
   }
 
   if (!data.data?.playerProfileOverview) {
-    console.error(`No profile data returned for player ${playerId}. Full response:`, data);
+    console.warn(`No profile data returned for player ${playerId}. Full response:`, data);
   }
 
   return data;
@@ -158,7 +158,7 @@ export async function getPlayerProfileOverview(
   currentTour?: string
 ): Promise<PlayerProfileData | null> {
   if (!playerId) {
-    console.error("No player ID provided");
+    console.warn("No player ID provided");
     return null;
   }
 
@@ -166,18 +166,18 @@ export async function getPlayerProfileOverview(
     const data = await fetchPlayerProfileData(playerId, currentTour);
 
     if (!data || typeof data !== "object") {
-      console.error(`Invalid data structure returned from API for player ${playerId}`);
+      console.warn(`Invalid data structure returned from API for player ${playerId}`);
       return null;
     }
 
     if (!("data" in data)) {
-      console.error(`Missing 'data' field in API response for player ${playerId}`);
+      console.warn(`Missing 'data' field in API response for player ${playerId}`);
       return null;
     }
 
     const responseData = data as { data?: { playerProfileOverview?: any } };
     if (!responseData.data?.playerProfileOverview) {
-      console.error(`No profile data returned from API for player ${playerId}`);
+      console.warn(`No profile data returned from API for player ${playerId}`);
       return null;
     }
 
@@ -186,22 +186,22 @@ export async function getPlayerProfileOverview(
       return validatedData.data.playerProfileOverview;
     } catch (validationError) {
       if (validationError instanceof z.ZodError) {
-        console.error(`Validation error for player ${playerId}:`, {
+        console.warn(`Validation error for player ${playerId}:`, {
           errors: validationError.errors.map((err) => ({
             path: err.path.join("."),
             message: err.message,
           })),
         });
       } else {
-        console.error(`Validation error for player ${playerId}:`, validationError);
+        console.warn(`Validation error for player ${playerId}:`, validationError);
       }
       return null;
     }
   } catch (error) {
     if (error instanceof Error) {
-      console.error(`Error fetching player profile for ${playerId}: ${error.message}`);
+      console.warn(`Error fetching player profile for ${playerId}: ${error.message}`);
     } else {
-      console.error(`Unknown error for player ${playerId}`);
+      console.warn(`Unknown error for player ${playerId}`);
     }
     return null;
   }
