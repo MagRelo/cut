@@ -18,7 +18,7 @@ const toneChipClassName: Record<Exclude<ListHeaderTone, "past" | "live">, string
 };
 
 const titleToneClassName =
-  "inline-flex max-w-full items-center gap-1.5 truncate font-display text-sm font-semibold uppercase tracking-wider text-slate-500";
+  "inline-flex max-w-full items-center gap-1.5 truncate font-display text-sm font-semibold uppercase tracking-wider text-slate-900";
 
 export const ListHeader: React.FC<ListHeaderProps> = ({
   title,

@@ -31,7 +31,7 @@ export function eventHeaderPrimaryLineClassName(tone: EventHeaderTone): string {
 export function eventHeaderSecondaryLineClassName(tone: EventHeaderTone): string {
   return cn(
     tone === "paper"
-      ? "text-gray-600"
+      ? "text-gray-900"
       : "text-white/80 [text-shadow:_0_1px_1px_rgb(0_0_0_/_35%)]",
   );
 }
@@ -46,7 +46,7 @@ export function eventHeaderMetaRowClassName(tone: EventHeaderTone): string {
 }
 
 export function eventHeaderSeparatorClassName(tone: EventHeaderTone): string {
-  return cn("text-[9px] leading-none", tone === "paper" ? "text-gray-400" : "text-white/60");
+  return cn("text-[9px] leading-none", tone === "paper" ? "text-gray-700" : "text-white/60");
 }
 
 export function eventHeaderActionLinkClassName(tone: EventHeaderTone): string {
