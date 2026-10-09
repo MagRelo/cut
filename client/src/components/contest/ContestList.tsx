@@ -14,7 +14,6 @@ interface ContestListProps {
   error: string | null;
   eventShell?: CompetitionEventShell;
   variant?: ContestListItemVariant;
-  nest?: "default" | "hero";
   createContestTo?: string;
 }
 
@@ -48,23 +47,14 @@ export function ContestListConnectHint({ className = "mt-6" }: { className?: str
   );
 }
 
-function emptySlotClassName(nest: "default" | "hero"): string {
-  return cn(
-    "rounded-lg bg-slate-50 shadow-md shadow-slate-900/10 ring-1 ring-black/5",
-    nest === "hero" ? "p-4" : "p-3.5",
-  );
-}
-
-function CreateContestSlot({ to, nest }: { to: string; nest: "default" | "hero" }) {
+function CreateContestRow({ to }: { to: string }) {
   return (
     <Link
       to={to}
-      className={`${emptySlotClassName(nest)} group flex min-h-[5.5rem] flex-col items-center justify-center gap-2 text-center`}
+      className="flex items-center gap-2 px-4 py-3 font-display text-sm font-semibold text-gray-900 transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-500"
     >
-      <span className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2.5 font-display text-sm font-medium text-white">
-        <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
-        Create Contest
-      </span>
+      <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
+      Create contest
     </Link>
   );
 }
@@ -75,7 +65,6 @@ export const ContestList = ({
   error,
   eventShell,
   variant = "default",
-  nest = "default",
   createContestTo,
 }: ContestListProps) => {
   if (loading) {
@@ -93,10 +82,16 @@ export const ContestList = ({
 
   if (contests.length === 0) {
     if (createContestTo) {
-      return <CreateContestSlot to={createContestTo} nest={nest} />;
+      return (
+        <ul>
+          <li>
+            <CreateContestRow to={createContestTo} />
+          </li>
+        </ul>
+      );
     }
     return (
-      <div className={emptySlotClassName(nest)}>
+      <div className="px-4 py-4">
         <p className="mb-1 font-display text-base font-semibold text-gray-900">
           New contests coming soon!
         </p>
@@ -108,17 +103,22 @@ export const ContestList = ({
   }
 
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <ul className="divide-y divide-slate-200">
       {contests.map((contest) => (
-        <ContestListItem
-          key={contest.id}
-          contest={contest}
-          to={contestLobbyPath(contest)}
-          eventShell={eventShell}
-          variant={variant}
-        />
+        <li key={contest.id}>
+          <ContestListItem
+            contest={contest}
+            to={contestLobbyPath(contest)}
+            eventShell={eventShell}
+            variant={variant}
+          />
+        </li>
       ))}
-      {createContestTo ? <CreateContestSlot to={createContestTo} nest={nest} /> : null}
-    </div>
+      {createContestTo ? (
+        <li>
+          <CreateContestRow to={createContestTo} />
+        </li>
+      ) : null}
+    </ul>
   );
 };

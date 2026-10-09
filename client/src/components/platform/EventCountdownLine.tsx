@@ -1,5 +1,9 @@
 import { CountdownTimer } from "../common/CountdownTimer";
 import { eventStartDateFromMetadata, eventStatusFromMetadata } from "../../lib/eventMetadata";
+import {
+  eventHeaderCountdownClassName,
+  type EventHeaderTone,
+} from "./eventHeaderTone";
 
 function isBeforeDate(targetDate: string): boolean {
   const ms = new Date(targetDate).getTime();
@@ -16,7 +20,13 @@ export function shouldShowEventCountdown(metadata: unknown): boolean {
   return status !== "LIVE" && status !== "COMPLETE";
 }
 
-export function EventCountdownLine({ metadata }: { metadata: unknown }) {
+export function EventCountdownLine({
+  metadata,
+  tone = "hero",
+}: {
+  metadata: unknown;
+  tone?: EventHeaderTone;
+}) {
   const startDate = eventStartDateFromMetadata(metadata);
   if (!startDate || !shouldShowEventCountdown(metadata)) {
     return null;
@@ -25,7 +35,7 @@ export function EventCountdownLine({ metadata }: { metadata: unknown }) {
   return (
     <span>
       Begins in{" "}
-      <strong className="ml-1 tabular-nums text-sky-200">
+      <strong className={eventHeaderCountdownClassName(tone)}>
         <CountdownTimer targetDate={startDate} />
       </strong>
     </span>

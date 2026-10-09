@@ -14,7 +14,7 @@ export const F1EventSummary: React.FC<EventSummaryProps> = ({ event, surface = "
   if (surface === "content") {
     return (
       <div className="px-4 py-3">
-        <F1EventDetails event={event} />
+        <F1EventDetails event={event} tone="paper" />
       </div>
     );
   }

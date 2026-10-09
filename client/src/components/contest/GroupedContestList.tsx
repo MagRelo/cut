@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import type { CompetitionEventShell } from "@cut/sport-sdk";
 import type { ContestDirectoryEvent, EventContestGroup } from "../../types/contest";
 import { formatTournamentDateRange } from "../../lib/contestCreation";
 import { eventShellFromDirectoryEvent } from "../../lib/contestNavigation";
@@ -25,6 +26,20 @@ function eventSublabel(event: ContestDirectoryEvent): string | null {
   return event.externalId;
 }
 
+function EventImageBand({ sportId, event }: { sportId: string; event: CompetitionEventShell }) {
+  const plugin = useSportUIPlugin(sportId);
+  const heroImage = plugin?.resolveEventHeroImage ? plugin.resolveEventHeroImage(event) : null;
+  if (!heroImage) return null;
+
+  return (
+    <div
+      className={cn("h-36 bg-cover bg-center sm:h-44", plugin?.eventHeroImageClassName)}
+      style={{ backgroundImage: `url(${heroImage})` }}
+      aria-hidden
+    />
+  );
+}
+
 function GroupedContestSection({
   group,
   variant = "default",
@@ -34,70 +49,40 @@ function GroupedContestSection({
   variant?: ContestListItemVariant;
   createContestTo?: string;
 }) {
-  const plugin = useSportUIPlugin(group.event.sportId);
   const eventShell = eventShellFromDirectoryEvent(group.event);
-  const heroImage = plugin?.resolveEventHeroImage ? plugin.resolveEventHeroImage(eventShell) : null;
-  const hasHeroPanel = Boolean(group.event.sportId && heroImage);
+  const sublabel = eventSublabel(group.event);
 
-  if (hasHeroPanel) {
-    const heroImageClassName = plugin?.eventHeroImageClassName;
-    return (
-      <section className="overflow-hidden rounded-none sm:rounded-xl">
-        <div className="relative overflow-hidden">
-          <div className="absolute inset-0 overflow-hidden" aria-hidden>
-            <div
-              className={cn("absolute inset-0 bg-cover bg-center", heroImageClassName)}
-              style={{ backgroundImage: `url(${heroImage})` }}
-            />
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-black/10" aria-hidden />
-          <div className="relative z-10">
+  return (
+    <section className="overflow-hidden rounded-xl border border-slate-400/60 bg-white shadow-sm">
+      {group.event.sportId ? (
+        <>
+          <EventImageBand sportId={group.event.sportId} event={eventShell} />
+          <div className="border-b border-slate-200">
             <SportEventHeader
               sportId={group.event.sportId}
               event={eventShell}
               summarySurface="content"
             />
-            <div className="px-3 pb-5 pt-1">
-              <ContestList
-                contests={group.contests}
-                loading={false}
-                error={null}
-                eventShell={eventShell}
-                variant={variant}
-                nest="hero"
-                createContestTo={createContestTo}
-              />
-            </div>
           </div>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="overflow-hidden rounded-none border-y border-slate-200 bg-white sm:rounded-xl sm:border">
-      {group.event.sportId ? (
-        <SportEventHeader sportId={group.event.sportId} event={eventShell} />
+        </>
       ) : (
-        <header className="border-b border-slate-100 px-4 py-3">
-          <h4 className="font-display text-base font-semibold text-gray-900">
+        <header className="border-b border-slate-200 px-4 py-3">
+          <h4 className="font-display text-2xl font-bold leading-snug tracking-tight text-gray-900 sm:text-3xl">
             {group.event.sportName} · {group.event.name}
           </h4>
-          {eventSublabel(group.event) ? (
-            <p className="font-display text-sm text-gray-500">{eventSublabel(group.event)}</p>
+          {sublabel ? (
+            <p className="mt-1 font-display text-sm font-medium text-gray-900">{sublabel}</p>
           ) : null}
         </header>
       )}
-      <div className="border-t border-slate-800 bg-slate-900 p-3">
-        <ContestList
-          contests={group.contests}
-          loading={false}
-          error={null}
-          eventShell={eventShell}
-          variant={variant}
-          createContestTo={createContestTo}
-        />
-      </div>
+      <ContestList
+        contests={group.contests}
+        loading={false}
+        error={null}
+        eventShell={eventShell}
+        variant={variant}
+        createContestTo={createContestTo}
+      />
     </section>
   );
 }
@@ -115,10 +100,10 @@ export const GroupedContestList = ({
 
   let listContent: ReactNode;
 
-  // Prefer existing groups over the spinner so refetches don't rip hero images out.
+  // Prefer existing groups over the spinner so refetches don't rip the list out.
   if (groups.length > 0) {
     listContent = (
-      <div className="-mx-4 space-y-5">
+      <div className="space-y-5">
         {groups.map((group) => (
           <GroupedContestSection
             key={group.event.id}
