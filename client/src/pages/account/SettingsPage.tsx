@@ -25,7 +25,7 @@ const AccountInfo = ({
   accountIdAddress: string | undefined;
 }) => {
   return (
-    <PageSection>
+    <PageSection variant="card">
       <h2 className="mb-3 font-display text-lg font-semibold text-gray-700">Account Information</h2>
 
       <div className="space-y-3 pl-3">
@@ -59,16 +59,19 @@ const AccountInfo = ({
       </div>
 
       {canSignOut && (
-        <div className="mt-4 flex justify-center pt-4">
-          <button
-            type="button"
-            className="min-w-[120px] rounded border border-blue-500 bg-blue-500 px-4 py-1 font-display text-sm text-white transition-colors hover:bg-blue-600"
-            onClick={() => {
-              void disconnect();
-            }}
-          >
-            Sign Out
-          </button>
+        <div className="mt-4">
+          <hr className="border-gray-200" />
+          <div className="flex justify-center pt-4">
+            <button
+              type="button"
+              className="min-w-[120px] rounded border border-blue-500 bg-blue-500 px-4 py-1 font-display text-sm text-white transition-colors hover:bg-blue-600"
+              onClick={() => {
+                void disconnect();
+              }}
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
       )}
     </PageSection>
@@ -92,14 +95,16 @@ export function SettingsPage() {
         Settings
       </h1>
 
-      <DisplaySettings />
+      <div className="space-y-4">
+        <DisplaySettings />
 
-      <AccountInfo
-        disconnect={logout}
-        canSignOut={!!address || !!smartWalletAddress}
-        userEmail={user?.email}
-        accountIdAddress={smartWalletAddress}
-      />
+        <AccountInfo
+          disconnect={logout}
+          canSignOut={!!address || !!smartWalletAddress}
+          userEmail={user?.email}
+          accountIdAddress={smartWalletAddress}
+        />
+      </div>
     </>
   );
 }

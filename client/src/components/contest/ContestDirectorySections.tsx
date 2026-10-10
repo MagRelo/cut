@@ -29,7 +29,7 @@ export function ContestDirectorySections({
         : null;
 
   return (
-    <div className="-mx-4 -mt-4 bg-slate-100 px-4 py-4">
+    <div>
       {showUpcomingSection ? (
         <>
           <div className="mb-3">

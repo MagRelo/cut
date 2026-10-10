@@ -10,21 +10,13 @@ interface PagePanelProps {
 
 export const PagePanel: React.FC<PagePanelProps> = ({ children, variant = "default", className = "" }) => {
   return (
-    <div
-      className={[
-        "bg-white min-h-[4rem]",
-        variant === "default" ? "p-4" : "",
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
-    >
+    <div className={["min-h-[4rem]", variant === "default" ? "p-4" : "", className].filter(Boolean).join(" ")}>
       {children}
     </div>
   );
 };
 
-/** Route-aware panel wrapper for the app shell. */
+/** Route-aware padding wrapper. The page color comes from the app shell. */
 export const PageContentPanel: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const variant = getPagePanelVariant(location.pathname);

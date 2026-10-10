@@ -17,8 +17,8 @@ export function WalletBalancePanel({
   const email = user?.email;
 
   return (
-    <div className="max-w-md overflow-hidden rounded-lg border border-blue-500/60 bg-white shadow-md shadow-blue-950/10 ring-1 ring-blue-900/5">
-      <div className="bg-blue-50 px-4 py-4">
+    <div className="max-w-md overflow-hidden rounded-lg border border-blue-200 bg-gradient-to-tl from-blue-100 via-blue-50 to-white shadow-md shadow-blue-950/10 ring-1 ring-blue-900/5">
+      <div className="px-4 py-4">
         <p className={walletSpecLabelClassName}>Balance</p>
         {balancesUnavailable ? (
           <button
@@ -43,7 +43,7 @@ export function WalletBalancePanel({
           </div>
         ) : null}
       </div>
-      <div className="border-t border-blue-200 bg-gradient-to-tl from-blue-100 via-blue-50 to-white">
+      <div className="border-t border-blue-200/80 bg-white/55">
         <AssetChips tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
       </div>
     </div>

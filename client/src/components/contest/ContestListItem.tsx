@@ -62,9 +62,9 @@ export const ContestListItem = ({
           {contest.name}
         </p>
         <p className="mt-0.5 truncate font-display text-sm text-gray-500">
-          {leagueLabel}
-          <span aria-hidden> · </span>
           {buyInValue}
+          <span aria-hidden> · </span>
+          {leagueLabel}
           <span aria-hidden> · </span>
           <span className="shrink-0 font-display text-sm">
             {formatContestStatus(contest.status)}

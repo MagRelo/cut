@@ -68,11 +68,11 @@ export function DisplaySettings() {
   };
 
   return (
-    <PageSection>
+    <PageSection variant="card">
       <h2 className="mb-3 font-display text-lg font-semibold text-gray-700">User Display</h2>
 
-      <form onSubmit={handleSubmit} className="space-y-8 pl-3">
-        <div className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="space-y-4 pl-3">
           <div>
             <label
               htmlFor="name"
@@ -187,14 +187,17 @@ export function DisplaySettings() {
 
         {error && <div className="mt-2 text-sm text-red-500">{error}</div>}
 
-        <div className="flex justify-center">
-          <button
-            type="submit"
-            disabled={isLoading || !hasChanges}
-            className="inline-block min-w-[120px] rounded border border-blue-500 bg-blue-500 px-3 py-1 font-display text-sm text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isLoading ? "Saving..." : "Save"}
-          </button>
+        <div>
+          <hr className="border-gray-200" />
+          <div className="flex justify-center pt-4">
+            <button
+              type="submit"
+              disabled={isLoading || !hasChanges}
+              className="inline-block min-w-[120px] rounded border border-blue-500 bg-blue-500 px-3 py-1 font-display text-sm text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isLoading ? "Saving..." : "Save"}
+            </button>
+          </div>
         </div>
       </form>
     </PageSection>

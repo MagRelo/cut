@@ -9,10 +9,10 @@ interface AppLayoutProps {
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-dvh bg-white flex flex-col">
-      <main className="flex-1 min-h-0 pb-6">
+    <div className="flex min-h-dvh flex-col bg-slate-100">
+      <main className="min-h-0 flex-1 pb-6">
         <div className="container mx-auto">
-          <div className="max-w-shell mx-auto">
+          <div className="mx-auto max-w-shell">
             <TopNav />
             <PageContentPanel>{children}</PageContentPanel>
           </div>
