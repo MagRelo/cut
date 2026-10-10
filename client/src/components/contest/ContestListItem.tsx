@@ -45,7 +45,7 @@ export const ContestListItem = ({
     <Link
       to={to}
       state={eventShell ? contestLobbyLinkState(eventShell, contest) : undefined}
-      aria-label={`${actionLabel} ${contest.name} contest`}
+      aria-label={`${actionLabel} ${leagueLabel} contest`}
       className={cn(
         "group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-500",
@@ -59,13 +59,14 @@ export const ContestListItem = ({
             isPast ? "text-slate-600" : "text-gray-900",
           )}
         >
-          {contest.name}
+          {leagueLabel}
         </p>
         <p className="mt-0.5 truncate font-display text-sm text-gray-500">
           {buyInValue}
-          <span aria-hidden> · </span>
-          {leagueLabel}
-          <span aria-hidden> · </span>
+          <span aria-hidden className="px-1">
+            {" "}
+            ·{" "}
+          </span>
           <span className="shrink-0 font-display text-sm">
             {formatContestStatus(contest.status)}
           </span>

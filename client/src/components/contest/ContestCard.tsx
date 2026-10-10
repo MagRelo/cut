@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { type Contest } from "../../types/contest";
 import { useContestPotDisplay } from "../../hooks/useContestPotDisplay";
-import { Cog6ToothIcon, UserGroupIcon } from "@heroicons/react/24/outline";
+import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 
 interface ContestCardProps {
   contest: Contest;
@@ -49,8 +49,7 @@ export const ContestCard = ({
   return (
     <div className="flex w-full min-w-0 items-center justify-between gap-2.5">
       <div className="min-w-0 flex-1 overflow-hidden">
-        <h3 className="flex min-w-0 items-center gap-1.5 font-display text-md font-medium leading-tight text-gray-700">
-          <UserGroupIcon className="h-5 w-5 shrink-0" aria-hidden />
+        <h3 className="flex min-w-0 items-center gap-1.5 font-display text-base font-semibold leading-tight text-slate-600">
           {groupTitle}
         </h3>
       </div>
@@ -65,7 +64,7 @@ export const ContestCard = ({
               className="flex items-center gap-5 rounded text-right transition hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
             >
               {showPotIcon ? (
-                <Cog6ToothIcon className="h-5 w-5 shrink-0 text-gray-500" aria-hidden />
+                <Cog6ToothIcon className="h-5 w-5 shrink-0 text-slate-600" aria-hidden />
               ) : null}
               {potValue}
             </button>
