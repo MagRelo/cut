@@ -1,5 +1,5 @@
 import type { CompetitionEventShell } from "@cut/sport-sdk";
-import { BanknotesIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import { type Contest } from "../../types/contest";
 import { contestLobbyPath } from "../../utils/contestRoutes";
 import { Link } from "react-router-dom";
@@ -21,14 +21,17 @@ export function ContestListConnectHint({ className = "mt-6" }: { className?: str
   return (
     <div
       className={cn(
-        "overflow-hidden rounded border border-blue-200 bg-gradient-to-br from-blue-200 via-blue-50 to-slate-100 p-4 text-center font-display shadow-md shadow-blue-950/10",
+        "overflow-hidden rounded border border-blue-200 bg-blue-100 p-4 text-center font-display shadow-md shadow-blue-950/10",
         className,
       )}
     >
-      <p className="text-base font-semibold text-gray-900">
-        <span className="mr-1.5 inline-flex h-8 w-8 -translate-y-px items-center justify-center rounded-full border border-emerald-600 bg-white align-middle">
-          <BanknotesIcon className="h-3.5 w-3.5 text-emerald-700" aria-hidden />
-        </span>
+      <span
+        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 font-display text-base font-bold leading-none text-white"
+        aria-hidden
+      >
+        $
+      </span>
+      <p className="mt-2 text-base font-semibold leading-snug text-gray-900">
         Real money contests available in private leagues
       </p>
       <p className="mt-1 text-sm text-gray-600">Sign in to see leagues you’re in, or start one.</p>
