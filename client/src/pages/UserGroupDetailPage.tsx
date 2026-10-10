@@ -132,7 +132,7 @@ export const UserGroupDetailPage = () => {
         ]}
       />
 
-      <header className="pb-4">
+      <PageSection variant="card">
         <h1 className="mb-1 font-display text-2xl font-bold leading-tight tracking-tight text-gray-900 sm:text-3xl">
           {userGroup.name}
         </h1>
@@ -141,10 +141,10 @@ export const UserGroupDetailPage = () => {
             {userGroup.description}
           </p>
         ) : null}
-      </header>
+      </PageSection>
 
       {isAdmin ? (
-        <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+        <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex} className="pt-2">
           <TabList className={tabListClassName()}>
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               Contests
@@ -163,7 +163,7 @@ export const UserGroupDetailPage = () => {
           </div>
         </TabGroup>
       ) : (
-        contestContent
+        <div className="pt-4">{contestContent}</div>
       )}
     </>
   );

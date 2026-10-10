@@ -65,9 +65,7 @@ export function ContestLobbyLoadingShell({
         <div className="border-b border-slate-200 px-4 py-3">
           <ContestCardSkeleton />
         </div>
-        <div className="px-4 pt-3">
-          <ContestTabListSkeleton />
-        </div>
+        <ContestTabListSkeleton />
         <div className="space-y-4 p-4">
           <TimelineSkeleton />
           <ContestEntryListSkeleton />

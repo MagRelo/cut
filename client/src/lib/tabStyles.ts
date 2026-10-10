@@ -2,12 +2,12 @@
  * Equal-width boxed tabs — active state is a filled background, not an underline.
  */
 export const tabListClassName = (...extra: string[]) =>
-  ["flex gap-1 rounded-sm bg-blue-50 p-0.5", ...extra].filter(Boolean).join(" ");
+  ["flex gap-1 rounded-sm bg-blue-50 pt-1", ...extra].filter(Boolean).join(" ");
 
-const tabActive = "bg-white text-slate-900 font-medium shadow-sm";
+const tabActive = "bg-white text-slate-900 font-medium";
 const tabInactive = "bg-transparent text-blue-500 hover:text-blue-600 hover:bg-white/60";
 
-const segmentActive = "bg-white text-slate-900 font-medium shadow-sm";
+const segmentActive = "bg-white text-slate-900 font-medium";
 const segmentInactive = "bg-transparent text-blue-500 hover:text-blue-600 hover:bg-white/60";
 
 export function tabButtonClassName(selected: boolean, options?: { compact?: boolean }): string {

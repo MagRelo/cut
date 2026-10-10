@@ -119,6 +119,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
               />
             </div>
           ) : null}
+
           <div className="border-b border-slate-200 px-4 py-3">
             <ContestCard
               contest={contest}
@@ -135,62 +136,50 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
             onChange={handleTabChange}
             key={viewModel.layout.layoutKey}
           >
-            <div className="px-4 pt-3">
-              <TabList className={tabListClassName()}>
-                {viewModel.layout.showLineupsTab ? (
-                  <Tab
-                    className={({ selected }: { selected: boolean }) =>
-                      tabButtonClassName(selected)
-                    }
-                  >
-                    Lineups
-                  </Tab>
-                ) : null}
+            <TabList className={tabListClassName()}>
+              {viewModel.layout.showLineupsTab ? (
                 <Tab
                   className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
                 >
-                  Contest
+                  Lineups
                 </Tab>
-                {viewModel.layout.showPredictionsTab ? (
-                  <Tab
-                    className={({ selected }: { selected: boolean }) =>
-                      tabButtonClassName(selected)
-                    }
-                  >
-                    Pool
-                  </Tab>
-                ) : null}
-                {viewModel.layout.showFeedTab ? (
-                  <Tab
-                    className={({ selected }: { selected: boolean }) =>
-                      tabButtonClassName(selected)
-                    }
-                  >
-                    <span className="inline-flex items-center justify-center gap-1.5">
-                      {hasUnreadMentions ? (
-                        <span
-                          aria-hidden="true"
-                          className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500"
-                        />
-                      ) : null}
-                      Cutbot
-                      {hasUnreadMentions ? (
-                        <span className="sr-only">, unread mentions</span>
-                      ) : null}
-                    </span>
-                  </Tab>
-                ) : null}
-                {viewModel.layout.showResultsTab ? (
-                  <Tab
-                    className={({ selected }: { selected: boolean }) =>
-                      tabButtonClassName(selected)
-                    }
-                  >
-                    Results
-                  </Tab>
-                ) : null}
-              </TabList>
-            </div>
+              ) : null}
+              <Tab
+                className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+              >
+                Contest
+              </Tab>
+              {viewModel.layout.showPredictionsTab ? (
+                <Tab
+                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                >
+                  Pool
+                </Tab>
+              ) : null}
+              {viewModel.layout.showFeedTab ? (
+                <Tab
+                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                >
+                  <span className="inline-flex items-center justify-center gap-1.5">
+                    {hasUnreadMentions ? (
+                      <span
+                        aria-hidden="true"
+                        className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500"
+                      />
+                    ) : null}
+                    Cutbot
+                    {hasUnreadMentions ? <span className="sr-only">, unread mentions</span> : null}
+                  </span>
+                </Tab>
+              ) : null}
+              {viewModel.layout.showResultsTab ? (
+                <Tab
+                  className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                >
+                  Results
+                </Tab>
+              ) : null}
+            </TabList>
 
             <TabPanels>
               {viewModel.layout.showLineupsTab && fieldSportId ? (
