@@ -9,7 +9,10 @@ import {
   EventCountdownLine,
   shouldShowEventCountdown,
 } from "../../components/platform/EventCountdownLine";
-import { EventLeaderboardLink } from "../../components/platform/EventLeaderboardLink";
+import {
+  EventLeaderboardLink,
+  useIsOnEventLeaderboard,
+} from "../../components/platform/EventLeaderboardLink";
 import { formatCommoditiesEventStatusLabel, formatCommoditySessionWindow } from "./commodityUtils";
 import {
   eventHeaderMetaRowClassName,
@@ -45,6 +48,7 @@ export function CommodityEventDetails({
     commodities?.sessionClose,
   );
   const showCountdown = shouldShowEventCountdown(event.metadata);
+  const onLeaderboardPage = useIsOnEventLeaderboard(event);
   const leaderboardTo = leaderboardPath(event.sportId, event.id);
   const leaderboardState = leaderboardLinkState(event);
 
@@ -74,9 +78,11 @@ export function CommodityEventDetails({
         )}
       </div>
 
-      <div className={eventHeaderMetaRowClassName(tone)}>
-        <EventLeaderboardLink event={event} />
-      </div>
+      {onLeaderboardPage ? null : (
+        <div className={eventHeaderMetaRowClassName(tone)}>
+          <EventLeaderboardLink event={event} />
+        </div>
+      )}
     </div>
   );
 }

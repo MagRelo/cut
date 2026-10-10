@@ -1,8 +1,5 @@
 export type PagePanelVariant = "default" | "flush";
 
-export function getPagePanelVariant(pathname: string): PagePanelVariant {
-  if (/^\/sports\/[^/]+(\/events\/[^/]+)?\/leaderboard$/.test(pathname)) {
-    return "flush";
-  }
+export function getPagePanelVariant(_pathname: string): PagePanelVariant {
   return "default";
 }

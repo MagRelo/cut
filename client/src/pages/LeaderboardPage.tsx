@@ -2,6 +2,12 @@ import React from "react";
 import { useParams, useSearchParams, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import type { CompetitionEventShell } from "@cut/sport-sdk";
+import {
+  EventCardImage,
+  eventCardBodyClassName,
+  eventCardSoloClassName,
+  useEventCardHeroImage,
+} from "../components/platform/EventCardFrame";
 import { EventLeaderboardPanel } from "../components/platform/EventLeaderboardPanel";
 import { SportEventHeader } from "../components/platform/SportEventHeader";
 import { ErrorMessage } from "../components/common/ErrorMessage";
@@ -22,6 +28,7 @@ export const LeaderboardPage: React.FC = () => {
   const navState = parseLeaderboardNavigationState(location.state);
   const headerEvent: CompetitionEventShell | null =
     navState?.eventShell ?? (eventId ? getDirectoryEventById(queryClient, eventId) : null);
+  const heroImage = useEventCardHeroImage(sportId, headerEvent);
 
   const clearPlayerParams = () => {
     if (!searchParams.has("pgaTourId") && !searchParams.has("playerId")) return;
@@ -32,17 +39,20 @@ export const LeaderboardPage: React.FC = () => {
   };
 
   if (!sportId || !eventId) {
-    return (
-      <div className="p-4">
-        <ErrorMessage message="Sport and event are required in the URL." />
-      </div>
-    );
+    return <ErrorMessage message="Sport and event are required in the URL." />;
   }
 
   return (
-    <div>
-      {headerEvent ? <SportEventHeader sportId={sportId} event={headerEvent} /> : null}
-      <div className="px-4 pt-2">
+    <section className="shadow-sm">
+      {headerEvent && heroImage ? (
+        <EventCardImage sportId={sportId} event={headerEvent} />
+      ) : null}
+      <div className={heroImage ? eventCardBodyClassName : eventCardSoloClassName}>
+        {headerEvent ? (
+          <div className="border-b border-slate-200">
+            <SportEventHeader sportId={sportId} event={headerEvent} summarySurface="content" />
+          </div>
+        ) : null}
         <EventLeaderboardPanel
           sportId={sportId}
           eventId={eventId}
@@ -52,6 +62,6 @@ export const LeaderboardPage: React.FC = () => {
           onClearPlayerParams={clearPlayerParams}
         />
       </div>
-    </div>
+    </section>
   );
 };

@@ -7,7 +7,10 @@ import {
   EventCountdownLine,
   shouldShowEventCountdown,
 } from "../../components/platform/EventCountdownLine";
-import { EventLeaderboardLink } from "../../components/platform/EventLeaderboardLink";
+import {
+  EventLeaderboardLink,
+  useIsOnEventLeaderboard,
+} from "../../components/platform/EventLeaderboardLink";
 import { formatGolfEventStatus, parseGolfEventMetadata } from "./utils";
 import {
   eventHeaderActionLinkClassName,
@@ -46,6 +49,8 @@ export function GolfEventDetails({
   const showCountdown = shouldShowEventCountdown(event.metadata);
   const showPreview = isScheduled && hasSummary && onOpenSummary;
   const showLeaderboard = !isScheduled;
+  const onLeaderboardPage = useIsOnEventLeaderboard(event);
+  const showLeaderboardLink = showLeaderboard && !onLeaderboardPage;
   const leaderboardTo = leaderboardPath(event.sportId, event.id);
   const leaderboardState = leaderboardLinkState(event);
 
@@ -108,9 +113,9 @@ export function GolfEventDetails({
         )}
       </div>
 
-      {showPreview || showLeaderboard ? (
+      {showPreview || showLeaderboardLink ? (
         <div className={eventHeaderMetaRowClassName(tone)}>
-          {showLeaderboard ? (
+          {showLeaderboardLink ? (
             <EventLeaderboardLink event={event} />
           ) : (
             <button

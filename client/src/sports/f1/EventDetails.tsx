@@ -6,7 +6,10 @@ import {
   EventCountdownLine,
   shouldShowEventCountdown,
 } from "../../components/platform/EventCountdownLine";
-import { EventLeaderboardLink } from "../../components/platform/EventLeaderboardLink";
+import {
+  EventLeaderboardLink,
+  useIsOnEventLeaderboard,
+} from "../../components/platform/EventLeaderboardLink";
 import { formatF1EventStatusLabel, parseF1EventMetadataView } from "./utils";
 import {
   eventHeaderMetaRowClassName,
@@ -32,6 +35,7 @@ export function F1EventDetails({ event, className = "", tone = "hero" }: F1Event
   const seasonRound =
     f1.season != null && f1.round != null ? `${f1.season} · Round ${f1.round}` : null;
   const showCountdown = shouldShowEventCountdown(event.metadata);
+  const onLeaderboardPage = useIsOnEventLeaderboard(event);
   const leaderboardTo = leaderboardPath(event.sportId, event.id);
   const leaderboardState = leaderboardLinkState(event);
 
@@ -75,9 +79,11 @@ export function F1EventDetails({ event, className = "", tone = "hero" }: F1Event
         )}
       </div>
 
-      <div className={eventHeaderMetaRowClassName(tone)}>
-        <EventLeaderboardLink event={event} />
-      </div>
+      {onLeaderboardPage ? null : (
+        <div className={eventHeaderMetaRowClassName(tone)}>
+          <EventLeaderboardLink event={event} />
+        </div>
+      )}
     </div>
   );
 }
