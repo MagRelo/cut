@@ -52,6 +52,35 @@ describe("contestAnnouncement email", () => {
     expect(html).toContain("https://playthecut.com/contest/abc");
     expect(html).toContain("Open contest");
     expect(html).not.toContain("/contests");
+    expect(html).not.toContain("CommodityBG3.png");
+  });
+
+  it("places a hero image above the event title when one is set", () => {
+    const html = buildContestAnnouncementHtml({
+      ...data,
+      announcement: {
+        ...announcement,
+        headerImageUrl: "https://playthecut.com/CommodityBG3.png",
+      },
+    });
+    const imageAt = html.indexOf("CommodityBG3.png");
+    const titleAt = html.lastIndexOf("Charles Schwab Challenge");
+    expect(imageAt).toBeGreaterThan(-1);
+    expect(imageAt).toBeLessThan(titleAt);
+    expect(html).toContain("height:176px");
+  });
+
+  it("bolds the week sign-off", () => {
+    const html = buildContestAnnouncementHtml({
+      ...data,
+      announcement: {
+        ...announcement,
+        blurb:
+          "A hurricane cancels a presidential football trip. Harry Styles takes over Madison Square Garden. And the Bills head to Los Angeles.\n\nThose stories—and a few surprises—this week on Planet Earth.",
+      },
+    });
+    expect(html).toContain('<strong style="font-weight:700;">this week on Planet Earth.</strong>');
+    expect(html).toContain("And the Bills head to Los Angeles.<br><br>Those stories");
   });
 
   it("uses contest address for lobby href when present", () => {

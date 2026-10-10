@@ -14,12 +14,17 @@ export function parseEmailAnnouncementContent(raw: unknown): EmailAnnouncementCo
   if (!Array.isArray(value.leadSections) || !Array.isArray(value.bodySections)) {
     return null;
   }
+  const headerImageUrl =
+    typeof value.headerImageUrl === "string" && value.headerImageUrl.trim()
+      ? value.headerImageUrl.trim()
+      : null;
   return {
     courseLine: value.courseLine,
     dateLine: value.dateLine,
     blurb: value.blurb,
     leadSections: value.leadSections as EmailAnnouncementSection[],
     bodySections: value.bodySections as EmailAnnouncementSection[],
+    ...(headerImageUrl ? { headerImageUrl } : {}),
   };
 }
 

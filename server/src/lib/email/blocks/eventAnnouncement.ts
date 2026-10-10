@@ -15,6 +15,9 @@ const ANNOUNCEMENT_EYEBROW = "New contest";
 const ANNOUNCEMENT_CARD_STYLE =
   "border:1px solid #cbd5e1;border-radius:8px;padding:16px 18px;background:#ffffff;";
 
+/** Event card photo strip at `sm:h-44` (11rem). */
+const EVENT_HEADER_IMAGE_HEIGHT_PX = 176;
+
 export type EventAnnouncementData = {
   tournamentName: string;
   courseLine: string;
@@ -23,6 +26,7 @@ export type EventAnnouncementData = {
   leagueName?: string;
   memberCount?: number;
   buyInLabel?: string;
+  headerImageUrl?: string | null;
 };
 
 export function announcementDataFromContent(
@@ -38,6 +42,7 @@ export function announcementDataFromContent(
     ...(contest?.leagueName !== undefined ? { leagueName: contest.leagueName } : {}),
     ...(contest?.memberCount !== undefined ? { memberCount: contest.memberCount } : {}),
     ...(contest?.buyInLabel !== undefined ? { buyInLabel: contest.buyInLabel } : {}),
+    ...(content.headerImageUrl ? { headerImageUrl: content.headerImageUrl } : {}),
   };
 }
 
@@ -77,6 +82,27 @@ function renderContestMetaRowHtml(data: EventAnnouncementData): string {
 </table>`;
 }
 
+const WEEK_SIGN_OFF_BOLD = "this week on Planet Earth.";
+
+function emphasizeSignOff(text: string): string {
+  return escapeHtml(text).replaceAll(
+    WEEK_SIGN_OFF_BOLD,
+    `<strong style="font-weight:700;">${WEEK_SIGN_OFF_BOLD}</strong>`,
+  );
+}
+
+function renderBlurbHtml(blurb: string): string {
+  const paragraphs = blurb
+    .split(/\n+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const [first, ...rest] = paragraphs;
+  const inner = `${emphasizeSignOff(first ?? "")}${rest
+    .map((part) => `<br><br>${emphasizeSignOff(part)}`)
+    .join("")}`;
+  return `<p style="${ANNOUNCEMENT_DESCRIPTION_STYLE}">${inner}</p>`;
+}
+
 /** Announcement card: contest + event header + blurb prose (email). */
 export function renderEventAnnouncementHtml(data: EventAnnouncementData): string {
   const courseHtml = data.courseLine.trim()
@@ -85,23 +111,38 @@ export function renderEventAnnouncementHtml(data: EventAnnouncementData): string
   const dateHtml = data.dateLine.trim()
     ? `<p style="${BODY_DATE_LINE_TIGHT_STYLE}">${escapeHtml(data.dateLine.trim())}</p>`
     : "";
-  const descriptionHtml = data.blurb
-    ? `<p style="${ANNOUNCEMENT_DESCRIPTION_STYLE}">${escapeHtml(data.blurb)}</p>`
-    : "";
+  const descriptionHtml = data.blurb ? renderBlurbHtml(data.blurb) : "";
   const contestMetaHtml = renderContestMetaRowHtml(data);
-
-  return `<div style="margin:0 0 28px;">
-<h2 style="${SECTION_TITLE_STYLE}">${escapeHtml(ANNOUNCEMENT_EYEBROW)}</h2>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0;">
-  <tr>
-    <td style="${ANNOUNCEMENT_CARD_STYLE}">
-      <h1 style="${BODY_TITLE_H1_STYLE}">${escapeHtml(data.tournamentName)}</h1>
+  const copyHtml = `<h1 style="${BODY_TITLE_H1_STYLE}">${escapeHtml(data.tournamentName)}</h1>
       ${courseHtml}
       ${dateHtml}
       ${descriptionHtml}
-      ${contestMetaHtml}
+      ${contestMetaHtml}`;
+  const headerImageUrl = data.headerImageUrl?.trim() ?? "";
+  const cardInner = headerImageUrl
+    ? `<tr>
+    <td style="padding:0;line-height:0;font-size:0;">
+      <img src="${escapeHtml(headerImageUrl)}" alt="" width="504" height="${EVENT_HEADER_IMAGE_HEIGHT_PX}" style="display:block;width:100%;max-width:504px;height:${EVENT_HEADER_IMAGE_HEIGHT_PX}px;object-fit:cover;object-position:center;border:0;border-radius:8px 8px 0 0;" />
     </td>
   </tr>
+  <tr>
+    <td style="padding:16px 18px;">
+      ${copyHtml}
+    </td>
+  </tr>`
+    : `<tr>
+    <td style="${ANNOUNCEMENT_CARD_STYLE}">
+      ${copyHtml}
+    </td>
+  </tr>`;
+  const tableStyle = headerImageUrl
+    ? "margin:0;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;"
+    : "margin:0;";
+
+  return `<div style="margin:0 0 28px;">
+<h2 style="${SECTION_TITLE_STYLE}">${escapeHtml(ANNOUNCEMENT_EYEBROW)}</h2>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="${tableStyle}">
+  ${cardInner}
 </table>
 </div>`;
 }

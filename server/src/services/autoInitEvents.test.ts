@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   initGolf: vi.fn(),
   resolveNext: vi.fn(),
   generateSummary: vi.fn(),
+  generateWeekBrief: vi.fn(),
 }));
 
 vi.mock("../lib/prisma.js", () => ({
@@ -18,6 +19,10 @@ vi.mock("../lib/prisma.js", () => ({
 
 vi.mock("../sports/commodities/initEvent.js", () => ({
   initCommoditiesEvent: mocks.initCommodities,
+}));
+
+vi.mock("../sports/commodities/generateWeekBrief.js", () => ({
+  generateCommoditiesWeekBriefSafe: mocks.generateWeekBrief,
 }));
 
 vi.mock("../sports/pga-golf/initEvent.js", () => ({
@@ -83,6 +88,7 @@ describe("runAutoInitEvents", () => {
       fieldSize: 144,
     });
     mocks.generateSummary.mockResolvedValue(undefined);
+    mocks.generateWeekBrief.mockResolvedValue(undefined);
   });
 
   it("skips commodities when the week already exists", async () => {
@@ -121,12 +127,30 @@ describe("runAutoInitEvents", () => {
   });
 
   it("inits the upcoming commodities week on Saturday", async () => {
-    mocks.findFirst.mockResolvedValue(null);
+    mocks.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "cmd-event", externalId: "2026-W41" });
     await runAutoInitEvents({
       sports: "commodities",
       now: new Date("2026-10-03T16:00:00.000-04:00"),
     });
     expect(mocks.initCommodities).toHaveBeenCalledWith("2026-W41");
+    expect(mocks.generateWeekBrief).toHaveBeenCalledWith("cmd-event");
+  });
+
+  it("skips the commodities week brief when requested", async () => {
+    mocks.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "cmd-event", externalId: "2026-W41" });
+    await runAutoInitEvents({
+      sports: "commodities",
+      skipSummary: true,
+      now: new Date("2026-10-03T16:00:00.000-04:00"),
+    });
+    expect(mocks.initCommodities).toHaveBeenCalledWith("2026-W41");
+    expect(mocks.generateWeekBrief).not.toHaveBeenCalled();
   });
 
   it("prepares golf without activating when the current event is LIVE", async () => {

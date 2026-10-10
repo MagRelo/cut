@@ -3,6 +3,8 @@ import {
   EMPTY_SUMMARY_STYLE,
   FONT_QUOTE,
   SECTION_TITLE_STYLE,
+  STORY_BODY_STYLE,
+  STORY_HEADLINE_STYLE,
   SUMMARY_ITEM_STYLE,
 } from "../styles.js";
 import type { EmailAnnouncementSection } from "@cut/sport-sdk";
@@ -108,6 +110,32 @@ ${quoteBlocksHtml}
 </div>`;
 }
 
+function renderStorySectionHtml(section: EmailAnnouncementSection): string {
+  const rows = section.items
+    .map((item, index) => {
+      const label = item.label?.trim();
+      const headline = label
+        ? `<p style="${STORY_HEADLINE_STYLE}">${escapeHtml(label)}</p>`
+        : "";
+      const rule = index === 0 ? "" : "border-top:1px solid #e4e4e7;";
+      const padding = index === 0 ? "4px 0 16px" : "16px 0";
+      return `<tr>
+    <td style="padding:${padding};${rule}">
+      ${headline}
+      <p style="${STORY_BODY_STYLE}">${escapeHtml(item.body)}</p>
+    </td>
+  </tr>`;
+    })
+    .join("");
+
+  return `<div style="margin:0 0 20px;">
+<h2 style="${SECTION_TITLE_STYLE}">${escapeHtml(section.title)}</h2>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  ${rows}
+</table>
+</div>`;
+}
+
 function renderBulletSectionHtml(section: EmailAnnouncementSection): string {
   const itemsHtml = section.items
     .map((item) => {
@@ -130,7 +158,9 @@ export function renderBodySummarySectionsHtml(
 ): string {
   return (sections ?? [])
     .filter((s) => s.kind !== "quotes")
-    .map(renderBulletSectionHtml)
+    .map((section) =>
+      section.kind === "prose" ? renderStorySectionHtml(section) : renderBulletSectionHtml(section),
+    )
     .join("");
 }
 
@@ -169,6 +199,9 @@ export function renderSummarySectionByKeyHtml(
   if (!section) return "";
   if (section.kind === "quotes") {
     return renderLeadSummarySectionsHtml([section]);
+  }
+  if (section.kind === "prose") {
+    return renderStorySectionHtml(section);
   }
   return renderBulletSectionHtml(section);
 }

@@ -178,18 +178,24 @@ async function resolveContestMetadata(
       name: true,
       description: true,
       settings: true,
+      userGroup: { select: { name: true } },
+      event: { select: { metadata: true, externalId: true } },
     },
   });
   if (!contest?.name) {
     return null;
   }
 
+  const eventName = eventNameFromMetadata(contest.event.metadata, contest.event.externalId);
+  const leagueName = contest.userGroup?.name?.trim() || null;
   const entryLabel = getContestEntryLabel(contest.settings);
   const titleParts = [entryLabel, contest.name].filter(Boolean).join(" ").trim();
+  const title =
+    eventName && leagueName ? `${eventName} - ${leagueName}` : `${titleParts}${TITLE_SUFFIX}`;
 
   return {
     ...defaults,
-    title: `${titleParts}${TITLE_SUFFIX}`,
+    title,
     description: contest.description?.trim() || `Join this contest on ${BRAND_PROSE}.`,
   };
 }

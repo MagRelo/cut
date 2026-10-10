@@ -30,5 +30,52 @@ describe("createCommoditiesEmailContent", () => {
     expect(content.dateLine).toBe("Jun 29–Jul 3, 2026");
     expect(content.blurb).toBeNull();
     expect(content.bodySections).toEqual([]);
+    expect(content.headerImageUrl).toBe("https://playthecut.com/CommodityBG3.png");
+  });
+
+  it("maps the teaser onto the card and puts Last week ahead of Top Stories", async () => {
+    const content = await adapter.loadAnnouncementContent({
+      sportId: COMMODITIES_SPORT_ID,
+      externalId: "2026-W27",
+      name: "Planet Earth – Week 27",
+      metadata: {
+        ...commoditiesMetadata,
+        summarySections: [
+          {
+            title: "Top Stories",
+            items: [{ label: "Data centers", body: "Power demand is the week's bid for natural gas." }],
+          },
+          {
+            title: "Event Blurb",
+            items: [
+              {
+                body: "Data centers are the hot topic.\nThose stories—and a few surprises—this week on Planet Earth.",
+              },
+            ],
+          },
+          {
+            title: "Last week",
+            items: [{ label: "Gold", body: "Best — +42 pts, +3.1% on the week" }],
+          },
+        ],
+      },
+    });
+
+    expect(content.blurb).toBe(
+      "Data centers are the hot topic.\nThose stories—and a few surprises—this week on Planet Earth.",
+    );
+    expect(content.leadSections).toEqual([]);
+    expect(content.bodySections.map((section) => section.title)).toEqual([
+      "Last week",
+      "Top Stories",
+    ]);
+    expect(content.bodySections[0]).toMatchObject({
+      kind: "bullets",
+      items: [{ label: "Gold", body: "Best — +42 pts, +3.1% on the week" }],
+    });
+    expect(content.bodySections[1]).toMatchObject({
+      kind: "prose",
+      items: [{ label: "Data centers" }],
+    });
   });
 });

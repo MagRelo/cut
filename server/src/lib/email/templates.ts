@@ -25,6 +25,12 @@ export function getEmailLogoUrl(): string {
   return `${getEmailAssetBaseUrl()}${LOGO_PATH}`;
 }
 
+export function getEmailAssetUrl(path: string): string {
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${getEmailAssetBaseUrl()}${normalized}`;
+}
+
 function emailHeaderHtml(): string {
   const logoUrl = escapeHtml(getEmailLogoUrl());
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="padding-bottom:16px;">

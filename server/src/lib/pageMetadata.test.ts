@@ -137,12 +137,40 @@ describe("resolvePageMetadata", () => {
     expect(meta.title).toBe("BMW Championship | Play The Cut");
   });
 
-  it("keeps contest lobby titles", async function () {
+  it("titles league contests as event - league", async function () {
     resolveContestDbId.mockResolvedValue("contest-1");
     prismaMock.contest.findUnique.mockResolvedValue({
       name: "Sunday Funday",
       description: "Bring your A game.",
       settings: { primaryDeposit: 25 },
+      userGroup: { name: "The Usual Suspects" },
+      event: { metadata: { name: "BMW Championship" }, externalId: "R2026033" },
+    });
+
+    const meta = await resolvePageMetadata(url("/contest/0xabc"), BASE);
+
+    expect(meta.title).toBe("BMW Championship - The Usual Suspects");
+    expect(meta.description).toBe("Bring your A game.");
+    expect(prismaMock.contest.findUnique).toHaveBeenCalledWith({
+      where: { id: "contest-1" },
+      select: {
+        name: true,
+        description: true,
+        settings: true,
+        userGroup: { select: { name: true } },
+        event: { select: { metadata: true, externalId: true } },
+      },
+    });
+  });
+
+  it("keeps public contest lobby titles", async function () {
+    resolveContestDbId.mockResolvedValue("contest-1");
+    prismaMock.contest.findUnique.mockResolvedValue({
+      name: "Sunday Funday",
+      description: "Bring your A game.",
+      settings: { primaryDeposit: 25 },
+      userGroup: null,
+      event: { metadata: { name: "BMW Championship" }, externalId: "R2026033" },
     });
 
     const meta = await resolvePageMetadata(url("/contest/0xabc"), BASE);

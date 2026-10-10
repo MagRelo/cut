@@ -61,6 +61,7 @@
     "script:commodities-inspect-candidates": "tsx src/scripts/commoditiesInspectCandidates.ts",
     "script:commodities-refresh-candidates": "tsx src/scripts/commoditiesRefreshCandidates.ts",
     "script:commodities-week-analysis": "tsx src/scripts/commoditiesWeekAnalysis.ts",
+    "script:commodities-week-brief": "tsx src/scripts/commoditiesWeekBrief.ts",
     "script:commodities-scoring-models": "tsx src/scripts/commoditiesScoringModels.ts",
     "script:contest-commentary": "NODE_NO_WARNINGS=1 tsx src/scripts/contestCommentary.ts",
     "script:contest-feed": "NODE_NO_WARNINGS=1 tsx src/scripts/contestFeed.ts",

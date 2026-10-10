@@ -26,6 +26,8 @@ export type EmailAnnouncementContent = {
   leadSections: EmailAnnouncementSection[];
   /** Remaining ordered body sections for new-event email */
   bodySections: EmailAnnouncementSection[];
+  /** Hero banner for the announcement card. Absolute URL. */
+  headerImageUrl?: string | null;
 };
 
 export type EmailEventShell = {

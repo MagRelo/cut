@@ -15,6 +15,12 @@ export const SECTION_TITLE_STYLE = `font-family:${FONT_DISPLAY};font-size:14px;f
 
 export const SUMMARY_ITEM_STYLE = `font-family:${FONT_BODY};font-size:14px;line-height:1.45;color:#3f3f46;margin:0 0 10px;padding-left:16px;`;
 
+/** Story headline on its own line above the paragraph. */
+export const STORY_HEADLINE_STYLE = `margin:0 0 6px;font-family:${FONT_DISPLAY};font-size:16px;font-weight:700;line-height:1.3;color:#18181b;`;
+
+/** Story paragraph under a headline. */
+export const STORY_BODY_STYLE = `margin:0;font-family:${FONT_BODY};font-size:14px;line-height:1.55;color:#3f3f46;`;
+
 export const QUOTE_BG = "#ebf3fe";
 export const QUOTE_BORDER = "#3b82f6";
 export const QUOTE_TEXT_COLOR = "#204887";

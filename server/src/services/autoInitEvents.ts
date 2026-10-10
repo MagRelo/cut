@@ -7,6 +7,7 @@ import {
 import { golfEventStatusFromMetadata, PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 import { prisma } from "../lib/prisma.js";
 import { getUpcomingCommoditiesWeekExternalId } from "../sports/commodities/externalId.js";
+import { generateCommoditiesWeekBriefSafe } from "../sports/commodities/generateWeekBrief.js";
 import { initCommoditiesEvent } from "../sports/commodities/initEvent.js";
 import { generateGolfEventSummarySafe } from "../sports/pga-golf/generateEventSummary.js";
 import { initGolfEvent } from "../sports/pga-golf/initEvent.js";
@@ -103,6 +104,9 @@ async function autoInitCommodities(options: AutoInitOptions): Promise<AutoInitRe
   const created = await prisma.competitionEvent.findFirst({
     where: { sportId: COMMODITIES_SPORT_ID, externalId: weekKey },
   });
+  if (created?.id && !options.skipSummary) {
+    await generateCommoditiesWeekBriefSafe(created.id);
+  }
   return {
     sportId: "commodities",
     action: "inited",
