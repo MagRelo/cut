@@ -59,7 +59,7 @@ export function eventHeaderActionLinkClassName(tone: EventHeaderTone): string {
 }
 
 export function eventHeaderCountdownClassName(tone: EventHeaderTone): string {
-  return cn("ml-1 tabular-nums", tone === "paper" ? "text-gray-900" : "text-sky-200");
+  return cn("ml-1 tabular-nums", tone === "paper" ? "text-green-600" : "text-green-300");
 }
 
 export function eventHeaderSuspendedClassName(tone: EventHeaderTone): string {

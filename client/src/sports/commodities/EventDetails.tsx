@@ -1,4 +1,3 @@
-import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import {
   commoditiesEventStatusFromMetadata,
@@ -10,9 +9,9 @@ import {
   EventCountdownLine,
   shouldShowEventCountdown,
 } from "../../components/platform/EventCountdownLine";
+import { EventLeaderboardLink } from "../../components/platform/EventLeaderboardLink";
 import { formatCommoditiesEventStatusLabel, formatCommoditySessionWindow } from "./commodityUtils";
 import {
-  eventHeaderActionLinkClassName,
   eventHeaderMetaRowClassName,
   eventHeaderPrimaryLineClassName,
   eventHeaderTitleClassName,
@@ -76,14 +75,7 @@ export function CommodityEventDetails({
       </div>
 
       <div className={eventHeaderMetaRowClassName(tone)}>
-        <Link
-          to={leaderboardTo}
-          state={leaderboardState}
-          className={eventHeaderActionLinkClassName(tone)}
-        >
-          View Leaderboard
-          <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        </Link>
+        <EventLeaderboardLink event={event} />
       </div>
     </div>
   );

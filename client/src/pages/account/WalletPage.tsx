@@ -56,7 +56,7 @@ export function WalletPage() {
         Wallet
       </h1>
 
-      <div className="space-y-4 font-display">
+      <div className="space-y-4 overflow-hidden rounded-md border border-slate-300 bg-white p-4 font-display shadow-sm">
         {/* Testnet warning */}
         {showTestnetWarning ? (
           <div
@@ -80,6 +80,15 @@ export function WalletPage() {
         ) : null}
 
         <div>
+          <h2 className="font-medium text-gray-900">Your Wallet</h2>
+
+          <p className="text-sm leading-relaxed text-gray-700">
+            Your wallet belongs to you and is secured by your email. Play The Cut never holds or has
+            access to your funds.
+          </p>
+        </div>
+
+        <div>
           {/* <p className="mb-3 font-display text-sm leading-relaxed text-gray-700">
               Your wallet belongs to you and is secured by your email. Play The Cut never holds or
               has access to your funds.
@@ -100,7 +109,7 @@ export function WalletPage() {
         <div>
           <h2 className="font-medium text-gray-900">Receive and Send {tokenSymbol}</h2>
           <p className="mb-2 font-display text-sm leading-relaxed text-gray-700">
-            You can receive and send {tokenSymbol} to and from your account wallet.
+            You can receive and send {tokenSymbol} to and from your account wallet at any time.
           </p>
 
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md shadow-slate-900/10 ring-1 ring-black/5">

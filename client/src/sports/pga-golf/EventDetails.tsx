@@ -7,6 +7,7 @@ import {
   EventCountdownLine,
   shouldShowEventCountdown,
 } from "../../components/platform/EventCountdownLine";
+import { EventLeaderboardLink } from "../../components/platform/EventLeaderboardLink";
 import { formatGolfEventStatus, parseGolfEventMetadata } from "./utils";
 import {
   eventHeaderActionLinkClassName,
@@ -110,14 +111,7 @@ export function GolfEventDetails({
       {showPreview || showLeaderboard ? (
         <div className={eventHeaderMetaRowClassName(tone)}>
           {showLeaderboard ? (
-            <Link
-              to={leaderboardTo}
-              state={leaderboardState}
-              className={eventHeaderActionLinkClassName(tone)}
-            >
-              View Leaderboard
-              <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            </Link>
+            <EventLeaderboardLink event={event} />
           ) : (
             <button
               type="button"

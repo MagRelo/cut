@@ -9,6 +9,12 @@ import { useContestEvent } from "../../../hooks/useContestEvent";
 import { useContestMentionBadge } from "../../../hooks/useContestMentionBadge";
 import { useStreamFeedsSession } from "../../../hooks/useStreamFeedsSession";
 import { tabButtonClassName, tabListClassName } from "../../../lib/tabStyles";
+import {
+  EventCardImage,
+  eventCardBodyClassName,
+  eventCardSoloClassName,
+  useEventCardHeroImage,
+} from "../../platform/EventCardFrame";
 import { EventLineupsPanel } from "../../platform/EventLineupsPanel";
 import { SportEventHeader } from "../../platform/SportEventHeader";
 import { ContestCard } from "../ContestCard";
@@ -90,20 +96,30 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
 
   const [isPayoutsModalOpen, setIsPayoutsModalOpen] = useState(false);
   const { eventShell, error: eventError } = useContestEvent(contest);
+  const heroImage = useEventCardHeroImage(fieldSportId, eventShell);
 
   return (
     <ContestEventScopeProvider contest={contest}>
-      <div className="">
-        {eventError ? (
-          <div className="p-4">
-            <ErrorMessage message={eventError.message} />
-          </div>
+      <section className="shadow-sm">
+        {fieldSportId && eventShell && heroImage ? (
+          <EventCardImage sportId={fieldSportId} event={eventShell} />
         ) : null}
-        {fieldSportId && eventShell ? (
-          <SportEventHeader sportId={fieldSportId} event={eventShell} />
-        ) : null}
-        <div>
-          <div className="px-3 pb-2 pt-4">
+        <div className={heroImage ? eventCardBodyClassName : eventCardSoloClassName}>
+          {eventError ? (
+            <div className="border-b border-slate-200 p-4">
+              <ErrorMessage message={eventError.message} />
+            </div>
+          ) : null}
+          {fieldSportId && eventShell ? (
+            <div className="border-b border-slate-200">
+              <SportEventHeader
+                sportId={fieldSportId}
+                event={eventShell}
+                summarySurface="content"
+              />
+            </div>
+          ) : null}
+          <div className="border-b border-slate-200 px-4 py-3">
             <ContestCard
               contest={contest}
               linkUserGroup
@@ -119,7 +135,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
             onChange={handleTabChange}
             key={viewModel.layout.layoutKey}
           >
-            <div className="px-3">
+            <div className="px-4 pt-3">
               <TabList className={tabListClassName()}>
                 {viewModel.layout.showLineupsTab ? (
                   <Tab
@@ -238,7 +254,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
             contest={contest}
           />
         ) : null}
-      </div>
+      </section>
     </ContestEventScopeProvider>
   );
 };

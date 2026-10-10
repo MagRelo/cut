@@ -1,4 +1,10 @@
 import type { CompetitionEventShell } from "@cut/sport-sdk";
+import {
+  EventCardImage,
+  eventCardBodyClassName,
+  eventCardSoloClassName,
+  useEventCardHeroImage,
+} from "../../platform/EventCardFrame";
 import { SportEventHeader } from "../../platform/SportEventHeader";
 import { ContestEntryListSkeleton } from "../ContestEntryList";
 import { TimelineSkeleton } from "../TimelineSkeleton";
@@ -7,11 +13,10 @@ import { tabListClassName } from "../../../lib/tabStyles";
 function ContestCardSkeleton() {
   return (
     <div className="flex w-full min-w-0 items-center justify-between gap-2.5" aria-hidden>
-      <div className="min-w-0 flex-1 overflow-hidden pl-2">
+      <div className="min-w-0 flex-1 overflow-hidden">
         <div className="h-6 w-48 max-w-[70%] animate-skeleton-pulse rounded" />
-        <div className="mt-1.5 h-4 w-28 max-w-[45%] animate-skeleton-pulse rounded" />
       </div>
-      <div className="ml-2 mr-2 flex shrink-0 flex-col items-end">
+      <div className="flex shrink-0 flex-col items-end">
         <div className="h-6 w-12 animate-skeleton-pulse rounded" />
         <div className="mt-1 h-2 w-6 animate-skeleton-pulse rounded" />
       </div>
@@ -40,16 +45,27 @@ export function ContestLobbyLoadingShell({
 }: {
   eventShell?: CompetitionEventShell | null;
 }) {
+  const heroImage = useEventCardHeroImage(eventShell?.sportId, eventShell);
+
   return (
-    <div aria-busy="true" aria-label="Loading contest">
-      {eventShell ? (
-        <SportEventHeader sportId={eventShell.sportId} event={eventShell} />
+    <section className="shadow-sm" aria-busy="true" aria-label="Loading contest">
+      {eventShell && heroImage ? (
+        <EventCardImage sportId={eventShell.sportId} event={eventShell} />
       ) : null}
-      <div>
-        <div className="px-3 pb-2 pt-4">
+      <div className={heroImage ? eventCardBodyClassName : eventCardSoloClassName}>
+        {eventShell ? (
+          <div className="border-b border-slate-200">
+            <SportEventHeader
+              sportId={eventShell.sportId}
+              event={eventShell}
+              summarySurface="content"
+            />
+          </div>
+        ) : null}
+        <div className="border-b border-slate-200 px-4 py-3">
           <ContestCardSkeleton />
         </div>
-        <div className="px-3">
+        <div className="px-4 pt-3">
           <ContestTabListSkeleton />
         </div>
         <div className="space-y-4 p-4">
@@ -57,6 +73,6 @@ export function ContestLobbyLoadingShell({
           <ContestEntryListSkeleton />
         </div>
       </div>
-    </div>
+    </section>
   );
 }

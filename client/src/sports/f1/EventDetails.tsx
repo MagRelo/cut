@@ -1,4 +1,3 @@
-import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import { f1EventStatusFromMetadata } from "@cut/sport-f1";
 import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
@@ -7,9 +6,9 @@ import {
   EventCountdownLine,
   shouldShowEventCountdown,
 } from "../../components/platform/EventCountdownLine";
+import { EventLeaderboardLink } from "../../components/platform/EventLeaderboardLink";
 import { formatF1EventStatusLabel, parseF1EventMetadataView } from "./utils";
 import {
-  eventHeaderActionLinkClassName,
   eventHeaderMetaRowClassName,
   eventHeaderPrimaryLineClassName,
   eventHeaderSecondaryLineClassName,
@@ -77,14 +76,7 @@ export function F1EventDetails({ event, className = "", tone = "hero" }: F1Event
       </div>
 
       <div className={eventHeaderMetaRowClassName(tone)}>
-        <Link
-          to={leaderboardTo}
-          state={leaderboardState}
-          className={eventHeaderActionLinkClassName(tone)}
-        >
-          View Leaderboard
-          <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        </Link>
+        <EventLeaderboardLink event={event} />
       </div>
     </div>
   );

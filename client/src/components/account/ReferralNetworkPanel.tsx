@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { TreeIcon } from "../common/TreeIcon";
 import { CopyButton } from "../common/CopyToClipboard";
 import { ShareInviteButton } from "../common/ShareInviteButton";
 import { walletSpecLabelClassName } from "./wallet/AssetChips";
@@ -114,8 +115,25 @@ export function ReferralNetworkPanelView({
 }: ReferralNetworkPanelViewProps) {
   return (
     <div className={cardClassName}>
-      <EarningsSection loading={loading} totalEarned={totalEarned} />
+      <div className="border-b border-slate-100 px-4 pb-4 pt-4">
+        <h1 className="flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
+          <TreeIcon className="h-6 w-6 shrink-0 text-green-700" aria-hidden />
+          Referral Rewards
+        </h1>
+        <div className="mt-3 space-y-3 font-display text-sm leading-relaxed text-gray-700">
+          <p>
+            Play The Cut is different—<b>no fees, no ads</b>. We grow by referrals - players
+            supporting players.
+          </p>
+          <p>
+            Referrals turn contests into a team sport - <b>when your friends win, you win</b>. As
+            your friends invite friends, your network grows. Share your referral link to start
+            building your team!
+          </p>
+        </div>
+      </div>
       {referralUrl ? <LinkSection url={referralUrl} /> : null}
+      <EarningsSection loading={loading} totalEarned={totalEarned} />
       <NetworkSection loading={loading} error={error} tree={tree} shareUrl={referralUrl} />
     </div>
   );
