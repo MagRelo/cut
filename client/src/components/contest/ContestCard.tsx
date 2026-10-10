@@ -49,7 +49,7 @@ export const ContestCard = ({
   return (
     <div className="flex w-full min-w-0 items-center justify-between gap-2.5">
       <div className="min-w-0 flex-1 overflow-hidden">
-        <h3 className="flex min-w-0 items-center gap-1.5 font-display text-base font-semibold leading-tight text-slate-600">
+        <h3 className="text-grey-900 flex min-w-0 items-center gap-1.5 font-display text-base font-semibold leading-tight">
           {groupTitle}
         </h3>
       </div>
@@ -64,7 +64,7 @@ export const ContestCard = ({
               className="flex items-center gap-5 rounded text-right transition hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
             >
               {showPotIcon ? (
-                <Cog6ToothIcon className="h-5 w-5 shrink-0 text-slate-600" aria-hidden />
+                <Cog6ToothIcon className="text-grey-900 h-5 w-5 shrink-0" aria-hidden />
               ) : null}
               {potValue}
             </button>
