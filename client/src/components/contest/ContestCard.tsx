@@ -64,7 +64,7 @@ export const ContestCard = ({
               className="flex items-center gap-5 rounded text-right transition hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
             >
               {showPotIcon ? (
-                <Cog6ToothIcon className="text-grey-900 h-5 w-5 shrink-0" aria-hidden />
+                <Cog6ToothIcon className="h-5 w-5 shrink-0 text-blue-500" aria-hidden />
               ) : null}
               {potValue}
             </button>
