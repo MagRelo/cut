@@ -85,10 +85,8 @@ function renderContestMetaRowHtml(data: EventAnnouncementData): string {
 const WEEK_SIGN_OFF_BOLD = "this week on Planet Earth.";
 
 function emphasizeSignOff(text: string): string {
-  return escapeHtml(text).replaceAll(
-    WEEK_SIGN_OFF_BOLD,
-    `<strong style="font-weight:700;">${WEEK_SIGN_OFF_BOLD}</strong>`,
-  );
+  const emphasis = `<strong style="font-weight:700;">${WEEK_SIGN_OFF_BOLD}</strong>`;
+  return escapeHtml(text).split(WEEK_SIGN_OFF_BOLD).join(emphasis);
 }
 
 function renderBlurbHtml(blurb: string): string {

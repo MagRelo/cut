@@ -88,7 +88,7 @@ async function loadLastWeekSection(currentExternalId: string): Promise<WeekBrief
       if (row.total == null) return [];
       return [
         {
-          displayName: row.participant.displayName,
+          displayName: row.participant.displayName ?? "",
           total: row.total,
           pctReturn: pctReturnFromScoreData(row.scoreData),
         },

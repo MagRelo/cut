@@ -28,7 +28,7 @@ export type WeekBriefSections = WeekBriefSection[];
 export type LastWeekCandidate = {
   displayName: string;
   total: number;
-  pctReturn?: number | null;
+  pctReturn?: number | null | undefined;
 };
 
 export type NewsBriefValidation = {
