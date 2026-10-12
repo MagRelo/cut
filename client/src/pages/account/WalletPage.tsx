@@ -80,20 +80,18 @@ export function WalletPage() {
         ) : null}
 
         <div>
-          <h2 className="font-medium text-gray-900">Your Wallet</h2>
-
-          <p className="text-sm leading-relaxed text-gray-700">
-            Your wallet belongs to you and is secured by your email. Play The Cut never holds or has
-            access to your funds.
-          </p>
-        </div>
-
-        <div>
           {/* <p className="mb-3 font-display text-sm leading-relaxed text-gray-700">
               Your wallet belongs to you and is secured by your email. Play The Cut never holds or
               has access to your funds.
             </p> */}
           <WalletBalancePanel tokenSymbol={tokenSymbol} networkLabel={networkLabel} />
+
+          <div>
+            <p className="mt-2 text-sm leading-relaxed text-gray-700">
+              Your wallet belongs to you and is secured by your email. Play The Cut never holds or
+              has access to your funds.
+            </p>
+          </div>
         </div>
 
         <div>
