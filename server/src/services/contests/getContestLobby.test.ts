@@ -407,17 +407,27 @@ describe("getContestLobby", () => {
 });
 
 describe("slimParticipantMetadata", () => {
-  it("keeps identity fields only", () => {
+  it("keeps identity fields and a thinned week sparkline", () => {
+    const sessionPriceHistory = [
+      { t: 0, c: 100 },
+      { t: 5 * 60 * 1000, c: 101 },
+      { t: 25 * 60 * 1000, c: 102 },
+      { t: 30 * 60 * 1000, c: 110 },
+      { t: 40 * 60 * 1000, c: 111 },
+    ];
+
     expect(
       slimParticipantMetadata({
         firstName: "Max",
         lastName: "Verstappen",
         driverNumber: 1,
         teamName: "Red Bull",
+        sector: "precious",
+        iconKey: "gold",
         standings: { pos: 1 },
         dataGolf: { sg: 1 },
         quote: { last: 72 },
-        sessionPriceHistory: [1],
+        sessionPriceHistory,
         priceHistory: [1, 2, 3],
         gridPosition: 1,
       }),
@@ -426,6 +436,25 @@ describe("slimParticipantMetadata", () => {
       lastName: "Verstappen",
       driverNumber: 1,
       teamName: "Red Bull",
+      sector: "precious",
+      iconKey: "gold",
+      sessionPriceHistory: [
+        { t: 25 * 60 * 1000, c: 102 },
+        { t: 40 * 60 * 1000, c: 111 },
+      ],
+    });
+  });
+
+  it("drops an unusable session series", () => {
+    expect(
+      slimParticipantMetadata({
+        iconKey: "gold",
+        sessionPriceHistory: [1],
+        priceHistory: [1, 2, 3],
+        quote: { last: 72 },
+      }),
+    ).toEqual({
+      iconKey: "gold",
     });
   });
 });

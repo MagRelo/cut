@@ -14,6 +14,7 @@ import {
   referralStakeForViewerByPrivyId,
 } from "../referral/referralStakeForViewer.js";
 import { settledPotForContestRow } from "../../utils/settledPot.js";
+import { thinSessionPriceHistory } from "./thinSessionPriceHistory.js";
 
 export const CONTEST_LOBBY_CACHE_TTL_MS = 15_000;
 
@@ -78,6 +79,10 @@ export function slimParticipantMetadata(raw: unknown): Record<string, unknown> |
   const out: Record<string, unknown> = {};
   for (const key of PARTICIPANT_IDENTITY_KEYS) {
     if (source[key] !== undefined) out[key] = source[key];
+  }
+  const sessionPriceHistory = thinSessionPriceHistory(source.sessionPriceHistory);
+  if (sessionPriceHistory) {
+    out.sessionPriceHistory = sessionPriceHistory;
   }
   return Object.keys(out).length > 0 ? out : null;
 }
