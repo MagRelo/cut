@@ -23,7 +23,8 @@ describe("cacheControlForStaticPath", () => {
     const expected = "public, max-age=31536000, immutable";
     expect(cacheControlForStaticPath("public/logo-transparent.png")).toBe(expected);
     expect(cacheControlForStaticPath("public/commodities/avatars/gold.png")).toBe(expected);
-    expect(cacheControlForStaticPath("public/favicon.svg")).toBe(expected);
+    expect(cacheControlForStaticPath("public/favicon.ico")).toBe(expected);
+    expect(cacheControlForStaticPath("public/favicon-32.png")).toBe(expected);
   });
 
   it("caches unhashed non-media public files for one day", () => {

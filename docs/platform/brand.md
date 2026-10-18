@@ -7,8 +7,8 @@ Canonical product naming for user-facing copy, marketing, and documentation.
 | Context | Format | Example |
 | --- | --- | --- |
 | Wordmark | `PLAYTHECUT` — one word, all caps | Nav header, loading screen, email header |
-| Mark | `/logo-transparent.png` (678×787) | In-app lockup, email header. Not used as favicon. |
-| Favicon | `/favicon.svg` | Tab icon, web app manifest |
+| Mark | `/logo-transparent.png` (678×787) | In-app lockup, email header. |
+| Favicon | Square icons cut from the mark | Tab icon, Apple home screen, web app manifest |
 | Prose | `Play The Cut` — capital T in The | FAQ, emails, page titles, share text |
 | URL | `https://playthecut.com` | Share links, OG URLs, email CTAs |
 
@@ -23,11 +23,19 @@ Canonical product naming for user-facing copy, marketing, and documentation.
 **Mark (`/logo-transparent.png`)**
 
 - In-app lockup (`BrandLogo`) and email header image
-- Not the tab icon or manifest icon — those use `/favicon.svg` so the 123KB PNG is fetched once
+- Source artwork for the favicon set. The full PNG is not linked as a tab icon.
 
-**Favicon (`/favicon.svg`)**
+**Favicon**
 
-- Browser tab icon and web app manifest icon
+Square icons cut from the mark. Tab and Apple icons keep a small margin. Maskable icons sit inside the center safe zone on a white field so circular home-screen masks do not crop the flames.
+
+| File | Size | Use |
+| --- | --- | --- |
+| `/favicon.ico` | 16, 32, 48 | Browser default. Transparent. |
+| `/favicon-16.png`, `/favicon-32.png`, `/favicon-48.png`, `/favicon-64.png` | square | Tab icon. Transparent. |
+| `/favicon-180.png`, `/favicon-192.png`, `/favicon-256.png`, `/favicon-512.png` | square | Larger transparent sizes. 192 and 512 are the manifest `any` icons. |
+| `/apple-touch-icon.png` | 180 | Apple home screen. Opaque white. |
+| `/favicon-maskable-192.png`, `/favicon-maskable-512.png` | square | Manifest `maskable` icons. Opaque white. |
 
 **Prose (`Play The Cut`)**
 
