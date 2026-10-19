@@ -2,23 +2,29 @@ import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tab, TabGroup, TabList, TabPanel } from "@headlessui/react";
 import { Breadcrumbs } from "../components/common/Breadcrumbs";
+import { Modal } from "../components/common/Modal";
 import { PageSection } from "../components/layout/PageSection";
 import { UserGroupSettings } from "../components/userGroup/UserGroupSettings";
 import { UserGroupMemberManagement } from "../components/userGroup/UserGroupMemberManagement";
 import { UserGroupInvitePanel } from "../components/userGroup/UserGroupInvitePanel";
 import { ContestDirectorySections } from "../components/contest/ContestDirectorySections";
+import { LoadingSpinnerSmall } from "../components/common/LoadingSpinnerSmall";
 import { leagueCreateContestPath, overlayLeagueContestsOnDirectory } from "../lib/contestGroups";
 import { useContestDirectory } from "../hooks/useContestDirectory";
+import { useDeleteLeagueContest } from "../hooks/useContestMutations";
 import { useUserGroupQuery, useUserGroupContestsQuery } from "../hooks/useUserGroupQuery";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { isApiError } from "../utils/apiError";
 import { tabButtonClassName, tabListClassName } from "../lib/tabStyles";
+import type { Contest } from "../types/contest";
 
 export const UserGroupDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [contestToDelete, setContestToDelete] = useState<Contest | null>(null);
+  const deleteContest = useDeleteLeagueContest(id ?? "");
   const { data: userGroup, isLoading, error, refetch } = useUserGroupQuery(id);
   const {
     data: leagueContests,
@@ -58,6 +64,11 @@ export const UserGroupDetailPage = () => {
     navigate("/leagues");
   };
 
+  const requestDeleteContest = (contest: Contest) => {
+    deleteContest.reset();
+    setContestToDelete(contest);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -87,6 +98,7 @@ export const UserGroupDetailPage = () => {
       createContestToForEvent={
         isAdmin ? (event) => leagueCreateContestPath(userGroup.id, event.id) : undefined
       }
+      onDeleteContest={isAdmin ? requestDeleteContest : undefined}
     />
   );
 
@@ -165,6 +177,61 @@ export const UserGroupDetailPage = () => {
       ) : (
         <div className="pt-4">{contestContent}</div>
       )}
+
+      <Modal
+        isOpen={contestToDelete != null}
+        onClose={() => {
+          if (deleteContest.isPending) return;
+          deleteContest.reset();
+          setContestToDelete(null);
+        }}
+        title="Delete Contest"
+        maxWidth="md"
+      >
+        <div className="space-y-4 p-4">
+          {deleteContest.error ? (
+            <ErrorMessage
+              message={
+                deleteContest.error instanceof Error
+                  ? deleteContest.error.message
+                  : "Failed to delete contest"
+              }
+            />
+          ) : null}
+
+          <p className="font-display text-sm leading-relaxed text-gray-700">
+            This contest will be removed from the league. This cannot be undone.
+          </p>
+
+          <div className="flex flex-wrap justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                deleteContest.reset();
+                setContestToDelete(null);
+              }}
+              disabled={deleteContest.isPending}
+              className="inline-flex min-w-[120px] items-center justify-center rounded border border-gray-300 bg-white px-4 py-1.5 font-display text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!contestToDelete) return;
+                deleteContest.mutate(contestToDelete.id, {
+                  onSuccess: () => setContestToDelete(null),
+                });
+              }}
+              disabled={deleteContest.isPending}
+              className="inline-flex min-w-[120px] items-center justify-center gap-2 rounded border border-red-600 bg-red-600 px-4 py-1.5 font-display text-sm text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {deleteContest.isPending ? <LoadingSpinnerSmall /> : null}
+              {deleteContest.isPending ? "Deleting..." : "Delete Contest"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 };

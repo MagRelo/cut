@@ -240,6 +240,26 @@ export function useLeaveContest() {
   });
 }
 
+export function useDeleteLeagueContest(leagueId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (contestId: string) => {
+      return await apiClient.delete<{ success: boolean }>(`/contests/${contestId}`);
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.contests(leagueId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.lineups.all });
+    },
+
+    onError: (err) => {
+      console.error("Failed to delete contest:", err);
+    },
+  });
+}
+
 export function useContestActions() {
   const create = useCreateContest();
   const join = useJoinContest();

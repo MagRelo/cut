@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import type { ContestDirectoryEvent, EventContestGroup } from "../../types/contest";
+import type { Contest, ContestDirectoryEvent, EventContestGroup } from "../../types/contest";
 import { formatTournamentDateRange } from "../../lib/contestCreation";
 import { eventShellFromDirectoryEvent } from "../../lib/contestNavigation";
 import { useAuth } from "../../contexts/AuthContext";
@@ -20,6 +20,7 @@ interface GroupedContestListProps {
   error: string | null;
   variant?: ContestListItemVariant;
   createContestToForEvent?: (event: ContestDirectoryEvent) => string | undefined;
+  onDeleteContest?: (contest: Contest) => void;
   showConnectHint?: boolean;
 }
 
@@ -34,10 +35,12 @@ function GroupedContestSection({
   group,
   variant = "default",
   createContestTo,
+  onDeleteContest,
 }: {
   group: EventContestGroup;
   variant?: ContestListItemVariant;
   createContestTo?: string;
+  onDeleteContest?: (contest: Contest) => void;
 }) {
   const eventShell = eventShellFromDirectoryEvent(group.event);
   const sublabel = eventSublabel(group.event);
@@ -82,6 +85,7 @@ function GroupedContestSection({
           eventShell={eventShell}
           variant={variant}
           createContestTo={createContestTo}
+          onDeleteContest={onDeleteContest}
         />
       </div>
     </section>
@@ -94,6 +98,7 @@ export const GroupedContestList = ({
   error,
   variant = "default",
   createContestToForEvent,
+  onDeleteContest,
   showConnectHint = false,
 }: GroupedContestListProps) => {
   const { user } = useAuth();
@@ -111,6 +116,7 @@ export const GroupedContestList = ({
             group={group}
             variant={variant}
             createContestTo={createContestToForEvent?.(group.event)}
+            onDeleteContest={onDeleteContest}
           />
         ))}
       </div>

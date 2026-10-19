@@ -48,6 +48,10 @@ import {
 import { primaryDepositWeiFromSettings } from "../lib/contractAddresses.js";
 import { contestListSelect, contestVisibilityWhere } from "../utils/contestListQuery.js";
 import {
+  canDeleteLeagueContest,
+  primaryDepositFromSettings,
+} from "../utils/canDeleteLeagueContest.js";
+import {
   getContestDirectory,
   invalidateContestDirectory,
 } from "../services/contests/listContestDirectory.js";
@@ -717,6 +721,81 @@ contestRouter.post(
     }
   },
 );
+
+contestRouter.delete("/:id", requireAuth, async (c) => {
+  try {
+    const user = c.get("user");
+    const contestId = c.req.param("id");
+
+    const contest = await prisma.contest.findUnique({
+      where: { id: contestId },
+      select: {
+        id: true,
+        address: true,
+        userGroupId: true,
+        status: true,
+        settings: true,
+      },
+    });
+
+    if (!contest) {
+      return c.json({ error: "Contest not found" }, 404);
+    }
+
+    if (!contest.userGroupId) {
+      return c.json({ error: "Only league contests can be deleted" }, 403);
+    }
+
+    const isAdmin = await isUserGroupAdmin(user.userId, contest.userGroupId);
+    if (!isAdmin) {
+      return c.json({ error: "You must be a league admin to delete this contest" }, 403);
+    }
+
+    const primaryDeposit = primaryDepositFromSettings(contest.settings);
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        const current = await tx.contest.findUnique({
+          where: { id: contest.id },
+          select: { status: true, userGroupId: true },
+        });
+        const entryCount = await tx.contestLineup.count({ where: { contestId: contest.id } });
+        if (
+          !current ||
+          !canDeleteLeagueContest({
+            userGroupId: current.userGroupId,
+            status: current.status,
+            primaryDeposit,
+            entryCount,
+          })
+        ) {
+          throw new Error(
+            current?.status === "OPEN" ? "CONTEST_NOT_DELETABLE" : "CONTEST_NOT_OPEN",
+          );
+        }
+
+        await tx.contestLineup.deleteMany({ where: { contestId: contest.id } });
+        await tx.lineup.deleteMany({ where: { contestId: contest.id } });
+        await tx.contest.delete({ where: { id: contest.id } });
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === "CONTEST_NOT_OPEN") {
+        return c.json({ error: "Only open contests can be deleted" }, 409);
+      }
+      if (error instanceof Error && error.message === "CONTEST_NOT_DELETABLE") {
+        return c.json({ error: "Paid contests with entries cannot be deleted" }, 409);
+      }
+      throw error;
+    }
+
+    invalidateContestDirectory();
+    invalidateContestLobby(contest);
+    return c.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting contest:", error);
+    return c.json({ error: "Failed to delete contest" }, 500);
+  }
+});
 
 contestRouter.delete(
   "/:id/lineups/:lineupId",

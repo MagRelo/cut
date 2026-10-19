@@ -1,4 +1,4 @@
-import type { ContestDirectoryEvent, EventContestGroup } from "../../types/contest";
+import type { Contest, ContestDirectoryEvent, EventContestGroup } from "../../types/contest";
 import { ListHeader } from "../common/ListHeader";
 import { GroupedContestList } from "./GroupedContestList";
 
@@ -8,6 +8,7 @@ interface ContestDirectorySectionsProps {
   past: EventContestGroup[];
   error?: string | null;
   createContestToForEvent?: (event: ContestDirectoryEvent) => string | undefined;
+  onDeleteContest?: (contest: Contest) => void;
 }
 
 export function ContestDirectorySections({
@@ -16,6 +17,7 @@ export function ContestDirectorySections({
   past,
   error = null,
   createContestToForEvent,
+  onDeleteContest,
 }: ContestDirectorySectionsProps) {
   const showUpcomingSection = upcoming.length > 0;
   const showLiveSection = live.length > 0;
@@ -41,6 +43,7 @@ export function ContestDirectorySections({
             error={error}
             variant="upcoming"
             createContestToForEvent={createContestToForEvent}
+            onDeleteContest={onDeleteContest}
             showConnectHint={connectHintSection === "upcoming"}
           />
         </>
@@ -62,6 +65,7 @@ export function ContestDirectorySections({
             groups={live}
             loading={false}
             error={null}
+            onDeleteContest={onDeleteContest}
             showConnectHint={connectHintSection === "live"}
           />
         </>
@@ -76,6 +80,7 @@ export function ContestDirectorySections({
             loading={false}
             error={null}
             variant="past"
+            onDeleteContest={onDeleteContest}
             showConnectHint={connectHintSection === "past"}
           />
         </>

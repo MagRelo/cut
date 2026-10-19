@@ -15,6 +15,7 @@ interface ContestListProps {
   eventShell?: CompetitionEventShell;
   variant?: ContestListItemVariant;
   createContestTo?: string;
+  onDeleteContest?: (contest: Contest) => void;
 }
 
 export function ContestListConnectHint({ className = "mt-6" }: { className?: string }) {
@@ -69,6 +70,7 @@ export const ContestList = ({
   eventShell,
   variant = "default",
   createContestTo,
+  onDeleteContest,
 }: ContestListProps) => {
   if (loading) {
     return (
@@ -114,6 +116,7 @@ export const ContestList = ({
             to={contestLobbyPath(contest)}
             eventShell={eventShell}
             variant={variant}
+            onDelete={onDeleteContest}
           />
         </li>
       ))}
