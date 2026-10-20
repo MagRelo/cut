@@ -53,13 +53,15 @@ export function ContestListConnectHint({ className = "mt-6" }: { className?: str
 
 function CreateContestRow({ to }: { to: string }) {
   return (
-    <Link
-      to={to}
-      className="flex items-center gap-2 px-4 py-3 font-display text-sm font-semibold text-gray-900 transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-500"
-    >
-      <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
-      Create contest
-    </Link>
+    <div className="flex items-center justify-end px-4 py-3">
+      <Link
+        to={to}
+        className="inline-flex h-10 shrink-0 items-center justify-center gap-0.5 rounded bg-blue-500 px-4 font-display text-sm font-semibold text-white transition-colors hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+      >
+        <PlusIcon className="-ml-0.5 h-4 w-4 shrink-0" aria-hidden />
+        Create contest
+      </Link>
+    </div>
   );
 }
 

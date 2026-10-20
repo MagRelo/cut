@@ -1,4 +1,4 @@
-import { ChevronRightIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { ExclamationTriangleIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import { golfEventStatusFromMetadata } from "@cut/sport-pga-golf";
 import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
@@ -123,8 +123,8 @@ export function GolfEventDetails({
               onClick={onOpenSummary}
               className={eventHeaderActionLinkClassName(tone)}
             >
+              <MagnifyingGlassIcon className="h-4 w-4 shrink-0" aria-hidden />
               Tournament Preview
-              <ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
             </button>
           )}
         </div>
