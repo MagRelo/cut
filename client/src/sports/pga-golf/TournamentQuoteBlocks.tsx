@@ -22,9 +22,10 @@ export function TournamentQuoteBlocks({ sections, className = "" }: TournamentQu
         {quotes.map((quote) => (
           <blockquote
             key={`${quote.attribution}-${quote.body.slice(0, 24)}`}
-            className="rounded-sm border-l-[3px] px-4 py-3"
+            className="rounded-sm border border-l-[3px] px-4 py-3"
             style={{
-              borderColor: quote.colors.border,
+              borderColor: quote.colors.hairline,
+              borderLeftColor: quote.colors.border,
               backgroundColor: quote.colors.bg,
               color: quote.colors.text,
             }}

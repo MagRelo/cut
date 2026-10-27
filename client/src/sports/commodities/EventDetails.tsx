@@ -79,7 +79,7 @@ export function CommodityEventDetails({
       </div>
 
       {onLeaderboardPage ? null : (
-        <div className={`${eventHeaderMetaRowClassName(tone)} pt-1`}>
+        <div className={eventHeaderMetaRowClassName(tone)}>
           <EventLeaderboardLink event={event} />
         </div>
       )}

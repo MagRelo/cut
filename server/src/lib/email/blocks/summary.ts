@@ -13,7 +13,7 @@ export { normalizeSummarySectionKey } from "./summaryKeys.js";
 
 const DEFAULT_QUOTE_COLOR = "#3b82f6";
 
-type QuoteColors = { border: string; bg: string; text: string };
+type QuoteColors = { border: string; hairline: string; bg: string; text: string };
 
 function normalizeHexColor(color: string | undefined): string | null {
   if (!color) return null;
@@ -57,6 +57,7 @@ function quoteColorsFromHex(color: string | undefined): QuoteColors {
   const border = normalizeHexColor(color) ?? DEFAULT_QUOTE_COLOR;
   return {
     border,
+    hairline: mixHexWithWhite(border, 0.45),
     bg: mixHexWithWhite(border, 0.9),
     text: darkenHex(border, 0.45),
   };
@@ -73,7 +74,7 @@ function renderQuoteBlockHtml(
 ): string {
   const textStyle = quoteTextStyle(colors.text);
   const attributionStyle = quoteTextStyle(colors.text, 600);
-  const cellStyle = `border-left:3px solid ${colors.border};background-color:${colors.bg};padding:14px 16px;`;
+  const cellStyle = `border-top:1px solid ${colors.hairline};border-right:1px solid ${colors.hairline};border-bottom:1px solid ${colors.hairline};border-left:3px solid ${colors.border};background-color:${colors.bg};padding:14px 16px;`;
 
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 12px;">
   <tr>

@@ -23,13 +23,15 @@ export const STORY_BODY_STYLE = `margin:0;font-family:${FONT_BODY};font-size:14p
 
 export const QUOTE_BG = "#ebf3fe";
 export const QUOTE_BORDER = "#3b82f6";
+/** Soft edge on the top, right, and bottom of the default blue quote panel. */
+export const QUOTE_HAIRLINE = "#93bafa";
 export const QUOTE_TEXT_COLOR = "#204887";
 
 export const QUOTE_TEXT_STYLE = `font-family:${FONT_QUOTE};font-size:14px;font-weight:500;font-style:italic;line-height:1.5;color:${QUOTE_TEXT_COLOR};margin:0;`;
 
 export const QUOTE_ATTRIBUTION_STYLE = `font-family:${FONT_QUOTE};font-size:14px;font-weight:600;font-style:italic;line-height:1.5;color:${QUOTE_TEXT_COLOR};`;
 
-export const QUOTE_CELL_STYLE = `border-left:3px solid ${QUOTE_BORDER};background-color:${QUOTE_BG};padding:14px 16px;`;
+export const QUOTE_CELL_STYLE = `border-top:1px solid ${QUOTE_HAIRLINE};border-right:1px solid ${QUOTE_HAIRLINE};border-bottom:1px solid ${QUOTE_HAIRLINE};border-left:3px solid ${QUOTE_BORDER};background-color:${QUOTE_BG};padding:14px 16px;`;
 
 export const BODY_TITLE_H1_STYLE = `margin:0 0 4px;font-family:${FONT_DISPLAY};font-size:22px;font-weight:700;line-height:1.25;color:#18181b;`;
 

@@ -57,6 +57,7 @@ describe("tournamentSummary", () => {
   it("derives quote block colors from hex", () => {
     const colors = quoteColorsFromHex("#00abb8");
     expect(colors.border).toBe("#00abb8");
+    expect(colors.hairline).toBe("#73d1d8");
     expect(colors.bg).toBe("#e6f7f8");
     expect(colors.text).toBe("#005e65");
   });

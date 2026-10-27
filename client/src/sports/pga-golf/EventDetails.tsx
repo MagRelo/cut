@@ -114,7 +114,7 @@ export function GolfEventDetails({
       </div>
 
       {showPreview || showLeaderboardLink ? (
-        <div className={`${eventHeaderMetaRowClassName(tone)} pt-1`}>
+        <div className={eventHeaderMetaRowClassName(tone)}>
           {showLeaderboardLink ? (
             <EventLeaderboardLink event={event} />
           ) : (

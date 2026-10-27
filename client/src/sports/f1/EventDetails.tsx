@@ -80,7 +80,7 @@ export function F1EventDetails({ event, className = "", tone = "hero" }: F1Event
       </div>
 
       {onLeaderboardPage ? null : (
-        <div className={`${eventHeaderMetaRowClassName(tone)} pt-1`}>
+        <div className={eventHeaderMetaRowClassName(tone)}>
           <EventLeaderboardLink event={event} />
         </div>
       )}

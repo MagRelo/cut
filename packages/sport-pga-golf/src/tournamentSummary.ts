@@ -21,6 +21,8 @@ export type NormalizedTournamentQuote = {
 
 export type QuoteBlockColors = {
   border: string;
+  /** Lighter edge for the top, right, and bottom of the panel. */
+  hairline: string;
   bg: string;
   text: string;
 };
@@ -101,6 +103,7 @@ export function quoteColorsFromHex(color: string): QuoteBlockColors {
   const border = normalizeHexColor(color) ?? DEFAULT_QUOTE_COLOR;
   return {
     border,
+    hairline: mixHexWithWhite(border, 0.45),
     bg: mixHexWithWhite(border, 0.9),
     text: darkenHex(border, 0.45),
   };
