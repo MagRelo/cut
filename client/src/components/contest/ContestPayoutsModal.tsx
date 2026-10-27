@@ -323,6 +323,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
       onClose={onClose}
       title="Contest payouts"
       hideHeader
+      showCloseButton={false}
       maxWidth="4xl"
       scrollable
       maxHeight="600px"

@@ -46,26 +46,24 @@ export function TournamentAnnouncementCard({
 
   return (
     <section className={className}>
-      <div className="rounded-lg border border-slate-300 bg-white px-[18px] py-4">
-        <h2 className="font-display text-[22px] font-bold leading-snug tracking-tight text-zinc-900">
-          {tournamentName}
-        </h2>
-        {courseLine ? (
-          <p className="mt-0.5 font-display text-[13px] font-semibold leading-snug text-zinc-600">
-            {courseLine}
-          </p>
-        ) : null}
-        {dateLine ? (
-          <p className="font-display text-[13px] font-semibold leading-snug text-zinc-600">
-            {dateLine}
-          </p>
-        ) : null}
-        {description ? (
-          <p className="mt-3 font-display text-[13px] font-normal leading-relaxed text-zinc-600">
-            {description}
-          </p>
-        ) : null}
-      </div>
+      <h2 className="pr-8 font-display text-[22px] font-bold leading-snug tracking-tight text-zinc-900">
+        {tournamentName}
+      </h2>
+      {courseLine ? (
+        <p className="mt-1 font-display text-[13px] font-semibold leading-snug text-zinc-600">
+          {courseLine}
+        </p>
+      ) : null}
+      {dateLine ? (
+        <p className="font-display text-[13px] font-semibold leading-snug text-zinc-600">
+          {dateLine}
+        </p>
+      ) : null}
+      {description ? (
+        <p className="mt-3 font-display text-[13px] font-normal leading-relaxed text-zinc-600">
+          {description}
+        </p>
+      ) : null}
     </section>
   );
 }

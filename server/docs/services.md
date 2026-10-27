@@ -19,7 +19,7 @@ Common behavior:
 - Sync participant field and profiles
 - Set `isActive=true` on this event (clears other active events for the sport). Golf auto-init uses `activate: false` when the current event is still LIVE or SCHEDULED.
 
-Golf-only: DataGolf rankings. Tournament preview copy is written after auto-init when `CURSOR_API_KEY` is set (`summarySections`); operators can still run `script:write-tournament-summary` or the tournament-summary skill.
+Golf-only: DataGolf rankings. Tournament preview copy is written after auto-init when `CURSOR_API_KEY` is set and the DataGolf win board matches (`summarySections`). The overview pipeline retries a missing preview. Operators run the same generator with `script:golf-event-summary` (`--force` to replace).
 
 ### `service:init-next-event [pga-golf|commodities|all] [--dry-run] [--skip-summary]`
 

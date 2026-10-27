@@ -90,6 +90,6 @@ pnpm --filter server run script:send-test-email you@example.com contest-announce
 ## Ops sequence
 
 1. `pnpm run service:init-event pga-golf R{pgaTourId}` — field + announcement snapshot
-2. Optional: tournament-summary skill / `script:write-tournament-summary` — refreshes snapshot
+2. Optional: `pnpm --filter server run script:golf-event-summary R{pgaTourId}` — refreshes the snapshot when auto-init has not written one yet (`--force` to replace)
 3. League admin creates a contest with the email checkbox on
 4. Members receive the contest announcement

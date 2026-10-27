@@ -33,7 +33,7 @@ Graceful shutdown: SIGTERM / SIGINT stop all scheduled tasks and request feed wo
 | Job | Cadence | Notes |
 | --- | --- | --- |
 | `scorePipeline` | `*/5 * * * *` | Promote prepared golf, scores, activate/settle, referral |
-| `overviewPipeline` | `*/20 * * * *` | PGA continuous + commodities day-settle `Contest.commentary` refresh |
+| `overviewPipeline` | `*/20 * * * *` | Contest commentary refresh, plus a missing golf event preview |
 | `eventInitPipeline` | `0 10 * * *` America/New_York | Saturday commodities week; Monday next PGA event. `AUTO_INIT_EVENTS=false` skips |
 | `feedWorker` | in-process | Drains `CommentaryFeedJob` (concurrency 1; PGA feed stories) |
 

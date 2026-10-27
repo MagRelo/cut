@@ -158,36 +158,38 @@ describe("generateCommoditiesWeekBrief", () => {
     };
     const result = await generateCommoditiesWeekBrief("evt", { generator });
     expect(result).toBe("wrote");
-    expect(prompts).toHaveLength(3);
+    expect(prompts).toHaveLength(2);
     expect(prompts[1]).toMatch(/5–8/);
-    expect(prompts[2]).toMatch(/FACT CHECK/);
+    expect(prompts[1]).not.toMatch(/FACT CHECK/);
+    const written = mocks.update.mock.calls[0]?.[0]?.data?.metadata?.summarySections;
+    const stories = written.find((section: { title: string }) => section.title === "Top Stories");
+    expect(stories.items).toHaveLength(5);
   });
 
-  it("persists the fact-checked copy, not the draft", async () => {
-    const stale = newsJson().replace(
-      "A reported event that can move energy this week (4).",
-      "Monday night the Bills, 2-0, visit the Rams. Los Angeles is 0-1.",
-    );
-    const corrected = newsJson().replace(
+  it("persists the draft", async () => {
+    const draft = newsJson().replace(
       "A reported event that can move energy this week (4).",
       "Monday night the Bills, 3-1, visit the Rams. Los Angeles is 2-2.",
     );
-    const generator = {
-      generate: async (prompt: string) => (prompt.includes("FACT CHECK") ? corrected : stale),
-    };
-
-    const result = await generateCommoditiesWeekBrief("evt", { generator });
+    const prompts: string[] = [];
+    const result = await generateCommoditiesWeekBrief("evt", {
+      generator: {
+        generate: async (prompt: string) => {
+          prompts.push(prompt);
+          return draft;
+        },
+      },
+    });
     expect(result).toBe("wrote");
+    expect(prompts).toHaveLength(1);
     const written = mocks.update.mock.calls[0]?.[0]?.data?.metadata?.summarySections;
     const stories = written.find((section: { title: string }) => section.title === "Top Stories");
     expect(stories.items[3].body).toContain("3-1");
-    expect(stories.items[3].body).not.toContain("2-0");
   });
 
-  it("does not save a draft when the fact check stays invalid", async () => {
+  it("does not save when the draft stays invalid", async () => {
     const generator = {
-      generate: async (prompt: string) =>
-        prompt.includes("FACT CHECK") ? newsJson(2) : newsJson(5),
+      generate: async () => newsJson(2),
     };
     await expect(generateCommoditiesWeekBrief("evt", { generator })).rejects.toThrow(/5–8/);
     expect(mocks.update).not.toHaveBeenCalled();

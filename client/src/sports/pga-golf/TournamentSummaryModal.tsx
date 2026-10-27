@@ -62,15 +62,17 @@ export function TournamentSummaryModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Tournament Preview"
+      hideHeader
+      closeButtonClassName="text-blue-500 hover:text-blue-600 focus-visible:ring-blue-400"
       maxWidth="2xl"
       scrollable
       maxHeight="80vh"
-      contentClassName="px-4 py-4"
+      contentClassName="px-6 pb-6 pt-5"
     >
       {!sections ? (
-        <p className="text-sm text-zinc-500">No tournament summary available.</p>
+        <p className="pr-8 text-sm text-zinc-500">No tournament summary available.</p>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           <TournamentAnnouncementCard
             tournamentName={tournamentName}
             course={course}

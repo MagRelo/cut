@@ -4,7 +4,7 @@ Product spec for outbound email.
 
 ## Sending model
 
-The live send path is **contest announcement**: a league admin creates a contest and emails opted-in league members. MailerSend delivers one message per member. `service:init-event` and tournament-summary writes **prepare** announcement copy on the event; they do not send. Signup does not send email.
+The live send path is **contest announcement**: a league admin creates a contest and emails opted-in league members. MailerSend delivers one message per member. `service:init-event` and the golf event-summary script **prepare** announcement copy on the event; they do not send. Signup does not send email.
 
 Player-withdrawal is a transactional template (preview / test send only; no live trigger yet).
 
@@ -37,7 +37,7 @@ flowchart LR
 |-------|--------|
 | **Purpose** | Tell league members a contest is open for the week's event, with tournament preview copy and a link to that contest. |
 | **Trigger** | `POST /api/contests` with `userGroupId` and `notifyLeagueMembers: true`. Public contests ignore the flag. |
-| **Prepare** | `prepareEventAnnouncementEmail` runs at the end of `service:init-event` and after `script:write-tournament-summary`. Snapshot: `CompetitionEvent.metadata.emailAnnouncement`. Send uses the snapshot when present, otherwise compiles live from the sport adapter (or platform fallback). |
+| **Prepare** | `prepareEventAnnouncementEmail` runs at the end of `service:init-event` and after `script:golf-event-summary` (and the commodities week-brief script). Snapshot: `CompetitionEvent.metadata.emailAnnouncement`. Send uses the snapshot when present, otherwise compiles live from the sport adapter (or platform fallback). |
 | **Audience** | `UserGroupMember`s whose user is `userType=USER`, has a non-empty email, and `settings.marketingUnsubscribed !== true`. Includes league admins. Members without email are skipped. Privy dashboard test accounts (`userType=TEST`) are not emailed. |
 | **Content** | League name + buy-in (or Free); event announcement card from the sport adapter (PGA: course, dates, quotes and summary sections; F1: circuit and race dates; commodities: session dates, week teaser, last week’s best and worst, then 5–8 Top Stories); CTA to the contest lobby (`/contest/{address\|id}`). |
 | **Skip if** | MailerSend not configured; no eligible members; checkbox off. Contest create still succeeds. |

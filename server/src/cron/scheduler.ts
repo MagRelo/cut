@@ -5,6 +5,7 @@ import { batchActivateContests } from "../services/batch/batchActivateContests.j
 import { batchSettleContests } from "../services/batch/batchSettleContests.js";
 import { batchSyncReferralGraph } from "../services/batch/batchSyncReferralGraph.js";
 import { refreshContestOverviews } from "../sports/pga-golf/commentary/refreshContestOverviews.js";
+import { refreshMissingGolfEventSummary } from "../sports/pga-golf/generateEventSummary.js";
 import { refreshCommoditiesContestOverviews } from "../sports/commodities/commentary/refreshCommoditiesContestOverviews.js";
 import {
   startCommentaryFeedWorker,
@@ -194,6 +195,11 @@ class CronScheduler {
       await this.executeWithErrorHandling(
         "Refresh Commodities Contest Overviews",
         refreshCommoditiesContestOverviews,
+        pipelineErrors,
+      );
+      await this.executeWithErrorHandling(
+        "Golf event summary",
+        refreshMissingGolfEventSummary,
         pipelineErrors,
       );
 

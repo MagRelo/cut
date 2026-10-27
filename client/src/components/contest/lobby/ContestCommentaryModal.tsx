@@ -21,6 +21,7 @@ export const ContestCommentaryModal: React.FC<ContestCommentaryModalProps> = ({
       onClose={onClose}
       title="Contest Breakdown"
       hideHeader
+      showCloseButton={false}
       maxWidth="lg"
       scrollable
       maxHeight="70vh"

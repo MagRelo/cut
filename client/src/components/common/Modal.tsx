@@ -10,12 +10,40 @@ export interface ModalProps {
   showCloseButton?: boolean;
   /** Skip title bar; shows floating close + sr-only title for accessibility */
   hideHeader?: boolean;
+  /** Color and hover classes for the headerless floating close button. */
+  closeButtonClassName?: string;
   headerClassName?: string;
   /** Extra classes on the dialog panel (e.g. `bg-gray-50` for headerless modals). */
   panelClassName?: string;
   contentClassName?: string;
   scrollable?: boolean;
   maxHeight?: string;
+}
+
+function ModalCloseButton({
+  onClose,
+  className,
+}: {
+  onClose: () => void;
+  className: string;
+}) {
+  return (
+    <button type="button" className={className} onClick={onClose} aria-label="Close">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        className="h-5 w-5"
+        aria-hidden
+      >
+        <path
+          fillRule="evenodd"
+          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+          clipRule="evenodd"
+        />
+      </svg>
+    </button>
+  );
 }
 
 const maxWidthClasses = {
@@ -35,6 +63,7 @@ export const Modal: React.FC<ModalProps> = ({
   maxWidth = "2xl",
   showCloseButton = true,
   hideHeader = false,
+  closeButtonClassName,
   headerClassName = "",
   panelClassName = "",
   contentClassName = "",
@@ -71,7 +100,18 @@ export const Modal: React.FC<ModalProps> = ({
                 className={`relative w-full ${maxWidthClasses[maxWidth]} transform rounded-sm text-left align-middle shadow-xl transition-all ${panelClassName || "bg-white"}`.trim()}
               >
                 {hideHeader ? (
-                  <DialogTitle className="sr-only">{title || "Dialog"}</DialogTitle>
+                  <>
+                    <DialogTitle className="sr-only">{title || "Dialog"}</DialogTitle>
+                    {showCloseButton && (
+                      <ModalCloseButton
+                        onClose={onClose}
+                        className={`absolute right-3 top-3 z-10 rounded-md p-1 transition-colors focus:outline-none focus-visible:ring-2 ${
+                          closeButtonClassName ??
+                          "text-slate-400 hover:text-slate-600 focus-visible:ring-slate-300"
+                        }`}
+                      />
+                    )}
+                  </>
                 ) : (
                   <div
                     className={`flex items-center justify-between rounded-t-sm border-b border-slate-200 bg-slate-100 px-4 py-3 ${headerClassName}`}
@@ -80,25 +120,10 @@ export const Modal: React.FC<ModalProps> = ({
                       {title}
                     </DialogTitle>
                     {showCloseButton && (
-                      <button
-                        type="button"
+                      <ModalCloseButton
+                        onClose={onClose}
                         className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-200/70 hover:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-                        onClick={onClose}
-                        aria-label="Close"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          className="h-5 w-5"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
+                      />
                     )}
                   </div>
                 )}

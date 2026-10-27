@@ -21,11 +21,7 @@ import {
   type WeekBriefSection,
   type WeekBriefSections,
 } from "./weekBrief.js";
-import {
-  buildCommoditiesWeekBriefFactCheckPrompt,
-  buildCommoditiesWeekBriefPrompt,
-  type WeekBriefContext,
-} from "./weekBriefPrompt.js";
+import { buildCommoditiesWeekBriefPrompt, type WeekBriefContext } from "./weekBriefPrompt.js";
 
 export type GenerateCommoditiesWeekBriefOptions = {
   generator?: CommentaryTextGenerator;
@@ -141,33 +137,9 @@ export async function generateCommoditiesWeekBrief(
   const context = weekBriefContext(event.externalId, event.metadata);
 
   const locked = await tryWithCommentaryLlmLock(async () => {
-    let raw = await generator.generate(buildCommoditiesWeekBriefPrompt(context));
-    let parsed: unknown;
-    try {
-      parsed = extractJsonArray(raw);
-    } catch (error) {
-      raw = await generator.generate(
-        buildCommoditiesWeekBriefPrompt(
-          context,
-          error instanceof Error ? error.message : "Output was not valid JSON.",
-        ),
-      );
-      parsed = extractJsonArray(raw);
-    }
-
-    let { sections, reason } = validateNewsBrief(parsed);
-    if (reason) {
-      raw = await generator.generate(buildCommoditiesWeekBriefPrompt(context, reason));
-      parsed = extractJsonArray(raw);
-      ({ sections, reason } = validateNewsBrief(parsed));
-    }
-    if (reason || sections.length === 0) {
-      throw new Error(reason ?? "Week brief validation failed");
-    }
-
-    const checked = await factCheckNewsBrief(generator, context, sections);
+    const draft = await draftWeekBrief(generator, context);
     const lastWeek = await loadLastWeekSection(event.externalId);
-    const assembled = assembleWeekBrief(checked, lastWeek);
+    const assembled = assembleWeekBrief(draft, lastWeek);
     await persistWeekBrief(event.id, existing, assembled);
     return assembled;
   });
@@ -183,29 +155,31 @@ export async function generateCommoditiesWeekBrief(
   return "wrote";
 }
 
-async function factCheckNewsBrief(
+async function draftWeekBrief(
   generator: CommentaryTextGenerator,
   context: WeekBriefContext,
-  draft: WeekBriefSections,
 ): Promise<WeekBriefSections> {
-  const draftJson = JSON.stringify(draft);
-  let reason: string | null = null;
+  let reason: string | undefined;
+  let sections: WeekBriefSections | null = null;
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const raw = await generator.generate(
-      buildCommoditiesWeekBriefFactCheckPrompt(context, draftJson, reason ?? undefined),
-    );
+    const raw = await generator.generate(buildCommoditiesWeekBriefPrompt(context, reason));
     let parsed: unknown;
     try {
       parsed = extractJsonArray(raw);
     } catch (error) {
-      reason = error instanceof Error ? error.message : "Fact check output was not valid JSON.";
+      reason = error instanceof Error ? error.message : "Output was not valid JSON.";
       continue;
     }
-    const checked = validateNewsBrief(parsed);
-    if (!checked.reason && checked.sections.length > 0) return checked.sections;
-    reason = checked.reason ?? "Week brief fact check failed";
+    const validated = validateNewsBrief(parsed);
+    if (validated.reason || validated.sections.length === 0) {
+      reason = validated.reason ?? "Week brief validation failed";
+      continue;
+    }
+    sections = validated.sections;
+    break;
   }
-  throw new Error(reason ?? "Week brief fact check failed");
+  if (!sections) throw new Error(reason ?? "Week brief validation failed");
+  return sections;
 }
 
 export async function generateCommoditiesWeekBriefSafe(

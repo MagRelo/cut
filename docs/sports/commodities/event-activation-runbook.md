@@ -122,7 +122,7 @@ Verify:
 
 ### 4b. Week brief
 
-Saturday auto-init writes the contest announcement copy onto `CompetitionEvent.metadata.summarySections` when `CURSOR_API_KEY` is set, then refreshes `metadata.emailAnnouncement`. After the draft passes, a second pass fact-checks every score, record, date, and named result against current reporting and is the copy that gets saved. A failed fact check does not save the draft. Init still succeeds if that write fails. Local eval inits do not generate a brief.
+Saturday auto-init writes the contest announcement copy onto `CompetitionEvent.metadata.summarySections` when `CURSOR_API_KEY` is set, then refreshes `metadata.emailAnnouncement`. One research draft is saved. Last week’s best and worst are filled from the previous session’s scores. Init still succeeds if that write fails. Local eval inits do not generate a brief.
 
 The brief is three parts: an Event Blurb that ends on its own line with “Those stories—and a few surprises—this week on Planet Earth.”, Last week’s best and worst candidates from the previous session’s `EventParticipant.total` (omitted when that event or its scores are missing), and 5–8 Top Stories for the week ahead, each 2–3 sentences. The stories are a wide mix — politics, weather, sports, pop culture — written funny. Four of them name a clear hit on the contest field. One to three are just the story, with no field aside. The announcement email shows the blurb on the card, Last week above the contest button, and Top Stories below it.
 

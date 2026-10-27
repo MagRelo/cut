@@ -4,6 +4,7 @@ import {
   type GolfEventMetadata,
 } from "@cut/sport-pga-golf";
 import {
+  americanToDecimal,
   formatAmericanOdds,
   formatPlayerOddsLabel,
   type SourcedPlayerOdds,
@@ -11,12 +12,13 @@ import {
 
 export type EventSummaryPlayer = {
   displayName: string;
-  owgr?: number | null;
   odds: SourcedPlayerOdds | null;
 };
 
 export type EventSummaryContext = {
   eventName: string;
+  pgaTourId?: string | undefined;
+  overviewUrl?: string | undefined;
   course?: string | undefined;
   city?: string | undefined;
   state?: string | undefined;
@@ -26,33 +28,58 @@ export type EventSummaryContext = {
   fieldSize: number;
   players: EventSummaryPlayer[];
   oddsEventName?: string | null;
+  marketShape: string;
 };
+
+export function overviewUrlForPgaTourId(pgaTourId: string | undefined): string | undefined {
+  if (!pgaTourId) return undefined;
+  const year = /^R(\d{4})/.exec(pgaTourId)?.[1];
+  if (!year) return undefined;
+  return `https://www.pgatour.com/tournaments/${year}/overview/${pgaTourId}`;
+}
+
+export function oddsRangeText(quotes: readonly number[]): string {
+  if (quotes.length === 0) return "";
+  const sorted = [...quotes].sort((a, b) => americanToDecimal(a) - americanToDecimal(b));
+  const short = formatAmericanOdds(sorted[0]!);
+  const long = formatAmericanOdds(sorted[sorted.length - 1]!);
+  if (sorted.length === 1 || short === long) return short;
+  return `${short} to ${long}`;
+}
+
+export function buildMarketShape(players: EventSummaryPlayer[]): string {
+  const priced = players.filter((player) => (player.odds?.quotes.length ?? 0) > 0);
+  const favorite = priced[0];
+  if (!favorite?.odds) return "";
+  const next = priced.slice(1, 4).map((player) => {
+    const range = oddsRangeText(player.odds?.quotes ?? []);
+    return range ? `${player.displayName} (${range})` : player.displayName;
+  });
+  const cluster = next.length > 0 ? ` Next: ${next.join(", ")}.` : "";
+  return `Favorite: ${favorite.displayName} (${oddsRangeText(favorite.odds.quotes)}).${cluster}`;
+}
 
 function factsBlock(ctx: EventSummaryContext): string {
   const lines = [
     `Tournament: ${ctx.eventName}`,
+    ctx.pgaTourId ? `PGA Tour id: ${ctx.pgaTourId}` : null,
+    ctx.overviewUrl ? `PGA Tour overview: ${ctx.overviewUrl}` : null,
     ctx.course ? `Course: ${ctx.course}` : null,
     ctx.city || ctx.state ? `Place: ${[ctx.city, ctx.state].filter(Boolean).join(", ")}` : null,
     ctx.displayDates ? `Dates: ${ctx.displayDates}` : null,
     ctx.purse != null ? `Purse: ${ctx.purse}` : null,
     ctx.format ? `Format: ${ctx.format}` : null,
     `Field size: ${ctx.fieldSize}`,
+    ctx.oddsEventName ? `Sportsbook board: ${ctx.oddsEventName}` : null,
+    ctx.marketShape ? `Market: ${ctx.marketShape}` : null,
   ];
   return lines.filter(Boolean).join("\n");
 }
 
 function playersBlock(ctx: EventSummaryContext): string {
-  if (ctx.players.length === 0) return "(no field names)";
+  if (ctx.players.length === 0) return "(no priced players)";
   return ctx.players
-    .map((player) => {
-      const label = formatPlayerOddsLabel(player.displayName, player.odds?.quotes ?? []);
-      const rank = player.owgr != null ? ` OWGR ${player.owgr}` : "";
-      const books =
-        player.odds && player.odds.quotes.length > 0
-          ? ` books=${player.odds.quotes.map(formatAmericanOdds).join(",")}`
-          : " (no sportsbook quotes)";
-      return `- ${label}${rank}${books}`;
-    })
+    .map((player) => `- ${formatPlayerOddsLabel(player.displayName, player.odds?.quotes ?? [])}`)
     .join("\n");
 }
 
@@ -64,28 +91,26 @@ export function buildGolfEventSummaryPrompt(
     ? `\nPREVIOUS OUTPUT WAS REJECTED: ${retryReason}\nFix that and output JSON only.\n`
     : "";
 
-  return `You write Play The Cut tournament preview copy for the announcement card and email.
+  return `You write the Play The Cut tournament preview for the announcement card and email. Make someone want to enter this week.
 Output a JSON array only. No markdown, no commentary outside JSON.
 ${retry}
-FACTS (do not invent anything missing):
-${factsBlock(ctx)}
-${ctx.oddsEventName ? `Sportsbook board event: ${ctx.oddsEventName}` : "Sportsbook board: not matched for this tournament — do not include American odds."}
+Look up this week's public reporting before you write. Start with the PGA Tour overview URL when one is listed, then check a few other current sources.
 
-BEST PLAYERS (use these names; copy odds tokens exactly from the label prefix):
+${factsBlock(ctx)}
+
+PRICES (these labels are the odds; copy a label exactly when you include that player):
 ${playersBlock(ctx)}
 
-RULES:
-- Canonical sections in this order when you have facts: "From the 19th Hole", "Event Blurb", "Best Players and Odds", "Course and Format".
-- Omit "Broadcast Information" unless TV windows are in FACTS (they are not).
-- From the 19th Hole: exactly one quote item. This is the advertisement, not a fact sheet. body = 3 short sentences. Place and feeling first, week stakes, at most 2 player names. attribution "${DEFAULT_CUTBOT_ATTRIBUTION}", color "${DEFAULT_QUOTE_COLOR}". No American odds in the quote. No invented defending champ or win counts. Do not restate the Event Blurb.
-- Event Blurb: exactly one item, body only (no label). Two sentences in PGA TOUR press-office pamphlet voice, using only FACTS. Sentence one: the tour is traveling to the place for this field (size, and no-cut only if FACTS say so) at the course. Sentence two: one concrete course note from FACTS and who headlines the field from the player list. Official and plain. Not a sales line. Not the same point as the quote. A shared name is fine. A shared sentence is not.
-- Best Players and Odds: 8–10 items from the list above. label must be exactly the "Name:" or "Name (+x):" / "Name (+low to +high):" prefix shown. body = one plain sentence, opinion/course-fit only — no invented history, majors, or odds.
-- Course and Format: bullets only from FACTS (Course, Dates, Purse, Format, field size). Skip unknown fields.
-- Never invent American odds, TV times, defending champion, season win counts, or venue lore.
-- Use straight apostrophes.
+Write the week, not a form sheet.
+- "From the 19th Hole": one quote. attribution "${DEFAULT_CUTBOT_ATTRIBUTION}", color "${DEFAULT_QUOTE_COLOR}". The advertisement: the place, what's at stake, at most two names. The player list carries the prices.
+- "Event Blurb": one item, body only. Two sentences. Where the tour is going, what the course is like, who the week is about.
+- "Best Players and Odds": the players you can say something about, in the order above. Leave someone off if you have nothing to say. label is their price line. body is one sentence on why you'd pick them.
+- "Course and Format": how the week plays.
+- "Broadcast Information": only if you found the windows.
+Use straight apostrophes.
 
 JSON shape:
-[{"title":"From the 19th Hole","items":[{"body":"...","attribution":"CutBot","color":"${DEFAULT_QUOTE_COLOR}"}]},{"title":"Event Blurb","items":[{"body":"..."}]}]
+[{"title":"From the 19th Hole","items":[{"body":"...","attribution":"CutBot","color":"${DEFAULT_QUOTE_COLOR}"}]},{"title":"Event Blurb","items":[{"body":"..."}]},{"title":"Best Players and Odds","items":[{"label":"Player (+1100 to +1300):","body":"..."}]},{"title":"Course and Format","items":[{"label":"Course:","body":"..."}]}]
 `;
 }
 

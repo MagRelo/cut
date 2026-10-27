@@ -2,7 +2,7 @@
 
 Operator checklist for switching Play The Cut to a new competition week on the **platform schema** (`CompetitionEvent`, sport plugins). PGA Golf is the first supported sport; **Formula 1** has a dedicated runbook: [F1 event activation](../f1/event-activation-runbook.md). **Commodity Picks** (daily futures): [Commodities event activation](../commodities/event-activation-runbook.md). F1 uses OpenF1 Race `session_key` as `externalId` (not PGA Tour-style IDs).
 
-**Related specs:** [email-program.md](../../operations/email-program.md) · tournament summary skill (`.cursor/skills/tournament-summary/SKILL.md`)
+**Related specs:** [email-program.md](../../operations/email-program.md) · [cron](../../../spec/server/cron.md)
 
 ### pnpm command style
 
@@ -16,7 +16,7 @@ Pass script arguments **directly** — do **not** insert `--` before them. In th
 |------|--------|
 | **Sport** | `pga-golf` (first plugin) |
 | **externalId** | PGA Tour id — e.g. `R2026033` (`R{year}{event#}`) |
-| **Summary** | `CompetitionEvent.metadata.summarySections` (auto after Monday init; skill rewrite optional) |
+| **Summary** | `CompetitionEvent.metadata.summarySections` (auto after Monday init, retried until the odds board matches; `script:golf-event-summary` to rewrite) |
 | **Init command** | Auto: Monday 10:00 ET via cron. Manual: `pnpm run service:init-next-event pga-golf` or `pnpm run service:init-event pga-golf R2026033` |
 | **Active flag** | `CompetitionEvent.isActive = true` (set by init unless `activate: false`) |
 | **Admin dashboard** | `GET /api/admin/dashboard` (accepts `eventId` or `tournamentId` alias) |
@@ -43,7 +43,7 @@ Pass script arguments **directly** — do **not** insert `--` before them. In th
 Monday **10:00 America/New_York**, `eventInitPipeline` resolves the next PGA Tour event with a published field and runs `initGolfEvent`.
 
 - If the active golf event is still **LIVE** or **SCHEDULED**, the next event is created with `activate: false` so the hub is not yanked. The 5-minute score pipeline promotes the prepared row when the live/current event is **COMPLETE** (Monday playoff or delayed finish).
-- After init, missing `summarySections` are generated from event metadata, field, and DataGolf win outrights (no invented odds). Existing copy is left alone.
+- After init, missing `summarySections` are generated when `CURSOR_API_KEY` is set and the DataGolf win board matches this event. The preview is researched from current reporting and labeled with those sportsbook prices. If the board is still last week's event, nothing is written. The overview pipeline retries every 20 minutes until copy exists. A failed attempt waits 3 hours. Existing copy is left alone.
 - Dry-run: `pnpm --filter server run service:init-next-event pga-golf --dry-run`
 
 Kill switch: `AUTO_INIT_EVENTS=false`.
@@ -70,19 +70,18 @@ pnpm --filter server run service:init-next-event pga-golf
 
 ---
 
-### Generate event summary (optional rewrite)
+### Generate event summary
 
-Auto-init writes a CutBot preview when `CURSOR_API_KEY` is set. For a researched rewrite (broadcast windows, extra quotes), use the Cursor **tournament-summary** skill:
+Auto-init and the manual script call the same generator. It writes `summarySections` onto the event (announcement card, in-app preview, and contest announcement email) and refreshes `metadata.emailAnnouncement`. Not required for field or scoring.
 
+```bash
+pnpm --filter server run script:golf-event-summary R__________
+pnpm --filter server run script:golf-event-summary R__________ --force
 ```
-Generate a tournament summary for R__________
-```
 
-Writes `summarySections` onto the event's DB metadata (announcement card + in-app
-preview + contest announcement email) and refreshes `metadata.emailAnnouncement`.
-Not required for field/scoring.
+`--force` replaces an existing preview. Without it, an existing preview is left alone.
 
-- [ ] Summary validated and written via `script:write-tournament-summary`
+- [ ] Summary written (auto, or the script above)
 - [ ] In-app preview / email preview reviewed
 
 ---

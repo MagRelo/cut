@@ -1,4 +1,4 @@
-import { ExclamationTriangleIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { ExclamationTriangleIcon, NewspaperIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import { golfEventStatusFromMetadata } from "@cut/sport-pga-golf";
 import type { CompetitionEventShell } from "@cut/sport-sdk/ui";
@@ -114,16 +114,16 @@ export function GolfEventDetails({
       </div>
 
       {showPreview || showLeaderboardLink ? (
-        <div className={eventHeaderMetaRowClassName(tone)}>
+        <div className={`${eventHeaderMetaRowClassName(tone)} pt-1`}>
           {showLeaderboardLink ? (
             <EventLeaderboardLink event={event} />
           ) : (
             <button
               type="button"
               onClick={onOpenSummary}
-              className={eventHeaderActionLinkClassName(tone)}
+              className={`${eventHeaderActionLinkClassName(tone)} font-semibold`}
             >
-              <MagnifyingGlassIcon className="h-4 w-4 shrink-0" aria-hidden />
+              <NewspaperIcon className="h-4 w-4 shrink-0" aria-hidden />
               Tournament Preview
             </button>
           )}

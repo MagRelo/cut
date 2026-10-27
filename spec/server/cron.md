@@ -100,14 +100,15 @@ Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event statu
 
 ## Overview pipeline (`*/20`)
 
-Runs two sport-specific overview refreshers under the shared commentary LLM mutex (skips a pass if the lock is held). Requires `CONTEST_COMMENTARY_ENABLED=true` and `CURSOR_API_KEY`.
+Runs two sport-specific overview refreshers under the shared commentary LLM mutex (skips a pass if the lock is held). Those refreshers require `CONTEST_COMMENTARY_ENABLED=true` and `CURSOR_API_KEY`. The same pipeline also fills a missing golf event preview.
 
 | Refresher | Sport | Behavior |
 | --- | --- | --- |
 | `refreshContestOverviews` | PGA Golf | Refresh `Contest.commentary` for entered `ACTIVE`/`LOCKED` contests on LIVE events when missing or ≥ 20 minutes old |
 | `refreshCommoditiesContestOverviews` | Commodities | Refresh `Contest.commentary` when a trading day has newly settled (idempotent vs that day’s session close) for `ACTIVE`/`LOCKED`/`SETTLED` contests on the active event |
+| `refreshMissingGolfEventSummary` | PGA Golf | When the active golf event has no `summarySections`, run the event-summary generator. Skips until the DataGolf win board matches. A failed attempt waits 3 hours. Does not require `CONTEST_COMMENTARY_ENABLED`. |
 
-Neither refresher generates feed items.
+These refreshers do not generate feed items.
 
 ---
 
@@ -143,7 +144,7 @@ Detect path (`detectAndEnqueueContestFeed`) advances `lastHoleState` / `lastCont
 | Monday | pga-golf | Next upcoming PGA Tour event with a published field. If the active golf event is still LIVE or SCHEDULED, init with `activate: false`. Score pipeline promotes that row when the current event is COMPLETE. |
 | Other days | — | No-op |
 
-After a successful golf init, the job writes `CompetitionEvent.metadata.summarySections` when copy is missing, using the Cursor SDK (`CURSOR_API_KEY`) plus DataGolf sportsbook win outrights when the board event name matches. Init succeeds even if copy generation fails.
+After a successful golf init, the job writes `CompetitionEvent.metadata.summarySections` when copy is missing and the DataGolf win board matches this event. The generator researches current reporting and stamps sportsbook prices from that board. If the board does not match yet, nothing is written; the overview pipeline retries. A failed attempt waits 3 hours. Init succeeds even if copy generation fails. Manual rewrite: `pnpm --filter server run script:golf-event-summary <pgaTourId> [--force]`.
 
 CLI (same resolver; ignores weekday):
 
