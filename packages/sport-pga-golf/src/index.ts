@@ -172,6 +172,7 @@ export {
   normalizeHexColor,
   normalizeQuoteItem,
   parseSummarySections,
+  splitPlayerOddsLabel,
   quoteColorsFromHex,
   QUOTES_SECTION_DISPLAY_TITLE,
   type NormalizedTournamentQuote,

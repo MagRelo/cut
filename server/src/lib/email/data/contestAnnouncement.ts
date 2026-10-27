@@ -1,5 +1,7 @@
 import type { EmailAnnouncementContent, EmailAnnouncementSection } from "@cut/sport-sdk";
+import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 import { sportEmailContentFor } from "../../../sports/emailContentRegistry.js";
+import { attachGolfPlayerPortraits } from "../../../sports/pga-golf/emailContent.js";
 import { loadEventForEmail, type EmailEventRecord } from "./event.js";
 
 export function parseEmailAnnouncementContent(raw: unknown): EmailAnnouncementContent | null {
@@ -60,7 +62,11 @@ export async function loadContestAnnouncementSource(
   if (!event) return null;
 
   const stored = parseEmailAnnouncementContent(event.emailAnnouncement);
-  const announcement = stored ?? (await compileEventAnnouncement(event));
+  const compiled = stored ?? (await compileEventAnnouncement(event));
+  const announcement =
+    event.sportId === PGA_GOLF_SPORT_ID
+      ? await attachGolfPlayerPortraits(event.id, compiled)
+      : compiled;
 
   return {
     eventName: event.name,

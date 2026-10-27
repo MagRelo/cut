@@ -37,6 +37,8 @@ export const GolfEventSummary: React.FC<EventSummaryProps> = ({ event, surface =
       startDate={meta?.startDate}
       endDate={meta?.endDate}
       summarySections={meta?.summarySections}
+      sportId={event.sportId}
+      eventId={event.id}
     />
   ) : null;
 

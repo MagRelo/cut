@@ -106,7 +106,9 @@ describe("golf email announcement → summary HTML", () => {
     expect(html).toContain("&mdash; CutBot");
     expect(html).toContain("from the 19th hole:");
     expect(html).toContain("Anthony Kim's Nose");
-    expect(html).toContain("&#8226;&nbsp;");
-    expect(html).toContain("Best Players and Odds");
+    expect(html).toContain("colspan=\"3\"");
+    expect(html).toContain("Odds note.");
+    expect(html).not.toContain("&#8226;&nbsp;");
+    expect(html).toContain("Best bets");
   });
 });

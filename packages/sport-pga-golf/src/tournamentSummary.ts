@@ -211,6 +211,14 @@ export function getNormalizedQuotes(
   return quotesSection.items.map(normalizeQuoteItem);
 }
 
+/** "Scottie Scheffler (+450):" → name and the odds token. */
+export function splitPlayerOddsLabel(label: string | undefined): { name: string; odds: string } {
+  const raw = (label ?? "").trim().replace(/:\s*$/, "").trim();
+  const match = /^(.*?)\s+\(([^)]+)\)\s*$/.exec(raw);
+  if (!match) return { name: raw, odds: "" };
+  return { name: match[1]!.trim(), odds: match[2]!.trim() };
+}
+
 export function parseSummarySections(json: unknown): TournamentSummarySections | null {
   if (!Array.isArray(json) || json.length === 0) return null;
   if (!json.every(isSummarySection)) return null;

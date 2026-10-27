@@ -1,13 +1,16 @@
+import { splitPlayerOddsLabel } from "@cut/sport-pga-golf";
+import type { EmailAnnouncementSection, EmailAnnouncementSectionItem } from "@cut/sport-sdk";
 import { escapeHtml } from "../escape.js";
 import {
   EMPTY_SUMMARY_STYLE,
+  FONT_BODY,
+  FONT_DISPLAY,
   FONT_QUOTE,
   SECTION_TITLE_STYLE,
   STORY_BODY_STYLE,
   STORY_HEADLINE_STYLE,
   SUMMARY_ITEM_STYLE,
 } from "../styles.js";
-import type { EmailAnnouncementSection } from "@cut/sport-sdk";
 
 export { normalizeSummarySectionKey } from "./summaryKeys.js";
 
@@ -137,6 +140,68 @@ function renderStorySectionHtml(section: EmailAnnouncementSection): string {
 </div>`;
 }
 
+const BEST_PLAYERS_TITLE = /best players and odds/i;
+
+function isBestPlayersSection(section: EmailAnnouncementSection): boolean {
+  return BEST_PLAYERS_TITLE.test(section.key) || BEST_PLAYERS_TITLE.test(section.title);
+}
+
+function portraitSrc(url: string | undefined): string | null {
+  const trimmed = url?.trim() ?? "";
+  if (!trimmed.startsWith("https://")) return null;
+  return trimmed;
+}
+
+function initials(name: string): string {
+  const letters = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0] ?? "");
+  return letters.join("").toUpperCase() || "?";
+}
+
+function renderPlayerOddsRowHtml(item: EmailAnnouncementSectionItem, index: number): string {
+  const { name, odds } = splitPlayerOddsLabel(item.label);
+  const displayName = name || "Player";
+  const src = portraitSrc(item.imageUrl);
+  const avatar = src
+    ? `<img src="${escapeHtml(src)}" width="40" height="40" alt="" style="display:block;width:40px;height:40px;border-radius:20px;object-fit:cover;" />`
+    : `<div style="width:40px;height:40px;border-radius:20px;background-color:#f4f4f5;font-family:${FONT_DISPLAY};font-size:13px;font-weight:600;line-height:40px;text-align:center;color:#71717a;">${escapeHtml(initials(displayName))}</div>`;
+  const country = item.subtitle?.trim()
+    ? `<p style="margin:2px 0 0;font-family:${FONT_BODY};font-size:12px;line-height:1.3;color:#52525b;">${escapeHtml(item.subtitle.trim())}</p>`
+    : "";
+  const oddsHtml = odds
+    ? `<p style="margin:0;font-family:${FONT_DISPLAY};font-size:14px;font-weight:600;line-height:1.3;color:#18181b;text-align:right;">${escapeHtml(odds)}</p>`
+    : "";
+  const top = index === 0 ? "0" : "16px";
+  const rule = index === 0 ? "" : "border-top:1px solid #e4e4e7;";
+
+  return `<tr>
+    <td width="40" valign="middle" style="padding:${top} 12px 0 0;${rule}width:40px;">${avatar}</td>
+    <td valign="middle" style="padding:${top} 12px 0 0;${rule}">
+      <p style="margin:0;font-family:${FONT_DISPLAY};font-size:15px;font-weight:600;line-height:1.25;color:#18181b;">${escapeHtml(displayName)}</p>
+      ${country}
+    </td>
+    <td width="72" valign="middle" align="right" style="padding:${top} 0 0 16px;${rule}width:72px;">${oddsHtml}</td>
+  </tr>
+  <tr>
+    <td colspan="3" style="padding:8px 0 0;">
+      <p style="margin:0;font-family:${FONT_BODY};font-size:14px;line-height:1.45;color:#3f3f46;">${escapeHtml(item.body)}</p>
+    </td>
+  </tr>`;
+}
+
+function renderPlayerOddsSectionHtml(section: EmailAnnouncementSection): string {
+  const rows = section.items.map((item, index) => renderPlayerOddsRowHtml(item, index)).join("");
+  return `<div style="margin:0 0 20px;">
+<h2 style="${SECTION_TITLE_STYLE}margin-bottom:24px;">Best bets</h2>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  ${rows}
+</table>
+</div>`;
+}
+
 function renderBulletSectionHtml(section: EmailAnnouncementSection): string {
   const itemsHtml = section.items
     .map((item) => {
@@ -159,9 +224,7 @@ export function renderBodySummarySectionsHtml(
 ): string {
   return (sections ?? [])
     .filter((s) => s.kind !== "quotes")
-    .map((section) =>
-      section.kind === "prose" ? renderStorySectionHtml(section) : renderBulletSectionHtml(section),
-    )
+    .map((section) => renderOneBodySectionHtml(section))
     .join("");
 }
 
@@ -201,8 +264,11 @@ export function renderSummarySectionByKeyHtml(
   if (section.kind === "quotes") {
     return renderLeadSummarySectionsHtml([section]);
   }
-  if (section.kind === "prose") {
-    return renderStorySectionHtml(section);
-  }
+  return renderOneBodySectionHtml(section);
+}
+
+function renderOneBodySectionHtml(section: EmailAnnouncementSection): string {
+  if (section.kind === "prose") return renderStorySectionHtml(section);
+  if (isBestPlayersSection(section)) return renderPlayerOddsSectionHtml(section);
   return renderBulletSectionHtml(section);
 }

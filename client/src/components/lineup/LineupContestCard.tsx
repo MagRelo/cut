@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { SportParticipantDetailModal } from "../platform/SportParticipantDetailModal";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { CandidatePicker } from "../platform/CandidatePicker";
@@ -103,9 +103,7 @@ export const LineupContestCardLoading: React.FC<{ slotCount?: number }> = ({ slo
       <div className="px-3 pb-3 pt-0">
         <div className="mb-4 mt-3 space-y-6">
           {Array.from({ length: slotPlaceholders }, (_, index) => (
-            <div key={`loading-slot-${index}`} className="px-3">
-              <LineupPlayerSlotLoading />
-            </div>
+            <LineupPlayerSlotLoading key={`loading-slot-${index}`} />
           ))}
         </div>
       </div>
@@ -327,7 +325,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                   const awaitingPlayer =
                     isCandidatesLoading && Boolean(expectedPickIdsBySlot[index]) && !candidate;
                   return (
-                    <div key={`slot-${index}`} className="px-3">
+                    <Fragment key={`slot-${index}`}>
                       {awaitingPlayer ? (
                         <LineupPlayerSlotLoading />
                       ) : candidate ? (
@@ -394,34 +392,31 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
                           </button>
                         </LineupSlotShell>
                       )}
-                    </div>
+                    </Fragment>
                   );
                 })
               : isCandidatesLoading && expectedPickIdsBySlot.some(Boolean)
                 ? expectedPickIdsBySlot.map((pickId, index) =>
                     pickId ? (
-                      <div key={`loading-pick-${index}`} className="px-3">
-                        <LineupPlayerSlotLoading />
-                      </div>
+                      <LineupPlayerSlotLoading key={`loading-pick-${index}`} />
                     ) : null,
                   )
                 : displayCandidates.map((candidate) => (
-                    <div key={candidate.participantId} className="px-3">
-                      <SportLineupPickRow
-                        candidate={candidate}
-                        status={status}
-                        eventMetadata={eventMetadata}
-                        onClick={() => openDetailModal(candidate)}
-                        popularityBonus={
-                          showPickPopularity
-                            ? pickPopularityForParticipant(
-                                pickPopularity,
-                                candidate.eventParticipantId,
-                              )?.bonus
-                            : null
-                        }
-                      />
-                    </div>
+                    <SportLineupPickRow
+                      key={candidate.participantId}
+                      candidate={candidate}
+                      status={status}
+                      eventMetadata={eventMetadata}
+                      onClick={() => openDetailModal(candidate)}
+                      popularityBonus={
+                        showPickPopularity
+                          ? pickPopularityForParticipant(
+                              pickPopularity,
+                              candidate.eventParticipantId,
+                            )?.bonus
+                          : null
+                      }
+                    />
                   ))}
           </div>
           {canEditSlots ? (

@@ -4,7 +4,6 @@ import {
   type GolfEventMetadata,
 } from "@cut/sport-pga-golf";
 import {
-  americanToDecimal,
   formatAmericanOdds,
   formatPlayerOddsLabel,
   type SourcedPlayerOdds,
@@ -38,25 +37,19 @@ export function overviewUrlForPgaTourId(pgaTourId: string | undefined): string |
   return `https://www.pgatour.com/tournaments/${year}/overview/${pgaTourId}`;
 }
 
-export function oddsRangeText(quotes: readonly number[]): string {
-  if (quotes.length === 0) return "";
-  const sorted = [...quotes].sort((a, b) => americanToDecimal(a) - americanToDecimal(b));
-  const short = formatAmericanOdds(sorted[0]!);
-  const long = formatAmericanOdds(sorted[sorted.length - 1]!);
-  if (sorted.length === 1 || short === long) return short;
-  return `${short} to ${long}`;
+function priceText(player: EventSummaryPlayer): string {
+  const american = player.odds?.datagolf;
+  if (american == null) return player.displayName;
+  return `${player.displayName} (${formatAmericanOdds(american)})`;
 }
 
 export function buildMarketShape(players: EventSummaryPlayer[]): string {
-  const priced = players.filter((player) => (player.odds?.quotes.length ?? 0) > 0);
+  const priced = players.filter((player) => player.odds?.datagolf != null);
   const favorite = priced[0];
-  if (!favorite?.odds) return "";
-  const next = priced.slice(1, 4).map((player) => {
-    const range = oddsRangeText(player.odds?.quotes ?? []);
-    return range ? `${player.displayName} (${range})` : player.displayName;
-  });
+  if (!favorite) return "";
+  const next = priced.slice(1, 4).map(priceText);
   const cluster = next.length > 0 ? ` Next: ${next.join(", ")}.` : "";
-  return `Favorite: ${favorite.displayName} (${oddsRangeText(favorite.odds.quotes)}).${cluster}`;
+  return `Favorite: ${priceText(favorite)}.${cluster}`;
 }
 
 function factsBlock(ctx: EventSummaryContext): string {
@@ -79,7 +72,7 @@ function factsBlock(ctx: EventSummaryContext): string {
 function playersBlock(ctx: EventSummaryContext): string {
   if (ctx.players.length === 0) return "(no priced players)";
   return ctx.players
-    .map((player) => `- ${formatPlayerOddsLabel(player.displayName, player.odds?.quotes ?? [])}`)
+    .map((player) => `- ${formatPlayerOddsLabel(player.displayName, player.odds?.datagolf)}`)
     .join("\n");
 }
 
@@ -110,7 +103,7 @@ Write the week, not a form sheet.
 Use straight apostrophes.
 
 JSON shape:
-[{"title":"From the 19th Hole","items":[{"body":"...","attribution":"CutBot","color":"${DEFAULT_QUOTE_COLOR}"}]},{"title":"Event Blurb","items":[{"body":"..."}]},{"title":"Best Players and Odds","items":[{"label":"Player (+1100 to +1300):","body":"..."}]},{"title":"Course and Format","items":[{"label":"Course:","body":"..."}]}]
+[{"title":"From the 19th Hole","items":[{"body":"...","attribution":"CutBot","color":"${DEFAULT_QUOTE_COLOR}"}]},{"title":"Event Blurb","items":[{"body":"..."}]},{"title":"Best Players and Odds","items":[{"label":"Player (+1100):","body":"..."}]},{"title":"Course and Format","items":[{"label":"Course:","body":"..."}]}]
 `;
 }
 

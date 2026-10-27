@@ -60,7 +60,7 @@ export function TournamentAnnouncementCard({
         </p>
       ) : null}
       {description ? (
-        <p className="mt-3 font-display text-[13px] font-normal leading-relaxed text-zinc-600">
+        <p className="mt-3 font-display text-[15px] font-normal leading-relaxed text-zinc-600">
           {description}
         </p>
       ) : null}

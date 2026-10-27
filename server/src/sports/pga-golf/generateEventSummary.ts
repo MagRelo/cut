@@ -99,6 +99,7 @@ function sourcedTokensForPlayer(odds: SourcedPlayerOdds | null): Set<string> {
     tokens.add(formatAmericanOdds(odds.low));
     tokens.add(formatAmericanOdds(odds.high));
   }
+  if (odds.datagolf != null) tokens.add(formatAmericanOdds(odds.datagolf));
   return tokens;
 }
 
@@ -193,7 +194,7 @@ function finishSections(
     if (prior == null || !prior.body.trim()) return [];
     return [
       {
-        label: formatPlayerOddsLabel(player.displayName, player.odds?.quotes ?? []),
+        label: formatPlayerOddsLabel(player.displayName, player.odds?.datagolf),
         body: prior.body,
       },
     ];
@@ -237,13 +238,13 @@ async function loadSummaryContext(
   const players: EventSummaryPlayer[] = rows.flatMap((row) => {
     const displayName = row.participant.displayName?.trim() || "Unknown";
     const odds = findPlayerOdds(board, displayName);
-    if (!odds || odds.quotes.length === 0) return [];
+    if (odds?.datagolf == null) return [];
     return [{ displayName, odds }];
   });
 
   players.sort((a, b) => {
-    const aOdds = a.odds?.quotes.length ? americanToDecimal(a.odds.low) : Number.POSITIVE_INFINITY;
-    const bOdds = b.odds?.quotes.length ? americanToDecimal(b.odds.low) : Number.POSITIVE_INFINITY;
+    const aOdds = a.odds?.datagolf != null ? americanToDecimal(a.odds.datagolf) : Number.POSITIVE_INFINITY;
+    const bOdds = b.odds?.datagolf != null ? americanToDecimal(b.odds.datagolf) : Number.POSITIVE_INFINITY;
     if (aOdds !== bOdds) return aOdds - bOdds;
     return a.displayName.localeCompare(b.displayName);
   });

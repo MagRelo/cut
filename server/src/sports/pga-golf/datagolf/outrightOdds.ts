@@ -9,6 +9,8 @@ export type SourcedPlayerOdds = {
   quotes: number[];
   low: number;
   high: number;
+  /** DataGolf model win price (`datagolf.baseline`), American odds. */
+  datagolf: number | null;
 };
 
 export type DataGolfOutrightsBoard = {
@@ -41,15 +43,16 @@ export function formatAmericanOdds(american: number): string {
   return rounded > 0 ? `+${rounded}` : `${rounded}`;
 }
 
-export function formatPlayerOddsLabel(playerName: string, quotes: readonly number[]): string {
-  if (quotes.length === 0) return `${playerName}:`;
-  const sorted = [...quotes].sort((a, b) => americanToDecimal(a) - americanToDecimal(b));
-  const short = sorted[0]!;
-  const long = sorted[sorted.length - 1]!;
-  if (sorted.length === 1 || short === long) {
-    return `${playerName} (${formatAmericanOdds(short)}):`;
+export function formatPlayerOddsLabel(playerName: string, american: number | null | undefined): string {
+  if (american == null || !Number.isFinite(american)) return `${playerName}:`;
+  return `${playerName} (${formatAmericanOdds(american)}):`;
+}
+
+function parseDataGolfPrice(value: unknown): number | null {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return asNumber((value as Record<string, unknown>).baseline) ?? null;
   }
-  return `${playerName} (${formatAmericanOdds(short)} to ${formatAmericanOdds(long)}):`;
+  return asNumber(value) ?? null;
 }
 
 export function normalizeEventName(name: string): string {
@@ -96,6 +99,7 @@ function parseOddsRow(row: unknown): SourcedPlayerOdds | null {
     (asString(rec.first) && asString(rec.last) ? `${rec.first} ${rec.last}` : undefined);
   if (!rawName) return null;
   const quotes = collectBookQuotes(rec);
+  const datagolf = parseDataGolfPrice(rec.datagolf);
   if (quotes.length === 0) {
     return {
       playerName: rawName,
@@ -103,6 +107,7 @@ function parseOddsRow(row: unknown): SourcedPlayerOdds | null {
       quotes: [],
       low: 0,
       high: 0,
+      datagolf,
     };
   }
   const sorted = [...quotes].sort((a, b) => americanToDecimal(a) - americanToDecimal(b));
@@ -112,6 +117,7 @@ function parseOddsRow(row: unknown): SourcedPlayerOdds | null {
     quotes,
     low: sorted[0]!,
     high: sorted[sorted.length - 1]!,
+    datagolf,
   };
 }
 

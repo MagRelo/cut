@@ -12,10 +12,91 @@ import {
   parseGolfEventMetadata,
   PGA_GOLF_SPORT_ID,
   QUOTES_SECTION_DISPLAY_TITLE,
+  splitPlayerOddsLabel,
   type TournamentSummarySections,
 } from "@cut/sport-pga-golf";
+import { prisma } from "../../lib/prisma.js";
 import { EMAIL_TZ_ET, formatEmailDateRange, parseEmailDate } from "../emailDateFormat.js";
 import { resolveSummarySectionsForEvent } from "./tournamentSummaryIO.js";
+
+const BEST_PLAYERS_TITLE = /best players and odds/i;
+
+type PlayerPortrait = { imageUrl?: string; country?: string };
+
+function portraitFromMetadata(metadata: unknown): PlayerPortrait {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return {};
+  const record = metadata as Record<string, unknown>;
+  const imageUrl =
+    typeof record.imageUrl === "string" && record.imageUrl.trim().startsWith("https://")
+      ? record.imageUrl.trim()
+      : undefined;
+  const country =
+    typeof record.country === "string" && record.country.trim() ? record.country.trim() : undefined;
+  return {
+    ...(imageUrl ? { imageUrl } : {}),
+    ...(country ? { country } : {}),
+  };
+}
+
+async function loadPlayerPortraits(eventId: string): Promise<Map<string, PlayerPortrait>> {
+  const rows = await prisma.eventParticipant.findMany({
+    where: { eventId },
+    select: {
+      participant: { select: { displayName: true, metadata: true } },
+    },
+  });
+  const directory = new Map<string, PlayerPortrait>();
+  for (const row of rows) {
+    const name = row.participant.displayName?.trim();
+    if (!name) continue;
+    directory.set(name.toLowerCase(), portraitFromMetadata(row.participant.metadata));
+  }
+  return directory;
+}
+
+/** Fill avatar and country on the best-odds list from the event field. */
+export async function attachGolfPlayerPortraits(
+  eventId: string,
+  announcement: EmailAnnouncementContent,
+): Promise<EmailAnnouncementContent> {
+  const needsPortraits = announcement.bodySections.some(
+    (section) => BEST_PLAYERS_TITLE.test(section.key) || BEST_PLAYERS_TITLE.test(section.title),
+  );
+  if (!needsPortraits) return announcement;
+
+  let directory: Map<string, PlayerPortrait>;
+  try {
+    directory = await loadPlayerPortraits(eventId);
+  } catch (error) {
+    console.warn(
+      "[pga-golf] Player portraits unavailable:",
+      error instanceof Error ? error.message : error,
+    );
+    return announcement;
+  }
+
+  return {
+    ...announcement,
+    bodySections: announcement.bodySections.map((section) => {
+      if (!BEST_PLAYERS_TITLE.test(section.key) && !BEST_PLAYERS_TITLE.test(section.title)) {
+        return section;
+      }
+      return {
+        ...section,
+        items: section.items.map((item) => {
+          const { name } = splitPlayerOddsLabel(item.label);
+          const portrait = directory.get(name.toLowerCase());
+          if (!portrait) return item;
+          return {
+            ...item,
+            ...(portrait.imageUrl ? { imageUrl: portrait.imageUrl } : {}),
+            ...(portrait.country ? { subtitle: portrait.country } : {}),
+          };
+        }),
+      };
+    }),
+  };
+}
 
 function toEmailSections(sections: TournamentSummarySections): EmailAnnouncementSection[] {
   return sections.map((section) => {

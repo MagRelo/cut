@@ -60,6 +60,7 @@ describe("unsourcedOddsReason", () => {
             quotes: [450, 500],
             low: 450,
             high: 500,
+            datagolf: 450,
           },
         },
       ],
@@ -85,6 +86,7 @@ describe("unsourcedOddsReason", () => {
               quotes: [450, 500],
               low: 450,
               high: 500,
+              datagolf: 420,
             },
           },
         ],
@@ -147,6 +149,7 @@ describe("generateGolfEventSummary", () => {
         quotes: [450],
         low: 450,
         high: 450,
+        datagolf: 450,
       },
     ],
   };
@@ -238,16 +241,19 @@ describe("generateGolfEventSummary", () => {
             quotes: [450, 500],
             low: 450,
             high: 500,
+            datagolf: 420,
           },
         ],
       }),
     });
     expect(prompts).toHaveLength(1);
-    expect(prompts[0]).toMatch(/Scottie Scheffler \(\+450 to \+500\):/);
+    expect(prompts[0]).toMatch(/Scottie Scheffler \(\+420\):/);
+    expect(prompts[0]).not.toMatch(/\+450 to \+500/);
     expect(prompts[0]).toMatch(/Look up this week's public reporting/);
     expect(prompts[0]).toMatch(/https:\/\/www\.pgatour\.com\/tournaments\/2026\/overview\/R2026011/);
     expect(prompts[0]).not.toMatch(/OWGR|top-10s|FACT CHECK/);
     const written = mocks.update.mock.calls[0]?.[0]?.data?.metadata?.summarySections;
+    expect(written?.[2]?.items?.[0]?.label).toBe("Scottie Scheffler (+420):");
     expect(written?.[2]?.items?.[0]?.body).toBe("OWGR 1 and the clear favorite.");
   });
 

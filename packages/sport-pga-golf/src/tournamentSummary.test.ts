@@ -7,6 +7,7 @@ import {
   isQuotesSection,
   normalizeHexColor,
   parseSummarySections,
+  splitPlayerOddsLabel,
   quoteColorsFromHex,
 } from "./tournamentSummary.js";
 
@@ -28,6 +29,18 @@ describe("tournamentSummary", () => {
     expect(isEventBlurbSection({ title: "Course and Format", items: [{ body: "x" }] })).toBe(
       false,
     );
+  });
+
+  it("splits a player odds label into a name and a price", () => {
+    expect(splitPlayerOddsLabel("Scottie Scheffler (+450):")).toEqual({
+      name: "Scottie Scheffler",
+      odds: "+450",
+    });
+    expect(splitPlayerOddsLabel("Doug Ghim (+2000 to +2800):")).toEqual({
+      name: "Doug Ghim",
+      odds: "+2000 to +2800",
+    });
+    expect(splitPlayerOddsLabel("Player:")).toEqual({ name: "Player", odds: "" });
   });
 
   it("joins Event Blurb bodies into announcement prose", () => {

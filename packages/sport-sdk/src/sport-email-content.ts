@@ -5,6 +5,10 @@ export type EmailAnnouncementSectionItem = {
   label?: string;
   attribution?: string;
   color?: string;
+  /** Player portrait for the best-odds list. Absolute https URL. */
+  imageUrl?: string;
+  /** Secondary line under the label, such as a player's country. */
+  subtitle?: string;
 };
 
 export type EmailAnnouncementSection = {

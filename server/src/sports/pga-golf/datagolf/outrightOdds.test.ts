@@ -7,35 +7,35 @@ import {
 } from "./outrightOdds.js";
 
 describe("parseDataGolfOutrightsPayload", () => {
-  it("collects sportsbook quotes and drops the model column", () => {
+  it("stamps the DataGolf baseline and keeps sportsbook quotes separate", () => {
     const board = parseDataGolfOutrightsPayload({
       event_name: "Charles Schwab Challenge",
       odds: [
         {
           player_name: "Scheffler, Scottie",
-          draftkings: 450,
-          fanduel: 500,
-          bet365: 475,
-          datagolf: 420,
+          draftkings: "+450",
+          fanduel: "+500",
+          bet365: "+475",
+          datagolf: { baseline: "+420", baseline_history_fit: "+400" },
         },
         {
           player_name: "Morikawa, Collin",
-          draftkings: 1600,
+          draftkings: "+1600",
         },
       ],
     });
     expect(board?.eventName).toBe("Charles Schwab Challenge");
     const scottie = board?.players.find((p) => p.displayName === "Scottie Scheffler");
+    expect(scottie?.datagolf).toBe(420);
     expect(scottie?.quotes).toEqual(expect.arrayContaining([450, 500, 475]));
     expect(scottie?.quotes).not.toContain(420);
-    expect(formatPlayerOddsLabel("Scottie Scheffler", scottie?.quotes ?? [])).toBe(
-      "Scottie Scheffler (+450 to +500):",
+    expect(formatPlayerOddsLabel("Scottie Scheffler", scottie?.datagolf)).toBe(
+      "Scottie Scheffler (+420):",
     );
     const collin = board?.players.find((p) => p.displayName === "Collin Morikawa");
-    expect(formatPlayerOddsLabel("Collin Morikawa", collin?.quotes ?? [])).toBe(
-      "Collin Morikawa (+1600):",
-    );
-    expect(formatPlayerOddsLabel("Unknown", [])).toBe("Unknown:");
+    expect(collin?.datagolf).toBeNull();
+    expect(formatPlayerOddsLabel("Collin Morikawa", collin?.datagolf)).toBe("Collin Morikawa:");
+    expect(formatPlayerOddsLabel("Unknown", null)).toBe("Unknown:");
   });
 
   it("reads nested sportsbook odds objects", () => {

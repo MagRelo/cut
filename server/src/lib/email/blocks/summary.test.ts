@@ -36,4 +36,35 @@ describe("renderBodySummarySectionsHtml", () => {
     expect(html).toContain("Natural Gas");
     expect(html).toContain("Best — +109 pts, +11.2% on the week");
   });
+
+  it("lays a best-odds player out as avatar, name, price, then the blurb", () => {
+    const html = renderBodySummarySectionsHtml([
+      {
+        key: "Best Players and Odds",
+        title: "Best Players and Odds",
+        kind: "bullets",
+        items: [
+          {
+            label: "Scottie Scheffler (+450):",
+            body: "The clear favorite on a course that suits him.",
+            imageUrl: "https://images.example.com/scottie.jpg",
+            subtitle: "United States",
+          },
+        ],
+      },
+    ]);
+
+    expect(html).not.toContain("&#8226;");
+    expect(html).toContain("Best bets");
+    expect(html).toContain("margin-bottom:24px");
+    expect(html).toContain("colspan=\"3\"");
+    expect(html).toContain("https://images.example.com/scottie.jpg");
+    expect(html).toContain("Scottie Scheffler");
+    expect(html).toContain("United States");
+    expect(html).toContain("+450");
+    expect(html).not.toContain("(+450)");
+    expect(html.indexOf("Scottie Scheffler")).toBeLessThan(
+      html.indexOf("The clear favorite on a course that suits him."),
+    );
+  });
 });
