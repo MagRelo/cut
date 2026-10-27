@@ -116,6 +116,53 @@ export function resolveSettlementEntryId(lineup: {
   return contestLineupEntryKey(lineup);
 }
 
+const EMPTY_OFFCHAIN_SNAPSHOT: ContestSnapshot = {
+  contractBalance: "0",
+  primaryPrizePool: "0",
+  primarySideBalance: "0",
+  secondarySideBalance: "0",
+  totalSecondaryLiquidity: "0",
+  primaryDepositSecondarySubsidyBps: 0,
+};
+
+/** Close a $0 contest that never received an entry. No payouts to calculate. */
+async function settleEmptyOffChainContest(
+  contestId: string,
+  status: string,
+): Promise<OperationResult> {
+  if (status === "ACTIVE") {
+    const lockResult = await lockContest(contestId);
+    if (!lockResult.success) {
+      return {
+        success: false,
+        contestId,
+        error: `Failed to lock before settle: ${lockResult.error ?? "unknown error"}`,
+      };
+    }
+  }
+
+  const results: ContestResults = {
+    winningEntries: [],
+    payoutBps: [],
+    detailedResults: [],
+    snapshot: EMPTY_OFFCHAIN_SNAPSHOT,
+  };
+
+  await prisma.contest.update({
+    where: { id: contestId },
+    data: {
+      status: "SETTLED",
+      results: JSON.parse(JSON.stringify(results)),
+    },
+  });
+
+  console.log(`[settleContest] Settled empty off-chain contest ${contestId}`);
+  return {
+    success: true,
+    contestId,
+  };
+}
+
 export async function settleContest(contestId: string): Promise<OperationResult> {
   try {
     const contest = await prisma.contest.findUnique({
@@ -153,6 +200,9 @@ export async function settleContest(contestId: string): Promise<OperationResult>
     }
 
     if (!contest.contestLineups || contest.contestLineups.length === 0) {
+      if (!hasOnchainEscrow(contest)) {
+        return settleEmptyOffChainContest(contestId, contest.status);
+      }
       return {
         success: false,
         contestId,

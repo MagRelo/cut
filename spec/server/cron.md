@@ -82,6 +82,8 @@ Pi cron should keep `PRISMA_SOCKET_TIMEOUT` at least `60` (home → managed Post
 | `batchActivateContests` | `OPEN` → `ACTIVE` when sport says event is live |
 | `batchSettleContests`   | → `SETTLED` when event complete + operator settle |
 
+Off-chain ($0) contests activate with zero entries, so registration closes when the event is live. When that event is complete, settlement writes an empty result. On-chain activation and settlement still require at least one entry.
+
 Terminal on-chain states are `SETTLED` / `CANCELLED`. Permissionless `cancelExpired` applies after expiry + grace if unsettled.
 
 Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event status.

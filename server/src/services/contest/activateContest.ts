@@ -46,14 +46,8 @@ export async function activateContest(contestId: string): Promise<OperationResul
       };
     }
 
-    if (!contest.contestLineups || contest.contestLineups.length === 0) {
-      return {
-        success: false,
-        contestId,
-        error: "Contest has no entries",
-      };
-    }
-
+    // $0 contests have no contract. Close registration when the event is live
+    // even if nobody has entered, so the contest cannot be joined mid-event.
     if (!hasOnchainEscrow(contest)) {
       await prisma.contest.update({
         where: { id: contestId },
@@ -63,6 +57,14 @@ export async function activateContest(contestId: string): Promise<OperationResul
       return {
         success: true,
         contestId,
+      };
+    }
+
+    if (!contest.contestLineups || contest.contestLineups.length === 0) {
+      return {
+        success: false,
+        contestId,
+        error: "Contest has no entries",
       };
     }
 
