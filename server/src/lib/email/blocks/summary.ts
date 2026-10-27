@@ -161,7 +161,11 @@ function initials(name: string): string {
   return letters.join("").toUpperCase() || "?";
 }
 
-function renderPlayerOddsRowHtml(item: EmailAnnouncementSectionItem, index: number): string {
+function renderPlayerOddsRowHtml(
+  item: EmailAnnouncementSectionItem,
+  index: number,
+  isLast: boolean,
+): string {
   const { name, odds } = splitPlayerOddsLabel(item.label);
   const displayName = name || "Player";
   const src = portraitSrc(item.imageUrl);
@@ -174,8 +178,9 @@ function renderPlayerOddsRowHtml(item: EmailAnnouncementSectionItem, index: numb
   const oddsHtml = odds
     ? `<p style="margin:0;font-family:${FONT_DISPLAY};font-size:14px;font-weight:600;line-height:1.3;color:#18181b;text-align:right;">${escapeHtml(odds)}</p>`
     : "";
-  const top = index === 0 ? "0" : "16px";
+  const top = index === 0 ? "0" : "20px";
   const rule = index === 0 ? "" : "border-top:1px solid #e4e4e7;";
+  const bodyBottom = isLast ? "0" : "20px";
 
   return `<tr>
     <td width="40" valign="middle" style="padding:${top} 12px 0 0;${rule}width:40px;">${avatar}</td>
@@ -186,14 +191,18 @@ function renderPlayerOddsRowHtml(item: EmailAnnouncementSectionItem, index: numb
     <td width="72" valign="middle" align="right" style="padding:${top} 0 0 16px;${rule}width:72px;">${oddsHtml}</td>
   </tr>
   <tr>
-    <td colspan="3" style="padding:8px 0 0;">
+    <td colspan="3" style="padding:8px 0 ${bodyBottom};">
       <p style="margin:0;font-family:${FONT_BODY};font-size:14px;line-height:1.45;color:#3f3f46;">${escapeHtml(item.body)}</p>
     </td>
   </tr>`;
 }
 
 function renderPlayerOddsSectionHtml(section: EmailAnnouncementSection): string {
-  const rows = section.items.map((item, index) => renderPlayerOddsRowHtml(item, index)).join("");
+  const rows = section.items
+    .map((item, index) =>
+      renderPlayerOddsRowHtml(item, index, index === section.items.length - 1),
+    )
+    .join("");
   return `<div style="margin:0 0 20px;">
 <h2 style="${SECTION_TITLE_STYLE}margin-bottom:24px;">Best bets</h2>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">

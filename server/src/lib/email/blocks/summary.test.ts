@@ -67,4 +67,22 @@ describe("renderBodySummarySectionsHtml", () => {
       html.indexOf("The clear favorite on a course that suits him."),
     );
   });
+
+  it("leaves space above and below the rule between best-bet players", () => {
+    const html = renderBodySummarySectionsHtml([
+      {
+        key: "Best Players and Odds",
+        title: "Best Players and Odds",
+        kind: "bullets",
+        items: [
+          { label: "Tom Kim (+1755):", body: "First Tour start since Asian Games gold." },
+          { label: "Doug Ghim (+1878):", body: "Three top 20s in three fall starts." },
+        ],
+      },
+    ]);
+
+    expect(html).toContain("padding:8px 0 20px;");
+    expect(html).toContain("padding:20px 12px 0 0;border-top:1px solid #e4e4e7;");
+    expect(html).not.toMatch(/Doug Ghim[\s\S]*padding:8px 0 20px;/);
+  });
 });
