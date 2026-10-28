@@ -121,7 +121,7 @@ export function GolfEventDetails({
             <button
               type="button"
               onClick={onOpenSummary}
-              className={`${eventHeaderActionLinkClassName(tone)} font-semibold`}
+              className={`${eventHeaderActionLinkClassName(tone)} font-medium`}
             >
               <NewspaperIcon className="h-4 w-4 shrink-0" aria-hidden />
               Tournament Preview
