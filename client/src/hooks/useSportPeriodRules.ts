@@ -1,6 +1,6 @@
 import type { PeriodRules } from "@cut/sport-sdk";
 import { useSportsQuery } from "./useSportData";
-import { getPeriodRulesForSport } from "../lib/periodRules";
+import { periodRulesForSport } from "../sports/eventPresentation";
 
 export function useSportPeriodRules(sportId: string | undefined): PeriodRules | null {
   const { data: sports = [] } = useSportsQuery();
@@ -8,5 +8,5 @@ export function useSportPeriodRules(sportId: string | undefined): PeriodRules | 
   if (sport?.periodRules !== undefined) {
     return sport.periodRules;
   }
-  return getPeriodRulesForSport(sportId);
+  return periodRulesForSport(sportId);
 }

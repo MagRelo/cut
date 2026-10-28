@@ -45,8 +45,10 @@ export function GolfEventDetails({
   const periodDisplay = meta.periodDisplay || "R1";
   const periodStatusDisplay = meta.periodStatusDisplay?.trim() || formatGolfEventStatus(meta.status);
   const isSuspended = meta.periodStatusDisplay === "Suspended";
-  const isScheduled = golfEventStatusFromMetadata(event.metadata) === "SCHEDULED";
-  const showCountdown = shouldShowEventCountdown(event.metadata);
+  const eventStatus = golfEventStatusFromMetadata(event.metadata);
+  const isScheduled = eventStatus === "SCHEDULED";
+  const startDate = meta.startDate?.trim() || null;
+  const showCountdown = shouldShowEventCountdown(startDate, eventStatus);
   const showPreview = isScheduled && hasSummary && onOpenSummary;
   const showLeaderboard = !isScheduled;
   const onLeaderboardPage = useIsOnEventLeaderboard(event);
@@ -91,7 +93,11 @@ export function GolfEventDetails({
 
       <div className={eventHeaderMetaRowClassName(tone)}>
         {showCountdown ? (
-          <EventCountdownLine metadata={event.metadata} tone={tone} />
+          <EventCountdownLine
+            startDate={startDate}
+            status={eventStatus}
+            tone={tone}
+          />
         ) : (
           <>
             {periodDisplay}

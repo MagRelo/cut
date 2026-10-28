@@ -105,16 +105,17 @@ Pure logic only — no Prisma, no `fetch`, no env vars.
 - [ ] `CandidateRow.tsx` — picker row (scheduled state)
 - [ ] `ParticipantRow.tsx` — leaderboard / lineup slot row (live + complete)
 - [ ] `ParticipantDetail.tsx` — detail modal content
-- [ ] `PredictionField.tsx` — tie-break slider using `useSportPredictionRules(sportId)`
 - [ ] `EventSummary.tsx` (+ optional `EventDetails.tsx`, `eventMedia.ts`) — contest and field leaderboard hero UI (not editorial Cutbot commentary)
+- [ ] Plugin methods: `eventStatus`, `formatEventStatus`, `eventStart`, `eventEnd`, and `periodRules` (build-time fallback when `GET /sports` omits the field)
 - [ ] Import `*CandidateSortConfig` from the sport package; attach to the UI plugin
 - [ ] Register in `client/src/sports/registry.ts`
 - [ ] Add `@cut/sport-<id>` to `client/package.json`
-- [ ] Verify: `/sports/<sportId>` hub, leaderboard, lineup builder, and contest lobby render
+- [ ] Verify: leaderboard, lineup builder, and contest lobby render. `/` and `/sports/:sportId` stay redirects to `/contests`
+- [ ] `pnpm run check:sport-boundary` — `client/src/lib`, `components`, `hooks`, `pages`, and `contexts` do not import the new sport package
 
-Platform shell components (`SportEventHeader`, `CandidatePicker`, `SportParticipantRow`, `SportPredictionField`) delegate to the plugin — do not fork platform layout.
+Platform shell components (`SportEventHeader`, `CandidatePicker`, `SportParticipantRow`) delegate row and hero rendering to the plugin. The tie-break slider is platform `SportPredictionField`, driven by `Sport.predictionRules` — not a per-sport `PredictionField`.
 
-`EventSummary.tsx` is the hub/hero React component. Contest Cutbot commentary (`Contest.commentary` / `commentaryFeed`) is a separate optional track — see Phase 8.
+`EventSummary.tsx` is the hub/hero React component. Contest Cutbot commentary (`Contest.commentary` / `commentaryFeed`) is a separate optional track — see Phase 8. The lobby JSON fallback is parsed by `@cut/sport-sdk` `parseContestCommentaryFeedItems`.
 
 ---
 
@@ -122,12 +123,12 @@ Platform shell components (`SportEventHeader`, `CandidatePicker`, `SportParticip
 
 Verify the new sport works through shared platform paths (pass `sportId` from `EventScope` everywhere):
 
-- [ ] `client/src/lib/eventMetadata.ts` — status labels and start date for the new metadata shape
-- [ ] `client/src/hooks/useLineupSlotEditor.ts` + `useSportRosterRules` — slot count from DB rules
+- [ ] `client/src/hooks/useLineupSlotEditor.ts` + `useSportRosterRules` — slot count from `GET /sports` `rosterRules` (undefined until that payload arrives)
 - [ ] `client/src/lib/lineupApi.ts` — lineup create/update passes `sportId`; prediction serializes as `{ type: "winningLineupTotal", value }`
-- [ ] `client/src/components/platform/SportPredictionField.tsx` — plugin `PredictionField` renders for the sport
+- [ ] `SportPredictionField` renders `LineupWinningScoreSlider` from `predictionRules` (label, min, max, scale). It takes `sportId` and does not branch on a sport id
 - [ ] Server lineup services use `parseLineupPrediction` + `Sport.predictionRules` for validation
 - [ ] `GET /sports/:sportId/events/:eventId/candidates` returns sorted candidates with correct `sortKeys`
+- [ ] Status, start, end, and period-rule fallback resolve through `SportUIPlugin` (`client/src/sports/eventPresentation.ts`). Platform files do not import `@cut/sport-<id>`
 
 Optional, separate track:
 
@@ -286,7 +287,6 @@ client/src/sports/<id>/
   CandidateRow.tsx
   ParticipantRow.tsx
   ParticipantDetail.tsx
-  PredictionField.tsx
   EventSummary.tsx                  # hub/hero UI — not Cutbot copy
 
 docs/sports/<id>/

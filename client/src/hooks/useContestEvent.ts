@@ -4,13 +4,15 @@ import type { Contest } from "../types/contest";
 import type { EventStatus } from "../types/event";
 import {
   eventDisplayNameFromMetadata,
-  eventStartDateFromMetadata,
-  eventStatusDisplayFromMetadata,
-  eventStatusFromMetadata,
-  isEventEditableFromMetadata,
+  isEventEditableStatus,
   periodDisplayFromMetadata,
   periodStatusDisplayFromMetadata,
 } from "../lib/eventMetadata";
+import {
+  eventStartForSport,
+  eventStatusForSport,
+  eventStatusLabelForSport,
+} from "../sports/eventPresentation";
 import { currentPeriodFromMetadata } from "../lib/eventPeriods";
 
 export interface ContestEventState {
@@ -50,7 +52,7 @@ export function useContestEvent(contest: Contest | undefined): ContestEventState
   const eventId = contest?.eventId ?? "";
   const metadata = contest?.event?.metadata ?? null;
 
-  const status = useMemo(() => eventStatusFromMetadata(metadata), [metadata]);
+  const status = useMemo(() => eventStatusForSport(sportId, metadata), [sportId, metadata]);
 
   return {
     sportId,
@@ -58,13 +60,13 @@ export function useContestEvent(contest: Contest | undefined): ContestEventState
     eventShell,
     metadata,
     status,
-    isEventEditable: isEventEditableFromMetadata(metadata),
+    isEventEditable: isEventEditableStatus(status),
     eventName: eventDisplayNameFromMetadata(metadata, ""),
     currentPeriod: currentPeriodFromMetadata(metadata),
     periodDisplay: periodDisplayFromMetadata(metadata),
     periodStatusDisplay: periodStatusDisplayFromMetadata(metadata),
-    eventStartDate: eventStartDateFromMetadata(metadata),
-    eventStatusDisplay: eventStatusDisplayFromMetadata(metadata),
+    eventStartDate: eventStartForSport(sportId, metadata),
+    eventStatusDisplay: eventStatusLabelForSport(sportId, metadata),
     error: eventShell ? null : MISSING_EVENT_ERROR,
   };
 }

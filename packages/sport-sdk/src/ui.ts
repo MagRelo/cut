@@ -5,7 +5,6 @@ export type {
   EventSummarySurface,
   ParticipantDetailProps,
   ParticipantRowProps,
-  PredictionFieldProps,
   SportUIPlugin,
 } from "./sport-ui-plugin.js";
 

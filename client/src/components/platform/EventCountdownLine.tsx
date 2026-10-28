@@ -1,5 +1,5 @@
 import { CountdownTimer } from "../common/CountdownTimer";
-import { eventStartDateFromMetadata, eventStatusFromMetadata } from "../../lib/eventMetadata";
+import type { EventStatus } from "../../types/event";
 import {
   eventHeaderCountdownClassName,
   type EventHeaderTone,
@@ -11,24 +11,26 @@ function isBeforeDate(targetDate: string): boolean {
 }
 
 /** True when the event has not started yet and a countdown should replace period/status. */
-export function shouldShowEventCountdown(metadata: unknown): boolean {
-  const startDate = eventStartDateFromMetadata(metadata);
+export function shouldShowEventCountdown(
+  startDate: string | null,
+  status: EventStatus,
+): boolean {
   if (!startDate || !isBeforeDate(startDate)) {
     return false;
   }
-  const status = eventStatusFromMetadata(metadata);
   return status !== "LIVE" && status !== "COMPLETE";
 }
 
 export function EventCountdownLine({
-  metadata,
+  startDate,
+  status,
   tone = "hero",
 }: {
-  metadata: unknown;
+  startDate: string | null;
+  status: EventStatus;
   tone?: EventHeaderTone;
 }) {
-  const startDate = eventStartDateFromMetadata(metadata);
-  if (!startDate || !shouldShowEventCountdown(metadata)) {
+  if (!startDate || !shouldShowEventCountdown(startDate, status)) {
     return null;
   }
 

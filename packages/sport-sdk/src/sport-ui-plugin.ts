@@ -1,14 +1,7 @@
 import type { ComponentType } from "react";
 import type { CandidateSortConfig } from "./candidateSort.js";
+import type { PeriodRules } from "./periods.js";
 import type { Candidate, CompetitionEventShell, EventStatus } from "./types.js";
-
-export interface PredictionFieldProps {
-  value: unknown;
-  onChange?: (value: unknown) => void;
-  disabled?: boolean;
-  error?: string | null;
-  readOnly?: boolean;
-}
 
 export interface CandidateRowProps {
   candidate: Candidate;
@@ -51,7 +44,6 @@ export interface SportUIPlugin {
   CandidateRow: ComponentType<CandidateRowProps>;
   ParticipantRow: ComponentType<ParticipantRowProps>;
   ParticipantDetail: ComponentType<ParticipantDetailProps>;
-  PredictionField?: ComponentType<PredictionFieldProps>;
   EventSummary?: ComponentType<EventSummaryProps>;
   resolveEventHeroImage?: (event: CompetitionEventShell) => string | null;
   /** Optional Tailwind classes for hero background positioning (e.g. object-position). */
@@ -59,4 +51,12 @@ export interface SportUIPlugin {
   /** Optional Tailwind classes for hero tint; defaults to {@link DEFAULT_EVENT_HERO_OVERLAY_CLASSNAME}. */
   eventHeroOverlayClassName?: string;
   candidateSortConfig: CandidateSortConfig;
+  /** Platform status from this sport's event metadata. */
+  eventStatus: (metadata: unknown) => EventStatus;
+  /** Status label. Golf formats the raw tour status; other sports format the platform status. */
+  formatEventStatus: (status: EventStatus, metadata: unknown) => string;
+  eventStart: (metadata: unknown) => string | null;
+  eventEnd: (metadata: unknown) => string | null;
+  /** Build-time fallback when `GET /sports` omits `periodRules`. */
+  periodRules: PeriodRules | null;
 }

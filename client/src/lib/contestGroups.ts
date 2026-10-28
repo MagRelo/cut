@@ -6,7 +6,7 @@ import type {
   EventContestGroup,
   LeagueContest,
 } from "../types/contest";
-import { eventStatusFromMetadata } from "./eventMetadata";
+import { eventStatusForSport } from "../sports/eventPresentation";
 
 export function sortContestsByEntryFee(contests: Contest[]): Contest[] {
   return [...contests].sort((a, b) => {
@@ -103,7 +103,7 @@ export function flattenContestGroups(groups: EventContestGroup[]): LeagueContest
 }
 
 function bucketDirectoryEvent(event: ContestDirectoryEvent): keyof ContestDirectoryResponse {
-  const status = eventStatusFromMetadata(event.metadata);
+  const status = eventStatusForSport(event.sportId, event.metadata);
   if (status === "LIVE") return "live";
   if (status === "COMPLETE") return "past";
   return "upcoming";

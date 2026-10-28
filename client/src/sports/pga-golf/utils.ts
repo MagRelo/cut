@@ -28,6 +28,7 @@ type GolfEventMetadata = {
   city?: string;
   state?: string;
   status?: string;
+  startDate?: string;
   periodDisplay?: string | null;
   periodStatusDisplay?: string | null;
   currentPeriod?: number | null;

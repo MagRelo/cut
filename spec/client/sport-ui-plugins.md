@@ -1,6 +1,6 @@
 # Sport UI plugins — boundaries and conventions
 
-How the v4 client splits **platform shell** (sport-agnostic) from **sport UI plugins** (presentation). This is the as-built reference for `ParticipantRow` / `CandidateRow` and remaining platform leaks.
+How the v4 client splits **platform shell** (sport-agnostic) from **sport UI plugins** (presentation). This is the as-built reference for `ParticipantRow` / `CandidateRow` and event status on the plugin.
 
 **Related:** [Plugin system (server + client contracts)](../platform/plugins.md) · [Component structure](component-structure.md) · [Platform architecture](../../docs/platform/architecture.md)
 
@@ -13,13 +13,12 @@ flowchart LR
   subgraph platform [Platform shell]
     Page[Pages / feature components]
     Hook[useContestEvent / useEventCandidatesQuery + useSportUI]
-    Shell[SportParticipantRow, CandidatePicker, ...]
+    Shell[SportParticipantRow, CandidatePicker, SportPredictionField]
   end
   subgraph plugin [Sport UI plugin]
     PR[ParticipantRow]
     CR[CandidateRow]
     PD[ParticipantDetail]
-    PF[PredictionField]
     ES[EventSummary]
   end
   Page --> Hook
@@ -30,8 +29,8 @@ flowchart LR
 
 | Layer | Owns | Does not own |
 |-------|------|----------------|
-| **Platform** | Routing, contest/lineup flows, `Candidate[]` fetching, `EventStatus`, lineup totals from API, when lists open modals | Player row layout, Stableford display, golf round thru/par, scorecard hole table, prediction input UX |
-| **Sport plugin** | How a `Candidate` renders in each slot; sport metadata inside `candidate.metadata`; scorecard primitives | API calls, lineup save, contest join, global nav |
+| **Platform** | Routing, contest/lineup flows, `Candidate[]` fetching, lineup totals from API, when lists open modals, tie-break slider from `predictionRules` | Player row layout, Stableford display, golf round thru/par, scorecard hole table, event status and start/end parsing |
+| **Sport plugin** | How a `Candidate` renders in each slot; sport metadata inside `candidate.metadata`; scorecard primitives; `eventStatus`, status label, `eventStart`, `eventEnd`, `periodRules` | API calls, lineup save, contest join, global nav, tie-break control |
 
 **Data rule:** Platform code passes `Candidate` + `EventStatus` (+ optional `eventMetadata`). It does not pass legacy player types or sport-specific presentation props. Golf reads `roundDisplay` from `eventMetadata` inside the plugin.
 
@@ -52,8 +51,11 @@ flowchart LR
 | `CandidateRow` | yes | `candidate`, `onSelect?`, `isSelected?`, `disabled?`, `status?`, `eventMetadata?` | **Picker only** — lineup slot selection UI |
 | `ParticipantRow` | yes | `candidate`, `status`, `onClick?`, `ownershipPercentage?`, `eventMetadata?` | **Display lists** — read-only or clickable rows |
 | `ParticipantDetail` | yes | `candidate`, `status`, `rowTrailing?`, `onShare?`, `eventMetadata?` | **Detail modal** — scorecard header, round tabs, hole table |
-| `PredictionField` | no | `value`, `onChange`, `disabled?`, `error?` | Sport-specific tie-break / prediction input |
 | `EventSummary` | no | `{ event: CompetitionEventShell }` | Event hero in page header |
+| `eventStatus` | yes | `metadata` → `EventStatus` | Platform status. Callers pass `sportId` through `eventStatusForSport` |
+| `formatEventStatus` | yes | `status`, `metadata` | Status label. Golf formats the raw tour status; other sports format the platform status |
+| `eventStart` / `eventEnd` | yes | `metadata` → ISO string or null | Countdown and schedule bounds |
+| `periodRules` | yes | `PeriodRules` or null | Fallback when `GET /sports` omits `periodRules` |
 | `candidateSortConfig` | yes | `CandidateSortConfig` from sport package | Sort key order for picker, leaderboard, and lineup pick lists |
 
 ### `CandidateRow` vs `ParticipantRow`
@@ -81,7 +83,7 @@ Location: [`client/src/components/platform/`](../../client/src/components/platfo
 | [`SportParticipantDetailModal`](../../client/src/components/platform/SportParticipantDetailModal.tsx) | `ParticipantDetail` | Leaderboard, lineup card, contest entry modal (click row → scorecard) |
 | [`SportLineupPickRow`](../../client/src/components/platform/SportLineupPickRow.tsx) | `SportParticipantRow` → `ParticipantRow` | Editable lineup slots on `LineupContestCard` |
 | [`CandidatePicker`](../../client/src/components/platform/CandidatePicker.tsx) | `CandidateRow` | `LineupContestCard` slot editor |
-| [`SportPredictionField`](../../client/src/components/platform/SportPredictionField.tsx) | `PredictionField` | `LineupContestCard` winning-score slider |
+| [`SportPredictionField`](../../client/src/components/platform/SportPredictionField.tsx) | `predictionRules` for the passed `sportId` | `LineupContestCard` winning-score slider (`LineupWinningScoreSlider`) |
 | [`SportEventHeader`](../../client/src/components/platform/SportEventHeader.tsx) | `EventSummary` | Leaderboard and contest directory heroes (`sportId` + event shell) |
 
 Contest lobby renders plugin `EventSummary` directly in [`ContestLobbyView`](../../client/src/components/contest/lobby/ContestLobbyView.tsx) — not via `AppLayout`.
@@ -107,7 +109,6 @@ Registered slots and plugin-local modules:
 | [`ParticipantRow.tsx`](../../client/src/sports/pga-golf/ParticipantRow.tsx) | Leaderboard / list row layout |
 | [`ParticipantDetail.tsx`](../../client/src/sports/pga-golf/ParticipantDetail.tsx) | Detail modal — header, round tabs, scorecard |
 | [`CandidateSelectionCard.tsx`](../../client/src/sports/pga-golf/CandidateSelectionCard.tsx) | Scheduled picker card body (internal) |
-| [`PredictionField.tsx`](../../client/src/sports/pga-golf/PredictionField.tsx) | Winning-score prediction slider |
 | [`EventSummary.tsx`](../../client/src/sports/pga-golf/EventSummary.tsx) | Event hero; embeds `EventDetails` |
 | [`EventDetails.tsx`](../../client/src/sports/pga-golf/EventDetails.tsx) | Course / weather text (not on `SportUIPlugin` interface) |
 | [`utils.ts`](../../client/src/sports/pga-golf/utils.ts) | Metadata parsing, per-player Stableford for row display |
@@ -150,7 +151,8 @@ Lineup header PTS: [`lineupDisplayScore`](../../client/src/lib/lineupScore.ts) f
 | [`lineupUtils.ts`](../../client/src/lib/lineupUtils.ts) | `platformLineupEventParticipantIds`, prediction helpers |
 | [`lineupScore.ts`](../../client/src/lib/lineupScore.ts) | Display score from API — no client-side sport aggregation |
 | [`sportPrediction.ts`](../../client/src/lib/sportPrediction.ts) | `{ type: "winningLineupTotal", value }` parse/serialize |
-| [`useSportPredictionRules`](../../client/src/hooks/useSportPredictionRules.ts) | Per-sport slider range from `GET /sports` |
+| [`useSportPredictionRules`](../../client/src/hooks/useSportPredictionRules.ts) | Per-sport slider range from `GET /sports`. Undefined until that sport is in the catalog |
+| [`eventPresentation.ts`](../../client/src/sports/eventPresentation.ts) | `eventStatusForSport`, labels, start/end, `periodRulesForSport` via the registry |
 
 ---
 
@@ -162,20 +164,19 @@ Lineup header PTS: [`lineupDisplayScore`](../../client/src/lib/lineupScore.ts) f
 4. **Contest lineups:** use `lineup.lineup.picks`. Use `contestLineupDisplayName(lineup)` for names.
 5. **Lineup totals:** use `lineupDisplayScore(contestLineup)` or `lineup.score` / `platformLineup.score` — never import plugin utils for aggregation.
 6. **Slot editor:** `useLineupSlotEditor` works in `Candidate[]`; saves `eventParticipantId[]`.
-7. **New sport:** implement `SportUIPlugin` in `client/src/sports/{sport-id}/`, register in `registry.ts`. Populate `sortKeys` in `build*Candidates`, export `*CandidateSortConfig`, attach to plugin. Reuse platform shells unchanged.
+7. **New sport:** implement `SportUIPlugin` in `client/src/sports/{sport-id}/`, including status, dates, and `periodRules`, and register in `registry.ts`. Populate `sortKeys` in `build*Candidates`, export `*CandidateSortConfig`, attach to plugin. Reuse platform shells unchanged. Do not import the sport package from `client/src/lib`, `components`, `hooks`, or `contexts`.
 8. **Do not** add presentation props to `ParticipantRowProps` for one-off UI. Round tab state lives inside `ParticipantDetail`.
 
 ---
 
-## Remaining platform leaks
-
-Golf-specific logic still in platform code. **Do not extend**; migrate when adding a second sport.
+## Platform ownership
 
 | Item | Location | Notes |
 |------|----------|-------|
-| Lineup total prediction | `lib/sportPrediction.ts`, `useSportPredictionRules`, `SportPredictionField` | Plugin wraps slider; platform owns canonical JSON shape |
+| Lineup total prediction | `lib/sportPrediction.ts`, `useSportPredictionRules`, `SportPredictionField` | Slider reads `predictionRules`. Canonical JSON shape stays `{ type: "winningLineupTotal", value }` |
+| Event status and dates | `sports/eventPresentation.ts` | Registry lookup by `sportId`. Missing plugin is `SCHEDULED` and null dates |
 | Event round display | Golf plugin reads `roundDisplay` from `eventMetadata` | Not a platform hook field |
-| Home demo | `InfoScorecard` imports plugin `ScoreDisplay` | Marketing-only cross-boundary import |
+| Home demo | `sports/pga-golf/InfoScorecard` | Golf marketing surface. `Home` imports it; platform components do not |
 
 ---
 

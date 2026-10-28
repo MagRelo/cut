@@ -81,7 +81,7 @@ The client runs the same roster + prediction check before save (slot editor and 
 
 **Surface:** `LineupContestCard` → **Players** tab, bottom of the panel when the user can edit slots (`canEditSlots`: editable event + lineup id present).
 
-**Control:** `SportPredictionField` → sport plugin `PredictionField` (golf: `LineupWinningScoreSlider`; F1: custom range slider)
+**Control:** `SportPredictionField` renders `LineupWinningScoreSlider` from `Sport.predictionRules` (label, min, max, scale). The lineup card passes `sportId`.
 
 - Label: sport-specific (e.g. “Predicted winning lineup score” for golf)
 - Range from `Sport.predictionRules` via `useSportPredictionRules`
@@ -240,7 +240,7 @@ sequenceDiagram
 | Contest entry HTTP | `server/src/routes/contest.ts` |
 | Live positions | `server/src/services/updateContestLineups.ts` |
 | Settlement | `server/src/services/contest/settleContest.ts` |
-| Prediction UI | `client/src/components/platform/SportPredictionField.tsx` → sport `PredictionField` |
+| Prediction UI | `client/src/components/platform/SportPredictionField.tsx` (`LineupWinningScoreSlider` + `predictionRules`) |
 | Prediction rules hook | `client/src/hooks/useSportPredictionRules.ts` |
 | Client helpers | `client/src/lib/sportPrediction.ts` |
 | Duplicate message | `client/src/utils/lineupPrediction.ts` |

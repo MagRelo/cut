@@ -89,8 +89,12 @@ interface SportUIPlugin {
   CandidateRow: React.FC<CandidateRowProps>;       // picker (scheduled card; live delegates to ParticipantRow)
   ParticipantRow: React.FC<ParticipantRowProps>;   // field / event lists (leaderboard, picker live row) — no contest popularity
   ParticipantDetail: React.FC<ParticipantDetailProps>; // detail modal (scorecard header + round tabs + hole table)
-  PredictionField?: React.FC<PredictionFieldProps>;
   EventSummary?: React.FC<{ event: CompetitionEventShell }>;
+  eventStatus(metadata: unknown): EventStatus;
+  formatEventStatus(status: EventStatus, metadata: unknown): string;
+  eventStart(metadata: unknown): string | null;
+  eventEnd(metadata: unknown): string | null;
+  periodRules: PeriodRules | null;
   candidateSortConfig: CandidateSortConfig;        // per-context sort key order for platform lists
 }
 ```
@@ -122,7 +126,7 @@ Golf also provides `EventDetails` (hero text) used inside `EventSummary`.
 | `SportLineupPickRow` | Thin wrapper → `SportParticipantRow` in editable lineup slots |
 | `SportParticipantRow` | Resolves plugin `ParticipantRow`; passes `status` + optional `eventMetadata` |
 | `SportParticipantDetailModal` | Dialog chrome → plugin `ParticipantDetail`; share URL helper |
-| `SportPredictionField` | Renders plugin `PredictionField` |
+| `SportPredictionField` | Winning-score slider from `predictionRules` for the passed `sportId` |
 | `CreateContestEventPicker` | Sport + active event for contest create |
 
 Contest lobby renders plugin `EventSummary` in `ContestLobbyView` (not in `AppLayout`).

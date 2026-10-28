@@ -74,7 +74,7 @@ interface UseLineupSlotEditorOptions {
   initialCandidates: Candidate[];
   fieldCandidates: Candidate[];
   lineups: PlatformLineupListItem[];
-  predictionValue: number;
+  predictionValue: number | null;
   updateLineup: (
     lineupId: string,
     picks: string[],
@@ -167,6 +167,8 @@ export function useLineupSlotEditor({
 
   const saveSlots = useCallback(
     async (newSlots: Array<Candidate | null>) => {
+      if (predictionValue == null) return false;
+
       const eventParticipantIds = eventParticipantIdsFromSlots(newSlots);
 
       if (checkForDuplicateLineup(eventParticipantIds, predictionValue)) {

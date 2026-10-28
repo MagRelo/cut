@@ -1,7 +1,5 @@
 import type { Candidate } from "@cut/sport-sdk";
 
-export { golfCandidateHasDisplayName as candidateHasDisplayName } from "@cut/sport-pga-golf";
-
 export function participantLastName(candidate: Candidate): string {
   if (!candidate.metadata || typeof candidate.metadata !== "object" || Array.isArray(candidate.metadata)) {
     return candidate.displayName;

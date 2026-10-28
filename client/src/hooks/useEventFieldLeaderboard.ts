@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { eventStatusFromMetadata } from "../lib/eventMetadata";
+import { eventStatusForSport } from "../sports/eventPresentation";
 import { useEventCandidatesQuery } from "./useSportData";
 
 export function useEventFieldLeaderboard(
@@ -10,8 +10,8 @@ export function useEventFieldLeaderboard(
   const candidatesQuery = useEventCandidatesQuery(sportId, eventId);
 
   const status = useMemo(
-    () => eventStatusFromMetadata(eventMetadata),
-    [eventMetadata],
+    () => eventStatusForSport(sportId, eventMetadata),
+    [sportId, eventMetadata],
   );
 
   const rawError = candidatesQuery.error;

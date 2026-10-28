@@ -6,7 +6,7 @@ import apiClient from "../utils/apiClient";
 import { type Contest, type ContestStatus } from "../types/contest";
 import { normalizeContestAddress } from "../utils/contestRoutes";
 import { useAuth } from "../contexts/AuthContext";
-import { eventStatusFromMetadata } from "../lib/eventMetadata";
+import { eventStatusForSport } from "../sports/eventPresentation";
 import {
   getDirectoryContextForContest,
   parseContestLobbyNavigationState,
@@ -20,7 +20,7 @@ const LIVE_TRACKED_CONTEST_STATUSES: ContestStatus[] = ["ACTIVE", "LOCKED"];
 export function isContestLiveTracked(contest: Contest | undefined): boolean {
   if (!contest) return false;
   if (!LIVE_TRACKED_CONTEST_STATUSES.includes(contest.status)) return false;
-  if (eventStatusFromMetadata(contest.event?.metadata) === "COMPLETE") return false;
+  if (eventStatusForSport(contest.event?.sportId, contest.event?.metadata) === "COMPLETE") return false;
   return true;
 }
 

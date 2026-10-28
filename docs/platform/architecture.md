@@ -248,7 +248,7 @@ Core platform endpoints:
 - `SportLineupPickRow` — contest roster pick row (optional post-lock popularity bonus; see [consensus-axis.md](consensus-axis.md))
 - `SportParticipantRow` / `SportParticipantDetailModal` — field/event display lists and scorecard modal (no contest popularity)
 - `SportEventHeader` — leaderboard event hero → plugin `EventSummary`
-- `SportPredictionField` — delegates to plugin prediction input
+- `SportPredictionField` — winning-score tie-break slider from `Sport.predictionRules` (`label`, min, max, scale). Pass `sportId`. There is no per-sport prediction component.
 
 `LineupContestCard` composes the shell for lineup editing: `SportLineupPickRow` slots, `CandidatePicker` for swaps, and `SportPredictionField` for the winning-score tie-breaker. Feature components in `contest/`, `lineup/`, `userGroup/` use platform types (`Candidate`, `PlatformLineup`, `ContestLineup`). Sport-specific presentation lives in per-sport UI plugins under `client/src/sports/{sport-id}/`.
 
@@ -261,12 +261,17 @@ interface SportUIPlugin {
   CandidateRow: React.FC<CandidateRowProps>;
   ParticipantRow: React.FC<ParticipantRowProps>;
   ParticipantDetail: React.FC<ParticipantDetailProps>;
-  PredictionField?: React.FC<PredictionProps>;
   EventSummary?: React.FC<{ event: CompetitionEvent }>;
+  eventStatus(metadata: unknown): EventStatus;
+  formatEventStatus(status: EventStatus, metadata: unknown): string;
+  eventStart(metadata: unknown): string | null;
+  eventEnd(metadata: unknown): string | null;
+  periodRules: PeriodRules | null;
+  candidateSortConfig: CandidateSortConfig;
 }
 ```
 
-Golf provides OWGR/DataGolf-ranked candidate rows, Stableford scorecards, and a winning-score prediction slider. NFL would provide position badges, projected points, and a different prediction input. The platform shell stays the same.
+Golf provides OWGR/DataGolf-ranked candidate rows and Stableford scorecards. The winning-score slider is platform UI. A new sport provides its own row, detail, and event-status methods. The platform shell stays the same.
 
 ---
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Share } from "../components/common/Share";
-import { InfoScorecard } from "../components/common/InfoScorecard";
+import { InfoScorecard } from "../sports/pga-golf/InfoScorecard";
 import { PageSection } from "../components/layout/PageSection";
 import { BrandLogo } from "../components/common/BrandLogo";
 import { BRAND_PROSE, BRAND_TAGLINE, BRAND_URL, BRAND_WORDMARK } from "../lib/brand";

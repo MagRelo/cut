@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { parseContestCommentaryFeedDocument } from "@cut/sport-pga-golf";
+import { parseContestCommentaryFeedItems } from "@cut/sport-sdk";
 import type { ActivityResponse, FeedsClient } from "@stream-io/feeds-react-sdk";
 import { type Contest } from "../../../types/contest";
 import { contestLineupIdentityKeys } from "../../../lib/hasOnchainEscrow";
@@ -119,7 +119,7 @@ const JsonFallbackFeed: React.FC<{
   currentUserId?: string;
 }> = ({ contest, currentUserId }) => {
   const items = useMemo(
-    () => parseContestCommentaryFeedDocument(contest.commentaryFeed).items,
+    () => parseContestCommentaryFeedItems(contest.commentaryFeed),
     [contest.commentaryFeed],
   );
   const userEntryIds = useMemo(
@@ -144,7 +144,7 @@ const JsonFallbackFeed: React.FC<{
               text={item.text}
               generatedAt={item.generatedAt}
               storyType={item.storyType}
-              isMentioned={jsonItemMentionsUser(item.subjects.entryIds, userEntryIds)}
+              isMentioned={jsonItemMentionsUser(item.subjects?.entryIds, userEntryIds)}
             />
           </li>
         ))}

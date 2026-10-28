@@ -63,6 +63,12 @@ export {
 } from "./contestCommentaryVoices.js";
 
 export type {
+  ContestCommentaryFeedItem,
+  ContestCommentaryFeedItemSubjects,
+} from "./contestFeed.js";
+export { parseContestCommentaryFeedItems } from "./contestFeed.js";
+
+export type {
   AdjustedPickScore,
   NormalizedPopularityRules,
   PickPopularityEntry,

@@ -31,10 +31,12 @@ export function F1EventDetails({ event, className = "", tone = "hero" }: F1Event
   const meta = parseF1EventMetadataView(event.metadata);
   const f1 = meta.f1 ?? {};
   const name = meta.name ?? f1.raceName ?? event.externalId;
-  const status = formatF1EventStatusLabel(f1EventStatusFromMetadata(event.metadata));
+  const statusValue = f1EventStatusFromMetadata(event.metadata);
+  const status = formatF1EventStatusLabel(statusValue);
   const seasonRound =
     f1.season != null && f1.round != null ? `${f1.season} · Round ${f1.round}` : null;
-  const showCountdown = shouldShowEventCountdown(event.metadata);
+  const startDate = f1.raceStart?.trim() || null;
+  const showCountdown = shouldShowEventCountdown(startDate, statusValue);
   const onLeaderboardPage = useIsOnEventLeaderboard(event);
   const leaderboardTo = leaderboardPath(event.sportId, event.id);
   const leaderboardState = leaderboardLinkState(event);
@@ -73,7 +75,7 @@ export function F1EventDetails({ event, className = "", tone = "hero" }: F1Event
 
       <div className={eventHeaderMetaRowClassName(tone)}>
         {showCountdown ? (
-          <EventCountdownLine metadata={event.metadata} tone={tone} />
+          <EventCountdownLine startDate={startDate} status={statusValue} tone={tone} />
         ) : (
           <span>{status}</span>
         )}

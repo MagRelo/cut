@@ -39,15 +39,15 @@ export function CommodityEventDetails({
       : {};
   const commodities = parseCommoditiesEventMetadata(event.metadata);
   const name = typeof meta.name === "string" ? meta.name : event.externalId;
-  const status = formatCommoditiesEventStatusLabel(
-    commoditiesEventStatusFromMetadata(event.metadata),
-  );
+  const statusValue = commoditiesEventStatusFromMetadata(event.metadata);
+  const status = formatCommoditiesEventStatusLabel(statusValue);
   const sessionDate = commodities?.sessionDate ?? event.externalId;
   const sessionWindow = formatCommoditySessionWindow(
     commodities?.sessionOpen,
     commodities?.sessionClose,
   );
-  const showCountdown = shouldShowEventCountdown(event.metadata);
+  const startDate = commodities?.sessionOpen?.trim() || null;
+  const showCountdown = shouldShowEventCountdown(startDate, statusValue);
   const onLeaderboardPage = useIsOnEventLeaderboard(event);
   const leaderboardTo = leaderboardPath(event.sportId, event.id);
   const leaderboardState = leaderboardLinkState(event);
@@ -72,7 +72,7 @@ export function CommodityEventDetails({
 
       <div className={eventHeaderMetaRowClassName(tone)}>
         {showCountdown ? (
-          <EventCountdownLine metadata={event.metadata} tone={tone} />
+          <EventCountdownLine startDate={startDate} status={statusValue} tone={tone} />
         ) : (
           <span>{status}</span>
         )}

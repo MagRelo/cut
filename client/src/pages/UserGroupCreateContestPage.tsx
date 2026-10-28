@@ -6,7 +6,8 @@ import { LeagueCreateContestForm } from "../components/userGroup/LeagueCreateCon
 import { useContestDirectory } from "../hooks/useContestDirectory";
 import { useUserGroupQuery } from "../hooks/useUserGroupQuery";
 import { findDirectoryEvent } from "../lib/contestGroups";
-import { isEventEditableFromMetadata } from "../lib/eventMetadata";
+import { isEventEditableStatus } from "../lib/eventMetadata";
+import { eventStatusForSport } from "../sports/eventPresentation";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import { isApiError } from "../utils/apiError";
@@ -31,7 +32,9 @@ export const UserGroupCreateContestPage = () => {
       sportName: directoryEvent.sportName,
       startDate: directoryEvent.startDate ?? "",
       endDate: directoryEvent.endDate ?? "",
-      isEditable: isEventEditableFromMetadata(directoryEvent.metadata),
+      isEditable: isEventEditableStatus(
+        eventStatusForSport(directoryEvent.sportId, directoryEvent.metadata),
+      ),
     };
   }, [directoryEvent]);
 

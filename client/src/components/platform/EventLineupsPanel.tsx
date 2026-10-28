@@ -9,10 +9,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useLineupData } from "../../hooks/useLineupData";
 import { useContestLineupEntry } from "../../hooks/useContestLineupEntry";
 import { useSportRosterRules } from "../../hooks/useSportRosterRules";
-import {
-  eventDisplayNameFromMetadata,
-  eventStatusFromMetadata,
-} from "../../lib/eventMetadata";
+import { eventDisplayNameFromMetadata } from "../../lib/eventMetadata";
+import { eventStatusForSport } from "../../sports/eventPresentation";
 import { canEditLineupForContest } from "../../lib/lineupEditable";
 import ContestContract from "../../utils/contracts/ContestController.json";
 import { ErrorMessage } from "../common/ErrorMessage";
@@ -92,7 +90,10 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
     query: { enabled: Boolean(contest.address) },
   });
 
-  const eventStatus = useMemo(() => eventStatusFromMetadata(eventMetadata), [eventMetadata]);
+  const eventStatus = useMemo(
+    () => eventStatusForSport(sportId, eventMetadata),
+    [sportId, eventMetadata],
+  );
   const isLineupEditable = useMemo(
     () =>
       canEditLineupForContest(

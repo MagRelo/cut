@@ -69,16 +69,15 @@ flowchart TB
     Pred[SportPredictionField]
   end
   subgraph plugin[SportUIPlugin]
-  Golf[pga-golf: CandidateRow, ParticipantRow, ParticipantDetail, EventSummary, PredictionField]
+  Golf["rows, detail, EventSummary, eventStatus"]
   end
   Header --> plugin
   Picker --> plugin
-  Pred --> plugin
 ```
 
-`client/src/sports/registry.ts` maps `sportId` → `SportUIPlugin`. Platform components call `requireSportUIPlugin(sportId)` for sport-specific rendering (row layout, scorecard, prediction input).
+`client/src/sports/registry.ts` maps `sportId` → `SportUIPlugin`. Platform components call `requireSportUIPlugin(sportId)` for sport-specific rendering (row layout, scorecard, event status). `SportPredictionField` reads `predictionRules` for the `sportId` passed by the lineup card. Status, start, end, and period-rule fallback go through `client/src/sports/eventPresentation.ts`.
 
-**pga-golf**, **f1**, and **commodities** are registered today. Adding a sport = new package folder + registry entry (server plugin must exist first).
+**pga-golf**, **f1**, and **commodities** are registered today. Adding a sport = new package folder + registry entry (server plugin must exist first). `pnpm run check:sport-boundary` rejects sport-package imports under `client/src/lib`, `components`, `hooks`, `pages`, and `contexts`.
 
 ---
 

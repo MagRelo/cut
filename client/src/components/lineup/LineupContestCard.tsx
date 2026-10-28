@@ -169,6 +169,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         : null;
     const value = fromListValue ?? fromLineup;
     if (value != null) return value;
+    if (!predictionRules) return null;
     return lineupId
       ? defaultPredictionForLineupId(lineupId, predictionRules)
       : defaultPredictionMidpoint(predictionRules);
@@ -237,7 +238,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   );
 
   useEffect(() => {
-    if (!canEditSlots || prediction === serverPrediction) return;
+    if (!canEditSlots || prediction == null || prediction === serverPrediction) return;
 
     const timer = window.setTimeout(() => {
       void savePrediction(prediction);
@@ -421,6 +422,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
           </div>
           {canEditSlots ? (
             <SportPredictionField
+              sportId={sportId}
               value={toLineupPredictionValue(prediction)}
               onChange={(value) => {
                 const next = predictionNumericValue(value);
@@ -430,7 +432,11 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
               error={sliderError}
             />
           ) : (
-            <SportPredictionField value={toLineupPredictionValue(serverPrediction)} readOnly />
+            <SportPredictionField
+              sportId={sportId}
+              value={toLineupPredictionValue(serverPrediction)}
+              readOnly
+            />
           )}
         </div>
       </div>

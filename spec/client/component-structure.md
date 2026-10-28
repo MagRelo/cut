@@ -17,7 +17,7 @@ Sport-agnostic building blocks. They accept platform types (`Candidate`, `EventS
 | `SportParticipantDetailModal` | Dialog chrome → plugin `ParticipantDetail` (scorecard modal) |
 | `SportLineupPickRow` | Thin wrapper around `SportParticipantRow` for editable lineup slots |
 | `CandidatePicker` | Search/sort over `Candidate[]` → plugin `CandidateRow` |
-| `SportPredictionField` | Wrapper → plugin `PredictionField` |
+| `SportPredictionField` | Winning-score slider from `predictionRules` (`sportId` prop) |
 
 Used by: leaderboard, lineup card, contest entry list/modal, contest lobby slot editor.
 
@@ -36,7 +36,6 @@ Registered via `pgaGolfUIPlugin` in `sports/pga-golf/index.tsx`. See [sport-ui-p
 | `ParticipantDetail` | Scorecard detail modal (header, round tabs, hole table) |
 | `EventSummary` | Event hero on lobby + leaderboard |
 | `EventDetails` | Course/weather (used inside `EventSummary`, not on interface) |
-| `PredictionField` | Winning-score prediction slider |
 | `scorecard/` | Hole table, score chips, round utils (plugin-internal) |
 | `types.ts` | Golf scorecard metadata shapes |
 | `eventMedia.ts` | Hero image fallback URL |
@@ -67,7 +66,7 @@ Pages: `ContestListPage` (`/contests`), `ContestLobbyPage`, `ContestCreatePage`.
 | Component | Purpose |
 |-----------|---------|
 | `LineupContestCard` | Primary lineup UI — `SportLineupPickRow` slots, `CandidatePicker`, `SportPredictionField`, server lineup score |
-| `LineupWinningScoreSlider` | Range input used internally by golf `PredictionField` |
+| `LineupWinningScoreSlider` | Range input used by platform `SportPredictionField` |
 | Side bet subfolder | Platform-owned betting UI |
 
 Used on contest lobby Lineups tab (no standalone `/lineups` page).
