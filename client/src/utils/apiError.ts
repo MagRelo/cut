@@ -51,3 +51,10 @@ export async function handleApiResponse<T>(response: Response): Promise<T> {
 export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError;
 }
+
+/** Server message from `ApiError`, then any `Error.message`, then `fallback`. */
+export function apiErrorMessage(error: unknown, fallback: string): string {
+  if (isApiError(error)) return error.message;
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}

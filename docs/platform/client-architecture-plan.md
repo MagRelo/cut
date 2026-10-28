@@ -20,8 +20,7 @@ flowchart TB
     Privy --> SmartWallets
     SmartWallets --> QueryClient
     QueryClient --> Wagmi
-    Wagmi --> GlobalError
-    GlobalError --> Auth
+    Wagmi --> Auth
     Auth --> Router
   end
   Router --> Shell["AppLayout: TopNav + PageContentPanel + Footer"]
@@ -52,7 +51,7 @@ Paid create, join, leave, and winner-pool buys write the chain first, then POST 
 | Shell | `components/layout/` — `AppLayout` (`max-w-shell` = 56rem, `bg-slate-100`), `TopNav`, `MobileNavMenu`, `UserMenu`, `PagePanel`, `Footer` |
 | Nav data | `lib/navTabs.ts`, `lib/navRoutes.ts`. Footer legal links are a separate list in `Footer.tsx` |
 | Server state | `utils/apiClient.ts`, `utils/queryKeys.ts`, `lib/queryClient.ts`, `hooks/use*.ts` |
-| Session | `contexts/AuthContext.tsx` — Privy token, `GET /auth/me`, payment-token balance. Own `fetch`, parallel to `apiClient` |
+| Session | `contexts/AuthContext.tsx` — Privy facade over `queryKeys.user.profile()` (`GET /auth/me` through `apiClient`). Payment-token balance still polled here |
 | Lobby scope | `contexts/EventScopeContext.tsx` — `sportId` and event shell for the open contest |
 | Chain | `wagmi.ts`, `hooks/useBlockchainTransaction.ts`, `utils/contracts/*.json`, `config/targetChain.ts` |
 | Sport UI | `sports/registry.ts` plus `sports/pga-golf/`, `sports/f1/`, `sports/commodities/` |
@@ -73,12 +72,11 @@ flowchart TB
   Registry --> Plugins["sports/pga-golf | f1 | commodities"]
   Features --> Hooks["hooks/ flat"]
   Plugins --> SportPkgs["@cut/sport-*"]
-  Lib["lib/eventMetadata.ts, periodRules.ts"] --> SportPkgs
 ```
 
-`lib/eventMetadata.ts` and `lib/periodRules.ts` import every sport package. The server guard `pnpm run check:sport-boundary` (`scripts/check-sport-boundary.mjs`) forbids that pattern under `server/src/services`, `lib`, `utils`, `routes`, and `cron`. It allows `client/src/sports/**` and does not scan `client/src/lib` or `client/src/components`.
+`pnpm run check:sport-boundary` (`scripts/check-sport-boundary.mjs`) forbids `@cut/sport-pga-golf`, `@cut/sport-f1`, and `@cut/sport-commodities` under `server/src/services`, `lib`, `utils`, `routes`, and `cron`, and under `client/src/lib`, `components`, `hooks`, `pages`, and `contexts`. Sport packages are imported from `client/src/sports/**` and test fixtures. Status, period labels, commentary parsing, and display-name checks go through `@cut/sport-sdk` or the registered plugin.
 
-`spec/client/` describes this stack and is behind the code in a few places: it still says `GlobalErrorContext` surfaces failed loads, that `EventScopeContext` holds candidates, and that React Query Devtools are mounted. `spec/client/README.md` still lists the sport UI as `pga-golf` only. This plan is the target; `spec/client/` is the older slice.
+`spec/client/state-management.md` still says `EventScopeContext` holds candidates, and React Query Devtools are not mounted. `spec/client/README.md` still lists the sport UI as `pga-golf` only. This plan is the target; `spec/client/` is the as-built note.
 
 ---
 
@@ -86,34 +84,29 @@ flowchart TB
 
 Verified in the client. Grouped by the boundary they break.
 
-### Sport extension still edits the platform
+### Shell copy names golf
 
-A new sport is supposed to be a package, a `Sport` row, a server module, and a `SportUIPlugin` registration (`spec/platform/add-sport-checklist.md` Phase 5). The registry in `client/src/sports/registry.ts` does that part. These platform files also have to change, and unknown metadata is treated as golf:
+A new sport is a package, a `Sport` row, a server module, and a `SportUIPlugin` registration. The registry and `check:sport-boundary` keep sport packages out of platform files. `SportPredictionField` reads `predictionRules` for the given `sportId`. Roster size comes from `GET /sports` and is undefined until that sport is in the catalog.
+
+The shell copy still names golf:
 
 | File | What it hardcodes |
 | --- | --- |
-| `client/src/lib/eventMetadata.ts` | Imports `@cut/sport-pga-golf`, `@cut/sport-f1`, `@cut/sport-commodities`. Status resolution tries commodities, then F1, then golf. |
-| `client/src/lib/periodRules.ts` | `PERIOD_RULES_BY_SPORT` map for the three ids. `useSportPeriodRules` uses API `periodRules` when present, then this map. |
-| `client/src/lib/candidateSorting.ts` | Re-exports `golfCandidateHasDisplayName` as the shared display-name check. |
-| `client/src/components/platform/SportPredictionField.tsx` | Falls back to `sportId ?? "pga-golf"`. Label is `"Tie-Breaker"` for golf and a different string for every other id. Does not render `plugin.PredictionField`. |
-| `client/src/hooks/useSportRosterRules.ts` | After the sports query settles with no match, returns golf-sized rules (`slotCount` / `minPicks` / `maxPicks` = 4). |
-| `client/src/components/contest/lobby/ContestFeedPanel.tsx` | Parses `contest.commentaryFeed` with `parseContestCommentaryFeedDocument` from `@cut/sport-pga-golf`. |
 | `client/src/lib/brand.ts` | `DISCORD_TAGLINE` (“talk golf”), `BRAND_TAGLINE` (“Play The Cut Fantasy Golf”). Rendered from nav and `pages/Home.tsx`. |
-| `pages/Home.tsx`, `pages/FAQPage.tsx` | Golf-only product copy (four golfers, Stableford, PGA stroke count) inside the shared shell. |
-
-Phase 5 of the add-sport checklist also asks for `PredictionField.tsx` per sport and a `/sports/:sportId` hub. No sport folder exports `PredictionField`. `/sports/:sportId` redirects to `/contests` in `App.tsx`. The checklist and the code describe two different extension points.
+| `pages/Home.tsx`, `pages/FAQPage.tsx` | Golf-only product copy (four golfers, Stableford, PGA stroke count) inside the shared shell. `Home` imports `sports/pga-golf/InfoScorecard` (pages may import a sport folder). |
 
 The three `CandidateRow` implementations repeat the same scheduled-card vs live-row switch.
 
 ### Session, queries, and chain are three styles of “data”
 
-- `apiClient` (`client/src/utils/apiClient.ts`) is the HTTP wrapper: bearer from `registerAuthTokenHandlers`, `X-Cut-Chain-Id`, `ApiError`.
-- `AuthContext` issues its own `fetch` for `/auth/me`, `/auth/session`, `/auth/sync-wallets`, `/auth/update`, `/auth/settings`. The profile is `useState`, so logout’s `invalidateQueries(["auth"])` hits nothing. Profile edits patch context and skip the query cache.
+Profile reads and writes go through `apiClient` and `queryKeys.user.profile()`. League create, settings, and member removal use `apiErrorMessage`. Join league branches on `isApiError` status codes. There is no app-wide error overlay.
+
+What is still split:
+
 - Chain reads (`useBalance`, contest `state()`, prediction quotes) sit in feature hooks with their own stale times. The payment-token balance is polled every 30s inside `AuthContext` and formatted again in `UserMenu` and `MobileNavMenu`.
 - `queryKeys.user.contests()` and `queryKeys.contests.byEvent()` are invalidated from `useContestMutations.ts` and have no `useQuery`. `useLineupQuery` caches the event lineup list under a second key and is unused.
 - Lobby and timeline polls are gated (`isContestLiveTracked` in `useContestQuery.ts`: five minutes while `ACTIVE` or `LOCKED` and the event is not complete). Candidate and lineup queries poll that same interval whenever they are mounted (`useSportData.ts`, `useLineupQueries.ts`), including settled lobbies.
-- `GlobalErrorProvider` is in the tree. `useGlobalError` has no callers outside `contexts/GlobalErrorContext.tsx`. There is no React error boundary.
-- League screens read `error.response.data.error` (`UserGroupSettings.tsx`, `UserGroupMemberManagement.tsx`). The client throws `ApiError`, so those messages never surface. Join league uses `isApiError` correctly.
+- There is no React error boundary.
 - `ContestDirectorySections` forwards `error` only into the upcoming group. An empty directory with a failed fetch renders a blank column.
 
 ### UI has a shell and no kit
@@ -211,7 +204,7 @@ Import rules:
 | `screens` | one feature’s public components, route params | `fetch`, contract ABIs, sport packages |
 | `app` | screens, session, shell | contest or lineup internals |
 
-`client/src/sports/registry.ts` is the only client module outside `sports/<id>/` that imports sport UI plugins. A client boundary check should mirror `scripts/check-sport-boundary.mjs` for `client/src/lib`, `client/src/components`, `client/src/hooks`, `client/src/pages`, and `client/src/contexts`.
+`client/src/sports/registry.ts` is the only client module outside `sports/<id>/` and `client/src/pages/` that imports sport UI plugins. `scripts/check-sport-boundary.mjs` enforces that for `client/src/lib`, `components`, `hooks`, `pages` (package imports), and `contexts`.
 
 ### Folder / module map
 
@@ -459,7 +452,7 @@ Stop using `gray-*` and `slate-*` for the same role. `gray.25` can go once nothi
 
 **Onboarding.** Still a server flag: `settings.onboardingDismissed === false` redirects to `/onboarding`. Step index can stay local. Skip and exit set the flag through the profile mutation. Pending league invite (`useLeagueInviteCapture`) still wins over the default return path.
 
-**Errors.** Query `error` and empty `data` render the danger text pattern in the screen. `ApiError.message` and `code` are the only client error shape. League forms use `isApiError`, as `UserGroupJoinPage` already does. `GlobalErrorProvider` leaves the tree. Auth bootstrap failure stays on the connect screen (`serverSessionError`).
+**Errors.** Query `error` and empty `data` render the danger text pattern in the screen. `ApiError.message` and `code` are the only client error shape. League create, settings, and member removal use `apiErrorMessage`. Join league branches on status codes. Auth bootstrap failure stays on the connect screen (`serverSessionError`).
 
 **Forms.** Local state plus a pure validate function beside the feature. HTML `required` is enough for a single text field. Cross-field checks (contest fees, send amount, prediction amount) are functions with unit tests. No form library.
 
@@ -500,27 +493,27 @@ Stop using `gray-*` and `slate-*` for the same role. `gray.25` can go once nothi
 
 **Keep.** `apiClient`, `ApiError`, `queryKeys` factory, directory vs lobby vs timeline split, optimistic join/leave, timeline merge, sports catalog stale time, cron-aligned interval constant, “keep previous data” on the directory.
 
-**Change.** Profile reads and writes go through `apiClient` and a profile query. Candidate and lineup intervals use the same live gate as the lobby. Stream token uses `queryKeys`. Remove invalidations for keys with no query. Mount Devtools in development.
+**Change.** Candidate and lineup intervals use the same live gate as the lobby. Stream token uses `queryKeys`. Remove invalidations for keys with no query. Mount Devtools in development. Profile reads and writes already go through `apiClient` and `queryKeys.user.profile()`.
 
 **Target.** `data/<resource>.ts` exports `useXQuery` and `useXMutation` only. Screens never import `apiClient`. A mutation’s `onSuccess` lists the keys it changes and nothing else.
 
 ### 3. Client state
 
-**Current.** Three contexts and no store. `AuthContext` holds the user, login errors, and balance. `EventScopeContext` holds contest sport and event (not candidates — `spec/client/state-management.md` is wrong here). `GlobalErrorContext` holds an overlay message nobody sets. Referral and league-invite codes are `sessionStorage`. Odds format and onboarding live on `user.settings`. Lineup drafts live in `useLineupSlotEditor` (and a second copy in `GuestLineupPicker`).
+**Current.** Two contexts and no store. `AuthContext` is the session facade: `user` is `queryKeys.user.profile()`, plus login errors and the payment-token balance. `EventScopeContext` holds contest sport and event (not candidates — `spec/client/state-management.md` is wrong here). Referral and league-invite codes are `sessionStorage`. Odds format and onboarding live on `user.settings`. Lineup drafts live in `useLineupSlotEditor` (and a second copy in `GuestLineupPicker`).
 
-**Keep.** Event scope as a lobby provider, not a global sport. Session storage for pre-auth `?ref=` and invite codes. Local slot drafts, modal flags, and form drafts. No global store.
+**Keep.** Event scope as a lobby provider, not a global sport. Session storage for pre-auth `?ref=` and invite codes. Local slot drafts, modal flags, and form drafts. No global store. The profile query behind `useAuth()`.
 
-**Change.** Auth becomes a facade over the profile query plus Privy. Balance moves to `chain/`. Delete `GlobalErrorContext`. One slot editor shared by guest and member.
+**Change.** Balance moves to `chain/`. One slot editor shared by guest and member.
 
 **Target.** Context count stays at two: session facade, and event scope on the lobby route. Everything else is a query or `useState`.
 
 ### 4. Auth and session
 
-**Current.** `PrivyProvider` receives only `appId`. Login UI is `components/auth/Connect.tsx`: “Sign in” and “Create Account” both call `useLogin()`. After Privy `onComplete`, `AuthProvider` switches to the target chain, then `GET /auth/me`, `POST /auth/sync-wallets` when the profile has no wallet, or `POST /auth/session` on `401` + `NEEDS_PROVISIONING` (referral header attached). `409` + `WALLET_NOT_PROVISIONED_FOR_CHAIN` syncs and reloads. `400` / `403` logs out. `useAppLoadingGate` blocks the shell while loading and no user (200ms debounce, 750ms minimum). PostHog `identify` runs after the profile loads. `ProtectedRoute` still mounts children during load.
+**Current.** `PrivyProvider` receives only `appId`. Login UI is `components/auth/Connect.tsx`: “Sign in” and “Create Account” both call `useLogin()`. After Privy `onComplete`, `AuthProvider` switches to the target chain. The profile query runs `GET /auth/me` through `apiClient` with the target chain id, `POST /auth/sync-wallets` when the profile has no wallet, or `POST /auth/session` on `401` + `NEEDS_PROVISIONING` (referral header attached). `409` + `WALLET_NOT_PROVISIONED_FOR_CHAIN` syncs and reloads. `400` / `403` logs out. `staleTime` is infinite; `refreshUser` refetches the profile key. `useAppLoadingGate` blocks the shell while loading and no user (200ms debounce, 750ms minimum). PostHog `identify` runs after the profile loads. `ProtectedRoute` still mounts children during load.
 
-**Keep.** Privy bearer via `registerAuthTokenHandlers`. Chain header. Provisioning sequence (me → session → sync-wallets). Referral header only on session create. Connect return path from `location.state.from`. Separate admin gate. Cold-start overlay.
+**Keep.** Privy bearer via `registerAuthTokenHandlers`. Chain header. Provisioning sequence (me → session → sync-wallets). Referral header only on session create. Connect return path from `location.state.from`. Separate admin gate. Cold-start overlay. Profile query behind the existing `useAuth()` API.
 
-**Change.** The provisioning sequence calls `apiClient` and writes the profile query. `ProtectedRoute` and `AdminRoute` both render nothing until the session query settles. Connect’s two buttons can stay as two labels on one Privy login; the screen should not imply two auth methods. Sign-in from a protected URL preserves that URL; the nav’s signed-out Sign In may continue to return to `/contests` when there is no prior location.
+**Change.** `ProtectedRoute` and `AdminRoute` both render nothing until the session query settles. Connect’s two buttons can stay as two labels on one Privy login; the screen should not imply two auth methods. Sign-in from a protected URL preserves that URL; the nav’s signed-out Sign In may continue to return to `/contests` when there is no prior location.
 
 **Target.** `session/AuthProvider` exposes `user`, `login`, `logout`, `updateProfile`, `updateSettings`, and the pending/error flags. Components that need “who am I” use that hook. They do not call Privy except inside `session/`.
 
@@ -540,7 +533,7 @@ Stop using `gray-*` and `slate-*` for the same role. `gray.25` can go once nothi
 
 **Keep.** The registry, explicit sport id, required row/detail/sort slots, hero image hook, and “no plugin throws.” Sport packages own sort config and metadata parsers. Platform shells (`SportEventHeader`, `CandidatePicker`, `SportParticipantRow`, `SportParticipantDetailModal`) stay the injection points.
 
-**Change.** Move status, labels, start/end, and period rules onto the plugin (table in Target architecture). Delete the golf fallback in `SportPredictionField` and the unused `PredictionField` slot until a sport needs a custom control. Collapse the three `CandidateRow` switches into one platform component. Point `ContestFeedPanel` at a sdk parser. Extend `check:sport-boundary` to client platform paths. Update the add-sport checklist so Phase 5 matches this contract: no per-sport `PredictionField.tsx`, no sport hub route.
+**Change.** Collapse the three `CandidateRow` switches into one platform component. Status, period rules, the commentary parser, the rules-driven tie-break slider, and `check:sport-boundary` on client platform paths are already in place. The add-sport checklist Phase 5 matches this contract: no per-sport `PredictionField.tsx`, no sport hub route.
 
 **Target.** Adding a sport on the client is: implement the plugin, register it, depend on `@cut/sport-<id>`. `client/src/lib` and `client/src/components` do not gain a `case` for the new id. Roster size comes from `GET /sports` or `undefined` while loading — never a silent 4-slot roster.
 
@@ -622,7 +615,7 @@ Stop using `gray-*` and `slate-*` for the same role. `gray.25` can go once nothi
 
 ### 11. Error, empty, and loading states
 
-**Current.** Shared: `LoadingSpinner`, lobby skeletons, `ErrorMessage` (red-50), `GlobalLoadingOverlay`, per-screen empty sentences (`UserGroupList`, `ActivityList`, `ContestEntryList`). Inconsistent: activity uses a red paragraph; lobby non-404 is a plain paragraph; directory drops the error when upcoming is empty; chain modals show `"..."`; `GlobalErrorOverlay` is unused. No error boundary and no toast stack — and the target does not add a toast stack.
+**Current.** Shared: `LoadingSpinner`, lobby skeletons, `ErrorMessage` (red-50), `GlobalLoadingOverlay`, per-screen empty sentences (`UserGroupList`, `ActivityList`, `ContestEntryList`). League create, settings, and member removal use `apiErrorMessage`. Inconsistent: activity uses a red paragraph; lobby non-404 is a plain paragraph; directory drops the error when upcoming is empty; chain modals show `"..."`. No error boundary and no toast stack — and the target does not add a toast stack.
 
 **Keep.** Lobby skeleton and directory “don’t blank on refetch.” Empty copy that includes the next action. Overlay only for cold start.
 
@@ -669,11 +662,15 @@ Stop using `gray-*` and `slate-*` for the same role. `gray.25` can go once nothi
 
 ## Migration stance
 
-Move the existing app toward this shape at the seams. Leave working flows intact until the seam is in place.
+Two seams are in place. The rest of the move stays incremental. Leave working flows intact until the next seam is in place.
 
-1. **Client sport boundary.** Extend `scripts/check-sport-boundary.mjs` to forbid `@cut/sport-pga-golf`, `@cut/sport-f1`, and `@cut/sport-commodities` under `client/src/lib`, `client/src/components`, `client/src/hooks`, `client/src/pages`, and `client/src/contexts`. Fix the current violations by moving status, dates, period rules, the commentary parser, and the display-name helper onto the plugin or `@cut/sport-sdk`. Update `spec/platform/add-sport-checklist.md` Phase 5 to match. This is the seam that makes the next sport a plugin.
+**In place**
 
-2. **Session query.** Implement `GET /auth/me` as a React Query behind the current `AuthProvider` API so callers do not change. Route profile writes through `apiClient`. Then point logout invalidation at that query key. Do not rewrite Privy or the wallet in the same pass.
+1. **Client sport boundary.** `scripts/check-sport-boundary.mjs` forbids `@cut/sport-pga-golf`, `@cut/sport-f1`, and `@cut/sport-commodities` under `client/src/lib`, `components`, `hooks`, `pages`, and `contexts`. Status, dates, period rules, the commentary parser, and the display-name helper live on the plugin or `@cut/sport-sdk`. `spec/platform/add-sport-checklist.md` Phase 5 matches that contract.
+
+2. **Session query.** `GET /auth/me` is `queryKeys.user.profile()` behind `AuthProvider`. Callers still use `useAuth()`. Profile writes go through `apiClient` and `setQueryData`. Logout removes that key. League create, settings, and member removal read `ApiError` through `apiErrorMessage`. Privy and the wallet poll stay in `AuthContext`. There is no global error overlay.
+
+**Remaining**
 
 3. **Primitives at the shell and directory.** Add `Button`, `TextField`, `Tabs`, and the focus-ring fix. Use them in `TopNav` / `UserMenu` / `MobileNavMenu` and `ContestListItem`. Collapse overflow links into one nav module. Leave lobby internals alone until a lobby change is otherwise required. Remove the global focus suppression when the primitives own focus.
 
@@ -683,7 +680,7 @@ Move the existing app toward this shape at the seams. Leave working flows intact
 
 **Leave alone until a seam requires it.** `useBlockchainTransaction` call order. Contest lifecycle and optimistic join/leave patches. Stream feed ids and reaction set. Per-sport row visuals. Onboarding copy. The five-minute cron contract. Query key prefixes that live queries already use (renaming keys blanks caches).
 
-When a seam lands, update the matching page in `spec/client/` so that folder stops describing a global error overlay and a golf-only plugin. This plan remains the target; `spec/client/` remains the as-built note and should follow the code.
+When a seam lands, update the matching page in `spec/client/`. This plan remains the target; `spec/client/` remains the as-built note and should follow the code.
 
 ---
 

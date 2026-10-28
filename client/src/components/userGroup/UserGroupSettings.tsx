@@ -5,6 +5,7 @@ import { UserGroupForm } from "./UserGroupForm";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { Modal } from "../common/Modal";
+import { apiErrorMessage } from "../../utils/apiError";
 
 interface UserGroupSettingsProps {
   userGroupId: string;
@@ -47,16 +48,7 @@ export const UserGroupSettings = ({
     });
   };
 
-  const getDeleteError = () => {
-    const error = deleteMutation.error as any;
-    if (error?.message) {
-      return error.message;
-    }
-    if (error?.response?.data?.error) {
-      return error.response.data.error;
-    }
-    return "Failed to delete league";
-  };
+  const getDeleteError = () => apiErrorMessage(deleteMutation.error, "Failed to delete league");
 
   const secondaryButtonClass =
     "inline-flex min-w-[120px] items-center justify-center rounded border border-gray-300 bg-white px-4 py-1.5 font-display text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50";
@@ -73,7 +65,7 @@ export const UserGroupSettings = ({
           isLoading={updateMutation.isPending}
           error={
             updateMutation.error
-              ? (updateMutation.error as any)?.response?.data?.error || "Failed to update league"
+              ? apiErrorMessage(updateMutation.error, "Failed to update league")
               : null
           }
           submitLabel="Save Changes"

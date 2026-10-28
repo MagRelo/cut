@@ -10,16 +10,26 @@ import {
 import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract } from "wagmi";
 import { usePrivy, useLogin } from "@privy-io/react-auth";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { erc20Abi } from "viem";
 import { usePostHog } from "posthog-js/react";
 import { captureAccountFirstFunded, captureAuthSessionSynced } from "../lib/analytics/posthog";
-import { ApiError, handleApiResponse, isApiError } from "../utils/apiError";
+import { ApiError, isApiError } from "../utils/apiError";
+import apiClient from "../utils/apiClient";
+import { queryKeys } from "../utils/queryKeys";
 import { getContractAddress } from "../utils/blockchainUtils";
 import { registerAuthTokenHandlers } from "../lib/authToken";
 import { getTargetChainIdFromEnv } from "../config/targetChain";
 import { clearStoredReferralCode, getStoredReferralCode } from "../lib/referralCapture";
 import { preloadLineups } from "../lib/preloadData";
+
+/** Thrown when a profile fetch finishes after logout or a 401 cleared the session cache. */
+class SessionEndedError extends Error {
+  constructor() {
+    super("Session ended");
+    this.name = "SessionEndedError";
+  }
+}
 
 /** Membership + nested group as returned by GET /auth/me. */
 export type AuthUserGroupMembership = {
@@ -104,10 +114,84 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { disconnect } = useDisconnect();
   const { ready, authenticated, logout: privyLogout, getAccessToken } = usePrivy();
   const queryClient = useQueryClient();
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [userSyncLoading, setUserSyncLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [serverSessionError, setServerSessionError] = useState<string | null>(null);
+  /** Blocks the profile query until the next Privy login so a removed cache is not immediately refetched. */
+  const [profileBlocked, setProfileBlocked] = useState(false);
+  const profileBlockedRef = useRef(false);
+
+  const blockProfile = useCallback(() => {
+    profileBlockedRef.current = true;
+    setProfileBlocked(true);
+  }, []);
+
+  const unblockProfile = useCallback(() => {
+    profileBlockedRef.current = false;
+    setProfileBlocked(false);
+  }, []);
+
+  const bootstrapAuthProfile = useCallback(async (targetChainId: number): Promise<AuthUser> => {
+    if (profileBlockedRef.current) {
+      throw new SessionEndedError();
+    }
+
+    const chainOptions = { requiresAuth: true as const, chainId: targetChainId };
+
+    const loadProfile = async (): Promise<AuthUser> => {
+      const profile = await apiClient.get<AuthUser>("/auth/me", chainOptions);
+      if (!profile.walletAddress) {
+        await apiClient.post("/auth/sync-wallets", undefined, chainOptions);
+        return await apiClient.get<AuthUser>("/auth/me", chainOptions);
+      }
+      return profile;
+    };
+
+    const finish = (profile: AuthUser): AuthUser => {
+      if (profileBlockedRef.current) {
+        throw new SessionEndedError();
+      }
+      return profile;
+    };
+
+    try {
+      return finish(await loadProfile());
+    } catch (error) {
+      if (error instanceof SessionEndedError) {
+        throw error;
+      }
+      if (isApiError(error) && error.statusCode === 401 && error.code === "NEEDS_PROVISIONING") {
+        const referralCode = getStoredReferralCode();
+        const profile = await apiClient.post<AuthUser>("/auth/session", undefined, {
+          ...chainOptions,
+          headers: referralCode ? { "X-Cut-Referral-Code": referralCode } : undefined,
+        });
+        clearStoredReferralCode();
+        return finish(profile);
+      }
+      if (
+        isApiError(error) &&
+        error.statusCode === 409 &&
+        error.code === "WALLET_NOT_PROVISIONED_FOR_CHAIN"
+      ) {
+        await apiClient.post("/auth/sync-wallets", undefined, chainOptions);
+        return finish(await loadProfile());
+      }
+      throw error;
+    }
+  }, []);
+
+  const sessionEnabled = ready && authenticated && !!address && !profileBlocked;
+
+  const profileQuery = useQuery({
+    queryKey: queryKeys.user.profile(),
+    queryFn: () => bootstrapAuthProfile(getTargetChainIdFromEnv()),
+    enabled: sessionEnabled,
+    retry: false,
+    staleTime: Infinity,
+  });
+
+  const user: AuthUser | null = sessionEnabled ? (profileQuery.data ?? null) : null;
+  const profilePending = sessionEnabled && profileQuery.isPending;
 
   const paymentTokenAddress = getContractAddress(currentChainId ?? 0, "paymentTokenAddress");
 
@@ -164,10 +248,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const syncedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    syncedUserIdRef.current = user?.id ?? null;
-  }, [user?.id]);
-
-  useEffect(() => {
     if (!user?.id || !posthog) return;
     posthog.identify(user.id);
   }, [user?.id, posthog]);
@@ -211,8 +291,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     paymentTokenBalanceData?.value,
   ]);
 
-  // Keep apiClient / non-React fetch helpers in sync with Privy JWT + wagmi chain for Authorization and X-Cut-Chain-Id.
-  // Necessary if anything outside this tree calls those helpers; remove only if all API calls go through `request` here.
+  // Keep apiClient in sync with the Privy JWT and the wagmi chain for Authorization and X-Cut-Chain-Id.
   useEffect(() => {
     registerAuthTokenHandlers(
       () => getAccessToken(),
@@ -220,144 +299,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }, [getAccessToken, currentChainId]);
 
-  const config = useMemo(
-    () => ({
-      baseURL: import.meta.env.VITE_API_URL || "/api",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }),
-    [],
-  );
-
-  const request = useCallback(
-    async <T,>(
-      method: string,
-      endpoint: string,
-      data?: unknown,
-      chainOverride?: number,
-      extraHeaders?: Record<string, string>,
-    ): Promise<T> => {
-      const token = await getAccessToken();
-      if (!token) {
-        throw new ApiError(401, "Not authenticated");
-      }
-      const headers: Record<string, string> = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-        ...extraHeaders,
-      };
-      const cid = chainOverride ?? currentChainId;
-      if (typeof cid === "number") {
-        headers["X-Cut-Chain-Id"] = String(cid);
-      }
-
-      const response = await fetch(`${config.baseURL}${endpoint}`, {
-        method,
-        headers,
-        body: data ? JSON.stringify(data) : undefined,
-        credentials: "omit",
-      });
-
-      try {
-        return await handleApiResponse<T>(response);
-      } catch (error) {
-        if (
-          error instanceof ApiError &&
-          error.statusCode === 401 &&
-          error.code !== "NEEDS_PROVISIONING"
-        ) {
-          setUser(null);
-        }
-        throw error;
+  const forgetUnauthorizedProfile = useCallback(
+    (error: unknown) => {
+      if (isApiError(error) && error.statusCode === 401 && error.code !== "NEEDS_PROVISIONING") {
+        blockProfile();
       }
     },
-    [config, getAccessToken, currentChainId],
-  );
-
-  const bootstrapAuthProfile = useCallback(
-    async (targetChainId: number): Promise<AuthUser> => {
-      const loadProfile = async (): Promise<AuthUser> => {
-        const profile = await request<AuthUser>("GET", "/auth/me", undefined, targetChainId);
-        if (!profile.walletAddress) {
-          await request("POST", "/auth/sync-wallets", undefined, targetChainId);
-          return await request<AuthUser>("GET", "/auth/me", undefined, targetChainId);
-        }
-        return profile;
-      };
-
-      try {
-        return await loadProfile();
-      } catch (error) {
-        if (isApiError(error) && error.statusCode === 401 && error.code === "NEEDS_PROVISIONING") {
-          const referralCode = getStoredReferralCode();
-          const profile = await request<AuthUser>(
-            "POST",
-            "/auth/session",
-            undefined,
-            targetChainId,
-            referralCode ? { "X-Cut-Referral-Code": referralCode } : undefined,
-          );
-          clearStoredReferralCode();
-          return profile;
-        }
-        if (
-          isApiError(error) &&
-          error.statusCode === 409 &&
-          error.code === "WALLET_NOT_PROVISIONED_FOR_CHAIN"
-        ) {
-          await request("POST", "/auth/sync-wallets", undefined, targetChainId);
-          return await loadProfile();
-        }
-        throw error;
-      }
-    },
-    [request],
+    [blockProfile],
   );
 
   const updateUser = useCallback(
     async (updatedUser: { name?: string }) => {
       try {
-        const response = await request<{ user: { id: string; name: string; userType: string } }>(
-          "PUT",
+        const response = await apiClient.put<{ user: { id: string; name: string; userType: string } }>(
           "/auth/update",
           updatedUser,
+          { requiresAuth: true },
         );
-        setUser((prev) => (prev ? { ...prev, name: response.user.name } : null));
+        queryClient.setQueryData<AuthUser | null>(queryKeys.user.profile(), (prev) =>
+          prev ? { ...prev, name: response.user.name } : prev,
+        );
       } catch (error) {
+        forgetUnauthorizedProfile(error);
         if (error instanceof ApiError) {
           throw error;
         }
         throw new ApiError(500, "Failed to update user");
       }
     },
-    [request],
+    [forgetUnauthorizedProfile, queryClient],
   );
 
   const updateUserSettings = useCallback(
     async (settings: Record<string, unknown>) => {
       try {
-        const response = await request<{ settings: Record<string, unknown> }>(
-          "PUT",
+        const response = await apiClient.put<{ settings: Record<string, unknown> }>(
           "/auth/settings",
           settings,
+          { requiresAuth: true },
         );
-        setUser((prev) => (prev ? { ...prev, settings: response.settings } : null));
+        queryClient.setQueryData<AuthUser | null>(queryKeys.user.profile(), (prev) =>
+          prev ? { ...prev, settings: response.settings } : prev,
+        );
       } catch (error) {
+        forgetUnauthorizedProfile(error);
         if (error instanceof ApiError) {
           throw error;
         }
         throw new ApiError(500, "Failed to update user settings");
       }
     },
-    [request],
+    [forgetUnauthorizedProfile, queryClient],
   );
 
   const refreshUser = useCallback(async () => {
-    const targetChainId = getTargetChainIdFromEnv();
-    const response = await bootstrapAuthProfile(targetChainId);
-    setUser(response);
-  }, [bootstrapAuthProfile]);
+    await queryClient.refetchQueries({ queryKey: queryKeys.user.profile() });
+  }, [queryClient]);
 
   const getCurrentUser = useCallback((): AuthUser | null => {
     return user;
@@ -369,24 +366,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const flushAuthRelatedQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["auth"] });
+    void queryClient.cancelQueries({ queryKey: queryKeys.user.profile() });
+    queryClient.removeQueries({ queryKey: queryKeys.user.profile() });
     queryClient.invalidateQueries({ queryKey: ["user"] });
     queryClient.invalidateQueries({ queryKey: ["lineups"] });
     queryClient.invalidateQueries({ queryKey: ["balance"] });
-    queryClient.removeQueries({ queryKey: ["auth"] });
-    queryClient.removeQueries({ queryKey: ["user"] });
     queryClient.removeQueries({ queryKey: ["lineups"] });
     queryClient.removeQueries({ queryKey: ["balance"] });
+    queryClient.removeQueries({
+      predicate: (query) =>
+        Array.isArray(query.queryKey) &&
+        query.queryKey[0] === "user" &&
+        query.queryKey[1] !== "profile",
+    });
   }, [queryClient]);
-
-  const clearLocalCache = useCallback(() => {
-    setUser(null);
-    setServerSessionError(null);
-    flushAuthRelatedQueries();
-  }, [flushAuthRelatedQueries]);
 
   /** End Privy + wagmi without clearing `serverSessionError` (so Connect can show why signup failed). */
   const endPrivyAndWagmiSession = useCallback(async () => {
+    blockProfile();
     try {
       await privyLogout();
     } catch (e) {
@@ -398,9 +395,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn("Wagmi disconnect:", e);
     }
     flushAuthRelatedQueries();
-  }, [privyLogout, disconnect, flushAuthRelatedQueries]);
+  }, [blockProfile, privyLogout, disconnect, flushAuthRelatedQueries]);
 
   const logout = useCallback(async () => {
+    blockProfile();
     try {
       posthog?.reset();
     } catch {
@@ -411,13 +409,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       console.warn("Privy logout:", e);
     }
-    clearLocalCache();
+    setServerSessionError(null);
+    flushAuthRelatedQueries();
     try {
       await disconnect();
     } catch (e) {
       console.warn("Wagmi disconnect:", e);
     }
-  }, [privyLogout, clearLocalCache, disconnect, posthog]);
+  }, [blockProfile, privyLogout, flushAuthRelatedQueries, disconnect, posthog]);
 
   const clearLoginError = useCallback(() => {
     setLoginError(null);
@@ -426,6 +425,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const { login } = useLogin({
     onComplete: () => {
+      unblockProfile();
       setLoginError(null);
       setServerSessionError(null);
       const targetChainId = getTargetChainIdFromEnv();
@@ -442,80 +442,84 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
-  // Core: bootstrap Cut user via GET /auth/me, POST /auth/session when unprovisioned.
   useEffect(() => {
-    if (!ready) return;
+    if (!profileBlocked) return;
+    void queryClient.cancelQueries({ queryKey: queryKeys.user.profile() });
+    queryClient.removeQueries({ queryKey: queryKeys.user.profile() });
+  }, [profileBlocked, queryClient]);
 
-    if (!authenticated) {
-      setUser(null);
-      setUserSyncLoading(false);
+  useEffect(() => {
+    const id = user?.id ?? null;
+    if (!id) {
+      syncedUserIdRef.current = null;
       return;
     }
-
-    if (!address) {
-      setUser(null);
-      setUserSyncLoading(false);
-      return;
-    }
-
-    let cancelled = false;
     const previousUserId = syncedUserIdRef.current;
+    if (previousUserId === id) return;
     const isInitialUserLoad = previousUserId === null;
-    if (isInitialUserLoad) {
-      setUserSyncLoading(true);
+    const userIdentityChanged = previousUserId !== null && previousUserId !== id;
+    syncedUserIdRef.current = id;
+    if (isInitialUserLoad || userIdentityChanged) {
+      void queryClient.invalidateQueries({ queryKey: ["lineups"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["user"],
+        predicate: (query) => query.queryKey[1] !== "profile",
+      });
+      void queryClient.invalidateQueries({ queryKey: ["balance"] });
+      void preloadLineups(queryClient, id);
     }
+  }, [user?.id, queryClient]);
 
-    const targetChainId = getTargetChainIdFromEnv();
-
-    void (async () => {
-      try {
-        const response = await bootstrapAuthProfile(targetChainId);
-        if (!cancelled) {
-          setServerSessionError(null);
-          setUser(response);
-          const userIdentityChanged = previousUserId !== null && previousUserId !== response.id;
-          if (isInitialUserLoad || userIdentityChanged) {
-            queryClient.invalidateQueries({ queryKey: ["lineups"] });
-            queryClient.invalidateQueries({ queryKey: ["user"] });
-            queryClient.invalidateQueries({ queryKey: ["balance"] });
-          }
-          void preloadLineups(queryClient, response.id);
-        }
-      } catch (error) {
-        console.error("Auth profile bootstrap failed:", error);
-        if (!cancelled) {
-          setUser(null);
-          if (isApiError(error)) {
-            if (error.statusCode === 401 && error.code !== "NEEDS_PROVISIONING") {
-              setServerSessionError(null);
-            } else {
-              setServerSessionError(error.message);
-              if (error.statusCode === 400 || error.statusCode === 403) {
-                void endPrivyAndWagmiSession();
-              }
-            }
-          } else {
-            setServerSessionError("Could not connect to Play The Cut. Please try again.");
-          }
-        }
-      } finally {
-        if (!cancelled) setUserSyncLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      setUserSyncLoading(false);
-    };
-  }, [ready, authenticated, address, bootstrapAuthProfile, queryClient, endPrivyAndWagmiSession]);
-
-  // Wagmi can disconnect (e.g. wallet revoke) while React still holds `user`; clear local server user + RQ caches so UI matches wallet.
-  // Could be merged into the effect above if you prefer a single “auth state” effect, but keep if you want an explicit wallet-disconnect edge.
+  const reportedProfileError = useRef<unknown>(null);
   useEffect(() => {
-    if (status === "disconnected" && !address && user) {
-      clearLocalCache();
+    if (!profileQuery.isError) {
+      reportedProfileError.current = null;
+      if (sessionEnabled && profileQuery.data) {
+        setServerSessionError(null);
+      }
+      return;
     }
-  }, [address, user, clearLocalCache, status]);
+    const error = profileQuery.error;
+    if (reportedProfileError.current === error) return;
+    reportedProfileError.current = error;
+    if (error instanceof SessionEndedError) return;
+
+    console.error("Auth profile bootstrap failed:", error);
+    if (isApiError(error)) {
+      if (error.statusCode === 401 && error.code !== "NEEDS_PROVISIONING") {
+        setServerSessionError(null);
+        blockProfile();
+      } else {
+        setServerSessionError(error.message);
+        if (error.statusCode === 400 || error.statusCode === 403) {
+          void endPrivyAndWagmiSession();
+        }
+      }
+      return;
+    }
+    setServerSessionError("Could not connect to Play The Cut. Please try again.");
+  }, [
+    profileQuery.isError,
+    profileQuery.error,
+    profileQuery.data,
+    sessionEnabled,
+    blockProfile,
+    endPrivyAndWagmiSession,
+  ]);
+
+  const hadSessionUserRef = useRef(false);
+  useEffect(() => {
+    if (user) hadSessionUserRef.current = true;
+  }, [user]);
+
+  // Wallet revoke while a Cut user is loaded: drop the profile and related caches.
+  useEffect(() => {
+    if (status === "disconnected" && !address && hadSessionUserRef.current) {
+      hadSessionUserRef.current = false;
+      setServerSessionError(null);
+      flushAuthRelatedQueries();
+    }
+  }, [address, flushAuthRelatedQueries, status]);
 
   // If the wallet is on the wrong chain vs `user.chainId` (e.g. user switched network in the wallet app), nudge back to the chain the server expects.
   // Optional UX polish; remove if you handle chain mismatch only in transaction flows or don’t auto-switch.
@@ -537,13 +541,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void run();
   }, [user, status, currentChainId, switchChain]);
 
-  const loading = !ready || userSyncLoading;
+  const loading = !ready || profilePending;
 
   const contextValue = useMemo(
     () => ({
       user,
       loading,
-      serverUserSyncing: userSyncLoading,
+      serverUserSyncing: profilePending,
       login,
       loginError,
       serverSessionError,
@@ -565,7 +569,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [
       user,
       loading,
-      userSyncLoading,
+      profilePending,
       login,
       loginError,
       serverSessionError,

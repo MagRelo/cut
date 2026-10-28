@@ -12,7 +12,6 @@ import { config } from "./wagmi";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useReferralCapture } from "./hooks/useReferralCapture";
 import { useLeagueInviteCapture } from "./hooks/useLeagueInviteCapture";
-import { GlobalErrorProvider } from "./contexts/GlobalErrorContext";
 import {
   getSmartWalletsPaymasterConfig,
   getSmartWalletsProviderKey,
@@ -267,13 +266,11 @@ export const App: React.FC = () => {
       <SmartWalletsProvider key={smartWalletsProviderKey} config={smartWalletsPaymasterConfig}>
         <QueryClientProvider client={queryClient}>
           <WagmiProvider config={config}>
-            <GlobalErrorProvider>
-              <AuthProvider>
-                <Router>
-                  <AppShell />
-                </Router>
-              </AuthProvider>
-            </GlobalErrorProvider>
+            <AuthProvider>
+              <Router>
+                <AppShell />
+              </Router>
+            </AuthProvider>
           </WagmiProvider>
           {/* React Query DevTools - only loads in development */}
           {/* <ReactQueryDevtools initialIsOpen={false} /> */}

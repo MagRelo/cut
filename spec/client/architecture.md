@@ -9,8 +9,7 @@ graph TB
   PRIVY[PrivyProvider] --> SW[SmartWalletsProvider]
   SW --> RQ[QueryClientProvider]
   RQ --> WAGMI[WagmiProvider]
-  WAGMI --> ERR[GlobalErrorProvider]
-  ERR --> AUTH[AuthProvider]
+  WAGMI --> AUTH[AuthProvider]
   AUTH --> ROUTER[BrowserRouter]
   ROUTER --> APP[AppShell / Routes]
 ```
@@ -21,8 +20,7 @@ graph TB
 | `SmartWalletsProvider` | Paymaster config for gas sponsorship |
 | `QueryClientProvider` | Server state cache |
 | `WagmiProvider` | Contract reads/writes on Base / Base Sepolia |
-| `GlobalErrorProvider` | App-wide error surfacing |
-| `AuthProvider` | Cut user from `/auth/me`, balances, connect flow |
+| `AuthProvider` | Privy facade over the profile query (`GET /auth/me`), balances, connect flow |
 
 Event and sport scope are provided at **page boundaries** — `ContestEventScopeProvider` on contest lobby; leaderboard takes `sportId` and `eventId` from the URL (no scope provider).
 

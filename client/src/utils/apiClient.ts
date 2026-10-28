@@ -10,6 +10,9 @@ interface RequestOptions {
   isPublic?: boolean;
   requiresAuth?: boolean;
   data?: unknown;
+  /** Overrides the wagmi chain sent as `X-Cut-Chain-Id` (auth bootstrap uses the target chain). */
+  chainId?: number;
+  headers?: Record<string, string>;
 }
 
 export class ApiClient {
@@ -28,6 +31,7 @@ export class ApiClient {
   private async buildHeaders(options: RequestOptions = {}): Promise<Record<string, string>> {
     const headers: Record<string, string> = {
       ...this.config.headers,
+      ...options.headers,
     };
 
     if (options.isPublic) {
@@ -42,7 +46,7 @@ export class ApiClient {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const chainId = getOptionalChainIdForApi();
+    const chainId = options.chainId ?? getOptionalChainIdForApi();
     if (typeof chainId === "number") {
       headers["X-Cut-Chain-Id"] = String(chainId);
     }
@@ -68,7 +72,11 @@ export class ApiClient {
 
       return await handleApiResponse<T>(response);
     } catch (error) {
-      if (error instanceof ApiError && error.statusCode === 401) {
+      if (
+        error instanceof ApiError &&
+        error.statusCode === 401 &&
+        error.code !== "NEEDS_PROVISIONING"
+      ) {
         console.error("Unauthorized request");
       }
       throw error;

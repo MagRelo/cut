@@ -4,6 +4,7 @@ import { PageSection } from "../components/layout/PageSection";
 import { UserGroupForm } from "../components/userGroup/UserGroupForm";
 import { useCreateUserGroup } from "../hooks/useUserGroupMutations";
 import { type CreateUserGroupInput, type UpdateUserGroupInput } from "../types/userGroup";
+import { apiErrorMessage } from "../utils/apiError";
 
 export const UserGroupCreatePage = () => {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ export const UserGroupCreatePage = () => {
           isLoading={createMutation.isPending}
           error={
             createMutation.error
-              ? (createMutation.error as any)?.response?.data?.error || "Failed to create league"
+              ? apiErrorMessage(createMutation.error, "Failed to create league")
               : null
           }
         />

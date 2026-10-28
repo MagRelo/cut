@@ -154,16 +154,19 @@ sequenceDiagram
   participant User
   participant Privy
   participant Auth as AuthProvider
-  participant API as GET /auth/me
+  participant RQ as profileQuery
+  participant API as apiClient
 
   User->>Privy: Sign in
-  Privy-->>Auth: session + getAccessToken
-  Auth->>API: Bearer token
-  API-->>Auth: user, lineups, userGroups
+  Privy-->>Auth: authenticated
   Auth->>apiClient: registerAuthTokenHandlers
+  Auth->>RQ: enabled
+  RQ->>API: GET /auth/me
+  API-->>RQ: AuthUser
+  RQ-->>Auth: user
 ```
 
-`AuthProvider` polls token balances on an interval (~30s) for display in nav/account.
+The profile query function also provisions: `POST /auth/sync-wallets` when the wallet is missing, and `POST /auth/session` with `X-Cut-Referral-Code` on `401 NEEDS_PROVISIONING`. `AuthProvider` polls the payment-token balance on an interval (~30s) for display in nav/account.
 
 ---
 
@@ -182,6 +185,6 @@ Stale times: sports 24h, active event/candidates/lineups 5m (see `useSportData.t
 ## Error handling
 
 - `ApiError` 404 on active event → `useActiveEventQuery` returns `null` (staff create shows “no active event”; event-less leaderboard redirects to `/contests`)
-- React Query retries transient network errors
-- `GlobalErrorContext` for user-visible fatal errors
+- React Query retries transient network errors. The profile query does not (`retry: false`)
+- Screen-level `ApiError.message`. League create, settings, and member removal use `apiErrorMessage`. Auth bootstrap failure stays on Connect (`serverSessionError`)
 - Wagmi tx errors surfaced in contest/token hooks with user-readable messages

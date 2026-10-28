@@ -10,6 +10,7 @@ import { ReferralStakeIcon } from "../contest/ReferralStakeIcon";
 import { inviteNetworkLabel } from "../../lib/referralStake";
 import { buildFundSendUrl } from "../../lib/fundLinks";
 import { walletSpecSecondaryClassName } from "../account/wallet/AssetChips";
+import { apiErrorMessage } from "../../utils/apiError";
 
 interface UserGroupMemberManagementProps {
   userGroupId: string;
@@ -47,16 +48,8 @@ export const UserGroupMemberManagement = ({
     );
   };
 
-  const getRemoveError = () => {
-    const error = removeMemberMutation.error as any;
-    if (error?.message) {
-      return error.message;
-    }
-    if (error?.response?.data?.error) {
-      return error.response.data.error;
-    }
-    return "Failed to remove member";
-  };
+  const getRemoveError = () =>
+    apiErrorMessage(removeMemberMutation.error, "Failed to remove member");
 
   return (
     <div className="space-y-3 font-display">

@@ -46,13 +46,12 @@ lineups.byEvent(userId, eventId)
 
 | State | Source |
 |-------|--------|
-| `user` | `GET /auth/me` |
-| `isAuthenticated` | Privy `authenticated` |
-| `tokenBalances` | wagmi `useReadContracts` + poll |
-| `authFlow` | connect / network selection UI state |
-| `startAuthFlow` | imperative connect helper |
+| `user` | React Query `queryKeys.user.profile()` — `GET /auth/me` through `apiClient` |
+| `loading` / `serverUserSyncing` | Privy not ready, or the profile query has no data yet |
+| `serverSessionError` | Profile query failure (shown on Connect) |
+| `paymentTokenBalance` | wagmi `useBalance`, 30s poll while a user is loaded |
 
-Registers Privy token getter with `apiClient` on mount.
+`AuthProvider` registers the Privy token getter with `apiClient` on mount. `PUT /auth/update` and `PUT /auth/settings` go through `apiClient` and `setQueryData` on the profile key. Logout removes that key. Callers use `useAuth()` and do not fetch `/auth/me` themselves.
 
 ### EventScopeContext (contest lobby only)
 
@@ -62,9 +61,7 @@ Registers Privy token getter with `apiClient` on mount.
 
 Used on `/contest/:address` so deep lobby trees (`ContestEntryList`, lineup mutations, plugin hooks) share one contest-scoped event. **Not** app-wide; leaderboard uses URL `sportId` + `eventId` and directory/nav cache for the hero.
 
-### GlobalErrorContext
-
-App-level error message queue for non-field errors (failed loads, unexpected API failures).
+Failed loads render on the screen that owns the query. There is no app-wide error overlay.
 
 ---
 
