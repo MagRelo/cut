@@ -36,7 +36,7 @@ export const Live: Story = {
     title: (
       <>
         <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-hidden="true" />
-        Live Events
+        Live
       </>
     ),
     tone: "live",
@@ -58,7 +58,7 @@ export const LongTitle: Story = {
 
 export const WithActions: Story = {
   args: {
-    title: "Live Events",
+    title: "Live",
     actions: (
       <button
         type="button"

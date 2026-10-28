@@ -64,7 +64,7 @@ export function ContestDirectorySections({
               title={
                 <>
                   <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-hidden="true" />
-                  Live Events
+                  Live
                 </>
               }
             />
