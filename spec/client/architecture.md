@@ -124,7 +124,7 @@ Some query keys and admin types still expose `tournamentId` aliases; new code sh
 
 - API: short-lived Privy bearer tokens via `registerAuthTokenHandlers` in `AuthProvider`
 - Routes: `ProtectedRoute` for authenticated pages; `AdminRoute` for staff
-- Forms: client-side Yup/Zod; server is authoritative
+- Forms: local component state; server is authoritative
 - No secrets in client bundle beyond public Privy app id and RPC URLs
 
 ---

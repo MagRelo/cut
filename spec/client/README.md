@@ -83,7 +83,6 @@ client/src/
 | Auth | @privy-io/react-auth, @privy-io/wagmi |
 | Chain | wagmi, viem |
 | UI | Tailwind, Headless UI, Heroicons, Chart.js |
-| Forms | react-hook-form, yup, zod |
 
 ---
 

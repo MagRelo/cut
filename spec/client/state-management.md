@@ -104,7 +104,7 @@ Privy `SmartWalletsProvider` supplies paymaster for sponsored txs where configur
 | Use case | Tool |
 |----------|------|
 | Modal open/close | `useState` |
-| Form drafts | `react-hook-form` |
+| Form drafts | `useState` |
 | Optimistic UI | mutation `onMutate` (selective) |
 
 Prefer server cache over duplicating API data in local state.
