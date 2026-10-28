@@ -83,7 +83,7 @@ Location: [`client/src/components/platform/`](../../client/src/components/platfo
 | [`SportParticipantDetailModal`](../../client/src/components/platform/SportParticipantDetailModal.tsx) | `ParticipantDetail` | Leaderboard, lineup card, contest entry modal (click row → scorecard) |
 | [`SportLineupPickRow`](../../client/src/components/platform/SportLineupPickRow.tsx) | `SportParticipantRow` → `ParticipantRow` | Editable lineup slots on `LineupContestCard` |
 | [`CandidatePicker`](../../client/src/components/platform/CandidatePicker.tsx) | `CandidateRow` | `LineupContestCard` slot editor |
-| [`SportPredictionField`](../../client/src/components/platform/SportPredictionField.tsx) | `predictionRules` for the passed `sportId` | `LineupContestCard` winning-score slider (`LineupWinningScoreSlider`) |
+| [`SportPredictionField`](../../client/src/components/platform/SportPredictionField.tsx) | `predictionRules` from `GET /sports` for the passed `sportId` | `LineupContestCard` winning-score slider (`LineupWinningScoreSlider`) |
 | [`SportEventHeader`](../../client/src/components/platform/SportEventHeader.tsx) | `EventSummary` | Leaderboard and contest directory heroes (`sportId` + event shell) |
 
 Contest lobby renders plugin `EventSummary` directly in [`ContestLobbyView`](../../client/src/components/contest/lobby/ContestLobbyView.tsx) — not via `AppLayout`.
@@ -173,7 +173,8 @@ Lineup header PTS: [`lineupDisplayScore`](../../client/src/lib/lineupScore.ts) f
 
 | Item | Location | Notes |
 |------|----------|-------|
-| Lineup total prediction | `lib/sportPrediction.ts`, `useSportPredictionRules`, `SportPredictionField` | Slider reads `predictionRules`. Canonical JSON shape stays `{ type: "winningLineupTotal", value }` |
+| Lineup total prediction | `lib/sportPrediction.ts`, `useSportPredictionRules`, `SportPredictionField` | Slider reads `predictionRules` from `GET /sports`. Canonical JSON shape is `{ type: "winningLineupTotal", value }` |
+| Roster size | `useSportRosterRules` | `rosterRules.slotCount` from `GET /sports`. The lineup card and `EventLineupsPanel` show the loading shell until those rules are present |
 | Event status and dates | `sports/eventPresentation.ts` | Registry lookup by `sportId`. Missing plugin is `SCHEDULED` and null dates |
 | Event round display | Golf plugin reads `roundDisplay` from `eventMetadata` | Not a platform hook field |
 | Home demo | `sports/pga-golf/InfoScorecard` | Golf marketing surface. `Home` imports it; platform components do not |

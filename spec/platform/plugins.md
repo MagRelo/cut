@@ -126,7 +126,7 @@ Golf also provides `EventDetails` (hero text) used inside `EventSummary`.
 | `SportLineupPickRow` | Thin wrapper → `SportParticipantRow` in editable lineup slots |
 | `SportParticipantRow` | Resolves plugin `ParticipantRow`; passes `status` + optional `eventMetadata` |
 | `SportParticipantDetailModal` | Dialog chrome → plugin `ParticipantDetail`; share URL helper |
-| `SportPredictionField` | Winning-score slider from `predictionRules` for the passed `sportId` |
+| `SportPredictionField` | Winning-score slider from `predictionRules` on `GET /sports` for the passed `sportId` |
 | `CreateContestEventPicker` | Sport + active event for contest create |
 
 Contest lobby renders plugin `EventSummary` in `ContestLobbyView` (not in `AppLayout`).

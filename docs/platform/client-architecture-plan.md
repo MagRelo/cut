@@ -335,7 +335,7 @@ Target plugin surface:
 | `periodRules` | when the sport has periods | Replaces `PERIOD_RULES_BY_SPORT`. Prefer the value on `GET /sports` when the API sends it; the plugin is the fallback shipped with the build. |
 | Hero class names | no | Already optional on the type. |
 
-`PredictionField` comes off the plugin. Every current sport uses a numeric `winningLineupTotal` slider whose min, max, step, scale, and label come from `Sport.predictionRules`. `SportPredictionField` renders `LineupWinningScoreSlider` from those rules only. A sport id is required; the component has no `"pga-golf"` branch. A future sport that needs a non-numeric tie-break adds a slot then, with a platform default of “rules-driven slider.”
+`SportPredictionField` renders `LineupWinningScoreSlider` from `Sport.predictionRules` (`label`, `description`, `min`, `max`, `displayScale`, `step`) for the `sportId` the lineup card passes. Rules come from `GET /sports`. While that sport is absent from the catalog, the field renders nothing. Roster size is `rosterRules.slotCount` from the same payload. The lineup card and `EventLineupsPanel` show the loading shell until those rules are present.
 
 **Platform keeps:** routing, directory, lobby tabs, lineup save/join, contest create, leagues, wallet, referrals, ranking display, popularity display after lock ([consensus-axis.md](consensus-axis.md)), tie-break ordering display ([lineup-tie-breaker.md](lineup-tie-breaker.md)).
 
@@ -529,13 +529,13 @@ Stop using `gray-*` and `slate-*` for the same role. `gray.25` can go once nothi
 
 ### 6. Sport plugins
 
-**Current.** `SportUIPlugin` requires `CandidateRow`, `ParticipantRow`, `ParticipantDetail`, and `candidateSortConfig`. Optional: `PredictionField` (unused), `EventSummary`, hero image and class names. All three sports fill the same slots except `PredictionField` and hero class names. Golf’s detail is a scorecard; F1’s is driver and team; commodities adds a sparkline. Registration is a `Map` in `sports/registry.ts`. `useSportUIPlugin` takes an explicit id or event scope.
+**Current.** `SportUIPlugin` requires `CandidateRow`, `ParticipantRow`, `ParticipantDetail`, `candidateSortConfig`, `eventStatus`, `formatEventStatus`, `eventStart`, `eventEnd`, and `periodRules`. Optional: `EventSummary`, hero image, and hero class names. Golf’s detail is a scorecard; F1’s is driver and team; commodities adds a sparkline. Registration is a `Map` in `sports/registry.ts`. `useSportUIPlugin` takes an explicit id or event scope. `SportPredictionField` renders `LineupWinningScoreSlider` from `predictionRules` (`label`, `description`, `min`, `max`, `displayScale`, `step`) for the lineup card’s `sportId`. Roster size is `rosterRules.slotCount` from `GET /sports`. The lineup card and `EventLineupsPanel` show the loading shell until those rules are present.
 
 **Keep.** The registry, explicit sport id, required row/detail/sort slots, hero image hook, and “no plugin throws.” Sport packages own sort config and metadata parsers. Platform shells (`SportEventHeader`, `CandidatePicker`, `SportParticipantRow`, `SportParticipantDetailModal`) stay the injection points.
 
-**Change.** Collapse the three `CandidateRow` switches into one platform component. Status, period rules, the commentary parser, the rules-driven tie-break slider, and `check:sport-boundary` on client platform paths are already in place. The add-sport checklist Phase 5 matches this contract: no per-sport `PredictionField.tsx`, no sport hub route.
+**Change.** Collapse the three `CandidateRow` switches into one platform component.
 
-**Target.** Adding a sport on the client is: implement the plugin, register it, depend on `@cut/sport-<id>`. `client/src/lib` and `client/src/components` do not gain a `case` for the new id. Roster size comes from `GET /sports` or `undefined` while loading — never a silent 4-slot roster.
+**Target.** Adding a sport on the client is: implement the plugin, register it, depend on `@cut/sport-<id>`. `client/src/lib` and `client/src/components` do not gain a `case` for the new id. Roster size is `rosterRules.slotCount` from `GET /sports`. The lineup card shows the loading shell until those rules are present.
 
 ### 7. Domain flows
 
@@ -699,4 +699,4 @@ Contract adjustments this audit actually motivates, as recommendations for the s
 - Contest, profile, and league response types are shared or generated so `client/src/types/contest.ts` and `AuthUser` stop drifting from `server/src/lib/authProfile.ts` and the contest serializers.
 - A `/userGroups` → `/leagues` path rename is optional. The client architecture does not depend on it.
 
-`docs/platform/architecture.md` remains the product and platform model. Where its client section says `SportPredictionField` delegates to `plugin.PredictionField`, this plan is the correction: the slider is platform UI driven by `predictionRules`.
+`docs/platform/architecture.md` remains the product and platform model. `SportPredictionField` is platform UI driven by `predictionRules` from `GET /sports`.

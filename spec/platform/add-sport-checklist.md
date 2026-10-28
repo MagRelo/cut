@@ -27,7 +27,7 @@ Contests, leagues, wallets, referrals, and on-chain contracts require **no chang
 - [ ] Lock **lifecycle triggers** (`SCHEDULED → LIVE → COMPLETE`)
 - [ ] Lock **roster rules** (`slotCount`, `minPicks`, `maxPicks`, `allowDuplicates`, pool constraints)
 - [ ] Lock **scoring rules** (`aggregation`, `direction`, per-participant score definition)
-- [ ] Lock **tie-break prediction** range (`Sport.predictionRules`: `min`, `max`, random defaults)
+- [ ] Lock **tie-break prediction** (`Sport.predictionRules`: `min`, `max`, random defaults, `label`, `description`)
 - [ ] Lock **candidate sort keys** for picker, field leaderboard, and lineup picks
 - [ ] Pick a **dry-run target** `externalId` (historical replay preferred for first end-to-end test)
 - [ ] List **v1 scope** and **out of scope** explicitly in the brief
@@ -113,7 +113,7 @@ Pure logic only — no Prisma, no `fetch`, no env vars.
 - [ ] Verify: leaderboard, lineup builder, and contest lobby render. `/` and `/sports/:sportId` stay redirects to `/contests`
 - [ ] `pnpm run check:sport-boundary` — `client/src/lib`, `components`, `hooks`, `pages`, and `contexts` do not import the new sport package
 
-Platform shell components (`SportEventHeader`, `CandidatePicker`, `SportParticipantRow`) delegate row and hero rendering to the plugin. The tie-break slider is platform `SportPredictionField`, driven by `Sport.predictionRules` — not a per-sport `PredictionField`.
+Platform shell components (`SportEventHeader`, `CandidatePicker`, `SportParticipantRow`) delegate row and hero rendering to the plugin. `SportPredictionField` renders `LineupWinningScoreSlider` from `Sport.predictionRules` for the passed `sportId`.
 
 `EventSummary.tsx` is the hub/hero React component. Contest Cutbot commentary (`Contest.commentary` / `commentaryFeed`) is a separate optional track — see Phase 8. The lobby JSON fallback is parsed by `@cut/sport-sdk` `parseContestCommentaryFeedItems`.
 
@@ -125,7 +125,7 @@ Verify the new sport works through shared platform paths (pass `sportId` from `E
 
 - [ ] `client/src/hooks/useLineupSlotEditor.ts` + `useSportRosterRules` — slot count from `GET /sports` `rosterRules` (undefined until that payload arrives)
 - [ ] `client/src/lib/lineupApi.ts` — lineup create/update passes `sportId`; prediction serializes as `{ type: "winningLineupTotal", value }`
-- [ ] `SportPredictionField` renders `LineupWinningScoreSlider` from `predictionRules` (label, min, max, scale). It takes `sportId` and does not branch on a sport id
+- [ ] `SportPredictionField` renders `LineupWinningScoreSlider` from `predictionRules` (`label`, `description`, `min`, `max`, `displayScale`, `step`) for the passed `sportId`
 - [ ] Server lineup services use `parseLineupPrediction` + `Sport.predictionRules` for validation
 - [ ] `GET /sports/:sportId/events/:eventId/candidates` returns sorted candidates with correct `sortKeys`
 - [ ] Status, start, end, and period-rule fallback resolve through `SportUIPlugin` (`client/src/sports/eventPresentation.ts`). Platform files do not import `@cut/sport-<id>`
@@ -242,7 +242,7 @@ Reverse of add — no platform schema or contest/wallet changes required:
 | Concern | Convention |
 |---------|------------|
 | **Tie-break JSON** | `{ type: "winningLineupTotal", value: number }` — `@cut/sport-sdk` |
-| **Prediction range** | `Sport.predictionRules` in seed (`min`, `max`, `defaultRandomMin`, `defaultRandomMax`) |
+| **Prediction range** | `Sport.predictionRules` in seed (`min`, `max`, `defaultRandomMin`, `defaultRandomMax`, `label`, `description`) |
 | **Event init** | `pnpm --filter server run service:init-event <sportId> <externalId>` |
 | **Active event** | One `isActive` event per sport; init deactivates the previous one |
 | **Cron (scores)** | `runSportEventPipeline` every 5 min — metadata → field → live scores → contest lineups → optional `afterLiveScoreSync` |

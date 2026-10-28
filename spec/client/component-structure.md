@@ -17,7 +17,7 @@ Sport-agnostic building blocks. They accept platform types (`Candidate`, `EventS
 | `SportParticipantDetailModal` | Dialog chrome → plugin `ParticipantDetail` (scorecard modal) |
 | `SportLineupPickRow` | Thin wrapper around `SportParticipantRow` for editable lineup slots |
 | `CandidatePicker` | Search/sort over `Candidate[]` → plugin `CandidateRow` |
-| `SportPredictionField` | Winning-score slider from `predictionRules` (`sportId` prop) |
+| `SportPredictionField` | Winning-score slider from `predictionRules` on `GET /sports` (`sportId` prop) |
 
 Used by: leaderboard, lineup card, contest entry list/modal, contest lobby slot editor.
 

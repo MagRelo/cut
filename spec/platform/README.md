@@ -69,7 +69,7 @@ Per-sport packages implement ingestion, candidates, validation, scoring, ranking
 
 ### 3. Client UI plugins (`SportUIPlugin`)
 
-Sport-specific React components injected into the platform shell (candidate rows, pick detail, prediction field, event summary).
+Sport-specific React components injected into the platform shell (candidate rows, pick detail, event summary). The tie-break slider is platform `SportPredictionField`.
 
 **Client:** `client/src/sports/registry.ts`  
 **Golf:** `client/src/sports/pga-golf/`

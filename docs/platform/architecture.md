@@ -248,7 +248,7 @@ Core platform endpoints:
 - `SportLineupPickRow` — contest roster pick row (optional post-lock popularity bonus; see [consensus-axis.md](consensus-axis.md))
 - `SportParticipantRow` / `SportParticipantDetailModal` — field/event display lists and scorecard modal (no contest popularity)
 - `SportEventHeader` — leaderboard event hero → plugin `EventSummary`
-- `SportPredictionField` — winning-score tie-break slider from `Sport.predictionRules` (`label`, min, max, scale). Pass `sportId`. There is no per-sport prediction component.
+- `SportPredictionField` — winning-score tie-break slider from `Sport.predictionRules` (`label`, `description`, `min`, `max`, `displayScale`, `step`). Pass `sportId`. Rules come from `GET /sports`.
 
 `LineupContestCard` composes the shell for lineup editing: `SportLineupPickRow` slots, `CandidatePicker` for swaps, and `SportPredictionField` for the winning-score tie-breaker. Feature components in `contest/`, `lineup/`, `userGroup/` use platform types (`Candidate`, `PlatformLineup`, `ContestLineup`). Sport-specific presentation lives in per-sport UI plugins under `client/src/sports/{sport-id}/`.
 
@@ -286,7 +286,7 @@ Contest lifecycle is sport-agnostic. The sport plugin only answers "should this 
 3. Platform derives payout vector (via `sport.derivePayoutVector` or default policy: 100% to 1st if fewer than 10 entries, else 70/20/10 for top 3)
 4. Paid contests: oracle calls `settleContest(winningEntries, payoutBps)` on-chain, then pushes payouts. $0 contests write standings to the database only (no contract, no payouts).
 
-**Tie-breaker pattern** (platform-wide): score descending → prediction distance ascending → entry time ascending. The prediction field shape is sport-specific (golf: winning Stableford score; other sports define their own).
+**Tie-breaker pattern** (platform-wide): score descending → prediction distance ascending → entry time ascending. The stored prediction is `{ type: "winningLineupTotal", value }`. Range, label, and description come from `Sport.predictionRules`.
 
 ---
 
@@ -347,4 +347,4 @@ client/
 | Wallet / Privy / on-chain payments | One wallet per user across all sports |
 | Referral network | One graph per user; fees apply to any contest |
 | `ContestLineup` / timeline | Stores aggregated score (`finalScore`), optional `baseScore` / `popularityBonus`, and position; popularity map is contest-scoped |
-| Tie-breaker comparator | Same comparison structure; prediction field is the sport-specific part |
+| Tie-breaker comparator | Score descending, then prediction distance, then entry time. Every sport stores `winningLineupTotal`; range and label come from `Sport.predictionRules` |

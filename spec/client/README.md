@@ -102,7 +102,7 @@ client/src/
 - **Event scope:** URL `eventId`, directory group, or `contest.event`. Staff create uses `useActiveEventQuery` after a sport is selected. Contest surfaces use `useContestEvent(contest)`. No implicit fallbacks.
 - **Event headers:** Page-local only — contest lobby `EventSummary` above contest card; leaderboard `SportEventHeader` with an explicit event shell. `AppLayout` has no event bar.
 - **Platform** fetches `Candidate[]` and `PlatformLineup`; passes `Candidate` + `EventStatus` + optional `eventMetadata` into shell components.
-- **Plugin** (`sports/pga-golf/`) owns all golf presentation — rows, scorecard, event hero, prediction field.
+- **Plugin** (`sports/pga-golf/`) owns golf presentation — rows, scorecard, and event hero. The tie-break slider is platform `SportPredictionField`, driven by `predictionRules` from `GET /sports`. Roster size is `rosterRules.slotCount` from that same payload.
 - Lineup totals: `ContestLineup.score` and `PlatformLineup.score` from the server ([`lineupScore.ts`](../../client/src/lib/lineupScore.ts)).
 - See [sport-ui-plugins.md](sport-ui-plugins.md) for the full contract and remaining platform leaks.
 

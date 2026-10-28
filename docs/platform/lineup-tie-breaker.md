@@ -37,7 +37,7 @@ The prediction serves two roles:
 | Field | Model | Type | Notes |
 | --- | --- | --- | --- |
 | `prediction` | `Lineup` | `Json?` | `{ type: "winningLineupTotal", value: number }`. Range from `Sport.predictionRules` (golf: 1–250; F1: 1–120; commodities: -100–250). Stored on the lineup, not per contest entry. |
-| `predictionRules` | `Sport` | `Json` | `{ min, max, defaultRandomMin, defaultRandomMax }` — per-sport slider range and server random defaults. |
+| `predictionRules` | `Sport` | `Json` | `{ min, max, defaultRandomMin, defaultRandomMax, label, description, displayScale, step }` — slider range, copy, and server random defaults. |
 | `eventParticipantId` | `LineupPick` | `String` | Pick identity for roster slots. |
 | `score` | `ContestLineup` | `Int` | Live and final fantasy total (`finalScore`). |
 | `baseScore` | `ContestLineup` | `Int?` | Sum of unadjusted pick totals (see [consensus-axis.md](consensus-axis.md)). |
@@ -81,11 +81,10 @@ The client runs the same roster + prediction check before save (slot editor and 
 
 **Surface:** `LineupContestCard` → **Players** tab, bottom of the panel when the user can edit slots (`canEditSlots`: editable event + lineup id present).
 
-**Control:** `SportPredictionField` renders `LineupWinningScoreSlider` from `Sport.predictionRules` (label, min, max, scale). The lineup card passes `sportId`.
+**Control:** `SportPredictionField` renders `LineupWinningScoreSlider` from `Sport.predictionRules` (`label`, `description`, `min`, `max`, `displayScale`, `step`). The lineup card passes `sportId`. Rules come from `GET /sports` through `useSportPredictionRules`. While that sport is absent from the catalog, the field renders nothing.
 
-- Label: sport-specific (e.g. “Predicted winning lineup score” for golf)
-- Range from `Sport.predictionRules` via `useSportPredictionRules`
-- Commodities allows negative values (-100–250) because asymmetric loss scoring can produce negative lineup totals; golf and F1 use non-negative ranges only.
+- Labels: golf `"Tie-Breaker"`, F1 and commodities `"Tie-Breaker (winning lineup pts)"`.
+- Ranges: golf 1–250, F1 1–120, commodities −100–250. Commodities includes negative values because asymmetric loss scoring can produce negative lineup totals.
 
 **Save behavior**
 
