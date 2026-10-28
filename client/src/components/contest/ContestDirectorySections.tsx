@@ -35,7 +35,15 @@ export function ContestDirectorySections({
       {showUpcomingSection ? (
         <>
           <div className="mb-3">
-            <ListHeader title={" 🚩\u00A0 Upcoming Events"} tone="upcoming" />
+            <ListHeader
+              tone="upcoming"
+              title={
+                <>
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-green-500" aria-hidden="true" />
+                  Open Now
+                </>
+              }
+            />
           </div>
           <GroupedContestList
             groups={upcoming}

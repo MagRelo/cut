@@ -21,7 +21,12 @@ export const Default: Story = {
 
 export const Upcoming: Story = {
   args: {
-    title: "Upcoming Events",
+    title: (
+      <>
+        <span className="h-2 w-2 shrink-0 rounded-full bg-green-500" aria-hidden="true" />
+        Open Now
+      </>
+    ),
     tone: "upcoming",
   },
 };

@@ -10,12 +10,8 @@ interface ListHeaderProps {
   tone?: ListHeaderTone;
 }
 
-const toneChipClassName: Record<Exclude<ListHeaderTone, "past" | "live">, string> = {
-  default:
-    "rounded-full bg-gradient-to-b from-slate-100 to-slate-200/80 px-3 py-1 font-display text-sm font-medium text-slate-800 shadow-sm ring-1 ring-slate-300/80",
-  upcoming:
-    "rounded-full bg-emerald-600 px-3 py-1 font-display text-sm font-semibold text-white shadow-sm shadow-emerald-700/25",
-};
+const defaultChipClassName =
+  "rounded-full bg-gradient-to-b from-slate-100 to-slate-200/80 px-3 py-1 font-display text-sm font-medium text-slate-800 shadow-sm ring-1 ring-slate-300/80";
 
 const titleToneClassName =
   "inline-flex max-w-full items-center gap-1.5 truncate font-display text-sm font-semibold uppercase tracking-wider text-slate-900";
@@ -27,9 +23,9 @@ export const ListHeader: React.FC<ListHeaderProps> = ({
   tone = "default",
 }) => {
   const titleClassName =
-    tone === "past" || tone === "live"
-      ? titleToneClassName
-      : cn("inline-flex max-w-full items-center gap-1.5 truncate", toneChipClassName[tone]);
+    tone === "default"
+      ? cn("inline-flex max-w-full items-center gap-1.5 truncate", defaultChipClassName)
+      : titleToneClassName;
 
   return (
     <div className={`flex items-center justify-between gap-4 ${className}`}>
