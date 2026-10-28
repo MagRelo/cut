@@ -2,6 +2,7 @@ import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { useAccount } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 
+import { Button } from "../../components/common/Button";
 import { CopyButton } from "../../components/common/CopyToClipboard";
 import { Breadcrumbs } from "../../components/common/Breadcrumbs";
 import { PageSection } from "../../components/layout/PageSection";
@@ -62,15 +63,15 @@ const AccountInfo = ({
         <div className="mt-4">
           <hr className="border-gray-200" />
           <div className="flex justify-center pt-4">
-            <button
+            <Button
               type="button"
-              className="min-w-[120px] rounded border border-blue-500 bg-blue-500 px-4 py-1 font-display text-sm text-white transition-colors hover:bg-blue-600"
+              className="min-w-[120px]"
               onClick={() => {
                 void disconnect();
               }}
             >
               Sign Out
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
-import { Link } from "react-router-dom";
+import { Button } from "../common/Button";
 import { useReadContract } from "wagmi";
 import type { Contest } from "../../types/contest";
 import type { AuthUser } from "../../contexts/AuthContext";
@@ -165,15 +165,10 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
       </p>
 
       <div className="mt-4">
-        <button
-          type="button"
-          onClick={() => void handleCreateLineup()}
-          disabled={isCreateBusy}
-          className="inline-flex items-center justify-center gap-1 rounded border border-blue-500 bg-blue-500 px-3 py-2 font-display text-sm text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <Button type="button" onClick={() => void handleCreateLineup()} disabled={isCreateBusy}>
           <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
           {isCreating ? "Creating…" : "New lineup"}
-        </button>
+        </Button>
       </div>
 
       {copyableLineups.length > 0 ? (
@@ -199,14 +194,14 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
                       </p>
                     )}
                   </div>
-                  <button
+                  <Button
                     type="button"
+                    size="compact"
                     onClick={() => void handleCopyFromLineup(row.id)}
                     disabled={isCreateBusy}
-                    className="shrink-0 rounded border border-blue-500 bg-blue-500 px-3 py-1 font-display text-xs text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isCopying ? "Copying…" : "Copy"}
-                  </button>
+                  </Button>
                 </li>
               );
             })}
@@ -309,12 +304,9 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
           <p className="text-sm text-gray-600">
             Lineups can only be created or edited while this contest is open for entry.
           </p>
-          <Link
-            to="/contests"
-            className="mt-3 inline-block rounded border border-blue-500 bg-blue-500 px-3 py-1 font-display text-sm text-white transition-colors hover:bg-blue-600"
-          >
+          <Button to="/contests" className="mt-3">
             Browse Contests
-          </Link>
+          </Button>
         </PageSection>
       ) : null}
     </div>

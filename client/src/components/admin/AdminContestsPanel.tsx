@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { Button } from "../common/Button";
 import apiClient from "../../utils/apiClient";
 import type {
   AdminDashboardContest,
@@ -72,14 +73,14 @@ function ContestsTable({
                       {c.status}
                     </span>
                     {c.status === "ACTIVE" ? (
-                      <button
+                      <Button
                         type="button"
+                        size="compact"
                         onClick={() => onLock(c.id)}
                         disabled={lockingId === c.id}
-                        className="px-2 py-0.5 text-xs font-medium text-white bg-blue-600 rounded-sm hover:bg-blue-700 disabled:opacity-50"
                       >
                         {lockingId === c.id ? "Locking…" : "Lock"}
-                      </button>
+                      </Button>
                     ) : null}
                   </div>
                   {lockErrors[c.id] ? (

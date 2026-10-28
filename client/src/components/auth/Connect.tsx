@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 
+import { Button } from "../common/Button";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useAuth } from "../../contexts/AuthContext";
 import { useReferralCodeDetected } from "../../hooks/useReferralCapture";
@@ -51,14 +52,9 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
       ) : (
         <div className="flex w-full max-w-xs flex-col items-center gap-5">
           <div className="flex w-full flex-col gap-3">
-            <button
-              className="w-full rounded-md border border-blue-500 bg-blue-500 px-6 py-3.5 font-display text-base font-semibold text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={loading}
-              onClick={handleConnect}
-              type="button"
-            >
+            <Button type="button" block disabled={loading} onClick={handleConnect}>
               Sign in
-            </button>
+            </Button>
             <button
               className="w-full rounded-md border border-blue-500 bg-white px-6 py-3.5 font-display text-base font-semibold text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={loading}

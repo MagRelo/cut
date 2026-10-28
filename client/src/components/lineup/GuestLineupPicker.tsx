@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
+import { Button } from "../common/Button";
 import type { Candidate } from "@cut/sport-sdk";
 import type { EventStatus } from "../../types/event";
 import { CandidatePicker } from "../platform/CandidatePicker";
@@ -188,10 +189,10 @@ export const GuestLineupPicker: React.FC<GuestLineupPickerProps> = ({
                       onClick={() => setDetailCandidate(candidate)}
                     />
                   </div>
-                  <button
+                  <Button
                     type="button"
+                    size="compact"
                     onClick={() => openSlot(index)}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-600"
                     aria-label={`Edit pick in slot ${index + 1}`}
                   >
                     <svg
@@ -209,7 +210,7 @@ export const GuestLineupPicker: React.FC<GuestLineupPickerProps> = ({
                       />
                     </svg>
                     Edit
-                  </button>
+                  </Button>
                 </LineupSlotShell>
               ) : (
                 <LineupSlotShell>
@@ -220,15 +221,15 @@ export const GuestLineupPicker: React.FC<GuestLineupPickerProps> = ({
                   >
                     <LineupEmptySlotLabel />
                   </button>
-                  <button
+                  <Button
                     type="button"
+                    size="compact"
                     onClick={() => openSlot(index)}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-600"
                     aria-label={`Add pick to slot ${index + 1}`}
                   >
                     <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
                     Add
-                  </button>
+                  </Button>
                 </LineupSlotShell>
               )}
             </div>

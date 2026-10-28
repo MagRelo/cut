@@ -25,16 +25,16 @@ import {
 import { ReferralMenuTotal } from "../account/ReferralMenuTotal";
 
 const menuItemClass =
-  "block w-full px-4 py-2 text-left text-sm font-display text-slate-700 data-[focus]:bg-slate-50";
+  "block w-full px-4 py-2 text-left text-sm font-display text-slate-700 focus:outline-none data-[focus]:bg-slate-50";
 
 const menuItemActiveClass =
-  "block w-full px-4 py-2 text-left text-sm font-display font-semibold text-slate-950 data-[focus]:bg-slate-50";
+  "block w-full px-4 py-2 text-left text-sm font-display font-semibold text-slate-950 focus:outline-none data-[focus]:bg-slate-50";
 
 const menuSubItemClass =
-  "block w-full px-4 py-1.5 pl-7 text-left text-sm font-display text-slate-600 data-[focus]:bg-slate-50";
+  "block w-full px-4 py-1.5 pl-7 text-left text-sm font-display text-slate-600 focus:outline-none data-[focus]:bg-slate-50";
 
 const menuSubItemActiveClass =
-  "block w-full px-4 py-1.5 pl-7 text-left text-sm font-display font-semibold text-slate-950 data-[focus]:bg-slate-50";
+  "block w-full px-4 py-1.5 pl-7 text-left text-sm font-display font-semibold text-slate-950 focus:outline-none data-[focus]:bg-slate-50";
 
 export const UserMenu: React.FC = () => {
   const { user, paymentTokenBalance, balancesUnavailable, isAdmin } = useAuth();
@@ -53,7 +53,6 @@ export const UserMenu: React.FC = () => {
       <MenuButton
         className={[
           "inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 font-display text-sm font-medium transition-colors",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40",
           isAccountActive
             ? "bg-slate-100 font-semibold text-slate-950"
             : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",

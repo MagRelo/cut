@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { Button } from "../common/Button";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import {
   useUserTransactions,
@@ -122,12 +123,9 @@ export function ActivityList() {
         <p className="mt-2 text-sm leading-relaxed text-gray-600">
           Contest entries, winner pool tickets, and payouts will show up here.
         </p>
-        <Link
-          to="/account/funds"
-          className="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700"
-        >
+        <Button to="/account/funds" className="mt-6">
           Add funds
-        </Link>
+        </Button>
         <p className="mt-3">
           <Link to="/contests" className="text-sm text-blue-600 hover:text-blue-700 hover:underline">
             Browse contests

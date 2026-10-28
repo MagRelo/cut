@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { Button } from "../components/common/Button";
 import { Share } from "../components/common/Share";
 import { InfoScorecard } from "../sports/pga-golf/InfoScorecard";
 import { PageSection } from "../components/layout/PageSection";
@@ -201,12 +202,9 @@ export const Home: React.FC = () => {
       <div className="mb-8 flex w-full flex-col items-center gap-3 px-4">
         <h3 className="text-center text-2xl font-bold text-gray-400">Live Contests</h3>
         <p className="text-center font-display text-gray-700">New contests every week:</p>
-        <Link
-          to="/contests"
-          className="inline-block w-full max-w-sm rounded-lg border border-blue-500 bg-blue-500 px-6 py-3 text-center font-display text-base font-semibold text-white transition-colors hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-        >
+        <Button to="/contests" block className="max-w-sm">
           View Contests
-        </Link>
+        </Button>
       </div>
 
       <hr className="my-8 w-full border-gray-200" />

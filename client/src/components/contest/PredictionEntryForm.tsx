@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { Button } from "../common/Button";
 import { usePostHog } from "posthog-js/react";
 import { formatUnits } from "viem";
 import { useAccount, useBalance, useReadContract } from "wagmi";
@@ -410,13 +411,9 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           </div>
         </form>
 
-        <Link
-          to="/connect"
-          state={{ from: location }}
-          className="flex w-full justify-center rounded border border-blue-500 bg-blue-500 px-4 py-2 font-display text-sm font-medium text-white transition-colors hover:bg-blue-600"
-        >
+        <Button to="/connect" state={{ from: location }} block>
           Connect
-        </Link>
+        </Button>
       </div>
     );
   }
@@ -484,8 +481,9 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       </div>
 
       <div>
-        <button
+        <Button
           type="submit"
+          block
           disabled={
             secondaryActionsLocked ||
             isProcessing ||
@@ -494,7 +492,6 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
             Number.parseFloat(amount) <= 0 ||
             !canAffordPurchase
           }
-          className="w-full rounded border border-blue-500 bg-blue-500 px-4 py-2 font-display text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isProcessing ? (
             <span className="flex items-center justify-center gap-2">
@@ -504,7 +501,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           ) : (
             "Place Wager"
           )}
-        </button>
+        </Button>
 
         {error && (
           <div className="rounded-md border border-red-200 bg-red-50 p-3">

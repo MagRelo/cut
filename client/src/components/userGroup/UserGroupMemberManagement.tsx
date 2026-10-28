@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Button } from "../common/Button";
 import { type UserGroupMemberResponse } from "../../types/userGroup";
 import { useRemoveUserGroupMember } from "../../hooks/useUserGroupMutations";
 import { useAuth } from "../../contexts/AuthContext";
@@ -17,9 +17,6 @@ interface UserGroupMemberManagementProps {
   members: UserGroupMemberResponse[];
   onMemberRemoved?: () => void;
 }
-
-const sendFundsClassName =
-  "inline-flex min-h-11 shrink-0 items-center justify-center rounded border border-blue-500 bg-blue-500 px-4 font-display text-sm font-medium text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2";
 
 const chipClassName =
   "rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-gray-700";
@@ -97,9 +94,7 @@ export const UserGroupMemberManagement = ({
                 ) : null}
               </div>
               {showSendFunds && member.walletAddress ? (
-                <Link to={buildFundSendUrl(member.walletAddress)} className={sendFundsClassName}>
-                  Send funds
-                </Link>
+                <Button to={buildFundSendUrl(member.walletAddress)}>Send funds</Button>
               ) : null}
             </li>
           );

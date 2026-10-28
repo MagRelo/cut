@@ -29,7 +29,7 @@ import { DiscordIcon } from "../common/DiscordIcon";
 import { StagingBadge } from "./StagingBadge";
 
 const mobileNavItemBase =
-  "block w-full rounded-md px-3 py-2.5 text-left text-sm font-medium font-display uppercase tracking-wider transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
+  "block w-full rounded-md px-3 py-2.5 text-left text-sm font-medium font-display uppercase tracking-wider transition-colors";
 
 function mobileNavItemClass(active: boolean) {
   return [
@@ -42,7 +42,7 @@ function mobileNavItemClass(active: boolean) {
 
 function mobileSubItemClass(active: boolean) {
   return [
-    "block w-full rounded-md px-3 py-2 text-left text-sm font-display transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40",
+    "block w-full rounded-md px-3 py-2 text-left text-sm font-display transition-colors",
     active
       ? "bg-slate-100 font-semibold text-slate-950"
       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
@@ -73,7 +73,7 @@ export const MobileNavMenu: React.FC = () => {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+        className="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
         aria-label="Open menu"
       >
         <Bars3Icon className="h-6 w-6" aria-hidden />
@@ -111,7 +111,7 @@ export const MobileNavMenu: React.FC = () => {
                         to="/"
                         onClick={closeMenu}
                         aria-label={BRAND_PROSE}
-                        className="flex items-center gap-1.5 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+                        className="flex items-center gap-1.5 rounded-sm"
                       >
                         <BrandLogo className="h-8 w-auto" />
                         <span className="font-display text-lg font-medium uppercase leading-none tracking-[0.06em] text-slate-900">
@@ -122,7 +122,7 @@ export const MobileNavMenu: React.FC = () => {
                       <button
                         type="button"
                         onClick={closeMenu}
-                        className="rounded-md p-2 text-slate-500 hover:bg-slate-50 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+                        className="rounded-md p-2 text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                         aria-label="Close menu"
                       >
                         <XMarkIcon className="h-5 w-5" aria-hidden />

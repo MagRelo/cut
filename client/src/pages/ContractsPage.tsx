@@ -1,4 +1,5 @@
 import React from "react";
+import { Button } from "../components/common/Button";
 import { useChainId } from "wagmi";
 import { getContractConfig, getExplorerUrl, type ContractConfig } from "../utils/blockchainUtils";
 import { getTargetChainIdFromEnv, isTargetTestnet } from "../config/targetChain";
@@ -108,11 +109,11 @@ const ContractsPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex-shrink-0 w-full sm:w-auto">
-                <a
-                  href={contract.blockExplorerUrl}
+                <Button
+                  href={contract.blockExplorerUrl ?? "#"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center w-full sm:w-auto px-3 sm:px-4 py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                  className="w-full sm:w-auto"
                 >
                   <svg
                     className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2"
@@ -129,7 +130,7 @@ const ContractsPage: React.FC = () => {
                   </svg>
                   <span className="hidden sm:inline">View on Blockscout</span>
                   <span className="sm:hidden">View</span>
-                </a>
+                </Button>
               </div>
             </div>
           </div>

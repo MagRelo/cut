@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { type CreateUserGroupInput, type UpdateUserGroupInput } from "../../types/userGroup";
+import { Button } from "../common/Button";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 const labelClass = "block text-sm font-medium text-gray-700 font-display";
 const fieldClass =
   "mt-1 block w-full rounded-sm border border-gray-300 bg-white py-2.5 px-3 text-sm font-display focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-gray-100";
-const primaryButtonClass =
-  "inline-flex min-w-[120px] items-center justify-center gap-2 rounded border border-blue-500 bg-blue-500 px-4 py-1.5 font-display text-sm text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50";
-
 interface UserGroupFormProps {
   initialData?: {
     name?: string;
@@ -87,14 +85,10 @@ export const UserGroupForm = ({
       </div>
 
       <div className="flex justify-center !mt-6">
-        <button
-          type="submit"
-          disabled={isLoading || !name.trim()}
-          className={primaryButtonClass}
-        >
+        <Button type="submit" disabled={isLoading || !name.trim()} className="min-w-[120px]">
           {isLoading && <LoadingSpinnerSmall />}
           {submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );

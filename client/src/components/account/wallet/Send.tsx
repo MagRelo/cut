@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useAccount } from "wagmi";
 import { formatUnits, isAddress, parseUnits } from "viem";
+import { Button } from "../../common/Button";
 import { LoadingSpinnerSmall } from "../../common/LoadingSpinnerSmall";
 import { useTransferTokens } from "../../../hooks/useTokenOperations";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -8,12 +9,7 @@ import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../../config/targ
 import { PAYMENT_TOKEN_DECIMALS } from "../../../lib/paymentTokenSpend";
 import { BLOCKCHAIN_NETWORK } from "../../../lib/legalPlaceholders";
 import { getSmartWalletsPaymasterConfig } from "../../../lib/privySmartWalletPaymaster";
-import {
-  AssetChips,
-  walletSpecCtaClassName,
-  walletSpecLabelClassName,
-  walletSpecSecondaryClassName,
-} from "./AssetChips";
+import { AssetChips, walletSpecLabelClassName, walletSpecSecondaryClassName } from "./AssetChips";
 import { formatAddressForDisplay, walletAddressWellClassName } from "./WalletAddressCopy";
 
 export type SendProps = {
@@ -262,15 +258,15 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
       <div className="flex flex-col gap-2">
         {isReviewing ? (
           <>
-            <button
+            <Button
               type="button"
+              block
               onClick={() => void handleSend()}
               disabled={!isConnected || isProcessing || balancesUnavailable}
-              className={walletSpecCtaClassName}
             >
               {(isSending || isProcessing) && <LoadingSpinnerSmall />}
               {isConfirmed ? "Sent!" : isFailed ? "Failed — try again" : `Send ${targetSymbol}`}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => {
@@ -284,14 +280,14 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
             </button>
           </>
         ) : (
-          <button
+          <Button
             type="button"
+            block
             onClick={handleReview}
             disabled={!isConnected || isProcessing || balancesUnavailable}
-            className={walletSpecCtaClassName}
           >
             Review send
-          </button>
+          </Button>
         )}
       </div>
     </div>

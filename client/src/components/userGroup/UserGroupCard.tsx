@@ -1,10 +1,7 @@
-import { Link } from "react-router-dom";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
+import { Button } from "../common/Button";
 import { type UserGroupListItem } from "../../types/userGroup";
 import { cn } from "../../lib/tabStyles";
-
-const viewButtonClassName =
-  "inline-flex min-w-[88px] items-center justify-center gap-1 rounded border border-blue-500 bg-blue-500 px-4 py-1.5 font-display text-sm text-white transition-colors hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500";
 
 function LeagueListStat({ value, label }: { value: string | number; label: string }) {
   return (
@@ -63,14 +60,14 @@ export const UserGroupCard = ({ userGroup }: UserGroupCardProps) => {
           <LeagueListStat value={userGroup.memberCount} label="Members" />
           <LeagueListStat value={userGroup.contestCount} label="Contests" />
         </div>
-        <Link
+        <Button
           to={leaguePath}
           aria-label={`View ${userGroup.name} league`}
-          className={viewButtonClassName}
+          className="min-w-[88px]"
         >
           View
           <ChevronRightIcon className="h-4 w-4 shrink-0" aria-hidden />
-        </Link>
+        </Button>
       </div>
     </div>
   );

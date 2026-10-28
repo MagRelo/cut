@@ -2,6 +2,8 @@ import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 
 import { BRAND_PROSE } from "../../lib/brand";
+import { cn } from "../../lib/tabStyles";
+import { Button } from "./Button";
 
 interface ShareInviteButtonProps {
   url: string;
@@ -50,6 +52,23 @@ export function ShareInviteButton({
 
   const label = feedback === "shared" ? "Shared!" : feedback === "copied" ? "Copied!" : idleLabel;
   const active = feedback !== null;
+
+  if (variant === "compact" || variant === "cta") {
+    return (
+      <Button
+        type="button"
+        onClick={() => void handleClick()}
+        aria-label={active ? label : ariaLabel}
+        block={variant === "cta"}
+        pressed={active}
+        className={cn(variant === "cta" && "min-w-[200px]", className)}
+      >
+        {label}
+        <ArrowTopRightOnSquareIcon className="h-4 w-4 shrink-0" aria-hidden />
+      </Button>
+    );
+  }
+
   const variantClass =
     variant === "secondary"
       ? `w-full min-h-11 justify-center border px-4 sm:w-auto ${
@@ -57,19 +76,13 @@ export function ShareInviteButton({
             ? "border-gray-400 bg-gray-50 text-gray-900"
             : "border-gray-300 bg-white text-gray-800 hover:bg-gray-50"
         }`
-      : variant === "cta"
-        ? `justify-center min-w-[200px] border border-blue-500 px-4 py-2 text-white ${
-            active ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"
+      : variant === "success"
+        ? `w-full min-h-11 justify-center border px-4 ${
+            active
+              ? "border-green-700 bg-green-700 text-white"
+              : "border-green-600 bg-green-600 text-white hover:bg-green-700"
           }`
-        : variant === "success"
-          ? `w-full min-h-11 justify-center border px-4 ${
-              active
-                ? "border-green-700 bg-green-700 text-white"
-                : "border-green-600 bg-green-600 text-white hover:bg-green-700"
-            }`
-          : variant === "link"
-            ? `px-0 py-0 text-base font-semibold ${active ? "text-blue-800" : "text-blue-600 hover:underline"}`
-            : `px-3 py-1 text-white ${active ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-600"}`;
+        : `px-0 py-0 text-base font-semibold ${active ? "text-blue-800" : "text-blue-600 hover:underline"}`;
 
   return (
     <button

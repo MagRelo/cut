@@ -4,6 +4,7 @@ import { useChainId } from "wagmi";
 import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
+import { Button } from "../common/Button";
 import { DiscreteValueSlider } from "../common/DiscreteValueSlider";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useAuth } from "../../contexts/AuthContext";
@@ -243,10 +244,10 @@ export const LeagueCreateContestForm = ({
       <hr className="my-6 border-slate-200" />
 
       <div className="flex sm:justify-end">
-        <button
+        <Button
           type="submit"
           disabled={!canCreateContest || loading || isProcessing}
-          className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300 sm:min-h-0 sm:w-auto sm:py-2"
+          className="w-full sm:w-auto"
         >
           {loading || isProcessing ? (
             <span className="flex items-center gap-2">
@@ -258,7 +259,7 @@ export const LeagueCreateContestForm = ({
           ) : (
             "Create Contest"
           )}
-        </button>
+        </Button>
       </div>
 
       {(transactionError || isFailed || error) && (

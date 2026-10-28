@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { BrandLogo } from "../components/common/BrandLogo";
+import { Button } from "../components/common/Button";
 import { BRAND_PROSE, BRAND_WORDMARK } from "../lib/brand";
 import { ONBOARDING_DISMISSED_KEY } from "../lib/onboardingSettings";
 import { getPendingLeagueInviteCode } from "../lib/leagueInviteCapture";
@@ -37,8 +38,6 @@ function StepActions({ children, className = "" }: { children: ReactNode; classN
   );
 }
 
-const primaryBtn =
-  "inline-flex shrink-0 items-center justify-center rounded-sm bg-blue-600 px-5 py-2.5 text-center font-display font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 /** Match primary control height; reset default button padding so flex cross-axis centers line up on mobile */
 const ghostLink =
   "inline-flex shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent px-2 py-2.5 text-left text-sm font-medium text-gray-400 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-sm underline-offset-2 hover:underline disabled:opacity-50";
@@ -178,9 +177,9 @@ export function OnboardingPage() {
               >
                 Skip for now
               </button>
-              <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
+              <Button type="button" onClick={goNext} disabled={saving}>
                 Start
-              </button>
+              </Button>
             </StepActions>
           </>
         )}
@@ -214,14 +213,9 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button
-                type="button"
-                onClick={() => void handleSaveNameContinue()}
-                disabled={saving}
-                className={primaryBtn}
-              >
+              <Button type="button" onClick={() => void handleSaveNameContinue()} disabled={saving}>
                 Save & Continue
-              </button>
+              </Button>
             </StepActions>
           </>
         )}
@@ -261,14 +255,13 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button
+              <Button
                 type="button"
                 onClick={() => void handleSaveColorContinue()}
                 disabled={saving}
-                className={primaryBtn}
               >
                 Save & Continue
-              </button>
+              </Button>
             </StepActions>
           </>
         )}
@@ -332,14 +325,9 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button
-                type="button"
-                onClick={() => void handleSaveOddsContinue()}
-                disabled={saving}
-                className={primaryBtn}
-              >
+              <Button type="button" onClick={() => void handleSaveOddsContinue()} disabled={saving}>
                 Save & Continue
-              </button>
+              </Button>
             </StepActions>
           </>
         )}
@@ -359,9 +347,9 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
+              <Button type="button" onClick={goNext} disabled={saving}>
                 nice
-              </button>
+              </Button>
             </StepActions>
           </>
         )}
@@ -386,9 +374,9 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button type="button" onClick={goNext} disabled={saving} className={primaryBtn}>
+              <Button type="button" onClick={goNext} disabled={saving}>
                 sweet
-              </button>
+              </Button>
             </StepActions>
           </>
         )}
@@ -405,14 +393,9 @@ export function OnboardingPage() {
               <button type="button" onClick={goBack} className={ghostLink}>
                 Back
               </button>
-              <button
-                type="button"
-                onClick={() => void dismissOnboarding()}
-                disabled={saving}
-                className={primaryBtn}
-              >
+              <Button type="button" onClick={() => void dismissOnboarding()} disabled={saving}>
                 Continue
-              </button>
+              </Button>
             </StepActions>
           </>
         )}

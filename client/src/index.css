@@ -21,13 +21,6 @@
     font-family: "Outfit", sans-serif;
   }
 
-  /* Disable focus outlines site-wide */
-  *:focus,
-  *:focus-visible {
-    outline: none !important;
-    box-shadow: none !important;
-  }
-
   /* Disable tap highlight on mobile */
   * {
     -webkit-tap-highlight-color: transparent;

@@ -1,5 +1,6 @@
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
+import { Button } from "../components/common/Button";
 import { PageSection } from "../components/layout/PageSection";
 import { UserGroupList } from "../components/userGroup/UserGroupList";
 import { useUserGroupsQuery } from "../hooks/useUserGroupQuery";
@@ -35,13 +36,10 @@ export const UserGroupListPage = () => {
               Read the guide
             </Link>
           </p>
-          <Link
-            to="/leagues/create"
-            className="inline-flex items-center justify-center gap-1 rounded border border-blue-500 bg-blue-500 px-3 py-2 font-display text-sm text-white transition-colors hover:bg-blue-600"
-          >
+          <Button to="/leagues/create">
             <PlusIcon className="h-4 w-4 shrink-0" aria-hidden />
             Create League
-          </Link>
+          </Button>
         </div>
       ) : null}
     </>

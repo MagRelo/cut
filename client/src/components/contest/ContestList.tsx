@@ -5,6 +5,7 @@ import { contestLobbyPath } from "../../utils/contestRoutes";
 import { Link } from "react-router-dom";
 import { cn } from "../../lib/tabStyles";
 import { LEAGUE_STARTER_GUIDE_PATH } from "../../pages/LeagueStarterGuidePage";
+import { Button } from "../common/Button";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ContestListItem, type ContestListItemVariant } from "./ContestListItem";
 
@@ -36,12 +37,9 @@ export function ContestListConnectHint({ className = "mt-6" }: { className?: str
         Real money contests available in private leagues
       </p>
       <p className="mt-1 text-sm text-gray-600">Sign in to see leagues you’re in, or start one.</p>
-      <Link
-        to="/leagues"
-        className="mt-3 inline-flex h-10 min-w-[5.5rem] items-center justify-center rounded bg-blue-500 px-4 font-display text-sm font-semibold text-white transition-colors hover:bg-blue-600"
-      >
+      <Button to="/leagues" className="mt-3 min-w-[5.5rem]">
         Sign in
-      </Link>
+      </Button>
       <p className="mt-2.5 text-sm text-gray-600">
         <Link to={LEAGUE_STARTER_GUIDE_PATH} className="text-blue-600 hover:text-blue-700">
           How leagues work →
@@ -54,13 +52,10 @@ export function ContestListConnectHint({ className = "mt-6" }: { className?: str
 function CreateContestRow({ to }: { to: string }) {
   return (
     <div className="flex items-center justify-end px-4 py-3">
-      <Link
-        to={to}
-        className="inline-flex h-10 shrink-0 items-center justify-center gap-0.5 rounded bg-blue-500 px-4 font-display text-sm font-semibold text-white transition-colors hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-      >
+      <Button to={to}>
         <PlusIcon className="-ml-0.5 h-4 w-4 shrink-0" aria-hidden />
         Create contest
-      </Link>
+      </Button>
     </div>
   );
 }

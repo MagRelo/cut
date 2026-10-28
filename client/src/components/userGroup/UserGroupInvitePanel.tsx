@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "../common/Button";
 import { CopyButton } from "../common/CopyToClipboard";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
@@ -6,11 +7,7 @@ import { Modal } from "../common/Modal";
 import { ShareInviteButton } from "../common/ShareInviteButton";
 import { useGenerateLeagueInvite } from "../../hooks/useUserGroupMutations";
 import { BRAND_PROSE } from "../../lib/brand";
-import {
-  walletSpecCtaClassName,
-  walletSpecLabelClassName,
-  walletSpecSecondaryClassName,
-} from "../account/wallet/AssetChips";
+import { walletSpecLabelClassName, walletSpecSecondaryClassName } from "../account/wallet/AssetChips";
 
 interface UserGroupInvitePanelProps {
   userGroupId: string;
@@ -83,7 +80,6 @@ export const UserGroupInvitePanel = ({
                 ariaLabel="Share league invite"
                 label="Share Invite Link"
                 variant="cta"
-                className="min-h-11 w-full"
               />
               <CopyButton text={activeInviteUrl} variant="secondary" idleLabel="Copy Invite Link" />
               <button
@@ -101,15 +97,15 @@ export const UserGroupInvitePanel = ({
           </>
         ) : (
           <div className="flex flex-col gap-2 px-4 py-3">
-            <button
+            <Button
               type="button"
+              block
               onClick={handleGenerate}
               disabled={generateInviteMutation.isPending}
-              className={walletSpecCtaClassName}
             >
               {generateInviteMutation.isPending ? <LoadingSpinnerSmall /> : null}
               Generate invite
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -126,15 +122,15 @@ export const UserGroupInvitePanel = ({
             has the old one will not be able to join.
           </p>
           <div className="flex flex-col gap-2">
-            <button
+            <Button
               type="button"
+              block
               onClick={handleGenerate}
               disabled={generateInviteMutation.isPending}
-              className={walletSpecCtaClassName}
             >
               {generateInviteMutation.isPending ? <LoadingSpinnerSmall /> : null}
               Rotate link
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => setShowRotateConfirm(false)}

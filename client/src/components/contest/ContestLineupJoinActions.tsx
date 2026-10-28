@@ -5,6 +5,7 @@ import { canAddPrimaryPosition, canRemovePrimaryPosition } from "../../types/con
 import { effectiveContestStatus } from "../../lib/lineupEditable";
 import type { useContestLineupEntry } from "../../hooks/useContestLineupEntry";
 import { CheckIcon } from "@heroicons/react/24/outline";
+import { Button } from "../common/Button";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 const joinActionsFooterClassName = "border-t border-gray-200 bg-slate-50 px-3 py-2.5 font-display";
@@ -71,11 +72,11 @@ export const ContestLineupJoinActions: React.FC<ContestLineupJoinActionsProps> =
   } else if (canJoin) {
     footer = (
       <div className={joinActionsFooterClassName}>
-        <button
+        <Button
           type="button"
+          block
           onClick={() => void entry.handleJoinContest(lineupId)}
           disabled={!entry.hasPlayers(lineupId) || isProcessing || entry.isPrimaryDepositLoading}
-          className="w-full rounded-lg border border-blue-500 bg-blue-500 px-4 py-2.5 font-display text-sm font-semibold text-white shadow-md transition-colors hover:border-blue-600 hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isProcessing ? (
             <span className="flex items-center justify-center gap-2">
@@ -85,7 +86,7 @@ export const ContestLineupJoinActions: React.FC<ContestLineupJoinActionsProps> =
           ) : (
             `Enter Contest - ${entry.joinPrimaryDepositLabel}`
           )}
-        </button>
+        </Button>
       </div>
     );
   }
@@ -127,13 +128,9 @@ export const ContestLineupJoinActions: React.FC<ContestLineupJoinActionsProps> =
                     Warning
                   </DialogTitle>
                   <p className="mb-4 font-display text-gray-800">{entry.warningMessage}</p>
-                  <button
-                    type="button"
-                    onClick={entry.clearWarningMessage}
-                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-                  >
+                  <Button type="button" onClick={entry.clearWarningMessage}>
                     Close
-                  </button>
+                  </Button>
                 </DialogPanel>
               </TransitionChild>
             </div>

@@ -5,10 +5,8 @@ import { type Contest } from "../../types/contest";
 import { canDeleteLeagueContestRow } from "../../lib/canDeleteLeagueContest";
 import { contestLobbyLinkState } from "../../lib/contestNavigation";
 import { formatContestStatus } from "../../lib/contestStatus";
+import { Button } from "../common/Button";
 import { cn } from "../../lib/tabStyles";
-
-const actionButtonClassName =
-  "inline-flex h-10 min-w-[5.5rem] shrink-0 items-center justify-center gap-0.5 rounded px-4 font-display text-sm font-semibold text-white transition-colors";
 
 function contestListActionLabel(variant: ContestListItemVariant): string {
   return variant === "upcoming" ? "Join" : "View";
@@ -56,7 +54,7 @@ export const ContestListItem = ({
         to={to}
         state={eventShell ? contestLobbyLinkState(eventShell, contest) : undefined}
         aria-label={`${actionLabel} ${leagueLabel} contest`}
-        className="flex min-w-0 flex-1 items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-500"
+        className="flex min-w-0 flex-1 items-center"
       >
         <div className="min-w-0 flex-1">
           <p
@@ -90,18 +88,18 @@ export const ContestListItem = ({
         </button>
       ) : null}
 
-      <Link
+      <Button
         to={to}
         state={eventShell ? contestLobbyLinkState(eventShell, contest) : undefined}
+        variant={isPast ? "neutral" : "primary"}
         className={cn(
-          actionButtonClassName,
-          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
-          isPast ? "bg-slate-500 group-hover:bg-slate-600" : "bg-blue-500 group-hover:bg-blue-600",
+          "min-w-[5.5rem]",
+          isPast ? "group-hover:bg-slate-600" : "group-hover:bg-blue-600",
         )}
       >
         {actionLabel}
         <ChevronRightIcon className="-ml-0.5 h-4 w-4 shrink-0" aria-hidden />
-      </Link>
+      </Button>
     </div>
   );
 };

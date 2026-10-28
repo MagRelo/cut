@@ -1,3 +1,22 @@
+const plugin = require('tailwindcss/plugin');
+
+/** Keyboard outline on a precise pointer. Touch and mouse clicks stay unoutlined. */
+const focusOutlinePlugin = plugin(function ({ addBase }) {
+  addBase({
+    '*:focus, *:focus-visible': {
+      boxShadow: 'none !important',
+    },
+    '*:focus:not(:focus-visible)': {
+      outline: 'none !important',
+    },
+    '@media (hover: none), (pointer: coarse)': {
+      '*:focus, *:focus-visible': {
+        outline: 'none !important',
+      },
+    },
+  });
+});
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
@@ -70,5 +89,5 @@ module.exports = {
       },
     },
   },
-  plugins: [require('@tailwindcss/forms')],
+  plugins: [require('@tailwindcss/forms'), focusOutlinePlugin],
 };

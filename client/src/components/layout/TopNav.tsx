@@ -21,7 +21,7 @@ import { StagingBadge } from "./StagingBadge";
 import { UserMenu } from "./UserMenu";
 
 const tabLinkBase =
-  "shrink-0 rounded-md px-2.5 py-1.5 text-sm font-medium font-display uppercase tracking-wider transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40";
+  "shrink-0 rounded-md px-2.5 py-1.5 text-sm font-medium font-display uppercase tracking-wider transition-colors";
 
 function tabLinkClass(active: boolean) {
   return [
@@ -50,13 +50,13 @@ function NavTabLink({ tab, pathname }: { tab: (typeof LEFT_TABS)[number]; pathna
 }
 
 const overflowItemClass =
-  "block w-full px-4 py-2 text-left text-sm font-display text-slate-700 data-[focus]:bg-slate-50";
+  "block w-full px-4 py-2 text-left text-sm font-display text-slate-700 focus:outline-none data-[focus]:bg-slate-50";
 
 function DesktopOverflowMenu() {
   return (
     <Menu as="div" className="relative shrink-0">
       <MenuButton
-        className="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+        className="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
         aria-label="More"
       >
         <Bars3Icon className="h-5 w-5" aria-hidden />
@@ -117,7 +117,7 @@ export const TopNav: React.FC = () => {
         <Link
           to="/"
           aria-label={BRAND_PROSE}
-          className="flex shrink-0 items-center gap-1.5 rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+          className="flex shrink-0 items-center gap-1.5 rounded-sm"
         >
           <BrandLogo className="h-9 w-auto" />
           <span className="mt-1.5 font-display text-lg font-medium uppercase leading-none tracking-[0.06em] text-slate-900">

@@ -7,6 +7,7 @@ import {
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router-dom";
+import { Button } from "../components/common/Button";
 import { PageSection } from "../components/layout/PageSection";
 
 export const LEAGUE_STARTER_GUIDE_PATH = "/guides/start-a-league";
@@ -205,12 +206,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
           </ol>
 
           <div className="mt-2 px-4 sm:px-5">
-            <Link
-              to="/leagues/create"
-              className="inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              Create a League
-            </Link>
+            <Button to="/leagues/create">Create a League</Button>
           </div>
         </PageSection>
 

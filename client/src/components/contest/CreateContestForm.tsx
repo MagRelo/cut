@@ -4,6 +4,7 @@ import { useChainId } from "wagmi";
 
 import { type ContestSettings, type CreateContestInput } from "../../types/contest";
 import { contestLobbyPath } from "../../utils/contestRoutes";
+import { Button } from "../common/Button";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useAuth } from "../../contexts/AuthContext";
 import { defaultPaymentTokenSymbol, getTargetChainIdFromEnv } from "../../config/targetChain";
@@ -411,11 +412,7 @@ export const CreateContestForm = () => {
       </div>
 
       <div>
-        <button
-          type="submit"
-          disabled={loading || isProcessing}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed mt-2"
-        >
+        <Button type="submit" block disabled={loading || isProcessing} className="mt-2">
           {loading || isProcessing ? (
             <div className="flex items-center gap-2 w-full justify-center">
               <LoadingSpinnerSmall />
@@ -424,7 +421,7 @@ export const CreateContestForm = () => {
           ) : (
             "Create Contest"
           )}
-        </button>
+        </Button>
       </div>
 
       <div className="mt-2 text-sm text-center text-red-500">

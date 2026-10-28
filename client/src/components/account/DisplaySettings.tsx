@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Button } from "../common/Button";
 import { PageSection } from "../layout/PageSection";
 import { useAuth } from "../../contexts/AuthContext";
 import { ODDS_FORMAT_OPTIONS, parseOddsDisplayFormat } from "../../lib/oddsSettings";
@@ -190,13 +191,9 @@ export function DisplaySettings() {
         <div>
           <hr className="border-gray-200" />
           <div className="flex justify-center pt-4">
-            <button
-              type="submit"
-              disabled={isLoading || !hasChanges}
-              className="inline-block min-w-[120px] rounded border border-blue-500 bg-blue-500 px-3 py-1 font-display text-sm text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-            >
+            <Button type="submit" disabled={isLoading || !hasChanges} className="min-w-[120px]">
               {isLoading ? "Saving..." : "Save"}
-            </button>
+            </Button>
           </div>
         </div>
       </form>
