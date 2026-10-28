@@ -122,7 +122,7 @@ export const UserGroupDetailPage = () => {
   );
 
   const settingsContent = (
-    <PageSection variant="card">
+    <PageSection variant="card" className="!rounded-t-none !border-t-0">
       <UserGroupSettings
         userGroupId={userGroup.id}
         initialData={{
@@ -157,7 +157,9 @@ export const UserGroupDetailPage = () => {
 
       {isAdmin ? (
         <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex} className="pt-2">
-          <TabList className={tabListClassName()}>
+          <TabList
+            className={tabListClassName("!rounded-b-none border-x border-t border-gray-200")}
+          >
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               Contests
             </Tab>
@@ -168,11 +170,9 @@ export const UserGroupDetailPage = () => {
               Settings
             </Tab>
           </TabList>
-          <div className="pt-4">
-            <TabPanel className="focus:outline-none">{contestContent}</TabPanel>
-            <TabPanel className="focus:outline-none">{membersContent}</TabPanel>
-            <TabPanel className="focus:outline-none">{settingsContent}</TabPanel>
-          </div>
+          <TabPanel className="pt-4 focus:outline-none">{contestContent}</TabPanel>
+          <TabPanel className="focus:outline-none">{membersContent}</TabPanel>
+          <TabPanel className="focus:outline-none">{settingsContent}</TabPanel>
         </TabGroup>
       ) : (
         <div className="pt-4">{contestContent}</div>
