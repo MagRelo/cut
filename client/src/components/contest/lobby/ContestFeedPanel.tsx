@@ -178,6 +178,9 @@ const StreamContestFeed: React.FC<{
   }
 
   if (isLoading && activities.length === 0) {
+    if (parseContestCommentaryFeedItems(contest.commentaryFeed).length > 0) {
+      return <JsonFallbackFeed contest={contest} currentUserId={currentUserId} />;
+    }
     return (
       <div className="rounded-sm border border-slate-200 bg-slate-50 p-6 text-center font-display">
         <p className="text-sm text-slate-600">Loading Cutbot updates…</p>
@@ -217,26 +220,19 @@ export const ContestFeedPanel: React.FC<ContestFeedPanelProps> = ({
   currentUserId,
   isLoading = false,
 }) => {
-  return (
-    <div className="space-y-3 font-display">
-      <div className="space-y-2">
-        <h2 className="m-0 font-display text-xl font-bold uppercase tracking-[0.1em] text-slate-400 sm:text-2xl">
-          Live Updates
-        </h2>
-        {isLoading ? (
-          <div className="rounded-sm border border-slate-200 bg-slate-50 p-6 text-center font-display">
-            <p className="text-sm text-slate-600">Loading Cutbot updates…</p>
-          </div>
-        ) : streamClient ? (
-          <StreamContestFeed
-            contest={contest}
-            client={streamClient}
-            currentUserId={currentUserId}
-          />
-        ) : (
-          <JsonFallbackFeed contest={contest} currentUserId={currentUserId} />
-        )}
+  if (isLoading) {
+    return (
+      <div className="rounded-sm border border-slate-200 bg-slate-50 p-6 text-center font-display">
+        <p className="text-sm text-slate-600">Loading Cutbot updates…</p>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (streamClient) {
+    return (
+      <StreamContestFeed contest={contest} client={streamClient} currentUserId={currentUserId} />
+    );
+  }
+
+  return <JsonFallbackFeed contest={contest} currentUserId={currentUserId} />;
 };

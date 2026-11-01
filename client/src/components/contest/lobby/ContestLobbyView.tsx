@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
 import { type Contest, type TimelineData } from "../../../types/contest";
@@ -35,6 +35,17 @@ export interface ContestLobbyViewProps {
   isTimelineLoading?: boolean;
 }
 
+/** True when dropping a temporary min-height would not pull the window upward. */
+function canReleasePanelMinHeight(wrapper: HTMLElement, lockedHeight: number): boolean {
+  const inner = wrapper.firstElementChild;
+  if (!(inner instanceof HTMLElement)) return false;
+  const innerHeight = inner.offsetHeight;
+  if (innerHeight >= lockedHeight) return true;
+  const excess = lockedHeight - innerHeight;
+  const maxScrollIfReleased = document.documentElement.scrollHeight - excess - window.innerHeight;
+  return window.scrollY <= maxScrollIfReleased + 1;
+}
+
 function tabIndexFromQuery(
   tab: string | null,
   layout: ContestLobbyViewModel["layout"],
@@ -63,15 +74,38 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   }, [searchParams, viewModel.layout]);
 
   const [selectedIndex, setSelectedIndex] = useState(initialTabIndex);
+  const panelsRef = useRef<HTMLDivElement>(null);
+  const [panelMinHeight, setPanelMinHeight] = useState<number | null>(null);
 
   useEffect(() => {
     setSelectedIndex(initialTabIndex);
   }, [viewModel.layout.layoutKey, initialTabIndex]);
 
+  useLayoutEffect(() => {
+    const wrapper = panelsRef.current;
+    if (!wrapper || panelMinHeight == null) return;
+
+    const releaseIfSafe = () => {
+      if (canReleasePanelMinHeight(wrapper, panelMinHeight)) {
+        setPanelMinHeight(null);
+      }
+    };
+
+    releaseIfSafe();
+    const inner = wrapper.firstElementChild;
+    if (!(inner instanceof HTMLElement)) return;
+    const observer = new ResizeObserver(releaseIfSafe);
+    observer.observe(inner);
+    return () => observer.disconnect();
+  }, [selectedIndex, panelMinHeight]);
+
   const { client: streamClient } = useStreamFeedsSession();
   const { unreadCount, markContestMentionsRead } = useContestMentionBadge(streamClient, contest.id);
 
   const handleTabChange = (index: number) => {
+    if (index === selectedIndex) return;
+    const height = panelsRef.current?.offsetHeight ?? 0;
+    setPanelMinHeight(height > 0 ? height : null);
     setSelectedIndex(index);
   };
 
@@ -181,6 +215,10 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
               ) : null}
             </TabList>
 
+            <div
+              ref={panelsRef}
+              style={panelMinHeight != null ? { minHeight: panelMinHeight } : undefined}
+            >
             <TabPanels>
               {viewModel.layout.showLineupsTab && fieldSportId ? (
                 <TabPanel className="p-4 focus:outline-none">
@@ -217,7 +255,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
               ) : null}
 
               {viewModel.layout.showFeedTab ? (
-                <TabPanel className="p-4 focus:outline-none">
+                <TabPanel unmount={false} className="p-4 focus:outline-none">
                   <ContestFeedPanel
                     contest={contest}
                     streamClient={streamClient}
@@ -233,6 +271,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                 </TabPanel>
               ) : null}
             </TabPanels>
+            </div>
           </TabGroup>
         </div>
 
