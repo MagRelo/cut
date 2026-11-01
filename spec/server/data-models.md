@@ -156,4 +156,4 @@ Stored on `CompetitionEvent.metadata` and `Participant.metadata`:
 | `pgaTourId` | External id alias |
 | Participant `pga_firstName` / rankings | Candidate display |
 
-Tournament preview: `CompetitionEvent.metadata.summarySections` (written by golf `script:golf-event-summary` / auto-init, and by the commodities week brief). `summaryAttemptAt` is the last failed golf preview attempt.
+Tournament preview: `CompetitionEvent.metadata.summarySections` (written by golf `script:golf-event-summary` / auto-init, and by the commodities week brief). `summaryAttemptAt` is the last failed preview attempt for either sport. A retry waits 3 hours.

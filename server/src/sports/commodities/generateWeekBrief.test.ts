@@ -112,6 +112,7 @@ describe("generateCommoditiesWeekBrief", () => {
     ]);
     expect(mocks.findMany).not.toHaveBeenCalled();
     expect(mocks.prepare).toHaveBeenCalledWith("evt");
+    expect(mocks.update.mock.calls[0]?.[0]?.data?.metadata?.summaryAttemptAt).toBeUndefined();
   });
 
   it("writes best and worst from the prior event, including ties", async () => {
@@ -187,11 +188,34 @@ describe("generateCommoditiesWeekBrief", () => {
     expect(stories.items[3].body).toContain("3-1");
   });
 
-  it("does not save when the draft stays invalid", async () => {
+  it("records a backoff timestamp when generation fails", async () => {
     const generator = {
       generate: async () => newsJson(2),
     };
     await expect(generateCommoditiesWeekBrief("evt", { generator })).rejects.toThrow(/5–8/);
-    expect(mocks.update).not.toHaveBeenCalled();
+    const written = mocks.update.mock.calls.at(-1)?.[0]?.data?.metadata;
+    expect(typeof written.summaryAttemptAt).toBe("string");
+    expect(written.summarySections).toBeUndefined();
+  });
+
+  it("skips a recent failed attempt unless force is set", async () => {
+    mocks.findFirst.mockResolvedValue({
+      ...eventRow,
+      metadata: {
+        ...eventRow.metadata,
+        summaryAttemptAt: new Date().toISOString(),
+      },
+    });
+    const generate = vi.fn(async () => newsJson());
+    await expect(
+      generateCommoditiesWeekBrief("evt", { generator: { generate } }),
+    ).resolves.toBe("skipped");
+    expect(generate).not.toHaveBeenCalled();
+
+    await expect(
+      generateCommoditiesWeekBrief("evt", { generator: { generate }, force: true }),
+    ).resolves.toBe("wrote");
+    expect(generate).toHaveBeenCalled();
+    expect(mocks.update.mock.calls[0]?.[0]?.data?.metadata?.summaryAttemptAt).toBeUndefined();
   });
 });

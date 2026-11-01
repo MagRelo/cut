@@ -23,6 +23,8 @@ import {
 } from "./weekBrief.js";
 import { buildCommoditiesWeekBriefPrompt, type WeekBriefContext } from "./weekBriefPrompt.js";
 
+const SUMMARY_ATTEMPT_BACKOFF_MS = 3 * 60 * 60 * 1000;
+
 export type GenerateCommoditiesWeekBriefOptions = {
   generator?: CommentaryTextGenerator;
   force?: boolean;
@@ -39,6 +41,14 @@ function defaultGenerator(): CommentaryTextGenerator | null {
   const apiKey = process.env.CURSOR_API_KEY?.trim();
   if (!apiKey) return null;
   return new CursorCommentaryTextGenerator({ apiKey });
+}
+
+function attemptIsRecent(metadata: Record<string, unknown>, now = Date.now()): boolean {
+  const raw = metadata.summaryAttemptAt;
+  if (typeof raw !== "string") return false;
+  const at = Date.parse(raw);
+  if (!Number.isFinite(at)) return false;
+  return now - at < SUMMARY_ATTEMPT_BACKOFF_MS;
 }
 
 function weekBriefContext(externalId: string, metadata: unknown): WeekBriefContext {
@@ -98,16 +108,25 @@ async function persistWeekBrief(
   existing: Record<string, unknown>,
   sections: WeekBriefSections,
 ) {
+  const next: Record<string, unknown> = { ...existing, summarySections: sections };
+  delete next.summaryAttemptAt;
+  await prisma.competitionEvent.update({
+    where: { id: eventId },
+    data: { metadata: next as Prisma.InputJsonValue },
+  });
+  await prepareEventAnnouncementEmailSafe(eventId);
+}
+
+async function recordSummaryAttempt(eventId: string, existing: Record<string, unknown>) {
   await prisma.competitionEvent.update({
     where: { id: eventId },
     data: {
       metadata: {
         ...existing,
-        summarySections: sections,
+        summaryAttemptAt: new Date().toISOString(),
       } as Prisma.InputJsonValue,
     },
   });
-  await prepareEventAnnouncementEmailSafe(eventId);
 }
 
 export async function generateCommoditiesWeekBrief(
@@ -127,6 +146,10 @@ export async function generateCommoditiesWeekBrief(
     console.log(`[commodities] Week brief skipped — copy already exists on ${eventId}`);
     return "skipped";
   }
+  if (!options.force && attemptIsRecent(existing)) {
+    console.log(`[commodities] Week brief skipped — last attempt on ${eventId} is still inside the backoff`);
+    return "skipped";
+  }
 
   const generator = options.generator ?? defaultGenerator();
   if (!generator) {
@@ -136,23 +159,39 @@ export async function generateCommoditiesWeekBrief(
 
   const context = weekBriefContext(event.externalId, event.metadata);
 
-  const locked = await tryWithCommentaryLlmLock(async () => {
-    const draft = await draftWeekBrief(generator, context);
-    const lastWeek = await loadLastWeekSection(event.externalId);
-    const assembled = assembleWeekBrief(draft, lastWeek);
-    await persistWeekBrief(event.id, existing, assembled);
-    return assembled;
-  });
+  let attempted = false;
+  try {
+    const locked = await tryWithCommentaryLlmLock(async () => {
+      attempted = true;
+      const draft = await draftWeekBrief(generator, context);
+      const lastWeek = await loadLastWeekSection(event.externalId);
+      const assembled = assembleWeekBrief(draft, lastWeek);
+      await persistWeekBrief(event.id, existing, assembled);
+      return assembled;
+    });
 
-  if (locked == null) {
-    console.log("[commodities] Week brief skipped — commentary LLM is busy");
-    return "skipped";
+    if (locked == null) {
+      console.log("[commodities] Week brief skipped — commentary LLM is busy");
+      return "skipped";
+    }
+
+    console.log(
+      `[commodities] Wrote summarySections (${locked.length} sections) to event ${event.id}`,
+    );
+    return "wrote";
+  } catch (error) {
+    if (attempted) {
+      try {
+        await recordSummaryAttempt(event.id, existing);
+      } catch (recordError) {
+        console.error(
+          `[commodities] Failed to record week brief attempt for ${eventId}:`,
+          recordError instanceof Error ? recordError.message : recordError,
+        );
+      }
+    }
+    throw error;
   }
-
-  console.log(
-    `[commodities] Wrote summarySections (${locked.length} sections) to event ${event.id}`,
-  );
-  return "wrote";
 }
 
 async function draftWeekBrief(
@@ -194,4 +233,15 @@ export async function generateCommoditiesWeekBriefSafe(
       error instanceof Error ? error.message : error,
     );
   }
+}
+
+/** Overview retry: write a brief for the active commodities event when copy is missing. */
+export async function refreshMissingCommoditiesWeekBrief(): Promise<void> {
+  const event = await prisma.competitionEvent.findFirst({
+    where: { sportId: COMMODITIES_SPORT_ID, isActive: true },
+    select: { id: true, metadata: true },
+  });
+  if (!event) return;
+  if (parseWeekBriefSections(summarySectionsFromMetadata(event.metadata))) return;
+  await generateCommoditiesWeekBriefSafe(event.id);
 }

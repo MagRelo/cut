@@ -100,13 +100,14 @@ Uses `SportModule.shouldActivateContest` / `shouldSettleContest` via event statu
 
 ## Overview pipeline (`*/20`)
 
-Runs two sport-specific overview refreshers under the shared commentary LLM mutex (skips a pass if the lock is held). Those refreshers require `CONTEST_COMMENTARY_ENABLED=true` and `CURSOR_API_KEY`. The same pipeline also fills a missing golf event preview.
+Runs two sport-specific overview refreshers under the shared commentary LLM mutex (skips a pass if the lock is held). Those refreshers require `CONTEST_COMMENTARY_ENABLED=true` and `CURSOR_API_KEY`. The same pipeline also fills a missing golf event preview and a missing commodities week brief.
 
 | Refresher | Sport | Behavior |
 | --- | --- | --- |
 | `refreshContestOverviews` | PGA Golf | Refresh `Contest.commentary` for entered `ACTIVE`/`LOCKED` contests on LIVE events when missing or ≥ 20 minutes old |
 | `refreshCommoditiesContestOverviews` | Commodities | Refresh `Contest.commentary` when a trading day has newly settled (idempotent vs that day’s session close) for `ACTIVE`/`LOCKED`/`SETTLED` contests on the active event |
 | `refreshMissingGolfEventSummary` | PGA Golf | When the active golf event has no `summarySections`, run the event-summary generator. Skips until the DataGolf win board matches. A failed attempt waits 3 hours. Does not require `CONTEST_COMMENTARY_ENABLED`. |
+| `refreshMissingCommoditiesWeekBrief` | Commodities | When the active commodities event has no `summarySections`, run the week-brief generator. A failed attempt waits 3 hours. Does not require `CONTEST_COMMENTARY_ENABLED`. |
 
 These refreshers do not generate feed items.
 
@@ -145,6 +146,8 @@ Detect path (`detectAndEnqueueContestFeed`) advances `lastHoleState` / `lastCont
 | Other days | — | No-op |
 
 After a successful golf init, the job writes `CompetitionEvent.metadata.summarySections` when copy is missing and the DataGolf win board matches this event. The generator researches current reporting and stamps sportsbook prices from that board. If the board does not match yet, nothing is written; the overview pipeline retries. A failed attempt waits 3 hours. Init succeeds even if copy generation fails. Manual rewrite: `pnpm --filter server run script:golf-event-summary <pgaTourId> [--force]`.
+
+After a commodities init, the same job writes `summarySections` when copy is missing. If that write fails, or the week already exists without copy, the overview pipeline retries. A failed attempt waits 3 hours. Manual rewrite: `pnpm --filter server run script:commodities-week-brief <YYYY-Www> [--force]`.
 
 CLI (same resolver; ignores weekday):
 

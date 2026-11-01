@@ -17,7 +17,7 @@ Pass script arguments **directly** — do **not** insert `--` before them. Use `
 | **Sport** | `commodities` |
 | **externalId** | ISO week `YYYY-Www` — e.g. `2026-W27` |
 | **Init command** | Auto: Saturday 10:00 ET via cron. Manual: `pnpm --filter server run service:init-next-event commodities` or `pnpm --filter server run service:init-event commodities 2026-W27` |
-| **Week brief** | Saturday auto-init writes `metadata.summarySections` when `CURSOR_API_KEY` is set. Manual: `pnpm --filter server run script:commodities-week-brief 2026-W42` (`--force` to replace) |
+| **Week brief** | Saturday auto-init writes `metadata.summarySections` when `CURSOR_API_KEY` is set. The overview pipeline retries a missing brief; a failed draft waits 3 hours. Manual: `pnpm --filter server run script:commodities-week-brief 2026-W42` (`--force` to replace) |
 | **Custom window** | `… commodities 2026-W27 --open +2m --close +62m` (local eval) |
 | **Local cleanup** | `pnpm --filter server run script:commodities-cleanup-local` |
 | **Enable sport** | Seed sets `isEnabled: false`; flip in Prisma Studio or use `script:commodities-local-eval` |
@@ -122,9 +122,9 @@ Verify:
 
 ### 4b. Week brief
 
-Saturday auto-init writes the contest announcement copy onto `CompetitionEvent.metadata.summarySections` when `CURSOR_API_KEY` is set, then refreshes `metadata.emailAnnouncement`. One research draft is saved. Last week’s best and worst are filled from the previous session’s scores. Init still succeeds if that write fails. Local eval inits do not generate a brief.
+Saturday auto-init writes the contest announcement copy onto `CompetitionEvent.metadata.summarySections` when `CURSOR_API_KEY` is set, then refreshes `metadata.emailAnnouncement`. One research draft is saved. Last week’s best and worst are filled from the previous session’s scores. Init still succeeds if that write fails. The overview pipeline retries the active event when that copy is missing. A failed draft waits 3 hours via `summaryAttemptAt`. A missing API key or a busy commentary lock does not stamp an attempt. Local eval inits do not generate a brief.
 
-The brief is three parts: an Event Blurb that ends on its own line with “Those stories—and a few surprises—this week on Planet Earth.”, Last week’s best and worst candidates from the previous session’s `EventParticipant.total` (omitted when that event or its scores are missing), and 5–8 Top Stories for the week ahead, each 2–3 sentences. The stories are a wide mix — politics, weather, sports, pop culture — written funny. Four of them name a clear hit on the contest field. One to three are just the story, with no field aside. The announcement email shows the blurb on the card, Last week above the contest button, and Top Stories below it.
+The brief is three parts: an Event Blurb that ends on its own line with “Those stories—and a few surprises—this week on Planet Earth.”, Last week’s best and worst candidates from the previous session’s `EventParticipant.total` (omitted when that event or its scores are missing), and 5–8 Top Stories for the week ahead, each 2–3 sentences. The stories are a wide mix — politics, weather, sports, pop culture — written funny. Four of them name a clear hit on the contest field. One to three are just the story, with no field aside. That copy is the announcement card, the in-app Tournament Preview while the session is scheduled, and the contest announcement email. The preview shows the blurb, Last week, and Top Stories. The email shows the blurb on the card, Last week above the contest button, and Top Stories below it.
 
 Rewrite an existing week:
 

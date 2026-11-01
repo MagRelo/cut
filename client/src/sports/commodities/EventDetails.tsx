@@ -1,3 +1,4 @@
+import { NewspaperIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import {
   commoditiesEventStatusFromMetadata,
@@ -15,6 +16,7 @@ import {
 } from "../../components/platform/EventLeaderboardLink";
 import { formatCommoditiesEventStatusLabel, formatCommoditySessionWindow } from "./commodityUtils";
 import {
+  eventHeaderActionLinkClassName,
   eventHeaderMetaRowClassName,
   eventHeaderPrimaryLineClassName,
   eventHeaderTitleClassName,
@@ -25,12 +27,16 @@ import {
 interface CommodityEventDetailsProps {
   event: CompetitionEventShell;
   className?: string;
+  hasSummary?: boolean;
+  onOpenSummary?: () => void;
   tone?: EventHeaderTone;
 }
 
 export function CommodityEventDetails({
   event,
   className = "",
+  hasSummary = false,
+  onOpenSummary,
   tone = "hero",
 }: CommodityEventDetailsProps) {
   const meta =
@@ -48,20 +54,27 @@ export function CommodityEventDetails({
   );
   const startDate = commodities?.sessionOpen?.trim() || null;
   const showCountdown = shouldShowEventCountdown(startDate, statusValue);
+  const isScheduled = statusValue === "SCHEDULED";
+  const showPreview = isScheduled && hasSummary && Boolean(onOpenSummary);
   const onLeaderboardPage = useIsOnEventLeaderboard(event);
+  const showLeaderboardLink = !showPreview && !onLeaderboardPage;
   const leaderboardTo = leaderboardPath(event.sportId, event.id);
   const leaderboardState = leaderboardLinkState(event);
 
   return (
     <div className={["font-display text-sm leading-snug", className].filter(Boolean).join(" ")}>
       <h1 className={eventHeaderTitleClassName(tone)}>
-        <Link
-          to={leaderboardTo}
-          state={leaderboardState}
-          className={eventHeaderTitleLinkClassName(tone)}
-        >
-          {name}
-        </Link>
+        {showPreview ? (
+          <span>{name}</span>
+        ) : (
+          <Link
+            to={leaderboardTo}
+            state={leaderboardState}
+            className={eventHeaderTitleLinkClassName(tone)}
+          >
+            {name}
+          </Link>
+        )}
       </h1>
 
       <div className="mt-0.5 flex w-full flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -78,11 +91,22 @@ export function CommodityEventDetails({
         )}
       </div>
 
-      {onLeaderboardPage ? null : (
+      {showPreview || showLeaderboardLink ? (
         <div className={eventHeaderMetaRowClassName(tone)}>
-          <EventLeaderboardLink event={event} />
+          {showPreview ? (
+            <button
+              type="button"
+              onClick={onOpenSummary}
+              className={`${eventHeaderActionLinkClassName(tone)} font-medium`}
+            >
+              <NewspaperIcon className="h-4 w-4 shrink-0" aria-hidden />
+              Tournament Preview
+            </button>
+          ) : (
+            <EventLeaderboardLink event={event} />
+          )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
