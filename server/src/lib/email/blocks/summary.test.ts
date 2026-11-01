@@ -22,11 +22,31 @@ describe("renderBodySummarySectionsHtml", () => {
     expect(html).toContain("border-top:1px solid #e4e4e7;");
   });
 
-  it("keeps short labeled results on one bullet line", () => {
+  it("lays last week out as icon, name, change, and points", () => {
     const html = renderBodySummarySectionsHtml([
       {
         key: "Last week",
         title: "Last week",
+        kind: "bullets",
+        items: [{ label: "Natural Gas", body: "Best — +109 pts, +11.2% on the week" }],
+      },
+    ]);
+
+    expect(html).toContain("Last week best/worst");
+    expect(html).not.toContain("&#8226;");
+    expect(html).toContain("/commodities/avatars/natural-gas.png");
+    expect(html).toContain("Natural Gas");
+    expect(html).toContain("+11.20%");
+    expect(html).toContain(">109<");
+    expect(html).toContain("PTS");
+    expect(html).not.toContain("Best —");
+  });
+
+  it("keeps other labeled results on one bullet line", () => {
+    const html = renderBodySummarySectionsHtml([
+      {
+        key: "Notes",
+        title: "Notes",
         kind: "bullets",
         items: [{ label: "Natural Gas", body: "Best — +109 pts, +11.2% on the week" }],
       },

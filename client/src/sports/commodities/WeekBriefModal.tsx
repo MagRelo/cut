@@ -1,10 +1,13 @@
 import { Fragment } from "react";
+import { COMMODITY_METADATA_ALLOWLIST } from "@cut/sport-commodities";
 import { formatInTimeZone } from "date-fns-tz";
 import { Modal } from "../../components/common/Modal";
+import { CommodityAvatar } from "./CommodityAvatar";
 
 const ET = "America/New_York";
 const EVENT_BLURB_TITLE = "event blurb";
 const LAST_WEEK_TITLE = "last week";
+const LAST_WEEK_HEADING = "Last week best/worst";
 const TOP_STORIES_TITLE = "top stories";
 const SIGN_OFF_EMPHASIS = "this week on Planet Earth.";
 
@@ -104,25 +107,79 @@ function EventBlurb({ body }: { body: string }) {
 
 function sectionHeading(title: string) {
   return (
-    <h2 className="font-display text-sm font-bold uppercase tracking-wide text-zinc-900">{title}</h2>
+    <h2 className="mb-5 font-display text-sm font-bold uppercase tracking-wide text-zinc-900">{title}</h2>
   );
+}
+
+function parseLastWeekStats(body: string): { points: number | null; pct: number | null } {
+  const pointsMatch = body.match(/([+-]?\d+(?:\.\d+)?)\s*pts/i);
+  const pctMatch = body.match(/([+-]?\d+(?:\.\d+)?)\s*%/);
+  const points = pointsMatch ? Number(pointsMatch[1]) : null;
+  const pct = pctMatch ? Number(pctMatch[1]) : null;
+  return {
+    points: points != null && Number.isFinite(points) ? points : null,
+    pct: pct != null && Number.isFinite(pct) ? pct : null,
+  };
+}
+
+function formatLastWeekPoints(value: number | null): string {
+  if (value == null) return "—";
+  return String(Math.round(value));
+}
+
+function formatLastWeekChange(value: number | null): string {
+  if (value == null) return "—";
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${value.toFixed(2)}%`;
 }
 
 function LastWeekSection({ section }: { section: BriefSection }) {
   return (
-    <section className="space-y-2">
-      {sectionHeading(section.title)}
-      <ul className="space-y-2 pl-4 text-sm leading-relaxed text-zinc-700">
-        {section.items.map((item) => {
-          const label = item.label?.trim();
+    <section>
+      {sectionHeading(LAST_WEEK_HEADING)}
+      <div>
+        {section.items.map((item, index) => {
+          const name = item.label?.trim() || "Contract";
+          const stats = parseLastWeekStats(item.body);
+          const entry = COMMODITY_METADATA_ALLOWLIST.find(
+            (candidate) => candidate.displayName.toLowerCase() === name.toLowerCase(),
+          );
+          const changeClass =
+            stats.pct == null
+              ? "text-gray-400"
+              : stats.pct >= 0
+                ? "text-emerald-600"
+                : "text-red-600";
           return (
-            <li key={`${label ?? ""}-${item.body.slice(0, 24)}`} className="list-disc">
-              {label ? <span className="font-semibold text-zinc-900">{label} </span> : null}
-              {item.body}
-            </li>
+            <div
+              key={`${name}-${item.body.slice(0, 24)}`}
+              className={`grid grid-cols-[2.25rem_minmax(0,1fr)_4.5rem_3.25rem] items-center gap-x-3 ${
+                index === 0 ? "pb-3" : "border-t border-zinc-200 py-3"
+              }`}
+            >
+              <CommodityAvatar
+                displayName={name}
+                iconKey={entry?.iconKey}
+                sector={entry?.sector}
+              />
+              <div className="truncate font-display text-lg font-semibold leading-tight text-gray-900">
+                {name}
+              </div>
+              <div className={`text-right text-xs font-medium tabular-nums ${changeClass}`}>
+                {formatLastWeekChange(stats.pct)}
+              </div>
+              <div className="text-center">
+                <div className="font-display text-xl font-bold leading-none tabular-nums text-gray-900">
+                  {formatLastWeekPoints(stats.points)}
+                </div>
+                <div className="mt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500">
+                  PTS
+                </div>
+              </div>
+            </div>
           );
         })}
-      </ul>
+      </div>
     </section>
   );
 }
@@ -137,7 +194,7 @@ function TopStoriesSection({ section }: { section: BriefSection }) {
           return (
             <div
               key={`${label ?? ""}-${item.body.slice(0, 24)}`}
-              className={index === 0 ? "pt-1" : "mt-4 border-t border-zinc-200 pt-4"}
+              className={index === 0 ? "" : "mt-4 border-t border-zinc-200 pt-4"}
             >
               {label ? (
                 <h3 className="font-display text-base font-bold leading-snug text-zinc-900">{label}</h3>

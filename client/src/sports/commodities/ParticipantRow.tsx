@@ -8,7 +8,7 @@ import {
   formatPctReturn,
   parseCommodityCandidateMetadata,
 } from "./commodityUtils";
-import { sectorColor, sectorLabel } from "./utils";
+import { sectorLabel } from "./utils";
 
 type CommodityParticipantRowProps = ParticipantRowProps & {
   rowTrailing?: "scorecard" | "share";
@@ -66,13 +66,7 @@ export const CommodityParticipantRow: React.FC<CommodityParticipantRowProps> = (
         <div className="truncate text-md font-semibold leading-tight text-gray-900">
           {candidate.displayName}
         </div>
-        <div className="truncate text-xs text-gray-600">
-          <span
-            className="mr-1 inline-block h-2 w-2 rounded-full"
-            style={{ backgroundColor: sectorColor(participant.sector) }}
-          />
-          {sectorLabel(participant.sector)}
-        </div>
+        <div className="truncate text-xs text-gray-600">{sectorLabel(participant.sector)}</div>
       </div>
     </div>
   );

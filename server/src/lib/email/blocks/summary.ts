@@ -1,6 +1,8 @@
+import { COMMODITY_METADATA_ALLOWLIST } from "@cut/sport-commodities";
 import { splitPlayerOddsLabel } from "@cut/sport-pga-golf";
 import type { EmailAnnouncementSection, EmailAnnouncementSectionItem } from "@cut/sport-sdk";
 import { escapeHtml } from "../escape.js";
+import { getEmailAssetUrl } from "../templates.js";
 import {
   EMPTY_SUMMARY_STYLE,
   FONT_BODY,
@@ -211,6 +213,89 @@ function renderPlayerOddsSectionHtml(section: EmailAnnouncementSection): string 
 </div>`;
 }
 
+const LAST_WEEK_TITLE = /^last week$/i;
+const LAST_WEEK_HEADING = "Last week best/worst";
+
+function isLastWeekSection(section: EmailAnnouncementSection): boolean {
+  return LAST_WEEK_TITLE.test(section.key) || LAST_WEEK_TITLE.test(section.title);
+}
+
+function parseLastWeekStats(body: string): { points: number | null; pct: number | null } {
+  const pointsMatch = body.match(/([+-]?\d+(?:\.\d+)?)\s*pts/i);
+  const pctMatch = body.match(/([+-]?\d+(?:\.\d+)?)\s*%/);
+  const points = pointsMatch ? Number(pointsMatch[1]) : null;
+  const pct = pctMatch ? Number(pctMatch[1]) : null;
+  return {
+    points: points != null && Number.isFinite(points) ? points : null,
+    pct: pct != null && Number.isFinite(pct) ? pct : null,
+  };
+}
+
+function formatLastWeekPoints(value: number | null): string {
+  if (value == null) return "—";
+  return String(Math.round(value));
+}
+
+function formatLastWeekChange(value: number | null): string {
+  if (value == null) return "—";
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${value.toFixed(2)}%`;
+}
+
+function lastWeekChangeColor(value: number | null): string {
+  if (value == null) return "#9ca3af";
+  return value >= 0 ? "#059669" : "#dc2626";
+}
+
+function lastWeekAvatarUrl(name: string): string | null {
+  const entry = COMMODITY_METADATA_ALLOWLIST.find(
+    (candidate) => candidate.displayName.toLowerCase() === name.toLowerCase(),
+  );
+  if (!entry) return null;
+  return getEmailAssetUrl(`/commodities/avatars/${entry.iconKey}.png`);
+}
+
+function renderLastWeekRowHtml(
+  item: EmailAnnouncementSectionItem,
+  index: number,
+): string {
+  const name = item.label?.trim() || "Contract";
+  const stats = parseLastWeekStats(item.body);
+  const avatarUrl = lastWeekAvatarUrl(name);
+  const avatar = avatarUrl
+    ? `<img src="${escapeHtml(avatarUrl)}" width="36" height="36" alt="" style="display:block;width:36px;height:36px;border-radius:18px;object-fit:cover;" />`
+    : `<div style="width:36px;height:36px;border-radius:18px;background-color:#f4f4f5;font-family:${FONT_DISPLAY};font-size:13px;font-weight:600;line-height:36px;text-align:center;color:#71717a;">${escapeHtml(name.slice(0, 1).toUpperCase())}</div>`;
+  const rule = index === 0 ? "" : "border-top:1px solid #e4e4e7;";
+  const padTop = index === 0 ? "4px" : "12px";
+  const iconCell = `padding:${padTop} 12px 12px 0;${rule}width:48px;`;
+  const nameCell = `padding:${padTop} 12px 12px 0;${rule}`;
+  const statCell = `padding:${padTop} 0 12px;${rule}`;
+
+  return `<tr>
+    <td width="48" valign="middle" style="${iconCell}">${avatar}</td>
+    <td valign="middle" style="${nameCell}">
+      <p style="margin:0;font-family:${FONT_DISPLAY};font-size:18px;font-weight:600;line-height:1.2;color:#111827;">${escapeHtml(name)}</p>
+    </td>
+    <td width="72" valign="middle" align="right" style="${statCell}width:72px;padding-right:12px;">
+      <p style="margin:0;font-family:${FONT_BODY};font-size:12px;font-weight:500;line-height:1.3;color:${lastWeekChangeColor(stats.pct)};text-align:right;">${escapeHtml(formatLastWeekChange(stats.pct))}</p>
+    </td>
+    <td width="52" valign="middle" align="right" style="${statCell}width:52px;">
+      <p style="margin:0;font-family:${FONT_DISPLAY};font-size:20px;font-weight:700;line-height:1;color:#111827;text-align:right;">${escapeHtml(formatLastWeekPoints(stats.points))}</p>
+      <p style="margin:2px 0 0;font-family:${FONT_BODY};font-size:10px;font-weight:600;letter-spacing:0.04em;line-height:1;color:#6b7280;text-align:right;">PTS</p>
+    </td>
+  </tr>`;
+}
+
+function renderLastWeekSectionHtml(section: EmailAnnouncementSection): string {
+  const rows = section.items.map((item, index) => renderLastWeekRowHtml(item, index)).join("");
+  return `<div style="margin:0 0 20px;">
+<h2 style="${SECTION_TITLE_STYLE}">${escapeHtml(LAST_WEEK_HEADING)}</h2>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  ${rows}
+</table>
+</div>`;
+}
+
 function renderBulletSectionHtml(section: EmailAnnouncementSection): string {
   const itemsHtml = section.items
     .map((item) => {
@@ -278,6 +363,7 @@ export function renderSummarySectionByKeyHtml(
 
 function renderOneBodySectionHtml(section: EmailAnnouncementSection): string {
   if (section.kind === "prose") return renderStorySectionHtml(section);
+  if (isLastWeekSection(section)) return renderLastWeekSectionHtml(section);
   if (isBestPlayersSection(section)) return renderPlayerOddsSectionHtml(section);
   return renderBulletSectionHtml(section);
 }
