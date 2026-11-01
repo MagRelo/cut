@@ -54,30 +54,32 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
           {description ? (
             <p className="mt-0.5 font-display text-xs leading-relaxed text-gray-600">{description}</p>
           ) : null}
-          <div className="mt-3 flex items-center gap-3">
-            <input
-              id={id}
-              type="range"
-              min={min}
-              max={max}
-              step={step}
-              value={value}
-              disabled={disabled}
-              onChange={(event) => onChange?.(Number(event.target.value))}
-              className="tiebreaker-slider w-full flex-1 disabled:cursor-not-allowed disabled:opacity-50"
-              style={{ "--tiebreaker-fill": `${fillPercent}%` } as React.CSSProperties}
-              aria-valuemin={min}
-              aria-valuemax={max}
-              aria-valuenow={value}
-              aria-valuetext={displayValue}
-            />
-            <span className="w-16 shrink-0 text-right font-display text-lg font-bold tabular-nums leading-none text-gray-900">
+          <div className="mt-3 flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <input
+                id={id}
+                type="range"
+                min={min}
+                max={max}
+                step={step}
+                value={value}
+                disabled={disabled}
+                onChange={(event) => onChange?.(Number(event.target.value))}
+                className="tiebreaker-slider w-full disabled:cursor-not-allowed disabled:opacity-50"
+                style={{ "--tiebreaker-fill": `${fillPercent}%` } as React.CSSProperties}
+                aria-valuemin={min}
+                aria-valuemax={max}
+                aria-valuenow={value}
+                aria-valuetext={displayValue}
+              />
+              <div className="mt-1 flex justify-between font-display text-[10px] font-medium text-gray-500">
+                <span>{formatBound(min)}</span>
+                <span>{formatBound(max)}</span>
+              </div>
+            </div>
+            <span className="flex h-5 w-16 shrink-0 items-center justify-end font-display text-lg font-bold tabular-nums leading-none text-gray-900">
               {displayValue}
             </span>
-          </div>
-          <div className="mt-1 flex justify-between px-0.5 font-display text-[10px] font-medium text-gray-400">
-            <span>{formatBound(min)}</span>
-            <span>{formatBound(max)}</span>
           </div>
         </>
       )}
