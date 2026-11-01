@@ -34,6 +34,8 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
   readOnly = false,
 }) => {
   const displayValue = formatValue(value);
+  const span = max - min;
+  const fillPercent = span > 0 ? Math.min(100, Math.max(0, ((value - min) / span) * 100)) : 0;
 
   return (
     <div className="border-t border-gray-100 p-3">
@@ -62,7 +64,8 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
               value={value}
               disabled={disabled}
               onChange={(event) => onChange?.(Number(event.target.value))}
-              className="h-2 w-full flex-1 accent-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+              className="tiebreaker-slider w-full flex-1 disabled:cursor-not-allowed disabled:opacity-50"
+              style={{ "--tiebreaker-fill": `${fillPercent}%` }}
               aria-valuemin={min}
               aria-valuemax={max}
               aria-valuenow={value}

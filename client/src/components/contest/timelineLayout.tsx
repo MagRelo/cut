@@ -7,7 +7,7 @@ export const TIMELINE_CHART_HEIGHT_PX = 220;
 export const DEFAULT_TIMELINE_TITLE = "Event Timeline";
 
 const timelineFrameClassName =
-  "flex w-full flex-col overflow-hidden rounded-sm border border-gray-300 bg-white font-display";
+  "flex w-full flex-col overflow-hidden bg-white font-display";
 
 interface TimelineFrameProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;

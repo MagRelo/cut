@@ -126,8 +126,8 @@ export const FAQPage: React.FC = () => {
               </li>
               <li>
                 Set the <span className="font-medium">Tie-Breaker</span> at the bottom of the
-                Players tab—your guess at how many Stableford points the winning lineup will score
-                in a contest (1–250). This is not PGA stroke count or course par.
+                Players tab. Your guess at how many championship points the winning lineup will
+                score in a contest (1–250). This is not PGA stroke count or course par.
               </li>
               <li>
                 When the tournament starts, lineups lock—you can no longer change slots or your

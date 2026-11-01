@@ -8,6 +8,8 @@ export const queryKeys = {
     list: () => [...queryKeys.sports.all, "list"] as const,
     activeEvent: (sportId: string) =>
       [...queryKeys.sports.all, "activeEvent", sportId] as const,
+    event: (sportId: string, eventId: string) =>
+      [...queryKeys.sports.all, "event", sportId, eventId] as const,
     candidates: (sportId: string, eventId: string) =>
       [...queryKeys.sports.all, "candidates", sportId, eventId] as const,
   },

@@ -35,7 +35,7 @@ function buildActiveEventResponse(options: ActiveEventFixtureOptions): ActiveEve
         defaultRandomMax: 145,
         label: "Tie-Breaker",
         description:
-          "Used to break ties – Your guess at how many Stableford points the winning lineup will score in this contest.",
+          "Your guess at how many championship points the winning lineup will score in a contest.",
       },
     },
     event: {

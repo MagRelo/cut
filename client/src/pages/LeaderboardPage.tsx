@@ -1,7 +1,5 @@
 import React from "react";
 import { useParams, useSearchParams, useLocation } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
-import type { CompetitionEventShell } from "@cut/sport-sdk";
 import {
   EventCardImage,
   eventCardBodyClassName,
@@ -11,23 +9,21 @@ import {
 import { EventLeaderboardPanel } from "../components/platform/EventLeaderboardPanel";
 import { SportEventHeader } from "../components/platform/SportEventHeader";
 import { ErrorMessage } from "../components/common/ErrorMessage";
-import {
-  getDirectoryEventById,
-  parseLeaderboardNavigationState,
-} from "../lib/contestNavigation";
+import { LoadingSpinner } from "../components/common/LoadingSpinner";
+import { useEventQuery } from "../hooks/useSportData";
+import { parseLeaderboardNavigationState } from "../lib/contestNavigation";
 
 export const LeaderboardPage: React.FC = () => {
   const { sportId, eventId } = useParams<{ sportId: string; eventId: string }>();
   const location = useLocation();
-  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const eventQuery = useEventQuery(sportId, eventId);
 
   const playerIdParam = searchParams.get("playerId");
   const pgaTourIdParam = searchParams.get("pgaTourId");
 
   const navState = parseLeaderboardNavigationState(location.state);
-  const headerEvent: CompetitionEventShell | null =
-    navState?.eventShell ?? (eventId ? getDirectoryEventById(queryClient, eventId) : null);
+  const headerEvent = eventQuery.data ?? navState?.eventShell ?? null;
   const heroImage = useEventCardHeroImage(sportId, headerEvent);
 
   const clearPlayerParams = () => {
@@ -53,14 +49,26 @@ export const LeaderboardPage: React.FC = () => {
             <SportEventHeader sportId={sportId} event={headerEvent} summarySurface="content" />
           </div>
         ) : null}
-        <EventLeaderboardPanel
-          sportId={sportId}
-          eventId={eventId}
-          eventMetadata={headerEvent?.metadata}
-          playerIdParam={playerIdParam}
-          pgaTourIdParam={pgaTourIdParam}
-          onClearPlayerParams={clearPlayerParams}
-        />
+        {headerEvent ? (
+          <EventLeaderboardPanel
+            sportId={sportId}
+            eventId={eventId}
+            eventMetadata={headerEvent.metadata}
+            playerIdParam={playerIdParam}
+            pgaTourIdParam={pgaTourIdParam}
+            onClearPlayerParams={clearPlayerParams}
+          />
+        ) : eventQuery.isLoading ? (
+          <div className="flex min-h-[200px] items-center justify-center">
+            <LoadingSpinner />
+          </div>
+        ) : (
+          <ErrorMessage
+            message={
+              eventQuery.error instanceof Error ? eventQuery.error.message : "Event not found."
+            }
+          />
+        )}
       </div>
     </section>
   );

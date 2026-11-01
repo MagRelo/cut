@@ -43,7 +43,7 @@ export const WithDescription: Story = {
   args: {
     value: 142,
     description:
-      "Used to break ties – Your guess at how many Stableford points the winning lineup will score in this contest.",
+      "Your guess at how many championship points the winning lineup will score in a contest.",
   },
 };
 
@@ -51,7 +51,7 @@ export const WithError: Story = {
   args: {
     value: 142,
     description:
-      "Used to break ties – Your guess at how many Stableford points the winning lineup will score in this contest.",
+      "Your guess at how many championship points the winning lineup will score in a contest.",
     error: "You already have a lineup with these players and winning score prediction for this tournament",
   },
 };

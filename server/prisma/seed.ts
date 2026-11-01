@@ -31,14 +31,17 @@ const PGA_GOLF_SCORING_RULES = {
   popularity: DEFAULT_POPULARITY_RULES,
 };
 
+const TIE_BREAKER_LABEL = "Tie-Breaker";
+const TIE_BREAKER_DESCRIPTION =
+  "Your guess at how many championship points the winning lineup will score in a contest.";
+
 const PGA_GOLF_PREDICTION_RULES = {
   min: 1,
   max: 250,
   defaultRandomMin: 95,
   defaultRandomMax: 145,
-  label: "Tie-Breaker",
-  description:
-    "Used to break ties – Your guess at how many Stableford points the winning lineup will score in this contest.",
+  label: TIE_BREAKER_LABEL,
+  description: TIE_BREAKER_DESCRIPTION,
 };
 
 const F1_ROSTER_RULES = {
@@ -59,9 +62,8 @@ const F1_PREDICTION_RULES = {
   max: 120,
   defaultRandomMin: 45,
   defaultRandomMax: 75,
-  label: "Tie-Breaker (winning lineup pts)",
-  description:
-    "Your guess at how many championship points the winning lineup will score in a contest.",
+  label: TIE_BREAKER_LABEL,
+  description: TIE_BREAKER_DESCRIPTION,
 };
 
 const COMMODITIES_ROSTER_RULES = {
@@ -82,9 +84,8 @@ const COMMODITIES_PREDICTION_RULES = {
   max: 250,
   defaultRandomMin: 40,
   defaultRandomMax: 90,
-  label: "Tie-Breaker (winning lineup pts)",
-  description:
-    "Your guess at the winning lineup's total score in a contest, on the same scale as lineup points.",
+  label: TIE_BREAKER_LABEL,
+  description: TIE_BREAKER_DESCRIPTION,
 };
 
 async function main() {

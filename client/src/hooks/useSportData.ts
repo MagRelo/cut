@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { SportSummary } from "@cut/sport-sdk";
-import type { Candidate } from "@cut/sport-sdk";
+import type { Candidate, CompetitionEventShell, SportSummary } from "@cut/sport-sdk";
 import apiClient from "../utils/apiClient";
 import { ApiError } from "../utils/apiError";
 import { queryKeys } from "../utils/queryKeys";
@@ -36,6 +35,19 @@ export function useActiveEventQuery(sportId: string) {
     refetchOnWindowFocus: true,
     refetchOnMount: "always",
     enabled: Boolean(sportId),
+  });
+}
+
+export function useEventQuery(sportId: string | undefined, eventId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.sports.event(sportId ?? "", eventId ?? ""),
+    queryFn: () =>
+      apiClient.get<CompetitionEventShell>(`/sports/${sportId}/events/${eventId}`),
+    enabled: Boolean(sportId && eventId),
+    staleTime: SERVER_SYNC_INTERVAL_MS,
+    refetchInterval: SERVER_SYNC_INTERVAL_MS,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
   });
 }
 

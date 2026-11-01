@@ -83,7 +83,8 @@ The client runs the same roster + prediction check before save (slot editor and 
 
 **Control:** `SportPredictionField` renders `LineupWinningScoreSlider` from `Sport.predictionRules` (`label`, `description`, `min`, `max`, `displayScale`, `step`). The lineup card passes `sportId`. Rules come from `GET /sports` through `useSportPredictionRules`. While that sport is absent from the catalog, the field renders nothing.
 
-- Labels: golf `"Tie-Breaker"`, F1 and commodities `"Tie-Breaker (winning lineup pts)"`.
+- Label: `"Tie-Breaker"` on every sport.
+- Description: `"Your guess at how many championship points the winning lineup will score in a contest."`
 - Ranges: golf 1–250, F1 1–120, commodities −100–250. Commodities includes negative values because asymmetric loss scoring can produce negative lineup totals.
 
 **Save behavior**

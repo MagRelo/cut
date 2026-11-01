@@ -92,7 +92,8 @@ Higher wins.
 |-------|-------|
 | **Range** | -100 to 250 |
 | **defaultRandom** | 40–90 |
-| **Label** | Tie-Breaker (winning lineup pts) |
+| **Label** | Tie-Breaker |
+| **Description** | Your guess at how many championship points the winning lineup will score in a contest. |
 
 Negative minimum reflects asymmetric loss scoring (lineup totals can be negative).
 
@@ -153,7 +154,8 @@ Static allowlist in `packages/sport-commodities/src/catalog.ts`. Hyperliquid res
     "max": 250,
     "defaultRandomMin": 40,
     "defaultRandomMax": 90,
-    "label": "Tie-Breaker (winning lineup pts)"
+    "label": "Tie-Breaker",
+    "description": "Your guess at how many championship points the winning lineup will score in a contest."
   },
   "isEnabled": false
 }

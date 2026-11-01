@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { getEventCandidates } from "../services/events/getEventCandidates.js";
+import { getEventForSport } from "../services/events/getEvent.js";
 import { getActiveEventForSport } from "../services/events/getActiveEvent.js";
 import { listEnabledSports } from "../services/sports/listEnabledSports.js";
 
@@ -32,6 +33,24 @@ sportsRouter.get("/:sportId/events/active", async (c) => {
   } catch (error) {
     console.error("Error fetching active event:", error);
     return c.json({ error: "Failed to fetch active event" }, 500);
+  }
+});
+
+sportsRouter.get("/:sportId/events/:eventId", async (c) => {
+  try {
+    const sportId = c.req.param("sportId");
+    const eventId = c.req.param("eventId");
+    const event = await getEventForSport(sportId, eventId);
+
+    if (!event) {
+      return c.json({ error: "Event not found for this sport" }, 404);
+    }
+
+    c.header("Cache-Control", "private, no-cache, must-revalidate");
+    return c.json(event);
+  } catch (error) {
+    console.error("Error fetching event:", error);
+    return c.json({ error: "Failed to fetch event" }, 500);
   }
 });
 
