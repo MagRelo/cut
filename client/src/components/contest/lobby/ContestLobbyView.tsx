@@ -153,7 +153,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                 <Tab
                   className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
                 >
-                  Pool
+                  Winner Pool
                 </Tab>
               ) : null}
               {viewModel.layout.showFeedTab ? (
@@ -167,7 +167,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                         className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500"
                       />
                     ) : null}
-                    Cutbot
+                    Commentary
                     {hasUnreadMentions ? <span className="sr-only">, unread mentions</span> : null}
                   </span>
                 </Tab>

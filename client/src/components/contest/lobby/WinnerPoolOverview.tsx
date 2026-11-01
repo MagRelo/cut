@@ -17,7 +17,7 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest,
 
   return (
     <div className="space-y-2 font-display">
-      <div className="overflow-hidden rounded-sm border border-blue-200 bg-gradient-to-tl from-blue-100 via-blue-50 to-white p-3">
+      <div className="overflow-hidden rounded-sm bg-white">
         <h2 className="flex items-center gap-1.5 text-lg font-semibold text-slate-900">
           <BrandLogo className="h-6 w-auto shrink-0" />
           Winner Pool
@@ -35,7 +35,7 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest,
         ) : (
           <>
             <p className="text-sm leading-relaxed text-slate-600">
-              Live prediction market - predict the winner of the contest.
+              Bet on which lineup will win the contest.
             </p>
             <Link to="/faq#winner-pool" className="text-sm font-medium text-blue-500">
               How it works →
