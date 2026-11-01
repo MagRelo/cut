@@ -65,7 +65,7 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
               disabled={disabled}
               onChange={(event) => onChange?.(Number(event.target.value))}
               className="tiebreaker-slider w-full flex-1 disabled:cursor-not-allowed disabled:opacity-50"
-              style={{ "--tiebreaker-fill": `${fillPercent}%` }}
+              style={{ "--tiebreaker-fill": `${fillPercent}%` } as React.CSSProperties}
               aria-valuemin={min}
               aria-valuemax={max}
               aria-valuenow={value}
