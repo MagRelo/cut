@@ -10,15 +10,95 @@ import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 const joinActionsFooterClassName = "border-t border-gray-200 bg-slate-50 px-3 py-2.5 font-display";
 
+const statusBarClassName =
+  "flex w-full items-center justify-center gap-1.5 py-1 text-sm font-semibold text-slate-900";
+
+const leaveButtonClassName =
+  "inline-flex h-10 w-full items-center justify-center rounded border border-slate-300 bg-white px-4 text-sm font-medium text-slate-500 transition-colors hover:border-slate-400 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50";
+
 const EnteredInContestLabel = () => (
-  <div
-    role="status"
-    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-200 px-4 py-2.5 font-display text-sm font-semibold text-slate-800"
-  >
+  <div role="status" className={statusBarClassName}>
     <CheckIcon className="h-5 w-5 shrink-0 text-emerald-600" strokeWidth={2.5} aria-hidden />
     Entered in this contest
   </div>
 );
+
+export interface ContestLineupJoinFooterProps {
+  entered: boolean;
+  canJoin: boolean;
+  canLeave: boolean;
+  isProcessing: boolean;
+  hasPlayers: boolean;
+  depositLoading: boolean;
+  /** Shown after "Enter Contest - ", e.g. "$10" or "Free". */
+  depositLabel: string;
+  onJoin: () => void;
+  onLeave: () => void;
+}
+
+/** Entered / not-entered strip at the bottom of a lineup card. */
+export const ContestLineupJoinFooter: React.FC<ContestLineupJoinFooterProps> = ({
+  entered,
+  canJoin,
+  canLeave,
+  isProcessing,
+  hasPlayers,
+  depositLoading,
+  depositLabel,
+  onJoin,
+  onLeave,
+}) => {
+  if (!entered && !canJoin) {
+    return null;
+  }
+
+  if (entered) {
+    return (
+      <div className={joinActionsFooterClassName}>
+        <div className="mt-1 space-y-2.5">
+          <EnteredInContestLabel />
+          {canLeave ? (
+            <button
+              type="button"
+              onClick={onLeave}
+              disabled={isProcessing}
+              className={leaveButtonClassName}
+            >
+              {isProcessing ? (
+                <span className="flex items-center justify-center gap-2">
+                  <LoadingSpinnerSmall color="gray" />
+                  Confirming...
+                </span>
+              ) : (
+                "Leave Contest"
+              )}
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={joinActionsFooterClassName}>
+      <Button
+        type="button"
+        block
+        onClick={onJoin}
+        disabled={!hasPlayers || isProcessing || depositLoading}
+      >
+        {isProcessing ? (
+          <span className="flex items-center justify-center gap-2">
+            <LoadingSpinnerSmall />
+            Confirming...
+          </span>
+        ) : (
+          `Enter Contest - ${depositLabel}`
+        )}
+      </Button>
+    </div>
+  );
+};
 
 type ContestLineupEntry = ReturnType<typeof useContestLineupEntry>;
 
@@ -42,56 +122,21 @@ export const ContestLineupJoinActions: React.FC<ContestLineupJoinActionsProps> =
   const canJoin = canAddPrimaryPosition(status);
   const canLeave = canRemovePrimaryPosition(status);
 
-  let footer: React.ReactNode = null;
+  const footer = (
+    <ContestLineupJoinFooter
+      entered={isEntered}
+      canJoin={canJoin}
+      canLeave={canLeave}
+      isProcessing={isProcessing}
+      hasPlayers={entry.hasPlayers(lineupId)}
+      depositLoading={entry.isPrimaryDepositLoading}
+      depositLabel={entry.joinPrimaryDepositLabel}
+      onJoin={() => void entry.handleJoinContest(lineupId)}
+      onLeave={() => void entry.handleLeaveContest(lineupId)}
+    />
+  );
 
-  if (isEntered) {
-    footer = (
-      <div className={joinActionsFooterClassName}>
-        <div className="mt-1 space-y-2.5">
-          <EnteredInContestLabel />
-          {canLeave ? (
-            <button
-              type="button"
-              onClick={() => void entry.handleLeaveContest(lineupId)}
-              disabled={isProcessing}
-              className="mx-auto block py-1 font-display text-sm font-medium text-slate-600 underline-offset-2 hover:text-slate-900 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isProcessing ? (
-                <span className="flex items-center justify-center gap-2">
-                  <LoadingSpinnerSmall />
-                  Confirming...
-                </span>
-              ) : (
-                "Leave Contest"
-              )}
-            </button>
-          ) : null}
-        </div>
-      </div>
-    );
-  } else if (canJoin) {
-    footer = (
-      <div className={joinActionsFooterClassName}>
-        <Button
-          type="button"
-          block
-          onClick={() => void entry.handleJoinContest(lineupId)}
-          disabled={!entry.hasPlayers(lineupId) || isProcessing || entry.isPrimaryDepositLoading}
-        >
-          {isProcessing ? (
-            <span className="flex items-center justify-center gap-2">
-              <LoadingSpinnerSmall />
-              Confirming...
-            </span>
-          ) : (
-            `Enter Contest - ${entry.joinPrimaryDepositLabel}`
-          )}
-        </Button>
-      </div>
-    );
-  }
-
-  if (!footer) {
+  if (!isEntered && !canJoin) {
     return null;
   }
 
