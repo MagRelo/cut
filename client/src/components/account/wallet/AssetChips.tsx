@@ -51,9 +51,7 @@ export function AssetChips({
   flush?: boolean;
 }) {
   return (
-    <div
-      className={flush ? "flex flex-col gap-4" : "grid grid-cols-2 divide-x divide-gray-100"}
-    >
+    <div className={flush ? "flex flex-col gap-4" : "grid grid-cols-2 divide-x divide-gray-100"}>
       <AssetSpec
         label="Token"
         iconSrc={usdcIcon}
