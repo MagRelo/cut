@@ -56,7 +56,7 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
               Sign in
             </Button>
             <button
-              className="w-full rounded-md border border-blue-500 bg-white px-6 py-3.5 font-display text-base font-semibold text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-10 w-full shrink-0 items-center justify-center rounded border border-blue-500 bg-white px-4 font-display text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={loading}
               onClick={handleConnect}
               type="button"

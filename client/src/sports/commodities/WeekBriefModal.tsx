@@ -235,7 +235,8 @@ export function CommodityWeekBriefModal({
       maxWidth="2xl"
       scrollable
       maxHeight="80vh"
-      contentClassName="px-6 pb-6 pt-5"
+      panelClassName="overflow-hidden bg-gray-100 p-2"
+      contentClassName="rounded-sm border border-gray-300 bg-white px-6 pb-6 pt-5"
     >
       {!sections ? (
         <p className="pr-8 text-sm text-zinc-500">No tournament summary available.</p>
