@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { cn } from "../../lib/tabStyles";
 import { LEAGUE_STARTER_GUIDE_PATH } from "../../pages/LeagueStarterGuidePage";
 import { Button } from "../common/Button";
+import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import { ContestListItem, type ContestListItemVariant } from "./ContestListItem";
 
@@ -79,7 +80,7 @@ export const ContestList = ({
   }
 
   if (error) {
-    return <div className="text-center font-display text-sm text-red-500">{error}</div>;
+    return <ErrorMessage message={error} className="text-center" />;
   }
 
   if (contests.length === 0) {

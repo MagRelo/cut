@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import { Button } from "../common/Button";
+import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useAuth } from "../../contexts/AuthContext";
 import { useReferralCodeDetected } from "../../hooks/useReferralCapture";
@@ -81,13 +82,12 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
         </div>
       )}
 
-      {(loginError || serverSessionError) && (
-        <div className="max-w-xs px-6 py-4 bg-red-50 border border-red-300 rounded-sm">
-          <p className="text-sm text-red-700 text-center whitespace-pre-line">
-            {serverSessionError || loginError}
-          </p>
-        </div>
-      )}
+      {loginError || serverSessionError ? (
+        <ErrorMessage
+          className="max-w-xs text-center"
+          message={serverSessionError || loginError || ""}
+        />
+      ) : null}
     </div>
   );
 }

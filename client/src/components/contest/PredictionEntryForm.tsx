@@ -21,6 +21,7 @@ import { useOddsFormat } from "../../hooks/useOddsFormat";
 import { incrementalGlobalClaimDelta } from "../../utils/secondaryPurchasePreview";
 import { captureWinnerPoolPositionRecorded } from "../../lib/analytics/posthog";
 import { contestLineupDisplayName } from "../../lib/candidateUtils";
+import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
@@ -251,9 +252,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
               entryId,
               transactionHash: lastReceipt.transactionHash,
               chainId: contest.chainId,
-              ...(purchaseAmountWei != null
-                ? { amountWei: purchaseAmountWei.toString() }
-                : {}),
+              ...(purchaseAmountWei != null ? { amountWei: purchaseAmountWei.toString() } : {}),
             },
             { requiresAuth: true },
           );
@@ -503,11 +502,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           )}
         </Button>
 
-        {error && (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3">
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        )}
+        {error ? <ErrorMessage message={error} className="mt-2" /> : null}
       </div>
     </form>
   );

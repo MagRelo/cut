@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
 import { useClaimPredictionPayout } from "../../hooks/useSpectatorOperations";
@@ -125,12 +126,7 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
         Claim Prediction Winnings
       </h3>
 
-      {/* Error Message */}
-      {error && (
-        <div className="mx-4 mb-4 bg-red-50 border border-red-200 rounded-md p-3">
-          <p className="text-red-700 text-sm">{error}</p>
-        </div>
-      )}
+      {error ? <ErrorMessage message={error} className="mx-4 mb-4" /> : null}
 
       {/* Winning Positions */}
       {winningPositions.length > 0 && (

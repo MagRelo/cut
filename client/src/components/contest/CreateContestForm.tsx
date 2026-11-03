@@ -5,6 +5,7 @@ import { useChainId } from "wagmi";
 import { type ContestSettings, type CreateContestInput } from "../../types/contest";
 import { contestLobbyPath } from "../../utils/contestRoutes";
 import { Button } from "../common/Button";
+import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useAuth } from "../../contexts/AuthContext";
 import { defaultPaymentTokenSymbol, getTargetChainIdFromEnv } from "../../config/targetChain";
@@ -411,7 +412,7 @@ export const CreateContestForm = () => {
         </div>
       </div>
 
-      <div>
+      <div className="flex flex-col gap-2">
         <Button type="submit" block disabled={loading || isProcessing} className="mt-2">
           {loading || isProcessing ? (
             <div className="flex items-center gap-2 w-full justify-center">
@@ -422,16 +423,15 @@ export const CreateContestForm = () => {
             "Create Contest"
           )}
         </Button>
-      </div>
-
-      <div className="mt-2 text-sm text-center text-red-500">
-        {(transactionError || isFailed) && (
-          <div>
-            {transactionError ||
-              "The transaction was rejected or failed to execute. Please try again."}
-          </div>
-        )}
-        {error && <div>Server Error: {error}</div>}
+        {transactionError || isFailed ? (
+          <ErrorMessage
+            message={
+              transactionError ||
+              "The transaction was rejected or failed to execute. Please try again."
+            }
+          />
+        ) : null}
+        {error ? <ErrorMessage message={error} /> : null}
       </div>
     </form>
   );

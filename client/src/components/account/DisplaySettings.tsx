@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "../common/Button";
+import { ErrorMessage } from "../common/ErrorMessage";
 import { PageSection } from "../layout/PageSection";
 import { useAuth } from "../../contexts/AuthContext";
 import { ODDS_FORMAT_OPTIONS, parseOddsDisplayFormat } from "../../lib/oddsSettings";
@@ -186,14 +187,13 @@ export function DisplaySettings() {
           </div>
         </div>
 
-        {error && <div className="mt-2 text-sm text-red-500">{error}</div>}
-
         <div>
           <hr className="border-gray-200" />
-          <div className="flex justify-center pt-4">
+          <div className="flex flex-col items-center gap-2 pt-4">
             <Button type="submit" disabled={isLoading || !hasChanges} className="min-w-[120px]">
               {isLoading ? "Saving..." : "Save"}
             </Button>
+            {error ? <ErrorMessage message={error} className="text-center" /> : null}
           </div>
         </div>
       </form>

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { TreeIcon } from "../common/TreeIcon";
 import { CopyButton } from "../common/CopyToClipboard";
+import { ErrorMessage } from "../common/ErrorMessage";
 import { ShareInviteButton } from "../common/ShareInviteButton";
 import { walletSpecLabelClassName } from "./wallet/AssetChips";
 import { ReferralTree } from "./ReferralTree";
@@ -87,7 +88,7 @@ function NetworkSection({
 
       <div className="pl-8 pr-6 pt-2">
         {!loading && error ? (
-          <p className="font-display text-sm text-red-600">{error}</p>
+          <ErrorMessage message={error} />
         ) : loading ? (
           <TreeSkeleton />
         ) : (

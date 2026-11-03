@@ -5,6 +5,7 @@ import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
 import { Button } from "../common/Button";
+import { ErrorMessage } from "../common/ErrorMessage";
 import { DiscreteValueSlider } from "../common/DiscreteValueSlider";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useAuth } from "../../contexts/AuthContext";
@@ -243,7 +244,7 @@ export const LeagueCreateContestForm = ({
 
       <hr className="my-6 border-slate-200" />
 
-      <div className="flex sm:justify-end">
+      <div className="flex flex-col gap-2 sm:items-end">
         <Button
           type="submit"
           disabled={!canCreateContest || loading || isProcessing}
@@ -260,13 +261,17 @@ export const LeagueCreateContestForm = ({
             "Create Contest"
           )}
         </Button>
+        {transactionError || isFailed || error ? (
+          <ErrorMessage
+            className="sm:text-right"
+            message={
+              error ||
+              transactionError ||
+              "The transaction was rejected or failed. Please try again."
+            }
+          />
+        ) : null}
       </div>
-
-      {(transactionError || isFailed || error) && (
-        <p className="font-display text-sm text-red-600" role="alert">
-          {error || transactionError || "The transaction was rejected or failed. Please try again."}
-        </p>
-      )}
     </form>
   );
 };

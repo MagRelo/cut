@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useAccount } from "wagmi";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { Button } from "../../common/Button";
+import { ErrorMessage } from "../../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../../common/LoadingSpinnerSmall";
 import { useTransferTokens } from "../../../hooks/useTokenOperations";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -242,10 +243,6 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
         </div>
       )}
 
-      {(sendError || transactionError) && (
-        <p className="text-sm text-red-600">{sendError || String(transactionError)}</p>
-      )}
-
       {balancesUnavailable && (
         <p className="text-sm text-amber-800">
           Could not load balance.{" "}
@@ -289,6 +286,9 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
             Review send
           </Button>
         )}
+        {sendError || transactionError ? (
+          <ErrorMessage message={sendError || String(transactionError)} />
+        ) : null}
       </div>
     </div>
   );

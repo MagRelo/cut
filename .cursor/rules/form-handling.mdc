@@ -1,71 +1,55 @@
 ---
-description: form handling, ie, sending user input to the server and back to the client
-globs: 
-alwaysApply: false
----
----
-description: Form handling
-globs: 
+description: Form handling — local state and ErrorMessage for field and submit failures
+globs: client/src/**/*Form*.tsx
 alwaysApply: false
 ---
 
 # Form Handling
 
-- Use React Hook Form with Zod for validation
-- The same validation should be done in the server action too
+Forms keep their draft in local state. The server validates the request. The client checks before submit and shows the failure with `ErrorMessage`.
 
-## Form Example
+- Field checks render under that field.
+- Submit, wallet, and chain failures render under the submit button.
+- Use `ErrorMessage` from `client/src/components/common/ErrorMessage.tsx`. Do not add a tinted error panel, a toast, or a one-off red paragraph.
+- Pass `className` only for placement (`mt-1`, `text-center`) or a tighter size (`text-xs`).
+
+## Example
 
 ```tsx
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Input } from "@/components/Input";
-import { Button } from "@/components/ui/button";
-import { toastSuccess, toastError } from "@/components/Toast";
-import { createExampleAction } from "@/utils/actions/example";
-import { type CreateExampleBody } from "@/utils/actions/example.validation";
+import { useState } from "react";
+import { Button } from "../common/Button";
+import { ErrorMessage } from "../common/ErrorMessage";
 
 export const ExampleForm = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<CreateExampleBody>({
-    resolver: zodResolver(processHistorySchema),
-  });
+  const [name, setName] = useState("");
+  const [fieldError, setFieldError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const onSubmit: SubmitHandler<CreateExampleBody> = useCallback(
-    async (data) => {
-      const result = await createExampleAction(data.email);
-      if (isActionError(result)) {
-        toastError({ title: "Error", description: result.error });
-      } else {
-        toastSuccess({ description: "Created example!" });
-      }
-    },
-    []
-  );
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    setFieldError(null);
+    setSubmitError(null);
+
+    if (!name.trim()) {
+      setFieldError("Name is required");
+      return;
+    }
+
+    // submit, then setSubmitError(message) when the request fails
+  };
 
   return (
-    <form className="max-w-sm space-y-4" onSubmit={handleSubmit(onSubmit)}>
-      <Input
-        type="email"
-        name="email"
-        label="Email"
-        registerProps={register("email", { required: true })}
-        error={errors.email}
-      />
-      <Button type="submit" loading={isSubmitting}>
-        Save
-      </Button>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="name">Name</label>
+        <input id="name" value={name} onChange={(event) => setName(event.target.value)} />
+        {fieldError ? <ErrorMessage message={fieldError} className="mt-1" /> : null}
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <Button type="submit">Save</Button>
+        {submitError ? <ErrorMessage message={submitError} /> : null}
+      </div>
     </form>
   );
 };
 ```
-
-## Validation Guidelines
-
-- Define validation schemas using Zod
-- Apply the same validation in both client and server
-- Use descriptive error messages
-- Validate form inputs before submission
-- Show validation errors inline next to form fields

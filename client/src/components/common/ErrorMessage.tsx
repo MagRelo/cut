@@ -1,13 +1,19 @@
-import React from 'react';
+import { cn } from "../../lib/tabStyles";
 
 interface ErrorMessageProps {
   message: string;
+  className?: string;
 }
 
-export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message }) => {
+export const ErrorMessage = ({ message, className }: ErrorMessageProps) => {
+  if (!message) return null;
+
   return (
-    <div className='mb-4 p-4 bg-red-50 border border-red-200 rounded-md'>
-      <div className='text-sm text-red-800'>{message}</div>
-    </div>
+    <p
+      role="alert"
+      className={cn("whitespace-pre-line font-display text-sm font-medium text-red-600", className)}
+    >
+      {message}
+    </p>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { useWithdrawPrediction } from "../../hooks/useSpectatorOperations";
 import { ContestState, useContestPredictionData } from "../../hooks/useContestPredictionData";
@@ -103,12 +104,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
 
   return (
     <div>
-      {/* Error Message */}
-      {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-3">
-          <p className="text-red-700 text-sm">{error}</p>
-        </div>
-      )}
+      {error ? <ErrorMessage message={error} className="mb-4" /> : null}
 
       <div className="space-y-2">
         {userPositions.map((position) => {

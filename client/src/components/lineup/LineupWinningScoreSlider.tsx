@@ -1,4 +1,5 @@
 import React from "react";
+import { ErrorMessage } from "../common/ErrorMessage";
 
 interface LineupWinningScoreSliderProps {
   id?: string;
@@ -83,11 +84,7 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
           </div>
         </>
       )}
-      {error ? (
-        <p className="mt-2 font-display text-xs text-red-600" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <ErrorMessage message={error} className="mt-2 text-xs" /> : null}
     </div>
   );
 };

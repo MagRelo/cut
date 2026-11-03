@@ -48,9 +48,6 @@ export const UserGroupForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <ErrorMessage message={error} />}
-      {validationError && <ErrorMessage message={validationError} />}
-
       <div>
         <label htmlFor="name" className={labelClass}>
           League Name <span className="text-red-500">*</span>
@@ -66,6 +63,7 @@ export const UserGroupForm = ({
           placeholder="Enter league name"
           disabled={isLoading}
         />
+        {validationError ? <ErrorMessage message={validationError} className="mt-1" /> : null}
       </div>
 
       <div>
@@ -84,11 +82,12 @@ export const UserGroupForm = ({
         />
       </div>
 
-      <div className="flex justify-center !mt-6">
+      <div className="!mt-6 flex flex-col items-center gap-2">
         <Button type="submit" disabled={isLoading || !name.trim()} className="min-w-[120px]">
           {isLoading && <LoadingSpinnerSmall />}
           {submitLabel}
         </Button>
+        {error ? <ErrorMessage message={error} className="text-center" /> : null}
       </div>
     </form>
   );

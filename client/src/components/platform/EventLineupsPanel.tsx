@@ -252,11 +252,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
   return (
     <div className="space-y-4">
       {createError ? <ErrorMessage message={createError} /> : null}
-      {entryError && !hasLineups ? (
-        <div className="rounded border border-red-400 bg-red-100 p-3 text-sm text-red-700">
-          {entryError}
-        </div>
-      ) : null}
+      {entryError && !hasLineups ? <ErrorMessage message={entryError} /> : null}
 
       {hasLineups ? (
         <div className="space-y-4">

@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "../common/Button";
+import { ErrorMessage } from "../common/ErrorMessage";
 import apiClient from "../../utils/apiClient";
 import type {
   AdminDashboardContest,
@@ -58,49 +59,48 @@ function ContestsTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {contests.map((c) => (
-            <tr key={c.id} className="hover:bg-gray-50">
-              <td className="px-3 py-2">
-                <div className="font-medium text-gray-900">{c.name}</div>
-                <div className="text-xs text-gray-500">{c.eventName}</div>
-              </td>
-              <td className="px-3 py-2">
-                <div className="flex flex-col items-start gap-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClass(c.status)}`}
-                    >
-                      {c.status}
-                    </span>
-                    {c.status === "ACTIVE" ? (
-                      <Button
-                        type="button"
-                        size="compact"
-                        onClick={() => onLock(c.id)}
-                        disabled={lockingId === c.id}
+          {contests.map((c) => {
+            const lockError = lockErrors[c.id];
+            return (
+              <tr key={c.id} className="hover:bg-gray-50">
+                <td className="px-3 py-2">
+                  <div className="font-medium text-gray-900">{c.name}</div>
+                  <div className="text-xs text-gray-500">{c.eventName}</div>
+                </td>
+                <td className="px-3 py-2">
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClass(c.status)}`}
                       >
-                        {lockingId === c.id ? "Locking…" : "Lock"}
-                      </Button>
-                    ) : null}
+                        {c.status}
+                      </span>
+                      {c.status === "ACTIVE" ? (
+                        <Button
+                          type="button"
+                          size="compact"
+                          onClick={() => onLock(c.id)}
+                          disabled={lockingId === c.id}
+                        >
+                          {lockingId === c.id ? "Locking…" : "Lock"}
+                        </Button>
+                      ) : null}
+                    </div>
+                    {lockError ? <ErrorMessage message={lockError} className="text-xs" /> : null}
                   </div>
-                  {lockErrors[c.id] ? (
-                    <p className="text-xs text-red-600" role="alert">
-                      {lockErrors[c.id]}
-                    </p>
-                  ) : null}
-                </div>
-              </td>
-              <td className="px-3 py-2 text-right tabular-nums">
-                {c.primaryDeposit > 0 ? `$${formatUsd(c.primaryDeposit)}` : "Free"}
-              </td>
-              <td className="px-3 py-2 text-right tabular-nums">{c.lineupCount}</td>
-              <td className="px-3 py-2 text-right tabular-nums font-medium">
-                ${formatUsd(c.estimatedPrimaryCash)}
-              </td>
-              <td className="px-3 py-2 text-right tabular-nums">{c.secondaryParticipantCount}</td>
-              <td className="px-3 py-2 text-gray-600">{c.userGroupName ?? "—"}</td>
-            </tr>
-          ))}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums">
+                  {c.primaryDeposit > 0 ? `$${formatUsd(c.primaryDeposit)}` : "Free"}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums">{c.lineupCount}</td>
+                <td className="px-3 py-2 text-right tabular-nums font-medium">
+                  ${formatUsd(c.estimatedPrimaryCash)}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums">{c.secondaryParticipantCount}</td>
+                <td className="px-3 py-2 text-gray-600">{c.userGroupName ?? "—"}</td>
+              </tr>
+            );
+          })}
         </tbody>
         <tfoot className="bg-gray-50 text-gray-800 font-medium">
           <tr>

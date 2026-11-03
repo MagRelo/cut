@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../common/Button";
+import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinner } from "../common/LoadingSpinner";
 import {
   useUserTransactions,
@@ -110,9 +111,10 @@ export function ActivityList() {
 
   if (error) {
     return (
-      <div className="py-8 text-center font-display text-red-500">
-        {error instanceof Error ? error.message : "Failed to load activity"}
-      </div>
+      <ErrorMessage
+        className="py-8 text-center"
+        message={error instanceof Error ? error.message : "Failed to load activity"}
+      />
     );
   }
 
