@@ -61,11 +61,11 @@ export interface UserGroupMemberResponse {
   };
   role: UserGroupRole;
   joinedAt: Date;
-  /** Present for league admins only (Settings tab funding). */
+  /** Wallet on the request chain, for sending funds to this member. */
   walletAddress?: string | null;
   /**
-   * Present for league admins when this member is in the viewer's invite tree
-   * (depth 1–10). Same overlay as contest lineup lists.
+   * Present when this member is in the viewer's invite tree (depth 1–10).
+   * Private to the viewer. Same overlay as contest lineup lists.
    */
   referralStake?: { depth: number } | null;
 }

@@ -44,11 +44,7 @@ export const UserGroupInvitePanel = ({
     <div className="space-y-3 font-display">
       {errorMessage ? <ErrorMessage message={errorMessage} /> : null}
 
-      <div
-        className="overflow-hidden rounded-b-lg border-x border-b border-gray-200 bg-white"
-        role="group"
-        aria-labelledby="league-invite-heading"
-      >
+      <div role="group" aria-labelledby="league-invite-heading">
         <div className="px-4 pt-4">
           <h2
             id="league-invite-heading"

@@ -103,21 +103,24 @@ export const UserGroupDetailPage = () => {
   );
 
   const membersContent = (
-    <div className="space-y-5">
-      <UserGroupInvitePanel
-        userGroupId={userGroup.id}
-        leagueName={userGroup.name}
-        inviteCode={userGroup.inviteCode}
-        inviteUrl={userGroup.inviteUrl}
-        onInviteUpdated={() => refetch()}
-      />
-      <PageSection variant="card">
+    <div className="overflow-hidden rounded-b-lg border-x border-b border-gray-200 bg-white">
+      {isAdmin ? (
+        <UserGroupInvitePanel
+          userGroupId={userGroup.id}
+          leagueName={userGroup.name}
+          inviteCode={userGroup.inviteCode}
+          inviteUrl={userGroup.inviteUrl}
+          onInviteUpdated={() => refetch()}
+        />
+      ) : null}
+      <div className={isAdmin ? "border-t border-gray-200 px-4 py-4" : "px-4 py-4"}>
         <UserGroupMemberManagement
           userGroupId={userGroup.id}
           members={userGroup.members}
+          canManage={isAdmin}
           onMemberRemoved={() => refetch()}
         />
-      </PageSection>
+      </div>
     </div>
   );
 
@@ -144,7 +147,7 @@ export const UserGroupDetailPage = () => {
         ]}
       />
 
-      <PageSection variant="card">
+      <PageSection variant="card" className="!rounded-b-none !border-b-0 !shadow-none">
         <h1 className="mb-1 font-display text-2xl font-bold leading-tight tracking-tight text-gray-900 sm:text-3xl">
           {userGroup.name}
         </h1>
@@ -155,28 +158,30 @@ export const UserGroupDetailPage = () => {
         ) : null}
       </PageSection>
 
-      {isAdmin ? (
-        <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex} className="pt-2">
-          <TabList
-            className={tabListClassName("!rounded-b-none border-x border-t border-gray-200")}
-          >
-            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
-              Contests
-            </Tab>
-            <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
-              Invite players
-            </Tab>
+      <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
+        <TabList className={tabListClassName("!rounded-none border-x border-t border-gray-200")}>
+          <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
+            Contests
+          </Tab>
+          <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
+            Members
+          </Tab>
+          {isAdmin ? (
             <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
               Settings
             </Tab>
-          </TabList>
-          <TabPanel className="pt-4 focus:outline-none">{contestContent}</TabPanel>
-          <TabPanel className="focus:outline-none">{membersContent}</TabPanel>
+          ) : null}
+        </TabList>
+        <TabPanel className="focus:outline-none">
+          <div className="rounded-b-lg border-x border-b border-gray-200 bg-white p-4">
+            {contestContent}
+          </div>
+        </TabPanel>
+        <TabPanel className="focus:outline-none">{membersContent}</TabPanel>
+        {isAdmin ? (
           <TabPanel className="focus:outline-none">{settingsContent}</TabPanel>
-        </TabGroup>
-      ) : (
-        <div className="pt-4">{contestContent}</div>
-      )}
+        ) : null}
+      </TabGroup>
 
       <Modal
         isOpen={contestToDelete != null}

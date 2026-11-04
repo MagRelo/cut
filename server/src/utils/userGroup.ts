@@ -47,7 +47,7 @@ type UserGroupDetailRecord = {
 export type FormatUserGroupDetailOptions = {
   memberWalletByUserId?: Map<string, string | null>;
   inviteReferralCode?: string | null;
-  /** Viewer-relative invite-tree depths (admin member list). */
+  /** Viewer-relative invite-tree depths (member list). */
   referralDepthByUserId?: Map<string, number>;
 };
 
@@ -71,14 +71,14 @@ export function formatUserGroupDetailResponse(
     currentUserRole: currentUserMembership?.role ?? null,
     isMember: true,
     members: userGroup.members.map((member) => {
-      const depth = isAdmin ? options?.referralDepthByUserId?.get(member.userId) : undefined;
+      const depth = options?.referralDepthByUserId?.get(member.userId);
       return {
         id: member.id,
         userId: member.userId,
         user: member.user,
         role: member.role,
         joinedAt: member.joinedAt,
-        ...(isAdmin && memberWalletByUserId
+        ...(memberWalletByUserId
           ? { walletAddress: memberWalletByUserId.get(member.userId) ?? null }
           : {}),
         ...(depth != null ? { referralStake: { depth } } : {}),
@@ -93,7 +93,7 @@ export function formatUserGroupDetailResponse(
   };
 }
 
-/** Wallet addresses for league members on a chain (admin tooling). */
+/** Wallet addresses for league members on a chain. */
 export async function getMemberWalletByUserId(
   userIds: string[],
   chainId: number,

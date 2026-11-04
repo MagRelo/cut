@@ -163,16 +163,11 @@ userGroupRouter.get("/:id", requireAuth, requireUserGroupMember, async (c) => {
       return c.json({ error: "UserGroup not found" }, 404);
     }
 
-    const isAdmin = userGroup.members.some(
-      (m) => m.userId === user.userId && m.role === "ADMIN",
-    );
     const chainId = getRequestChainId(c);
     const memberIds = userGroup.members.map((m) => m.userId);
     const memberWalletByUserId =
-      isAdmin && chainId !== null ? await getMemberWalletByUserId(memberIds, chainId) : undefined;
-    const referralDepthByUserId = isAdmin
-      ? await referralStakeForViewer(user.userId, memberIds)
-      : undefined;
+      chainId !== null ? await getMemberWalletByUserId(memberIds, chainId) : undefined;
+    const referralDepthByUserId = await referralStakeForViewer(user.userId, memberIds);
 
     return c.json(
       formatUserGroupDetailResponse(userGroup, user.userId, {

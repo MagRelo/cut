@@ -15,6 +15,7 @@ import { apiErrorMessage } from "../../utils/apiError";
 interface UserGroupMemberManagementProps {
   userGroupId: string;
   members: UserGroupMemberResponse[];
+  canManage?: boolean;
   onMemberRemoved?: () => void;
 }
 
@@ -24,6 +25,7 @@ const chipClassName =
 export const UserGroupMemberManagement = ({
   userGroupId,
   members,
+  canManage = false,
   onMemberRemoved,
 }: UserGroupMemberManagementProps) => {
   const { user } = useAuth();
@@ -59,7 +61,7 @@ export const UserGroupMemberManagement = ({
         {members.map((member) => {
           const isYou = member.userId === currentUserId;
           const isLastAdmin = member.role === "ADMIN" && adminCount === 1;
-          const canRemove = !isLastAdmin;
+          const canRemove = canManage && !isLastAdmin;
           const showSendFunds = Boolean(member.walletAddress) && !isYou;
           const referralDepth = member.referralStake?.depth;
           const showReferralStake = referralDepth != null && referralDepth >= 1;

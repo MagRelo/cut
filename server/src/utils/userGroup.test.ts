@@ -33,7 +33,7 @@ function group(members: Array<{ userId: string; role: string }>) {
 }
 
 describe("formatUserGroupDetailResponse referralStake", () => {
-  it("attaches invite-tree depths for admins only", () => {
+  it("attaches invite-tree depths and wallets for every member, and invite codes for admins", () => {
     const userGroup = group([
       { userId: "admin", role: "ADMIN" },
       { userId: "direct", role: "MEMBER" },
@@ -43,22 +43,52 @@ describe("formatUserGroupDetailResponse referralStake", () => {
       ["direct", 1],
       ["other", 3],
     ]);
+    const wallets = new Map<string, string | null>([
+      ["admin", "0xadmin"],
+      ["direct", "0xdirect"],
+      ["other", null],
+    ]);
 
     const asAdmin = formatUserGroupDetailResponse(userGroup, "admin", {
       referralDepthByUserId: depths,
+      memberWalletByUserId: wallets,
     });
+    expect(asAdmin.inviteCode).toBe("abc123");
     expect(asAdmin.members).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ userId: "direct", referralStake: { depth: 1 } }),
-        expect.objectContaining({ userId: "other", referralStake: { depth: 3 } }),
-        expect.objectContaining({ userId: "admin" }),
+        expect.objectContaining({
+          userId: "direct",
+          walletAddress: "0xdirect",
+          referralStake: { depth: 1 },
+        }),
+        expect.objectContaining({
+          userId: "other",
+          walletAddress: null,
+          referralStake: { depth: 3 },
+        }),
+        expect.objectContaining({ userId: "admin", walletAddress: "0xadmin" }),
       ]),
     );
     expect(asAdmin.members.find((m) => m.userId === "admin")).not.toHaveProperty("referralStake");
 
     const asMember = formatUserGroupDetailResponse(userGroup, "direct", {
       referralDepthByUserId: depths,
+      memberWalletByUserId: wallets,
     });
-    expect(asMember.members.every((m) => !("referralStake" in m))).toBe(true);
+    expect(asMember).not.toHaveProperty("inviteCode");
+    expect(asMember.members).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          userId: "direct",
+          walletAddress: "0xdirect",
+          referralStake: { depth: 1 },
+        }),
+        expect.objectContaining({
+          userId: "other",
+          walletAddress: null,
+          referralStake: { depth: 3 },
+        }),
+      ]),
+    );
   });
 });
