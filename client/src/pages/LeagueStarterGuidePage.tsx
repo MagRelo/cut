@@ -30,7 +30,7 @@ export const LeagueStarterGuidePage: React.FC = () => {
   }, [location.pathname, location.hash]);
 
   return (
-    <>
+    <div className="overflow-hidden rounded-md border border-slate-300 bg-white px-4 py-4 shadow-sm sm:px-5 sm:py-5">
       <h1 className="mb-3 font-display text-3xl font-bold text-gray-900">Start a League</h1>
       <div className="text-sm text-gray-700">
         <p>Leagues are private groups. All real-money contests happen inside leagues.</p>
@@ -237,6 +237,6 @@ export const LeagueStarterGuidePage: React.FC = () => {
           </nav>
         </aside>
       </div>
-    </>
+    </div>
   );
 };

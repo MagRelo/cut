@@ -1,5 +1,5 @@
 import type { CompetitionEventShell } from "@cut/sport-sdk";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { ChevronRightIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { type Contest } from "../../types/contest";
 import { contestLobbyPath } from "../../utils/contestRoutes";
 import { Link } from "react-router-dom";
@@ -24,26 +24,32 @@ export function ContestListConnectHint({ className = "mt-6" }: { className?: str
   return (
     <div
       className={cn(
-        "overflow-hidden rounded border border-blue-200 bg-blue-100 p-4 text-center font-display shadow-md shadow-blue-950/10",
+        "overflow-hidden rounded-md border border-slate-300 bg-white px-4 py-3 text-left font-display shadow-sm",
         className,
       )}
     >
-      <span
-        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 font-display text-base font-bold leading-none text-white"
-        aria-hidden
-      >
-        $
-      </span>
-      <p className="mt-2 text-base font-semibold leading-snug text-gray-900">
-        Real money contests available in private leagues
+      <p className="mb-1 text-xs font-semibold uppercase leading-5 tracking-[0.16em] text-emerald-700">
+        Private leagues
       </p>
-      <p className="mt-1 text-sm text-gray-600">Sign in to see leagues you’re in, or start one.</p>
-      <Button to="/leagues" className="mt-3 min-w-[5.5rem]">
-        Sign in
+      <p className="text-base font-semibold leading-snug text-slate-900">
+        There’s more to play for.
+      </p>
+      <p className="mt-1 text-sm leading-snug text-slate-600">
+        Play for real money in private leagues. Start your own or join friends for the next
+        tournament.
+      </p>
+      <Button to={LEAGUE_STARTER_GUIDE_PATH} className="mt-3">
+        Explore private leagues
+        <ChevronRightIcon className="-ml-0.5 h-4 w-4 shrink-0" aria-hidden />
       </Button>
-      <p className="mt-2.5 text-sm text-gray-600">
-        <Link to={LEAGUE_STARTER_GUIDE_PATH} className="text-blue-600 hover:text-blue-700">
-          How leagues work →
+      <p className="mt-2.5 text-sm text-slate-500">
+        Already in a league?{" "}
+        <Link
+          to="/connect"
+          state={{ from: { pathname: "/leagues", search: "", hash: "" } }}
+          className="font-medium text-blue-600 hover:text-blue-700"
+        >
+          Sign in
         </Link>
       </p>
     </div>

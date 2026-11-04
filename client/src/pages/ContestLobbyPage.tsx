@@ -42,7 +42,7 @@ function ContestNotFound({ isAuthenticated }: { isAuthenticated: boolean }) {
               This contest may be private, or the link may be incorrect.
             </p>
             <div className="mt-5 border-t border-slate-100 pt-5">
-              <ContestListConnectHint className="text-center" />
+              <ContestListConnectHint className="mt-0" />
             </div>
           </>
         )}
