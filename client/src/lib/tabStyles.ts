@@ -2,7 +2,7 @@
  * Equal-width boxed tabs — active state is a filled background, not an underline.
  */
 export const tabListClassName = (...extra: string[]) =>
-  ["flex gap-1 rounded-sm bg-blue-50", ...extra].filter(Boolean).join(" ");
+  ["flex rounded-sm bg-blue-50", ...extra].filter(Boolean).join(" ");
 
 const tabActive = "bg-white text-slate-900 font-medium border-t border-x border-gray-200";
 const tabInactive =
