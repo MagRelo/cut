@@ -102,7 +102,7 @@ export function ContestPayoutRow({
 }) {
   return (
     <div
-      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-sm border border-gray-200 bg-white p-3 py-2 font-display shadow-sm"
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-sm bg-white p-3 py-2 font-display"
       style={
         userColor
           ? {

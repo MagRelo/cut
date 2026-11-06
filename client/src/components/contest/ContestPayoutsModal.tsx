@@ -424,7 +424,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                 <ContestPayoutRow
                   left={
                     <>
-                      <ContestPayoutRowTitle>Winner Ticket</ContestPayoutRowTitle>
+                      <ContestPayoutRowTitle>Total Winner Pool</ContestPayoutRowTitle>
                       <ContestPayoutRowSubtitle>100% of winner pool</ContestPayoutRowSubtitle>
                     </>
                   }
