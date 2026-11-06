@@ -4,14 +4,15 @@
 export const tabListClassName = (...extra: string[]) =>
   ["flex gap-1 rounded-sm bg-blue-50", ...extra].filter(Boolean).join(" ");
 
-const tabActive = "bg-white text-slate-900 font-medium";
-const tabInactive = "bg-transparent text-blue-500 hover:text-blue-600 hover:bg-blue-100";
+const tabActive = "bg-white text-slate-900 font-medium border-t border-x border-gray-200";
+const tabInactive =
+  "bg-transparent text-blue-500 hover:text-blue-600 hover:bg-blue-100 border-t border-x border-b border-t-transparent border-x-transparent border-b-gray-200";
 
 const segmentActive = "bg-white text-slate-900 font-medium";
 const segmentInactive = "bg-transparent text-blue-500 hover:text-blue-600 hover:bg-blue-100";
 
 export function tabButtonClassName(selected: boolean, options?: { compact?: boolean }): string {
-  const padding = options?.compact ? "py-1 px-2" : "py-2 px-2";
+  const padding = options?.compact ? "py-2 px-2" : "py-3 px-2";
   const base = [
     "flex-1 rounded-sm",
     padding,
