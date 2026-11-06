@@ -24,11 +24,11 @@ export function ContestListConnectHint({ className = "mt-6" }: { className?: str
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-md border border-slate-300 bg-white px-4 py-3 text-left font-display shadow-sm",
+        "overflow-hidden rounded-md border border-blue-600 bg-white px-4 py-4 text-left font-display shadow-md shadow-blue-600/30",
         className,
       )}
     >
-      <p className="mb-1 text-xs font-semibold uppercase leading-5 tracking-[0.16em] text-emerald-700">
+      <p className="mb-1 text-xs font-semibold uppercase leading-5 tracking-[0.16em] text-blue-600">
         Private leagues
       </p>
       <p className="text-base font-semibold leading-snug text-slate-900">
@@ -38,11 +38,11 @@ export function ContestListConnectHint({ className = "mt-6" }: { className?: str
         Play for real money in private leagues. Start your own or join friends for the next
         tournament.
       </p>
-      <Button to={LEAGUE_STARTER_GUIDE_PATH} className="mt-3">
+      <Button to={LEAGUE_STARTER_GUIDE_PATH} className="mt-4">
         Explore private leagues
         <ChevronRightIcon className="-ml-0.5 h-4 w-4 shrink-0" aria-hidden />
       </Button>
-      <p className="mt-2.5 text-sm text-slate-500">
+      <p className="mt-3 text-sm text-slate-500">
         Already in a league?{" "}
         <Link
           to="/connect"
