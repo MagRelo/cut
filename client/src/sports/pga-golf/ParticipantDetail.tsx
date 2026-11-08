@@ -34,7 +34,7 @@ interface LabelProps {
 
 const Label: React.FC<LabelProps> = ({ children, className = "" }) => (
   <span
-    className={`text-[10px] uppercase text-gray-500 font-semibold font-display tracking-wide leading-none ${className}`}
+    className={`font-display text-[10px] font-semibold uppercase leading-none tracking-wide text-gray-500 ${className}`}
   >
     {children}
   </span>
@@ -43,9 +43,9 @@ const Label: React.FC<LabelProps> = ({ children, className = "" }) => (
 const STAT_VALUE_CLASS =
   "w-full min-h-[1.5rem] text-center font-display text-lg leading-none tabular-nums";
 const STAT_CELL_OUTER =
-  "flex h-full min-h-0 w-full min-w-0 flex-col items-stretch px-1 py-1.5";
+  "flex h-full min-h-0 w-full min-w-0 flex-col items-stretch px-1 pt-1.5 pb-0.5";
 const STAT_CELL_BUTTON = `${STAT_CELL_OUTER} appearance-none border-0 text-center`;
-const STAT_LABEL_STRIP_BASE = "mb-0 w-full pt-0.5 pb-0.5 text-center";
+const STAT_LABEL_STRIP_BASE = "mb-0 w-full pt-0.5 pb-1.5 text-center";
 
 function DetailHeader({
   displayName,
@@ -223,8 +223,8 @@ export const GolfParticipantDetail: React.FC<ParticipantDetailProps> = ({
   const showSeasonStats = status === "SCHEDULED";
 
   return (
-    <div className="overflow-hidden border border-gray-300 rounded-sm bg-white">
-      <div className="bg-white overflow-hidden">
+    <div className="overflow-hidden rounded-sm border border-gray-300 bg-white">
+      <div className="overflow-hidden bg-white">
         <div className="p-3 py-4">
           <DetailHeader
             displayName={displayName}
@@ -246,90 +246,95 @@ export const GolfParticipantDetail: React.FC<ParticipantDetailProps> = ({
         ) : (
           <>
             <div
-              className="grid w-full grid-cols-[repeat(4,minmax(0,1fr))_repeat(2,minmax(0,1fr))] items-stretch border-t border-gray-200 divide-x divide-gray-200 bg-white"
+              className="grid w-full grid-cols-[repeat(4,minmax(0,1fr))_repeat(2,minmax(0,1fr))] items-stretch divide-x divide-gray-200 border-t border-gray-200 bg-white"
               role="presentation"
             >
-          {(
-            [
-              [1, tournamentData?.r1],
-              [2, tournamentData?.r2],
-              [3, tournamentData?.r3],
-              [4, tournamentData?.r4],
-            ] as const
-          ).map(([roundNum, data]) => {
-            const played = roundHasBeenPlayed(data);
-            const selectable = isScorecardRoundSelectable(roundNum, data, currentPeriod);
-            const selected = selectedScorecardRound === roundNum;
-            const label = `R${roundNum}`;
-            const value = played && data?.total !== undefined ? data.total : null;
+              {(
+                [
+                  [1, tournamentData?.r1],
+                  [2, tournamentData?.r2],
+                  [3, tournamentData?.r3],
+                  [4, tournamentData?.r4],
+                ] as const
+              ).map(([roundNum, data]) => {
+                const played = roundHasBeenPlayed(data);
+                const selectable = isScorecardRoundSelectable(roundNum, data, currentPeriod);
+                const selected = selectedScorecardRound === roundNum;
+                const label = `R${roundNum}`;
+                const value = played && data?.total !== undefined ? data.total : null;
 
-            const valueClass = !played ? "font-medium text-gray-300" : "font-bold text-gray-900";
+                const valueClass = !played
+                  ? "font-medium text-gray-300"
+                  : "font-bold text-gray-900";
 
-            if (!selectable) {
-              return (
-                <div
-                  key={label}
-                  className={`${STAT_CELL_OUTER} cursor-default !bg-white text-center`}
-                  aria-label={`${label}, no round data`}
-                >
-                  <div className={STAT_LABEL_STRIP_BASE}>
-                    <Label className="block !text-gray-400">{label}</Label>
-                  </div>
-                  <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value ?? ""}</div>
-                </div>
-              );
-            }
+                if (!selectable) {
+                  return (
+                    <div
+                      key={label}
+                      className={`${STAT_CELL_OUTER} cursor-default !bg-white text-center`}
+                      aria-label={`${label}, no round data`}
+                    >
+                      <div className={STAT_LABEL_STRIP_BASE}>
+                        <Label className="block !text-gray-400">{label}</Label>
+                      </div>
+                      <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value ?? ""}</div>
+                    </div>
+                  );
+                }
 
-            return (
-              <button
-                key={label}
-                type="button"
-                onClick={() => setSelectedScorecardRound(roundNum)}
-                className={`group ${STAT_CELL_BUTTON} transition-colors focus:outline-none ${
-                  selected ? "bg-slate-100" : "bg-white hover:bg-slate-50"
-                }`}
-              >
-                <div className={STAT_LABEL_STRIP_BASE}>
-                  <Label
-                    className={`block ${selected ? "" : played ? "!text-blue-600" : "!text-gray-500"}`}
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => setSelectedScorecardRound(roundNum)}
+                    className={`group ${STAT_CELL_BUTTON} transition-colors focus:outline-none ${
+                      selected ? "bg-slate-100" : "bg-white hover:bg-slate-50"
+                    }`}
                   >
-                    {label}
-                  </Label>
+                    <div className={STAT_LABEL_STRIP_BASE}>
+                      <Label
+                        className={`block ${selected ? "" : played ? "!text-blue-600" : "!text-gray-500"}`}
+                      >
+                        {label}
+                      </Label>
+                    </div>
+                    <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value ?? ""}</div>
+                  </button>
+                );
+              })}
+
+              <div className={`${STAT_CELL_OUTER} !bg-white text-center`}>
+                <div className={STAT_LABEL_STRIP_BASE}>
+                  <Label className="block !text-gray-500">CUT</Label>
                 </div>
-                <div className={`${STAT_VALUE_CLASS} ${valueClass}`}>{value ?? ""}</div>
-              </button>
-            );
-          })}
 
-          <div className={`${STAT_CELL_OUTER} !bg-white text-center`}>
-            <div className={STAT_LABEL_STRIP_BASE}>
-              <Label className="block !text-gray-400">CUT</Label>
-            </div>
-            <div
-              className={`${STAT_VALUE_CLASS} ${
-                tournamentData?.cut && tournamentData.cut > 0
-                  ? "font-bold text-green-600"
-                  : "font-medium text-gray-300"
-              }`}
-            >
-              {tournamentData?.cut && tournamentData.cut > 0 ? `+${tournamentData.cut}` : ""}
-            </div>
-          </div>
+                <div
+                  className={`${STAT_VALUE_CLASS} ${
+                    tournamentData?.cut && tournamentData.cut > 0
+                      ? "font-bold text-green-700"
+                      : "font-medium text-gray-300"
+                  }`}
+                >
+                  {tournamentData?.cut && tournamentData.cut > 0 ? `+${tournamentData.cut}` : ""}
+                </div>
+              </div>
 
-          <div className={`${STAT_CELL_OUTER} !bg-white text-center`}>
-            <div className={STAT_LABEL_STRIP_BASE}>
-              <Label className="block !text-gray-400">POS</Label>
-            </div>
-            <div
-              className={`${STAT_VALUE_CLASS} ${
-                tournamentData?.bonus && tournamentData.bonus > 0
-                  ? "font-bold text-green-600"
-                  : "font-medium text-gray-300"
-              }`}
-            >
-              {tournamentData?.bonus && tournamentData.bonus > 0 ? `+${tournamentData.bonus}` : ""}
-            </div>
-          </div>
+              <div className={`${STAT_CELL_OUTER} !bg-white text-center`}>
+                <div className={STAT_LABEL_STRIP_BASE}>
+                  <Label className="block !text-gray-500">POS</Label>
+                </div>
+                <div
+                  className={`${STAT_VALUE_CLASS} ${
+                    tournamentData?.bonus && tournamentData.bonus > 0
+                      ? "font-bold text-green-700"
+                      : "font-medium text-gray-300"
+                  }`}
+                >
+                  {tournamentData?.bonus && tournamentData.bonus > 0
+                    ? `+${tournamentData.bonus}`
+                    : ""}
+                </div>
+              </div>
             </div>
 
             <div className="max-h-[min(50vh,22rem)] overflow-y-auto bg-white">
