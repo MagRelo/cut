@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { canAddPrimaryPosition, canRemovePrimaryPosition } from "../types/contest";
-import { effectiveContestStatus } from "../lib/lineupEditable";
+import { readContestSurfaces } from "../lib/contestSurfaces";
 import { deriveContestLobbyViewModel } from "./deriveContestLobbyViewModel";
 import { ContestState } from "./useContestPredictionData";
 import { contestFixtures } from "../test/fixtures/contestLobby";
@@ -15,38 +15,59 @@ describe("contract-aligned primary helpers", () => {
   });
 });
 
-describe("deriveContestLobbyViewModel primary gates", () => {
-  it("uses on-chain OPEN over DB ACTIVE for enterContest mode", () => {
-    const vm = deriveContestLobbyViewModel(contestFixtures.active, {
-      contestStateOnChain: ContestState.OPEN,
-    });
+describe("lobby follows join status", () => {
+  it("OPEN is the entry lobby", () => {
+    const vm = deriveContestLobbyViewModel(contestFixtures.open);
+    const surfaces = readContestSurfaces("OPEN");
+    expect(vm.phase).toBe("preRound");
     expect(vm.primary.mode).toBe("enterContest");
-    expect(vm.primary.entryListOpensModal).toBe(false);
+    expect(vm.layout.showLineupsTab).toBe(true);
+    expect(vm.layout.showPredictionsTab).toBe(false);
+    expect(surfaces.timelineEnabled).toBe(false);
+    expect(surfaces.lobbyPhase).toBe("preRound");
   });
 
-  it("locks join when on-chain ACTIVE even if DB OPEN", () => {
-    const vm = deriveContestLobbyViewModel(contestFixtures.open, {
-      contestStateOnChain: ContestState.ACTIVE,
-    });
+  it("ACTIVE is the live lobby", () => {
+    const vm = deriveContestLobbyViewModel(contestFixtures.active);
+    const surfaces = readContestSurfaces("ACTIVE");
+    expect(vm.phase).toBe("live");
     expect(vm.primary.mode).toBe("liveTimeline");
-    expect(
-      canAddPrimaryPosition(effectiveContestStatus("OPEN", ContestState.ACTIVE)),
-    ).toBe(false);
+    expect(vm.layout.showLineupsTab).toBe(false);
+    expect(vm.layout.showPredictionsTab).toBe(true);
+    expect(surfaces.timelineEnabled).toBe(true);
+    expect(surfaces.lobbyPhase).toBe("live");
   });
 
-  it("shows Lineups tab only while the contest is open for entry", () => {
-    expect(deriveContestLobbyViewModel(contestFixtures.open).layout.showLineupsTab).toBe(true);
-    expect(deriveContestLobbyViewModel(contestFixtures.active).layout.showLineupsTab).toBe(false);
-    expect(deriveContestLobbyViewModel(contestFixtures.locked).layout.showLineupsTab).toBe(false);
-    expect(deriveContestLobbyViewModel(contestFixtures.settled).layout.showLineupsTab).toBe(false);
+  it("LOCKED is the live lobby with the Winner Pool", () => {
+    const vm = deriveContestLobbyViewModel(contestFixtures.locked);
+    const surfaces = readContestSurfaces("LOCKED");
+    expect(vm.phase).toBe("locked");
+    expect(vm.primary.mode).toBe("liveTimeline");
+    expect(vm.layout.showLineupsTab).toBe(false);
+    expect(vm.layout.showPredictionsTab).toBe(true);
+    expect(surfaces.timelineEnabled).toBe(true);
+    expect(surfaces.lobbyPhase).toBe("locked");
   });
 
-  it("hides Lineups tab when on-chain is ACTIVE even if DB is OPEN", () => {
-    const vm = deriveContestLobbyViewModel(contestFixtures.open, {
+  it("SETTLED is the results lobby and claims open only for a SETTLED row", () => {
+    const vm = deriveContestLobbyViewModel(contestFixtures.settled);
+    const surfaces = readContestSurfaces("SETTLED");
+    expect(vm.phase).toBe("settled");
+    expect(vm.layout.showResultsTab).toBe(true);
+    expect(vm.layout.showPredictionsTab).toBe(false);
+    expect(surfaces.claimsOpen).toBe(true);
+    expect(surfaces.lobbyPhase).toBe("settled");
+  });
+
+  it("uses the chain status as the lobby status", () => {
+    const fromChain = deriveContestLobbyViewModel(contestFixtures.open, {
       contestStateOnChain: ContestState.ACTIVE,
     });
-    expect(vm.layout.showLineupsTab).toBe(false);
-    expect(vm.layout.defaultTabIndex).toBe(vm.layout.contestTabIndex);
+    const fromStatus = deriveContestLobbyViewModel(contestFixtures.active);
+    expect(fromChain.phase).toBe(fromStatus.phase);
+    expect(fromChain.primary.mode).toBe(fromStatus.primary.mode);
+    expect(fromChain.layout.showLineupsTab).toBe(fromStatus.layout.showLineupsTab);
+    expect(fromChain.layout.showPredictionsTab).toBe(fromStatus.layout.showPredictionsTab);
   });
 
   it("hides Winner Pool when the contest has no on-chain escrow", () => {
@@ -62,10 +83,10 @@ describe("deriveContestLobbyViewModel primary gates", () => {
     expect(vm.primary.mode).toBe("liveTimeline");
   });
 
-  it("CANCELLED: join false, leave true", () => {
-    const status = effectiveContestStatus("OPEN", ContestState.CANCELLED);
-    expect(canAddPrimaryPosition(status)).toBe(false);
-    expect(canRemovePrimaryPosition(status)).toBe(true);
+  it("CANCELLED closes entry and still allows leave", () => {
+    const { joinStatus } = readContestSurfaces("OPEN", ContestState.CANCELLED);
+    expect(canAddPrimaryPosition(joinStatus)).toBe(false);
+    expect(canRemovePrimaryPosition(joinStatus)).toBe(true);
   });
 });
 

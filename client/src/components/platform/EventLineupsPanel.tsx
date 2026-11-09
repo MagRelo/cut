@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { Button } from "../common/Button";
 import { useReadContract } from "wagmi";
-import type { Contest } from "../../types/contest";
+import { canAddPrimaryPosition, type Contest } from "../../types/contest";
 import type { AuthUser } from "../../contexts/AuthContext";
 import type { ContestLineup, PlatformLineupListItem } from "../../types/lineup";
 import { useAuth } from "../../contexts/AuthContext";
@@ -11,7 +11,7 @@ import { useContestLineupEntry } from "../../hooks/useContestLineupEntry";
 import { useSportRosterRules } from "../../hooks/useSportRosterRules";
 import { eventDisplayNameFromMetadata } from "../../lib/eventMetadata";
 import { eventStatusForSport } from "../../sports/eventPresentation";
-import { canEditLineupForContest } from "../../lib/lineupEditable";
+import { readContestSurfaces } from "../../lib/contestSurfaces";
 import ContestContract from "../../utils/contracts/ContestController.json";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { PageSection } from "../layout/PageSection";
@@ -94,14 +94,15 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
     () => eventStatusForSport(sportId, eventMetadata),
     [sportId, eventMetadata],
   );
-  const isLineupEditable = useMemo(
+  const contestSurfaces = useMemo(
     () =>
-      canEditLineupForContest(
+      readContestSurfaces(
         contest.status,
         contestStateOnChain !== undefined ? Number(contestStateOnChain) : undefined,
       ),
     [contest.status, contestStateOnChain],
   );
+  const isLineupEditable = canAddPrimaryPosition(contestSurfaces.joinStatus);
   const displayEventName = useMemo(
     () => eventDisplayNameFromMetadata(eventMetadata),
     [eventMetadata],
@@ -294,7 +295,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
           <div className="mb-2 flex items-center gap-2">
             <span className="text-lg text-gray-600">🏌️</span>
             <div className="font-display text-lg font-semibold text-gray-900">
-              Contest {contest.status}
+              Contest {contestSurfaces.joinStatus}
             </div>
           </div>
           <p className="text-sm text-gray-600">

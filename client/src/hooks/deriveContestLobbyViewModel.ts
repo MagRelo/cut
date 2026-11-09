@@ -1,5 +1,5 @@
 import { canAddPrimaryPosition, areSecondaryActionsLocked, type Contest } from "../types/contest";
-import { effectiveContestStatus } from "../lib/lineupEditable";
+import { readContestSurfaces } from "../lib/contestSurfaces";
 import {
   type ContestLobbyPhase,
   type ContestLobbyViewModel,
@@ -7,6 +7,8 @@ import {
 } from "../types/contestLobby";
 import { ContestState } from "./useContestPredictionData";
 import { hasOnchainEscrow } from "../lib/hasOnchainEscrow";
+
+export { deriveContestLobbyPhase } from "../lib/contestSurfaces";
 
 export interface DeriveContestLobbyViewModelInput {
   contestStateOnChain?: number;
@@ -16,22 +18,9 @@ export interface DeriveContestLobbyViewModelInput {
   isContestDataPending?: boolean;
 }
 
-export function deriveContestLobbyPhase(contest: Contest): ContestLobbyPhase {
-  if (contest.status === "SETTLED" || contest.status === "CLOSED") {
-    return "settled";
-  }
-  if (contest.status === "LOCKED") {
-    return "locked";
-  }
-  if (contest.status === "ACTIVE") {
-    return "live";
-  }
-  return "preRound";
-}
-
 function derivePredictionsPanelMode(
-  contest: Contest,
   phase: ContestLobbyPhase,
+  joinStatus: Contest["status"],
   contestStateOnChain: number | undefined,
   hasWallet: boolean,
 ): PredictionsPanelMode {
@@ -55,7 +44,7 @@ function derivePredictionsPanelMode(
     return "locked";
   }
 
-  if (canPredictOnChain && !areSecondaryActionsLocked(contest.status)) {
+  if (canPredictOnChain && !areSecondaryActionsLocked(joinStatus)) {
     return "wager";
   }
 
@@ -74,28 +63,24 @@ export function deriveContestLobbyViewModel(
   input: DeriveContestLobbyViewModelInput = {},
 ): ContestLobbyViewModel {
   const { contestStateOnChain, hasWallet = true, isContestDataPending = false } = input;
-  const phase = deriveContestLobbyPhase(contest);
-  // Join window closed ⇒ live timeline / entry modal (leave still gated in JoinActions).
-  const primaryActionsLocked = !canAddPrimaryPosition(
-    effectiveContestStatus(contest.status, contestStateOnChain),
-  );
+  const surfaces = readContestSurfaces(contest.status, contestStateOnChain);
+  const phase = surfaces.lobbyPhase;
+  const primaryActionsLocked = surfaces.timelineEnabled;
   const isSettled = phase === "settled";
 
   const canPredictOnChain = contestStateOnChain === ContestState.ACTIVE;
-  const secondaryActionsLocked = areSecondaryActionsLocked(contest.status);
+  const secondaryActionsLocked = areSecondaryActionsLocked(surfaces.joinStatus);
   const placeWagerTabLocked = !canPredictOnChain || secondaryActionsLocked;
 
   const predictionsMode = derivePredictionsPanelMode(
-    contest,
     phase,
+    surfaces.joinStatus,
     contestStateOnChain,
     hasWallet,
   );
 
-  // Roster builder is only needed while entry is open; after that, lineups live on Contest.
   const showLineupsTab =
-    Boolean(contest.event?.sportId) &&
-    canAddPrimaryPosition(effectiveContestStatus(contest.status, contestStateOnChain));
+    Boolean(contest.event?.sportId) && canAddPrimaryPosition(surfaces.joinStatus);
   // Live/locked always get Feed. Settled keeps it when history exists, or while the
   // lobby payload is still loading (placeholder data has no commentaryFeed yet).
   const showFeedTab =

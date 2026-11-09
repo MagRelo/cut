@@ -7,6 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useContestPredictionData } from "./useContestPredictionData";
 import { useEffectiveWalletAddress } from "./useEffectiveWalletAddress";
 import type { Contest } from "../types/contest";
+import { readContestSurfaces } from "../lib/contestSurfaces";
 import type { ContestLineup } from "../types/lineup";
 
 interface UseContestSettlementClaimsOptions {
@@ -54,7 +55,7 @@ export function useContestSettlementClaims(
   const { user } = useAuth();
   const walletAddress = useEffectiveWalletAddress();
 
-  const isSettled = contest?.status === "SETTLED";
+  const isSettled = contest ? readContestSurfaces(contest.status).claimsOpen : false;
   const contestAddress = contest?.address ?? "0x0000000000000000000000000000000000000000";
   const supportedChainId =
     contest?.chainId === 8453 || contest?.chainId === 84532 ? contest.chainId : undefined;

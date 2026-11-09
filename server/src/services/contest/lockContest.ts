@@ -9,6 +9,7 @@ import { prisma } from '../../lib/prisma.js';
 import { getContestContract, verifyOperator, readContestState } from '../shared/contractClient.js';
 import { ContestState, type OperationResult } from '../shared/types.js';
 import { hasOnchainEscrow } from '../../utils/hasOnchainEscrow.js';
+import { confirmContestWrite } from './confirmContestWrite.js';
 
 export async function lockContest(contestId: string): Promise<OperationResult> {
   try {
@@ -58,8 +59,18 @@ export async function lockContest(contestId: string): Promise<OperationResult> {
       };
     }
 
-    // Check contract state
     const contractState = await readContestState(contest.address, contest.chainId);
+    if (contractState === ContestState.LOCKED) {
+      await prisma.contest.update({
+        where: { id: contestId },
+        data: { status: 'LOCKED' },
+      });
+      console.log(`[lockContest] Aligned contest ${contestId} to chain LOCKED`);
+      return {
+        success: true,
+        contestId,
+      };
+    }
     if (contractState !== ContestState.ACTIVE) {
       return {
         success: false,
@@ -68,13 +79,17 @@ export async function lockContest(contestId: string): Promise<OperationResult> {
       };
     }
 
-    // Call contract to lock
     const contract = getContestContract(contest.address, contest.chainId);
-    const hash = (await contract.write.lockContest!()) as string;
+    const hash = (await contract.write.lockContest!()) as `0x${string}`;
 
     console.log(`[lockContest] Transaction hash: ${hash}`);
+    await confirmContestWrite({
+      contestAddress: contest.address,
+      chainId: contest.chainId,
+      hash,
+      expected: ContestState.LOCKED,
+    });
 
-    // Update database
     await prisma.contest.update({
       where: { id: contestId },
       data: { status: 'LOCKED' },

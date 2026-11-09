@@ -69,7 +69,7 @@ graph TB
 
 ### State Machine Pattern
 - **ContestController** uses enum-based state machine
-- States: OPEN, ACTIVE, LOCKED, SETTLED, CANCELLED, CLOSED
+- States: OPEN, ACTIVE, LOCKED, SETTLED, CANCELLED. `CLOSED` is not an on-chain state.
 - State transitions controlled by oracle/admin
 - Prevents invalid operations
 

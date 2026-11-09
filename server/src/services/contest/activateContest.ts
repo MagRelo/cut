@@ -9,6 +9,7 @@ import { requireSportModule } from "../../sports/registry.js";
 import { getContestContract, verifyOperator, readContestState } from "../shared/contractClient.js";
 import { ContestState, type OperationResult } from "../shared/types.js";
 import { hasOnchainEscrow } from "../../utils/hasOnchainEscrow.js";
+import { confirmContestWrite } from "./confirmContestWrite.js";
 
 export async function activateContest(contestId: string): Promise<OperationResult> {
   try {
@@ -78,6 +79,17 @@ export async function activateContest(contestId: string): Promise<OperationResul
     }
 
     const contractState = await readContestState(contest.address, contest.chainId);
+    if (contractState === ContestState.ACTIVE) {
+      await prisma.contest.update({
+        where: { id: contestId },
+        data: { status: "ACTIVE" },
+      });
+      console.log(`[activateContest] Aligned contest ${contestId} to chain ACTIVE`);
+      return {
+        success: true,
+        contestId,
+      };
+    }
     if (contractState !== ContestState.OPEN) {
       return {
         success: false,
@@ -87,9 +99,15 @@ export async function activateContest(contestId: string): Promise<OperationResul
     }
 
     const contract = getContestContract(contest.address, contest.chainId);
-    const hash = (await contract.write.activateContest!()) as string;
+    const hash = (await contract.write.activateContest!()) as `0x${string}`;
 
     console.log(`[activateContest] Transaction hash: ${hash}`);
+    await confirmContestWrite({
+      contestAddress: contest.address,
+      chainId: contest.chainId,
+      hash,
+      expected: ContestState.ACTIVE,
+    });
 
     await prisma.contest.update({
       where: { id: contestId },

@@ -47,6 +47,7 @@ import {
   captureContestSnapshot,
   capturePreSettleSnapshot,
 } from "./captureContestSnapshot.js";
+import { confirmContestWrite } from "./confirmContestWrite.js";
 import { waitForContestState } from "./waitForContestState.js";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
@@ -451,20 +452,12 @@ export async function settleContest(contestId: string): Promise<OperationResult>
       ])) as `0x${string}`;
 
       console.log(`[settleContest] Transaction submitted: ${hash}`);
-      settleReceipt = await publicClient.waitForTransactionReceipt({ hash });
-      if (settleReceipt.status !== "success") {
-        throw new Error(`settleContest transaction reverted: ${hash}`);
-      }
-      const settledState = await waitForContestState(
-        contest.address,
-        contest.chainId,
-        ContestState.SETTLED,
-      );
-      if (settledState !== ContestState.SETTLED) {
-        throw new Error(
-          `Contract state is ${settledState} after settle tx ${hash}; expected SETTLED (${ContestState.SETTLED})`,
-        );
-      }
+      settleReceipt = await confirmContestWrite({
+        contestAddress: contest.address,
+        chainId: contest.chainId,
+        hash,
+        expected: ContestState.SETTLED,
+      });
     }
 
     console.log(`[settleContest] Settlement confirmed on-chain: ${hash}`);

@@ -27,7 +27,7 @@ flowchart TB
 | **Participant** | Competitor identity (`Participant`) — golfer, NFL player, etc. |
 | **Event participant** | Competitor in a specific event with live `scoreData` and `total`. |
 | **Lineup** | User's roster for one event (`Lineup` + `LineupPick[]`). Optional `prediction` JSON for tie-breaks. |
-| **Contest** | Paid competition on one event. Status: `OPEN → ACTIVE → LOCKED → SETTLED → CLOSED`. |
+| **Contest** | Paid competition on one event. Status: `OPEN → ACTIVE → LOCKED → SETTLED`, or `CANCELLED` before settlement. `CLOSED` is a legacy database value. |
 | **Contest lineup** | Entry linking a `lineupId` into a contest (`ContestLineup`). Holds `entryId` (on-chain). |
 | **League** | `UserGroup` — cross-sport social group. No `sportId` on the league; each contest has its own `eventId`. |
 

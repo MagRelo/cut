@@ -64,13 +64,15 @@ export const ContestLobby: React.FC = () => {
     isPlaceholderData,
     error: queryError,
   } = useContestQuery(contestAddress);
+  const isContestDataPending = isFetching && isPlaceholderData;
+  const { viewModel, contestStateOnChain } = useContestLobbyState(contest, {
+    isContestDataPending,
+  });
   const {
     data: timelineData,
     isLoading: isTimelineLoading,
     isFetching: isTimelineFetching,
-  } = useContestTimelineQuery(contestAddress, contest);
-  const isContestDataPending = isFetching && isPlaceholderData;
-  const { viewModel } = useContestLobbyState(contest, { isContestDataPending });
+  } = useContestTimelineQuery(contestAddress, contest, contestStateOnChain);
 
   const eventShell = useMemo((): CompetitionEventShell | null => {
     if (contest?.event?.sportId) {

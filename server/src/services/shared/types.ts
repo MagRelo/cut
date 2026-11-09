@@ -11,7 +11,16 @@ export enum ContestState {
   CANCELLED = 4,
 }
 
-// Database status strings (CLOSED retained for legacy rows only)
+// Database status. CLOSED is a legacy value with no writer.
+// Terminal states are SETTLED and CANCELLED.
+//
+// Paid activate, lock, and cancel confirm the receipt and state() before the
+// row moves, so a reverted transaction no longer leaves the row ahead of the
+// chain. The next call adopts a chain that is already at that function's
+// target (OPEN row + ACTIVE chain, ACTIVE row + LOCKED chain, pre-settle row
+// + CANCELLED chain) and does not send another transaction. A row already
+// ahead of the chain is not rolled back. Chain SETTLED is written only by
+// settleContest, after payouts are recorded.
 export type ContestStatus = "OPEN" | "ACTIVE" | "LOCKED" | "SETTLED" | "CANCELLED" | "CLOSED";
 
 // Convert contract state to database status string

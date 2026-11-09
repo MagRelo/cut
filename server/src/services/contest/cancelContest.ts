@@ -8,6 +8,25 @@ import { prisma } from '../../lib/prisma.js';
 import { getContestContract, verifyOperator, readContestState } from '../shared/contractClient.js';
 import { ContestState, type OperationResult } from '../shared/types.js';
 import { hasOnchainEscrow } from '../../utils/hasOnchainEscrow.js';
+import { confirmContestWrite } from './confirmContestWrite.js';
+
+function cancelResults(
+  existing: unknown,
+  fields: { reason?: string; cancelTxHash?: string; alignedToChain?: boolean },
+) {
+  const base =
+    existing && typeof existing === 'object' && !Array.isArray(existing)
+      ? (existing as Record<string, unknown>)
+      : {};
+  return JSON.parse(JSON.stringify({
+    ...base,
+    cancelled: true,
+    reason: typeof base.reason === 'string' ? base.reason : fields.reason || 'Contest cancelled',
+    cancelledAt: typeof base.cancelledAt === 'string' ? base.cancelledAt : new Date().toISOString(),
+    ...(fields.cancelTxHash ? { cancelTx: { hash: fields.cancelTxHash } } : {}),
+    ...(fields.alignedToChain ? { alignedToChain: true } : {}),
+  }));
+}
 
 export async function cancelContest(contestId: string, reason?: string): Promise<OperationResult> {
   try {
@@ -64,7 +83,6 @@ export async function cancelContest(contestId: string, reason?: string): Promise
       };
     }
 
-    // Check contract state
     const contractState = await readContestState(contest.address, contest.chainId);
     if (contractState === ContestState.SETTLED) {
       return {
@@ -73,24 +91,37 @@ export async function cancelContest(contestId: string, reason?: string): Promise
         error: `Cannot cancel contest in contract state ${contractState}`,
       };
     }
+    if (contractState === ContestState.CANCELLED) {
+      await prisma.contest.update({
+        where: { id: contestId },
+        data: {
+          status: 'CANCELLED',
+          results: cancelResults(contest.results, { reason, alignedToChain: true }),
+        },
+      });
+      console.log(`[cancelContest] Aligned contest ${contestId} to chain CANCELLED`);
+      return {
+        success: true,
+        contestId,
+      };
+    }
 
-    // Call contract to cancel
     const contract = getContestContract(contest.address, contest.chainId);
-    const hash = (await contract.write.cancelContest!()) as string;
+    const hash = (await contract.write.cancelContest!()) as `0x${string}`;
 
     console.log(`[cancelContest] Transaction hash: ${hash}`);
+    await confirmContestWrite({
+      contestAddress: contest.address,
+      chainId: contest.chainId,
+      hash,
+      expected: ContestState.CANCELLED,
+    });
 
-    // Update database
     await prisma.contest.update({
       where: { id: contestId },
       data: {
         status: 'CANCELLED',
-        results: JSON.parse(JSON.stringify({
-          cancelled: true,
-          reason: reason || 'Contest cancelled',
-          cancelledAt: new Date().toISOString(),
-          cancelTx: { hash },
-        })),
+        results: cancelResults(contest.results, { reason, cancelTxHash: hash }),
       },
     });
 

@@ -139,11 +139,15 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
   [*] --> OPEN: create
-  OPEN --> ACTIVE: batchActivate + on-chain
-  ACTIVE --> LOCKED: admin lock or policy
-  LOCKED --> SETTLED: batchSettle + oracle
-  SETTLED --> CLOSED: batchClose
+  OPEN --> ACTIVE: batchActivate
+  ACTIVE --> LOCKED: lock
+  LOCKED --> SETTLED: batchSettle
+  OPEN --> CANCELLED: cancel
+  ACTIVE --> CANCELLED: cancel
+  LOCKED --> CANCELLED: cancel
 ```
+
+Terminal states are `SETTLED` and `CANCELLED`. `CLOSED` is a legacy database value. There is no `batchClose`.
 
 | Layer | Responsibility |
 |-------|----------------|

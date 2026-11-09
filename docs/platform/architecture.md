@@ -21,7 +21,7 @@ flowchart TB
 | **Sports** | Each sport is a registered plugin (PGA Golf, F1, Commodities, etc.). The platform lists enabled sports; contest cards and event groups show sport. |
 | **Active event** | One active event per sport at a time (e.g. this week's PGA tournament, this week's NFL slate). Ops/cron pointer — not a browse route. |
 | **Lineups** | Event-scoped. A user builds a roster from that event's candidate pool, then enters it into one or more contests for that event. |
-| **Contests** | Paid competitions tied to a single event, or $0 contests with no on-chain escrow. Lifecycle: `OPEN → ACTIVE → LOCKED → SETTLED → CLOSED`. Paid contests deploy via `ContestFactory` / `ContestController`. $0 contests are database-only (no wallet, no Winner Pool). |
+| **Contests** | Paid competitions tied to a single event, or $0 contests with no on-chain escrow. Lifecycle: `OPEN → ACTIVE → LOCKED → SETTLED`, or `CANCELLED` before settlement. `CLOSED` is a legacy database value. Paid contests deploy via `ContestFactory` / `ContestController`. $0 contests are database-only (no wallet, no Winner Pool). |
 | **Leagues** | Cross-sport social groups (`UserGroup`). No sport field on the league—a single league can host golf and NFL contests simultaneously. Sport is determined per contest via the event. |
 | **Account** | One user, one wallet, one referral graph. Lineups and contest entries span sports under the same identity. |
 

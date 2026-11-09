@@ -16,6 +16,7 @@ export function useContestLobbyState(
 ): {
   viewModel: ContestLobbyViewModel | null;
   isChainStateLoading: boolean;
+  contestStateOnChain: number | undefined;
 } {
   const hasWallet = Boolean(useEffectiveWalletAddress());
   const contestEvent = useContestEvent(contest);
@@ -53,5 +54,10 @@ export function useContestLobbyState(
     isContestDataPending,
   ]);
 
-  return { viewModel, isChainStateLoading };
+  return {
+    viewModel,
+    isChainStateLoading,
+    contestStateOnChain:
+      contestStateOnChain !== undefined ? Number(contestStateOnChain) : undefined,
+  };
 }

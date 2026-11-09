@@ -16,7 +16,7 @@ The contracts layer implements the core blockchain functionality for Play The Cu
 1. **ContestController** - Main contest contract (via ContestFactory)
 
    - Three-layer architecture (Oracle, Primary, Secondary)
-   - State machine (OPEN → ACTIVE → LOCKED → SETTLED → CLOSED)
+   - State machine (`OPEN → ACTIVE → LOCKED → SETTLED`, or `CANCELLED`). There is no on-chain `CLOSED`.
    - Primary participant deposits and prize distribution
    - Secondary prediction market
    - Cross-subsidy mechanism for pool balancing

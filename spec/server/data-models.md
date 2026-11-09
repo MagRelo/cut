@@ -85,7 +85,7 @@ Lineup ──< LineupPick >── EventParticipant
 | `userGroupId` | Optional league scope |
 | `address` | On-chain `ContestController` |
 | `chainId` | 8453 / 84532 |
-| `status` | `OPEN` \| `ACTIVE` \| `LOCKED` \| `SETTLED` \| `CLOSED` |
+| `status` | `OPEN` \| `ACTIVE` \| `LOCKED` \| `SETTLED` \| `CANCELLED`. `CLOSED` is a legacy database value. |
 | `settings` | Primary deposit, oracle, expiry, subsidy bps, … |
 | `results` | Settlement snapshot JSON |
 | `pickPopularity` | `Json?` — per-player popularity after lock (`pickRate`, `bonus`, `adjustedScore` keyed by `eventParticipantId`) |
