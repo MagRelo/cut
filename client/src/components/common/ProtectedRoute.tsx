@@ -6,16 +6,10 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+  const { sessionPhase } = useAuth();
   const location = useLocation();
 
-  if (loading) {
-    // Global loading overlay blocks interactions while auth resolves.
-    return <>{children}</>;
-  }
-
-  if (!user) {
-    // Redirect to connect page with the current location as return URL
+  if (sessionPhase === "signedOut" || sessionPhase === "sessionError") {
     return <Navigate to="/connect" state={{ from: location }} replace />;
   }
 

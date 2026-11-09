@@ -27,7 +27,7 @@ Nine implicit machines are worth a decision. Five of them hurt user experience, 
 1. **Contest database / chain mirror** — Implemented. Paid activate, lock, cancel, and settle update `Contest.status` only after the receipt succeeds and `state()` matches. If the chain is already at that function's target, the next call updates the row and does not send another transaction.
 2. **Contest lobby readers** — Implemented. The lobby follows `joinStatus` from `readContestSurfaces`: the chain state when one is present, otherwise the row. Claims open only when the row is `SETTLED`.
 3. **Wallet transaction phase** — Implemented. `useBlockchainTransaction` stores one `TxPhase`. Paid enter, leave, wager, claim, withdraw, and send share its labels. A mined transfer is written to `OnchainPayment`, and a failed save retries without a new transaction.
-4. **Session readiness** — Privy `ready` / `authenticated`, Wagmi `address`, `profileBlocked`, and the profile query are one gate with no name. `loading` goes false before a wallet address exists, and `ProtectedRoute` then sends the user to `/connect`.
+4. **Session readiness** — Implemented. `readSessionPhase` is the gate. A Privy session whose wallet is still connecting stays `needsWallet` and is not sent to Sign in.
 5. **Competition event phase** — `EventStatus` is a real union (`SCHEDULED | LIVE | COMPLETE`), but PGA, commodities, and F1 store different inputs, and `CompetitionEvent.isActive` is a second axis. An unrecognized PGA status string stays `SCHEDULED`, so contests do not activate and scores do not sync.
 
 **Implemented.** `readContestSurfaces(dbStatus, chainState?)` in `client/src/lib/contestSurfaces.ts` names the lobby. `joinStatus` is the chain state when one is present, otherwise the row. Lobby phase, entry, the Lineups tab, the timeline, and the Winner Pool follow `joinStatus`. The timeline runs when `joinStatus` is not `OPEN`, and it polls while that status is `ACTIVE` or `LOCKED` and the event is not `COMPLETE`. Claims open only when the row is `SETTLED`. `skew` is a diagnostic (`null` when the row and the chain agree) and is not rendered. The reader does not write `Contest.status`.
@@ -35,6 +35,8 @@ Nine implicit machines are worth a decision. Five of them hurt user experience, 
 `EventLineupsPanel` prints `joinStatus`. `useContestLobbyState` passes the chain `state()` into `useContestTimelineQuery`. `useContestQuery` still polls the lobby payload from the row.
 
 Wallet transactions use `TxPhase` on `useBlockchainTransaction`. The booleans are derived from it. Paid value transfers that had no ledger row are written to `OnchainPayment`. Contest creation is unchanged. `$0` join and leave stay on their API loading.
+
+`readSessionPhase` in `client/src/lib/sessionPhase.ts` names the session. `loading` is `booting`, `needsWallet`, or `syncingProfile`. `user` is set only in `ready`. Protected routes redirect only for `signedOut` and `sessionError`.
 
 ---
 
@@ -45,7 +47,7 @@ Wallet transactions use `TxPhase` on `useBlockchainTransaction`. The booleans ar
 | Contest DB / chain mirror | `Contest.status`, `Contest.address`, `Contest.results`, `confirmContestWrite`, `activateContest`, `lockContest`, `settleContest`, `cancelContest` | Free string, nullable address, JSON tx flags, chain enum | UX, DX, AX | Implemented. Writers confirm the receipt and `state()` before the row moves. A chain already at the target updates the row without another transaction. |
 | Contest lobby readers | `readContestSurfaces`, `deriveContestLobbyViewModel`, `useContestTimelineQuery`, `useContestSettlementClaims` | `joinStatus` (chain wins), phase from that status, claims from the row | UX, DX, AX | Implemented. The lobby follows `joinStatus`. Claims stay on the row. |
 | Wallet transaction phase | `useBlockchainTransaction`, `TxButton`, `OnchainPayment` | `TxPhase`; booleans derived from it. `ENTRY`, `WAGER`, `WITHDRAW`, `REFUND`, `SEND` | UX, DX, AX | Implemented. One phase. Token movements are inserted after a successful receipt. A failed save retries that insert and the domain write. |
-| Session readiness | `AuthContext`, `ProtectedRoute` | Privy ready, authenticated, Wagmi address, `profileBlocked`, query pending, two error strings | UX, AX | Read-only session phase next to `sessionEnabled`. Do not replace Privy. |
+| Session readiness | `readSessionPhase`, `AuthContext`, `ProtectedRoute`, `Connect` | `SessionPhase`. `loading` and `user` derived from it | UX, AX | Implemented. A connecting wallet is `needsWallet`. Disconnect and a blocked profile are `signedOut`. |
 | Competition event phase | `CompetitionEvent.metadata`, `isActive`, `packages/sport-*/src/status.ts` | Per-sport JSON and a boolean pointer, collapsed to `EventStatus` | UX, DX, AX | Document the raw-input table next to the three `status.ts` files. Do not add a status column. |
 | Lineup edit and entry | `getLineupEditBlock`, `EventLineupsPanel`, `useLineupSlotEditor`, `useContestLineupEntry`, `ContestLineup` | Contest `OPEN` vs event `LIVE`/`COMPLETE`; row presence; `SaveStatus`; `pendingAction` | UX, DX | Keep `SaveStatus`. Add `entryPhase` on top of the wallet phase. Document that `ContestLineup.status` does not move. |
 | Field membership | `Participant.metadata.inField`, `syncField.ts`, candidate filters | Boolean inside sport-global JSON | UX, DX, AX | Document that `inField` is on `Participant`, not `EventParticipant`. Do not migrate JSON. |
@@ -172,44 +174,22 @@ The old flags are derived: `isSending` is `awaitingSignature`, `isConfirming` is
 
 ## 4. Session readiness
 
-**What it controls.** Who is signed in, whether protected routes render, and whether join, wager, or send will talk to a wallet.
+**Status.** Implemented.
 
-**States, unnamed.** `AuthContext` combines:
+**What it controls.** Who is signed in, whether protected routes render, and whether the connect screen offers Sign in. `readSessionPhase` in `client/src/lib/sessionPhase.ts` is the gate: `booting | signedOut | needsWallet | syncingProfile | sessionError | ready`. First match wins.
 
-- Privy `ready`, `authenticated`
-- Wagmi `status` and `address`
-- `profileBlocked`
-- profile query pending / success / error
-- `loginError`, `serverSessionError`
+- `booting` — Privy is not ready
+- `signedOut` — not authenticated, or `profileBlocked`, or authenticated with no address and Wagmi `disconnected`
+- `needsWallet` — authenticated, no address, and Wagmi is still `connecting`, `reconnecting`, or `connected`
+- `syncingProfile` — an address is present and `/auth/me` has not returned a profile or an error
+- `sessionError` — that fetch failed and there is no profile
+- `ready` — a profile is loaded. A later error does not clear it
 
-```ts
-const sessionEnabled = ready && authenticated && !!address && !profileBlocked;
-const user = sessionEnabled ? (profileQuery.data ?? null) : null;
-const profilePending = sessionEnabled && profileQuery.isPending;
-const loading = !ready || profilePending;
-```
+`loading` is `booting`, `needsWallet`, or `syncingProfile`. `user` is the profile only in `ready`. `serverUserSyncing` is `syncingProfile`. `sessionEnabled` is still the profile-query switch. `ProtectedRoute` and `AdminRoute` redirect only for `signedOut` and `sessionError`. Onboarding runs only from `ready`. Connect says "Finishing sign-in" in `needsWallet` and "Connecting to Play The Cut..." in `syncingProfile`. The splash still covers `loading` with no user, so a late address stays on the splash.
 
-`ProtectedRoute` renders children while `loading` is true (the overlay is expected to block clicks) and redirects to `/connect` when `loading` is false and `user` is null.
+`bootstrapAuthProfile` still branches inside the query: missing `walletAddress` posts `/auth/sync-wallets`; `401 NEEDS_PROVISIONING` posts `/auth/session`; `409 WALLET_NOT_PROVISIONED_FOR_CHAIN` syncs and reloads. Those stay request steps.
 
-`bootstrapAuthProfile` also branches inside the query: missing `walletAddress` posts `/auth/sync-wallets`; `401 NEEDS_PROVISIONING` posts `/auth/session` with `X-Cut-Referral-Code`; `409 WALLET_NOT_PROVISIONED_FOR_CHAIN` syncs and reloads. Those are request steps, not UI states.
-
-A wrong chain (`currentChainId !== user.chainId`) triggers `switchChain` in an effect. Failure is a `console.warn`. There is no wrong-chain UI state. `balancesUnavailable` is a separate flag. Join and send block on it. Send still uses `paymentTokenBalance ?? 0n`, so a missing read must not be treated as an empty wallet. The flag exists for that.
-
-**Ambiguous and reachable.** Privy authenticated, `ready === true`, Wagmi `address` still missing: `sessionEnabled` is false, `profilePending` is false, `loading` is false, `user` is null. `ProtectedRoute` sends them to `/connect` during wallet hydration. `400` / `403` sets `serverSessionError` and tears the session down without clearing the message. A non-provisioning `401` blocks the profile and clears the message, so Connect gets no reason.
-
-**Why it is implicit.** "Can this person spend?" is the product of two libraries, a block flag, a query, and two error strings. `loading` hides the address gap.
-
-**Failure modes.** Connect shows Sign in while a Privy session exists and the address is late. An agent that treats `authenticated` or `loading` as "session ready" will call APIs or click through too early. Chain mismatch fails later, inside the transaction.
-
-**Decision.** One read-only helper next to `sessionEnabled`: `booting | needsWallet | syncingProfile | ready | sessionError | signedOut`. `loading` and `user` stay derived from it. Do not replace Privy, Wagmi, or the profile query. Do not add a wrong-chain blocker in the first step. That would change when transactions are attempted.
-
-**UX.** The connect screen can show "finishing sign-in" while the address is late, instead of a fresh Sign in.
-
-**DX.** Route guards and transaction hooks share one name for "not ready yet."
-
-**AX.** The helper is the gate to read. `authenticated` alone is not.
-
-**Effort.** Small. First step: the pure function of the flags that already exist, used only for logging or a Connect caption. Leave `ProtectedRoute`'s redirect rule until that caption is in place.
+**Where one shape does not fit.** A wrong chain still calls `switchChain` and warns. It is not a phase. `balancesUnavailable` stays its own flag so a failed balance read is not an empty wallet. `loginError` is a message on the signed-out screen. `profileBlocked` is `signedOut` even while Privy still says authenticated. That is the 401 teardown. `400` / `403` still set `serverSessionError` and end the Privy session, so Connect can show the reason after the phase is `signedOut`.
 
 ---
 

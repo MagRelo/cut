@@ -57,6 +57,9 @@ export const DebugPage: React.FC = () => {
         <h2 className="text-lg font-semibold mb-3 text-green-600">Auth context</h2>
         <div className="space-y-2 text-sm">
           <div>
+            <strong>Session:</strong> {auth.sessionPhase}
+          </div>
+          <div>
             <strong>Loading:</strong> {auth.loading ? "true" : "false"}
           </div>
           <div>

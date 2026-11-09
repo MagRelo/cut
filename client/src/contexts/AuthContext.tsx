@@ -22,6 +22,7 @@ import { registerAuthTokenHandlers } from "../lib/authToken";
 import { getTargetChainIdFromEnv } from "../config/targetChain";
 import { clearStoredReferralCode, getStoredReferralCode } from "../lib/referralCapture";
 import { preloadLineups } from "../lib/preloadData";
+import { readSessionPhase, sessionPhaseIsLoading, type SessionPhase } from "../lib/sessionPhase";
 
 /** Thrown when a profile fetch finishes after logout or a 401 cleared the session cache. */
 class SessionEndedError extends Error {
@@ -63,8 +64,9 @@ export interface AuthUser {
 
 interface AuthContextData {
   user: AuthUser | null;
-  /** Privy not ready, or loading server user from `/auth/me`. */
+  /** `booting`, `needsWallet`, or `syncingProfile`. */
   loading: boolean;
+  sessionPhase: SessionPhase;
   /** True while fetching `/auth/me` (after Privy session exists). */
   serverUserSyncing: boolean;
   /** Opens Privy login (see `useLogin` in Privy docs). */
@@ -190,8 +192,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     staleTime: Infinity,
   });
 
-  const user: AuthUser | null = sessionEnabled ? (profileQuery.data ?? null) : null;
-  const profilePending = sessionEnabled && profileQuery.isPending;
+  const hasUser = sessionEnabled && profileQuery.data != null;
+  const sessionPhase = readSessionPhase({
+    privyReady: ready,
+    authenticated,
+    profileBlocked,
+    wagmiStatus: status,
+    hasAddress: !!address,
+    profileError: sessionEnabled && profileQuery.isError && !hasUser,
+    hasUser,
+  });
+  const loading = sessionPhaseIsLoading(sessionPhase);
+  const user: AuthUser | null = sessionPhase === "ready" ? (profileQuery.data ?? null) : null;
 
   const paymentTokenAddress = getContractAddress(currentChainId ?? 0, "paymentTokenAddress");
 
@@ -541,13 +553,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void run();
   }, [user, status, currentChainId, switchChain]);
 
-  const loading = !ready || profilePending;
-
   const contextValue = useMemo(
     () => ({
       user,
       loading,
-      serverUserSyncing: profilePending,
+      sessionPhase,
+      serverUserSyncing: sessionPhase === "syncingProfile",
       login,
       loginError,
       serverSessionError,
@@ -569,7 +580,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [
       user,
       loading,
-      profilePending,
+      sessionPhase,
       login,
       loginError,
       serverSessionError,
@@ -610,6 +621,7 @@ const storybookAuthUser: AuthUser = {
 const storybookAuthContextValue: AuthContextData = {
   user: storybookAuthUser,
   loading: false,
+  sessionPhase: "ready",
   serverUserSyncing: false,
   login: () => undefined,
   loginError: null,

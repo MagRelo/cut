@@ -15,16 +15,16 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
   const {
     user,
     loading,
+    sessionPhase,
     login,
     loginError,
     serverSessionError,
     clearLoginError,
-    serverUserSyncing,
   } = useAuth();
   const referralCodeDetected = useReferralCodeDetected();
   const successTriggeredRef = useRef(false);
 
-  const isSyncingServer = serverUserSyncing && !user;
+  const isFinishingSignIn = sessionPhase === "needsWallet" || sessionPhase === "syncingProfile";
 
   useEffect(() => {
     if (!user) {
@@ -43,11 +43,13 @@ export function Connect({ onSuccess }: ConnectProps = {}) {
 
   return (
     <div className="flex flex-col items-center gap-4 font-display">
-      {isSyncingServer ? (
+      {isFinishingSignIn ? (
         <div className="p-8 text-center">
           <div className="flex items-center gap-3 justify-center text-gray-400 font-medium">
             <LoadingSpinnerSmall color={"green"} />
-            Connecting to {BRAND_PROSE}...
+            {sessionPhase === "needsWallet"
+              ? "Finishing sign-in"
+              : `Connecting to ${BRAND_PROSE}...`}
           </div>
         </div>
       ) : (

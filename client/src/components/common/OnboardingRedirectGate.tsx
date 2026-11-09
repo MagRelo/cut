@@ -9,10 +9,10 @@ const EXCLUDED_PATHS = new Set(["/onboarding", "/connect"]);
  * Excludes `/onboarding` and `/connect` so login and the flow itself still work.
  */
 export function OnboardingRedirectGate({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, sessionPhase } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  if (sessionPhase !== "ready") {
     return <>{children}</>;
   }
 

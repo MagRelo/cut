@@ -10,14 +10,14 @@ interface AdminRouteProps {
  * After login: only `ADMIN` / `SUPER_ADMIN` may view (must be nested under `ProtectedRoute`).
  */
 export function AdminRoute({ children }: AdminRouteProps) {
-  const { user, loading, isAdmin } = useAuth();
+  const { sessionPhase, isAdmin } = useAuth();
 
-  if (loading) {
-    return null;
+  if (sessionPhase === "signedOut" || sessionPhase === "sessionError") {
+    return <Navigate to="/connect" replace />;
   }
 
-  if (!user) {
-    return <Navigate to="/connect" replace />;
+  if (sessionPhase !== "ready") {
+    return null;
   }
 
   if (!isAdmin()) {
