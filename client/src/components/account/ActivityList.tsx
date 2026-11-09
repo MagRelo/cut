@@ -17,6 +17,9 @@ const TYPE_LABELS: Record<UserTxnType, string> = {
   PAYOUT_PRIMARY: "Payout",
   PAYOUT_SECONDARY: "Winner pool payout",
   PAYOUT_REFERRAL: "Referral",
+  SEND: "Send",
+  WITHDRAW: "Withdrawal",
+  REFUND: "Refund",
 };
 
 const formatDate = (iso: string) => {

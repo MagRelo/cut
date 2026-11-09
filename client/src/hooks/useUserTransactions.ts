@@ -7,7 +7,10 @@ export type UserTxnType =
   | "PREDICTION_BUY"
   | "PAYOUT_PRIMARY"
   | "PAYOUT_SECONDARY"
-  | "PAYOUT_REFERRAL";
+  | "PAYOUT_REFERRAL"
+  | "SEND"
+  | "WITHDRAW"
+  | "REFUND";
 
 export type UserTransaction = {
   id: string;

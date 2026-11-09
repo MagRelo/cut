@@ -7,6 +7,8 @@ import type { useContestLineupEntry } from "../../hooks/useContestLineupEntry";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { Button } from "../common/Button";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { TxButton } from "../common/TxButton";
+import type { TxPhase } from "../../lib/txPhase";
 
 const joinActionsFooterClassName = "border-t border-gray-200 bg-slate-50 px-3 py-2.5 font-display";
 
@@ -34,6 +36,10 @@ export interface ContestLineupJoinFooterProps {
   depositLabel: string;
   onJoin: () => void;
   onLeave: () => void;
+  /** Paid chain phase for this lineup. `$0` stays `idle` and uses `isProcessing`. */
+  phase?: TxPhase;
+  txError?: string | null;
+  onRetry?: () => void;
 }
 
 /** Entered / not-entered strip at the bottom of a lineup card. */
@@ -47,10 +53,23 @@ export const ContestLineupJoinFooter: React.FC<ContestLineupJoinFooterProps> = (
   depositLabel,
   onJoin,
   onLeave,
+  phase = "idle",
+  txError,
+  onRetry,
 }) => {
   if (!entered && !canJoin) {
     return null;
   }
+
+  const onChain = phase !== "idle";
+  const onJoinClick = () => {
+    if (phase === "recordFailed") onRetry?.();
+    else onJoin();
+  };
+  const onLeaveClick = () => {
+    if (phase === "recordFailed") onRetry?.();
+    else onLeave();
+  };
 
   if (entered) {
     return (
@@ -58,21 +77,32 @@ export const ContestLineupJoinFooter: React.FC<ContestLineupJoinFooterProps> = (
         <div className="mt-1 space-y-2.5">
           <EnteredInContestLabel />
           {canLeave ? (
-            <button
-              type="button"
-              onClick={onLeave}
-              disabled={isProcessing}
-              className={leaveButtonClassName}
-            >
-              {isProcessing ? (
-                <span className="flex items-center justify-center gap-2">
-                  <LoadingSpinnerSmall color="gray" />
-                  Confirming...
-                </span>
-              ) : (
-                "Leave Contest"
-              )}
-            </button>
+            onChain ? (
+              <TxButton
+                phase={phase}
+                idleLabel="Leave Contest"
+                onClick={onLeaveClick}
+                error={txError}
+                className={leaveButtonClassName}
+                spinnerColor="gray"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={onLeave}
+                disabled={isProcessing}
+                className={leaveButtonClassName}
+              >
+                {isProcessing ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <LoadingSpinnerSmall color="gray" />
+                    Confirming...
+                  </span>
+                ) : (
+                  "Leave Contest"
+                )}
+              </button>
+            )
           ) : null}
         </div>
       </div>
@@ -81,21 +111,32 @@ export const ContestLineupJoinFooter: React.FC<ContestLineupJoinFooterProps> = (
 
   return (
     <div className={joinActionsFooterClassName}>
-      <Button
-        type="button"
-        block
-        onClick={onJoin}
-        disabled={!hasPlayers || isProcessing || depositLoading}
-      >
-        {isProcessing ? (
-          <span className="flex items-center justify-center gap-2">
-            <LoadingSpinnerSmall />
-            Confirming...
-          </span>
-        ) : (
-          `Enter Contest - ${depositLabel}`
-        )}
-      </Button>
+      {onChain ? (
+        <TxButton
+          phase={phase}
+          idleLabel={`Enter Contest - ${depositLabel}`}
+          onClick={onJoinClick}
+          disabled={phase === "recordFailed" ? false : !hasPlayers || depositLoading}
+          error={txError}
+          block
+        />
+      ) : (
+        <Button
+          type="button"
+          block
+          onClick={onJoin}
+          disabled={!hasPlayers || isProcessing || depositLoading}
+        >
+          {isProcessing ? (
+            <span className="flex items-center justify-center gap-2">
+              <LoadingSpinnerSmall />
+              Confirming...
+            </span>
+          ) : (
+            `Enter Contest - ${depositLabel}`
+          )}
+        </Button>
+      )}
     </div>
   );
 };
@@ -133,6 +174,9 @@ export const ContestLineupJoinActions: React.FC<ContestLineupJoinActionsProps> =
       depositLabel={entry.joinPrimaryDepositLabel}
       onJoin={() => void entry.handleJoinContest(lineupId)}
       onLeave={() => void entry.handleLeaveContest(lineupId)}
+      phase={entry.lineupPhase(lineupId)}
+      txError={entry.lineupTxError(lineupId)}
+      onRetry={() => entry.retryLineupSave(lineupId)}
     />
   );
 

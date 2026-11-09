@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "../common/Button";
+import { TxButton } from "../common/TxButton";
 import { usePostHog } from "posthog-js/react";
 import { formatUnits } from "viem";
 import { useAccount, useBalance, useReadContract } from "wagmi";
@@ -21,8 +22,6 @@ import { useOddsFormat } from "../../hooks/useOddsFormat";
 import { incrementalGlobalClaimDelta } from "../../utils/secondaryPurchasePreview";
 import { captureWinnerPoolPositionRecorded } from "../../lib/analytics/posthog";
 import { contestLineupDisplayName } from "../../lib/candidateUtils";
-import { ErrorMessage } from "../common/ErrorMessage";
-import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 const isValidHexColor = (value: unknown): value is string => {
@@ -231,11 +230,21 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     setError(null);
   }, [entryId, contest.id]);
 
-  const { execute, isProcessing, createAddPredictionCalls } = useAddPrediction({
+  const {
+    execute,
+    retrySave,
+    phase,
+    isProcessing,
+    error: transactionError,
+    createAddPredictionCalls,
+  } = useAddPrediction({
     onSuccess: async (data) => {
       const statusData = data as BatchTransactionStatusData;
       const lastReceipt = statusData.receipts[statusData.receipts.length - 1];
-      if (user?.id && entryId && contest?.id) {
+      if (!lastReceipt?.transactionHash || !entryId || !contest?.id) {
+        throw new Error("Wager did not finish saving");
+      }
+      if (user?.id) {
         captureWinnerPoolPositionRecorded(posthog, {
           user_id: user.id,
           contest_id: contest.id,
@@ -244,34 +253,34 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           amount_wei: purchaseAmountWei !== null ? purchaseAmountWei.toString() : undefined,
         });
       }
-      if (lastReceipt?.transactionHash && entryId && contest?.id) {
-        try {
-          await apiClient.post(
-            `/contests/${contest.id}/secondary-participants`,
-            {
-              entryId,
-              transactionHash: lastReceipt.transactionHash,
-              chainId: contest.chainId,
-              ...(purchaseAmountWei != null ? { amountWei: purchaseAmountWei.toString() } : {}),
-            },
-            { requiresAuth: true },
-          );
-        } catch (e) {
-          console.error("[PredictionEntryForm] Failed to record secondary participant:", e);
-        }
-      }
+      await apiClient.post(
+        `/contests/${contest.id}/secondary-participants`,
+        {
+          entryId,
+          transactionHash: lastReceipt.transactionHash,
+          chainId: contest.chainId,
+          ...(purchaseAmountWei != null ? { amountWei: purchaseAmountWei.toString() } : {}),
+        },
+        { requiresAuth: true },
+      );
       setAmount("10");
       setError(null);
-      onClose();
-    },
-    onError: (err) => {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      setError(errorMsg);
     },
   });
 
+  const closedOnConfirm = useRef(false);
+  useEffect(() => {
+    if (phase !== "confirmed" || closedOnConfirm.current) return;
+    closedOnConfirm.current = true;
+    onClose();
+  }, [phase, onClose]);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (phase === "recordFailed") {
+      await retrySave();
+      return;
+    }
     setError(null);
 
     if (!entryId) {
@@ -302,15 +311,28 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       return;
     }
 
+    if (!balanceAddress || !contest.address || !contestPaymentToken) {
+      setError("Wallet not connected");
+      return;
+    }
+
     try {
       const calls = createAddPredictionCalls(
-        contest.address ?? "",
+        contest.address,
         Number.parseInt(entryId, 10),
         amountBigInt,
         contestPaymentToken,
       );
 
-      await execute(calls);
+      await execute(calls, {
+        kind: "WAGER",
+        tokenAddress: contestPaymentToken as `0x${string}`,
+        amountWei: amountBigInt.toString(),
+        from: balanceAddress,
+        to: contest.address as `0x${string}`,
+        contestId: contest.id,
+        entryId,
+      });
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       setError(errorMsg);
@@ -480,29 +502,22 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       </div>
 
       <div>
-        <Button
+        <TxButton
           type="submit"
           block
+          phase={phase}
+          idleLabel="Place Wager"
           disabled={
-            secondaryActionsLocked ||
-            isProcessing ||
-            balancesUnavailable ||
-            !amount ||
-            Number.parseFloat(amount) <= 0 ||
-            !canAffordPurchase
+            phase === "recordFailed"
+              ? false
+              : secondaryActionsLocked ||
+                balancesUnavailable ||
+                !amount ||
+                Number.parseFloat(amount) <= 0 ||
+                !canAffordPurchase
           }
-        >
-          {isProcessing ? (
-            <span className="flex items-center justify-center gap-2">
-              <LoadingSpinnerSmall />
-              Placing...
-            </span>
-          ) : (
-            "Place Wager"
-          )}
-        </Button>
-
-        {error ? <ErrorMessage message={error} className="mt-2" /> : null}
+          error={transactionError || error}
+        />
       </div>
     </form>
   );

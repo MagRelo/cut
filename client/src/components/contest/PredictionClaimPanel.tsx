@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { TxButton } from "../common/TxButton";
 import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
 import { useClaimPredictionPayout } from "../../hooks/useSpectatorOperations";
 import { useContestPredictionData } from "../../hooks/useContestPredictionData";
@@ -58,30 +59,37 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
   }, [contest.results, contest.contestLineups]);
 
   // Blockchain transaction hook
-  const { execute, isProcessing, createClaimPredictionPayoutCalls } = useClaimPredictionPayout({
-    onSuccess: async () => {
-      setClaimingEntryId(null);
-      setError(null);
-    },
-    onError: (err) => {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      setError(errorMsg);
-      setClaimingEntryId(null);
-    },
-  });
+  const {
+    execute,
+    retrySave,
+    phase,
+    error: transactionError,
+    createClaimPredictionPayoutCalls,
+  } = useClaimPredictionPayout();
 
   const handleClaim = async (entryId: string) => {
+    if (phase === "recordFailed" && claimingEntryId === entryId) {
+      await retrySave();
+      return;
+    }
+    const tokenAddress = contest.settings?.paymentTokenAddress;
+    if (!userAddress || !contest.address || !tokenAddress) {
+      setError("Wallet not connected");
+      return;
+    }
     setError(null);
     setClaimingEntryId(entryId);
 
-    try {
-      const calls = createClaimPredictionPayoutCalls(contest.address ?? "", parseInt(entryId));
-      await execute(calls);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      setError(errorMsg);
-      setClaimingEntryId(null);
-    }
+    const calls = createClaimPredictionPayoutCalls(contest.address, parseInt(entryId));
+    const outcome = await execute(calls, {
+      kind: "SECONDARY",
+      tokenAddress: tokenAddress as `0x${string}`,
+      from: contest.address as `0x${string}`,
+      to: userAddress,
+      contestId: contest.id,
+      entryId,
+    });
+    if (outcome === "idle") setClaimingEntryId(null);
   };
 
   if (!canClaim) {
@@ -126,7 +134,9 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
         Claim Prediction Winnings
       </h3>
 
-      {error ? <ErrorMessage message={error} className="mx-4 mb-4" /> : null}
+      {error || (phase === "idle" && transactionError) ? (
+        <ErrorMessage message={error || transactionError || ""} className="mx-4 mb-4" />
+      ) : null}
 
       {/* Winning Positions */}
       {winningPositions.length > 0 && (
@@ -143,7 +153,8 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
               const userName = lineup?.user?.name || "Unknown";
               const lineupName = lineup ? contestLineupDisplayName(lineup) : "Lineup";
 
-              const isClaiming = claimingEntryId === position.entryId;
+              const isActive = claimingEntryId === position.entryId;
+              const rowPhase = isActive ? phase : "idle";
 
               return (
                 <div key={position.entryId} className="p-4">
@@ -160,20 +171,18 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
                     You predicted correctly. Claim your payout from the parimutuel pool.
                   </div>
 
-                  <button
-                    onClick={() => handleClaim(position.entryId)}
-                    disabled={isProcessing}
+                  <TxButton
+                    phase={rowPhase}
+                    idleLabel="Claim Winnings"
+                    onClick={() => void handleClaim(position.entryId)}
+                    disabled={phase !== "idle" && phase !== "confirmed" && !isActive}
+                    error={
+                      isActive && (rowPhase === "chainFailed" || rowPhase === "recordFailed")
+                        ? transactionError
+                        : null
+                    }
                     className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-display font-semibold transition-colors"
-                  >
-                    {isClaiming ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <LoadingSpinnerSmall />
-                        Claiming...
-                      </span>
-                    ) : (
-                      "Claim Winnings"
-                    )}
-                  </button>
+                  />
                 </div>
               );
             })}

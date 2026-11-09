@@ -7,6 +7,7 @@ import {
   authErrorResponse,
   parsePreferredChainId,
   requireAuth,
+  requireWalletChain,
   verifyPrivyJwt,
 } from "../middleware/auth.js";
 import {
@@ -17,6 +18,8 @@ import {
 import { getReferralSummary } from "../services/referral/getReferralSummary.js";
 import { getUserTransactions } from "../services/user/getUserTransactions.js";
 import { mergeUserSettings, updateUserNameSchema, updateUserSettingsSchema } from "../schemas/user.js";
+import { recordOnchainPaymentSchema } from "../schemas/onchainPayment.js";
+import { recordValueTransfer, ValueTransferError } from "../services/contest/onchainPayment.js";
 
 const authRouter = new Hono();
 
@@ -245,6 +248,34 @@ authRouter.get("/contests", requireAuth, async (c) => {
   } catch (error) {
     console.error("Error fetching user contest history:", error);
     return c.json({ error: "Failed to fetch contest history" }, 500);
+  }
+});
+
+authRouter.post("/onchain-payments", requireAuth, requireWalletChain, async (c) => {
+  try {
+    const body = await c.req.json();
+    const validation = recordOnchainPaymentSchema.safeParse(body);
+    if (!validation.success) {
+      return c.json({ error: "Invalid request body", details: validation.error.errors }, 400);
+    }
+    const user = c.get("user");
+    const { contestId, entryId, lineupId, ...payment } = validation.data;
+    await recordValueTransfer({
+      ...payment,
+      userId: user.userId,
+      walletAddress: user.address,
+      chainId: user.chainId,
+      ...(contestId !== undefined ? { contestId } : {}),
+      ...(entryId !== undefined ? { entryId } : {}),
+      ...(lineupId !== undefined ? { lineupId } : {}),
+    });
+    return c.json({ ok: true });
+  } catch (error) {
+    if (error instanceof ValueTransferError) {
+      return c.json({ error: error.message }, error.status);
+    }
+    console.error("Error recording onchain payment:", error);
+    return c.json({ error: "Failed to record payment" }, 500);
   }
 });
 

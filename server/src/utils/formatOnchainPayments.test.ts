@@ -58,6 +58,37 @@ describe("formatOnchainPaymentsForContest", () => {
     expect(result).toHaveLength(0);
   });
 
+  it("lists settlement credits and leaves entry and send transfers out", () => {
+    const result = formatOnchainPaymentsForContest(
+      [
+        {
+          kind: "PRIMARY",
+          amountWei: "1000",
+          walletAddress: REFERRER_A,
+          metadata: {},
+          user: null,
+        },
+        {
+          kind: "ENTRY",
+          amountWei: "1000",
+          walletAddress: REFERRER_A,
+          metadata: {},
+          user: null,
+        },
+        {
+          kind: "SEND",
+          amountWei: "1000",
+          walletAddress: REFERRER_A,
+          metadata: { direction: "out" },
+          user: null,
+        },
+      ],
+      undefined,
+    );
+
+    expect(result.map((row) => row.kind)).toEqual(["PRIMARY"]);
+  });
+
   it("does not filter PRIMARY or SECONDARY rows for oracle wallet", () => {
     const result = formatOnchainPaymentsForContest(
       [

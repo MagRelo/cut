@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePostHog } from "posthog-js/react";
 import { useAccount, useBalance, useReadContract } from "wagmi";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
@@ -13,6 +13,7 @@ import {
 import { generateEntryId } from "../utils/entryIdUtils";
 import { captureContestEntryRecorded } from "../lib/analytics/posthog";
 import type { BatchTransactionStatusData } from "./useBlockchainTransaction";
+import { txPhaseInFlight, type TxPhase } from "../lib/txPhase";
 import { hasEnoughTokenBalance } from "../lib/paymentTokenSpend";
 import {
   platformLineupEventParticipantIds,
@@ -126,19 +127,16 @@ export function useContestLineupEntry(contest: Contest) {
 
   const {
     execute: executeJoinBlockchain,
-    isSending: isJoinSending,
-    isConfirming: isJoinConfirming,
-    isFailed: isJoinFailed,
+    phase: joinPhase,
     error: joinError,
+    retrySave: retryJoinSave,
     createJoinContestCalls,
   } = useJoinContestBlockchain({
     onSuccess: async (statusData: BatchTransactionStatusData) => {
-      if (
-        pendingAction?.type === "join" &&
-        pendingAction.entryId &&
-        user?.id &&
-        pendingAction.lineupId
-      ) {
+      if (pendingAction?.type !== "join" || !pendingAction.lineupId || !pendingAction.entryId) {
+        throw new Error("Join did not finish saving");
+      }
+      if (user?.id) {
         const txHash = statusData.receipts[0]?.transactionHash;
         captureContestEntryRecorded(posthog, {
           user_id: user.id,
@@ -148,64 +146,59 @@ export function useContestLineupEntry(contest: Contest) {
           transaction_hash: txHash,
         });
       }
-      if (pendingAction?.type === "join" && pendingAction.lineupId && pendingAction.entryId) {
-        try {
-          await joinContest.mutateAsync({
-            contestId: contest.id,
-            contestRouteKey: routeKey,
-            lineupId: pendingAction.lineupId,
-            entryId: pendingAction.entryId,
-          });
-          setPendingAction(null);
-          setServerError(null);
-        } catch (error) {
-          setServerError(
-            `Failed to join contest: ${error instanceof Error ? error.message : "Unknown error"}`,
-          );
-          setPendingAction(null);
-        }
-      }
-    },
-    onError: () => {
-      setServerError("Blockchain transaction failed. Please try again.");
-      setPendingAction(null);
+      await joinContest.mutateAsync({
+        contestId: contest.id,
+        contestRouteKey: routeKey,
+        lineupId: pendingAction.lineupId,
+        entryId: pendingAction.entryId,
+      });
+      setServerError(null);
     },
   });
 
   const {
     execute: executeLeaveBlockchain,
-    isSending: isLeaveSending,
-    isConfirming: isLeaveConfirming,
-    isFailed: isLeaveFailed,
+    phase: leavePhase,
     error: leaveError,
+    retrySave: retryLeaveSave,
     createLeaveContestCalls,
   } = useLeaveContestBlockchain({
     onSuccess: async () => {
-      if (pendingAction?.type === "leave" && pendingAction.lineupId) {
-        try {
-          const contestLineupId = enteredLineupsMap.get(pendingAction.lineupId);
-          if (contestLineupId) {
-            await leaveContest.mutateAsync({
-              contestId: contest.id,
-              contestRouteKey: routeKey,
-              contestLineupId,
-            });
-          }
-          setPendingAction(null);
-          setServerError(null);
-        } catch (error) {
-          setServerError(
-            `Failed to leave contest: ${error instanceof Error ? error.message : "Unknown error"}`,
-          );
-          setPendingAction(null);
-        }
+      if (pendingAction?.type !== "leave" || !pendingAction.lineupId) {
+        throw new Error("Leave did not finish saving");
       }
-    },
-    onError: () => {
-      setServerError("Blockchain transaction failed. Please try again.");
-      setPendingAction(null);
+      const contestLineupId = enteredLineupsMap.get(pendingAction.lineupId);
+      if (!contestLineupId) {
+        throw new Error("Entry not found. Cannot leave contest.");
+      }
+      await leaveContest.mutateAsync({
+        contestId: contest.id,
+        contestRouteKey: routeKey,
+        contestLineupId,
+      });
+      setServerError(null);
     },
   });
+
+  useEffect(() => {
+    if (
+      joinPhase === "confirmed" &&
+      pendingAction?.type === "join" &&
+      enteredLineupsMap.has(pendingAction.lineupId)
+    ) {
+      setPendingAction(null);
+    }
+  }, [joinPhase, pendingAction, enteredLineupsMap]);
+
+  useEffect(() => {
+    if (
+      leavePhase === "confirmed" &&
+      pendingAction?.type === "leave" &&
+      !enteredLineupsMap.has(pendingAction.lineupId)
+    ) {
+      setPendingAction(null);
+    }
+  }, [leavePhase, pendingAction, enteredLineupsMap]);
 
   const joinPrimaryDepositLabel =
     contest.settings?.primaryDeposit === 0 ? "Free" : `$${contest.settings?.primaryDeposit ?? 0}`;
@@ -260,8 +253,14 @@ export function useContestLineupEntry(contest: Contest) {
       return;
     }
 
+    if (!balanceAddress || !contest.address || !contestPaymentToken) {
+      setSubmissionError("Wallet not connected");
+      return;
+    }
+
     const entryId = generateEntryId(contest.address, lineupId);
-    setPendingAction({ type: "join", lineupId, entryId: entryId.toString() });
+    const entryIdText = entryId.toString();
+    setPendingAction({ type: "join", lineupId, entryId: entryIdText });
 
     const calls = createJoinContestCalls(
       contest.address,
@@ -269,7 +268,17 @@ export function useContestLineupEntry(contest: Contest) {
       contestantDepositAmount,
       contestPaymentToken,
     );
-    await executeJoinBlockchain(calls);
+    const outcome = await executeJoinBlockchain(calls, {
+      kind: "ENTRY",
+      tokenAddress: contestPaymentToken as `0x${string}`,
+      amountWei: contestantDepositAmount.toString(),
+      from: balanceAddress,
+      to: contest.address as `0x${string}`,
+      contestId: contest.id,
+      entryId: entryIdText,
+      lineupId,
+    });
+    if (outcome === "idle") setPendingAction(null);
   };
 
   const handleLeaveContest = async (lineupId: string) => {
@@ -306,17 +315,52 @@ export function useContestLineupEntry(contest: Contest) {
       setSubmissionError("Entry ID not found. Cannot leave contest.");
       return;
     }
+    if (
+      !balanceAddress ||
+      !contest.address ||
+      !contestPaymentToken ||
+      contestantDepositAmount === undefined
+    ) {
+      setSubmissionError("Unable to read contest details from blockchain");
+      return;
+    }
     setPendingAction({ type: "leave", lineupId });
     const calls = createLeaveContestCalls(contest.address, Number(contestLineup.entryId));
-    await executeLeaveBlockchain(calls);
+    const outcome = await executeLeaveBlockchain(calls, {
+      kind: "REFUND",
+      tokenAddress: contestPaymentToken as `0x${string}`,
+      amountWei: contestantDepositAmount.toString(),
+      from: contest.address as `0x${string}`,
+      to: balanceAddress,
+      contestId: contest.id,
+      entryId: contestLineup.entryId,
+      lineupId,
+    });
+    if (outcome === "idle") setPendingAction(null);
+  };
+
+  const lineupPhase = (lineupId: string): TxPhase => {
+    if (pendingAction?.lineupId !== lineupId) return "idle";
+    return pendingAction.type === "join" ? joinPhase : leavePhase;
+  };
+
+  const lineupTxError = (lineupId: string): string | null => {
+    if (pendingAction?.lineupId !== lineupId) return null;
+    const phase = pendingAction.type === "join" ? joinPhase : leavePhase;
+    if (phase !== "chainFailed" && phase !== "recordFailed") return null;
+    return pendingAction.type === "join" ? joinError : leaveError;
+  };
+
+  const retryLineupSave = (lineupId: string) => {
+    if (pendingAction?.lineupId !== lineupId) return;
+    if (pendingAction.type === "join") void retryJoinSave();
+    else void retryLeaveSave();
   };
 
   const isLineupProcessing = (lineupId: string) =>
     pendingAction?.lineupId === lineupId &&
-    (isJoinSending ||
-      isJoinConfirming ||
-      isLeaveSending ||
-      isLeaveConfirming ||
+    ((pendingAction.type === "join" && txPhaseInFlight(joinPhase)) ||
+      (pendingAction.type === "leave" && txPhaseInFlight(leavePhase)) ||
       joinContest.isPending ||
       leaveContest.isPending);
 
@@ -332,8 +376,11 @@ export function useContestLineupEntry(contest: Contest) {
     serverError,
     warningMessage,
     clearWarningMessage: () => setWarningMessage(null),
-    transactionError: joinError || leaveError,
-    isFailed: isJoinFailed || isLeaveFailed,
+    lineupPhase,
+    lineupTxError,
+    retryLineupSave,
+    transactionError: pendingAction ? null : joinError || leaveError,
+    isFailed: joinPhase === "chainFailed" || joinPhase === "recordFailed" || leavePhase === "chainFailed" || leavePhase === "recordFailed",
     hasPlayers: (lineupId: string) => {
       const lineup = lineups.find((l) => l.id === lineupId);
       return Boolean(lineup && platformLineupEventParticipantIds(lineup).length > 0);

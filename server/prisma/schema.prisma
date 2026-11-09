@@ -319,6 +319,11 @@ enum PaymentKind {
   PRIMARY
   SECONDARY
   REFERRAL
+  ENTRY
+  WAGER
+  WITHDRAW
+  REFUND
+  SEND
 }
 
 model OnchainPayment {

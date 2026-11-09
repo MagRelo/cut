@@ -7,6 +7,8 @@ import {
 
 const DEFAULT_USER_COLOR = "#9CA3AF";
 
+const CONTEST_PAYOUT_KINDS = new Set<PaymentKind>(["PRIMARY", "SECONDARY", "REFERRAL"]);
+
 function isValidHexColor(value: unknown): value is string {
   if (typeof value !== "string") return false;
   const v = value.trim();
@@ -110,6 +112,7 @@ export function formatOnchainPaymentsForContest(
 
   return payments
     .filter((p) => {
+      if (!CONTEST_PAYOUT_KINDS.has(p.kind)) return false;
       const meta = parsePaymentMetadata(p.metadata);
       return !isOracleReferralPayment(p.kind, p.walletAddress, meta, contestOracleAddress);
     })

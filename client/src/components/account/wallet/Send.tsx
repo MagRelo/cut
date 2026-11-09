@@ -3,7 +3,8 @@ import { useAccount } from "wagmi";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { Button } from "../../common/Button";
 import { ErrorMessage } from "../../common/ErrorMessage";
-import { LoadingSpinnerSmall } from "../../common/LoadingSpinnerSmall";
+import { TxButton } from "../../common/TxButton";
+import { useEffectiveWalletAddress } from "../../../hooks/useEffectiveWalletAddress";
 import { useTransferTokens } from "../../../hooks/useTokenOperations";
 import { useAuth } from "../../../contexts/AuthContext";
 import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../../config/targetChain";
@@ -34,6 +35,7 @@ function SendSpec({ label, children }: { label: string; children: ReactNode }) {
 
 export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendProps) => {
   const { isConnected } = useAccount();
+  const effectiveAddress = useEffectiveWalletAddress();
   const {
     paymentTokenBalance,
     paymentTokenAddress,
@@ -63,23 +65,13 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
 
   const {
     execute,
+    retrySave,
+    phase,
     isProcessing,
-    isSending,
-    isConfirmed,
-    isFailed,
     error: transactionError,
+    reset,
     createTransferCalls,
-  } = useTransferTokens({
-    onSuccess: () => {
-      setRecipientAddress("");
-      setAmount("");
-      setSendError(null);
-      setIsReviewing(false);
-    },
-    onError: () => {
-      setSendError(null);
-    },
-  });
+  } = useTransferTokens();
 
   const handleMaxSend = () => {
     if (balancesUnavailable) return;
@@ -136,11 +128,33 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
   };
 
   const handleSend = async () => {
+    if (phase === "recordFailed") {
+      await retrySave();
+      return;
+    }
     if (!validateSend()) return;
+    if (!effectiveAddress || !paymentTokenAddress) {
+      setSendError("Wallet not connected");
+      return;
+    }
+
+    let amountWei: bigint;
+    try {
+      amountWei = parseUnits(amount, resolvedDecimals);
+    } catch {
+      setSendError("Please enter a valid amount");
+      return;
+    }
 
     try {
       const calls = createTransferCalls(recipientAddress.trim(), amount);
-      await execute(calls);
+      await execute(calls, {
+        kind: "SEND",
+        tokenAddress: paymentTokenAddress as `0x${string}`,
+        amountWei: amountWei.toString(),
+        from: effectiveAddress,
+        to: recipientAddress.trim() as `0x${string}`,
+      });
     } catch (err) {
       setSendError(err instanceof Error ? err.message : "Transaction failed");
     }
@@ -255,18 +269,22 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
       <div className="flex flex-col gap-2">
         {isReviewing ? (
           <>
-            <Button
-              type="button"
+            <TxButton
               block
+              phase={phase}
+              idleLabel={`Send ${targetSymbol}`}
               onClick={() => void handleSend()}
-              disabled={!isConnected || isProcessing || balancesUnavailable}
-            >
-              {(isSending || isProcessing) && <LoadingSpinnerSmall />}
-              {isConfirmed ? "Sent!" : isFailed ? "Failed — try again" : `Send ${targetSymbol}`}
-            </Button>
+              disabled={!isConnected || (phase !== "recordFailed" && balancesUnavailable)}
+              error={transactionError}
+            />
             <button
               type="button"
               onClick={() => {
+                if (phase === "confirmed") {
+                  setRecipientAddress(lockRecipient ? (initialRecipientAddress ?? "") : "");
+                  setAmount("");
+                }
+                reset();
                 setIsReviewing(false);
                 setSendError(null);
               }}
@@ -286,9 +304,7 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
             Review send
           </Button>
         )}
-        {sendError || transactionError ? (
-          <ErrorMessage message={sendError || String(transactionError)} />
-        ) : null}
+        {sendError && phase === "idle" ? <ErrorMessage message={sendError} /> : null}
       </div>
     </div>
   );

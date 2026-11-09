@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
+import { TxButton } from "../common/TxButton";
 import { useWithdrawPrediction } from "../../hooks/useSpectatorOperations";
 import { ContestState, useContestPredictionData } from "../../hooks/useContestPredictionData";
 import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
@@ -46,34 +47,38 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
   }, [entryData]);
 
   // Blockchain transaction hook
-  const { execute, isProcessing, createWithdrawPredictionCalls } = useWithdrawPrediction({
-    onSuccess: async () => {
-      setWithdrawingEntryId(null);
-      setError(null);
-    },
-    onError: (err) => {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      setError(errorMsg);
-      setWithdrawingEntryId(null);
-    },
-  });
+  const {
+    execute,
+    retrySave,
+    phase,
+    error: transactionError,
+    createWithdrawPredictionCalls,
+  } = useWithdrawPrediction();
 
-  const handleWithdraw = async (entryId: string, tokenAmount: bigint) => {
+  const handleWithdraw = async (entryId: string, tokenAmount: bigint, paymentAmount: bigint) => {
+    if (phase === "recordFailed" && withdrawingEntryId === entryId) {
+      await retrySave();
+      return;
+    }
+    const tokenAddress = contest.settings?.paymentTokenAddress;
+    if (!userAddress || !contest.address || !tokenAddress) {
+      setError("Wallet not connected");
+      return;
+    }
     setError(null);
     setWithdrawingEntryId(entryId);
 
-    try {
-      const calls = createWithdrawPredictionCalls(
-        contest.address ?? "",
-        parseInt(entryId),
-        tokenAmount,
-      );
-      await execute(calls);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      setError(errorMsg);
-      setWithdrawingEntryId(null);
-    }
+    const calls = createWithdrawPredictionCalls(contest.address, parseInt(entryId), tokenAmount);
+    const outcome = await execute(calls, {
+      kind: "WITHDRAW",
+      tokenAddress: tokenAddress as `0x${string}`,
+      amountWei: paymentAmount.toString(),
+      from: contest.address as `0x${string}`,
+      to: userAddress,
+      contestId: contest.id,
+      entryId,
+    });
+    if (outcome === "idle") setWithdrawingEntryId(null);
   };
 
   if (!userAddress) {
@@ -104,14 +109,17 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
 
   return (
     <div>
-      {error ? <ErrorMessage message={error} className="mb-4" /> : null}
+      {error || (phase === "idle" && transactionError) ? (
+        <ErrorMessage message={error || transactionError || ""} className="mb-4" />
+      ) : null}
 
       <div className="space-y-2">
         {userPositions.map((position) => {
           const lineup = contest.contestLineups?.find((l) => l.entryId === position.entryId);
           const userName = lineup?.user?.name || lineup?.user?.email || "Unknown";
           const lineupName = lineup ? contestLineupDisplayName(lineup) : "Lineup";
-          const isWithdrawing = withdrawingEntryId === position.entryId;
+          const isActive = withdrawingEntryId === position.entryId;
+          const rowPhase = isActive ? phase : "idle";
 
           const userSettings = lineup?.user?.settings;
           const maybeColor =
@@ -192,23 +200,24 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
 
               {canWithdraw && (
                 <div className="mt-3 border-t border-gray-200 pt-3">
-                  <button
-                    type="button"
-                    onClick={() => handleWithdraw(position.entryId, position.balance)}
-                    disabled={isProcessing}
+                  <TxButton
+                    phase={rowPhase}
+                    idleLabel={isCancelled ? "Withdraw refund" : "Withdraw"}
+                    onClick={() =>
+                      void handleWithdraw(
+                        position.entryId,
+                        position.balance,
+                        position.secondaryDepositedPerEntry,
+                      )
+                    }
+                    disabled={phase !== "idle" && phase !== "confirmed" && !isActive}
+                    error={
+                      isActive && (rowPhase === "chainFailed" || rowPhase === "recordFailed")
+                        ? transactionError
+                        : null
+                    }
                     className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-display font-semibold transition-colors"
-                  >
-                    {isWithdrawing ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <LoadingSpinnerSmall />
-                        Withdrawing...
-                      </span>
-                    ) : isCancelled ? (
-                      "Withdraw refund"
-                    ) : (
-                      "Withdraw"
-                    )}
-                  </button>
+                  />
                 </div>
               )}
             </div>

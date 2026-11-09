@@ -26,7 +26,7 @@ Nine implicit machines are worth a decision. Five of them hurt user experience, 
 
 1. **Contest database / chain mirror** — Implemented. Paid activate, lock, cancel, and settle update `Contest.status` only after the receipt succeeds and `state()` matches. If the chain is already at that function's target, the next call updates the row and does not send another transaction.
 2. **Contest lobby readers** — Implemented. The lobby follows `joinStatus` from `readContestSurfaces`: the chain state when one is present, otherwise the row. Claims open only when the row is `SETTLED`.
-3. **Wallet transaction phase** — create, join, leave, wager, claim, and send share boolean flags. A mined transaction whose API write throws is the same `isFailed` bit as a revert. Join swallows that API error, so the hook also sets success.
+3. **Wallet transaction phase** — Implemented. `useBlockchainTransaction` stores one `TxPhase`. Paid enter, leave, wager, claim, withdraw, and send share its labels. A mined transfer is written to `OnchainPayment`, and a failed save retries without a new transaction.
 4. **Session readiness** — Privy `ready` / `authenticated`, Wagmi `address`, `profileBlocked`, and the profile query are one gate with no name. `loading` goes false before a wallet address exists, and `ProtectedRoute` then sends the user to `/connect`.
 5. **Competition event phase** — `EventStatus` is a real union (`SCHEDULED | LIVE | COMPLETE`), but PGA, commodities, and F1 store different inputs, and `CompetitionEvent.isActive` is a second axis. An unrecognized PGA status string stays `SCHEDULED`, so contests do not activate and scores do not sync.
 
@@ -34,7 +34,7 @@ Nine implicit machines are worth a decision. Five of them hurt user experience, 
 
 `EventLineupsPanel` prints `joinStatus`. `useContestLobbyState` passes the chain `state()` into `useContestTimelineQuery`. `useContestQuery` still polls the lobby payload from the row.
 
-The next change, separate and local, is a derived phase on `useBlockchainTransaction` so a mined transaction with a failed API write is not labeled as a chain failure. See that machine below.
+Wallet transactions use `TxPhase` on `useBlockchainTransaction`. The booleans are derived from it. Paid value transfers that had no ledger row are written to `OnchainPayment`. Contest creation is unchanged. `$0` join and leave stay on their API loading.
 
 ---
 
@@ -44,7 +44,7 @@ The next change, separate and local, is a derived phase on `useBlockchainTransac
 | --- | --- | --- | --- | --- |
 | Contest DB / chain mirror | `Contest.status`, `Contest.address`, `Contest.results`, `confirmContestWrite`, `activateContest`, `lockContest`, `settleContest`, `cancelContest` | Free string, nullable address, JSON tx flags, chain enum | UX, DX, AX | Implemented. Writers confirm the receipt and `state()` before the row moves. A chain already at the target updates the row without another transaction. |
 | Contest lobby readers | `readContestSurfaces`, `deriveContestLobbyViewModel`, `useContestTimelineQuery`, `useContestSettlementClaims` | `joinStatus` (chain wins), phase from that status, claims from the row | UX, DX, AX | Implemented. The lobby follows `joinStatus`. Claims stay on the row. |
-| Wallet transaction phase | `useBlockchainTransaction`, `useCreateContestSubmission`, `useContestLineupEntry` | `isSending`, `isConfirming`, `isProcessing`, `isConfirmed`, `isFailed`, extra `loading` | UX, DX, AX | Derived phase on the hook. Keep the booleans. Distinguish record failure from chain failure. |
+| Wallet transaction phase | `useBlockchainTransaction`, `TxButton`, `OnchainPayment` | `TxPhase`; booleans derived from it. `ENTRY`, `WAGER`, `WITHDRAW`, `REFUND`, `SEND` | UX, DX, AX | Implemented. One phase. Token movements are inserted after a successful receipt. A failed save retries that insert and the domain write. |
 | Session readiness | `AuthContext`, `ProtectedRoute` | Privy ready, authenticated, Wagmi address, `profileBlocked`, query pending, two error strings | UX, AX | Read-only session phase next to `sessionEnabled`. Do not replace Privy. |
 | Competition event phase | `CompetitionEvent.metadata`, `isActive`, `packages/sport-*/src/status.ts` | Per-sport JSON and a boolean pointer, collapsed to `EventStatus` | UX, DX, AX | Document the raw-input table next to the three `status.ts` files. Do not add a status column. |
 | Lineup edit and entry | `getLineupEditBlock`, `EventLineupsPanel`, `useLineupSlotEditor`, `useContestLineupEntry`, `ContestLineup` | Contest `OPEN` vs event `LIVE`/`COMPLETE`; row presence; `SaveStatus`; `pendingAction` | UX, DX | Keep `SaveStatus`. Add `entryPhase` on top of the wallet phase. Document that `ContestLineup.status` does not move. |
@@ -154,39 +154,19 @@ Secondary-market timing is also inconsistent across docs. `areSecondaryActionsLo
 
 ## 3. Wallet transaction phase
 
-**What it controls.** Button copy and double-submit for contest create, join, leave, winner-pool buy, claim, and wallet send. Sponsorship is configuration (`SmartWalletsProvider` / `sponsor: true` when `VITE_PIMLICO_SPONSORSHIP_POLICY_ID` is set, or a Privy embedded wallet). It is not a stored phase.
+**Status.** Implemented.
 
-**States implied by the flags** in `useBlockchainTransaction`:
+**What it controls.** Button copy and double-submit for a wallet transaction. `useBlockchainTransaction` stores one `TxPhase`: `idle | awaitingSignature | confirming | recording | confirmed | chainFailed | recordFailed`. `execute` returns immediately while the phase is `awaitingSignature`, `confirming`, or `recording`. A missing wallet or public client stays `idle` and sets `error`. Sponsorship is still configuration, not a phase.
 
-| Flags | Meaning in the hook |
-| --- | --- |
-| all clear | idle |
-| `isSending` | user operation or `writeContract` not back yet. Create copy says "User confirmation..." |
-| `isConfirming` | `waitForTransactionReceipt` |
-| `isProcessing` | set at the start, and the returned `isProcessing` is `isProcessing \|\| isSending \|\| isConfirming` |
-| `onSuccess` in flight | receipt is in, and the callback has not finished. Flags still look busy because `isProcessing` is true. There is no separate name. |
-| `confirmedSuccess` | callback returned |
-| `confirmedFailure` | send/revert, or the callback threw |
+The old flags are derived: `isSending` is `awaitingSignature`, `isConfirming` is `confirming`, `isProcessing` is any in-flight phase, `isConfirmed` is `confirmed`, `isFailed` is either failure. Contest creation still reads `isSending` and `isConfirming`, so its labels are unchanged. `$0` join, leave, and create do not call `execute`.
 
-`execute` does not return early when a call is already in flight. `getCreateContestStatusMessage(isSending, isConfirming)` returns `"User confirmation..."`, `"Network confirmation..."`, or `"idle"`. It has no success, failure, or server-index case. `useCreateContestSubmission` adds its own `loading` and `pendingContestForApiRef`. $0 create skips the chain and only uses `loading`. If the factory transaction mines and the POST fails, the ref is cleared. Retry deploys another contract. The server will accept a verified hash if the client POSTs that same hash. The client does not keep the hash on screen for that retry.
+`recording` inserts the payment when this transaction moved tokens, then runs `onSuccess`. A thrown `onSuccess` becomes `recordFailed` and keeps the receipt. `retrySave` posts the transfer again and runs `onSuccess` again. It does not send another transaction. Join and leave rethrow the lineup error, so a failed save stays on that lineup until it succeeds.
 
-Join (`useContestLineupEntry`) catches the POST error inside the blockchain `onSuccess`, sets `serverError`, clears `pendingAction`, and does not rethrow. The hook then sets `confirmedSuccess` as well, because its `onSuccess` did not throw. `generateEntryId` is deterministic from contest address and lineup id, so a second click sends the same `entryId`. This audit did not read the contract's duplicate-entry rule. The UI has no "retry the POST only" path, so a paid entry with no `ContestLineup` row is stuck behind another chain call. Leave has the inverse: `removePrimaryPosition` can mine, the DELETE can throw, `pendingAction` clears, and the row remains.
+`TxButton` and `txPhaseLabel` are the shared words: Confirm in wallet, Confirming, Saving, Confirmed, Saving failed. A chain failure shows the action label again. The error sits under the control. Paid enter, leave, wager, claim, withdraw, and send use it. The lineup or row in flight is the one that shows the phase. Send review stays a step before `execute`.
 
-Send (`client/src/components/account/wallet/Send.tsx`) adds `isReviewing`. Transfer `onSuccess` clears review before the hook latches success, so "Sent!" is easy to miss. Nothing is written to the database. Activity does not list USDC sends.
+**Ledger.** `OnchainPayment` gained `ENTRY`, `WAGER`, `WITHDRAW`, `REFUND`, and `SEND`. Each row carries the ERC-20 `Transfer` log index. A retry hits `skipDuplicates`. `SEND` writes the sender, and the recipient only when that address is a known user wallet. A claim does not add a second amount: an existing `PRIMARY` or `SECONDARY` row gets the claim hash in `metadata`, and a missing payout row is inserted as that same kind. Contest payouts still list only `PRIMARY`, `SECONDARY`, and `REFERRAL`. Activity reads paid entries, wagers, sends, withdrawals, and refunds from this table. A lineup or winner-pool row still fills a transfer that has no payment yet. Activate, lock, and cancel write nothing here.
 
-**Why it is implicit.** The legal sequence is idle, user confirm, network confirm, server record, success or fail. Callers rebuild it from booleans. Create adds a second `loading` bit. Join's catch makes success and `serverError` true together.
-
-**Failure modes.** Two clicks before `isProcessing` commits can send two user operations. A mined create or join with a failed POST looks like a chain failure, or, for join, like a success with an error string and an Enter button. "Sent!" does not survive refresh.
-
-**Decision.** Add a derived `TxPhase` on `useBlockchainTransaction`: `idle | awaitingSignature | confirming | recording | confirmed | chainFailed | recordFailed`. Compute today's booleans from it so callers keep working. `recordFailed` keeps `transactionHash` visible. Join should rethrow the POST error (or skip `setConfirmedSuccess`) so the phase is `recordFailed` and a later retry can POST the same hash. Do not add a transaction table. Do not change gas sponsorship.
-
-**UX.** The button can say the transaction mined and the save failed, and the user can retry the save. A revert still says the chain failed.
-
-**DX.** Create, join, wager, claim, and send stop re-deriving the same sequence.
-
-**AX.** An agent can read one phase and the hash instead of guessing from `isFailed` plus `serverError`.
-
-**Effort.** Small for the derived phase and the label. Medium if join's catch is changed so success and `serverError` cannot both stick. First step: the pure mapping from the existing booleans and "callback threw after a receipt" to `TxPhase`, with no call-site edits. The booleans stay.
+**Where one shape does not fit.** Send review, the deposit-price read on Enter, and "Entered in this contest" are not phases. `$0` actions and contest creation stay on their own loading. Claim and withdraw share one hook, so the label belongs to the active entry. A non-smart-wallet batch still moves through signature and confirmation once per call.
 
 ---
 
