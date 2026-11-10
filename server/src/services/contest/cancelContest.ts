@@ -96,7 +96,10 @@ export async function cancelContest(contestId: string, reason?: string): Promise
         where: { id: contestId },
         data: {
           status: 'CANCELLED',
-          results: cancelResults(contest.results, { reason, alignedToChain: true }),
+          results: cancelResults(contest.results, {
+            ...(reason ? { reason } : {}),
+            alignedToChain: true,
+          }),
         },
       });
       console.log(`[cancelContest] Aligned contest ${contestId} to chain CANCELLED`);
@@ -121,7 +124,10 @@ export async function cancelContest(contestId: string, reason?: string): Promise
       where: { id: contestId },
       data: {
         status: 'CANCELLED',
-        results: cancelResults(contest.results, { reason, cancelTxHash: hash }),
+        results: cancelResults(contest.results, {
+          ...(reason ? { reason } : {}),
+          cancelTxHash: hash,
+        }),
       },
     });
 
