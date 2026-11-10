@@ -38,7 +38,7 @@ export async function initGolfEvent(externalId: string, options?: InitGolfEventO
     });
   }
 
-  await syncGolfEventMetadata(event.id, { seedBeautyImage: true });
+  await syncGolfEventMetadata(event.id);
   await syncGolfParticipantField(event.id);
 
   if (activate) {
