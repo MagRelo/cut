@@ -11,6 +11,20 @@ export interface WinnerPoolOverviewProps {
   placeWagerTabLocked: boolean;
 }
 
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden className="h-3.5 w-3.5 shrink-0">
+      <path
+        d="M4 12h14M12.5 5.5 19 12l-6.5 6.5"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest, mode }) => {
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
   const isLocked = mode === "locked";
@@ -27,9 +41,10 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest,
             Betting is closed. Existing wagers are locked until the contest settles.{" "}
             <Link
               to="/faq#winner-pool"
-              className="text-sm font-medium text-blue-700 hover:underline"
+              className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline"
             >
-              How it works →
+              How it works
+              <ArrowIcon />
             </Link>
           </p>
         ) : (
@@ -37,8 +52,12 @@ export const WinnerPoolOverview: React.FC<WinnerPoolOverviewProps> = ({ contest,
             <p className="text-sm leading-relaxed text-slate-600">
               Bet on which lineup will win the contest.
             </p>
-            <Link to="/faq#winner-pool" className="text-sm font-medium text-blue-500">
-              How it works →
+            <Link
+              to="/faq#winner-pool"
+              className="inline-flex items-center gap-1 text-sm font-medium text-blue-500"
+            >
+              How it works
+              <ArrowIcon />
             </Link>
           </>
         )}
