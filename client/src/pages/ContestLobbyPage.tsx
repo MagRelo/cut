@@ -20,7 +20,7 @@ import {
 function ContestNotFound({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <div className="flex min-h-[240px] items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md rounded-md border border-slate-200 bg-white px-6 py-8 text-center shadow-sm">
+      <div className="w-full max-w-md rounded-md border border-slate-300 bg-white px-6 py-8 text-center shadow-sm">
         <div
           className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100"
           aria-hidden

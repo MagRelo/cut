@@ -10,7 +10,7 @@ import {
 import { GolfParticipantDetail } from "./ParticipantDetail";
 
 const detailShell = (Story: ComponentType) => (
-  <div className="mx-auto w-full max-w-modal rounded-sm bg-gray-50 p-2">
+  <div className="mx-auto w-full max-w-modal rounded-sm bg-slate-50 p-2">
     <Story />
   </div>
 );

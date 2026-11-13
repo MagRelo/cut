@@ -36,7 +36,7 @@ export const ContestPredictionsPanel: React.FC<ContestPredictionsPanelProps> = (
 
         {mode === "wager" ? (
           <TabGroup>
-            <TabList className={tabListClassName("-mx-4 !rounded-none border-t border-slate-200")}>
+            <TabList className={tabListClassName("-mx-4 !rounded-none border-t border-slate-300")}>
               <Tab
                 className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
               >

@@ -39,9 +39,9 @@ export const ContestEntryListSkeleton = () => {
       {ENTRY_LIST_SKELETON_ROWS.map((row, index) => (
         <div
           key={index}
-          className={`rounded-sm border border-gray-200 p-3 shadow-sm ${index > 0 ? "mt-2" : ""}`}
+          className={`rounded-sm border border-slate-300 p-3 shadow-sm ${index > 0 ? "mt-2" : ""}`}
           style={{
-            borderLeftColor: "#E5E7EB",
+            borderLeftColor: "#CBD5E1",
             borderLeftWidth: "5px",
             borderLeftStyle: "solid",
           }}
@@ -150,7 +150,7 @@ export const ContestEntryList = ({
         return (
           <div key={lineup.id}>
             <div
-              className={`group cursor-pointer rounded-sm border-0 border-b border-l border-r border-t border-gray-200 p-3 font-display shadow-sm ${
+              className={`group cursor-pointer rounded-sm border-0 border-b border-l border-r border-t border-slate-300 p-3 font-display shadow-sm ${
                 index > 0 ? "mt-2" : ""
               }`}
               onClick={() => openLineupModal(lineup)}

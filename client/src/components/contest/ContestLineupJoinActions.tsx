@@ -10,7 +10,7 @@ import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { TxButton } from "../common/TxButton";
 import type { TxPhase } from "../../lib/txPhase";
 
-const joinActionsFooterClassName = "border-t border-gray-200 bg-slate-50 px-3 py-2.5 font-display";
+const joinActionsFooterClassName = "border-t border-slate-300 bg-slate-50 px-3 py-2.5 font-display";
 
 const statusBarClassName =
   "flex w-full items-center justify-center gap-1.5 py-1 text-sm font-semibold text-slate-900";

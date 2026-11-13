@@ -7,17 +7,18 @@ const dummyScores = [3, 3, 4, 4, 7];
 const dummyStableford = [+5, +3, 0, -1, -3];
 
 const band = "bg-slate-100";
-const rowDivider = "border-t border-slate-200/80";
-const cellY = "border-y border-slate-200";
+const rowDivider = "border-t border-slate-300";
+const cellY = "border-y border-slate-300";
 
 const holeCol = "min-w-[2.25rem] w-[2.25rem]";
 /** First column: row labels — ~3.35rem fits POINTS + padding without matching the old 3.5rem+px-3 feel */
 const labelCol = "w-[3.35rem] min-w-[3.35rem] max-w-[3.35rem] box-border whitespace-nowrap";
 
 const rowLabelBase =
-  "sticky left-0 z-10 border-r border-slate-200 px-2 text-left align-middle text-xs font-display font-semibold uppercase text-slate-500 shadow-[2px_0_6px_-2px_rgba(15,23,42,0.06)]";
+  "sticky left-0 z-10 border-r border-slate-300 px-2 text-left align-middle text-xs font-display font-semibold uppercase text-slate-500 shadow-[2px_0_6px_-2px_rgba(15,23,42,0.06)]";
 
 const rowLabelBand = `${rowLabelBase} ${cellY} ${band} py-2.5 ${labelCol}`;
+const rowLabelScore = `${rowLabelBase} ${cellY} bg-white py-2.5 ${labelCol}`;
 const pointsRowY = "!py-3.5";
 
 const rowLabelPoints = `${rowLabelBase} ${cellY} bg-white ${pointsRowY} ${labelCol}`;
@@ -52,17 +53,17 @@ export const InfoScorecard: React.FC = () => {
                 </td>
               ))}
             </tr>
-            <tr className={`${band} ${rowDivider}`}>
-              <th className={`${rowLabelBand} align-middle`} scope="row">
+            <tr className={`bg-white ${rowDivider}`}>
+              <th className={`${rowLabelScore} align-middle`} scope="row">
                 Score
               </th>
               {dummyScores.map((score, i) => (
-                <ScoreDisplay key={i} score={score} par={dummyPars[i]} cellClassName={band} />
+                <ScoreDisplay key={i} score={score} par={dummyPars[i]} cellClassName="bg-white" />
               ))}
             </tr>
           </thead>
           <tbody>
-            <tr className="border-t border-slate-200 bg-white">
+            <tr className="border-t border-slate-300 bg-white">
               <th className={rowLabelPoints} scope="row">
                 Points
               </th>

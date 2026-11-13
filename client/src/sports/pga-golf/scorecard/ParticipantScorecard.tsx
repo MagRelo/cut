@@ -4,16 +4,17 @@ import { ScoreDisplay, StablefordDisplay } from "./ScoreDisplay";
 import { getTeeTimeLabelForRound } from "./roundUtils";
 
 const band = "bg-slate-100";
-const rowDivider = "border-t border-slate-200/80";
-const cellY = "border-y border-slate-200";
+const rowDivider = "border-t border-slate-300";
+const cellY = "border-y border-slate-300";
 
 const holeCol = "min-w-[2.25rem] w-[2.25rem]";
 const totalCol = "min-w-[3.5rem] w-[3.5rem]";
 
 const rowLabelBase =
-  "sticky left-0 z-10 border-r border-slate-200 px-3 text-left align-middle text-xs font-display font-semibold uppercase tracking-wide text-slate-500 shadow-[2px_0_6px_-2px_rgba(15,23,42,0.06)]";
+  "sticky left-0 z-10 border-r border-slate-300 px-3 text-left align-middle text-xs font-display font-semibold uppercase tracking-wide text-slate-500 shadow-[2px_0_6px_-2px_rgba(15,23,42,0.06)]";
 
 const rowLabelBand = `${rowLabelBase} ${cellY} ${band} py-2.5 ${totalCol}`;
+const rowLabelScore = `${rowLabelBase} ${cellY} bg-white py-2.5 ${totalCol}`;
 const pointsRowY = "!py-3.5";
 
 const rowLabelPoints = `${rowLabelBase} ${cellY} bg-white ${pointsRowY} ${totalCol}`;
@@ -24,12 +25,13 @@ const holeHeader = `${cellY} ${band} px-2 py-2 text-center font-display text-xs 
 
 const parCell = `${cellY} ${band} px-2 py-2 text-center font-display text-xs font-medium tabular-nums text-slate-500 ${holeCol}`;
 
-const bandTotal = `${cellY} border-l border-slate-200 ${band} px-3 py-2 text-center font-display text-xs font-medium tabular-nums text-slate-600 ${totalCol}`;
+const bandTotal = `${cellY} border-l border-slate-300 ${band} px-3 py-2 text-center font-display text-xs font-medium tabular-nums text-slate-600 ${totalCol}`;
+const scoreTotalCell = `${cellY} border-l border-slate-300 bg-white px-3 py-2 text-center font-display text-xs font-medium tabular-nums text-slate-600 ${totalCol}`;
 
 const scoreRowSlot = "flex h-7 w-full shrink-0 items-center justify-center";
 
 const pointsCell = `${scoreCell} bg-white ${holeCol} ${pointsRowY}`;
-const pointsTotal = `${cellY} border-l border-slate-200 bg-white px-3 py-3.5 text-center text-xs tabular-nums text-slate-900 ${totalCol}`;
+const pointsTotal = `${cellY} border-l border-slate-300 bg-white px-3 py-3.5 text-center text-xs tabular-nums text-slate-900 ${totalCol}`;
 
 interface GolfParticipantScorecardProps {
   tournamentData: TournamentPlayerData | undefined;
@@ -97,8 +99,8 @@ export const GolfParticipantScorecard: React.FC<GolfParticipantScorecardProps> =
           .reduce((sum: number, s: number) => sum + s, 0);
 
         return (
-          <tr className={`${band} ${rowDivider}`}>
-            <th className={`${rowLabelBand} align-middle`} scope="row">
+          <tr className={`bg-white ${rowDivider}`}>
+            <th className={`${rowLabelScore} align-middle`} scope="row">
               <div className={`${scoreRowSlot} justify-start`}>Score</div>
             </th>
             {roundData.holes.scores.map((score: number | null, i: number) => {
@@ -107,7 +109,7 @@ export const GolfParticipantScorecard: React.FC<GolfParticipantScorecardProps> =
                 return (
                   <td
                     key={i}
-                    className={`${scoreCell} ${band} text-slate-600 ${holeCol} align-middle`}
+                    className={`${scoreCell} bg-white text-slate-600 ${holeCol} align-middle`}
                   >
                     <div className={scoreRowSlot}>
                       <span className="text-slate-500">–</span>
@@ -115,9 +117,9 @@ export const GolfParticipantScorecard: React.FC<GolfParticipantScorecardProps> =
                   </td>
                 );
               }
-              return <ScoreDisplay key={i} score={score} par={par} cellClassName={band} />;
+              return <ScoreDisplay key={i} score={score} par={par} cellClassName="bg-white" />;
             })}
-            <td className={`${bandTotal} !py-2.5 align-middle`}>
+            <td className={`${scoreTotalCell} !py-2.5 align-middle`}>
               <div className={scoreRowSlot}>
                 {roundData.holes.scores.some((s: number | null) => s !== null) ? scoreTotal : "–"}
               </div>
@@ -136,7 +138,7 @@ export const GolfParticipantScorecard: React.FC<GolfParticipantScorecardProps> =
         );
 
         return (
-          <tr className="border-t border-slate-200 bg-white">
+          <tr className="border-t border-slate-300 bg-white">
             <th className={rowLabelPoints} scope="row">
               Points
             </th>
@@ -166,7 +168,7 @@ export const GolfParticipantScorecard: React.FC<GolfParticipantScorecardProps> =
             {pointsRow ? <tbody>{pointsRow}</tbody> : null}
           </table>
         ) : (
-          <div className="border-t border-slate-200 px-6 py-10 text-center font-display text-sm text-slate-600">
+          <div className="border-t border-slate-300 px-6 py-10 text-center font-display text-sm text-slate-600">
             {teeTimeLabel ? (
               <>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">

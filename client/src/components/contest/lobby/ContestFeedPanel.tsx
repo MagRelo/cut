@@ -129,15 +129,15 @@ const JsonFallbackFeed: React.FC<{
 
   if (items.length === 0) {
     return (
-      <div className="rounded-sm border border-slate-200 bg-slate-50 p-6 text-center font-display">
+      <div className="rounded-sm border border-slate-300 bg-slate-50 p-6 text-center font-display">
         <p className="text-sm text-slate-600">Cutbot hasn&apos;t posted any updates yet.</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-sm border border-slate-200 bg-white font-display">
-      <ul className="divide-y divide-slate-200">
+    <div className="overflow-hidden rounded-sm border border-slate-300 bg-white font-display">
+      <ul className="divide-y divide-slate-300">
         {items.map((item) => (
           <li key={item.id}>
             <CutbotPost
@@ -182,7 +182,7 @@ const StreamContestFeed: React.FC<{
       return <JsonFallbackFeed contest={contest} currentUserId={currentUserId} />;
     }
     return (
-      <div className="rounded-sm border border-slate-200 bg-slate-50 p-6 text-center font-display">
+      <div className="rounded-sm border border-slate-300 bg-slate-50 p-6 text-center font-display">
         <p className="text-sm text-slate-600">Loading Cutbot updates…</p>
       </div>
     );
@@ -193,8 +193,8 @@ const StreamContestFeed: React.FC<{
   }
 
   return (
-    <div className="overflow-hidden rounded-sm border border-slate-200 bg-white font-display">
-      <ul className="divide-y divide-slate-200">
+    <div className="overflow-hidden rounded-sm border border-slate-300 bg-white font-display">
+      <ul className="divide-y divide-slate-300">
         {ordered.map((activity) => (
           <li key={activity.id}>
             <CutbotPost
@@ -222,7 +222,7 @@ export const ContestFeedPanel: React.FC<ContestFeedPanelProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="rounded-sm border border-slate-200 bg-slate-50 p-6 text-center font-display">
+      <div className="rounded-sm border border-slate-300 bg-slate-50 p-6 text-center font-display">
         <p className="text-sm text-slate-600">Loading Cutbot updates…</p>
       </div>
     );

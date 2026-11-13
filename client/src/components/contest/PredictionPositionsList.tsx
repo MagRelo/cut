@@ -83,7 +83,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
 
   if (!userAddress) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+      <div className="bg-gray-50 border border-slate-300 rounded-lg p-4 text-center">
         <p className="text-gray-600 text-sm font-display">
           Connect your wallet to view your wagers.
         </p>
@@ -151,7 +151,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
           return (
             <div
               key={position.entryId}
-              className="bg-white rounded-none border-0 border-l border-t border-r border-b border-gray-200 p-3 font-display"
+              className="rounded-sm border-0 border-b border-l border-r border-t border-slate-300 bg-white p-3 font-display shadow-sm"
               style={{
                 borderLeftColor: resolvedLeftBorderColor,
                 borderLeftWidth: "5px",
@@ -199,7 +199,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
               </div>
 
               {canWithdraw && (
-                <div className="mt-3 border-t border-gray-200 pt-3">
+                <div className="mt-3 border-t border-slate-300 pt-3">
                   <TxButton
                     phase={rowPhase}
                     idleLabel={isCancelled ? "Withdraw refund" : "Withdraw"}

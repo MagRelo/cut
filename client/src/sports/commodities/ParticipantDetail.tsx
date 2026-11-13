@@ -83,7 +83,7 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
   const sparklineHistory = participant.sessionPriceHistory ?? [];
 
   return (
-    <div className="overflow-hidden rounded-sm border border-gray-300 bg-white">
+    <div className="overflow-hidden rounded-sm border border-slate-300 bg-white">
       <div className="p-3 py-4">
         <CommodityParticipantRow
           candidate={candidate}
@@ -95,7 +95,7 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
 
       {hasPeriodScores ? (
         <div
-          className="grid grid-cols-5 divide-x divide-gray-200 border-t border-gray-200 bg-slate-50"
+          className="grid grid-cols-5 divide-x divide-slate-300 border-t border-slate-300 bg-slate-50"
           role="presentation"
         >
           {Array.from({ length: COMMODITIES_PERIOD_RULES.count }, (_, index) => {
@@ -115,7 +115,7 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
         </div>
       ) : null}
 
-      <div className="border-t border-gray-200 pb-3 pt-4">
+      <div className="border-t border-slate-300 pb-3 pt-4">
         <SessionPriceSparkline
           history={sparklineHistory}
           eventMetadata={eventMetadata}
@@ -125,7 +125,7 @@ export const CommodityParticipantDetail: React.FC<ParticipantDetailProps> = ({
       </div>
 
       <div
-        className="grid w-full grid-cols-3 divide-x divide-gray-200 border-t border-gray-200 bg-slate-50"
+        className="grid w-full grid-cols-3 divide-x divide-slate-300 border-t border-slate-300 bg-slate-50"
         role="presentation"
       >
         <StatCell label="Open" value={formatPrice(scoreData.openPrice)} />

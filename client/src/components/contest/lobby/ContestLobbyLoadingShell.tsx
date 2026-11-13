@@ -54,7 +54,7 @@ export function ContestLobbyLoadingShell({
       ) : null}
       <div className={heroImage ? eventCardBodyClassName : eventCardSoloClassName}>
         {eventShell ? (
-          <div className="border-b border-slate-200">
+          <div className="border-b border-slate-300">
             <SportEventHeader
               sportId={eventShell.sportId}
               event={eventShell}
@@ -62,7 +62,7 @@ export function ContestLobbyLoadingShell({
             />
           </div>
         ) : null}
-        <div className="border-b border-slate-200 px-4 py-3">
+        <div className="border-b border-slate-300 px-4 py-3">
           <ContestCardSkeleton />
         </div>
         <ContestTabListSkeleton />

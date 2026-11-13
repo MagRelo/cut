@@ -140,12 +140,12 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
         ) : null}
         <div className={heroImage ? eventCardBodyClassName : eventCardSoloClassName}>
           {eventError ? (
-            <div className="border-b border-slate-200 p-4">
+            <div className="border-b border-slate-300 p-4">
               <ErrorMessage message={eventError.message} />
             </div>
           ) : null}
           {fieldSportId && eventShell ? (
-            <div className="border-b border-slate-200">
+            <div className="border-b border-slate-300">
               <SportEventHeader
                 sportId={fieldSportId}
                 event={eventShell}
@@ -154,7 +154,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
             </div>
           ) : null}
 
-          <div className="border-b border-slate-200 px-4 py-3">
+          <div className="border-b border-slate-300 px-4 py-3">
             <ContestCard
               contest={contest}
               linkUserGroup

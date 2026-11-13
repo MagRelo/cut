@@ -114,7 +114,7 @@ function DetailHeader({
           e.stopPropagation();
           onShare();
         }}
-        className="shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-800"
+        className="shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:bg-slate-100 hover:text-gray-800"
         aria-label="Share player leaderboard link"
         title="Share player"
       >
@@ -223,7 +223,7 @@ export const GolfParticipantDetail: React.FC<ParticipantDetailProps> = ({
   const showSeasonStats = status === "SCHEDULED";
 
   return (
-    <div className="overflow-hidden rounded-sm border border-gray-300 bg-white">
+    <div className="overflow-hidden rounded-sm border border-slate-300 bg-white">
       <div className="overflow-hidden bg-white">
         <div className="p-3 py-4">
           <DetailHeader
@@ -240,13 +240,13 @@ export const GolfParticipantDetail: React.FC<ParticipantDetailProps> = ({
         </div>
 
         {showSeasonStats ? (
-          <div className="border-t border-gray-200 px-4 py-4">
+          <div className="border-t border-slate-300 px-4 py-4">
             <ParticipantStatsPanel candidate={candidate} />
           </div>
         ) : (
           <>
             <div
-              className="grid w-full grid-cols-[repeat(4,minmax(0,1fr))_repeat(2,minmax(0,1fr))] items-stretch divide-x divide-gray-200 border-t border-gray-200 bg-white"
+              className="grid w-full grid-cols-[repeat(4,minmax(0,1fr))_repeat(2,minmax(0,1fr))] items-stretch divide-x divide-slate-300 border-t border-slate-300 bg-white"
               role="presentation"
             >
               {(

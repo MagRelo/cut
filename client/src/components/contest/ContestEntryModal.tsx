@@ -112,7 +112,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                     </div>
 
                     <div className="space-y-1">
-                      <hr className="my-0 border-0 border-t border-gray-200" />
+                      <hr className="my-0 border-0 border-t border-slate-300" />
                       <div className="space-y-1 px-2 pb-2 pt-0 sm:px-6">
                         {lineupCandidates.length === 0 ? (
                           <p className="py-4 text-center text-sm text-gray-500">No players</p>
@@ -136,7 +136,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                                 />
                               </div>
                               {index < lineupCandidates.length - 1 ? (
-                                <hr className="my-0 border-0 border-t border-gray-200" />
+                                <hr className="my-0 border-0 border-t border-slate-300" />
                               ) : null}
                             </Fragment>
                           ))

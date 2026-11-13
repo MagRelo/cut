@@ -98,7 +98,7 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
 
   if (!userAddress) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+      <div className="bg-gray-50 border border-slate-300 rounded-lg p-4 text-center">
         <p className="text-gray-600 text-sm font-display">
           Connect your wallet to claim your winnings.
         </p>
@@ -116,7 +116,7 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
 
   if (userPositions.length === 0) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+      <div className="bg-gray-50 border border-slate-300 rounded-lg p-4 text-center">
         <p className="text-gray-600 text-sm font-display">
           You didn't place any predictions in this contest.
         </p>
@@ -147,7 +147,7 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
             </h4>
           </div>
 
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-slate-300">
             {winningPositions.map((position) => {
               const lineup = contest.contestLineups?.find((l) => l.entryId === position.entryId);
               const userName = lineup?.user?.name || "Unknown";
@@ -193,13 +193,13 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
       {/* Losing Positions */}
       {losingPositions.length > 0 && (
         <div>
-          <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
+          <div className="px-4 py-2 bg-gray-50 border-b border-slate-300">
             <h4 className="text-sm font-semibold text-gray-700 font-display">
               Unsuccessful Predictions
             </h4>
           </div>
 
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-slate-300">
             {losingPositions.map((position) => {
               const lineup = contest.contestLineups?.find((l) => l.entryId === position.entryId);
               const userName = lineup?.user?.name || "Unknown";
@@ -223,7 +223,7 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
         </div>
       )}
 
-      <div className="px-4 pb-4 text-xs text-gray-500 border-t border-gray-200 pt-4 mt-2">
+      <div className="px-4 pb-4 text-xs text-gray-500 border-t border-slate-300 pt-4 mt-2">
         <p>
           <strong>Winner-Take-All:</strong> Only predictions on the winning entry receive payouts.
           Payout size is proportional to your winning ticket holdings.

@@ -152,7 +152,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
   };
 
   const createLineupPanel = showCreatePanel ? (
-    <div className="rounded-sm border border-gray-200 bg-gray-50 p-4">
+    <div className="rounded-sm border border-slate-300 bg-gray-50 p-4">
       <p className="font-display text-base font-semibold text-gray-900">Create lineup</p>
       <p className="mt-1 font-display text-sm leading-relaxed text-gray-600">
         {hasLineups ? (
@@ -177,7 +177,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
           <p className="font-display text-xs font-medium uppercase tracking-wide text-gray-500">
             Or copy from another contest
           </p>
-          <ul className="mt-2 divide-y divide-gray-200 overflow-hidden rounded border border-gray-200 bg-white">
+          <ul className="mt-2 divide-y divide-slate-300 overflow-hidden rounded border border-slate-300 bg-white">
             {copyableLineups.map((row) => {
               const players = lineupPickLastNames(row);
               const isCopying = copyingLineupId === row.id;
@@ -221,7 +221,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
           eventStatus={eventStatus}
           eventMetadata={eventMetadata}
         />
-        <div className="border-t border-gray-200 bg-slate-50 px-3 py-4">
+        <div className="border-t border-slate-300 bg-slate-50 px-3 py-4">
           <SignInPrompt action="save your lineup" className="mx-auto" />
         </div>
       </div>

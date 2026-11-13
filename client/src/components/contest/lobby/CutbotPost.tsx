@@ -218,7 +218,7 @@ export const CutbotPost: React.FC<CutbotPostProps> = ({
                   "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase leading-tight tracking-wide",
                   isMentioned
                     ? "border-emerald-300 bg-emerald-100 text-emerald-800"
-                    : "border-slate-200 bg-slate-50 text-slate-600",
+                    : "border-slate-300 bg-slate-50 text-slate-600",
                 ].join(" ")}
               >
                 {storyLabel}

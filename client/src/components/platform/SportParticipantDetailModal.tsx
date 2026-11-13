@@ -98,7 +98,7 @@ export const SportParticipantDetailModal: React.FC<SportParticipantDetailModalPr
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <DialogPanel className="w-full max-w-modal transform overflow-hidden rounded-sm bg-gray-50 text-left align-middle shadow-xl transition-[opacity,transform]">
+              <DialogPanel className="w-full max-w-modal transform overflow-hidden rounded-sm bg-slate-50 text-left align-middle shadow-xl transition-[opacity,transform]">
                 <div className="p-2">
                   {displayCandidate ? (
                     <ParticipantDetail

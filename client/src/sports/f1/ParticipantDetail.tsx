@@ -35,13 +35,13 @@ export const F1ParticipantDetail: React.FC<ParticipantDetailProps> = ({
   const totalPoints = candidatePoints(candidate);
 
   return (
-    <div className="overflow-hidden rounded-sm border border-gray-300 bg-white">
+    <div className="overflow-hidden rounded-sm border border-slate-300 bg-white">
       <div className="p-3 py-4">
         <F1ParticipantRow candidate={candidate} status={status} />
       </div>
 
       <div
-        className="grid w-full grid-cols-4 items-stretch divide-x divide-gray-200 border-t border-gray-200 bg-white"
+        className="grid w-full grid-cols-4 items-stretch divide-x divide-slate-300 border-t border-slate-300 bg-white"
         role="presentation"
       >
         <StatCell
@@ -62,7 +62,7 @@ export const F1ParticipantDetail: React.FC<ParticipantDetailProps> = ({
         />
       </div>
 
-      <div className="border-t border-gray-200 bg-slate-50 px-4 py-3 text-sm text-gray-700">
+      <div className="border-t border-slate-300 bg-slate-50 px-4 py-3 text-sm text-gray-700">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span>
             Status: <strong>{formatDriverStatus(scoreData.status)}</strong>

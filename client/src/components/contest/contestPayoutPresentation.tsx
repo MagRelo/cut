@@ -72,7 +72,7 @@ export function ContestPayoutSection({
   children: ReactNode;
 }) {
   return (
-    <section className="border-b border-slate-200 pb-4 last:border-b-0 last:pb-0">
+    <section className="border-b border-slate-300 pb-4 last:border-b-0 last:pb-0">
       <div className="space-y-2 px-4">
         <div>
           <h2 className="text-xl font-semibold leading-tight text-slate-900">{title}</h2>

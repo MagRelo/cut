@@ -111,11 +111,9 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
             <div
               key={entry.entryId}
               onClick={() => canOpenLineupModal && setSelectedEntryId(entry.entryId)}
-              className={`rounded-none border-0 border-b border-l border-r border-t border-gray-200 bg-white p-3 font-display ${
-                canOpenLineupModal
-                  ? "cursor-pointer hover:shadow-md"
-                  : "cursor-not-allowed opacity-60"
-              } transition-all`}
+              className={`rounded-sm border-0 border-b border-l border-r border-t border-slate-300 bg-white p-3 font-display shadow-sm ${
+                canOpenLineupModal ? "cursor-pointer" : "cursor-not-allowed opacity-60"
+              }`}
               style={{
                 borderLeftColor: resolvedLeftBorderColor,
                 borderLeftWidth: "5px",
