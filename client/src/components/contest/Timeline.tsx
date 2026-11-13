@@ -27,9 +27,19 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const OTHER_TEAM_LINE_OPACITY = 0.6;
-/** Shared color for y-axis ticks and period divider labels. */
-const TIMELINE_AXIS_LABEL_COLOR = "#4B5563";
+/** Score ticks and period labels (R1, Mon). */
+const TIMELINE_AXIS_LABEL_COLOR = "#374151";
+const TIMELINE_AXIS_LABEL_FONT = "500 11px 'Outfit', sans-serif";
+/** Gap between the plot edge and the top of a period label. */
+const TIMELINE_PERIOD_LABEL_OFFSET_PX = 8;
+/** Canvas space reserved under the plot for period labels. */
+const TIMELINE_PERIOD_LABEL_BAND_PX = 22;
+/** Vertical round breaks. */
+const TIMELINE_PERIOD_DIVIDER_COLOR = "rgba(17, 24, 39, 0.5)";
+const USER_LINE_WIDTH = 3;
+const WINNER_LINE_WIDTH = 2.5;
+const OTHER_LINE_WIDTH = 1.5;
+const OTHER_LINE_OPACITY = 0.5;
 /** Lower `order` draws on top in Chart.js (see mixed chart drawing-order docs). */
 const USER_LINE_ORDER = 0;
 const PAYOUT_WINNER_LINE_ORDER = 5;
@@ -167,18 +177,18 @@ const timelineChartPlugin: Plugin<"line"> = {
         ctx.beginPath();
         ctx.moveTo(x, chartArea.top);
         ctx.lineTo(x, chartArea.bottom);
-        ctx.strokeStyle = "rgba(107, 114, 128, 0.35)";
+        ctx.strokeStyle = TIMELINE_PERIOD_DIVIDER_COLOR;
         ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
+        ctx.setLineDash([2, 3]);
         ctx.stroke();
         ctx.setLineDash([]);
       }
 
       ctx.fillStyle = TIMELINE_AXIS_LABEL_COLOR;
-      ctx.font = "9px 'Outfit', sans-serif";
+      ctx.font = TIMELINE_AXIS_LABEL_FONT;
       ctx.textAlign = "left";
-      ctx.textBaseline = "bottom";
-      ctx.fillText(text, x + 6, chartArea.bottom - 4);
+      ctx.textBaseline = "top";
+      ctx.fillText(text, x + 6, chartArea.bottom + TIMELINE_PERIOD_LABEL_OFFSET_PX);
     }
     ctx.restore();
   },
@@ -269,26 +279,25 @@ export const Timeline: React.FC<TimelineProps> = ({
     [topTeams, highlightPayoutWinners, currentUserId],
   );
 
-  const lineColorForTeam = useCallback(
-    (team: TimelineTeam) => {
-      if (!currentUserId) return team.color;
-      if (isCurrentUserTeam(team, currentUserId)) return team.color;
-      if (highlightPayoutWinners && team.isPrimaryPayoutWinner === true) return team.color;
-      return colorWithOpacity(team.color, OTHER_TEAM_LINE_OPACITY);
-    },
-    [currentUserId, highlightPayoutWinners],
-  );
-
   const lineStyleForTeam = useCallback(
     (team: TimelineTeam) => {
       const isUser = isCurrentUserTeam(team, currentUserId);
+      const isWinner = highlightPayoutWinners && team.isPrimaryPayoutWinner === true;
+      const isOther = Boolean(currentUserId) && !isUser && !isWinner;
+      const borderWidth = !currentUserId
+        ? OTHER_LINE_WIDTH
+        : isUser
+          ? USER_LINE_WIDTH
+          : isWinner
+            ? WINNER_LINE_WIDTH
+            : OTHER_LINE_WIDTH;
       return {
-        borderColor: lineColorForTeam(team),
-        borderWidth: !currentUserId ? 2 : isUser ? 3 : 1,
+        borderColor: isOther ? colorWithOpacity(team.color, OTHER_LINE_OPACITY) : team.color,
+        borderWidth,
         order: chartOrderForTeam(team, currentUserId, highlightPayoutWinners),
       };
     },
-    [currentUserId, highlightPayoutWinners, lineColorForTeam],
+    [currentUserId, highlightPayoutWinners],
   );
 
   const labels = useMemo(
@@ -325,6 +334,11 @@ export const Timeline: React.FC<TimelineProps> = ({
       responsive: true,
       maintainAspectRatio: false,
       events: [],
+      layout: {
+        padding: {
+          bottom: periodDividerLabels.length ? TIMELINE_PERIOD_LABEL_BAND_PX : 0,
+        },
+      },
       plugins: {
         legend: {
           display: false,
@@ -369,7 +383,8 @@ export const Timeline: React.FC<TimelineProps> = ({
             color: TIMELINE_AXIS_LABEL_COLOR,
             font: {
               family: "'Outfit', sans-serif",
-              size: 9,
+              size: 11,
+              weight: 500,
             },
             callback: (value: string | number) => value,
           },

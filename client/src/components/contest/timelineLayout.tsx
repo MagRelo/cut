@@ -6,8 +6,7 @@ export const TIMELINE_CHART_HEIGHT_PX = 220;
 
 export const DEFAULT_TIMELINE_TITLE = "Event Timeline";
 
-const timelineFrameClassName =
-  "flex w-full flex-col overflow-hidden bg-white font-display";
+const timelineFrameClassName = "flex w-full flex-col overflow-hidden bg-white font-display";
 
 interface TimelineFrameProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
@@ -47,7 +46,7 @@ export const TimelineChartWell: React.FC<{
 }> = ({ children, fitContainer = false }) => {
   return (
     <div
-      className={cn("timeline-chart min-h-0 px-2 pb-3 pt-1", fitContainer ? "flex-1" : "")}
+      className={cn("timeline-chart min-h-0 px-1 pt-1", fitContainer ? "flex-1" : "")}
       style={fitContainer ? undefined : { height: TIMELINE_CHART_HEIGHT_PX }}
     >
       {children}
