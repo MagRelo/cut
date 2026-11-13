@@ -114,7 +114,7 @@ export const Modal: React.FC<ModalProps> = ({
                   </>
                 ) : (
                   <div
-                    className={`flex items-center justify-between rounded-t-sm border-b border-slate-200 bg-slate-100 px-4 py-3 ${headerClassName}`}
+                    className={`flex items-center justify-between rounded-t-sm border-b border-slate-300 bg-slate-100 px-4 py-3 ${headerClassName}`}
                   >
                     <DialogTitle className="font-display text-base font-semibold tracking-tight text-slate-600">
                       {title}

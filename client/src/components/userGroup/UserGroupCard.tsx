@@ -30,7 +30,7 @@ export const UserGroupCard = ({ userGroup }: UserGroupCardProps) => {
   return (
     <div
       className={cn(
-        "group min-w-0 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow] duration-200 hover:border-blue-200 hover:shadow-md",
+        "group min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition-[border-color,box-shadow] duration-200 hover:border-blue-200 hover:shadow-md",
       )}
     >
       <div className="px-3 pb-2 pt-4">
@@ -42,7 +42,7 @@ export const UserGroupCard = ({ userGroup }: UserGroupCardProps) => {
             className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ${
               userGroup.role === "ADMIN"
                 ? "border border-blue-300 bg-blue-100 text-blue-800"
-                : "border border-gray-300 bg-gray-100 text-gray-800"
+                : "border border-slate-300 bg-gray-100 text-gray-800"
             }`}
           >
             {formatRole(userGroup.role)}

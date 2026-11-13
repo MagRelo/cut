@@ -88,7 +88,7 @@ export const PredictionEntryModal: React.FC<PredictionEntryModalProps> = ({
               leaveTo="opacity-0 scale-95"
             >
               <DialogPanel className="w-full max-w-modal transform overflow-hidden rounded-sm bg-gray-100 p-2 text-left align-middle shadow-xl transition-all">
-                <div className="flex max-h-[70vh] flex-col overflow-hidden rounded-sm border border-gray-300 bg-white">
+                <div className="flex max-h-[70vh] flex-col overflow-hidden rounded-sm border border-slate-300 bg-white">
                   <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:px-6">
                     <div className="min-h-[280px]">
                       <PredictionEntryForm

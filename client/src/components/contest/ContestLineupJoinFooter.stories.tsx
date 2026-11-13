@@ -23,7 +23,7 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div className="w-80 overflow-hidden rounded-sm border border-gray-300 bg-white shadow-md">
+      <div className="w-80 overflow-hidden rounded-sm border border-slate-300 bg-white shadow-md">
         <div className="px-3 py-4 font-display text-sm text-gray-700">Lineup</div>
         <Story />
       </div>

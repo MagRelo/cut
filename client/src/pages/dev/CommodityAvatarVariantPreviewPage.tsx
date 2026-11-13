@@ -230,7 +230,7 @@ function VariantSection({ variant }: { variant: AvatarVariant }) {
       <h2 className="text-lg font-semibold text-gray-900">{meta.title}</h2>
       <p className="mb-4 max-w-2xl text-sm text-gray-600">{meta.description}</p>
 
-      <div className="mb-4 flex flex-wrap gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-4 flex flex-wrap gap-4 rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
         {SECTOR_SAMPLES.map((entry) => (
           <div key={entry.displayName} className="flex flex-col items-center gap-1.5">
             <PreviewAvatar
@@ -245,18 +245,18 @@ function VariantSection({ variant }: { variant: AvatarVariant }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Lineup row (md)</h3>
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-slate-300">
             {LINEUP_SAMPLE.map((entry) => (
               <LineupRowPreview key={entry.displayName} variant={variant} entry={entry} />
             ))}
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Lineup row (sm)</h3>
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-slate-300">
             {LINEUP_SAMPLE.map((entry) => (
               <LineupRowPreview key={`${entry.displayName}-sm`} variant={variant} size="sm" entry={entry} />
             ))}
@@ -314,9 +314,9 @@ export const CommodityAvatarVariantPreviewPage: React.FC = () => {
             </div>
           ))}
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Lineup row (md)</h3>
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-slate-300">
             {LINEUP_SAMPLE.map((entry) => (
               <div key={entry.displayName} className="flex min-w-0 items-center justify-between gap-3 py-2">
                 <CommodityAvatar
@@ -346,9 +346,9 @@ export const CommodityAvatarVariantPreviewPage: React.FC = () => {
 
       <section className="mb-10">
         <h2 className="mb-3 text-lg font-semibold text-gray-900">Color tokens</h2>
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-200 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <thead className="border-b border-slate-300 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="px-4 py-3">Sector</th>
                 <th className="px-4 py-3">Solid</th>
@@ -357,7 +357,7 @@ export const CommodityAvatarVariantPreviewPage: React.FC = () => {
                 <th className="px-4 py-3">Muted bg</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-slate-300">
               {COMMODITY_SECTORS.map((sector) => (
                 <tr key={sector}>
                   <td className="px-4 py-3 font-medium text-gray-900">{sectorLabel(sector)}</td>
@@ -391,9 +391,9 @@ export const CommodityAvatarVariantPreviewPage: React.FC = () => {
         </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {variants.map((variant) => (
-            <div key={variant} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div key={variant} className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
               <h3 className="mb-3 text-sm font-semibold text-gray-900">{VARIANT_META[variant].title}</h3>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-slate-300">
                 {LINEUP_SAMPLE.map((entry) => (
                   <LineupRowPreview key={entry.displayName} variant={variant} entry={entry} />
                 ))}
@@ -409,7 +409,7 @@ export const CommodityAvatarVariantPreviewPage: React.FC = () => {
 function Swatch({ color, label }: { color: string; label: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="h-5 w-5 shrink-0 rounded-full border border-gray-200" style={{ backgroundColor: color }} />
+      <span className="h-5 w-5 shrink-0 rounded-full border border-slate-300" style={{ backgroundColor: color }} />
       <span className="font-mono text-xs text-gray-500">{label}</span>
     </div>
   );

@@ -242,7 +242,7 @@ export const LeagueCreateContestForm = ({
         </Disclosure>
       ) : null}
 
-      <hr className="my-6 border-slate-200" />
+      <hr className="my-6 border-slate-300" />
 
       <div className="flex flex-col gap-2 sm:items-end">
         <Button

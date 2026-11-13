@@ -87,7 +87,7 @@ export function DisplaySettings() {
               id="name"
               value={draft.name}
               onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
-              className="mt-1 block w-full rounded-sm border border-gray-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+              className="mt-1 block w-full rounded-sm border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-gray-100"
               placeholder="Enter your name"
             />
           </div>
@@ -162,7 +162,7 @@ export function DisplaySettings() {
                       className={`flex min-h-[2.75rem] w-full flex-col items-center justify-center rounded-md border px-1 py-1.5 text-center font-display shadow-sm transition-colors ${
                         selected
                           ? "border-white bg-blue-500 text-white ring-2 ring-gray-400 ring-offset-4"
-                          : "border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50"
+                          : "border-slate-300 bg-white hover:border-slate-400 hover:bg-gray-50"
                       }`}
                     >
                       <span
@@ -188,7 +188,7 @@ export function DisplaySettings() {
         </div>
 
         <div>
-          <hr className="border-gray-200" />
+          <hr className="border-slate-300" />
           <div className="flex flex-col items-center gap-2 pt-4">
             <Button type="submit" disabled={isLoading || !hasChanges} className="min-w-[120px]">
               {isLoading ? "Saving..." : "Save"}

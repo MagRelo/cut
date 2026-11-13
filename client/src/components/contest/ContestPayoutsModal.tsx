@@ -328,7 +328,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
       scrollable
       maxHeight="600px"
       panelClassName="overflow-hidden bg-gray-100 p-2"
-      contentClassName="rounded-sm border border-gray-300 bg-white"
+      contentClassName="rounded-sm border border-slate-300 bg-white"
     >
       <div>
         {readsFailed ? (

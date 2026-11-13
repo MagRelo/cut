@@ -89,7 +89,7 @@ export const CandidatePicker: React.FC<CandidatePickerProps> = ({
             leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
           >
             <DialogPanel className="flex max-h-[75vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl">
-              <div className="border-b border-gray-200 px-4 py-3">
+              <div className="border-b border-slate-300 px-4 py-3">
                 <DialogTitle className="font-display text-lg font-semibold text-gray-900">
                   {title}
                 </DialogTitle>
@@ -100,7 +100,7 @@ export const CandidatePicker: React.FC<CandidatePickerProps> = ({
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder="Search..."
                     disabled={isBusy}
-                    className="mt-3 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="mt-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
                   />
                 ) : null}
               </div>
@@ -137,12 +137,12 @@ export const CandidatePicker: React.FC<CandidatePickerProps> = ({
               </div>
 
               {saveError ? (
-                <div className="border-t border-gray-200 p-3">
+                <div className="border-t border-slate-300 p-3">
                   <ErrorMessage message={saveError} />
                 </div>
               ) : null}
 
-              <div className="flex justify-end gap-2 border-t border-gray-200 px-4 py-3">
+              <div className="flex justify-end gap-2 border-t border-slate-300 px-4 py-3">
                 {onClearSlot ? (
                   <button
                     type="button"

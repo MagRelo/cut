@@ -15,7 +15,7 @@ function NodePanel({ node, shareUrl }: { node: ReferralDisplayNode; shareUrl?: s
   if (node.invite) {
     return (
       <div
-        className="rounded-sm border border-dashed border-gray-300 bg-white/80 px-3 py-4 font-display"
+        className="rounded-sm border border-dashed border-slate-300 bg-white/80 px-3 py-4 font-display"
         style={{
           borderLeftColor: resolveUserBorderColor(undefined),
           borderLeftWidth: "5px",
@@ -38,7 +38,7 @@ function NodePanel({ node, shareUrl }: { node: ReferralDisplayNode; shareUrl?: s
 
   return (
     <div
-      className="rounded-sm border border-gray-200 bg-white px-3 py-4 font-display shadow-sm"
+      className="rounded-sm border border-slate-300 bg-white px-3 py-4 font-display shadow-sm"
       style={{
         borderLeftColor: resolveUserBorderColor(node.color),
         borderLeftWidth: "5px",

@@ -14,7 +14,7 @@ export function AdminLeaguesTable({ leagues }: { leagues: AdminDashboardLeague[]
   }
 
   return (
-    <div className="overflow-x-auto border border-gray-200 rounded-sm">
+    <div className="overflow-x-auto border border-slate-300 rounded-sm">
       <table className="min-w-full text-sm text-left">
         <thead className="bg-gray-100 text-gray-700">
           <tr>
@@ -24,7 +24,7 @@ export function AdminLeaguesTable({ leagues }: { leagues: AdminDashboardLeague[]
             <th className="px-3 py-2 font-medium">Created</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-slate-300">
           {leagues.map((league) => (
             <tr key={league.id} className="hover:bg-gray-50">
               <td className="px-3 py-2">

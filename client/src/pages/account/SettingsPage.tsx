@@ -61,7 +61,7 @@ const AccountInfo = ({
 
       {canSignOut && (
         <div className="mt-4">
-          <hr className="border-gray-200" />
+          <hr className="border-slate-300" />
           <div className="flex justify-center pt-4">
             <Button
               type="button"

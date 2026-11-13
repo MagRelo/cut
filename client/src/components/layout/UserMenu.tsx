@@ -74,7 +74,7 @@ export const UserMenu: React.FC = () => {
 
       <MenuItems
         anchor="bottom end"
-        className="z-50 mt-1 min-w-[14rem] rounded-md border border-slate-200 bg-white py-1 shadow-lg focus:outline-none"
+        className="z-50 mt-1 min-w-[14rem] rounded-md border border-slate-300 bg-white py-1 shadow-lg focus:outline-none"
       >
         <MenuItem>
           {({ close }) => {
@@ -131,7 +131,7 @@ export const UserMenu: React.FC = () => {
           );
         })}
 
-        <div className="my-1 border-t border-slate-100" role="separator" />
+        <div className="my-1 border-t border-slate-300" role="separator" />
 
         {ACCOUNT_SUB_LINKS.map((link) => {
           const active = link.match(location.pathname);
@@ -168,7 +168,7 @@ export const UserMenu: React.FC = () => {
           );
         })}
 
-        <div className="my-1 border-t border-slate-100" role="separator" />
+        <div className="my-1 border-t border-slate-300" role="separator" />
 
         <MenuItem>
           {({ close }) => (
@@ -211,7 +211,7 @@ export const UserMenu: React.FC = () => {
 
         {showAdminNav ? (
           <>
-            <div className="my-1 border-t border-slate-100" role="separator" />
+            <div className="my-1 border-t border-slate-300" role="separator" />
             {ADMIN_MENU_LINKS.map((link) => {
               const active =
                 location.pathname === link.to || location.pathname.startsWith(`${link.to}/`);

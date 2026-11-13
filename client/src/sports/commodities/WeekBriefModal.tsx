@@ -154,7 +154,7 @@ function LastWeekSection({ section }: { section: BriefSection }) {
             <div
               key={`${name}-${item.body.slice(0, 24)}`}
               className={`grid grid-cols-[2.25rem_minmax(0,1fr)_4.5rem_3.25rem] items-center gap-x-3 ${
-                index === 0 ? "pb-3" : "border-t border-zinc-200 py-3"
+                index === 0 ? "pb-3" : "border-t border-slate-300 py-3"
               }`}
             >
               <CommodityAvatar
@@ -194,7 +194,7 @@ function TopStoriesSection({ section }: { section: BriefSection }) {
           return (
             <div
               key={`${label ?? ""}-${item.body.slice(0, 24)}`}
-              className={index === 0 ? "" : "mt-4 border-t border-zinc-200 pt-4"}
+              className={index === 0 ? "" : "mt-4 border-t border-slate-300 pt-4"}
             >
               {label ? (
                 <h3 className="font-display text-base font-bold leading-snug text-zinc-900">{label}</h3>
@@ -236,7 +236,7 @@ export function CommodityWeekBriefModal({
       scrollable
       maxHeight="80vh"
       panelClassName="overflow-hidden bg-gray-100 p-2"
-      contentClassName="rounded-sm border border-gray-300 bg-white px-6 pb-6 pt-5"
+      contentClassName="rounded-sm border border-slate-300 bg-white px-6 pb-6 pt-5"
     >
       {!sections ? (
         <p className="pr-8 text-sm text-zinc-500">No tournament summary available.</p>

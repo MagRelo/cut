@@ -75,7 +75,7 @@ export const AdminPage: React.FC = () => {
       type="button"
       onClick={refreshAll}
       disabled={dashboardQuery.isFetching}
-      className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50 disabled:opacity-50"
+      className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-slate-300 rounded-sm hover:bg-gray-50 disabled:opacity-50"
     >
       {dashboardQuery.isFetching ? "Refreshing…" : "Refresh"}
     </button>

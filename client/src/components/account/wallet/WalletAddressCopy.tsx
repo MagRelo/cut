@@ -2,7 +2,7 @@ import { CopyButton } from "../../common/CopyToClipboard";
 import { walletSpecLabelClassName } from "./AssetChips";
 
 export const walletAddressWellClassName =
-  "select-all rounded-md border border-gray-200 bg-gray-50 px-3 py-2 font-mono text-[13px] font-medium leading-6 tracking-tight text-gray-800";
+  "select-all rounded-md border border-slate-300 bg-gray-50 px-3 py-2 font-mono text-[13px] font-medium leading-6 tracking-tight text-gray-800";
 
 /** Groups hex for scanability; wrapping lands on 4-char boundaries instead of mid-token. */
 export function formatAddressForDisplay(address: string): string {

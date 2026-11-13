@@ -15,7 +15,7 @@ export const CommodityCandidateSelectionCard: React.FC<{ candidate: Candidate }>
     quote?.changePercent != null && quote.changePercent < 0 ? "text-red-600" : "text-emerald-600";
 
   return (
-    <div className="flex min-h-[5.5rem] flex-col justify-between rounded-sm border border-gray-200 bg-white p-3 shadow-sm">
+    <div className="flex min-h-[5.5rem] flex-col justify-between rounded-sm border border-slate-300 bg-white p-3 shadow-sm">
       <div className="flex items-start gap-3">
         <div className="flex w-14 shrink-0 flex-col items-center gap-1">
           <CommodityAvatar

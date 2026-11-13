@@ -31,7 +31,7 @@ function LivePickerCandidateRow({
 
   return (
     <div
-      className={`border-b border-gray-100 px-3 py-2.5 ${
+      className={`border-b border-slate-300 px-3 py-2.5 ${
         isSelected ? "bg-blue-50" : onSelect && !disabled ? "hover:bg-gray-50" : ""
       } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
     >

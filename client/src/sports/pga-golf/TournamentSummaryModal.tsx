@@ -60,7 +60,7 @@ function BestPlayersList({
             <div
               key={`${displayName}-${item.body.slice(0, 24)}`}
               className={`grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-x-3 ${
-                index === 0 ? "" : "mt-5 border-t border-zinc-200 pt-5"
+                index === 0 ? "" : "mt-5 border-t border-slate-300 pt-5"
               }`}
             >
               <ParticipantAvatar imageUrl={portrait.imageUrl} alt={displayName} />

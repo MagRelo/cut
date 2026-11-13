@@ -214,7 +214,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
 
   if (!isAuthenticated) {
     return (
-      <div className="overflow-hidden rounded-sm border border-gray-300 shadow-md">
+      <div className="overflow-hidden rounded-sm border border-slate-300 shadow-md">
         <GuestLineupPicker
           sportId={sportId}
           eventId={eventId}
@@ -230,7 +230,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
 
   if ((isAuthLoading && !user) || isLineupsLoading || !rosterRules) {
     return (
-      <div className="overflow-hidden rounded-sm border border-gray-300 shadow-md">
+      <div className="overflow-hidden rounded-sm border border-slate-300 shadow-md">
         <LineupContestCardLoading slotCount={rosterRules?.slotCount} />
       </div>
     );
@@ -260,7 +260,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
           {listItems.map((row) => (
             <div
               key={row.id}
-              className="overflow-hidden rounded-sm border border-gray-300 shadow-md"
+              className="overflow-hidden rounded-sm border border-slate-300 shadow-md"
             >
               <LineupContestCard
                 lineup={contestLineupForCard(row, user, contest.id)}

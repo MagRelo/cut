@@ -45,7 +45,7 @@ export const Home: React.FC = () => {
         </div>
       </div>
 
-      <hr className="my-8 w-full border-gray-200" />
+      <hr className="my-8 w-full border-slate-300" />
 
       {/* How To Win */}
       <div className="w-full max-w-4xl px-4">
@@ -95,7 +95,7 @@ export const Home: React.FC = () => {
         </div>
       </div>
 
-      <hr className="my-8 w-full border-gray-200" />
+      <hr className="my-8 w-full border-slate-300" />
 
       {/* How To Play Contests */}
       <div className="w-full max-w-4xl px-4">
@@ -111,7 +111,7 @@ export const Home: React.FC = () => {
                 {player.pga_imageUrl && (
                   <div className="mb-2 flex-shrink-0">
                     <img
-                      className="h-10 w-10 rounded-full border border-gray-300 object-cover"
+                      className="h-10 w-10 rounded-full border border-slate-300 object-cover"
                       src={player.pga_imageUrl}
                       alt={player.name}
                       style={{ objectPosition: "center top" }}
@@ -144,7 +144,7 @@ export const Home: React.FC = () => {
         </PageSection>
       </div>
 
-      <hr className="my-8 w-full border-gray-200" />
+      <hr className="my-8 w-full border-slate-300" />
 
       {/* Referral Bonus */}
       <div className="w-full max-w-4xl px-4">
@@ -197,7 +197,7 @@ export const Home: React.FC = () => {
         </div>
       </div>
 
-      <hr className="my-8 w-full border-gray-200" />
+      <hr className="my-8 w-full border-slate-300" />
 
       <div className="mb-8 flex w-full flex-col items-center gap-3 px-4">
         <h3 className="text-center text-2xl font-bold text-gray-400">Live Contests</h3>
@@ -207,7 +207,7 @@ export const Home: React.FC = () => {
         </Button>
       </div>
 
-      <hr className="my-8 w-full border-gray-200" />
+      <hr className="my-8 w-full border-slate-300" />
 
       {/* Share component */}
       <Share url={BRAND_URL} title={BRAND_TAGLINE} subtitle={BRAND_TAGLINE} />

@@ -39,7 +39,7 @@ export const LineupWinningScoreSlider: React.FC<LineupWinningScoreSliderProps> =
   const fillPercent = span > 0 ? Math.min(100, Math.max(0, ((value - min) / span) * 100)) : 0;
 
   return (
-    <div className="border-t border-gray-100 p-3">
+    <div className="border-t border-slate-300 p-3">
       {readOnly ? (
         <div className="flex items-center justify-between gap-3">
           <span className="font-display text-sm font-medium text-gray-900">{label}</span>

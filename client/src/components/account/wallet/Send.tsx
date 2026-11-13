@@ -22,7 +22,7 @@ export type SendProps = {
 };
 
 const fieldClassName =
-  "min-h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100";
+  "min-h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100";
 
 function SendSpec({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -248,7 +248,7 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
               <button
                 type="button"
                 onClick={handleMaxSend}
-                className="min-h-11 shrink-0 rounded-md border border-gray-300 px-4 text-sm font-medium text-gray-800 hover:bg-gray-50"
+                className="min-h-11 shrink-0 rounded-md border border-slate-300 px-4 text-sm font-medium text-gray-800 hover:bg-gray-50"
               >
                 Max
               </button>

@@ -57,7 +57,7 @@ export const UserGroupMemberManagement = ({
         <span className="font-normal tabular-nums text-gray-600">({members.length})</span>
       </h3>
 
-      <ul className="divide-y divide-gray-100">
+      <ul className="divide-y divide-slate-300">
         {members.map((member) => {
           const isYou = member.userId === currentUserId;
           const isLastAdmin = member.role === "ADMIN" && adminCount === 1;

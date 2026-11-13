@@ -225,7 +225,7 @@ export const FAQPage: React.FC = () => {
               tied scores. The split depends on how many entries are in the contest:
             </p>
             <div className="space-y-3">
-              <div className="rounded-sm border border-gray-200 bg-gray-50 p-3">
+              <div className="rounded-sm border border-slate-300 bg-gray-50 p-3">
                 <div className="mb-2 font-semibold text-gray-900">
                   Large contests (10 or more entries):
                 </div>
@@ -235,7 +235,7 @@ export const FAQPage: React.FC = () => {
                   <li>3rd place: 10%</li>
                 </ul>
               </div>
-              <div className="rounded-sm border border-gray-200 bg-gray-50 p-3">
+              <div className="rounded-sm border border-slate-300 bg-gray-50 p-3">
                 <div className="mb-2 font-semibold text-gray-900">
                   Small contests (fewer than 10 entries):
                 </div>
@@ -426,7 +426,7 @@ export const FAQPage: React.FC = () => {
               What are the contest status stages?
             </h3>
             <p className="mb-3 text-gray-700">Contests progress through the following lifecycle:</p>
-            <div className="mb-3 rounded-sm border border-gray-200 bg-gray-50 p-4">
+            <div className="mb-3 rounded-sm border border-slate-300 bg-gray-50 p-4">
               <code className="text-sm text-gray-800">
                 OPEN → ACTIVE → LOCKED → SETTLED → CLOSED
               </code>
@@ -442,104 +442,104 @@ export const FAQPage: React.FC = () => {
               What happens at each stage?
             </h3>
             <div className="overflow-x-auto">
-              <table className="min-w-full border border-gray-300 text-sm">
+              <table className="min-w-full border border-slate-300 text-sm">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-900">
+                    <th className="border border-slate-300 px-4 py-2 text-left font-semibold text-gray-900">
                       Day/Time
                     </th>
-                    <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-900">
+                    <th className="border border-slate-300 px-4 py-2 text-left font-semibold text-gray-900">
                       Event
                     </th>
-                    <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-900">
+                    <th className="border border-slate-300 px-4 py-2 text-left font-semibold text-gray-900">
                       Status
                     </th>
-                    <th className="border border-gray-300 px-4 py-2 text-left font-semibold text-gray-900">
+                    <th className="border border-slate-300 px-4 py-2 text-left font-semibold text-gray-900">
                       What Happens
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="border border-gray-300 px-4 py-2 font-medium text-gray-900">
+                    <td className="border border-slate-300 px-4 py-2 font-medium text-gray-900">
                       Monday Morning
                     </td>
-                    <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                    <td className="border border-slate-300 px-4 py-2 text-gray-700">
                       Contest Created
                     </td>
-                    <td className="border border-gray-300 px-4 py-2">
+                    <td className="border border-slate-300 px-4 py-2">
                       <span className="inline-block rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">
                         OPEN
                       </span>
                     </td>
-                    <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                    <td className="border border-slate-300 px-4 py-2 text-gray-700">
                       Contest becomes available. Users can join/leave and build lineups. Winner Pool
                       opens after activation.
                     </td>
                   </tr>
                   <tr className="bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-2 font-medium text-gray-900">
+                    <td className="border border-slate-300 px-4 py-2 font-medium text-gray-900">
                       Thursday Morning
                     </td>
-                    <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                    <td className="border border-slate-300 px-4 py-2 text-gray-700">
                       Tournament Starts
                     </td>
-                    <td className="border border-gray-300 px-4 py-2">
+                    <td className="border border-slate-300 px-4 py-2">
                       <span className="inline-block rounded bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
                         ACTIVE
                       </span>
                     </td>
-                    <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                    <td className="border border-slate-300 px-4 py-2 text-gray-700">
                       Entries locked (no join/leave). Prediction market stays open (buy only).
                     </td>
                   </tr>
                   <tr>
-                    <td className="border border-gray-300 px-4 py-2 font-medium text-gray-900">
+                    <td className="border border-slate-300 px-4 py-2 font-medium text-gray-900">
                       Varies
                     </td>
-                    <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                    <td className="border border-slate-300 px-4 py-2 text-gray-700">
                       Admin locks contest
                     </td>
-                    <td className="border border-gray-300 px-4 py-2">
+                    <td className="border border-slate-300 px-4 py-2">
                       <span className="inline-block rounded bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800">
                         LOCKED
                       </span>
                     </td>
-                    <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                    <td className="border border-slate-300 px-4 py-2 text-gray-700">
                       An administrator manually moves the contest to LOCKED based on contest
                       conditions (for example as the event nears a conclusion). All positions
                       frozen; Winner Pool closed; awaiting final results.
                     </td>
                   </tr>
                   <tr className="bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-2 font-medium text-gray-900">
+                    <td className="border border-slate-300 px-4 py-2 font-medium text-gray-900">
                       Sunday Evening
                     </td>
-                    <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                    <td className="border border-slate-300 px-4 py-2 text-gray-700">
                       Tournament Complete
                     </td>
-                    <td className="border border-gray-300 px-4 py-2">
+                    <td className="border border-slate-300 px-4 py-2">
                       <span className="inline-block rounded bg-purple-100 px-2 py-1 text-xs font-semibold text-purple-800">
                         SETTLED
                       </span>
                     </td>
-                    <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                    <td className="border border-slate-300 px-4 py-2 text-gray-700">
                       Results finalized. Winners can claim primary and secondary payouts.
                     </td>
                   </tr>
                   <tr>
-                    <td className="border border-gray-300 px-4 py-2 font-medium text-gray-900">
+                    <td className="border border-slate-300 px-4 py-2 font-medium text-gray-900">
                       Following Sunday
                     </td>
-                    <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                    <td className="border border-slate-300 px-4 py-2 text-gray-700">
                       Expiry Reached
                     </td>
-                    <td className="border border-gray-300 px-4 py-2">
+                    <td className="border border-slate-300 px-4 py-2">
                       <span className="inline-block rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-800">
                         CLOSED
                       </span>
                     </td>
-                    <td className="border border-gray-300 px-4 py-2 text-gray-700">
+                    <td className="border border-slate-300 px-4 py-2 text-gray-700">
                       Contest archived after expiry. Unclaimed SETTLED payouts or un-refunded
                       CANCELLED deposits may be swept. Close is only allowed from SETTLED or
                       CANCELLED.
@@ -556,7 +556,7 @@ export const FAQPage: React.FC = () => {
               What can I do at each status?
             </h3>
             <div className="space-y-3">
-              <div className="rounded-sm border border-gray-200 bg-gray-50 p-3">
+              <div className="rounded-sm border border-slate-300 bg-gray-50 p-3">
                 <div className="mb-2 font-semibold text-gray-900">
                   <span className="mr-2 inline-block rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">
                     OPEN
@@ -571,7 +571,7 @@ export const FAQPage: React.FC = () => {
                 </ul>
               </div>
 
-              <div className="rounded-sm border border-gray-200 bg-gray-50 p-3">
+              <div className="rounded-sm border border-slate-300 bg-gray-50 p-3">
                 <div className="mb-2 font-semibold text-gray-900">
                   <span className="mr-2 inline-block rounded bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
                     ACTIVE
@@ -586,7 +586,7 @@ export const FAQPage: React.FC = () => {
                 </ul>
               </div>
 
-              <div className="rounded-sm border border-gray-200 bg-gray-50 p-3">
+              <div className="rounded-sm border border-slate-300 bg-gray-50 p-3">
                 <div className="mb-2 font-semibold text-gray-900">
                   <span className="mr-2 inline-block rounded bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800">
                     LOCKED
@@ -601,7 +601,7 @@ export const FAQPage: React.FC = () => {
                 </ul>
               </div>
 
-              <div className="rounded-sm border border-gray-200 bg-gray-50 p-3">
+              <div className="rounded-sm border border-slate-300 bg-gray-50 p-3">
                 <div className="mb-2 font-semibold text-gray-900">
                   <span className="mr-2 inline-block rounded bg-purple-100 px-2 py-1 text-xs font-semibold text-purple-800">
                     SETTLED
@@ -616,7 +616,7 @@ export const FAQPage: React.FC = () => {
                 </ul>
               </div>
 
-              <div className="rounded-sm border border-gray-200 bg-gray-50 p-3">
+              <div className="rounded-sm border border-slate-300 bg-gray-50 p-3">
                 <div className="mb-2 font-semibold text-gray-900">
                   <span className="mr-2 inline-block rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-800">
                     CLOSED

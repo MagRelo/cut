@@ -10,8 +10,8 @@ interface PageSectionProps {
 }
 
 const variantClassNames: Record<PageSectionVariant, string> = {
-  default: "border-b border-gray-200 pb-4 last:border-b-0 last:pb-0 [&:not(:first-child)]:pt-4",
-  card: "rounded-lg border border-gray-200 bg-white p-4 shadow-sm",
+  default: "border-b border-slate-300 pb-4 last:border-b-0 last:pb-0 [&:not(:first-child)]:pt-4",
+  card: "rounded-lg border border-slate-300 bg-white p-4 shadow-sm",
 };
 
 /** Section divider inside a PagePanel. */

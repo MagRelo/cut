@@ -352,7 +352,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
 
       <div className="space-y-2 p-3 text-sm">
         <div
-          className="rounded-sm border border-gray-300 bg-white/90 px-2.5 py-2 shadow-sm"
+          className="rounded-sm border border-slate-300 bg-white/90 px-2.5 py-2 shadow-sm"
           style={{
             borderLeftColor: resolvedLeftBorderColor,
             borderLeftWidth: "5px",
@@ -426,7 +426,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
               readOnly
               tabIndex={-1}
               placeholder="Enter amount"
-              className="mt-2 w-full cursor-not-allowed rounded-sm border border-gray-300 bg-gray-50 px-3 py-2 text-sm tabular-nums text-gray-600"
+              className="mt-2 w-full cursor-not-allowed rounded-sm border border-slate-300 bg-gray-50 px-3 py-2 text-sm tabular-nums text-gray-600"
               disabled
             />
           </div>
@@ -495,7 +495,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
           placeholder="Enter amount"
-          className="mt-2 w-full rounded-sm border border-gray-300 px-3 py-2 text-sm tabular-nums text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-2 w-full rounded-sm border border-slate-300 px-3 py-2 text-sm tabular-nums text-gray-900 disabled:cursor-not-allowed disabled:opacity-50"
           disabled={isProcessing}
           autoFocus
         />

@@ -6,7 +6,7 @@ import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 
 const labelClass = "block text-sm font-medium text-gray-700 font-display";
 const fieldClass =
-  "mt-1 block w-full rounded-sm border border-gray-300 bg-white py-2.5 px-3 text-sm font-display focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-gray-100";
+  "mt-1 block w-full rounded-sm border border-slate-300 bg-white py-2.5 px-3 text-sm font-display focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-gray-100";
 interface UserGroupFormProps {
   initialData?: {
     name?: string;

@@ -94,7 +94,7 @@ const ContractsPage: React.FC = () => {
         {contracts.map((contract, index) => (
           <div
             key={index}
-            className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors"
+            className="border border-slate-300 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors"
           >
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
               <div className="flex-1 min-w-0">

@@ -97,7 +97,7 @@ export const ContestEntryModal: React.FC<ContestEntryModalProps> = ({
                 leaveTo="opacity-0 scale-95"
               >
                 <DialogPanel className="w-full max-w-modal transform overflow-hidden rounded-sm bg-gray-100 p-2 shadow-xl transition-all">
-                  <div className="max-h-[70vh] overflow-y-auto rounded-sm border border-gray-300 bg-white">
+                  <div className="max-h-[70vh] overflow-y-auto rounded-sm border border-slate-300 bg-white">
                     <div>
                       <EntryHeader
                         userColorHex={userColorHex}

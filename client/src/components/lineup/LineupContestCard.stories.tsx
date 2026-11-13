@@ -16,7 +16,7 @@ const withLineupRoster =
   };
 
 const cardShell: Decorator = (Story) => (
-  <div className="rounded-sm border border-gray-200 bg-white">
+  <div className="rounded-sm border border-slate-300 bg-white">
     <Story />
   </div>
 );

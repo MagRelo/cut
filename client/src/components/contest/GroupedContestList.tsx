@@ -70,7 +70,7 @@ function GroupedContestSection({
       )}
       <div className={eventCardBodyClassName}>
         {heroImage && group.event.sportId ? (
-          <div className="border-b border-slate-200">
+          <div className="border-b border-slate-300">
             <SportEventHeader
               sportId={group.event.sportId}
               event={eventShell}

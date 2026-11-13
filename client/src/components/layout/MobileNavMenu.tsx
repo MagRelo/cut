@@ -49,7 +49,7 @@ function mobileSubItemClass(active: boolean) {
   ].join(" ");
 }
 
-const mobileInsetListClass = "ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-100 pl-2";
+const mobileInsetListClass = "ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-300 pl-2";
 
 export const MobileNavMenu: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -106,7 +106,7 @@ export const MobileNavMenu: React.FC = () => {
               >
                 <DialogPanel className="w-screen max-w-xs transform bg-white shadow-xl">
                   <div className="flex h-full flex-col">
-                    <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                    <div className="flex items-center justify-between border-b border-slate-300 px-4 py-3">
                       <Link
                         to="/"
                         onClick={closeMenu}
@@ -224,7 +224,7 @@ export const MobileNavMenu: React.FC = () => {
                               </div>
                             </div>
 
-                            <hr className="my-1 border-slate-200" />
+                            <hr className="my-1 border-slate-300" />
                             <a
                               href={DISCORD_INVITE_URL}
                               target="_blank"
@@ -267,7 +267,7 @@ export const MobileNavMenu: React.FC = () => {
 
                             {showAdminNav ? (
                               <>
-                                <hr className="my-1 border-slate-200" />
+                                <hr className="my-1 border-slate-300" />
                                 {ADMIN_MENU_LINKS.map((link) => (
                                   <Link
                                     key={link.to}
@@ -301,7 +301,7 @@ export const MobileNavMenu: React.FC = () => {
                             >
                               Sign In
                             </Link>
-                            <hr className="my-1 border-slate-200" />
+                            <hr className="my-1 border-slate-300" />
                             <a
                               href={DISCORD_INVITE_URL}
                               target="_blank"

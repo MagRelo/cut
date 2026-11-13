@@ -267,7 +267,7 @@ export const CutbotPost: React.FC<CutbotPostProps> = ({
 
               {totalReactions > 0 ? (
                 <details
-                  className="group rounded-sm border border-slate-100 bg-slate-50/80 open:bg-slate-50"
+                  className="group rounded-sm border border-slate-300 bg-slate-50/80 open:bg-slate-50"
                   onToggle={(event) => {
                     if ((event.currentTarget as HTMLDetailsElement).open) {
                       void loadFullReactors();
@@ -285,7 +285,7 @@ export const CutbotPost: React.FC<CutbotPostProps> = ({
                       className="h-3.5 w-3.5 transition-transform group-open:rotate-180"
                     />
                   </summary>
-                  <ul className="space-y-1 border-t border-slate-100 px-3 py-2">
+                  <ul className="space-y-1 border-t border-slate-300 px-3 py-2">
                     {loadingReactors && listedReactors.length === 0 ? (
                       <li className="text-xs text-slate-400">Loading…</li>
                     ) : listedReactors.length === 0 ? (

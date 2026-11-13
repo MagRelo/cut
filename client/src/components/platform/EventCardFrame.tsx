@@ -4,7 +4,7 @@ import { cn } from "../../lib/tabStyles";
 
 /** Photo strip that caps an event card. Pairs with {@link eventCardBodyClassName}. */
 export const eventCardImageFrameClassName =
-  "overflow-hidden rounded-t-md border-x border-t border-slate-500";
+  "overflow-hidden rounded-t-md border-x border-t border-slate-300";
 
 /** White body under a photo. Bottom corners only — the image owns the top. */
 export const eventCardBodyClassName =

@@ -112,7 +112,7 @@ export const ContestList = ({
   }
 
   return (
-    <ul className="divide-y divide-slate-200">
+    <ul className="divide-y divide-slate-300">
       {contests.map((contest) => (
         <li key={contest.id}>
           <ContestListItem

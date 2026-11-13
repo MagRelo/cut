@@ -96,7 +96,7 @@ export function WalletPage() {
               You can receive and send {tokenSymbol} to and from your account wallet at any time.
             </p>
 
-            <div className="overflow-hidden rounded-md border border-slate-200">
+            <div className="overflow-hidden rounded-md border border-slate-300">
               <TabGroup selectedIndex={selectedIndex} onChange={handleTabChange}>
                 <TabList className={tabListClassName()}>
                   <Tab

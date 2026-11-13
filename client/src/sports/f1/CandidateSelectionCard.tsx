@@ -22,7 +22,7 @@ export const F1CandidateSelectionCard: React.FC<CandidateSelectionCardProps> = (
 
   return (
     <div
-      className={`overflow-hidden rounded-md border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm ${className}`}
+      className={`overflow-hidden rounded-md border border-slate-300 bg-gradient-to-br from-white to-slate-50 shadow-sm ${className}`}
     >
       {teamColor ? (
         <div className="h-1.5 w-full" style={{ backgroundColor: teamColor }} aria-hidden />

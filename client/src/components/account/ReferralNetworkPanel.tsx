@@ -13,7 +13,7 @@ import {
 import { formatReferralEarned } from "../../lib/formatReferralEarned";
 
 const cardClassName =
-  "max-w-md overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-tl from-slate-100 via-white to-white shadow-md shadow-slate-900/10 ring-1 ring-black/5";
+  "max-w-md overflow-hidden rounded-lg border border-slate-300 bg-gradient-to-tl from-slate-100 via-white to-white shadow-md shadow-slate-900/10 ring-1 ring-black/5";
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return <p className={`${walletSpecLabelClassName} px-4 pt-3`}>{children}</p>;
@@ -42,7 +42,7 @@ function EarningsSection({ loading, totalEarned }: { loading: boolean; totalEarn
 
 function LinkSection({ url }: { url: string }) {
   return (
-    <div className="border-t border-slate-100 bg-white/70">
+    <div className="border-t border-slate-300 bg-white/70">
       <SectionLabel>Your Referral Link</SectionLabel>
       <div className="grid grid-cols-2 gap-2 p-3 pt-2">
         <CopyButton text={url} variant="secondary" idleLabel="Copy" />
@@ -61,11 +61,11 @@ function TreeSkeleton() {
   return (
     <div aria-busy="true">
       <div className="flex w-6 -translate-x-[10px] flex-col items-center">
-        <span className="h-6 w-6 rounded-full border border-gray-200 bg-white" />
+        <span className="h-6 w-6 rounded-full border border-slate-300 bg-white" />
         <span className="h-2 w-px bg-slate-300" />
       </div>
       <div className="relative pl-4">
-        <div className="h-10 rounded-sm border border-gray-200 bg-gray-100" />
+        <div className="h-10 rounded-sm border border-slate-300 bg-gray-100" />
       </div>
     </div>
   );
@@ -83,7 +83,7 @@ function NetworkSection({
   shareUrl: string | null;
 }) {
   return (
-    <div className="border-t border-slate-100 bg-slate-50 pb-6">
+    <div className="border-t border-slate-300 bg-slate-50 pb-6">
       <SectionLabel>Your Referral Network</SectionLabel>
 
       <div className="pl-8 pr-6 pt-2">
@@ -116,7 +116,7 @@ export function ReferralNetworkPanelView({
 }: ReferralNetworkPanelViewProps) {
   return (
     <div className={cardClassName}>
-      <div className="border-b border-slate-100 px-4 pb-4 pt-4">
+      <div className="border-b border-slate-300 px-4 pb-4 pt-4">
         <h1 className="flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
           <TreeIcon className="h-6 w-6 shrink-0 text-green-700" aria-hidden />
           Referral Rewards

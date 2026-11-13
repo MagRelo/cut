@@ -31,7 +31,7 @@ const STEP_COUNT = 7;
 function StepActions({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`mt-6 pt-5 border-t border-gray-100 flex w-full flex-row flex-wrap items-center justify-between gap-x-3 gap-y-2 ${className}`}
+      className={`mt-6 pt-5 border-t border-slate-300 flex w-full flex-row flex-wrap items-center justify-between gap-x-3 gap-y-2 ${className}`}
     >
       {children}
     </div>
@@ -206,7 +206,7 @@ export function OnboardingPage() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Enter your name"
-                className="mt-1 block w-full rounded-sm border border-gray-300 bg-white py-2.5 px-3 text-base focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className="mt-1 block w-full rounded-sm border border-slate-300 bg-white py-2.5 px-3 text-base focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
             </div>
             <StepActions>
@@ -299,7 +299,7 @@ export function OnboardingPage() {
                       className={`flex min-h-[2.75rem] w-full flex-col items-center justify-center rounded-md border px-1 py-1.5 text-center font-display shadow-sm transition-colors ${
                         selected
                           ? "border-white bg-blue-500 text-white ring-2 ring-gray-400 ring-offset-4"
-                          : "border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50"
+                          : "border-slate-300 bg-white hover:border-slate-400 hover:bg-gray-50"
                       }`}
                     >
                       <span

@@ -142,7 +142,7 @@ export function ActivityList() {
 
   return (
     <div className="font-display">
-      <div className="divide-y divide-gray-100 sm:hidden">
+      <div className="divide-y divide-slate-300 sm:hidden">
         {transactions.map((txn) => (
           <ActivityRow key={txn.id} txn={txn} />
         ))}
@@ -151,7 +151,7 @@ export function ActivityList() {
       <div className="hidden sm:block">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500">
+            <tr className="border-b border-slate-300 text-xs uppercase tracking-wide text-gray-500">
               <th className="py-2 pr-3 font-semibold">Date</th>
               <th className="py-2 pr-3 font-semibold">Type</th>
               <th className="py-2 pr-3 font-semibold">Description</th>
@@ -162,7 +162,7 @@ export function ActivityList() {
             {transactions.map((txn) => {
               const amount = formatAmount(txn);
               return (
-                <tr key={txn.id} className="border-b border-gray-100 align-top">
+                <tr key={txn.id} className="border-b border-slate-300 align-top">
                   <td className="whitespace-nowrap py-3 pr-3 tabular-nums text-gray-600">
                     {formatDate(txn.createdAt)}
                   </td>

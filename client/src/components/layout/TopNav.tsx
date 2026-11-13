@@ -63,7 +63,7 @@ function DesktopOverflowMenu() {
       </MenuButton>
       <MenuItems
         anchor="bottom end"
-        className="z-50 mt-1 min-w-[14rem] rounded-md border border-slate-200 bg-white py-1 shadow-lg focus:outline-none"
+        className="z-50 mt-1 min-w-[14rem] rounded-md border border-slate-300 bg-white py-1 shadow-lg focus:outline-none"
       >
         <MenuItem>
           {({ close }) => (

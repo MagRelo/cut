@@ -45,7 +45,7 @@ function ContestsTable({
     return <p className="text-sm text-gray-500 py-4">No contests match this filter.</p>;
   }
   return (
-    <div className="overflow-x-auto border border-gray-200 rounded-sm">
+    <div className="overflow-x-auto border border-slate-300 rounded-sm">
       <table className="min-w-full text-sm text-left">
         <thead className="bg-gray-100 text-gray-700">
           <tr>
@@ -58,7 +58,7 @@ function ContestsTable({
             <th className="px-3 py-2 font-medium">League</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-slate-300">
           {contests.map((c) => {
             const lockError = lockErrors[c.id];
             return (
@@ -196,7 +196,7 @@ export function AdminContestsPanel({
               className={`px-3 py-1 text-xs font-medium rounded-sm border transition-colors ${
                 contestScope === value
                   ? "bg-gray-900 text-white border-gray-900"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  : "bg-white text-gray-700 border-slate-300 hover:bg-gray-50"
               }`}
             >
               {label}

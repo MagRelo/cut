@@ -74,7 +74,7 @@ export function ShareInviteButton({
       ? `w-full min-h-11 justify-center border px-4 sm:w-auto ${
           active
             ? "border-gray-400 bg-gray-50 text-gray-900"
-            : "border-gray-300 bg-white text-gray-800 hover:bg-gray-50"
+            : "border-slate-300 bg-white text-gray-800 hover:bg-gray-50"
         }`
       : variant === "success"
         ? `w-full min-h-11 justify-center border px-4 ${

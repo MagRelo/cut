@@ -39,7 +39,7 @@ export const CommodityIconPreviewPage: React.FC = () => {
         <p className="mb-4 text-sm text-gray-600">
           Left-to-right, top-to-bottom: crude oil, brent, natural gas, gold, silver, platinum, palladium, copper.
         </p>
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
           <img
             src="/commodoties_2_trimmed.png"
             alt="Commodity avatar source grid"
@@ -60,7 +60,7 @@ export const CommodityIconPreviewPage: React.FC = () => {
             return (
               <div
                 key={entry.ticker}
-                className="flex flex-col items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                className="flex flex-col items-center gap-3 rounded-xl border border-slate-300 bg-white p-4 shadow-sm"
               >
                 {url ? (
                   <img
@@ -95,7 +95,7 @@ export const CommodityIconPreviewPage: React.FC = () => {
           {COMMODITY_SECTORS.map((sector) => (
             <div
               key={sector}
-              className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm"
+              className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm"
             >
               <span
                 className="h-6 w-6 shrink-0 rounded-full"
@@ -118,7 +118,7 @@ export const CommodityIconPreviewPage: React.FC = () => {
           {UNIQUE_ICON_KEYS.map((iconKey) => (
             <div
               key={iconKey}
-              className="flex flex-col items-center gap-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+              className="flex flex-col items-center gap-2 rounded-xl border border-slate-300 bg-white p-4 shadow-sm"
             >
               <div
                 className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-500"
@@ -135,7 +135,7 @@ export const CommodityIconPreviewPage: React.FC = () => {
       <section className="mb-10">
         <h2 className="mb-1 text-lg font-semibold text-gray-900">Avatar sizes</h2>
         <p className="mb-4 text-sm text-gray-600">sm / md / lg as used in lineup and leaderboard rows.</p>
-        <div className="flex flex-wrap items-end gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-end gap-6 rounded-xl border border-slate-300 bg-white p-6 shadow-sm">
           {AVATAR_SIZES.map((size) => (
             <div key={size} className="flex flex-col items-center gap-2">
               <CommodityAvatar
@@ -165,9 +165,9 @@ export const CommodityIconPreviewPage: React.FC = () => {
               <span className="text-sm text-gray-500">({entries.length})</span>
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-gray-200 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <thead className="border-b border-slate-300 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                   <tr>
                     <th className="px-4 py-3">Commodity</th>
                     <th className="px-4 py-3">iconKey</th>
@@ -176,7 +176,7 @@ export const CommodityIconPreviewPage: React.FC = () => {
                     <th className="px-4 py-3">Row preview</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-slate-300">
                   {entries.map((entry) => {
                     const url = commodityAvatarUrl(entry.iconKey);
                     return (

@@ -5,7 +5,7 @@ export const walletSpecLabelClassName =
   "text-[11px] font-medium uppercase tracking-[0.12em] text-gray-600";
 
 export const walletSpecSecondaryClassName =
-  "min-h-11 w-full rounded border border-gray-300 px-4 font-display text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50";
+  "min-h-11 w-full rounded border border-slate-300 px-4 font-display text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50";
 
 function AssetSpec({
   label,
@@ -51,7 +51,7 @@ export function AssetChips({
   flush?: boolean;
 }) {
   return (
-    <div className={flush ? "flex flex-col gap-4" : "grid grid-cols-2 divide-x divide-gray-100"}>
+    <div className={flush ? "flex flex-col gap-4" : "grid grid-cols-2 divide-x divide-slate-300"}>
       <AssetSpec
         label="Token"
         iconSrc={usdcIcon}

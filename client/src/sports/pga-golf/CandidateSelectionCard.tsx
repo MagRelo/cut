@@ -23,7 +23,7 @@ export const CandidateSelectionCard: React.FC<CandidateSelectionCardProps> = ({
   const participant = (meta.participant ?? {}) as Record<string, unknown>;
   const { dgRank, dgSkill } = getParticipantSeasonStats(candidate);
   const shell =
-    "overflow-hidden rounded-md border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm p-3";
+    "overflow-hidden rounded-md border border-slate-300 bg-gradient-to-br from-white to-slate-50 shadow-sm p-3";
 
   const imageUrl = typeof participant.imageUrl === "string" ? participant.imageUrl : null;
   const country = typeof participant.country === "string" ? participant.country : "—";

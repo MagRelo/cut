@@ -6,7 +6,7 @@ import { lineupContestCardStoryDefaults } from "../../test/fixtures/lineupContes
 import { GuestLineupPicker } from "./GuestLineupPicker";
 
 const cardShell: Decorator = (Story) => (
-  <div className="overflow-hidden rounded-sm border border-gray-300 bg-white shadow-md">
+  <div className="overflow-hidden rounded-sm border border-slate-300 bg-white shadow-md">
     <Story />
   </div>
 );

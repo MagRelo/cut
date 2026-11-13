@@ -63,7 +63,7 @@ export const UserGroupInvitePanel = ({
             <div className="px-4 pt-4">
               <p className={walletSpecLabelClassName}>Invite link</p>
               <p
-                className="mt-1.5 select-all break-all rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-relaxed text-gray-600"
+                className="mt-1.5 select-all break-all rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm leading-relaxed text-gray-600"
                 aria-label={activeInviteUrl}
               >
                 {activeInviteUrl}

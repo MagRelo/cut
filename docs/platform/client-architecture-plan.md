@@ -376,7 +376,7 @@ Defined in `tailwind.config.cjs` and applied by primitives. Raw utilities in fea
 | paper | `white` | Nav, cards, modals, list rows |
 | ink | `slate-900` | Titles, primary text |
 | muted | `slate-500` | Secondary text, meta |
-| line | `slate-200` | Borders and dividers |
+| line | `slate-300` | Structural borders and dividers: `border-slate-300` and `divide-slate-300`. Action blue, and score or money emerald and red, stay outside this role, including their focus rings. |
 | action | `blue-500`, hover `blue-600` | Primary buttons, live dot, links that are actions |
 | on-action | `white` | Text on action fill |
 | money | `emerald-600` | Pot, payout, referral totals. Type and solid icons only |
@@ -411,8 +411,8 @@ Stop using `gray-*` and `slate-*` for the same role. `gray.25` can go once nothi
 
 | Primitive | Behavior |
 | --- | --- |
-| `Button` | `primary` (solid blue, Outfit, white), `secondary` (white, blue border — the Create Account treatment in `Connect`), `quiet` (white, slate border, slate text — cancel). One height scale. No tinted variants. |
-| `TextField` | Slate border, blue focus, label, error as `text-red-600` under the field. Replaces emerald focus rings on `UserGroupForm`, `DisplaySettings`, and `OnboardingPage`. |
+| `Button` | `primary` (solid blue, Outfit, white), `secondary` (white, blue border — the Create Account treatment in `Connect`), `quiet` (white, `slate-300` line, slate text — cancel). One height scale. No tinted variants. |
+| `TextField` | `slate-300` line, blue focus, label, error as `text-red-600` under the field. Replaces emerald focus rings on `UserGroupForm`, `DisplaySettings`, and `OnboardingPage`. |
 | `StatusDot` | `open` or `live`, the dots already on `ListHeader` and the nav. Optional solid label in ink, not a pastel pill. |
 | `Tabs` | Headless `Tab` plus `tabStyles`. Lobby, wallet, admin, and league detail use this wrapper. |
 | `Modal` | The only dialog. Enter/leave and close button live here. Full-bleed cases (mobile nav, candidate picker) use the same transition and close button. |

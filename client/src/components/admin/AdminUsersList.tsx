@@ -57,7 +57,7 @@ export function AdminUsersList() {
           <select
             value={userTypeFilter}
             onChange={(e) => setUserTypeFilter(e.target.value)}
-            className="rounded-sm border border-gray-300 bg-white px-2 py-1 text-sm text-gray-800"
+            className="rounded-sm border border-slate-300 bg-white px-2 py-1 text-sm text-gray-800"
           >
             {USER_TYPE_OPTIONS.map((userType) => (
               <option key={userType} value={userType}>
@@ -75,10 +75,10 @@ export function AdminUsersList() {
       ) : error ? (
         <ErrorMessage message={errorMessage || "Failed to load users"} />
       ) : (
-        <div className="overflow-x-auto border border-gray-200 rounded-sm">
+        <div className="overflow-x-auto border border-slate-300 rounded-sm">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50 text-left">
+              <tr className="border-b border-slate-300 bg-gray-50 text-left">
                 <th className="p-3 font-medium text-gray-700">Name</th>
                 <th className="p-3 font-medium text-gray-700">Email</th>
                 <th className="p-3 font-medium text-gray-700 whitespace-nowrap">Last contest entry</th>
@@ -89,7 +89,7 @@ export function AdminUsersList() {
             </thead>
             <tbody>
               {(data?.items ?? []).map((u) => (
-                <tr key={u.id} className="border-b border-gray-100 hover:bg-gray-50/80">
+                <tr key={u.id} className="border-b border-slate-300 hover:bg-gray-50/80">
                   <td className="p-3 text-gray-900 font-medium">
                     <Link to={`/admin/users/${u.id}`} className="text-blue-600 hover:text-blue-800">
                       {u.name}

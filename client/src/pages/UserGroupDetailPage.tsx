@@ -103,7 +103,7 @@ export const UserGroupDetailPage = () => {
   );
 
   const membersContent = (
-    <div className="overflow-hidden rounded-b-lg border-x border-b border-gray-200 bg-white">
+    <div className="overflow-hidden rounded-b-lg border-x border-b border-slate-300 bg-white">
       {isAdmin ? (
         <UserGroupInvitePanel
           userGroupId={userGroup.id}
@@ -113,7 +113,7 @@ export const UserGroupDetailPage = () => {
           onInviteUpdated={() => refetch()}
         />
       ) : null}
-      <div className={isAdmin ? "border-t border-gray-200 px-4 py-4" : "px-4 py-4"}>
+      <div className={isAdmin ? "border-t border-slate-300 px-4 py-4" : "px-4 py-4"}>
         <UserGroupMemberManagement
           userGroupId={userGroup.id}
           members={userGroup.members}
@@ -159,7 +159,7 @@ export const UserGroupDetailPage = () => {
       </PageSection>
 
       <TabGroup selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-        <TabList className={tabListClassName("!rounded-none border-x border-t border-gray-200")}>
+        <TabList className={tabListClassName("!rounded-none border-x border-t border-slate-300")}>
           <Tab className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}>
             Contests
           </Tab>
@@ -173,7 +173,7 @@ export const UserGroupDetailPage = () => {
           ) : null}
         </TabList>
         <TabPanel className="focus:outline-none">
-          <div className="rounded-b-lg border-x border-b border-gray-200 bg-white p-4">
+          <div className="rounded-b-lg border-x border-b border-slate-300 bg-white p-4">
             {contestContent}
           </div>
         </TabPanel>
@@ -216,7 +216,7 @@ export const UserGroupDetailPage = () => {
                 setContestToDelete(null);
               }}
               disabled={deleteContest.isPending}
-              className="inline-flex min-w-[120px] items-center justify-center rounded border border-gray-300 bg-white px-4 py-1.5 font-display text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-w-[120px] items-center justify-center rounded border border-slate-300 bg-white px-4 py-1.5 font-display text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Cancel
             </button>

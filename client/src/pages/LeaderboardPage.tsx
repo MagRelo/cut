@@ -45,7 +45,7 @@ export const LeaderboardPage: React.FC = () => {
       ) : null}
       <div className={heroImage ? eventCardBodyClassName : eventCardSoloClassName}>
         {headerEvent ? (
-          <div className="border-b border-slate-200">
+          <div className="border-b border-slate-300">
             <SportEventHeader sportId={sportId} event={headerEvent} summarySurface="content" />
           </div>
         ) : null}

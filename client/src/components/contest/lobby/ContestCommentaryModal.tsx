@@ -26,7 +26,7 @@ export const ContestCommentaryModal: React.FC<ContestCommentaryModalProps> = ({
       scrollable
       maxHeight="70vh"
       panelClassName="overflow-hidden bg-gray-100 p-2"
-      contentClassName="rounded-sm border border-gray-300 bg-white"
+      contentClassName="rounded-sm border border-slate-300 bg-white"
     >
       <CutbotPost text={commentary} generatedAt={generatedAt} />
     </Modal>

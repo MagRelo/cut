@@ -1,6 +1,6 @@
 import React from "react";
 
-const cellY = "border-y border-slate-200";
+const cellY = "border-y border-slate-300";
 const holeCol = "min-w-[2.25rem] w-[2.25rem]";
 
 const scoreCell = `px-2 py-2.5 text-center text-xs tabular-nums ${cellY}`;
