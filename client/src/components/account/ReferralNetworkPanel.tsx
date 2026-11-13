@@ -42,10 +42,15 @@ function EarningsSection({ loading, totalEarned }: { loading: boolean; totalEarn
 
 function LinkSection({ url }: { url: string }) {
   return (
-    <div className="border-t border-slate-300 bg-white/70">
+    <div className="">
       <SectionLabel>Your Referral Link</SectionLabel>
       <div className="grid grid-cols-2 gap-2 p-3 pt-2">
-        <CopyButton text={url} variant="secondary" idleLabel="Copy" />
+        <CopyButton
+          text={url}
+          variant="secondary"
+          idleLabel="Copy"
+          className="border-green-600 bg-white text-green-700"
+        />
         <ShareInviteButton
           url={url}
           ariaLabel="Share your referral link"
@@ -116,7 +121,7 @@ export function ReferralNetworkPanelView({
 }: ReferralNetworkPanelViewProps) {
   return (
     <div className={cardClassName}>
-      <div className="border-b border-slate-300 px-4 pb-4 pt-4">
+      <div className="px-4 pb-4 pt-4">
         <h1 className="flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
           <TreeIcon className="h-6 w-6 shrink-0 text-green-700" aria-hidden />
           Referral Rewards

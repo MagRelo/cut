@@ -77,7 +77,12 @@ export const UserGroupInvitePanel = ({
                 label="Share Invite Link"
                 variant="cta"
               />
-              <CopyButton text={activeInviteUrl} variant="secondary" idleLabel="Copy Invite Link" />
+              <CopyButton
+                text={activeInviteUrl}
+                variant="secondary"
+                idleLabel="Copy Invite Link"
+                className="border-slate-300 bg-white text-gray-700 hover:bg-gray-50"
+              />
               <button
                 type="button"
                 onClick={() => setShowRotateConfirm(true)}

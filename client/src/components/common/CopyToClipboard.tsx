@@ -140,11 +140,8 @@ export function CopyButton({
     );
   }
 
-  const variantClass = `inline-flex w-full min-h-11 items-center justify-center gap-1.5 border px-4 ${
-    copied
-      ? "border-gray-400 bg-gray-50 text-gray-900"
-      : "border-slate-300 bg-white text-gray-700 hover:bg-gray-50"
-  }`;
+  const variantClass =
+    "inline-flex w-full min-h-11 items-center justify-center gap-1.5 border px-4";
 
   return (
     <button
