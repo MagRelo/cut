@@ -36,7 +36,7 @@ function mobileNavItemClass(active: boolean) {
     mobileNavItemBase,
     active
       ? "bg-slate-100 text-slate-950 font-semibold"
-      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+      : "text-slate-700 hover:bg-slate-50 hover:text-slate-900",
   ].join(" ");
 }
 
@@ -45,11 +45,11 @@ function mobileSubItemClass(active: boolean) {
     "block w-full rounded-md px-3 py-2 text-left text-sm font-display transition-colors",
     active
       ? "bg-slate-100 font-semibold text-slate-950"
-      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+      : "text-slate-700 hover:bg-slate-50 hover:text-slate-900",
   ].join(" ");
 }
 
-const mobileInsetListClass = "ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-300 pl-2";
+const mobileInsetListClass = "ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-200";
 
 export const MobileNavMenu: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -189,7 +189,7 @@ export const MobileNavMenu: React.FC = () => {
                             </div>
 
                             <div className="flex flex-col">
-                              <p className="px-3 py-2 text-sm font-medium font-display uppercase tracking-wider text-slate-500">
+                              <p className="px-3 py-2 font-display text-sm font-medium uppercase tracking-wider text-slate-600">
                                 Account
                               </p>
 
@@ -240,7 +240,7 @@ export const MobileNavMenu: React.FC = () => {
                                   aria-hidden
                                 />
                               </span>
-                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-500">
+                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-600">
                                 {DISCORD_TAGLINE}
                               </span>
                             </a>
@@ -260,7 +260,7 @@ export const MobileNavMenu: React.FC = () => {
                                   aria-hidden
                                 />
                               </span>
-                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-500">
+                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-600">
                                 {STORE_TAGLINE}
                               </span>
                             </a>
@@ -317,7 +317,7 @@ export const MobileNavMenu: React.FC = () => {
                                   aria-hidden
                                 />
                               </span>
-                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-500">
+                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-600">
                                 {DISCORD_TAGLINE}
                               </span>
                             </a>
@@ -337,7 +337,7 @@ export const MobileNavMenu: React.FC = () => {
                                   aria-hidden
                                 />
                               </span>
-                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-500">
+                              <span className="mt-0.5 text-xs font-normal normal-case tracking-normal text-slate-600">
                                 {STORE_TAGLINE}
                               </span>
                             </a>
