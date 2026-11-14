@@ -31,7 +31,7 @@ const scoreTotalCell = `${cellY} border-l border-slate-300 bg-white px-3 py-2 te
 const scoreRowSlot = "flex h-7 w-full shrink-0 items-center justify-center";
 
 const pointsCell = `${scoreCell} bg-white ${holeCol} ${pointsRowY}`;
-const pointsTotal = `${cellY} border-l border-slate-300 bg-white px-3 py-3.5 text-center text-xs tabular-nums text-slate-900 ${totalCol}`;
+const pointsTotal = `${scoreTotalCell} ${pointsRowY}`;
 
 interface GolfParticipantScorecardProps {
   tournamentData: TournamentPlayerData | undefined;
