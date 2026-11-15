@@ -96,7 +96,7 @@ export function useCreateLineup() {
           id: `temp-${Date.now()}`,
           eventId,
           contestId: contestId ?? null,
-          name: name || "New Lineup",
+          name: name || `Lineup #${(previousLineups?.length ?? 0) + 1}`,
           prediction: null,
           picks: [],
           score: 0,

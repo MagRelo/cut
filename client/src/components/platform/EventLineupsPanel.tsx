@@ -122,11 +122,10 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
 
   const handleCreateLineup = async () => {
     if (isCreating) return;
-    const nextName = `Lineup #${lineups.length + 1}`;
     setIsCreating(true);
     setCreateError(null);
     try {
-      await createLineup(eventId, [], contest.id, nextName);
+      await createLineup(eventId, [], contest.id);
     } catch (error) {
       setCreateError(error instanceof Error ? error.message : "Failed to create lineup");
     } finally {
@@ -142,8 +141,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
     setCopyingLineupId(sourceLineupId);
     setCreateError(null);
     try {
-      const nextName = `Lineup #${lineups.length + 1}`;
-      await cloneLineup(sourceLineupId, eventId, contest.id, nextName);
+      await cloneLineup(sourceLineupId, eventId, contest.id);
     } catch (error) {
       setCreateError(error instanceof Error ? error.message : "Failed to copy lineup");
     } finally {

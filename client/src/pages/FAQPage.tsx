@@ -963,7 +963,7 @@ export const FAQPage: React.FC = () => {
         <div className="space-y-4 text-gray-700">
           <p>
             Entries are signed in one of three ways. If you have not added a delegate, you sign
-            from the app. If you allow Cut Bot, the server can join, leave, and update lineups
+            from the app. If you allow Cut Bot, the server can save a lineup, then join or leave,
             while you are away. If you paste a public address, that address can do the same, and
             the private key stays with whoever runs that bot.
           </p>

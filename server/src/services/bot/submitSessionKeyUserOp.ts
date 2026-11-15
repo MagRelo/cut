@@ -1,5 +1,10 @@
-import { createPublicClient, http, type Address, type Hex, type LocalAccount } from "viem";
-import { entryPoint07Address } from "viem/account-abstraction";
+import { createPublicClient, getAddress, http, type Address, type Hex, type LocalAccount } from "viem";
+import {
+  entryPoint07Address,
+  formatUserOperationRequest,
+  getUserOperationHash,
+  type UserOperation,
+} from "viem/account-abstraction";
 import { privateKeyToAccount } from "viem/accounts";
 import { createKernelAccountClient } from "@zerodev/sdk";
 import { KERNEL_V3_1 } from "@zerodev/sdk/constants";
@@ -7,6 +12,27 @@ import { deserializePermissionAccount } from "@zerodev/permissions";
 import { toECDSASigner } from "@zerodev/permissions/signers";
 import { getChainConfig } from "../../lib/chainConfig.js";
 import type { BotCall } from "./botCalls.js";
+
+/** Signature length used while the bundler estimates gas. Not a real authorization. */
+const DUMMY_USER_OP_SIGNATURE =
+  "0xfffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c" as Hex;
+
+export type SerializedUserOp = {
+  sender: Address;
+  nonce: string;
+  callData: Hex;
+  callGasLimit: string;
+  verificationGasLimit: string;
+  preVerificationGas: string;
+  maxFeePerGas: string;
+  maxPriorityFeePerGas: string;
+  paymaster?: Address;
+  paymasterData?: Hex;
+  paymasterVerificationGasLimit?: string;
+  paymasterPostOpGasLimit?: string;
+  factory?: Address;
+  factoryData?: Hex;
+};
 
 const entryPoint = {
   address: entryPoint07Address,
@@ -18,8 +44,10 @@ export type SubmitSessionKeyInput = {
   approval: string;
   calls: BotCall[];
   delegateAddress: Address;
+  smartWallet: Address;
   privateKey?: Hex;
   userOpSignature?: Hex;
+  userOp?: SerializedUserOp;
 };
 
 /** ZeroDev's default asks for `zd_getUserOperationGasPrice`, which Pimlico does not serve. */
@@ -43,64 +71,211 @@ function bundlerUrl(): string | null {
   return url || null;
 }
 
+type SessionClient = {
+  account: {
+    encodeCalls: (
+      calls: { to: Address; value: bigint; data: Hex }[],
+    ) => Promise<Hex>;
+    signUserOperation: (
+      parameters: UserOperation<"0.7"> & { chainId?: number },
+    ) => Promise<Hex>;
+  };
+  kernelClient: {
+    prepareUserOperation: (args: { callData: Hex }) => Promise<UserOperation<"0.7">>;
+    sendUserOperation: (args: { callData: Hex }) => Promise<Hex>;
+    waitForUserOperationReceipt: (args: {
+      hash: Hex;
+    }) => Promise<{ receipt: { transactionHash: Hex } }>;
+    request: (args: {
+      method: "eth_sendUserOperation";
+      params: [ReturnType<typeof formatUserOperationRequest>, Address];
+    }) => Promise<Hex>;
+  };
+};
+
+async function sessionClient(
+  input: SubmitSessionKeyInput,
+  signature: Hex,
+): Promise<SessionClient | { ok: false; error: string }> {
+  const bundler = bundlerUrl();
+  if (!bundler) return { ok: false, error: "Bundler is not configured" };
+  const chainConfig = getChainConfig(input.chainId);
+  const publicClient = createPublicClient({
+    chain: chainConfig.chain,
+    transport: http(chainConfig.rpcUrl),
+  });
+  const signer = input.privateKey
+    ? privateKeyToAccount(input.privateKey)
+    : fixedSignatureAccount(input.delegateAddress, signature);
+  const modularSigner = await toECDSASigner({ signer });
+  const account = await deserializePermissionAccount(
+    publicClient,
+    entryPoint,
+    KERNEL_V3_1,
+    input.approval,
+    modularSigner,
+  );
+  const sponsorshipPolicyId = process.env.PIMLICO_SPONSORSHIP_POLICY_ID?.trim();
+  const kernelClient = createKernelAccountClient({
+    account,
+    chain: chainConfig.chain,
+    bundlerTransport: http(bundler),
+    userOperation: {
+      estimateFeesPerGas: async ({ bundlerClient }) =>
+        pimlicoUserOperationGas(
+          bundlerClient as {
+            request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+          },
+        ),
+    },
+    paymaster: sponsorshipPolicyId ? true : undefined,
+    paymasterContext: sponsorshipPolicyId ? { sponsorshipPolicyId } : undefined,
+  });
+  return { account, kernelClient };
+}
+
+function callDataFor(calls: BotCall[]) {
+  return calls.map((call) => ({
+    to: call.to,
+    value: call.value,
+    data: call.data,
+  }));
+}
+
+export function serializeUserOp(userOp: UserOperation<"0.7">): SerializedUserOp {
+  return {
+    sender: userOp.sender,
+    nonce: userOp.nonce.toString(),
+    callData: userOp.callData,
+    callGasLimit: userOp.callGasLimit.toString(),
+    verificationGasLimit: userOp.verificationGasLimit.toString(),
+    preVerificationGas: userOp.preVerificationGas.toString(),
+    maxFeePerGas: userOp.maxFeePerGas.toString(),
+    maxPriorityFeePerGas: userOp.maxPriorityFeePerGas.toString(),
+    ...(userOp.paymaster ? { paymaster: userOp.paymaster } : {}),
+    ...(userOp.paymasterData ? { paymasterData: userOp.paymasterData } : {}),
+    ...(userOp.paymasterVerificationGasLimit != null
+      ? { paymasterVerificationGasLimit: userOp.paymasterVerificationGasLimit.toString() }
+      : {}),
+    ...(userOp.paymasterPostOpGasLimit != null
+      ? { paymasterPostOpGasLimit: userOp.paymasterPostOpGasLimit.toString() }
+      : {}),
+    ...(userOp.factory ? { factory: userOp.factory } : {}),
+    ...(userOp.factoryData ? { factoryData: userOp.factoryData } : {}),
+  };
+}
+
+export function parseUserOp(userOp: SerializedUserOp): UserOperation<"0.7"> {
+  return {
+    sender: getAddress(userOp.sender),
+    nonce: BigInt(userOp.nonce),
+    callData: userOp.callData,
+    callGasLimit: BigInt(userOp.callGasLimit),
+    verificationGasLimit: BigInt(userOp.verificationGasLimit),
+    preVerificationGas: BigInt(userOp.preVerificationGas),
+    maxFeePerGas: BigInt(userOp.maxFeePerGas),
+    maxPriorityFeePerGas: BigInt(userOp.maxPriorityFeePerGas),
+    signature: "0x",
+    ...(userOp.paymaster ? { paymaster: getAddress(userOp.paymaster) } : {}),
+    ...(userOp.paymasterData ? { paymasterData: userOp.paymasterData } : {}),
+    ...(userOp.paymasterVerificationGasLimit
+      ? { paymasterVerificationGasLimit: BigInt(userOp.paymasterVerificationGasLimit) }
+      : {}),
+    ...(userOp.paymasterPostOpGasLimit
+      ? { paymasterPostOpGasLimit: BigInt(userOp.paymasterPostOpGasLimit) }
+      : {}),
+    ...(userOp.factory ? { factory: getAddress(userOp.factory) } : {}),
+    ...(userOp.factoryData ? { factoryData: userOp.factoryData } : {}),
+  };
+}
+
+/**
+ * Fill gas, nonce, and paymaster data for the canonical calls and return the hash a
+ * personal delegate signs. Cut Bot does not use this. The server signs at submit time.
+ */
+export async function prepareSessionKeyUserOp(
+  input: SubmitSessionKeyInput,
+): Promise<
+  { ok: true; userOpHash: Hex; userOp: SerializedUserOp } | { ok: false; error: string }
+> {
+  try {
+    const session = await sessionClient(input, DUMMY_USER_OP_SIGNATURE);
+    if ("ok" in session) return session;
+    const callData = await session.account.encodeCalls(callDataFor(input.calls));
+    const prepared = await session.kernelClient.prepareUserOperation({ callData });
+    if (getAddress(prepared.sender) !== getAddress(input.smartWallet)) {
+      return { ok: false, error: "User operation sender does not match the smart wallet" };
+    }
+    const userOp = { ...prepared, signature: "0x" as Hex };
+    const userOpHash = getUserOperationHash({
+      chainId: input.chainId,
+      entryPointAddress: entryPoint.address,
+      entryPointVersion: "0.7",
+      userOperation: userOp,
+    });
+    return { ok: true, userOpHash, userOp: serializeUserOp(userOp) };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "User operation failed";
+    return { ok: false, error: message };
+  }
+}
+
 /**
  * Submit calls already authorized by a session key.
- * Cut Bot passes its private key. A personal delegate passes the userOp signature.
+ * Cut Bot passes its private key and the server signs the user operation it builds.
+ * A personal delegate passes the signature over a previously returned userOpHash,
+ * and the server submits that same user operation.
  */
 export async function submitSessionKeyUserOp(
   input: SubmitSessionKeyInput,
 ): Promise<{ ok: true; txHash: Hex } | { ok: false; error: string }> {
-  const bundler = bundlerUrl();
-  if (!bundler) {
-    return { ok: false, error: "Bundler is not configured" };
-  }
-  if (!input.privateKey && !input.userOpSignature) {
+  if (!input.privateKey && !(input.userOpSignature && input.userOp)) {
     return { ok: false, error: "Missing session key signature" };
+  }
+  if (input.userOp && input.userOpSignature) {
+    return submitPreparedSessionKeyUserOp(input);
   }
 
   try {
-    const chainConfig = getChainConfig(input.chainId);
-    const publicClient = createPublicClient({
-      chain: chainConfig.chain,
-      transport: http(chainConfig.rpcUrl),
+    const session = await sessionClient(input, DUMMY_USER_OP_SIGNATURE);
+    if ("ok" in session) return session;
+    const userOpHash = await session.kernelClient.sendUserOperation({
+      callData: await session.account.encodeCalls(callDataFor(input.calls)),
     });
-    const signer = input.privateKey
-      ? privateKeyToAccount(input.privateKey)
-      : fixedSignatureAccount(input.delegateAddress, input.userOpSignature as Hex);
-    const modularSigner = await toECDSASigner({ signer });
-    const account = await deserializePermissionAccount(
-      publicClient,
-      entryPoint,
-      KERNEL_V3_1,
-      input.approval,
-      modularSigner,
-    );
-    const sponsorshipPolicyId = process.env.PIMLICO_SPONSORSHIP_POLICY_ID?.trim();
-    const kernelClient = createKernelAccountClient({
-      account,
-      chain: chainConfig.chain,
-      bundlerTransport: http(bundler),
-      userOperation: {
-        estimateFeesPerGas: async ({ bundlerClient }) =>
-          pimlicoUserOperationGas(
-            bundlerClient as {
-              request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-            },
-          ),
-      },
-      paymaster: sponsorshipPolicyId ? true : undefined,
-      paymasterContext: sponsorshipPolicyId ? { sponsorshipPolicyId } : undefined,
+    const receipt = await session.kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
+    return { ok: true, txHash: receipt.receipt.transactionHash };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "User operation failed";
+    return { ok: false, error: message };
+  }
+}
+
+async function submitPreparedSessionKeyUserOp(
+  input: SubmitSessionKeyInput,
+): Promise<{ ok: true; txHash: Hex } | { ok: false; error: string }> {
+  if (!input.userOp || !input.userOpSignature) {
+    return { ok: false, error: "Missing session key signature" };
+  }
+  try {
+    const session = await sessionClient(input, input.userOpSignature);
+    if ("ok" in session) return session;
+    const callData = await session.account.encodeCalls(callDataFor(input.calls));
+    const userOp = parseUserOp(input.userOp);
+    if (getAddress(userOp.sender) !== getAddress(input.smartWallet)) {
+      return { ok: false, error: "User operation sender does not match the smart wallet" };
+    }
+    if (userOp.callData !== callData) {
+      return { ok: false, error: "User operation does not match this contest" };
+    }
+    const signature = await session.account.signUserOperation({
+      ...userOp,
+      chainId: input.chainId,
     });
-    const userOpHash = await kernelClient.sendUserOperation({
-      callData: await account.encodeCalls(
-        input.calls.map((call) => ({
-          to: call.to,
-          value: call.value,
-          data: call.data,
-        })),
-      ),
+    const userOpHash = await session.kernelClient.request({
+      method: "eth_sendUserOperation",
+      params: [formatUserOperationRequest({ ...userOp, signature }), entryPoint.address],
     });
-    const receipt = await kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
+    const receipt = await session.kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
     return { ok: true, txHash: receipt.receipt.transactionHash };
   } catch (error) {
     const message = error instanceof Error ? error.message : "User operation failed";

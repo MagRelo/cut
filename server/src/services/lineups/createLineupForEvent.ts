@@ -12,6 +12,7 @@ import {
 import { validateLineupPicks, writeLineupPicks } from "./validateLineupPicks.js";
 import { validateLineupContestScope } from "./validateLineupContestScope.js";
 import { getContestEditBlock, getEventEditBlock, lineupEditBlockToHttp } from "../../utils/lineupEditable.js";
+import { nextLineupName } from "./nextLineupName.js";
 
 export type CreateLineupInput = {
   userId: string;
@@ -104,7 +105,7 @@ export async function createLineupForEvent(input: CreateLineupInput) {
     data: {
       userId: input.userId,
       eventId: input.eventId,
-      name: input.name ?? "My Lineup",
+      name: await nextLineupName(input.userId, input.eventId),
       prediction,
       ...(input.contestId ? { contestId: input.contestId } : {}),
     },

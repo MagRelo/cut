@@ -1,9 +1,9 @@
 import { prisma } from "../../lib/prisma.js";
-import { clipName } from "../../schemas/limits.js";
 import { formatLineupResponse, lineupDetailInclude } from "./formatLineup.js";
 import { writeLineupPicks } from "./validateLineupPicks.js";
 import { validateLineupContestScope } from "./validateLineupContestScope.js";
 import { getContestEditBlock, lineupEditBlockToHttp } from "../../utils/lineupEditable.js";
+import { nextLineupName } from "./nextLineupName.js";
 
 export type CloneLineupInput = {
   sourceLineupId: string;
@@ -49,12 +49,8 @@ export async function cloneLineup(input: CloneLineupInput) {
     return { error: scope.error };
   }
 
-  const suffix = input.nameSuffix ?? " (copy)";
-  const rawName =
-    input.name ??
-    (source.name.endsWith(suffix) ? source.name : `${source.name}${suffix}`);
-  const name = clipName(rawName);
   const picks = source.picks.map((pick) => pick.eventParticipantId);
+  const name = await nextLineupName(source.userId, source.eventId);
 
   const lineup = await prisma.lineup.create({
     data: {

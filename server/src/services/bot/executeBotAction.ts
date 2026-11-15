@@ -13,7 +13,6 @@ import {
   assertLeaveCalls,
   buildJoinCalls,
   buildLeaveCalls,
-  hashCalls,
   hashPicks,
   type BotCall,
 } from "./botCalls.js";
@@ -23,8 +22,7 @@ import {
   type BotActionMessage,
   type BotActionName,
 } from "./botActionSignature.js";
-
-export const PREPARE_CALLS_HASH = hashCalls([]);
+import type { SerializedUserOp } from "./submitSessionKeyUserOp.js";
 
 export type BotDelegateRow = {
   userId: string;
@@ -60,17 +58,23 @@ export type ExecuteBotActionInput = {
   contestId: string;
   lineupId: string;
   picks: string[];
-  callsHash: Hex;
   prediction?: unknown;
   deadline: bigint;
   signature: Hex;
   userOpSignature?: Hex;
+  userOp?: SerializedUserOp;
   nowSeconds: number;
 };
 
 export type ExecuteBotActionResult =
-  | { ok: true; lineupId: string; prepared?: undefined }
-  | { ok: true; prepared: true; lineupId: string; callsHash: Hex; calls: BotCall[] }
+  | { ok: true; lineupId: string; preparedUserOp?: undefined }
+  | {
+      ok: true;
+      preparedUserOp: true;
+      lineupId: string;
+      userOpHash: Hex;
+      userOp: SerializedUserOp;
+    }
   | { ok: false; status: number; error: string };
 
 export type BotActionDeps = {
@@ -104,29 +108,37 @@ export type BotActionDeps = {
     picks: string[];
     prediction?: unknown;
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
+  prepareUserOp: (input: {
+    chainId: number;
+    approval: string;
+    calls: BotCall[];
+    delegateAddress: Address;
+    smartWallet: Address;
+  }) => Promise<
+    { ok: true; userOpHash: Hex; userOp: SerializedUserOp } | { ok: false; error: string }
+  >;
   submitCalls: (input: {
     chainId: number;
     approval: string;
     calls: BotCall[];
     delegateAddress: Address;
+    smartWallet: Address;
     privateKey?: Hex;
     userOpSignature?: Hex;
+    userOp?: SerializedUserOp;
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
   log: (userId: string, action: string, error?: string) => Promise<void>;
 };
 
-function picksMatch(left: readonly string[], right: readonly string[]): boolean {
-  return left.length === right.length && left.every((pick, index) => pick === right[index]);
-}
-
 function messageFor(input: ExecuteBotActionInput, smartWallet: Address): BotActionMessage {
+  const chainAction = input.action === "join" || input.action === "leave";
   return {
     action: input.action,
     smartWallet,
     contestId: input.contestId,
     lineupId: input.lineupId,
-    picksHash: hashPicks(input.picks),
-    callsHash: input.action === "update" ? zeroHash : input.callsHash,
+    picksHash: chainAction ? hashPicks([]) : hashPicks(input.picks),
+    callsHash: zeroHash,
     deadline: input.deadline,
   };
 }
@@ -193,27 +205,9 @@ export async function executeBotAction(
     }
   }
 
-  if (input.action === "update") {
-    if (input.callsHash !== zeroHash) {
-      return { ok: false, status: 400, error: "Update does not include chain calls" };
-    }
-    if (!input.lineupId) {
-      return { ok: false, status: 400, error: "Update requires a lineup" };
-    }
-    const result = await deps.updateLineup({
-      userId: delegate.userId,
-      lineupId: input.lineupId,
-      picks: input.picks,
-      prediction: input.prediction,
-    });
-    if (!result.ok) {
-      await deps.log(delegate.userId, "error", result.error);
-      return { ok: false, status: 400, error: result.error };
-    }
-    await deps.log(delegate.userId, "update");
-    return { ok: true, lineupId: input.lineupId };
+  if (input.action === "lineupUpsert") {
+    return upsertLineup(input, delegate, contest, deps);
   }
-
   if (input.action === "leave") {
     return leaveAction(input, delegate, contest, approval, deps);
   }
@@ -230,12 +224,11 @@ async function joinAction(
   if (!canAddPrimaryPosition(contest.status)) {
     return { ok: false, status: 409, error: "Contest is not open for entries" };
   }
-
-  const lineup = await resolveJoinLineup(input, delegate, contest, deps);
-  if (!lineup.ok) return { ok: false, status: 400, error: lineup.error };
-  if (input.lineupId && input.picks.length > 0 && !picksMatch(lineup.lineup.picks, input.picks)) {
-    return { ok: false, status: 400, error: "Picks do not match this lineup" };
+  if (input.picks.length > 0) {
+    return { ok: false, status: 400, error: "Join does not change the lineup" };
   }
+  const lineup = await requireLineup(input, delegate, contest, deps);
+  if (!lineup.ok) return { ok: false, status: 400, error: lineup.error };
 
   const existing = await deps.findContestEntry(contest.id, lineup.lineup.id);
   if (existing) return { ok: true, lineupId: lineup.lineup.id };
@@ -267,16 +260,16 @@ async function joinAction(
     }
   }
 
-  const callsHash = hashCalls(calls);
-  if (input.callsHash === PREPARE_CALLS_HASH) {
-    return { ok: true, prepared: true, lineupId: lineup.lineup.id, callsHash, calls };
-  }
-  if (input.callsHash !== callsHash) {
-    return { ok: false, status: 400, error: "Calls do not match this contest" };
-  }
-
-  const submitted = await submitIfNeeded(input, delegate, approval, calls, onchain, deps);
-  if (!submitted.ok) return submitted;
+  const submitted = await submitIfNeeded(
+    input,
+    delegate,
+    approval,
+    calls,
+    onchain,
+    lineup.lineup.id,
+    deps,
+  );
+  if (!submitted.ok || submitted.preparedUserOp) return submitted;
 
   await deps.insertContestEntry({
     contestId: contest.id,
@@ -300,24 +293,26 @@ async function leaveAction(
   if (!canRemovePrimaryPosition(contest.status)) {
     return { ok: false, status: 409, error: "Contest is not open to leave" };
   }
-  if (!input.lineupId) {
-    return { ok: false, status: 400, error: "Leave requires a lineup" };
+  if (input.picks.length > 0) {
+    return { ok: false, status: 400, error: "Leave does not change the lineup" };
   }
-  const entry = await deps.findContestEntry(contest.id, input.lineupId);
-  if (!entry) return { ok: true, lineupId: input.lineupId };
+  const lineup = await requireLineup(input, delegate, contest, deps);
+  if (!lineup.ok) return { ok: false, status: 400, error: lineup.error };
+  const entry = await deps.findContestEntry(contest.id, lineup.lineup.id);
+  if (!entry) return { ok: true, lineupId: lineup.lineup.id };
 
   const onchain = hasOnchainEscrow(contest);
   const calls = onchain
     ? buildLeaveCalls({
         contest: getAddress(contest.address as string),
-        entryId: BigInt(generateContestEntryId(contest.address as string, input.lineupId)),
+        entryId: BigInt(generateContestEntryId(contest.address as string, lineup.lineup.id)),
       })
     : [];
   if (onchain) {
     try {
       assertLeaveCalls(calls, {
         contest: getAddress(contest.address as string),
-        entryId: BigInt(generateContestEntryId(contest.address as string, input.lineupId)),
+        entryId: BigInt(generateContestEntryId(contest.address as string, lineup.lineup.id)),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Leave calls rejected";
@@ -326,20 +321,62 @@ async function leaveAction(
     }
   }
 
-  const callsHash = hashCalls(calls);
-  if (input.callsHash === PREPARE_CALLS_HASH) {
-    return { ok: true, prepared: true, lineupId: input.lineupId, callsHash, calls };
-  }
-  if (input.callsHash !== callsHash) {
-    return { ok: false, status: 400, error: "Calls do not match this contest" };
-  }
+  const submitted = await submitIfNeeded(
+    input,
+    delegate,
+    approval,
+    calls,
+    onchain,
+    lineup.lineup.id,
+    deps,
+  );
+  if (!submitted.ok || submitted.preparedUserOp) return submitted;
 
-  const submitted = await submitIfNeeded(input, delegate, approval, calls, onchain, deps);
-  if (!submitted.ok) return submitted;
-
-  await deps.deleteContestEntry(contest.id, input.lineupId, delegate.userId);
+  await deps.deleteContestEntry(contest.id, lineup.lineup.id, delegate.userId);
   await deps.log(delegate.userId, "leave");
-  return { ok: true, lineupId: input.lineupId };
+  return { ok: true, lineupId: lineup.lineup.id };
+}
+
+async function upsertLineup(
+  input: ExecuteBotActionInput,
+  delegate: BotDelegateRow,
+  contest: BotContest,
+  deps: BotActionDeps,
+): Promise<ExecuteBotActionResult> {
+  if (input.picks.length === 0) {
+    return { ok: false, status: 400, error: "Lineup requires picks" };
+  }
+  if (input.lineupId) {
+    const existing = await requireLineup(input, delegate, contest, deps);
+    if (!existing.ok) return { ok: false, status: 400, error: existing.error };
+    const result = await deps.updateLineup({
+      userId: delegate.userId,
+      lineupId: input.lineupId,
+      picks: input.picks,
+      ...(input.prediction !== undefined ? { prediction: input.prediction } : {}),
+    });
+    if (!result.ok) {
+      await deps.log(delegate.userId, "error", result.error);
+      return { ok: false, status: 400, error: result.error };
+    }
+    await deps.log(delegate.userId, "lineupUpsert");
+    return { ok: true, lineupId: input.lineupId };
+  }
+
+  const match = await deps.findLineupByPicks(delegate.userId, contest.id, input.picks);
+  if (match) return { ok: true, lineupId: match.id };
+  const created = await deps.createLineup({
+    userId: delegate.userId,
+    contest,
+    picks: input.picks,
+    ...(input.prediction !== undefined ? { prediction: input.prediction } : {}),
+  });
+  if (!created.ok) {
+    await deps.log(delegate.userId, "error", created.error);
+    return { ok: false, status: 400, error: created.error };
+  }
+  await deps.log(delegate.userId, "lineupUpsert");
+  return { ok: true, lineupId: created.lineup.id };
 }
 
 async function submitIfNeeded(
@@ -348,11 +385,31 @@ async function submitIfNeeded(
   approval: string,
   calls: BotCall[],
   onchain: boolean,
+  lineupId: string,
   deps: BotActionDeps,
-): Promise<{ ok: true } | ExecuteBotActionResult> {
-  if (!onchain) return { ok: true };
+): Promise<ExecuteBotActionResult> {
+  if (!onchain) return { ok: true, lineupId };
+  const smartWallet = getAddress(input.smartWallet);
+  const delegateAddress = getAddress(delegate.delegateAddress);
   if (delegate.kind === "external" && !input.userOpSignature) {
-    return { ok: false, status: 400, error: "Personal delegate must sign the user operation" };
+    const prepared = await deps.prepareUserOp({
+      chainId: input.chainId,
+      approval,
+      calls,
+      delegateAddress,
+      smartWallet,
+    });
+    if (!prepared.ok) {
+      await deps.log(delegate.userId, "error", prepared.error);
+      return { ok: false, status: 502, error: prepared.error };
+    }
+    return {
+      ok: true,
+      preparedUserOp: true,
+      lineupId,
+      userOpHash: prepared.userOpHash,
+      userOp: prepared.userOp,
+    };
   }
   if (delegate.kind === "cut_bot" && !getCutBotPrivateKey()) {
     return { ok: false, status: 503, error: "Cut Bot key is not configured" };
@@ -362,36 +419,32 @@ async function submitIfNeeded(
     chainId: input.chainId,
     approval,
     calls,
-    delegateAddress: getAddress(delegate.delegateAddress),
+    delegateAddress,
+    smartWallet,
     ...(privateKey ? { privateKey } : {}),
     ...(input.userOpSignature ? { userOpSignature: input.userOpSignature } : {}),
+    ...(input.userOp ? { userOp: input.userOp } : {}),
   });
   if (!submitted.ok) {
     await deps.log(delegate.userId, "error", submitted.error);
     return { ok: false, status: 502, error: submitted.error };
   }
-  return { ok: true };
+  return { ok: true, lineupId };
 }
 
-async function resolveJoinLineup(
+async function requireLineup(
   input: ExecuteBotActionInput,
   delegate: BotDelegateRow,
   contest: BotContest,
   deps: BotActionDeps,
 ): Promise<{ ok: true; lineup: BotLineup } | { ok: false; error: string }> {
-  if (input.lineupId) {
-    const lineup = await deps.findLineup(input.lineupId);
-    if (!lineup || lineup.userId !== delegate.userId || lineup.eventId !== contest.eventId) {
-      return { ok: false, error: "Lineup not found" };
-    }
-    return { ok: true, lineup };
+  if (!input.lineupId) return { ok: false, error: "Lineup is required" };
+  const lineup = await deps.findLineup(input.lineupId);
+  if (!lineup || lineup.userId !== delegate.userId || lineup.eventId !== contest.eventId) {
+    return { ok: false, error: "Lineup not found" };
   }
-  const existing = await deps.findLineupByPicks(delegate.userId, contest.id, input.picks);
-  if (existing) return { ok: true, lineup: existing };
-  return deps.createLineup({
-    userId: delegate.userId,
-    contest,
-    picks: input.picks,
-    prediction: input.prediction,
-  });
+  if (lineup.contestId && lineup.contestId !== contest.id) {
+    return { ok: false, error: "Lineup is for a different contest" };
+  }
+  return { ok: true, lineup };
 }

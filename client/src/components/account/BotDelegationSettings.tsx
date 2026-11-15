@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Switch } from "@headlessui/react";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWallets } from "@privy-io/react-auth";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
@@ -7,8 +9,9 @@ import { getAddress, isAddress } from "viem";
 import { base, baseSepolia } from "viem/chains";
 
 import { Button } from "../common/Button";
+import { CopyButton } from "../common/CopyToClipboard";
+import { BRAND_URL } from "../../lib/brand";
 import { ErrorMessage } from "../common/ErrorMessage";
-import { PageSection } from "../layout/PageSection";
 import {
   prepareBotSessionKey,
   prepareBotSessionRevoke,
@@ -29,9 +32,10 @@ type DelegateResponse = {
 
 const queryKey = ["bot-delegates"] as const;
 
-function sameAddress(left: string, right: string) {
-  return isAddress(left) && isAddress(right) && getAddress(left) === getAddress(right);
-}
+const agentPrompt = `Act as my personal delegate on Play The Cut. Create a dedicated wallet and reply with only the public address. Keep the private key.
+${BRAND_URL}/agents.md
+${BRAND_URL}/faq#agents
+${BRAND_URL}/llms.txt`;
 
 function chainFor(chainId: number) {
   if (chainId === base.id) return base;
@@ -43,7 +47,7 @@ export function BotDelegationSettings() {
   const chainId = useChainId();
   const publicClient = usePublicClient();
   const { wallets } = useWallets();
-  const { client: smartWalletClient } = useSmartWallets();
+  const { client: smartWalletClient, getClientForChain } = useSmartWallets();
   const queryClient = useQueryClient();
   const [delegateInput, setDelegateInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -60,17 +64,13 @@ export function BotDelegationSettings() {
   );
   const rows = delegates.data?.delegates ?? [];
   const cutBotAddress = delegates.data?.cutBotAddress ?? null;
-  const cutBotActive = rows.some((row) => row.kind === "cut_bot" && row.status === "active");
   const externalActive = rows.filter((row) => row.kind === "external" && row.status === "active");
 
-  async function send(call: WalletCall) {
-    if (!smartWalletClient || !publicClient) throw new Error("Wallet is not ready");
-    if (!("paymaster" in smartWalletClient) || !smartWalletClient.paymaster) {
-      throw new Error(
-        "Privy has no paymaster for this chain. The wallet has no ETH, so this transaction cannot be sponsored.",
-      );
-    }
-    const hash = await smartWalletClient.sendTransaction({
+  async function send(chainId: number, call: WalletCall) {
+    if (!publicClient) throw new Error("Wallet is not ready");
+    const client = await getClientForChain({ id: chainId });
+    if (!client) throw new Error("Wallet is not ready");
+    const hash = await client.sendTransaction({
       calls: [{ to: call.to, data: call.data, value: 0n }],
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
@@ -90,7 +90,7 @@ export function BotDelegationSettings() {
       smartWallet: getAddress(smartWallet),
       delegateAddress: getAddress(delegateAddress),
     });
-    await send(installed.call);
+    if (installed.call) await send(chain.id, installed.call);
     await apiClient.post(
       "/bot/delegates",
       {
@@ -114,7 +114,7 @@ export function BotDelegationSettings() {
       smartWallet: getAddress(smartWallet),
       delegateAddress: getAddress(delegateAddress),
     });
-    await send(call);
+    if (call) await send(chain.id, call);
     await apiClient.post("/bot/delegates/revoke", { delegateAddress }, { requiresAuth: true });
   }
 
@@ -131,69 +131,83 @@ export function BotDelegationSettings() {
     }
   }
 
-  const cutBotBusy =
-    pending === "cut_bot" ||
-    (cutBotAddress !== null && pending !== null && sameAddress(pending, cutBotAddress));
-  const toggleDisabled = !delegates.isSuccess || !cutBotAddress || pending !== null;
-
   return (
-    <PageSection variant="card">
-      <h2 className="mb-3 font-display text-lg font-semibold text-gray-700">Delegates</h2>
+    <section
+      className="rounded-lg border border-slate-200 bg-white p-6 font-display shadow-sm sm:p-8"
+      aria-labelledby="delegate-heading"
+    >
+      <div className="max-w-3xl">
+        <h2 id="delegate-heading" className="mb-3 font-display text-lg font-semibold text-gray-700">
+          Delegate account control
+        </h2>
 
-      <p className="mb-4 pl-3 font-display text-sm text-gray-700">
-        A delegate is a blank check on this wallet. It can sign any transaction, including sending
-        funds. Turn it off to remove the key.
-      </p>
+        <p className="text-sm leading-6 text-slate-600">
+          Give another wallet permission to act on behalf of this smart wallet. A delegate can sign
+          transactions without asking you each time—including sending funds.
+        </p>
+      </div>
 
-      <div className="space-y-6 pl-3">
-        <section className="space-y-2">
-          <h3 id="cut-bot-label" className="font-display text-sm font-semibold text-gray-900">
-            Cut Bot
-          </h3>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4">
-            <p className="font-display text-sm text-gray-700">
-              The server signs while you are away.
-              {cutBotAddress ? (
-                <span className="mt-0.5 block truncate font-mono text-xs text-gray-600">
-                  {cutBotAddress}
-                </span>
-              ) : (
-                <span className="mt-0.5 block text-xs text-gray-600">
-                  Not configured on the server
-                </span>
-              )}
+      <div
+        role="note"
+        aria-labelledby="delegate-warning"
+        className="mt-6 border border-orange-500 px-4 py-4 sm:px-5"
+      >
+        <div className="flex items-start gap-3">
+          <ExclamationTriangleIcon
+            className="mt-0.5 h-5 w-5 shrink-0 text-orange-600"
+            aria-hidden
+          />
+          <div>
+            <h3 id="delegate-warning" className="text-sm font-semibold text-orange-600">
+              Warning - Experimental
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-slate-800">
+              Bugs or compromised delegates could drain this wallet. Only use funds you can afford
+              to lose. Revoking access won’t undo past transactions.
             </p>
-            <button
-              type="button"
-              role="switch"
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8 divide-y divide-slate-300">
+        <div className="pb-7">
+          <div className="flex items-start justify-between gap-6">
+            <div className="min-w-0">
+              <h3 id="cut-bot-label" className="text-base font-semibold text-slate-900">
+                <span className="mr-1 text-xl">🤖</span>
+                CutBot
+                <span className="ml-2 text-sm font-normal text-slate-500">(coming soon!)</span>
+              </h3>
+              <p id="cut-bot-description" className="mt-1 text-sm leading-6 text-slate-600">
+                Let CutBot sign transactions for this wallet without your permission.
+              </p>
+            </div>
+
+            <Switch
+              checked={false}
+              disabled
               aria-labelledby="cut-bot-label"
-              aria-checked={cutBotActive}
-              aria-busy={cutBotBusy}
-              disabled={toggleDisabled}
-              onClick={() => {
+              aria-describedby="cut-bot-description delegate-warning"
+              onChange={(next) => {
                 if (!cutBotAddress) return;
-                if (cutBotActive) {
-                  void run(cutBotAddress, () => revoke(cutBotAddress));
+                if (next) {
+                  void run("cut_bot", () => enable("cut_bot", cutBotAddress));
                   return;
                 }
-                void run("cut_bot", () => enable("cut_bot", cutBotAddress));
+                void run(cutBotAddress, () => revoke(cutBotAddress));
               }}
-              className={`relative h-7 w-12 shrink-0 rounded-full border border-slate-900 transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                cutBotActive ? "bg-slate-900" : "bg-white"
-              }`}
+              className="group relative mt-1 inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full bg-slate-300 transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 data-[disabled]:cursor-not-allowed data-[checked]:bg-blue-600 data-[disabled]:opacity-50"
             >
               <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full border border-slate-900 transition-transform ${
-                  cutBotActive ? "translate-x-6 bg-white" : "translate-x-0.5 bg-slate-900"
-                }`}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform group-data-[checked]:translate-x-5"
               />
-              <span className="sr-only">{cutBotActive ? "Revoke Cut Bot" : "Allow Cut Bot"}</span>
-            </button>
+            </Switch>
           </div>
-        </section>
+        </div>
 
         <form
-          className="space-y-2"
+          className="pt-7"
           onSubmit={(event) => {
             event.preventDefault();
             if (!isAddress(delegateInput)) {
@@ -206,33 +220,17 @@ export function BotDelegationSettings() {
             });
           }}
         >
-          <h3 className="font-display text-sm font-semibold text-gray-900">BYO</h3>
-          <p className="font-display text-sm text-gray-700">
-            Paste a public address. That bot signs with its own key.
-          </p>
-          <label htmlFor="personal-delegate" className="sr-only">
-            Delegate address
-          </label>
-          <input
-            id="personal-delegate"
-            value={delegateInput}
-            onChange={(event) => setDelegateInput(event.target.value.trim())}
-            placeholder="0x…"
-            className="mt-1 block w-full rounded-sm border border-slate-300 bg-white px-3 py-2.5 font-mono text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-gray-100"
-            autoComplete="off"
-            spellCheck={false}
-            disabled={pending !== null}
-          />
+          <h3 className="text-base font-semibold text-slate-900">Bring your own agent</h3>
 
           {externalActive.length > 0 ? (
-            <ul className="mt-4 space-y-3">
+            <ul className="mt-5 divide-y divide-slate-200 border-t border-slate-200">
               {externalActive.map((row) => (
                 <li
                   key={row.delegateAddress}
-                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4"
+                  className="flex items-center justify-between gap-4 py-3"
                 >
                   <span
-                    className="truncate font-mono text-xs text-gray-800"
+                    className="min-w-0 break-all font-mono text-xs leading-5 text-slate-600"
                     title={row.delegateAddress}
                   >
                     {row.delegateAddress}
@@ -253,16 +251,55 @@ export function BotDelegationSettings() {
             </ul>
           ) : null}
 
-          <div className="mt-4">
-            <div className="flex flex-col items-center gap-2 pt-4">
-              <Button type="submit" disabled={pending !== null} className="min-w-[120px]">
-                {pending === "external" ? "Allowing..." : "Allow address"}
+          <div className="mt-5">
+            <h4 className="text-sm font-medium text-slate-800">
+              1. Have your agent set up a wallet
+            </h4>
+            <p id="delegate-address-help" className="mt-1 text-sm leading-6 text-slate-600">
+              Copy these instructions. The agent creates a wallet and replies with the public
+              address.
+            </p>
+            <div className="mt-3 flex justify-end">
+              <CopyButton text={agentPrompt} idleLabel="Copy prompt" />
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <h4 className="text-sm font-medium text-slate-800">
+              2. Paste that address and grant access
+            </h4>
+            <label
+              htmlFor="delegate-address"
+              className="mt-3 block text-sm font-medium text-slate-800"
+            >
+              Public address
+            </label>
+            <input
+              id="delegate-address"
+              name="delegateAddress"
+              value={delegateInput}
+              onChange={(event) => setDelegateInput(event.target.value.trim())}
+              type="text"
+              placeholder="0x..."
+              autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              aria-describedby="delegate-address-note"
+              disabled={pending !== null}
+              className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-gray-100"
+            />
+            <p id="delegate-address-note" className="mt-2 text-xs leading-5 text-slate-500">
+              Double-check the address before granting access.
+            </p>
+            <div className="mt-5 flex flex-col items-end gap-2">
+              <Button type="submit" disabled={pending !== null}>
+                {pending === "external" ? "Granting…" : "Grant full access"}
               </Button>
-              {error ? <ErrorMessage message={error} className="text-center" /> : null}
+              {error ? <ErrorMessage message={error} /> : null}
             </div>
           </div>
         </form>
       </div>
-    </PageSection>
+    </section>
   );
 }

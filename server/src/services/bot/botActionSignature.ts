@@ -19,7 +19,7 @@ export const BOT_ACTION_TYPES = {
   ],
 } as const;
 
-export type BotActionName = "join" | "leave" | "update";
+export type BotActionName = "lineupUpsert" | "join" | "leave";
 
 export type BotActionMessage = {
   action: BotActionName;
@@ -63,6 +63,49 @@ export async function recoverBotActionSigner(
     domain: botActionDomain(chainId, message.smartWallet),
     types: BOT_ACTION_TYPES,
     primaryType: "BotAction",
+    message,
+    signature,
+  });
+  return getAddress(recovered);
+}
+
+export const BOT_READ_TYPES = {
+  BotRead: [
+    { name: "action", type: "string" },
+    { name: "smartWallet", type: "address" },
+    { name: "chainId", type: "uint256" },
+    { name: "deadline", type: "uint256" },
+  ],
+} as const;
+
+export type BotReadMessage = {
+  action: "contests";
+  smartWallet: Address;
+  chainId: bigint;
+  deadline: bigint;
+};
+
+export async function signBotRead(
+  privateKey: Hex,
+  message: BotReadMessage,
+): Promise<Hex> {
+  const account = privateKeyToAccount(privateKey);
+  return account.signTypedData({
+    domain: botActionDomain(Number(message.chainId), message.smartWallet),
+    types: BOT_READ_TYPES,
+    primaryType: "BotRead",
+    message,
+  });
+}
+
+export async function recoverBotReadSigner(
+  message: BotReadMessage,
+  signature: Hex,
+): Promise<Address> {
+  const recovered = await recoverTypedDataAddress({
+    domain: botActionDomain(Number(message.chainId), message.smartWallet),
+    types: BOT_READ_TYPES,
+    primaryType: "BotRead",
     message,
     signature,
   });

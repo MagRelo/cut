@@ -13,7 +13,7 @@ import { getPublicClient } from "../shared/contractClient.js";
 import { invalidateContestLobby } from "../contests/getContestLobby.js";
 import type { BotActionDeps, BotLineup } from "./executeBotAction.js";
 import { readSessionKeyEnabled } from "./sessionKeyEnabled.js";
-import { submitSessionKeyUserOp } from "./submitSessionKeyUserOp.js";
+import { prepareSessionKeyUserOp, submitSessionKeyUserOp } from "./submitSessionKeyUserOp.js";
 
 const depositAbi = [
   {
@@ -155,6 +155,10 @@ export function createBotActionDeps(): BotActionDeps {
       if (result.error === "validation") {
         return { ok: false, error: result.messages.join(", ") };
       }
+      if (result.error === "not_editable") {
+        const body = result.body as { error?: string };
+        return { ok: false, error: body.error ?? "Lineup is not editable" };
+      }
       return { ok: false, error: "Could not create lineup" };
     },
     findContestEntry: async (contestId, lineupId) => {
@@ -193,6 +197,7 @@ export function createBotActionDeps(): BotActionDeps {
       }
       return { ok: false, error: "Lineup not found" };
     },
+    prepareUserOp: async (input) => prepareSessionKeyUserOp(input),
     submitCalls: async (input) => {
       const result = await submitSessionKeyUserOp(input);
       if (!result.ok) return result;

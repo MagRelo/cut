@@ -103,7 +103,7 @@ model BotDelegate {
 model BotActionLog {
   id        String   @id @default(cuid())
   userId    String
-  /// delegate | revoke | join | leave | update | error
+  /// delegate | revoke | lineupUpsert | join | leave | error
   action    String
   error     String?
   createdAt DateTime @default(now())

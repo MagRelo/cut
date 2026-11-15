@@ -5,9 +5,10 @@ import { getCutBotAddress, isCutBotAddress } from "../lib/cutBotKey.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { packApproval } from "../services/bot/approvalEnvelope.js";
-import { getEventCandidates } from "../services/events/getEventCandidates.js";
-import { PREPARE_CALLS_HASH, executeBotAction } from "../services/bot/executeBotAction.js";
+import { botContestListDeps, listSignedBotContests } from "../services/bot/listBotContests.js";
+import { executeBotAction } from "../services/bot/executeBotAction.js";
 import { createBotActionDeps } from "../services/bot/botActionRuntime.js";
+import type { SerializedUserOp } from "../services/bot/submitSessionKeyUserOp.js";
 
 const botRouter = new Hono();
 const deps = createBotActionDeps();
@@ -26,19 +27,38 @@ const revokeSchema = z.object({
   delegateAddress: z.string().refine((value) => isAddress(value), "Invalid delegate address"),
 });
 
+const uintSchema = z.string().regex(/^\d+$/);
+
+const userOpSchema = z.object({
+  sender: z.string().refine((value) => isAddress(value), "Invalid user operation sender"),
+  nonce: uintSchema,
+  callData: hexSchema,
+  callGasLimit: uintSchema,
+  verificationGasLimit: uintSchema,
+  preVerificationGas: uintSchema,
+  maxFeePerGas: uintSchema,
+  maxPriorityFeePerGas: uintSchema,
+  paymaster: z.string().optional(),
+  paymasterData: hexSchema.optional(),
+  paymasterVerificationGasLimit: uintSchema.optional(),
+  paymasterPostOpGasLimit: uintSchema.optional(),
+  factory: z.string().optional(),
+  factoryData: hexSchema.optional(),
+});
+
 const actionSchema = z.object({
   chainId: z.number().int(),
-  action: z.enum(["join", "leave", "update"]),
+  action: z.enum(["lineupUpsert", "join", "leave"]),
   smartWallet: z.string(),
   contestId: z.string().min(1),
   lineupId: z.string().default(""),
   candidates: z.array(z.string().min(1)).optional(),
   picks: z.array(z.string().min(1)).optional(),
-  callsHash: hexSchema.default(PREPARE_CALLS_HASH),
   prediction: z.unknown().optional(),
   deadline: z.string().regex(/^\d+$/),
   signature: hexSchema,
   userOpSignature: hexSchema.optional(),
+  userOp: userOpSchema.optional(),
 });
 
 function selectedCandidates(body: {
@@ -58,21 +78,35 @@ botRouter.get("/delegate-address", (c) => {
   return c.json({ address: getCutBotAddress() });
 });
 
-botRouter.get("/contests/:contestId/candidates", async (c) => {
-  const contest = await prisma.contest.findUnique({
-    where: { id: c.req.param("contestId") },
-    select: { id: true, eventId: true, event: { select: { sportId: true } } },
-  });
-  if (!contest) return c.json({ error: "Contest not found" }, 404);
+const listDeps = botContestListDeps();
 
-  const candidates = await getEventCandidates(contest.event.sportId, contest.eventId);
-  if (candidates === null) return c.json({ error: "Event not found" }, 404);
-
-  return c.json({
-    contestId: contest.id,
-    eventId: contest.eventId,
-    candidates,
-  });
+botRouter.get("/contests", async (c) => {
+  const chainId = Number(c.req.query("chainId"));
+  const smartWallet = c.req.query("smartWallet") ?? "";
+  const deadline = c.req.query("deadline") ?? "";
+  const signature = c.req.query("signature") ?? "";
+  const eventId = c.req.query("eventId")?.trim();
+  if (chainId !== 8453 && chainId !== 84532) {
+    return c.json({ error: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)" }, 400);
+  }
+  if (!/^0x[0-9a-fA-F]+$/.test(signature) || !/^\d+$/.test(deadline)) {
+    return c.json({ error: "Invalid request" }, 400);
+  }
+  const result = await listSignedBotContests(
+    {
+      chainId,
+      smartWallet,
+      deadline: BigInt(deadline),
+      signature: signature as Hex,
+      ...(eventId ? { eventId } : {}),
+      nowSeconds: Math.floor(Date.now() / 1000),
+    },
+    listDeps,
+  );
+  if (!result.ok) {
+    return c.json({ error: result.error }, result.status);
+  }
+  return c.json({ contests: result.contests });
 });
 
 botRouter.get("/delegates", requireAuth, async (c) => {
@@ -180,11 +214,11 @@ botRouter.post("/actions", async (c) => {
       contestId: body.contestId,
       lineupId: body.lineupId,
       picks: candidates,
-      callsHash: body.callsHash as Hex,
       ...(body.prediction !== undefined ? { prediction: body.prediction } : {}),
       deadline: BigInt(body.deadline),
       signature: body.signature as Hex,
       ...(body.userOpSignature ? { userOpSignature: body.userOpSignature as Hex } : {}),
+      ...(body.userOp ? { userOp: body.userOp as SerializedUserOp } : {}),
       nowSeconds: Math.floor(Date.now() / 1000),
     },
     deps,
@@ -193,16 +227,12 @@ botRouter.post("/actions", async (c) => {
     const status = result.status as 400 | 401 | 403 | 404 | 409 | 502 | 503;
     return c.json({ error: result.error }, status);
   }
-  if (result.prepared) {
+  if (result.preparedUserOp) {
     return c.json({
-      prepared: true,
+      preparedUserOp: true,
       lineupId: result.lineupId,
-      callsHash: result.callsHash,
-      calls: result.calls.map((call) => ({
-        to: call.to,
-        data: call.data,
-        value: call.value.toString(),
-      })),
+      userOpHash: result.userOpHash,
+      userOp: result.userOp,
     });
   }
   return c.json({ ok: true, lineupId: result.lineupId });

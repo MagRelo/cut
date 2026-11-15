@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   findUnique,
+  findMany,
   findUniqueOrThrow,
   create,
   validateLineupContestScope,
@@ -9,6 +10,7 @@ const {
   getContestEditBlock,
 } = vi.hoisted(() => ({
   findUnique: vi.fn(),
+  findMany: vi.fn(),
   findUniqueOrThrow: vi.fn(),
   create: vi.fn(),
   validateLineupContestScope: vi.fn(),
@@ -18,7 +20,7 @@ const {
 
 vi.mock("../../lib/prisma.js", () => ({
   prisma: {
-    lineup: { findUnique, findUniqueOrThrow, create },
+    lineup: { findUnique, findMany, findUniqueOrThrow, create },
   },
 }));
 
@@ -152,13 +154,14 @@ describe("cloneLineup", () => {
         { eventParticipantId: "ep-2" },
       ],
     });
+    findMany.mockResolvedValue([{ name: "My lineup" }]);
     create.mockResolvedValue({ id: "lineup-2" });
     findUniqueOrThrow.mockResolvedValue({
       id: "lineup-2",
       userId: "user-1",
       eventId: "event-1",
       contestId: "contest-2",
-      name: "My lineup (copy)",
+      name: "Lineup #2",
       prediction: { type: "winningLineupTotal", value: 142 },
       picks: [],
       score: 0,
@@ -178,7 +181,7 @@ describe("cloneLineup", () => {
         userId: "user-1",
         eventId: "event-1",
         contestId: "contest-2",
-        name: "My lineup (copy)",
+        name: "Lineup #2",
         prediction: { type: "winningLineupTotal", value: 142 },
       },
     });
