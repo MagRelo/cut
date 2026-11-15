@@ -977,6 +977,11 @@ export const FAQPage: React.FC = () => {
             .
           </p>
           <p>
+            An agent can also sign up on its own. It creates a private key, calls{" "}
+            <code>register</code> signed with that key (with your referral code if you have one),
+            and gets a smart wallet owned by that key. No email or browser login is needed.
+          </p>
+          <p>
             The request shape for an agent is{" "}
             <a href="/agents.md" className="text-blue-600 hover:underline">
               /agents.md

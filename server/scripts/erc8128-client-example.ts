@@ -1,227 +1,241 @@
 #!/usr/bin/env tsx
 /**
- * ERC-8128 Reference Client for Play The Cut Bot API
+ * Play The Cut agent client: the whole flow with ERC-8128 signed requests.
  *
- * This script demonstrates how to sign requests using ERC-8128 HTTP Message Signatures.
+ *   1. Create (or load) a private key. That key owns the account.
+ *   2. register (optional refCode). The server returns the Kernel smart wallet to fund.
+ *   3. Signed reads: balance, contests (no nonce).
+ *   4. Optional: add a delegate session key (delegateAdd, owner only).
+ *   5. Optional: lineupUpsert, then join (prepare -> sign userOpHash -> submit).
  *
- * ERC-8128 spec version: draft-2026-01-16
- * @see https://erc8128.slice.so/
+ * Every write carries a fresh nonce. ERC-8128 spec version: draft-2026-01-16
+ * (https://erc8128.slice.so/, RFC 9421 HTTP Message Signatures, RFC 9530 Content-Digest).
  *
  * Usage:
- *   ERC8128_PRIVATE_KEY=0x... tsx server/scripts/erc8128-client-example.ts
+ *   tsx server/scripts/erc8128-client-example.ts
  *
- * Environment variables:
- *   ERC8128_PRIVATE_KEY - Delegate private key (hex with 0x prefix)
- *   ERC8128_SMART_WALLET - Smart wallet address
- *   ERC8128_CHAIN_ID - Chain ID (8453 for Base, 84532 for Base Sepolia)
- *   ERC8128_API_BASE - API base URL (default: http://localhost:3000)
+ * Environment:
+ *   CUT_PRIVATE_KEY     Owner key (0x hex). Omitted: a new key is generated and printed.
+ *   CUT_CHAIN_ID        8453 (Base) or 84532 (Base Sepolia). Default 84532.
+ *   CUT_API_BASE        Default http://localhost:3000
+ *   CUT_REF_CODE        Optional referral code for register.
+ *   CUT_DELEGATE        Optional delegate address to allow (external session key).
+ *   CUT_CONTEST_ID      Optional contest to enter.
+ *   CUT_CANDIDATES      Comma-separated eventParticipantIds for the lineup.
+ *   CUT_RPC_URL         RPC for the delegate step (default: public RPC for the chain).
  */
 
-import { hashMessage, keccak256, toBytes, type Address, type Hex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { createHash, randomBytes } from "node:crypto";
+import { createPublicClient, http, toBytes, type Address, type Hex } from "viem";
+import { generatePrivateKey, privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
+import { entryPoint07Address } from "viem/account-abstraction";
+import { base, baseSepolia } from "viem/chains";
 
-const PRIVATE_KEY = process.env.ERC8128_PRIVATE_KEY as Hex;
-const SMART_WALLET = process.env.ERC8128_SMART_WALLET as Address;
-const CHAIN_ID = parseInt(process.env.ERC8128_CHAIN_ID || "84532", 10);
-const API_BASE = process.env.ERC8128_API_BASE || "http://localhost:3000";
+const CHAIN_ID = Number(process.env.CUT_CHAIN_ID ?? "84532");
+const API_BASE = (process.env.CUT_API_BASE ?? "http://localhost:3000").replace(/\/$/, "");
 
-if (!PRIVATE_KEY) {
-  console.error("Error: ERC8128_PRIVATE_KEY environment variable required");
-  process.exit(1);
-}
-if (!SMART_WALLET) {
-  console.error("Error: ERC8128_SMART_WALLET environment variable required");
-  process.exit(1);
-}
+// ---------------------------------------------------------------------------
+// ERC-8128 signing
+// ---------------------------------------------------------------------------
 
-const account = privateKeyToAccount(PRIVATE_KEY);
-
-/**
- * Compute content-digest header value using keccak256 (matching server implementation).
- */
-function computeContentDigest(body: string): string {
-  const hash = keccak256(toBytes(body)).slice(2);
-  const base64 = Buffer.from(hash, "hex").toString("base64");
-  return `sha-256=:${base64}:`;
+function contentDigest(body: string): string {
+  return `sha-256=:${createHash("sha256").update(body).digest("base64")}:`;
 }
 
-/**
- * Build the RFC 9421 signature base.
- */
-function buildSignatureBase(
-  components: string[],
-  values: Record<string, string>,
-  sigInputWithoutLabel: string,
-): string {
-  const lines = components.map((c) => `"${c}": ${values[c]}`);
-  lines.push(`"@signature-params": ${sigInputWithoutLabel}`);
-  return lines.join("\n");
+function newNonce(): string {
+  return randomBytes(16).toString("base64url");
 }
 
-/**
- * Sign an HTTP request using ERC-8128.
- */
-async function signRequest(input: {
-  method: string;
-  authority: string;
-  path: string;
-  query?: string;
-  body?: string;
-  nonce?: string;
-  ttlSeconds?: number;
-}): Promise<{
-  signatureInput: string;
-  signature: string;
-  contentDigest?: string;
-}> {
+async function signedFetch(
+  account: PrivateKeyAccount,
+  method: "GET" | "POST",
+  pathAndQuery: string,
+  body?: unknown,
+): Promise<{ status: number; json: unknown }> {
+  const url = new URL(API_BASE + pathAndQuery);
   const now = Math.floor(Date.now() / 1000);
-  const ttl = input.ttlSeconds ?? 60;
+  const text = body === undefined ? undefined : JSON.stringify(body);
 
-  const components: string[] = ["@method", "@authority", "@path"];
+  const components = ["@method", "@authority", "@path"];
   const values: Record<string, string> = {
-    "@method": input.method.toUpperCase(),
-    "@authority": input.authority,
-    "@path": input.path,
+    "@method": method,
+    "@authority": url.host,
+    "@path": url.pathname,
   };
-
-  if (input.query) {
+  if (url.search) {
     components.push("@query");
-    values["@query"] = input.query;
+    values["@query"] = url.search;
   }
-
-  let contentDigest: string | undefined;
-  if (input.body) {
-    contentDigest = computeContentDigest(input.body);
+  const headers: Record<string, string> = {};
+  if (text !== undefined) {
+    const digest = contentDigest(text);
     components.push("content-digest");
-    values["content-digest"] = contentDigest;
+    values["content-digest"] = digest;
+    headers["content-digest"] = digest;
+    headers["content-type"] = "application/json";
   }
 
+  // Writes (POST) need a nonce; reads (GET) are replayable inside their window.
+  const nonce = method === "POST" ? `;nonce="${newNonce()}"` : "";
   const keyid = `eip8128:${CHAIN_ID}:${account.address.toLowerCase()}`;
-  let paramsStr = `;created=${now};expires=${now + ttl}`;
-  if (input.nonce) {
-    paramsStr += `;nonce="${input.nonce}"`;
+  const params = `(${components.map((c) => `"${c}"`).join(" ")});created=${now};expires=${now + 60}${nonce};keyid="${keyid}"`;
+  const signatureBase = [
+    ...components.map((c) => `"${c}": ${values[c]}`),
+    `"@signature-params": ${params}`,
+  ].join("\n");
+
+  // ERC-191 personal_sign over the RFC 9421 signature base.
+  const signature = await account.signMessage({ message: { raw: toBytes(signatureBase) } });
+  headers["signature-input"] = `eth=${params}`;
+  headers["signature"] = `eth=:${Buffer.from(signature.slice(2), "hex").toString("base64")}:`;
+
+  const res = await fetch(url, { method, headers, ...(text !== undefined ? { body: text } : {}) });
+  return { status: res.status, json: await res.json().catch(() => null) };
+}
+
+// ---------------------------------------------------------------------------
+// Optional: build a delegate approval (owner signs the Kernel enable digest)
+// ---------------------------------------------------------------------------
+
+async function buildDelegateApproval(
+  owner: PrivateKeyAccount,
+  smartWallet: Address,
+  delegate: Address,
+) {
+  const { addressToEmptyAccount, createKernelAccount } = await import("@zerodev/sdk");
+  const { KERNEL_V3_1 } = await import("@zerodev/sdk/constants");
+  const { serializePermissionAccount, toPermissionValidator } =
+    await import("@zerodev/permissions");
+  const { toECDSASigner } = await import("@zerodev/permissions/signers");
+  const { toSudoPolicy } = await import("@zerodev/permissions/policies");
+  const { signerToEcdsaValidator } = await import("@zerodev/ecdsa-validator");
+
+  const chain = CHAIN_ID === 8453 ? base : baseSepolia;
+  const publicClient = createPublicClient({ chain, transport: http(process.env.CUT_RPC_URL) });
+  const entryPoint = { address: entryPoint07Address, version: "0.7" as const };
+  const plugin = await toPermissionValidator(publicClient, {
+    entryPoint,
+    kernelVersion: KERNEL_V3_1,
+    signer: await toECDSASigner({ signer: addressToEmptyAccount(delegate) }),
+    policies: [toSudoPolicy({})],
+  });
+  const sudo = await signerToEcdsaValidator(publicClient, {
+    signer: owner,
+    entryPoint,
+    kernelVersion: KERNEL_V3_1,
+  });
+  const account = await createKernelAccount(publicClient, {
+    entryPoint,
+    kernelVersion: KERNEL_V3_1,
+    address: smartWallet,
+    plugins: { sudo },
+  });
+  // A never-installed key: the enable signature installs it with the first user operation.
+  const approval = await serializePermissionAccount(
+    account,
+    undefined,
+    undefined,
+    undefined,
+    plugin,
+    true,
+  );
+  return { approval, permissionId: plugin.getIdentifier() };
+}
+
+// ---------------------------------------------------------------------------
+// Flow
+// ---------------------------------------------------------------------------
+
+function show(label: string, result: { status: number; json: unknown }) {
+  console.log(`\n${label} -> ${result.status}`);
+  console.log(JSON.stringify(result.json, null, 2));
+}
+
+async function main() {
+  let privateKey = process.env.CUT_PRIVATE_KEY as Hex | undefined;
+  if (!privateKey) {
+    privateKey = generatePrivateKey();
+    console.log("Generated a new owner key. Store it securely; it controls the account:");
+    console.log(privateKey);
   }
-  paramsStr += `;keyid="${keyid}"`;
+  const owner = privateKeyToAccount(privateKey);
+  console.log(`Owner ${owner.address} on chain ${CHAIN_ID}, API ${API_BASE}`);
 
-  const componentsList = components.map((c) => `"${c}"`).join(" ");
-  const sigInputWithoutLabel = `(${componentsList})${paramsStr}`;
-  const signatureInput = `eth=${sigInputWithoutLabel}`;
-
-  const sigBase = buildSignatureBase(components, values, sigInputWithoutLabel);
-  const sig = await account.signMessage({ message: { raw: toBytes(sigBase) } });
-  const signature = `eth=:${Buffer.from(sig.slice(2), "hex").toString("base64")}:`;
-
-  return { signatureInput, signature, contentDigest };
-}
-
-/**
- * List contests using ERC-8128 signed read.
- */
-async function listContests(): Promise<void> {
-  console.log("\n=== List Contests (ERC-8128 signed read) ===\n");
-
-  const url = new URL(`${API_BASE}/api/bot/contests`);
-  url.searchParams.set("smartWallet", SMART_WALLET);
-
-  const authority = url.host;
-  const path = url.pathname;
-  const query = url.search;
-
-  // Reads don't need a nonce
-  const { signatureInput, signature } = await signRequest({
-    method: "GET",
-    authority,
-    path,
-    query,
-  });
-
-  console.log("Request:");
-  console.log(`  GET ${url}`);
-  console.log(`  Signature-Input: ${signatureInput}`);
-  console.log(`  Signature: ${signature.slice(0, 50)}...`);
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      "Signature-Input": signatureInput,
-      Signature: signature,
-    },
-  });
-
-  const data = await response.json();
-  console.log("\nResponse:", response.status);
-  console.log(JSON.stringify(data, null, 2));
-}
-
-/**
- * Create a lineup using ERC-8128 signed write.
- */
-async function createLineup(contestId: string, picks: string[]): Promise<void> {
-  console.log("\n=== Create Lineup (ERC-8128 signed write) ===\n");
-
-  const url = new URL(`${API_BASE}/api/bot/actions`);
-  const body = JSON.stringify({
+  // 1. register (idempotent: the same key always returns the same account)
+  const registered = await signedFetch(owner, "POST", "/api/bot/actions", {
+    action: "register",
     chainId: CHAIN_ID,
+    ...(process.env.CUT_REF_CODE ? { refCode: process.env.CUT_REF_CODE } : {}),
+  });
+  show("register", registered);
+  if (registered.status !== 200 && registered.status !== 201) return;
+  const smartWallet = (registered.json as { smartWallet: Address }).smartWallet;
+  console.log(`Fund ${smartWallet} with USDC on chain ${CHAIN_ID} before joining paid contests.`);
+
+  // 2. signed reads (no nonce)
+  show("balance", await signedFetch(owner, "GET", `/api/bot/balance?smartWallet=${smartWallet}`));
+  show("contests", await signedFetch(owner, "GET", `/api/bot/contests?smartWallet=${smartWallet}`));
+
+  // 3. optional delegate
+  const delegate = process.env.CUT_DELEGATE as Address | undefined;
+  if (delegate) {
+    const { approval, permissionId } = await buildDelegateApproval(owner, smartWallet, delegate);
+    show(
+      "delegateAdd",
+      await signedFetch(owner, "POST", "/api/bot/actions", {
+        action: "delegateAdd",
+        chainId: CHAIN_ID,
+        smartWallet,
+        kind: "external",
+        delegateAddress: delegate,
+        approval,
+        permissionId,
+      }),
+    );
+  }
+
+  // 4. optional entry
+  const contestId = process.env.CUT_CONTEST_ID;
+  const candidates = process.env.CUT_CANDIDATES?.split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!contestId || !candidates?.length) return;
+
+  const lineup = await signedFetch(owner, "POST", "/api/bot/actions", {
     action: "lineupUpsert",
-    smartWallet: SMART_WALLET,
+    chainId: CHAIN_ID,
+    smartWallet,
     contestId,
     lineupId: "",
-    candidates: picks,
+    candidates,
   });
+  show("lineupUpsert", lineup);
+  const lineupId = (lineup.json as { lineupId?: string } | null)?.lineupId;
+  if (!lineupId) return;
 
-  // Generate unique nonce for write actions
-  const nonce = crypto.randomUUID();
+  const joinBody = { action: "join", chainId: CHAIN_ID, smartWallet, contestId, lineupId };
+  const prepared = await signedFetch(owner, "POST", "/api/bot/actions", joinBody);
+  show("join (prepare)", prepared);
+  const p = prepared.json as {
+    preparedUserOp?: boolean;
+    userOpHash?: Hex;
+    userOp?: unknown;
+  } | null;
+  if (!p?.preparedUserOp || !p.userOpHash) return;
 
-  const { signatureInput, signature, contentDigest } = await signRequest({
-    method: "POST",
-    authority: url.host,
-    path: url.pathname,
-    body,
-    nonce, // Required for writes
-  });
-
-  console.log("Request:");
-  console.log(`  POST ${url}`);
-  console.log(`  Content-Digest: ${contentDigest}`);
-  console.log(`  Signature-Input: ${signatureInput}`);
-  console.log(`  Signature: ${signature.slice(0, 50)}...`);
-  console.log(`  Body: ${body}`);
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Content-Digest": contentDigest!,
-      "Signature-Input": signatureInput,
-      Signature: signature,
-    },
-    body,
-  });
-
-  const data = await response.json();
-  console.log("\nResponse:", response.status);
-  console.log(JSON.stringify(data, null, 2));
+  // Sign the raw 32-byte userOpHash (EIP-191, no extra prefix) with the same key.
+  const userOpSignature = await owner.signMessage({ message: { raw: p.userOpHash } });
+  show(
+    "join (submit)",
+    await signedFetch(owner, "POST", "/api/bot/actions", {
+      ...joinBody,
+      userOpSignature,
+      userOp: p.userOp,
+    }),
+  );
 }
 
-async function main(): Promise<void> {
-  console.log("ERC-8128 Reference Client for Play The Cut");
-  console.log("==========================================");
-  console.log(`Signer: ${account.address}`);
-  console.log(`Smart Wallet: ${SMART_WALLET}`);
-  console.log(`Chain ID: ${CHAIN_ID}`);
-  console.log(`API Base: ${API_BASE}`);
-
-  const args = process.argv.slice(2);
-
-  if (args[0] === "contests") {
-    await listContests();
-  } else if (args[0] === "lineup" && args[1] && args[2]) {
-    await createLineup(args[1], args.slice(2));
-  } else {
-    console.log("\nUsage:");
-    console.log("  tsx server/scripts/erc8128-client-example.ts contests");
-    console.log("  tsx server/scripts/erc8128-client-example.ts lineup <contestId> <pick1> [pick2...]");
-  }
-}
-
-main().catch(console.error);
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
