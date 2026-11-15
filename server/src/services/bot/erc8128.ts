@@ -8,11 +8,11 @@
  * @see https://www.rfc-editor.org/rfc/rfc9421
  */
 
+import { createHash, timingSafeEqual } from "node:crypto";
 import {
   getAddress,
   hashMessage,
   isAddress,
-  keccak256,
   recoverAddress,
   toBytes,
   type Address,
@@ -25,8 +25,13 @@ export type Erc8128Params = {
   keyid: string;
   created: number;
   expires: number;
-  nonce?: string;
+  nonce?: string | undefined;
 };
+
+/** Longest signature validity window the server accepts (seconds). */
+export const MAX_SIGNATURE_TTL_SECONDS = 3600;
+/** Nonces are opaque strings; keep them short and header-safe. */
+const NONCE_PATTERN = /^[A-Za-z0-9._~+/=-]{8,128}$/;
 
 export type Erc8128ParsedKeyid = {
   chainId: number;
@@ -37,11 +42,11 @@ export type Erc8128VerifyInput = {
   method: string;
   authority: string;
   path: string;
-  query?: string;
-  contentDigest?: string;
+  query?: string | undefined;
+  contentDigest?: string | undefined;
   signatureInput: string;
   signature: string;
-  body?: Uint8Array | string;
+  body?: Uint8Array | string | undefined;
   nowSeconds: number;
 };
 
@@ -196,13 +201,23 @@ export function buildSignatureBase(
 }
 
 /**
- * Compute the content-digest header value for a body using SHA-256.
+ * Compute the RFC 9530 `Content-Digest` value for a body using SHA-256.
  */
 export function computeContentDigest(body: Uint8Array | string): string {
-  const bytes = typeof body === "string" ? toBytes(body) : body;
-  const hash = keccak256(bytes).slice(2);
-  const base64 = Buffer.from(hash, "hex").toString("base64");
-  return `sha-256=:${base64}:`;
+  const bytes = typeof body === "string" ? new TextEncoder().encode(body) : body;
+  const digest = createHash("sha256").update(bytes).digest("base64");
+  return `sha-256=:${digest}:`;
+}
+
+function bodyLength(body: Uint8Array | string | undefined): number {
+  if (body === undefined) return 0;
+  return typeof body === "string" ? body.length : body.length;
+}
+
+function sameString(a: string, b: string): boolean {
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  return left.length === right.length && timingSafeEqual(left, right);
 }
 
 /**
@@ -211,7 +226,9 @@ export function computeContentDigest(body: Uint8Array | string): string {
  * For Request-Bound signatures, must cover: @method, @authority, @path, @query (if present), content-digest (if body present)
  * For Non-Replayable signatures, must include nonce parameter.
  */
-export async function verifyErc8128Request(input: Erc8128VerifyInput): Promise<Erc8128VerifyResult> {
+export async function verifyErc8128Request(
+  input: Erc8128VerifyInput,
+): Promise<Erc8128VerifyResult> {
   const params = parseSignatureInput(input.signatureInput);
   if (!params) {
     return { ok: false, error: "Invalid Signature-Input header" };
@@ -229,9 +246,12 @@ export async function verifyErc8128Request(input: Erc8128VerifyInput): Promise<E
     return { ok: false, error: "Signature has expired" };
   }
 
-  const maxValidity = 3600;
-  if (params.expires - params.created > maxValidity) {
+  if (params.expires - params.created > MAX_SIGNATURE_TTL_SECONDS) {
     return { ok: false, error: "Signature validity window exceeds maximum (1 hour)" };
+  }
+
+  if (params.nonce !== undefined && !NONCE_PATTERN.test(params.nonce)) {
+    return { ok: false, error: "Invalid nonce (8-128 URL-safe characters)" };
   }
 
   const components = parseCoveredComponents(input.signatureInput);
@@ -239,8 +259,28 @@ export async function verifyErc8128Request(input: Erc8128VerifyInput): Promise<E
     return { ok: false, error: "No covered components in Signature-Input" };
   }
 
-  if (!components.includes("@authority")) {
-    return { ok: false, error: "Signature must cover @authority" };
+  // Request-bound signatures must cover the method, authority, and path, the query
+  // when the request has one, and the body digest when the request has a body.
+  for (const required of ["@method", "@authority", "@path"]) {
+    if (!components.includes(required)) {
+      return { ok: false, error: `Signature must cover ${required}` };
+    }
+  }
+  if (input.query && !components.includes("@query")) {
+    return { ok: false, error: "Signature must cover @query" };
+  }
+
+  const hasBody = bodyLength(input.body) > 0;
+  if (hasBody) {
+    if (!components.includes("content-digest")) {
+      return { ok: false, error: "Signature must cover content-digest" };
+    }
+    if (!input.contentDigest) {
+      return { ok: false, error: "Missing Content-Digest header" };
+    }
+    if (!sameString(input.contentDigest.trim(), computeContentDigest(input.body!))) {
+      return { ok: false, error: "Content-Digest does not match the request body" };
+    }
   }
 
   const signature = parseSignature(input.signature);
@@ -259,7 +299,7 @@ export async function verifyErc8128Request(input: Erc8128VerifyInput): Promise<E
   }
 
   if (input.contentDigest) {
-    componentValues["content-digest"] = input.contentDigest;
+    componentValues["content-digest"] = input.contentDigest.trim();
   }
 
   for (const component of components) {
@@ -304,10 +344,7 @@ export async function verifyErc8128Request(input: Erc8128VerifyInput): Promise<E
 /**
  * Build a Signature-Input header value for signing.
  */
-export function buildSignatureInput(
-  components: string[],
-  params: Erc8128Params,
-): string {
+export function buildSignatureInput(components: string[], params: Erc8128Params): string {
   const componentsList = components.map((c) => `"${c}"`).join(" ");
   let paramsStr = `;created=${params.created};expires=${params.expires}`;
   if (params.nonce) {
@@ -325,15 +362,15 @@ export async function signErc8128Request(input: {
   method: string;
   authority: string;
   path: string;
-  query?: string;
-  body?: Uint8Array | string;
+  query?: string | undefined;
+  body?: Uint8Array | string | undefined;
   chainId: number;
   address: Address;
   signMessage: (message: Uint8Array) => Promise<Hex>;
-  nonce?: string;
-  ttlSeconds?: number;
-  nowSeconds?: number;
-}): Promise<{ signatureInput: string; signature: string; contentDigest?: string }> {
+  nonce?: string | undefined;
+  ttlSeconds?: number | undefined;
+  nowSeconds?: number | undefined;
+}): Promise<{ signatureInput: string; signature: string; contentDigest?: string | undefined }> {
   const now = input.nowSeconds ?? Math.floor(Date.now() / 1000);
   const ttl = input.ttlSeconds ?? 60;
 
@@ -350,7 +387,7 @@ export async function signErc8128Request(input: {
   }
 
   let contentDigest: string | undefined;
-  if (input.body && (typeof input.body === "string" ? input.body.length > 0 : input.body.length > 0)) {
+  if (input.body !== undefined && bodyLength(input.body) > 0) {
     contentDigest = computeContentDigest(input.body);
     components.push("content-digest");
     componentValues["content-digest"] = contentDigest;

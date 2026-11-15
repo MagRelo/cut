@@ -1,80 +1,65 @@
-import { Hono } from "hono";
-import { getAddress, isAddress, type Address, type Hex } from "viem";
+import { Hono, type Context } from "hono";
+import { getAddress, isAddress, type Hex } from "viem";
 import { z } from "zod";
 import { getCutBotAddress, isCutBotAddress } from "../lib/cutBotKey.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { updateUserSettingsSchema } from "../schemas/user.js";
+import { NAME_MAX_LENGTH, LINEUP_PICKS_MAX } from "../schemas/limits.js";
 import { packApproval } from "../services/bot/approvalEnvelope.js";
-import { botContestListDeps, listSignedBotContests } from "../services/bot/listBotContests.js";
-import { executeBotAction, type Erc8128Auth } from "../services/bot/executeBotAction.js";
-import { createBotActionDeps } from "../services/bot/botActionRuntime.js";
-import type { SerializedUserOp } from "../services/bot/submitSessionKeyUserOp.js";
 import {
-  verifyErc8128Request,
-  ERC8128_SPEC_VERSION,
-  type Erc8128VerifyResult,
-} from "../services/bot/erc8128.js";
+  addDelegate,
+  createBalanceDeps,
+  createDelegateDeps,
+  createUserSettingsDeps,
+  readBotBalance,
+  revokeDelegate,
+  upsertUserSettings,
+  type BalanceDeps,
+  type DelegateDeps,
+  type UserSettingsDeps,
+} from "../services/bot/botAccount.js";
+import { createBotActionDeps } from "../services/bot/botActionRuntime.js";
+import {
+  createBotActorDeps,
+  resolveBotActor,
+  type BotActorDeps,
+} from "../services/bot/botActor.js";
+import { createBotNonceStore, type BotNonceStore } from "../services/bot/botNonce.js";
+import { authenticateBotRequest } from "../services/bot/botRequestAuth.js";
+import { executeBotAction, type BotActionDeps } from "../services/bot/executeBotAction.js";
+import {
+  botContestListDeps,
+  listBotContests,
+  type ListBotContestsDeps,
+} from "../services/bot/listBotContests.js";
+import { createRateLimiter, type RateLimiter } from "../services/bot/rateLimit.js";
+import {
+  createRegisterAgentDeps,
+  registerAgent,
+  type RegisterAgentDeps,
+} from "../services/bot/registerAgent.js";
+import type { SerializedUserOp } from "../services/bot/submitSessionKeyUserOp.js";
 
 /**
- * Verify ERC-8128 signature from HTTP headers.
- * Returns the verified result or null if headers are not present.
+ * Bot API. Every `/api/bot/*` agent route is authenticated with ERC-8128 signed HTTP
+ * requests (spec draft-2026-01-16, RFC 9421): there is no other auth path. Writes
+ * (`POST /api/bot/actions`) require a nonce, reserved in BotActionLog before anything
+ * executes. Reads (`GET /api/bot/contests`, `GET /api/bot/balance`) need no nonce.
  *
- * ERC-8128 spec version: draft-2026-01-16
- * @see https://erc8128.slice.so/
+ * The signer is either the smart wallet's owner key or an active delegate session key.
+ * `register` creates the account for a fresh owner key; delegates are optional.
+ *
+ * The `/delegates` routes below are the web app's Privy-session settings screen, not
+ * part of the agent API.
  */
-async function verifyErc8128Headers(
-  req: {
-    header: (name: string) => string | undefined;
-    method: string;
-    url: string;
-  },
-  body?: string,
-  nowSeconds?: number,
-): Promise<Erc8128VerifyResult | null> {
-  const signatureInput = req.header("signature-input");
-  const signature = req.header("signature");
-
-  if (!signatureInput || !signature) {
-    return null; // No ERC-8128 headers, use legacy format
-  }
-
-  const url = new URL(req.url);
-  const contentDigest = req.header("content-digest");
-
-  return verifyErc8128Request({
-    method: req.method,
-    authority: url.host,
-    path: url.pathname,
-    query: url.search || undefined,
-    contentDigest,
-    signatureInput,
-    signature,
-    body: body ? new TextEncoder().encode(body) : undefined,
-    nowSeconds: nowSeconds ?? Math.floor(Date.now() / 1000),
-  });
-}
-
-const botRouter = new Hono();
-const deps = createBotActionDeps();
 
 const hexSchema = z.string().regex(/^0x[0-9a-fA-F]*$/);
-
-const enableSchema = z.object({
-  kind: z.enum(["cut_bot", "external"]),
-  delegateAddress: z.string().refine((value) => isAddress(value), "Invalid delegate address"),
-  smartWallet: z.string().refine((value) => isAddress(value), "Invalid smart wallet"),
-  approval: z.string().min(1),
-  permissionId: z.string().regex(/^0x[0-9a-fA-F]{8}$/, "Invalid permission id"),
-});
-
-const revokeSchema = z.object({
-  delegateAddress: z.string().refine((value) => isAddress(value), "Invalid delegate address"),
-});
-
+const addressSchema = z.string().refine((value) => isAddress(value), "Invalid address");
 const uintSchema = z.string().regex(/^\d+$/);
 
 const userOpSchema = z.object({
-  sender: z.string().refine((value) => isAddress(value), "Invalid user operation sender"),
+  sender: addressSchema,
   nonce: uintSchema,
   callData: hexSchema,
   callGasLimit: uintSchema,
@@ -82,370 +67,447 @@ const userOpSchema = z.object({
   preVerificationGas: uintSchema,
   maxFeePerGas: uintSchema,
   maxPriorityFeePerGas: uintSchema,
-  paymaster: z.string().optional(),
+  paymaster: addressSchema.optional(),
   paymasterData: hexSchema.optional(),
   paymasterVerificationGasLimit: uintSchema.optional(),
   paymasterPostOpGasLimit: uintSchema.optional(),
-  factory: z.string().optional(),
+  factory: addressSchema.optional(),
   factoryData: hexSchema.optional(),
 });
 
-const actionSchema = z.object({
-  chainId: z.number().int(),
-  action: z.enum(["lineupUpsert", "join", "leave"]),
-  smartWallet: z.string(),
-  contestId: z.string().min(1),
-  lineupId: z.string().default(""),
-  candidates: z.array(z.string().min(1)).optional(),
-  picks: z.array(z.string().min(1)).optional(),
-  prediction: z.unknown().optional(),
-  deadline: z.string().regex(/^\d+$/),
-  signature: hexSchema,
-  userOpSignature: hexSchema.optional(),
-  userOp: userOpSchema.optional(),
-});
+const nameSchema = z.string().trim().min(1).max(NAME_MAX_LENGTH);
+const chainIdSchema = z.number().int();
 
-function selectedCandidates(body: {
-  candidates?: string[] | undefined;
-  picks?: string[] | undefined;
-}): string[] | { error: string } {
-  if (body.candidates && body.picks) {
-    const same =
-      body.candidates.length === body.picks.length &&
-      body.candidates.every((id, index) => id === body.picks?.[index]);
-    if (!same) return { error: "candidates and picks do not match" };
-  }
-  return body.candidates ?? body.picks ?? [];
+const registerBody = z
+  .object({
+    action: z.literal("register"),
+    chainId: chainIdSchema,
+    refCode: z.string().trim().min(1).max(64).optional(),
+    name: nameSchema.optional(),
+    settings: updateUserSettingsSchema.optional(),
+  })
+  .strict();
+
+const userSettingsBody = z
+  .object({
+    action: z.literal("userSettingsUpsert"),
+    chainId: chainIdSchema,
+    smartWallet: addressSchema,
+    name: nameSchema.optional(),
+    settings: updateUserSettingsSchema.optional(),
+  })
+  .strict();
+
+const delegateAddBody = z
+  .object({
+    action: z.literal("delegateAdd"),
+    chainId: chainIdSchema,
+    smartWallet: addressSchema,
+    kind: z.enum(["cut_bot", "external"]),
+    delegateAddress: addressSchema,
+    approval: z.string().min(1),
+    permissionId: z.string().regex(/^0x[0-9a-fA-F]{8}$/, "Invalid permission id"),
+  })
+  .strict();
+
+const delegateRevokeBody = z
+  .object({
+    action: z.literal("delegateRevoke"),
+    chainId: chainIdSchema,
+    smartWallet: addressSchema,
+    delegateAddress: addressSchema,
+  })
+  .strict();
+
+const lineupUpsertBody = z
+  .object({
+    action: z.literal("lineupUpsert"),
+    chainId: chainIdSchema,
+    smartWallet: addressSchema,
+    contestId: z.string().min(1),
+    lineupId: z.string().default(""),
+    candidates: z.array(z.string().min(1)).min(1).max(LINEUP_PICKS_MAX),
+    prediction: z.unknown().optional(),
+  })
+  .strict();
+
+const entryBody = (action: "join" | "leave") =>
+  z
+    .object({
+      action: z.literal(action),
+      chainId: chainIdSchema,
+      smartWallet: addressSchema,
+      contestId: z.string().min(1),
+      lineupId: z.string().min(1),
+      userOpSignature: hexSchema.optional(),
+      userOp: userOpSchema.optional(),
+    })
+    .strict();
+
+export const botActionBodySchema = z.discriminatedUnion("action", [
+  registerBody,
+  userSettingsBody,
+  delegateAddBody,
+  delegateRevokeBody,
+  lineupUpsertBody,
+  entryBody("join"),
+  entryBody("leave"),
+]);
+
+export type BotActionBody = z.infer<typeof botActionBodySchema>;
+
+export type BotRouterDeps = {
+  nonces: BotNonceStore;
+  actors: BotActorDeps;
+  actions: BotActionDeps;
+  register: RegisterAgentDeps;
+  settings: UserSettingsDeps;
+  delegates: DelegateDeps;
+  balance: BalanceDeps;
+  contests: ListBotContestsDeps;
+  registerLimitByIp: RateLimiter;
+  registerLimitBySigner: RateLimiter;
+  now?: () => number;
+};
+
+export function createBotRouterDeps(): BotRouterDeps {
+  return {
+    nonces: createBotNonceStore(),
+    actors: createBotActorDeps(),
+    actions: createBotActionDeps(),
+    register: createRegisterAgentDeps(),
+    settings: createUserSettingsDeps(),
+    delegates: createDelegateDeps(),
+    balance: createBalanceDeps(),
+    contests: botContestListDeps(),
+    registerLimitByIp: createRateLimiter({ limit: 20, windowMs: 60 * 60 * 1000 }),
+    registerLimitBySigner: createRateLimiter({ limit: 5, windowMs: 60 * 60 * 1000 }),
+  };
 }
 
-botRouter.get("/delegate-address", (c) => {
-  return c.json({ address: getCutBotAddress() });
-});
+/** Client IP for rate limiting: the proxy's X-Real-IP, else the last X-Forwarded-For hop. */
+function clientIp(c: Context): string {
+  const real = c.req.header("x-real-ip")?.trim();
+  if (real) return real;
+  const forwarded = c.req.header("x-forwarded-for");
+  const last = forwarded
+    ?.split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .pop();
+  return last ?? "unknown";
+}
 
-const listDeps = botContestListDeps();
+type Status = 400 | 401 | 403 | 404 | 409 | 429 | 502 | 503;
 
-/**
- * GET /api/bot/contests - List contests accessible to a delegate.
- *
- * Supports two authentication methods:
- * 1. ERC-8128 HTTP Message Signatures (preferred) - signature in headers, no nonce required for reads
- * 2. Legacy EIP-712 query params - signature, deadline, smartWallet, chainId in query string
- *
- * ERC-8128 reads are replayable (no nonce requirement) since they don't modify state.
- */
-botRouter.get("/contests", async (c) => {
-  const nowSeconds = Math.floor(Date.now() / 1000);
-  const eventId = c.req.query("eventId")?.trim();
+export function createBotRouter(deps: BotRouterDeps): Hono {
+  const router = new Hono();
+  const nowSeconds = () => Math.floor((deps.now?.() ?? Date.now()) / 1000);
 
-  // Check for ERC-8128 headers first
-  const erc8128Result = await verifyErc8128Headers(c.req, undefined, nowSeconds);
+  router.get("/delegate-address", (c) => {
+    return c.json({ address: getCutBotAddress() });
+  });
 
-  if (erc8128Result) {
-    // ERC-8128 headers present
-    if (!erc8128Result.ok) {
-      return c.json({ error: erc8128Result.error }, 401);
-    }
-
-    // Reads don't require nonce (replayable is OK)
-    const chainId = erc8128Result.chainId;
+  /** Shared by the signed reads: authenticate without a nonce and resolve the actor. */
+  async function signedRead(c: Context) {
+    const authed = await authenticateBotRequest(c.req, "", {
+      requireNonce: false,
+      nowSeconds: nowSeconds(),
+    });
+    if (!authed.ok) return { response: c.json({ error: authed.error }, authed.status) };
     const smartWallet = c.req.query("smartWallet") ?? "";
-
-    if (!isAddress(smartWallet)) {
-      return c.json({ error: "smartWallet query parameter required for ERC-8128 signed reads" }, 400);
-    }
-
-    if (chainId !== 8453 && chainId !== 84532) {
-      return c.json({ error: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)" }, 400);
-    }
-
-    const result = await listSignedBotContests(
-      {
-        chainId,
-        smartWallet,
-        deadline: BigInt(erc8128Result.expires),
-        signature: "0x" as Hex, // Placeholder, signature already verified via headers
-        ...(eventId ? { eventId } : {}),
-        nowSeconds,
-        // Pass pre-verified signer for ERC-8128
-        erc8128Signer: erc8128Result.address,
-      },
-      listDeps,
+    const resolved = await resolveBotActor(
+      { chainId: authed.auth.chainId, smartWallet, signer: authed.auth.signer },
+      deps.actors,
     );
+    if (!resolved.ok) return { response: c.json({ error: resolved.error }, resolved.status) };
+    return { actor: resolved.actor, chainId: authed.auth.chainId };
+  }
 
-    if (!result.ok) {
-      return c.json({ error: result.error }, result.status);
-    }
+  router.get("/contests", async (c) => {
+    const read = await signedRead(c);
+    if ("response" in read) return read.response;
+    const eventId = c.req.query("eventId")?.trim();
+    const result = await listBotContests(
+      { userId: read.actor.userId, chainId: read.chainId, ...(eventId ? { eventId } : {}) },
+      deps.contests,
+    );
     return c.json({ contests: result.contests });
-  }
-
-  // Legacy EIP-712 query param format
-  const chainId = Number(c.req.query("chainId"));
-  const smartWallet = c.req.query("smartWallet") ?? "";
-  const deadline = c.req.query("deadline") ?? "";
-  const signature = c.req.query("signature") ?? "";
-
-  if (chainId !== 8453 && chainId !== 84532) {
-    return c.json({ error: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)" }, 400);
-  }
-  if (!/^0x[0-9a-fA-F]+$/.test(signature) || !/^\d+$/.test(deadline)) {
-    return c.json({ error: "Invalid request" }, 400);
-  }
-
-  const result = await listSignedBotContests(
-    {
-      chainId,
-      smartWallet,
-      deadline: BigInt(deadline),
-      signature: signature as Hex,
-      ...(eventId ? { eventId } : {}),
-      nowSeconds,
-    },
-    listDeps,
-  );
-
-  if (!result.ok) {
-    return c.json({ error: result.error }, result.status);
-  }
-  // Add deprecation warning header for legacy format
-  c.header("X-Deprecation-Warning", "EIP-712 query signatures are deprecated. Migrate to ERC-8128 HTTP Message Signatures.");
-  return c.json({ contests: result.contests });
-});
-
-botRouter.get("/delegates", requireAuth, async (c) => {
-  const user = c.get("user");
-  const rows = await prisma.botDelegate.findMany({
-    where: { userId: user.userId },
-    orderBy: { createdAt: "desc" },
-    select: {
-      delegateAddress: true,
-      smartWallet: true,
-      kind: true,
-      status: true,
-      createdAt: true,
-      revokedAt: true,
-    },
   });
-  return c.json({ delegates: rows, cutBotAddress: getCutBotAddress() });
-});
 
-botRouter.post("/delegates", requireAuth, async (c) => {
-  const user = c.get("user");
-  const parsed = enableSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) {
-    return c.json({ error: "Invalid request body", details: parsed.error.errors }, 400);
-  }
-  const body = parsed.data;
-  const smartWallet = getAddress(body.smartWallet).toLowerCase();
-  const delegateAddress = getAddress(body.delegateAddress).toLowerCase();
-  if (smartWallet !== user.address.toLowerCase()) {
-    return c.json({ error: "Smart wallet does not match the signed-in account" }, 403);
-  }
-  if (body.kind === "cut_bot" && !isCutBotAddress(delegateAddress)) {
-    return c.json({ error: "That address is not Cut Bot" }, 400);
-  }
-  if (body.kind === "external" && isCutBotAddress(delegateAddress)) {
-    return c.json({ error: "Use Allow Cut Bot for the Cut Bot address" }, 400);
-  }
-
-  const approval = packApproval({
-    approval: body.approval,
-    permissionId: body.permissionId as Hex,
+  router.get("/balance", async (c) => {
+    const read = await signedRead(c);
+    if ("response" in read) return read.response;
+    const result = await readBotBalance(read.actor, read.chainId, deps.balance);
+    if (!result.ok) return c.json({ error: result.error }, result.status);
+    return c.json(result.balance);
   });
-  await prisma.botDelegate.upsert({
-    where: { userId_delegateAddress: { userId: user.userId, delegateAddress } },
-    create: {
-      userId: user.userId,
-      smartWallet,
-      delegateAddress,
-      kind: body.kind,
-      status: "active",
-      approval,
-    },
-    update: {
-      smartWallet,
-      kind: body.kind,
-      status: "active",
-      approval,
-      revokedAt: null,
-    },
-  });
-  await prisma.botActionLog.create({
-    data: { userId: user.userId, action: "delegate" },
-  });
-  return c.json({ status: "active", delegateAddress });
-});
 
-botRouter.post("/delegates/revoke", requireAuth, async (c) => {
-  const user = c.get("user");
-  const parsed = revokeSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) {
-    return c.json({ error: "Invalid request body", details: parsed.error.errors }, 400);
-  }
-  const delegateAddress = getAddress(parsed.data.delegateAddress).toLowerCase();
-  const existing = await prisma.botDelegate.findUnique({
-    where: { userId_delegateAddress: { userId: user.userId, delegateAddress } },
-  });
-  if (!existing) {
-    return c.json({ error: "Delegate not found" }, 404);
-  }
-  await prisma.botDelegate.update({
-    where: { id: existing.id },
-    data: { status: "revoked", revokedAt: new Date() },
-  });
-  await prisma.botActionLog.create({
-    data: { userId: user.userId, action: "revoke" },
-  });
-  return c.json({ status: "revoked", delegateAddress });
-});
+  router.post("/actions", async (c) => {
+    const rawBody = await c.req.text();
+    const authed = await authenticateBotRequest(c.req, rawBody, {
+      requireNonce: true,
+      nowSeconds: nowSeconds(),
+    });
+    if (!authed.ok) return c.json({ error: authed.error }, authed.status);
+    const { signer, chainId, nonce } = authed.auth;
 
-/**
- * ERC-8128 action body schema - only contains the action data, no signature.
- * Signature is in HTTP headers per RFC 9421.
- */
-const erc8128ActionSchema = z.object({
-  chainId: z.number().int(),
-  action: z.enum(["lineupUpsert", "join", "leave"]),
-  smartWallet: z.string(),
-  contestId: z.string().min(1),
-  lineupId: z.string().default(""),
-  candidates: z.array(z.string().min(1)).optional(),
-  picks: z.array(z.string().min(1)).optional(),
-  prediction: z.unknown().optional(),
-  userOpSignature: hexSchema.optional(),
-  userOp: userOpSchema.optional(),
-});
-
-botRouter.post("/actions", async (c) => {
-  const nowSeconds = Math.floor(Date.now() / 1000);
-  const rawBody = await c.req.text();
-  let parsedBody: unknown;
-  try {
-    parsedBody = JSON.parse(rawBody);
-  } catch {
-    return c.json({ error: "Invalid JSON body" }, 400);
-  }
-
-  // Check for ERC-8128 headers first
-  const erc8128Result = await verifyErc8128Headers(c.req, rawBody, nowSeconds);
-
-  let erc8128Auth: Erc8128Auth | undefined;
-
-  if (erc8128Result) {
-    // ERC-8128 headers present
-    if (!erc8128Result.ok) {
-      return c.json({ error: erc8128Result.error }, 401);
+    let json: unknown;
+    try {
+      json = JSON.parse(rawBody);
+    } catch {
+      return c.json({ error: "Invalid JSON body" }, 400);
     }
-
-    // Write actions MUST include a nonce for replay protection
-    if (erc8128Result.replayable) {
-      return c.json(
-        { error: "Write actions require a nonce for replay protection (non-replayable signature)" },
-        400,
-      );
-    }
-
-    erc8128Auth = {
-      signer: erc8128Result.address,
-      chainId: erc8128Result.chainId,
-      nonce: erc8128Result.nonce!,
-    };
-
-    // Parse body without signature fields
-    const parsed = erc8128ActionSchema.safeParse(parsedBody);
+    const parsed = botActionBodySchema.safeParse(json);
     if (!parsed.success) {
       return c.json({ error: "Invalid request body", details: parsed.error.errors }, 400);
     }
     const body = parsed.data;
-    const candidates = selectedCandidates(body);
-    if (!Array.isArray(candidates)) {
-      return c.json({ error: candidates.error }, 400);
+    if (body.chainId !== chainId) {
+      return c.json({ error: "Body chainId does not match the keyid chainId" }, 400);
     }
 
-    // Verify chainId matches
-    if (body.chainId !== erc8128Auth.chainId) {
-      return c.json({ error: "Body chainId does not match signature keyid chainId" }, 400);
+    if (body.action === "register") {
+      const ipOk = deps.registerLimitByIp.hit(`ip:${clientIp(c)}`);
+      const signerOk = deps.registerLimitBySigner.hit(`signer:${signer.toLowerCase()}`);
+      if (!ipOk || !signerOk) {
+        return c.json({ error: "Too many register requests, try again later" }, 429);
+      }
     }
 
-    const result = await executeBotAction(
-      {
-        chainId: body.chainId,
-        action: body.action,
-        smartWallet: body.smartWallet,
-        contestId: body.contestId,
-        lineupId: body.lineupId,
-        picks: candidates,
-        ...(body.prediction !== undefined ? { prediction: body.prediction } : {}),
-        deadline: BigInt(erc8128Result.expires), // Use signature expires as deadline
-        signature: "0x" as Hex, // Placeholder, signature already verified
-        ...(body.userOpSignature ? { userOpSignature: body.userOpSignature as Hex } : {}),
-        ...(body.userOp ? { userOp: body.userOp as SerializedUserOp } : {}),
-        nowSeconds,
-        erc8128Auth,
-      },
-      deps,
-    );
-
-    if (!result.ok) {
-      const status = result.status as 400 | 401 | 403 | 404 | 409 | 502 | 503;
-      return c.json({ error: result.error }, status);
-    }
-    if (result.preparedUserOp) {
-      return c.json({
-        preparedUserOp: true,
-        lineupId: result.lineupId,
-        userOpHash: result.userOpHash,
-        userOp: result.userOp,
-      });
-    }
-    return c.json({ ok: true, lineupId: result.lineupId });
-  }
-
-  // Legacy EIP-712 body signature format
-  const parsed = actionSchema.safeParse(parsedBody);
-  if (!parsed.success) {
-    return c.json({ error: "Invalid request body", details: parsed.error.errors }, 400);
-  }
-  const body = parsed.data;
-  const candidates = selectedCandidates(body);
-  if (!Array.isArray(candidates)) {
-    return c.json({ error: candidates.error }, 400);
-  }
-
-  const result = await executeBotAction(
-    {
-      chainId: body.chainId,
+    // Replay protection: reserve (signer, nonce) before anything executes.
+    const reserved = await deps.nonces.reserve({
+      signerAddress: signer,
+      nonce: nonce!,
       action: body.action,
-      smartWallet: body.smartWallet,
-      contestId: body.contestId,
-      lineupId: body.lineupId,
-      picks: candidates,
-      ...(body.prediction !== undefined ? { prediction: body.prediction } : {}),
-      deadline: BigInt(body.deadline),
-      signature: body.signature as Hex,
-      ...(body.userOpSignature ? { userOpSignature: body.userOpSignature as Hex } : {}),
-      ...(body.userOp ? { userOp: body.userOp as SerializedUserOp } : {}),
-      nowSeconds,
-    },
-    deps,
-  );
-
-  if (!result.ok) {
-    const status = result.status as 400 | 401 | 403 | 404 | 409 | 502 | 503;
-    return c.json({ error: result.error }, status);
-  }
-  if (result.preparedUserOp) {
-    // Add deprecation warning header for legacy format
-    c.header("X-Deprecation-Warning", "EIP-712 body signatures are deprecated. Migrate to ERC-8128 HTTP Message Signatures.");
-    return c.json({
-      preparedUserOp: true,
-      lineupId: result.lineupId,
-      userOpHash: result.userOpHash,
-      userOp: result.userOp,
     });
-  }
-  // Add deprecation warning header for legacy format
-  c.header("X-Deprecation-Warning", "EIP-712 body signatures are deprecated. Migrate to ERC-8128 HTTP Message Signatures.");
-  return c.json({ ok: true, lineupId: result.lineupId });
-});
+    if (!reserved.ok) {
+      return c.json({ error: "Nonce already used (replay rejected)" }, 409);
+    }
+    const finish = (userId: string | null, error?: string) =>
+      deps.nonces.finish(reserved.id, { userId, action: body.action, error });
+
+    if (body.action === "register") {
+      const result = await registerAgent(
+        {
+          chainId,
+          owner: signer,
+          ...(body.refCode !== undefined ? { refCode: body.refCode } : {}),
+          ...(body.name !== undefined ? { name: body.name } : {}),
+          ...(body.settings !== undefined ? { settings: body.settings } : {}),
+        },
+        deps.register,
+      );
+      if (!result.ok) {
+        await finish(null, result.error);
+        return c.json({ error: result.error, code: result.code }, result.status);
+      }
+      await finish(result.userId);
+      const { ok: _ok, ...account } = result;
+      return c.json(account, result.created ? 201 : 200);
+    }
+
+    const resolved = await resolveBotActor(
+      { chainId, smartWallet: body.smartWallet, signer },
+      deps.actors,
+    );
+    if (!resolved.ok) {
+      await finish(null, resolved.error);
+      return c.json({ error: resolved.error }, resolved.status);
+    }
+    const actor = resolved.actor;
+
+    const fail = async (status: Status, error: string) => {
+      await finish(actor.userId, error);
+      return c.json({ error }, status);
+    };
+
+    switch (body.action) {
+      case "userSettingsUpsert": {
+        if (body.name === undefined && body.settings === undefined) {
+          return fail(400, "Send name and/or settings");
+        }
+        const result = await upsertUserSettings(
+          actor,
+          {
+            ...(body.name !== undefined ? { name: body.name } : {}),
+            ...(body.settings !== undefined ? { settings: body.settings } : {}),
+          },
+          deps.settings,
+        );
+        if (!result.ok) return fail(result.status, result.error);
+        await finish(actor.userId);
+        return c.json({ ok: true, name: result.name, settings: result.settings });
+      }
+      case "delegateAdd": {
+        const result = await addDelegate(
+          actor,
+          {
+            kind: body.kind,
+            delegateAddress: body.delegateAddress,
+            approval: body.approval,
+            permissionId: body.permissionId as Hex,
+          },
+          deps.delegates,
+        );
+        if (!result.ok) return fail(result.status, result.error);
+        await finish(actor.userId);
+        return c.json(result);
+      }
+      case "delegateRevoke": {
+        const result = await revokeDelegate(
+          actor,
+          { delegateAddress: body.delegateAddress },
+          deps.delegates,
+        );
+        if (!result.ok) return fail(result.status, result.error);
+        await finish(actor.userId);
+        return c.json(result);
+      }
+      case "lineupUpsert":
+      case "join":
+      case "leave": {
+        const result = await executeBotAction(
+          {
+            chainId,
+            action: body.action,
+            actor,
+            contestId: body.contestId,
+            lineupId: body.lineupId,
+            picks: body.action === "lineupUpsert" ? body.candidates : [],
+            ...(body.action === "lineupUpsert" && body.prediction !== undefined
+              ? { prediction: body.prediction }
+              : {}),
+            ...(body.action !== "lineupUpsert" && body.userOpSignature
+              ? { userOpSignature: body.userOpSignature as Hex }
+              : {}),
+            ...(body.action !== "lineupUpsert" && body.userOp
+              ? { userOp: body.userOp as SerializedUserOp }
+              : {}),
+          },
+          deps.actions,
+        );
+        if (!result.ok) return fail(result.status as Status, result.error);
+        await finish(actor.userId);
+        if (result.preparedUserOp) {
+          return c.json({
+            preparedUserOp: true,
+            lineupId: result.lineupId,
+            userOpHash: result.userOpHash,
+            userOp: result.userOp,
+          });
+        }
+        return c.json({ ok: true, lineupId: result.lineupId });
+      }
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // Web app settings (Privy session). Not part of the agent API.
+  // -------------------------------------------------------------------------
+
+  const enableSchema = z.object({
+    kind: z.enum(["cut_bot", "external"]),
+    delegateAddress: addressSchema,
+    smartWallet: addressSchema,
+    approval: z.string().min(1),
+    permissionId: z.string().regex(/^0x[0-9a-fA-F]{8}$/, "Invalid permission id"),
+  });
+
+  const revokeSchema = z.object({
+    delegateAddress: addressSchema,
+  });
+
+  router.get("/delegates", requireAuth, async (c) => {
+    const user = c.get("user");
+    const rows = await prisma.botDelegate.findMany({
+      where: { userId: user.userId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        delegateAddress: true,
+        smartWallet: true,
+        kind: true,
+        status: true,
+        createdAt: true,
+        revokedAt: true,
+      },
+    });
+    return c.json({ delegates: rows, cutBotAddress: getCutBotAddress() });
+  });
+
+  router.post("/delegates", requireAuth, async (c) => {
+    const user = c.get("user");
+    const parsed = enableSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) {
+      return c.json({ error: "Invalid request body", details: parsed.error.errors }, 400);
+    }
+    const body = parsed.data;
+    const smartWallet = getAddress(body.smartWallet).toLowerCase();
+    const delegateAddress = getAddress(body.delegateAddress).toLowerCase();
+    if (smartWallet !== user.address.toLowerCase()) {
+      return c.json({ error: "Smart wallet does not match the signed-in account" }, 403);
+    }
+    if (body.kind === "cut_bot" && !isCutBotAddress(delegateAddress)) {
+      return c.json({ error: "That address is not Cut Bot" }, 400);
+    }
+    if (body.kind === "external" && isCutBotAddress(delegateAddress)) {
+      return c.json({ error: "Use Allow Cut Bot for the Cut Bot address" }, 400);
+    }
+
+    const approval = packApproval({
+      approval: body.approval,
+      permissionId: body.permissionId as Hex,
+    });
+    await prisma.botDelegate.upsert({
+      where: { userId_delegateAddress: { userId: user.userId, delegateAddress } },
+      create: {
+        userId: user.userId,
+        smartWallet,
+        delegateAddress,
+        kind: body.kind,
+        status: "active",
+        approval,
+      },
+      update: {
+        smartWallet,
+        kind: body.kind,
+        status: "active",
+        approval,
+        revokedAt: null,
+      },
+    });
+    await prisma.botActionLog.create({
+      data: { userId: user.userId, action: "delegate" },
+    });
+    return c.json({ status: "active", delegateAddress });
+  });
+
+  router.post("/delegates/revoke", requireAuth, async (c) => {
+    const user = c.get("user");
+    const parsed = revokeSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) {
+      return c.json({ error: "Invalid request body", details: parsed.error.errors }, 400);
+    }
+    const delegateAddress = getAddress(parsed.data.delegateAddress).toLowerCase();
+    const existing = await prisma.botDelegate.findUnique({
+      where: { userId_delegateAddress: { userId: user.userId, delegateAddress } },
+    });
+    if (!existing) {
+      return c.json({ error: "Delegate not found" }, 404);
+    }
+    await prisma.botDelegate.update({
+      where: { id: existing.id },
+      data: { status: "revoked", revokedAt: new Date() },
+    });
+    await prisma.botActionLog.create({
+      data: { userId: user.userId, action: "revoke" },
+    });
+    return c.json({ status: "revoked", delegateAddress });
+  });
+
+  return router;
+}
+
+const botRouter = createBotRouter(createBotRouterDeps());
 
 export default botRouter;

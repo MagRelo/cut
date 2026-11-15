@@ -304,7 +304,7 @@ async function syncEmailFromPrivy(userId: string, email: string | null) {
   });
 }
 
-async function maybeMintTestnetUsdc(address: string, chainId: number): Promise<void> {
+export async function maybeMintTestnetUsdc(address: string, chainId: number): Promise<void> {
   const isTokenMintingEnabled = process.env.ENABLE_TOKEN_MINTING === "true";
   const isBaseSepolia = chainId === 84532;
   if (!isTokenMintingEnabled || !isBaseSepolia) {

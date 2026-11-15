@@ -2,16 +2,14 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { getAddress, zeroHash, type Hex } from "viem";
+import { getAddress, type Hex } from "viem";
 import { describe, expect, it, vi } from "vitest";
-import { packApproval } from "./approvalEnvelope.js";
-import { assertJoinCalls, buildJoinCalls, hashPicks } from "./botCalls.js";
-import { signBotAction } from "./botActionSignature.js";
+import { assertJoinCalls, buildJoinCalls } from "./botCalls.js";
+import type { BotActor, BotDelegateRow } from "./botActor.js";
 import {
   executeBotAction,
   type BotActionDeps,
   type BotContest,
-  type BotDelegateRow,
   type ExecuteBotActionInput,
 } from "./executeBotAction.js";
 
@@ -23,7 +21,8 @@ const USER_ID = "user-1";
 
 const cutBotKey = generatePrivateKey();
 const cutBot = privateKeyToAccount(cutBotKey);
-const strangerKey = generatePrivateKey();
+const owner = privateKeyToAccount(generatePrivateKey());
+const external = privateKeyToAccount(generatePrivateKey());
 
 function contest(overrides: Partial<BotContest> = {}): BotContest {
   return {
@@ -39,21 +38,46 @@ function contest(overrides: Partial<BotContest> = {}): BotContest {
   };
 }
 
-function delegate(overrides: Partial<BotDelegateRow> = {}): BotDelegateRow {
-  return {
+function delegateActor(kind: "cut_bot" | "external" = "cut_bot"): BotActor {
+  const signer = kind === "cut_bot" ? cutBot.address : external.address;
+  const delegate: BotDelegateRow = {
     userId: USER_ID,
     smartWallet: SMART_WALLET.toLowerCase(),
-    delegateAddress: cutBot.address.toLowerCase(),
-    kind: "cut_bot",
-    approval: packApproval({ approval: "serialized", permissionId: "0x5a677774" }),
-    ...overrides,
+    delegateAddress: signer.toLowerCase(),
+    kind,
+    approval: "{}",
+  };
+  return {
+    role: "delegate",
+    userId: USER_ID,
+    smartWallet: SMART_WALLET,
+    signer: getAddress(signer),
+    delegate,
+    approval: "serialized",
+    permissionId: "0x5a677774",
   };
 }
 
+const ownerActor: BotActor = {
+  role: "owner",
+  userId: USER_ID,
+  smartWallet: SMART_WALLET,
+  signer: getAddress(owner.address),
+};
+
+const PREPARED_USER_OP = {
+  sender: SMART_WALLET,
+  nonce: "0",
+  callData: "0x1234" as Hex,
+  callGasLimit: "1",
+  verificationGasLimit: "1",
+  preVerificationGas: "1",
+  maxFeePerGas: "1",
+  maxPriorityFeePerGas: "1",
+};
+
 function deps(partial: Partial<BotActionDeps> = {}): BotActionDeps {
   return {
-    findDelegate: vi.fn(async () => delegate()),
-    sessionEnabled: vi.fn(async () => true),
     loadContest: vi.fn(async () => contest()),
     isGroupMember: vi.fn(async () => true),
     findLineup: vi.fn(async () => ({
@@ -79,38 +103,36 @@ function deps(partial: Partial<BotActionDeps> = {}): BotActionDeps {
     deleteContestEntry: vi.fn(async () => true),
     updateLineup: vi.fn(async () => ({ ok: true as const })),
     prepareUserOp: vi.fn(async () => ({
-      ok: false as const,
-      error: "prepare was not expected",
+      ok: true as const,
+      userOpHash: ("0x" + "ab".repeat(32)) as Hex,
+      userOp: PREPARED_USER_OP,
     })),
     submitCalls: vi.fn(async () => ({ ok: true as const })),
-    log: vi.fn(async () => undefined),
-    reserveNonce: vi.fn(async () => true),
     ...partial,
   };
 }
 
-async function signedJoin(key: Hex, lineupId = "lineup-1"): Promise<ExecuteBotActionInput> {
-  const deadline = BigInt(Math.floor(Date.now() / 1000) + 60);
-  const message = {
-    action: "join" as const,
-    smartWallet: SMART_WALLET,
-    contestId: "contest-1",
-    lineupId,
-    picksHash: hashPicks([]),
-    callsHash: zeroHash,
-    deadline,
-  };
+function join(actor: BotActor, extra: Partial<ExecuteBotActionInput> = {}): ExecuteBotActionInput {
   return {
     chainId: CHAIN_ID,
     action: "join",
-    smartWallet: SMART_WALLET,
+    actor,
     contestId: "contest-1",
-    lineupId,
+    lineupId: "lineup-1",
     picks: [],
-    deadline,
-    signature: await signBotAction(key, CHAIN_ID, message),
-    nowSeconds: Number(deadline) - 30,
+    ...extra,
   };
+}
+
+async function withCutBotKey<T>(fn: () => Promise<T>): Promise<T> {
+  const previous = process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
+  process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = cutBotKey;
+  try {
+    return await fn();
+  } finally {
+    if (previous === undefined) delete process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
+    else process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = previous;
+  }
 }
 
 describe("assertJoinCalls", () => {
@@ -142,161 +164,140 @@ describe("assertJoinCalls", () => {
 });
 
 describe("executeBotAction", () => {
-  it("rejects a signature from an address that is not a delegate", async () => {
-    const used = deps({ findDelegate: vi.fn(async () => null) });
-    const result = await executeBotAction(await signedJoin(strangerKey, ""), used);
-    expect(result).toMatchObject({ ok: false, status: 403 });
-    expect(used.insertContestEntry).not.toHaveBeenCalled();
-    expect(used.log).not.toHaveBeenCalled();
-  });
-
-  it("rejects a revoked session key and logs only the error", async () => {
-    const log = vi.fn(async () => undefined);
-    const used = deps({
-      sessionEnabled: vi.fn(async () => false),
-      log,
-    });
-    const result = await executeBotAction(await signedJoin(cutBotKey), used);
-    expect(result).toMatchObject({ ok: false, error: "Session key is not enabled" });
-    expect(used.insertContestEntry).not.toHaveBeenCalled();
-    expect(log).toHaveBeenCalledTimes(1);
-    // Log call: (userId, action, error, nonce?) - nonce is undefined for legacy format
-    expect(log.mock.calls[0]?.slice(0, 3)).toEqual([USER_ID, "error", "Session key is not enabled"]);
-  });
-
-  it("does not create a contest entry when the join user operation fails", async () => {
-    const log = vi.fn(async () => undefined);
-    const insertContestEntry = vi.fn(async () => undefined);
-    const used = deps({
-      submitCalls: vi.fn(async () => ({ ok: false as const, error: "bundler reverted" })),
-      log,
-      insertContestEntry,
-    });
-    const previous = process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
-    process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = cutBotKey;
-    const result = await executeBotAction(await signedJoin(cutBotKey), used);
-    if (previous === undefined) delete process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
-    else process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = previous;
-    expect(result).toMatchObject({ ok: false, error: "bundler reverted" });
-    expect(insertContestEntry).not.toHaveBeenCalled();
-    expect(log.mock.calls[0]?.slice(0, 2)).toEqual([USER_ID, "error"]);
-    expect(JSON.stringify(log.mock.calls)).not.toContain("contest-1");
-  });
-
   it("saves a lineup without submitting a user operation", async () => {
-    const log = vi.fn(async () => undefined);
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 60);
-    const message = {
-      action: "lineupUpsert" as const,
-      smartWallet: SMART_WALLET,
-      contestId: "contest-1",
-      lineupId: "",
-      picksHash: hashPicks(["p1", "p2"]),
-      callsHash: zeroHash,
-      deadline,
-    };
-    const used = deps({ log });
+    const used = deps();
     const result = await executeBotAction(
-      {
-        chainId: CHAIN_ID,
-        action: "lineupUpsert",
-        smartWallet: SMART_WALLET,
-        contestId: "contest-1",
-        lineupId: "",
-        picks: ["p1", "p2"],
-        deadline,
-        signature: await signBotAction(cutBotKey, CHAIN_ID, message),
-        nowSeconds: Number(deadline) - 10,
-      },
+      { ...join(ownerActor), action: "lineupUpsert", lineupId: "", picks: ["p1", "p2"] },
       used,
     );
     expect(result).toMatchObject({ ok: true, lineupId: "lineup-1" });
-    // Log call: (userId, action, error?, nonce?) - no nonce for legacy format
-    expect(log).toHaveBeenCalledWith(USER_ID, "lineupUpsert", undefined, undefined);
-    expect(used.createLineup).toHaveBeenCalledOnce();
+    expect(used.createLineup).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: USER_ID, picks: ["p1", "p2"] }),
+    );
     expect(used.submitCalls).not.toHaveBeenCalled();
     expect(used.prepareUserOp).not.toHaveBeenCalled();
   });
 
-  it("rejects replayed nonce with ERC-8128 auth", async () => {
-    const reserveNonce = vi.fn(async () => false); // Nonce already used
-    const used = deps({ reserveNonce });
-    const nowSeconds = Math.floor(Date.now() / 1000);
-    const result = await executeBotAction(
-      {
-        chainId: CHAIN_ID,
-        action: "lineupUpsert",
-        smartWallet: SMART_WALLET,
-        contestId: "contest-1",
-        lineupId: "",
-        picks: ["p1", "p2"],
-        deadline: BigInt(nowSeconds + 60),
-        signature: "0x" as Hex,
-        nowSeconds,
-        erc8128Auth: {
-          signer: cutBot.address,
-          chainId: CHAIN_ID,
-          nonce: "already-used-nonce",
-        },
-      },
-      used,
-    );
-    expect(result).toMatchObject({ ok: false, status: 409, error: "Nonce already used (replay rejected)" });
-    expect(reserveNonce).toHaveBeenCalledWith(
-      cutBot.address,
-      "already-used-nonce",
-      "",
-      "lineupUpsert",
-    );
-    expect(used.createLineup).not.toHaveBeenCalled();
+  it("rejects a contest on another chain", async () => {
+    const used = deps({ loadContest: vi.fn(async () => contest({ chainId: 8453 })) });
+    const result = await executeBotAction(join(ownerActor), used);
+    expect(result).toMatchObject({ ok: false, status: 404 });
   });
 
-  it("accepts ERC-8128 auth with valid nonce and logs nonce info", async () => {
-    const log = vi.fn(async () => undefined);
-    const reserveNonce = vi.fn(async () => true);
-    const used = deps({ log, reserveNonce });
-    const nowSeconds = Math.floor(Date.now() / 1000);
-    const result = await executeBotAction(
-      {
-        chainId: CHAIN_ID,
-        action: "lineupUpsert",
-        smartWallet: SMART_WALLET,
-        contestId: "contest-1",
-        lineupId: "",
-        picks: ["p1", "p2"],
-        deadline: BigInt(nowSeconds + 60),
-        signature: "0x" as Hex,
-        nowSeconds,
-        erc8128Auth: {
-          signer: cutBot.address,
-          chainId: CHAIN_ID,
-          nonce: "unique-nonce-123",
-        },
-      },
-      used,
-    );
-    expect(result).toMatchObject({ ok: true, lineupId: "lineup-1" });
-    expect(reserveNonce).toHaveBeenCalled();
-    // Log should include nonce info
-    expect(log).toHaveBeenCalledWith(
-      USER_ID,
-      "lineupUpsert",
-      undefined,
-      { signerAddress: getAddress(cutBot.address), nonce: "unique-nonce-123" },
-    );
+  it("rejects a league contest the user is not in", async () => {
+    const used = deps({
+      loadContest: vi.fn(async () => contest({ userGroupId: "league-1" })),
+      isGroupMember: vi.fn(async () => false),
+    });
+    const result = await executeBotAction(join(ownerActor), used);
+    expect(result).toMatchObject({ ok: false, status: 403 });
   });
 
-  it("joins an existing lineup and does not write picks", async () => {
-    const previous = process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
-    process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = cutBotKey;
+  it("Cut Bot joins in one request: the server signs with its own key", async () => {
     const used = deps();
-    const result = await executeBotAction(await signedJoin(cutBotKey), used);
-    if (previous === undefined) delete process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
-    else process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = previous;
+    const result = await withCutBotKey(() =>
+      executeBotAction(join(delegateActor("cut_bot")), used),
+    );
     expect(result).toMatchObject({ ok: true, lineupId: "lineup-1" });
+    expect(used.prepareUserOp).not.toHaveBeenCalled();
+    expect(used.submitCalls).toHaveBeenCalledWith(
+      expect.objectContaining({
+        privateKey: cutBotKey,
+        authority: expect.objectContaining({ kind: "session", approval: "serialized" }),
+      }),
+    );
+    expect(used.insertContestEntry).toHaveBeenCalledOnce();
     expect(used.createLineup).not.toHaveBeenCalled();
     expect(used.updateLineup).not.toHaveBeenCalled();
-    expect(used.submitCalls).toHaveBeenCalledOnce();
+  });
+
+  it("does not create a contest entry when the join user operation fails", async () => {
+    const used = deps({
+      submitCalls: vi.fn(async () => ({ ok: false as const, error: "bundler reverted" })),
+    });
+    const result = await withCutBotKey(() =>
+      executeBotAction(join(delegateActor("cut_bot")), used),
+    );
+    expect(result).toMatchObject({ ok: false, status: 502, error: "bundler reverted" });
+    expect(used.insertContestEntry).not.toHaveBeenCalled();
+  });
+
+  it("the owner key prepares a user operation with the owner (sudo) authority", async () => {
+    const used = deps();
+    const result = await executeBotAction(join(ownerActor), used);
+    expect(result).toMatchObject({ ok: true, preparedUserOp: true, lineupId: "lineup-1" });
+    expect(used.prepareUserOp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        authority: { kind: "owner", ownerAddress: getAddress(owner.address) },
+        smartWallet: SMART_WALLET,
+      }),
+    );
+    expect(used.insertContestEntry).not.toHaveBeenCalled();
+  });
+
+  it("the owner key submits its signed user operation and records the entry", async () => {
+    const used = deps();
+    const result = await executeBotAction(
+      join(ownerActor, { userOpSignature: "0xdead" as Hex, userOp: PREPARED_USER_OP }),
+      used,
+    );
+    expect(result).toMatchObject({ ok: true, lineupId: "lineup-1" });
+    const call = (used.submitCalls as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
+    expect(call).toMatchObject({
+      authority: { kind: "owner" },
+      userOpSignature: "0xdead",
+      userOp: PREPARED_USER_OP,
+    });
+    expect(call).not.toHaveProperty("privateKey");
+    expect(used.insertContestEntry).toHaveBeenCalledOnce();
+  });
+
+  it("an external delegate uses the same prepare-then-sign flow", async () => {
+    const used = deps();
+    const result = await executeBotAction(join(delegateActor("external")), used);
+    expect(result).toMatchObject({ ok: true, preparedUserOp: true });
+    expect(used.prepareUserOp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        authority: {
+          kind: "session",
+          approval: "serialized",
+          delegateAddress: getAddress(external.address),
+        },
+      }),
+    );
+  });
+
+  it("rejects a userOpSignature without the prepared userOp", async () => {
+    const used = deps();
+    const result = await executeBotAction(
+      join(ownerActor, { userOpSignature: "0xdead" as Hex }),
+      used,
+    );
+    expect(result).toMatchObject({ ok: false, status: 400 });
+    expect(used.submitCalls).not.toHaveBeenCalled();
+  });
+
+  it("leave submits removePrimaryPosition and deletes the entry", async () => {
+    const used = deps({ findContestEntry: vi.fn(async () => ({ id: "entry-1" })) });
+    const result = await withCutBotKey(() =>
+      executeBotAction({ ...join(delegateActor("cut_bot")), action: "leave" }, used),
+    );
+    expect(result).toMatchObject({ ok: true, lineupId: "lineup-1" });
+    expect(used.deleteContestEntry).toHaveBeenCalledWith("contest-1", "lineup-1", USER_ID);
+  });
+
+  it("refuses a lineup that belongs to someone else", async () => {
+    const used = deps({
+      findLineup: vi.fn(async () => ({
+        id: "lineup-1",
+        userId: "someone-else",
+        eventId: "event-1",
+        contestId: "contest-1",
+        picks: ["p1"],
+      })),
+    });
+    const result = await executeBotAction(join(ownerActor), used);
+    expect(result).toMatchObject({ ok: false, status: 400, error: "Lineup not found" });
   });
 });
 

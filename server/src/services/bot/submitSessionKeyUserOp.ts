@@ -6,10 +6,11 @@ import {
   type UserOperation,
 } from "viem/account-abstraction";
 import { privateKeyToAccount } from "viem/accounts";
-import { createKernelAccountClient } from "@zerodev/sdk";
+import { createKernelAccount, createKernelAccountClient } from "@zerodev/sdk";
 import { KERNEL_V3_1 } from "@zerodev/sdk/constants";
 import { deserializePermissionAccount } from "@zerodev/permissions";
 import { toECDSASigner } from "@zerodev/permissions/signers";
+import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
 import { getChainConfig } from "../../lib/chainConfig.js";
 import type { BotCall } from "./botCalls.js";
 
@@ -39,15 +40,25 @@ const entryPoint = {
   version: "0.7" as const,
 };
 
+/**
+ * Who authorizes the user operation.
+ * - `session`: an installed Kernel permission session key (Cut Bot or an external delegate).
+ * - `owner`: the wallet's ECDSA owner key (sudo validator). Works for undeployed wallets:
+ *   the first user operation carries the factory data and deploys the wallet.
+ */
+export type UserOpAuthority =
+  | { kind: "session"; approval: string; delegateAddress: Address }
+  | { kind: "owner"; ownerAddress: Address };
+
 export type SubmitSessionKeyInput = {
   chainId: number;
-  approval: string;
+  authority: UserOpAuthority;
   calls: BotCall[];
-  delegateAddress: Address;
   smartWallet: Address;
-  privateKey?: Hex;
-  userOpSignature?: Hex;
-  userOp?: SerializedUserOp;
+  /** Server-held key (Cut Bot only). Everyone else signs `userOpHash` themselves. */
+  privateKey?: Hex | undefined;
+  userOpSignature?: Hex | undefined;
+  userOp?: SerializedUserOp | undefined;
 };
 
 /** ZeroDev's default asks for `zd_getUserOperationGasPrice`, which Pimlico does not serve. */
@@ -104,17 +115,37 @@ async function sessionClient(
     chain: chainConfig.chain,
     transport: http(chainConfig.rpcUrl),
   });
+  const signerAddress =
+    input.authority.kind === "session" ? input.authority.delegateAddress : input.authority.ownerAddress;
   const signer = input.privateKey
     ? privateKeyToAccount(input.privateKey)
-    : fixedSignatureAccount(input.delegateAddress, signature);
-  const modularSigner = await toECDSASigner({ signer });
-  const account = await deserializePermissionAccount(
-    publicClient,
-    entryPoint,
-    KERNEL_V3_1,
-    input.approval,
-    modularSigner,
-  );
+    : fixedSignatureAccount(signerAddress, signature);
+  const account =
+    input.authority.kind === "session"
+      ? await deserializePermissionAccount(
+          publicClient,
+          entryPoint,
+          KERNEL_V3_1,
+          input.authority.approval,
+          await toECDSASigner({ signer }),
+        )
+      : await createKernelAccount(publicClient, {
+          entryPoint,
+          kernelVersion: KERNEL_V3_1,
+          plugins: {
+            sudo: await signerToEcdsaValidator(publicClient, {
+              signer,
+              entryPoint,
+              kernelVersion: KERNEL_V3_1,
+            }),
+          },
+          index: 0n,
+          // Pin the address so an on-chain owner rotation still targets this wallet.
+          address: getAddress(input.smartWallet),
+        });
+  if (getAddress(account.address) !== getAddress(input.smartWallet)) {
+    return { ok: false, error: "Signer does not control this smart wallet" };
+  }
   const sponsorshipPolicyId = process.env.PIMLICO_SPONSORSHIP_POLICY_ID?.trim();
   const kernelClient = createKernelAccountClient({
     account,
@@ -191,7 +222,7 @@ export function parseUserOp(userOp: SerializedUserOp): UserOperation<"0.7"> {
 
 /**
  * Fill gas, nonce, and paymaster data for the canonical calls and return the hash a
- * personal delegate signs. Cut Bot does not use this. The server signs at submit time.
+ * personal delegate or the wallet owner signs. Cut Bot does not use this. The server signs at submit time.
  */
 export async function prepareSessionKeyUserOp(
   input: SubmitSessionKeyInput,

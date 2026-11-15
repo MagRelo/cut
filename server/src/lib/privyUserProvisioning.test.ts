@@ -412,3 +412,58 @@ describe("provisionUserFromPrivy referral", () => {
     );
   });
 });
+
+describe("resolveReferralForNewUser (bot register)", () => {
+  const originalGroupId = process.env.REFERRAL_GROUP_ID;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.REFERRAL_GROUP_ID = GROUP_ID;
+  });
+
+  afterEach(() => {
+    process.env.REFERRAL_GROUP_ID = originalGroupId;
+  });
+
+  it("reports a malformed code or a 0x address as INVALID_REF_CODE", async () => {
+    const { resolveReferralForNewUser } = await import("./referralCode.js");
+    await expect(resolveReferralForNewUser("nope", 84532, INVITEE)).resolves.toMatchObject({
+      ok: false,
+      code: "INVALID_REF_CODE",
+    });
+    await expect(resolveReferralForNewUser(INVITER, 84532, INVITEE)).resolves.toMatchObject({
+      ok: false,
+      code: "INVALID_REF_CODE",
+    });
+    expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("reports an unknown code", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    const { resolveReferralForNewUser } = await import("./referralCode.js");
+    await expect(resolveReferralForNewUser(INVITER_CODE, 84532, INVITEE)).resolves.toMatchObject({
+      ok: false,
+      code: "UNKNOWN_REF_CODE",
+    });
+  });
+
+  it("reports a self-referral", async () => {
+    prismaMock.user.findUnique.mockResolvedValue(
+      inviterUserRow({ wallets: [{ publicKey: INVITEE, chainId: 84532, isPrimary: true }] }),
+    );
+    const { resolveReferralForNewUser } = await import("./referralCode.js");
+    await expect(resolveReferralForNewUser(INVITER_CODE, 84532, INVITEE)).resolves.toMatchObject({
+      ok: false,
+      code: "SELF_REFERRAL",
+    });
+  });
+
+  it("resolves a valid code to the inviter", async () => {
+    prismaMock.user.findUnique.mockResolvedValueOnce(inviterUserRow());
+    const { resolveReferralForNewUser } = await import("./referralCode.js");
+    await expect(resolveReferralForNewUser(INVITER_CODE, 84532, INVITEE)).resolves.toEqual({
+      ok: true,
+      referral: { referredByUserId: "inviter", groupIdHex: GROUP_ID, referrerAddress: INVITER },
+    });
+  });
+});

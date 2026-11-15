@@ -387,3 +387,138 @@ describe("ERC-8128 spec version", () => {
     expect(ERC8128_SPEC_VERSION).toBe("draft-2026-01-16");
   });
 });
+
+describe("ERC-8128 request binding", () => {
+  const authority = "api.playthecut.com";
+  const path = "/api/bot/actions";
+  const signMessage = async (message: Uint8Array) =>
+    testAccount.signMessage({ message: { raw: message } });
+
+  it("uses RFC 9530 SHA-256 for Content-Digest", () => {
+    // RFC 9530 section 2 example.
+    expect(computeContentDigest('{"hello": "world"}')).toBe(
+      "sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:",
+    );
+  });
+
+  it("rejects a swapped body even when the signed Content-Digest header is replayed", async () => {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({ action: "join" });
+    const signed = await signErc8128Request({
+      method: "POST",
+      authority,
+      path,
+      body,
+      chainId: CHAIN_ID,
+      address: TEST_ADDRESS,
+      signMessage,
+      nonce: "nonce-binding-1",
+      nowSeconds,
+    });
+    const result = await verifyErc8128Request({
+      method: "POST",
+      authority,
+      path,
+      contentDigest: signed.contentDigest,
+      signatureInput: signed.signatureInput,
+      signature: signed.signature,
+      body: JSON.stringify({ action: "leave" }),
+      nowSeconds,
+    });
+    expect(result).toEqual({ ok: false, error: "Content-Digest does not match the request body" });
+  });
+
+  it("requires content-digest coverage when the request has a body", async () => {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const signed = await signErc8128Request({
+      method: "POST",
+      authority,
+      path,
+      chainId: CHAIN_ID,
+      address: TEST_ADDRESS,
+      signMessage,
+      nonce: "nonce-binding-2",
+      nowSeconds,
+    });
+    const body = JSON.stringify({ action: "join" });
+    const result = await verifyErc8128Request({
+      method: "POST",
+      authority,
+      path,
+      contentDigest: computeContentDigest(body),
+      signatureInput: signed.signatureInput,
+      signature: signed.signature,
+      body,
+      nowSeconds,
+    });
+    expect(result).toEqual({ ok: false, error: "Signature must cover content-digest" });
+  });
+
+  it("requires @query coverage when the request has a query", async () => {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const signed = await signErc8128Request({
+      method: "GET",
+      authority,
+      path: "/api/bot/balance",
+      chainId: CHAIN_ID,
+      address: TEST_ADDRESS,
+      signMessage,
+      nowSeconds,
+    });
+    const result = await verifyErc8128Request({
+      method: "GET",
+      authority,
+      path: "/api/bot/balance",
+      query: "?smartWallet=0x0000000000000000000000000000000000000001",
+      signatureInput: signed.signatureInput,
+      signature: signed.signature,
+      nowSeconds,
+    });
+    expect(result).toEqual({ ok: false, error: "Signature must cover @query" });
+  });
+
+  it("rejects a signature for a different authority", async () => {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const signed = await signErc8128Request({
+      method: "GET",
+      authority: "evil.example",
+      path: "/api/bot/contests",
+      chainId: CHAIN_ID,
+      address: TEST_ADDRESS,
+      signMessage,
+      nowSeconds,
+    });
+    const result = await verifyErc8128Request({
+      method: "GET",
+      authority,
+      path: "/api/bot/contests",
+      signatureInput: signed.signatureInput,
+      signature: signed.signature,
+      nowSeconds,
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects malformed nonces", async () => {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const signed = await signErc8128Request({
+      method: "GET",
+      authority,
+      path: "/api/bot/contests",
+      chainId: CHAIN_ID,
+      address: TEST_ADDRESS,
+      signMessage,
+      nonce: "short",
+      nowSeconds,
+    });
+    const result = await verifyErc8128Request({
+      method: "GET",
+      authority,
+      path: "/api/bot/contests",
+      signatureInput: signed.signatureInput,
+      signature: signed.signature,
+      nowSeconds,
+    });
+    expect(result).toEqual({ ok: false, error: "Invalid nonce (8-128 URL-safe characters)" });
+  });
+});

@@ -1,5 +1,4 @@
 import { getAddress, type Address } from "viem";
-import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import {
   getPaymentTokenAddress,
@@ -13,7 +12,6 @@ import { updateLineupById } from "../lineups/updateLineupById.js";
 import { getPublicClient } from "../shared/contractClient.js";
 import { invalidateContestLobby } from "../contests/getContestLobby.js";
 import type { BotActionDeps, BotLineup } from "./executeBotAction.js";
-import { readSessionKeyEnabled } from "./sessionKeyEnabled.js";
 import { prepareSessionKeyUserOp, submitSessionKeyUserOp } from "./submitSessionKeyUserOp.js";
 
 const depositAbi = [
@@ -51,24 +49,6 @@ function toLineup(row: {
 
 export function createBotActionDeps(): BotActionDeps {
   return {
-    findDelegate: async (smartWallet, signer) => {
-      const row = await prisma.botDelegate.findFirst({
-        where: {
-          smartWallet: smartWallet.toLowerCase(),
-          delegateAddress: signer.toLowerCase(),
-          status: "active",
-        },
-      });
-      if (!row || (row.kind !== "cut_bot" && row.kind !== "external")) return null;
-      return {
-        userId: row.userId,
-        smartWallet: row.smartWallet,
-        delegateAddress: row.delegateAddress,
-        kind: row.kind,
-        approval: row.approval,
-      };
-    },
-    sessionEnabled: readSessionKeyEnabled,
     loadContest: async (contestId) => {
       const contest = await prisma.contest.findUnique({ where: { id: contestId } });
       if (!contest) return null;
@@ -203,39 +183,6 @@ export function createBotActionDeps(): BotActionDeps {
       const result = await submitSessionKeyUserOp(input);
       if (!result.ok) return result;
       return { ok: true };
-    },
-    log: async (userId, action, error, nonce) => {
-      await prisma.botActionLog.create({
-        data: {
-          userId,
-          action,
-          ...(error ? { error } : {}),
-          ...(nonce ? { signerAddress: nonce.signerAddress, nonce: nonce.nonce } : {}),
-        },
-      });
-    },
-    reserveNonce: async (signerAddress, nonce, _userId, _action) => {
-      // Try to insert a row with the nonce. If it already exists (unique constraint violation),
-      // this is a replay attempt. We reserve the nonce BEFORE executing the action.
-      // The _userId may be empty at this point (before delegate lookup), so we use a placeholder
-      // and the log() call later will create the real record with the correct userId.
-      try {
-        // Check if nonce already exists
-        const existing = await prisma.botActionLog.findFirst({
-          where: {
-            signerAddress: getAddress(signerAddress),
-            nonce,
-          },
-        });
-        if (existing) {
-          return false; // Nonce already used
-        }
-        return true; // Nonce is available
-      } catch (error) {
-        // Treat any error as a potential replay (fail safe)
-        console.error("reserveNonce error:", error);
-        return false;
-      }
     },
   };
 }

@@ -65,24 +65,33 @@ export async function resolveInviteReferralCode(
   return referralCodeForWallet(inviteReferrerAddress);
 }
 
+export type SignupReferralError =
+  | "INVALID_REF_CODE"
+  | "UNKNOWN_REF_CODE"
+  | "SELF_REFERRAL"
+  | "REFERRER_HAS_NO_WALLET";
+
+export type SignupReferralResolution =
+  | { ok: true; referral: ResolvedSignupReferral }
+  | { ok: false; code: SignupReferralError; message: string };
+
 /**
- * Best-effort signup referrer from an opaque `User.referralCode`.
- * `0x` addresses and unknown codes return null so account creation is never blocked.
+ * Resolve the referrer for a new user's opaque `User.referralCode`, reporting why a code
+ * cannot be used. The bot `register` action surfaces these errors; web signup uses
+ * {@link tryResolveReferralForNewUser}, which never blocks account creation.
  */
-export async function tryResolveReferralForNewUser(
-  referralCodeHeader: string,
+export async function resolveReferralForNewUser(
+  referralCode: string,
   chainId: number,
   newUserWalletLower: string,
-): Promise<ResolvedSignupReferral | null> {
-  const code = referralCodeHeader.trim();
-  if (!code) return null;
-  if (isAddress(code)) {
-    console.warn("Signup referral skipped: wallet address is not a referral code");
-    return null;
-  }
-  if (!isValidReferralCode(code)) {
-    console.warn("Signup referral skipped: invalid referral code");
-    return null;
+): Promise<SignupReferralResolution> {
+  const code = referralCode.trim();
+  if (!code || isAddress(code) || !isValidReferralCode(code)) {
+    return {
+      ok: false,
+      code: "INVALID_REF_CODE",
+      message: "refCode must be an 8-character Play The Cut referral code",
+    };
   }
 
   let groupIdHex: string | null = null;
@@ -105,27 +114,45 @@ export async function tryResolveReferralForNewUser(
     },
   });
   if (!inviter) {
-    console.warn("Signup referral skipped: unknown referral code");
-    return null;
+    return { ok: false, code: "UNKNOWN_REF_CODE", message: "Unknown refCode" };
   }
 
   const inviterWallets = inviter.wallets.map((w) => w.publicKey.toLowerCase());
-  if (inviterWallets.includes(newUserWalletLower)) {
-    console.warn("Signup referral skipped: self-referral");
-    return null;
+  if (inviterWallets.includes(newUserWalletLower.toLowerCase())) {
+    return { ok: false, code: "SELF_REFERRAL", message: "A wallet cannot refer itself" };
   }
 
   const primaryOnSignupChain = pickWalletPublicKeyForChain(inviter.wallets, chainId);
   const fallbackWallet = inviter.wallets[0]?.publicKey.toLowerCase() ?? null;
   const referrerAddress = primaryOnSignupChain ?? fallbackWallet;
   if (!referrerAddress) {
-    console.warn("Signup referral skipped: inviter has no wallet");
-    return null;
+    return {
+      ok: false,
+      code: "REFERRER_HAS_NO_WALLET",
+      message: "The referrer for this refCode has no wallet",
+    };
   }
 
   return {
-    referredByUserId: inviter.id,
-    groupIdHex,
-    referrerAddress,
+    ok: true,
+    referral: { referredByUserId: inviter.id, groupIdHex, referrerAddress },
   };
+}
+
+/**
+ * Best-effort signup referrer from an opaque `User.referralCode`.
+ * `0x` addresses and unknown codes return null so account creation is never blocked.
+ */
+export async function tryResolveReferralForNewUser(
+  referralCodeHeader: string,
+  chainId: number,
+  newUserWalletLower: string,
+): Promise<ResolvedSignupReferral | null> {
+  if (!referralCodeHeader.trim()) return null;
+  const resolved = await resolveReferralForNewUser(referralCodeHeader, chainId, newUserWalletLower);
+  if (!resolved.ok) {
+    console.warn(`Signup referral skipped: ${resolved.message}`);
+    return null;
+  }
+  return resolved.referral;
 }

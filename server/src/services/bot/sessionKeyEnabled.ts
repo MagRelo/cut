@@ -14,7 +14,8 @@ function validationId(permissionId: Hex): Hex {
  * Chain is the source of truth once a key is installed.
  * A permission that has never been installed is still allowed: the stored enable
  * signature installs it on the first join or leave. A revoked permission has a nonce
- * and no signer, and fails closed.
+ * and no signer, and fails closed. An undeployed (counterfactual) wallet has nothing
+ * installed yet, so it is treated like a never-installed permission.
  */
 export async function readSessionKeyEnabled(
   smartWallet: Address,
@@ -23,6 +24,8 @@ export async function readSessionKeyEnabled(
 ): Promise<boolean> {
   try {
     const publicClient = getPublicClient(chainId);
+    const code = await publicClient.getCode({ address: smartWallet });
+    if (!code || code === "0x") return true;
     const config = await publicClient.readContract({
       address: smartWallet,
       abi: KernelV3_1AccountAbi,

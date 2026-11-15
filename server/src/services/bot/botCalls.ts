@@ -1,12 +1,4 @@
-import {
-  decodeFunctionData,
-  encodeFunctionData,
-  getAddress,
-  keccak256,
-  toBytes,
-  type Address,
-  type Hex,
-} from "viem";
+import { decodeFunctionData, encodeFunctionData, getAddress, type Address, type Hex } from "viem";
 
 const approveAbi = [
   {
@@ -90,17 +82,6 @@ export function buildLeaveCalls(input: { contest: Address; entryId: bigint }): B
       }),
     },
   ];
-}
-
-export function hashCalls(calls: BotCall[]): Hex {
-  const packed = calls
-    .map((call) => `${call.to.toLowerCase()}:${call.value.toString()}:${call.data}`)
-    .join("|");
-  return keccak256(toBytes(packed));
-}
-
-export function hashPicks(picks: readonly string[]): Hex {
-  return keccak256(toBytes([...picks].join("|")));
 }
 
 /**
