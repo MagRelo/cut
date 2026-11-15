@@ -2,7 +2,7 @@
 
 Product, operations, and sport-specific reference for Play The Cut. For as-built technical specs (APIs, cron, plugins), see [`spec/README.md`](../spec/README.md).
 
-Production is **Base** (`8453`) with **canonical USDC**. Players add and withdraw USDC themselves (Coinbase or Robinhood if they do not already have crypto). Staging is Base Sepolia with MockUSDC (xUSDC). Wallet inventory: [wallet-roles-cashflows.md](operations/wallet-roles-cashflows.md). Network addresses: [BASE_DEPLOY.md](../BASE_DEPLOY.md).
+Production is **Base** (`8453`) with **canonical USDC**. Players add and withdraw USDC themselves (Coinbase or Robinhood if they do not already have crypto). An in-app card onramp is not shipped: Stripe does not serve New York, and MoonPay does not quote USD until Meld KYB. See [Player funding](operations/wallet-roles-cashflows.md#player-funding). Staging is Base Sepolia with MockUSDC (xUSDC). Wallet inventory: [wallet-roles-cashflows.md](operations/wallet-roles-cashflows.md). Network addresses: [BASE_DEPLOY.md](../BASE_DEPLOY.md).
 
 ## Platform
 
@@ -18,7 +18,7 @@ Production is **Base** (`8453`) with **canonical USDC**. Players add and withdra
 
 | Doc | Purpose |
 |-----|---------|
-| [wallet-roles-cashflows.md](operations/wallet-roles-cashflows.md) | Platform wallet roles, funding, contest cashflows. Prod is Base + USDC (self-serve on/off-ramp; Coinbase/Robinhood recommended). |
+| [wallet-roles-cashflows.md](operations/wallet-roles-cashflows.md) | Platform wallet roles, contest cashflows, and player funding. Prod is Base + USDC sent in by the player. Card onramp limits are in that doc. |
 | [database-connections.md](operations/database-connections.md) | Connection budget, PgBouncer pooling, pooled vs direct URLs |
 | [cron-pi.md](operations/cron-pi.md) | Raspberry Pi cron host (Tailscale, deploy, PM2) |
 | [email-program.md](operations/email-program.md) | Contest announcement email and unsubscribe |

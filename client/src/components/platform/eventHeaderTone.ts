@@ -53,5 +53,5 @@ export function eventHeaderCountdownClassName(tone: EventHeaderTone): string {
 }
 
 export function eventHeaderSuspendedClassName(tone: EventHeaderTone): string {
-  return tone === "paper" ? "text-amber-700" : "text-yellow-300";
+  return tone === "paper" ? "text-orange-600" : "text-yellow-300";
 }

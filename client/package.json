@@ -21,7 +21,7 @@
     "@cut/sport-sdk": "workspace:*",
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
-    "@privy-io/react-auth": "^3.18.0",
+    "@privy-io/react-auth": "^3.51.4",
     "@privy-io/wagmi": "^4.0.3",
     "@stream-io/feeds-client": "^2.6.0",
     "@stream-io/feeds-react-sdk": "^1.0.18",
