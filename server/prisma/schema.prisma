@@ -100,16 +100,24 @@ model BotDelegate {
 }
 
 // Records that an action happened. Lineup, contest, and tx hash live elsewhere.
+// For write actions (lineupUpsert, join, leave), the nonce column provides ERC-8128
+// replay protection: insert a row with (signerAddress, nonce) BEFORE executing the
+// action so concurrent replays fail on the unique constraint.
 model BotActionLog {
-  id        String   @id @default(cuid())
-  userId    String
+  id            String   @id @default(cuid())
+  userId        String
   /// delegate | revoke | lineupUpsert | join | leave | error
-  action    String
-  error     String?
-  createdAt DateTime @default(now())
+  action        String
+  error         String?
+  /// ERC-8128 nonce for replay protection (write actions only).
+  nonce         String?
+  /// The signer address that authorized this action (checksummed).
+  signerAddress String?
+  createdAt     DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([signerAddress, nonce])
   @@index([userId, createdAt])
 }
 

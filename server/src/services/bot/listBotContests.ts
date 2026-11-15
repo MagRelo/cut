@@ -10,6 +10,11 @@ import {
   type BotReadMessage,
 } from "./botActionSignature.js";
 
+/**
+ * ERC-8128 spec version: draft-2026-01-16
+ * Reads are replayable (no nonce requirement) since they don't modify state.
+ */
+
 export type BotContestListItem = {
   contestId: string;
   name: string;
@@ -53,6 +58,8 @@ export async function listSignedBotContests(
     signature: Hex;
     eventId?: string;
     nowSeconds: number;
+    /** Pre-verified signer from ERC-8128 headers. Skips signature verification when set. */
+    erc8128Signer?: Address;
   },
   deps: ListBotContestsDeps,
 ): Promise<
@@ -62,28 +69,36 @@ export async function listSignedBotContests(
   if (!isAddress(input.smartWallet)) {
     return { ok: false, status: 400, error: "Invalid smart wallet" };
   }
-  try {
-    assertDeadline(input.deadline, input.nowSeconds);
-  } catch (error) {
-    return {
-      ok: false,
-      status: 400,
-      error: error instanceof Error ? error.message : "Invalid deadline",
-    };
-  }
 
   const smartWallet = getAddress(input.smartWallet);
-  const message: BotReadMessage = {
-    action: "contests",
-    smartWallet,
-    chainId: BigInt(input.chainId),
-    deadline: input.deadline,
-  };
   let signer: Address;
-  try {
-    signer = await recoverBotReadSigner(message, input.signature);
-  } catch {
-    return { ok: false, status: 401, error: "Invalid action signature" };
+
+  if (input.erc8128Signer) {
+    // ERC-8128: signature already verified by route handler
+    signer = input.erc8128Signer;
+  } else {
+    // Legacy EIP-712: verify signature from query params
+    try {
+      assertDeadline(input.deadline, input.nowSeconds);
+    } catch (error) {
+      return {
+        ok: false,
+        status: 400,
+        error: error instanceof Error ? error.message : "Invalid deadline",
+      };
+    }
+
+    const message: BotReadMessage = {
+      action: "contests",
+      smartWallet,
+      chainId: BigInt(input.chainId),
+      deadline: input.deadline,
+    };
+    try {
+      signer = await recoverBotReadSigner(message, input.signature);
+    } catch {
+      return { ok: false, status: 401, error: "Invalid action signature" };
+    }
   }
 
   const delegate = await deps.findDelegate(smartWallet, signer);

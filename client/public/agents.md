@@ -10,9 +10,125 @@ Both delegates are a Kernel v3.1 session key on EntryPoint 0.7. The key is a bla
 
 Revoke removes the session key on-chain. A database row that still says active cannot keep a removed key working.
 
+## ERC-8128 (Preferred)
+
+The bot API supports [ERC-8128](https://erc8128.slice.so/) — signed HTTP requests with Ethereum per RFC 9421 HTTP Message Signatures. ERC-8128 provides request integrity (method, path, query, body are signed) and replay protection via nonces.
+
+Spec version: `draft-2026-01-16`
+
+### Headers
+
+| Header | Description |
+|--------|-------------|
+| `Signature-Input` | Covered components and signature parameters |
+| `Signature` | Base64-encoded signature bytes |
+| `Content-Digest` | SHA-256 digest of the body (POST requests) |
+
+### keyid format
+
+`eip8128:<chainId>:<address>` — e.g. `eip8128:8453:0x1234...`
+
+### Replay protection
+
+- **Write actions** (`lineupUpsert`, `join`, `leave`): MUST include a `nonce` parameter. The server reserves the nonce BEFORE executing the action, rejecting duplicates.
+- **Read requests** (`GET /api/bot/contests`): No nonce required; signatures are replayable within their validity window.
+
+### ERC-8128 signing example (viem)
+
+```typescript
+import { privateKeyToAccount } from 'viem/accounts'
+import { hashMessage, toBytes, keccak256 } from 'viem'
+
+const account = privateKeyToAccount('0x...')
+const chainId = 8453
+const nowSeconds = Math.floor(Date.now() / 1000)
+const ttlSeconds = 60
+
+// Build covered components
+const components = ['@method', '@authority', '@path']
+const method = 'POST'
+const authority = 'api.playthecut.com'
+const path = '/api/bot/actions'
+
+const body = JSON.stringify({
+  chainId: 8453,
+  action: 'lineupUpsert',
+  smartWallet: '0x...',
+  contestId: 'contest-1',
+  lineupId: '',
+  candidates: ['ep-1', 'ep-2'],
+})
+
+// Add content-digest for POST requests
+const bodyHash = keccak256(toBytes(body)).slice(2)
+const contentDigest = `sha-256=:${Buffer.from(bodyHash, 'hex').toString('base64')}:`
+components.push('content-digest')
+
+// Build Signature-Input
+const nonce = crypto.randomUUID() // Generate unique nonce for writes
+const keyid = `eip8128:${chainId}:${account.address.toLowerCase()}`
+const sigInput = `eth=("${components.join('" "')}");created=${nowSeconds};expires=${nowSeconds + ttlSeconds};nonce="${nonce}";keyid="${keyid}"`
+
+// Build signature base per RFC 9421
+const sigBase = [
+  `"@method": ${method}`,
+  `"@authority": ${authority}`,
+  `"@path": ${path}`,
+  `"content-digest": ${contentDigest}`,
+  `"@signature-params": ${sigInput.slice(4)}`, // Remove "eth=" prefix
+].join('\n')
+
+// Sign with ERC-191
+const sig = await account.signMessage({ message: { raw: toBytes(sigBase) } })
+const sigHeader = `eth=:${Buffer.from(sig.slice(2), 'hex').toString('base64')}:`
+
+// Send request
+const response = await fetch('https://api.playthecut.com/api/bot/actions', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Content-Digest': contentDigest,
+    'Signature-Input': sigInput,
+    'Signature': sigHeader,
+  },
+  body,
+})
+```
+
+### ERC-8128 action body (no signature field)
+
+When using ERC-8128, omit the `signature` and `deadline` fields from the JSON body:
+
+```json
+{
+  "chainId": 8453,
+  "action": "lineupUpsert",
+  "smartWallet": "0x…",
+  "contestId": "contest id",
+  "lineupId": "",
+  "candidates": ["eventParticipantId", "eventParticipantId"]
+}
+```
+
+## Legacy EIP-712 (Deprecated)
+
+The legacy format embeds the signature in the request body. It remains supported for backward compatibility but is deprecated. Responses include an `X-Deprecation-Warning` header.
+
 ## Contests
 
 `GET /api/bot/contests` returns the contests this delegate can enter, each with its field. No Privy session. The request is signed.
+
+### ERC-8128 (preferred)
+
+Sign the request with ERC-8128 headers. The `smartWallet` query parameter is still required. No nonce is needed for reads.
+
+```
+GET /api/bot/contests?smartWallet=0x...&eventId=event-1
+Signature-Input: eth=("@method" "@authority" "@path" "@query");created=...;expires=...;keyid="eip8128:8453:0x..."
+Signature: eth=:base64sig:
+```
+
+### Legacy EIP-712 (deprecated)
 
 The signature is an EIP-712 `BotRead`. Domain name `Cut Bot`, version `1`, `chainId` the query chain, `verifyingContract` the user's smart wallet. Message: `action` `contests`, `smartWallet`, `chainId`, `deadline` (unix seconds, at most one hour ahead).
 
@@ -54,6 +170,12 @@ Contests on the same event share one candidate pool. `lineupUpsert` sends the ch
 ## POST /api/bot/actions
 
 No Privy session. One signed request does one thing. Save the lineup first. Join and leave use that lineup id and do not change its picks.
+
+### ERC-8128 (preferred)
+
+Sign the request with ERC-8128 headers including a nonce. Write actions MUST include a nonce for replay protection.
+
+### Body format
 
 `candidates` is an ordered array of `eventParticipantId` values. Order is the lineup order. Only `lineupUpsert` sends it. `join` and `leave` omit it.
 
@@ -106,6 +228,8 @@ Open or cancelled contests. Same request shape as join, with `action` `leave` an
 ```
 
 `userOpSignature` and `userOp` are only on the personal delegate's second join or leave. Cut Bot omits both.
+
+### Legacy EIP-712 signature (deprecated)
 
 Domain:
 

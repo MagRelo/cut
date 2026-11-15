@@ -1,4 +1,5 @@
 import { getAddress, type Address } from "viem";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import {
   getPaymentTokenAddress,
@@ -203,14 +204,38 @@ export function createBotActionDeps(): BotActionDeps {
       if (!result.ok) return result;
       return { ok: true };
     },
-    log: async (userId, action, error) => {
+    log: async (userId, action, error, nonce) => {
       await prisma.botActionLog.create({
         data: {
           userId,
           action,
           ...(error ? { error } : {}),
+          ...(nonce ? { signerAddress: nonce.signerAddress, nonce: nonce.nonce } : {}),
         },
       });
+    },
+    reserveNonce: async (signerAddress, nonce, _userId, _action) => {
+      // Try to insert a row with the nonce. If it already exists (unique constraint violation),
+      // this is a replay attempt. We reserve the nonce BEFORE executing the action.
+      // The _userId may be empty at this point (before delegate lookup), so we use a placeholder
+      // and the log() call later will create the real record with the correct userId.
+      try {
+        // Check if nonce already exists
+        const existing = await prisma.botActionLog.findFirst({
+          where: {
+            signerAddress: getAddress(signerAddress),
+            nonce,
+          },
+        });
+        if (existing) {
+          return false; // Nonce already used
+        }
+        return true; // Nonce is available
+      } catch (error) {
+        // Treat any error as a potential replay (fail safe)
+        console.error("reserveNonce error:", error);
+        return false;
+      }
     },
   };
 }

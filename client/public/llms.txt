@@ -2,4 +2,6 @@
 
 Contest entries are signed by the logged-in user, by Cut Bot, or by a personal delegate.
 
-- [Agents](/agents.md)
+The bot API (`/api/bot/*`) supports ERC-8128 signed HTTP requests (RFC 9421 HTTP Message Signatures with Ethereum). Write actions require a nonce for replay protection.
+
+- [Agents](/agents.md) — ERC-8128 signing examples and API reference

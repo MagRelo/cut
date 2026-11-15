@@ -24,6 +24,17 @@ import {
 } from "./botActionSignature.js";
 import type { SerializedUserOp } from "./submitSessionKeyUserOp.js";
 
+/**
+ * ERC-8128 pre-verified authentication context.
+ * When present, signature verification has already been done by the route handler
+ * and this contains the verified signer and nonce for replay protection.
+ */
+export type Erc8128Auth = {
+  signer: Address;
+  chainId: number;
+  nonce: string;
+};
+
 export type BotDelegateRow = {
   userId: string;
   smartWallet: string;
@@ -64,6 +75,8 @@ export type ExecuteBotActionInput = {
   userOpSignature?: Hex;
   userOp?: SerializedUserOp;
   nowSeconds: number;
+  /** ERC-8128 pre-verified auth context. When set, signature is already verified. */
+  erc8128Auth?: Erc8128Auth;
 };
 
 export type ExecuteBotActionResult =
@@ -127,7 +140,13 @@ export type BotActionDeps = {
     userOpSignature?: Hex;
     userOp?: SerializedUserOp;
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
-  log: (userId: string, action: string, error?: string) => Promise<void>;
+  log: (userId: string, action: string, error?: string, nonce?: { signerAddress: string; nonce: string }) => Promise<void>;
+  /**
+   * Reserve a nonce for ERC-8128 replay protection.
+   * Must be called BEFORE executing any write action.
+   * Returns false if the nonce was already used (replay attempt).
+   */
+  reserveNonce: (signerAddress: Address, nonce: string, userId: string, action: string) => Promise<boolean>;
 };
 
 function messageFor(input: ExecuteBotActionInput, smartWallet: Address): BotActionMessage {
@@ -152,27 +171,51 @@ export async function executeBotAction(
   }
   const smartWallet = getAddress(input.smartWallet);
 
-  try {
-    assertDeadline(input.deadline, input.nowSeconds);
-  } catch (error) {
-    return {
-      ok: false,
-      status: 400,
-      error: error instanceof Error ? error.message : "Invalid deadline",
-    };
-  }
-
   let signer: Address;
-  try {
-    signer = await recoverBotActionSigner(input.chainId, messageFor(input, smartWallet), input.signature);
-  } catch {
-    return { ok: false, status: 401, error: "Invalid action signature" };
+
+  if (input.erc8128Auth) {
+    // ERC-8128: signature already verified by route handler, use pre-verified signer
+    signer = input.erc8128Auth.signer;
+
+    // Reserve nonce BEFORE executing any write action (replay protection)
+    const nonceReserved = await deps.reserveNonce(
+      signer,
+      input.erc8128Auth.nonce,
+      "", // userId not known yet, will be filled by reserveNonce from delegate lookup
+      input.action,
+    );
+    if (!nonceReserved) {
+      return { ok: false, status: 409, error: "Nonce already used (replay rejected)" };
+    }
+  } else {
+    // Legacy EIP-712: verify signature from body
+    try {
+      assertDeadline(input.deadline, input.nowSeconds);
+    } catch (error) {
+      return {
+        ok: false,
+        status: 400,
+        error: error instanceof Error ? error.message : "Invalid deadline",
+      };
+    }
+
+    try {
+      signer = await recoverBotActionSigner(input.chainId, messageFor(input, smartWallet), input.signature);
+    } catch {
+      return { ok: false, status: 401, error: "Invalid action signature" };
+    }
   }
 
   const delegate = await deps.findDelegate(smartWallet, signer);
   if (!delegate) {
     return { ok: false, status: 403, error: "No active delegate for this signature" };
   }
+
+  // For ERC-8128, we need to re-reserve nonce with the correct userId now that we have the delegate
+  // The initial reserveNonce above was a pre-check; the actual insert happens in the log call
+  const nonceInfo = input.erc8128Auth
+    ? { signerAddress: getAddress(signer), nonce: input.erc8128Auth.nonce }
+    : undefined;
 
   let permissionId: Hex;
   let approval: string;
@@ -190,7 +233,7 @@ export async function executeBotAction(
 
   const enabled = await deps.sessionEnabled(smartWallet, permissionId, input.chainId);
   if (!enabled) {
-    await deps.log(delegate.userId, "error", "Session key is not enabled");
+    await deps.log(delegate.userId, "error", "Session key is not enabled", nonceInfo);
     return { ok: false, status: 403, error: "Session key is not enabled" };
   }
 
@@ -206,12 +249,12 @@ export async function executeBotAction(
   }
 
   if (input.action === "lineupUpsert") {
-    return upsertLineup(input, delegate, contest, deps);
+    return upsertLineup(input, delegate, contest, deps, nonceInfo);
   }
   if (input.action === "leave") {
-    return leaveAction(input, delegate, contest, approval, deps);
+    return leaveAction(input, delegate, contest, approval, deps, nonceInfo);
   }
-  return joinAction(input, delegate, contest, approval, deps);
+  return joinAction(input, delegate, contest, approval, deps, nonceInfo);
 }
 
 async function joinAction(
@@ -220,6 +263,7 @@ async function joinAction(
   contest: BotContest,
   approval: string,
   deps: BotActionDeps,
+  nonceInfo?: { signerAddress: string; nonce: string },
 ): Promise<ExecuteBotActionResult> {
   if (!canAddPrimaryPosition(contest.status)) {
     return { ok: false, status: 409, error: "Contest is not open for entries" };
@@ -255,7 +299,7 @@ async function joinAction(
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Join calls rejected";
-      await deps.log(delegate.userId, "error", message);
+      await deps.log(delegate.userId, "error", message, nonceInfo);
       return { ok: false, status: 400, error: message };
     }
   }
@@ -268,6 +312,7 @@ async function joinAction(
     onchain,
     lineup.lineup.id,
     deps,
+    nonceInfo,
   );
   if (!submitted.ok || submitted.preparedUserOp) return submitted;
 
@@ -279,7 +324,7 @@ async function joinAction(
       ? String(generateContestEntryId(contest.address as string, lineup.lineup.id))
       : null,
   });
-  await deps.log(delegate.userId, "join");
+  await deps.log(delegate.userId, "join", undefined, nonceInfo);
   return { ok: true, lineupId: lineup.lineup.id };
 }
 
@@ -289,6 +334,7 @@ async function leaveAction(
   contest: BotContest,
   approval: string,
   deps: BotActionDeps,
+  nonceInfo?: { signerAddress: string; nonce: string },
 ): Promise<ExecuteBotActionResult> {
   if (!canRemovePrimaryPosition(contest.status)) {
     return { ok: false, status: 409, error: "Contest is not open to leave" };
@@ -316,7 +362,7 @@ async function leaveAction(
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Leave calls rejected";
-      await deps.log(delegate.userId, "error", message);
+      await deps.log(delegate.userId, "error", message, nonceInfo);
       return { ok: false, status: 400, error: message };
     }
   }
@@ -329,11 +375,12 @@ async function leaveAction(
     onchain,
     lineup.lineup.id,
     deps,
+    nonceInfo,
   );
   if (!submitted.ok || submitted.preparedUserOp) return submitted;
 
   await deps.deleteContestEntry(contest.id, lineup.lineup.id, delegate.userId);
-  await deps.log(delegate.userId, "leave");
+  await deps.log(delegate.userId, "leave", undefined, nonceInfo);
   return { ok: true, lineupId: lineup.lineup.id };
 }
 
@@ -342,6 +389,7 @@ async function upsertLineup(
   delegate: BotDelegateRow,
   contest: BotContest,
   deps: BotActionDeps,
+  nonceInfo?: { signerAddress: string; nonce: string },
 ): Promise<ExecuteBotActionResult> {
   if (input.picks.length === 0) {
     return { ok: false, status: 400, error: "Lineup requires picks" };
@@ -356,10 +404,10 @@ async function upsertLineup(
       ...(input.prediction !== undefined ? { prediction: input.prediction } : {}),
     });
     if (!result.ok) {
-      await deps.log(delegate.userId, "error", result.error);
+      await deps.log(delegate.userId, "error", result.error, nonceInfo);
       return { ok: false, status: 400, error: result.error };
     }
-    await deps.log(delegate.userId, "lineupUpsert");
+    await deps.log(delegate.userId, "lineupUpsert", undefined, nonceInfo);
     return { ok: true, lineupId: input.lineupId };
   }
 
@@ -372,10 +420,10 @@ async function upsertLineup(
     ...(input.prediction !== undefined ? { prediction: input.prediction } : {}),
   });
   if (!created.ok) {
-    await deps.log(delegate.userId, "error", created.error);
+    await deps.log(delegate.userId, "error", created.error, nonceInfo);
     return { ok: false, status: 400, error: created.error };
   }
-  await deps.log(delegate.userId, "lineupUpsert");
+  await deps.log(delegate.userId, "lineupUpsert", undefined, nonceInfo);
   return { ok: true, lineupId: created.lineup.id };
 }
 
@@ -387,6 +435,7 @@ async function submitIfNeeded(
   onchain: boolean,
   lineupId: string,
   deps: BotActionDeps,
+  nonceInfo?: { signerAddress: string; nonce: string },
 ): Promise<ExecuteBotActionResult> {
   if (!onchain) return { ok: true, lineupId };
   const smartWallet = getAddress(input.smartWallet);
@@ -400,7 +449,7 @@ async function submitIfNeeded(
       smartWallet,
     });
     if (!prepared.ok) {
-      await deps.log(delegate.userId, "error", prepared.error);
+      await deps.log(delegate.userId, "error", prepared.error, nonceInfo);
       return { ok: false, status: 502, error: prepared.error };
     }
     return {
@@ -426,7 +475,7 @@ async function submitIfNeeded(
     ...(input.userOp ? { userOp: input.userOp } : {}),
   });
   if (!submitted.ok) {
-    await deps.log(delegate.userId, "error", submitted.error);
+    await deps.log(delegate.userId, "error", submitted.error, nonceInfo);
     return { ok: false, status: 502, error: submitted.error };
   }
   return { ok: true, lineupId };

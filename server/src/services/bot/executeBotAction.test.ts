@@ -84,6 +84,7 @@ function deps(partial: Partial<BotActionDeps> = {}): BotActionDeps {
     })),
     submitCalls: vi.fn(async () => ({ ok: true as const })),
     log: vi.fn(async () => undefined),
+    reserveNonce: vi.fn(async () => true),
     ...partial,
   };
 }
@@ -159,7 +160,8 @@ describe("executeBotAction", () => {
     expect(result).toMatchObject({ ok: false, error: "Session key is not enabled" });
     expect(used.insertContestEntry).not.toHaveBeenCalled();
     expect(log).toHaveBeenCalledTimes(1);
-    expect(log.mock.calls[0]).toEqual([USER_ID, "error", "Session key is not enabled"]);
+    // Log call: (userId, action, error, nonce?) - nonce is undefined for legacy format
+    expect(log.mock.calls[0]?.slice(0, 3)).toEqual([USER_ID, "error", "Session key is not enabled"]);
   });
 
   it("does not create a contest entry when the join user operation fails", async () => {
@@ -209,10 +211,79 @@ describe("executeBotAction", () => {
       used,
     );
     expect(result).toMatchObject({ ok: true, lineupId: "lineup-1" });
-    expect(log).toHaveBeenCalledWith(USER_ID, "lineupUpsert");
+    // Log call: (userId, action, error?, nonce?) - no nonce for legacy format
+    expect(log).toHaveBeenCalledWith(USER_ID, "lineupUpsert", undefined, undefined);
     expect(used.createLineup).toHaveBeenCalledOnce();
     expect(used.submitCalls).not.toHaveBeenCalled();
     expect(used.prepareUserOp).not.toHaveBeenCalled();
+  });
+
+  it("rejects replayed nonce with ERC-8128 auth", async () => {
+    const reserveNonce = vi.fn(async () => false); // Nonce already used
+    const used = deps({ reserveNonce });
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const result = await executeBotAction(
+      {
+        chainId: CHAIN_ID,
+        action: "lineupUpsert",
+        smartWallet: SMART_WALLET,
+        contestId: "contest-1",
+        lineupId: "",
+        picks: ["p1", "p2"],
+        deadline: BigInt(nowSeconds + 60),
+        signature: "0x" as Hex,
+        nowSeconds,
+        erc8128Auth: {
+          signer: cutBot.address,
+          chainId: CHAIN_ID,
+          nonce: "already-used-nonce",
+        },
+      },
+      used,
+    );
+    expect(result).toMatchObject({ ok: false, status: 409, error: "Nonce already used (replay rejected)" });
+    expect(reserveNonce).toHaveBeenCalledWith(
+      cutBot.address,
+      "already-used-nonce",
+      "",
+      "lineupUpsert",
+    );
+    expect(used.createLineup).not.toHaveBeenCalled();
+  });
+
+  it("accepts ERC-8128 auth with valid nonce and logs nonce info", async () => {
+    const log = vi.fn(async () => undefined);
+    const reserveNonce = vi.fn(async () => true);
+    const used = deps({ log, reserveNonce });
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const result = await executeBotAction(
+      {
+        chainId: CHAIN_ID,
+        action: "lineupUpsert",
+        smartWallet: SMART_WALLET,
+        contestId: "contest-1",
+        lineupId: "",
+        picks: ["p1", "p2"],
+        deadline: BigInt(nowSeconds + 60),
+        signature: "0x" as Hex,
+        nowSeconds,
+        erc8128Auth: {
+          signer: cutBot.address,
+          chainId: CHAIN_ID,
+          nonce: "unique-nonce-123",
+        },
+      },
+      used,
+    );
+    expect(result).toMatchObject({ ok: true, lineupId: "lineup-1" });
+    expect(reserveNonce).toHaveBeenCalled();
+    // Log should include nonce info
+    expect(log).toHaveBeenCalledWith(
+      USER_ID,
+      "lineupUpsert",
+      undefined,
+      { signerAddress: getAddress(cutBot.address), nonce: "unique-nonce-123" },
+    );
   });
 
   it("joins an existing lineup and does not write picks", async () => {
