@@ -45,6 +45,8 @@ model User {
   contestSecondaryParticipants ContestSecondaryParticipant[]
   wallets                      UserWallet[]
   emailSendLogs                EmailSendLog[]
+  botDelegates                 BotDelegate[]
+  botActionLogs                BotActionLog[]
   referredBy                   User?                         @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
   referredUsers                User[]                        @relation("UserReferrals")
 
@@ -71,6 +73,44 @@ model UserWallet {
   @@index([userId])
   @@index([chainId])
   @@index([publicKey])
+}
+
+// A Kernel session key the user installed. Cut Bot's key lives on the server.
+// A personal delegate's private key does not.
+model BotDelegate {
+  id              String    @id @default(cuid())
+  userId          String
+  smartWallet     String
+  delegateAddress String
+  /// cut_bot | external
+  kind            String
+  /// active | revoked
+  status          String
+  /// Serialized permission account plus the installed validator address.
+  approval        String
+  createdAt       DateTime  @default(now())
+  revokedAt       DateTime?
+  updatedAt       DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, delegateAddress])
+  @@index([userId])
+  @@index([smartWallet, delegateAddress, status])
+}
+
+// Records that an action happened. Lineup, contest, and tx hash live elsewhere.
+model BotActionLog {
+  id        String   @id @default(cuid())
+  userId    String
+  /// delegate | revoke | join | leave | update | error
+  action    String
+  error     String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model UserGroup {

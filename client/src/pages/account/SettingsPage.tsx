@@ -7,6 +7,7 @@ import { CopyButton } from "../../components/common/CopyToClipboard";
 import { Breadcrumbs } from "../../components/common/Breadcrumbs";
 import { PageSection } from "../../components/layout/PageSection";
 import { DisplaySettings } from "../../components/account/DisplaySettings";
+import { BotDelegationSettings } from "../../components/account/BotDelegationSettings";
 import { useAuth } from "../../contexts/AuthContext";
 
 function truncateMiddle(value: string, head = 8, tail = 6) {
@@ -105,6 +106,8 @@ export function SettingsPage() {
           userEmail={user?.email}
           accountIdAddress={smartWalletAddress}
         />
+
+        <BotDelegationSettings />
       </div>
     </>
   );

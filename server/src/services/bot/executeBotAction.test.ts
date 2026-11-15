@@ -1,0 +1,240 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { getAddress, type Hex } from "viem";
+import { generateContestEntryId } from "../../utils/contestEntryId.js";
+import { describe, expect, it, vi } from "vitest";
+import { packApproval } from "./approvalEnvelope.js";
+import { assertJoinCalls, buildJoinCalls, hashCalls, hashPicks } from "./botCalls.js";
+import { signBotAction } from "./botActionSignature.js";
+import {
+  PREPARE_CALLS_HASH,
+  executeBotAction,
+  type BotActionDeps,
+  type BotContest,
+  type BotDelegateRow,
+  type ExecuteBotActionInput,
+} from "./executeBotAction.js";
+
+const CHAIN_ID = 84532;
+const SMART_WALLET = getAddress("0x1111111111111111111111111111111111111111");
+const CONTEST = getAddress("0x2222222222222222222222222222222222222222");
+const TOKEN = getAddress("0x3333333333333333333333333333333333333333");
+const USER_ID = "user-1";
+
+const cutBotKey = generatePrivateKey();
+const cutBot = privateKeyToAccount(cutBotKey);
+const strangerKey = generatePrivateKey();
+
+function contest(overrides: Partial<BotContest> = {}): BotContest {
+  return {
+    id: "contest-1",
+    eventId: "event-1",
+    userGroupId: null,
+    address: CONTEST,
+    chainId: CHAIN_ID,
+    status: "OPEN",
+    paymentToken: TOKEN,
+    depositWei: 5_000_000n,
+    ...overrides,
+  };
+}
+
+function delegate(overrides: Partial<BotDelegateRow> = {}): BotDelegateRow {
+  return {
+    userId: USER_ID,
+    smartWallet: SMART_WALLET.toLowerCase(),
+    delegateAddress: cutBot.address.toLowerCase(),
+    kind: "cut_bot",
+    approval: packApproval({ approval: "serialized", permissionId: "0x5a677774" }),
+    ...overrides,
+  };
+}
+
+function deps(partial: Partial<BotActionDeps> = {}): BotActionDeps {
+  return {
+    findDelegate: vi.fn(async () => delegate()),
+    sessionEnabled: vi.fn(async () => true),
+    loadContest: vi.fn(async () => contest()),
+    isGroupMember: vi.fn(async () => true),
+    findLineup: vi.fn(async () => ({
+      id: "lineup-1",
+      userId: USER_ID,
+      eventId: "event-1",
+      contestId: "contest-1",
+      picks: ["p1"],
+    })),
+    findLineupByPicks: vi.fn(async () => null),
+    createLineup: vi.fn(async () => ({
+      ok: true as const,
+      lineup: {
+        id: "lineup-1",
+        userId: USER_ID,
+        eventId: "event-1",
+        contestId: "contest-1",
+        picks: ["p1"],
+      },
+    })),
+    findContestEntry: vi.fn(async () => null),
+    insertContestEntry: vi.fn(async () => undefined),
+    deleteContestEntry: vi.fn(async () => true),
+    updateLineup: vi.fn(async () => ({ ok: true as const })),
+    submitCalls: vi.fn(async () => ({ ok: true as const })),
+    log: vi.fn(async () => undefined),
+    ...partial,
+  };
+}
+
+async function signedJoin(
+  key: Hex,
+  callsHash: Hex,
+  lineupId = "lineup-1",
+): Promise<ExecuteBotActionInput> {
+  const deadline = BigInt(Math.floor(Date.now() / 1000) + 60);
+  const message = {
+    action: "join" as const,
+    smartWallet: SMART_WALLET,
+    contestId: "contest-1",
+    lineupId,
+    picksHash: hashPicks(["p1"]),
+    callsHash,
+    deadline,
+  };
+  return {
+    chainId: CHAIN_ID,
+    action: "join",
+    smartWallet: SMART_WALLET,
+    contestId: "contest-1",
+    lineupId,
+    picks: ["p1"],
+    callsHash,
+    deadline,
+    signature: await signBotAction(key, CHAIN_ID, message),
+    nowSeconds: Number(deadline) - 30,
+  };
+}
+
+describe("assertJoinCalls", () => {
+  const expected = {
+    paymentToken: TOKEN,
+    contest: CONTEST,
+    depositWei: 5_000_000n,
+    entryId: 7n,
+  };
+
+  it("accepts approve to the contest for the deposit, then addPrimaryPosition", () => {
+    const calls = buildJoinCalls(expected);
+    expect(() => assertJoinCalls(calls, expected)).not.toThrow();
+  });
+
+  it("rejects an approve whose amount is not the contest deposit", () => {
+    const calls = buildJoinCalls({ ...expected, depositWei: 1n });
+    expect(() => assertJoinCalls(calls, expected)).toThrow(/amount must be the contest deposit/);
+  });
+
+  it("rejects an approve whose spender is not the contest", () => {
+    const calls = buildJoinCalls({
+      ...expected,
+      contest: getAddress("0x5555555555555555555555555555555555555555"),
+    });
+    calls[1] = buildJoinCalls(expected)[1];
+    expect(() => assertJoinCalls(calls, expected)).toThrow(/spender must be the contest/);
+  });
+});
+
+describe("executeBotAction", () => {
+  it("rejects a signature from an address that is not a delegate", async () => {
+    const used = deps({ findDelegate: vi.fn(async () => null) });
+    const result = await executeBotAction(
+      await signedJoin(strangerKey, PREPARE_CALLS_HASH, ""),
+      used,
+    );
+    expect(result).toMatchObject({ ok: false, status: 403 });
+    expect(used.insertContestEntry).not.toHaveBeenCalled();
+    expect(used.log).not.toHaveBeenCalled();
+  });
+
+  it("rejects a revoked session key and logs only the error", async () => {
+    const log = vi.fn(async () => undefined);
+    const used = deps({
+      sessionEnabled: vi.fn(async () => false),
+      log,
+    });
+    const result = await executeBotAction(await signedJoin(cutBotKey, PREPARE_CALLS_HASH), used);
+    expect(result).toMatchObject({ ok: false, error: "Session key is not enabled" });
+    expect(used.insertContestEntry).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(log.mock.calls[0]).toEqual([USER_ID, "error", "Session key is not enabled"]);
+  });
+
+  it("does not create a contest entry when the join user operation fails", async () => {
+    const calls = buildJoinCalls({
+      paymentToken: TOKEN,
+      contest: CONTEST,
+      depositWei: 5_000_000n,
+      entryId: BigInt(generateContestEntryId(CONTEST, "lineup-1")),
+    });
+    const log = vi.fn(async () => undefined);
+    const insertContestEntry = vi.fn(async () => undefined);
+    const used = deps({
+      submitCalls: vi.fn(async () => ({ ok: false as const, error: "bundler reverted" })),
+      log,
+      insertContestEntry,
+    });
+    const previous = process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
+    process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = cutBotKey;
+    const result = await executeBotAction(await signedJoin(cutBotKey, hashCalls(calls)), used);
+    if (previous === undefined) delete process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
+    else process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = previous;
+    expect(result).toMatchObject({ ok: false, error: "bundler reverted" });
+    expect(insertContestEntry).not.toHaveBeenCalled();
+    expect(log.mock.calls[0]?.slice(0, 2)).toEqual([USER_ID, "error"]);
+    expect(JSON.stringify(log.mock.calls)).not.toContain("contest-1");
+  });
+
+  it("logs a successful update with the action only", async () => {
+    const log = vi.fn(async () => undefined);
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 60);
+    const message = {
+      action: "update" as const,
+      smartWallet: SMART_WALLET,
+      contestId: "contest-1",
+      lineupId: "lineup-1",
+      picksHash: hashPicks(["p1", "p2"]),
+      callsHash: "0x0000000000000000000000000000000000000000000000000000000000000000" as Hex,
+      deadline,
+    };
+    const used = deps({ log });
+    const result = await executeBotAction(
+      {
+        chainId: CHAIN_ID,
+        action: "update",
+        smartWallet: SMART_WALLET,
+        contestId: "contest-1",
+        lineupId: "lineup-1",
+        picks: ["p1", "p2"],
+        callsHash: message.callsHash,
+        deadline,
+        signature: await signBotAction(cutBotKey, CHAIN_ID, message),
+        nowSeconds: Number(deadline) - 10,
+      },
+      used,
+    );
+    expect(result).toMatchObject({ ok: true, lineupId: "lineup-1" });
+    expect(log).toHaveBeenCalledWith(USER_ID, "update");
+    expect(used.submitCalls).not.toHaveBeenCalled();
+  });
+});
+
+describe("client join", () => {
+  it("does not go through the bot action API", () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const source = readFileSync(
+      path.resolve(here, "../../../../client/src/hooks/useContestLineupEntry.ts"),
+      "utf8",
+    );
+    expect(source).toContain("useJoinContest");
+    expect(source).not.toContain("/bot/actions");
+  });
+});

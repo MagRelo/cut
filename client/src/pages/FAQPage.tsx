@@ -69,6 +69,11 @@ export const FAQPage: React.FC = () => {
               Invite Network
             </a>
           </li>
+          <li>
+            <a href="#agents" className="text-blue-600 hover:underline">
+              Agents
+            </a>
+          </li>
         </ul>
       </PageSection>
 
@@ -949,6 +954,34 @@ export const FAQPage: React.FC = () => {
             Rewards are paid out when the contest settles and a winner is crowned. At settlement,
             the invite rewards are distributed up the winner&apos;s invite chain: the person who
             invited them, their inviter, and so on—using the multi-level rules above.
+          </p>
+        </div>
+      </PageSection>
+
+      <PageSection id="agents" className="scroll-mt-4">
+        <h2 className="mb-4 font-display text-2xl font-bold text-gray-900">Agents</h2>
+        <div className="space-y-4 text-gray-700">
+          <p>
+            Entries are signed in one of three ways. If you have not added a delegate, you sign
+            from the app. If you allow Cut Bot, the server can join, leave, and update lineups
+            while you are away. If you paste a public address, that address can do the same, and
+            the private key stays with whoever runs that bot.
+          </p>
+          <p>
+            A delegate is a session key on your smart wallet. It can sign any transaction for that
+            wallet, including sending {tokenLabel}.
+            You can revoke it from{" "}
+            <Link to="/account/settings" className="text-blue-600 hover:underline">
+              Settings
+            </Link>
+            .
+          </p>
+          <p>
+            The request shape for an agent is{" "}
+            <a href="/agents.md" className="text-blue-600 hover:underline">
+              /agents.md
+            </a>
+            .
           </p>
         </div>
       </PageSection>

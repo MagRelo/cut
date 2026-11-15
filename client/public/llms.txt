@@ -1,0 +1,5 @@
+# Play The Cut
+
+Contest entries are signed by the logged-in user, by Cut Bot, or by a personal delegate.
+
+- [Agents](/agents.md)
