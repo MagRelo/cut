@@ -149,3 +149,39 @@ settleContest → ReferralNetworkFeeDistributed → cold platform root (when anc
 | Referral | Platform root (organic referral parent) | `referralPlatformRootAddress` (chain JSON) | `0x15c3DC71f1f7Fd975e6c82Ff84e8bcaC0E4b2acb` | `0x15c3DC71f1f7Fd975e6c82Ff84e8bcaC0E4b2acb` |
 
 Never commit private keys. Addresses only in this doc; keys only in sealed env / secrets managers.
+
+---
+
+## Player funding
+
+Production players hold **canonical Base USDC** (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`) in their Privy smart wallet. They add it by transferring USDC on Base from an exchange or another wallet. Coinbase and Robinhood are the paths named in the product. Staging is **MockUSDC (xUSDC)** on Base Sepolia, funded player-to-player. The client does not open a card checkout.
+
+### Card onramp
+
+Privy Dashboard → Funding has card onramps enabled for Stripe and MoonPay. The client does not call `useDepositFunds`. The hook lives in `@privy-io/react-auth` (client is on `^3.51.4`; Stripe's embedded checkout needs `3.33.1` or later) and needs a direct `@stripe/crypto` dependency before Stripe can mount. A future call funds the **smart-wallet address** on chain `base`, asset `usdc`. Card onramps deliver mainnet assets. Stripe rejects testnets, including when `fiat.environment` is `sandbox`.
+
+Checked against Privy's deposit docs on 15 Nov 2026:
+
+| Dashboard setup | Provider | Fiat the client can quote | Coverage |
+|-----------------|----------|----------------------------|----------|
+| Card onramps on, Meld not configured | Stripe | USD, EUR | Debit, credit, Apple Pay, Google Pay, and ACH (US only). Embedded Components: United States except New York, and the EU. USDC on Base is a supported destination. |
+| Same | MoonPay | AUD, BRL | Card and local methods for those two currencies. This route does not quote USD. |
+| Meld → Configure, KYB approved | Meld's network | 50+ ISO currencies | Card, bank transfer, and local methods in 100+ countries. USD through a non-Stripe provider depends on this approval. |
+
+`fiat.preferredProvider` (`stripe`, `moonpay`, `coinbase`, `meld`) only picks among quotes Privy already returned. A provider with no quote is skipped.
+
+### New York
+
+A New York session on the enabled Stripe route returns **Stripe onramp is not available in New York** and leaves Continue disabled. No second provider quotes USD, so the modal cannot complete.
+
+Stripe documents the same limit for Embedded Components: available in the US and the EU, **not in New York**. Stripe is merchant of record for that onramp and runs KYC, sanctions screening, and disputes.
+
+New York treats a fiat-to-crypto exchange as virtual currency business activity. Under [23 NYCRR 200.2(q)](https://www.dfs.ny.gov/apps_and_licensing/virtual_currency_businesses) and 200.3(a), activity involving New York or a New York resident needs a BitLicense, or a New York Banking Law charter approved for that activity, before it can be offered. Moving the dollars can also require a New York money transmitter license under Banking Law Article 13-B. Play The Cut holds neither license. The onramp company is the licensed party.
+
+[MoonPay USA LLC](https://www.moonpay.com/legal/licenses) holds a New York virtual-currency license and a New York money transmitter license (NYDFS license 0000045; BitLicense announced [4 Jun 2025](https://www.moonpay.com/newsroom/ny-bitlicense)). MoonPay states that those licenses let it serve all 50 states. Privy's default client integration still sends only AUD and BRL to MoonPay until Meld KYB is approved, so that license does not produce a USD quote in the current dashboard setup.
+
+### Ship when
+
+Meld production access is approved, and a New York session receives a USD quote that delivers canonical Base USDC to the smart wallet. Until that quote exists, Wallet stays receive and send.
+
+Sources: [Privy deposit modal](https://docs.privy.io/wallets/funding/use-deposit-funds), [Privy deposit configuration](https://docs.privy.io/financial-flows/deposits/configuration), [Stripe Embedded Components onramp](https://docs.stripe.com/crypto/onramp/embedded-components-overview), [NYDFS virtual currency licensing](https://www.dfs.ny.gov/apps_and_licensing/virtual_currency_businesses).
