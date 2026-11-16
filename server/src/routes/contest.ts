@@ -29,8 +29,7 @@ import {
 import { canAccessLeagueContest, isUserGroupAdmin } from "../utils/userGroup.js";
 import { getContestTimelineData } from "../utils/contestTimeline.js";
 import { scheduleContestAnnouncementEmails } from "../lib/email/send/contestAnnouncement.js";
-import { queueVerifyContestContract } from "../services/contest/verifyContestContract.js";
-import { verifyFactoryContestCreation } from "../services/contest/verifyFactoryContestCreation.js";
+import { recordPaidContest } from "../services/contest/recordPaidContest.js";
 import { resolveContestDbId } from "../utils/contestRouteParam.js";
 import { hasOnchainEscrow } from "../utils/hasOnchainEscrow.js";
 import { cloneLineup } from "../services/lineups/cloneLineup.js";
@@ -40,12 +39,6 @@ import {
   verifySecondaryBuyReceipt,
 } from "../services/contest/verifySecondaryBuyReceipt.js";
 import { generateContestEntryId } from "../utils/contestEntryId.js";
-import {
-  getReferralGraphAddress,
-  getRewardCalculatorAddress,
-  parseReferralGroupIdFromEnv,
-} from "../lib/referralConfig.js";
-import { primaryDepositWeiFromSettings } from "../lib/contractAddresses.js";
 import { contestListSelect, contestVisibilityWhere } from "../utils/contestListQuery.js";
 import {
   canDeleteLeagueContest,
@@ -90,11 +83,10 @@ async function contestLobbyResponse(
   routeParam: string,
   options?: { skipCache?: boolean; status?: 200 | 201; cacheControl?: boolean },
 ) {
-  const payload = await getContestLobby(
-    routeParam,
-    getOptionalPrivyUserId(c),
-    options?.skipCache ? { skipCache: true } : undefined,
-  );
+  const payload = await getContestLobby(routeParam, getOptionalPrivyUserId(c), {
+    ...(options?.skipCache ? { skipCache: true } : {}),
+    userId: getOptionalUserId(c),
+  });
   if (!payload) {
     return c.json({ error: "Contest not found" }, 404);
   }
@@ -124,7 +116,7 @@ contestRouter.get("/directory", optionalPrivyJwt, async (c) => {
 
     const { scope } = validation.data;
     const privyUserId = getOptionalPrivyUserId(c);
-    const directory = await getContestDirectory(privyUserId, scope);
+    const directory = await getContestDirectory(privyUserId, scope, getOptionalUserId(c));
 
     c.header("Cache-Control", "private, max-age=15, stale-while-revalidate=45");
 
@@ -448,106 +440,22 @@ contestRouter.post("/", requireAuth, async (c) => {
       return c.json({ error: "transactionHash and address are required for paid contests" }, 400);
     }
 
-    const factoryCheck = await verifyFactoryContestCreation({
+    const recorded = await recordPaidContest({
+      name,
+      description,
+      eventId,
+      userGroupId,
+      endTime,
       chainId,
+      address,
       transactionHash: transactionHash as `0x${string}`,
-      claimedAddress: address,
-    });
-    if (!factoryCheck.ok) {
-      const messageByError = {
-        receipt_not_found: "Transaction receipt not found",
-        receipt_failed: "Transaction did not succeed",
-        not_factory_contest: "Transaction did not create a contest from the configured factory",
-        address_mismatch: "Contest address does not match the factory ContestCreated event",
-        operator_mismatch: "Contest operator does not match the configured operator",
-        token_mismatch: "Contest payment token does not match the configured token",
-        rpc_error: "Failed to verify contest creation",
-      } as const;
-      const status = factoryCheck.error === "rpc_error" ? 502 : 400;
-      return c.json({ error: messageByError[factoryCheck.error] }, status);
-    }
-
-    const contestAddress = factoryCheck.contestAddress;
-    const pinnedSettings = {
-      ...(settings ?? {}),
-      operator: factoryCheck.operator,
-      paymentTokenAddress: factoryCheck.paymentToken,
-    };
-
-    const contest = await prisma.contest.create({
-      data: {
-        name,
-        description: description || null,
-        eventId,
-        userGroupId: userGroupId || null,
-        endTime,
-        address: contestAddress,
-        chainId,
-        status: "OPEN",
-        settings: pinnedSettings as Prisma.InputJsonValue,
-      },
-      include: {
-        event: true,
-        userGroup: true,
-      },
-    });
-    invalidateContestDirectory();
-    invalidateContestLobby(contest);
-
-    const bps =
-      pinnedSettings.primaryDepositSecondarySubsidyBps ??
-      (pinnedSettings as { primaryEntryInvestmentShareBps?: number })
-        .primaryEntryInvestmentShareBps;
-
-    const referralNetworkBps =
-      typeof (pinnedSettings as { referralNetworkBps?: number }).referralNetworkBps === "number"
-        ? (pinnedSettings as { referralNetworkBps: number }).referralNetworkBps
-        : typeof pinnedSettings.oracleFeeBps === "number"
-          ? pinnedSettings.oracleFeeBps
-          : undefined;
-    const referralGraphAddress = getReferralGraphAddress(chainId);
-    const rewardCalculatorAddress = getRewardCalculatorAddress(chainId);
-    const referralGroupIdRaw =
-      (pinnedSettings as { referralGroupId?: string }).referralGroupId ??
-      parseReferralGroupIdFromEnv();
-    const referralGroupId = referralGroupIdRaw as `0x${string}` | null;
-    if (
-      typeof pinnedSettings.primaryDeposit === "number" &&
-      typeof referralNetworkBps === "number" &&
-      typeof pinnedSettings.expiryTimestamp === "number" &&
-      typeof bps === "number" &&
-      referralGraphAddress &&
-      rewardCalculatorAddress &&
-      referralGroupId
-    ) {
-      const primaryDepositAmountWei = primaryDepositWeiFromSettings(
-        pinnedSettings.primaryDeposit,
-        chainId,
-      ).toString();
-      void queueVerifyContestContract({
-        chainId,
-        contestAddress,
-        paymentTokenAddress: pinnedSettings.paymentTokenAddress,
-        operator: pinnedSettings.operator,
-        primaryDepositAmountWei,
-        referralNetworkBps,
-        expiryTimestamp: pinnedSettings.expiryTimestamp,
-        primaryDepositSecondarySubsidyBps: bps,
-        referralGraphAddress,
-        rewardCalculatorAddress,
-        referralGroupId,
-      }).catch((err) => {
-        console.error("Failed to queue contest contract verification:", err);
-      });
-    }
-
-    await scheduleContestAnnouncementEmails({
-      contestId: contest.id,
-      eventId: contest.eventId,
-      userGroupId: contest.userGroupId,
+      settings: (settings ?? null) as Record<string, unknown> | null,
       notifyLeagueMembers,
     });
-    return c.json(contest, 201);
+    if (!recorded.ok) {
+      return c.json({ error: recorded.error }, recorded.status);
+    }
+    return c.json(recorded.contest, 201);
   } catch (error) {
     console.error("Error creating contest:", error);
     return c.json({ error: "Failed to create contest" }, 500);
@@ -821,6 +729,7 @@ contestRouter.delete(
       if (!lineup) {
         const formattedContest = await getContestLobby(contestId, getOptionalPrivyUserId(c), {
           skipCache: true,
+          userId: getOptionalUserId(c),
         });
         if (!formattedContest) {
           return c.json({ error: "Contest not found" }, 404);

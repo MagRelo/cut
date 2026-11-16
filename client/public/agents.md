@@ -1,6 +1,6 @@
 # Agents
 
-The user is the account: one person, one smart wallet. In the browser that user signs in with Privy, installs or revokes a delegate, and can enter a contest from the app.
+The account is one wallet. A person signs in with Privy in the browser, installs or revokes a delegate, and can enter a contest from the app. An agent can register that wallet itself and sign the same player routes.
 
 A delegate is a key the user installs on that wallet so another client can act for them. The delegate signs this API. The server may hold the key, or the caller may hold it. Both are the same kind of key.
 
@@ -16,9 +16,13 @@ The user can also sign the HTTP request as the smart wallet. The server checks t
 
 ## Authentication
 
-`GET /api/bot/contests` and `POST /api/bot/actions` use [ERC-8128](https://erc8128.org). There is no Privy session and no signature field in the query or body.
+Player routes accept a Privy bearer token or an [ERC-8128](https://erc8128.org) signature. `GET /api/bot/contests` and `POST /api/bot/actions` are signature-only. There is no signature field in the query or body. A request that sends both a bearer token and a signature is rejected.
 
 Sign with `@slicekit/erc8128` `signRequest`. The signature is Request-Bound and Non-Replayable. `@slicekit/erc8128` covers `@scheme`, `@authority`, `@method`, `@path`, and `@query`, plus `content-digest` and `content-type` when the request has a body. Parameters are `keyid`, `created`, `expires`, `nonce`, and `tag="erc8128"`.
+
+A delegate names the account with `smartWallet` in the query, because the signature covers `@query`. When the signer is the wallet, omit that query. `user.address` is the wallet. When `X-Cut-Chain-Id` is present it must match the signature chain.
+
+These stay on a Privy session: `POST /api/auth/session`, `POST /api/auth/sync-wallets`, delegate install and revoke, and `/api/admin`. Public sport, event, and field routes stay unsigned. `AGENT` is a player type. It is not staff, so an agent signature on an admin route is rejected and an agent cannot create a public contest.
 
 `keyid` is `eip8128:<chainId>:0x<signer>`. The chain is `8453` or `84532` and must equal `chainId` on the request. `created` and `expires` are unix seconds. `expires - created` is at most one hour. `nonce` is a single-use ASCII string of at most 128 bytes. The server stores `(keyid, nonce)` until `expires`.
 
@@ -29,6 +33,14 @@ The signer is the delegate address, or the smart wallet when the user signs. A s
 ```
 BOT_DELEGATE_PRIVATE_KEY=0x… SMART_WALLET=0x… pnpm --filter server run script:sign-bot-request
 ```
+
+## Account
+
+`POST /api/auth/register` creates the account. The wallet signs. A `smartWallet` query that is not the signer is rejected. Body: `email` (required), optional `name`, optional `referralCode`. A new account is `userType` `AGENT`. Registering the same wallet again returns that account and does not change the email or type. Email already on another account is `EMAIL_ALREADY_BOUND`.
+
+Response: `userId`, `email`, `userType`, `name`, `referralCode`, `smartWallet`, `created`. `201` when the account is new, `200` when the wallet already has one.
+
+`GET /api/auth/me`, `PUT /api/auth/update`, and `PUT /api/auth/settings` then read and write that account. League routes, lineup save, contest reads, `$0` contest create, and recording a paid contest the caller already deployed are the existing `/api/userGroups`, `/api/lineups`, and `/api/contests` routes with the same signature. Directory and lobby membership for an account with no Privy id uses the Cut user id.
 
 ## Contests
 
@@ -123,13 +135,19 @@ Open or cancelled contests. Same request shape as join, with `action` `leave` an
 
 `userOpSignature` is the delegate's EIP-191 signature of the raw 32-byte `userOpHash`: `signMessage({ message: { raw: userOpHash } })`. Do not prefix it. The server adds the permission-plugin prefix and submits the returned `userOp` unchanged.
 
+### 4. createContest
+
+Paid contest the server deploys. A league admin, or staff, may create one. An `AGENT` creating a public contest is rejected. The body has `name`, `eventId`, `endDate`, and `settings` with `primaryDeposit` greater than zero. Optional `description`, `userGroupId`, and `notifyLeagueMembers`. There is no transaction hash.
+
+The server builds `ContestFactory.createContest` and submits it the same way as join: a server-held delegate returns `{ ok: true, contestId, address }`, and a caller-held delegate first receives `{ preparedUserOp: true, userOpHash, userOp }`. A self-registered wallet that sends its own factory transaction records it on `POST /api/contests` instead. A `$0` contest is that same route and stays in the database.
+
 A failed join is logged as `error` and does not create an entry. The log stores the action and the time. The lineup, contest entry, and transaction hash stay on their own records.
 
 ## Settings
 
 `GET /api/bot/delegate-address` returns the public address of the server-held delegate, or `null` when that key is unset. No signature.
 
-The signed-in user records an approval with `POST /api/bot/delegates`. These settings routes use the Privy bearer token. The first approval is the user's enable signature on the wallet. Kernel installs the key and grants `execute` on the first `join` or `leave`. Allowing the same key again after a revoke sends an install transaction:
+The signed-in user records an approval with `POST /api/bot/delegates`. Install and revoke use the Privy bearer token. The first approval is the user's enable signature on the wallet. Kernel installs the key and grants `execute` on the first `join` or `leave`. Allowing the same key again after a revoke sends an install transaction:
 
 - `kind`: `cut_bot` (the server holds the key) or `external` (the caller holds the key)
 - `delegateAddress`

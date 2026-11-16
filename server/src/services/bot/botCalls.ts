@@ -163,3 +163,72 @@ export function assertLeaveCalls(
     throw new Error("removePrimaryPosition entry does not match this lineup");
   }
 }
+
+const createContestAbi = [
+  {
+    type: "function",
+    name: "createContest",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "contestantDepositAmount", type: "uint256" },
+      { name: "referralNetworkBps", type: "uint256" },
+      { name: "expiry", type: "uint256" },
+      { name: "primaryDepositSecondarySubsidyBps", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "address" }],
+  },
+] as const;
+
+export function buildCreateContestCall(input: {
+  factory: Address;
+  primaryDepositAmount: bigint;
+  referralNetworkBps: bigint;
+  expiryTimestamp: bigint;
+  primaryDepositSecondarySubsidyBps: bigint;
+}): BotCall {
+  return {
+    to: getAddress(input.factory),
+    value: 0n,
+    data: encodeFunctionData({
+      abi: createContestAbi,
+      functionName: "createContest",
+      args: [
+        input.primaryDepositAmount,
+        input.referralNetworkBps,
+        input.expiryTimestamp,
+        input.primaryDepositSecondarySubsidyBps,
+      ],
+    }),
+  };
+}
+
+export function assertCreateContestCall(
+  call: BotCall,
+  expected: {
+    factory: Address;
+    primaryDepositAmount: bigint;
+    referralNetworkBps: bigint;
+    expiryTimestamp: bigint;
+    primaryDepositSecondarySubsidyBps: bigint;
+  },
+): void {
+  if (call.value !== 0n) {
+    throw new Error("Contest create cannot send ETH");
+  }
+  if (getAddress(call.to) !== getAddress(expected.factory)) {
+    throw new Error("createContest must target the contest factory");
+  }
+  const decoded = decodeFunctionData({ abi: createContestAbi, data: call.data });
+  if (decoded.functionName !== "createContest") {
+    throw new Error("Call must be createContest");
+  }
+  const [deposit, referralBps, expiry, subsidyBps] = decoded.args;
+  if (
+    deposit !== expected.primaryDepositAmount ||
+    referralBps !== expected.referralNetworkBps ||
+    expiry !== expected.expiryTimestamp ||
+    subsidyBps !== expected.primaryDepositSecondarySubsidyBps
+  ) {
+    throw new Error("createContest arguments do not match this contest");
+  }
+}

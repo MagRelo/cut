@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { createTtlCache } from "../../lib/ttlCache.js";
-import { contestPrivyVisibilityOr } from "../../utils/contestListQuery.js";
+import { contestViewerVisibilityOr } from "../../utils/contestListQuery.js";
 import { lobbyMetadata } from "../../utils/contestEventSummary.js";
 import { isEthereumAddress, normalizeContestAddress } from "../../utils/contestRouteParam.js";
 import { formatOnchainPaymentsForContest } from "../../utils/formatOnchainPayments.js";
@@ -45,8 +45,13 @@ type ContestLobbyPayload = Record<string, unknown>;
 
 const lobbyCache = createTtlCache<ContestLobbyPayload>(CONTEST_LOBBY_CACHE_TTL_MS);
 
-export function contestLobbyCacheKey(routeKey: string, privyUserId: string | null): string {
-  return `${normalizeContestAddress(routeKey)}:${privyUserId ?? "anon"}`;
+export function contestLobbyCacheKey(
+  routeKey: string,
+  privyUserId: string | null,
+  userId?: string | null,
+): string {
+  const viewer = privyUserId ?? (userId ? `user:${userId}` : "anon");
+  return `${normalizeContestAddress(routeKey)}:${viewer}`;
 }
 
 export function contestLobbyCachePrefix(routeKey: string): string {
@@ -343,6 +348,7 @@ function formatLobbyRow(row: ContestLobbyRow): ContestLobbyPayload {
 export async function loadContestLobby(
   routeParam: string,
   privyUserId: string | null,
+  userId?: string | null,
 ): Promise<ContestLobbyPayload | null> {
   const trimmed = routeParam.trim();
   if (!trimmed) return null;
@@ -354,7 +360,7 @@ export async function loadContestLobby(
   const row = await prisma.contest.findFirst({
     where: {
       ...identityWhere,
-      OR: contestPrivyVisibilityOr(privyUserId),
+      OR: contestViewerVisibilityOr({ privyUserId, userId }),
     },
     select: contestLobbySelect,
   });
@@ -393,21 +399,25 @@ async function overlayViewerReferralStakes(
 export async function getContestLobby(
   routeParam: string,
   privyUserId: string | null,
-  options?: { skipCache?: boolean },
+  options?: { skipCache?: boolean; userId?: string | null },
 ): Promise<ContestLobbyPayload | null> {
   const trimmed = routeParam.trim();
   if (!trimmed) return null;
+  const userId = options?.userId;
 
   if (options?.skipCache) {
-    return loadContestLobby(trimmed, privyUserId);
+    return loadContestLobby(trimmed, privyUserId, userId);
   }
 
   try {
-    return await lobbyCache.getOrLoad(contestLobbyCacheKey(trimmed, privyUserId), async () => {
-      const payload = await loadContestLobby(trimmed, privyUserId);
-      if (!payload) throw new LobbyNotFoundError();
-      return payload;
-    });
+    return await lobbyCache.getOrLoad(
+      contestLobbyCacheKey(trimmed, privyUserId, userId),
+      async () => {
+        const payload = await loadContestLobby(trimmed, privyUserId, userId);
+        if (!payload) throw new LobbyNotFoundError();
+        return payload;
+      },
+    );
   } catch (error) {
     if (error instanceof LobbyNotFoundError) return null;
     throw error;

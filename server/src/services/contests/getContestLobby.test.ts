@@ -148,6 +148,24 @@ describe("getContestLobby", () => {
     expect(where).not.toHaveProperty("id");
   });
 
+  it("includes membership filter for a Cut user id when there is no Privy id", async () => {
+    findFirst.mockResolvedValue(contestRow());
+
+    await loadContestLobby(ADDRESS, null, "agent-1");
+
+    const where = findFirst.mock.calls[0]?.[0]?.where;
+    expect(where.OR).toEqual([
+      { userGroupId: null },
+      {
+        userGroup: {
+          members: {
+            some: { userId: "agent-1" },
+          },
+        },
+      },
+    ]);
+  });
+
   it("includes membership filter for a signed-in Privy user", async () => {
     findFirst.mockResolvedValue(contestRow());
 

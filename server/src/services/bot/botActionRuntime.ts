@@ -228,7 +228,7 @@ export function createBotActionDeps(): BotActionDeps {
     submitCalls: async (input) => {
       const result = await submitSessionKeyUserOp(input);
       if (!result.ok) return result;
-      return { ok: true };
+      return { ok: true, txHash: result.txHash };
     },
     log: async (userId, action, error) => {
       await prisma.botActionLog.create({

@@ -130,24 +130,37 @@ export async function contestVisibilityWhere(
   };
 }
 
-/** Public contests, plus league contests the Privy user belongs to — no extra round trip. */
-export function contestPrivyVisibilityOr(privyUserId: string | null) {
-  return [
-    { userGroupId: null },
-    ...(privyUserId
-      ? [
-          {
-            userGroup: {
-              members: {
-                some: {
-                  user: { privyUserId },
-                },
-              },
+/** Public contests, plus league contests the viewer belongs to. */
+export function contestViewerVisibilityOr(viewer: {
+  privyUserId?: string | null | undefined;
+  userId?: string | null | undefined;
+}) {
+  const member = viewer.privyUserId
+    ? {
+        userGroup: {
+          members: {
+            some: {
+              user: { privyUserId: viewer.privyUserId },
             },
           },
-        ]
-      : []),
-  ];
+        },
+      }
+    : viewer.userId
+      ? {
+          userGroup: {
+            members: {
+              some: { userId: viewer.userId },
+            },
+          },
+        }
+      : null;
+
+  return [{ userGroupId: null }, ...(member ? [member] : [])];
+}
+
+/** Public contests, plus league contests the Privy user belongs to — no extra round trip. */
+export function contestPrivyVisibilityOr(privyUserId: string | null) {
+  return contestViewerVisibilityOr({ privyUserId });
 }
 
 export function sortContestsByEntryFee<

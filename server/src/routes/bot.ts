@@ -3,16 +3,23 @@ import { getAddress, isAddress, type Hex } from "viem";
 import { z } from "zod";
 import { getCutBotAddress, isCutBotAddress } from "../lib/cutBotKey.js";
 import { prisma } from "../lib/prisma.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requirePrivySession } from "../middleware/auth.js";
 import { packApproval } from "../services/bot/approvalEnvelope.js";
 import { botContestListDeps, listSignedBotContests } from "../services/bot/listBotContests.js";
 import { executeBotAction } from "../services/bot/executeBotAction.js";
+import { createContestActionDeps, executeCreateContest } from "../services/bot/executeCreateContest.js";
 import { createBotActionDeps } from "../services/bot/botActionRuntime.js";
 import type { SerializedUserOp } from "../services/bot/submitSessionKeyUserOp.js";
 import { verifyBotRequest } from "../services/bot/verifyBotRequest.js";
+import {
+  DESCRIPTION_MAX_LENGTH,
+  NAME_MAX_LENGTH,
+} from "../schemas/limits.js";
+import { contestSettingsSchema } from "../schemas/contest.js";
 
 const botRouter = new Hono();
 const deps = createBotActionDeps();
+const createDeps = createContestActionDeps();
 
 const hexSchema = z.string().regex(/^0x[0-9a-fA-F]*$/);
 
@@ -47,7 +54,7 @@ const userOpSchema = z.object({
   factoryData: hexSchema.optional(),
 });
 
-const actionSchema = z.object({
+const playActionSchema = z.object({
   chainId: z.number().int(),
   action: z.enum(["lineupUpsert", "join", "leave"]),
   smartWallet: z.string(),
@@ -59,6 +66,24 @@ const actionSchema = z.object({
   userOpSignature: hexSchema.optional(),
   userOp: userOpSchema.optional(),
 });
+
+const createContestActionSchema = z
+  .object({
+    chainId: z.number().int(),
+    action: z.literal("createContest"),
+    smartWallet: z.string(),
+    name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
+    description: z.string().max(DESCRIPTION_MAX_LENGTH).optional(),
+    eventId: z.string().cuid(),
+    userGroupId: z.string().cuid().optional(),
+    endDate: z.union([z.string().datetime(), z.number()]),
+    settings: contestSettingsSchema,
+    notifyLeagueMembers: z.boolean().optional(),
+    userOpSignature: hexSchema.optional(),
+    userOp: userOpSchema.optional(),
+  });
+
+const actionSchema = z.discriminatedUnion("action", [playActionSchema, createContestActionSchema]);
 
 function selectedCandidates(body: {
   candidates?: string[] | undefined;
@@ -123,7 +148,7 @@ botRouter.get("/delegates", requireAuth, async (c) => {
   return c.json({ delegates: rows, cutBotAddress: getCutBotAddress() });
 });
 
-botRouter.post("/delegates", requireAuth, async (c) => {
+botRouter.post("/delegates", requireAuth, requirePrivySession, async (c) => {
   const user = c.get("user");
   const parsed = enableSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) {
@@ -170,7 +195,7 @@ botRouter.post("/delegates", requireAuth, async (c) => {
   return c.json({ status: "active", delegateAddress });
 });
 
-botRouter.post("/delegates/revoke", requireAuth, async (c) => {
+botRouter.post("/delegates/revoke", requireAuth, requirePrivySession, async (c) => {
   const user = c.get("user");
   const parsed = revokeSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) {
@@ -203,6 +228,39 @@ botRouter.post("/actions", async (c) => {
   const body = parsed.data;
   if (body.chainId !== verified.chainId) {
     return c.json({ error: "Signature chain does not match the request" }, 400);
+  }
+  if (body.action === "createContest") {
+    const result = await executeCreateContest(
+      {
+        chainId: body.chainId,
+        smartWallet: body.smartWallet,
+        signer: verified.signer,
+        name: body.name,
+        ...(body.description !== undefined ? { description: body.description } : {}),
+        eventId: body.eventId,
+        ...(body.userGroupId ? { userGroupId: body.userGroupId } : {}),
+        endTime: new Date(body.endDate),
+        settings: (body.settings ?? {}) as Record<string, unknown>,
+        ...(body.notifyLeagueMembers !== undefined
+          ? { notifyLeagueMembers: body.notifyLeagueMembers }
+          : {}),
+        ...(body.userOpSignature ? { userOpSignature: body.userOpSignature as Hex } : {}),
+        ...(body.userOp ? { userOp: body.userOp as SerializedUserOp } : {}),
+      },
+      createDeps,
+    );
+    if (!result.ok) {
+      const status = result.status as 400 | 401 | 403 | 404 | 409 | 502 | 503;
+      return c.json({ error: result.error }, status);
+    }
+    if (result.preparedUserOp) {
+      return c.json({
+        preparedUserOp: true,
+        userOpHash: result.userOpHash,
+        userOp: result.userOp,
+      });
+    }
+    return c.json({ ok: true, contestId: result.contestId, address: result.address });
   }
   const candidates = selectedCandidates(body);
   if (!Array.isArray(candidates)) {

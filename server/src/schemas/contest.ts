@@ -14,7 +14,7 @@ import {
 const ethAddress = z.string().regex(ETH_ADDRESS_REGEX, "Invalid address");
 const bps = z.number().int().min(BPS_MIN).max(BPS_MAX);
 
-const contestSettingsSchema = z
+export const contestSettingsSchema = z
   .object({
     contestType: z.string().max(CONTEST_TYPE_MAX_LENGTH).optional(),
     chainId: z.number().optional(),

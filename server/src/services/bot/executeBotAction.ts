@@ -121,7 +121,7 @@ export type BotActionDeps = {
     privateKey?: Hex;
     userOpSignature?: Hex;
     userOp?: SerializedUserOp;
-  }) => Promise<{ ok: true } | { ok: false; error: string }>;
+  }) => Promise<{ ok: true; txHash?: Hex } | { ok: false; error: string }>;
   log: (userId: string, action: string, error?: string) => Promise<void>;
 };
 

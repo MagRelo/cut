@@ -23,6 +23,7 @@ export const ADMIN_LIST_USER_TYPES = [
   "ADMIN",
   "SUPER_ADMIN",
   "PUBLIC",
+  "AGENT",
 ] as const;
 
 export type AdminListUserType = (typeof ADMIN_LIST_USER_TYPES)[number];

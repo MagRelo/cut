@@ -4,16 +4,20 @@ Base URL: `/api` (e.g. `http://localhost:3000/api`)
 
 ## Authentication
 
-A delegate calls `GET /api/bot/contests` and `POST /api/bot/actions` with an [ERC-8128](https://erc8128.org) HTTP message signature. The user can sign the same requests as the smart wallet. The headers are `Signature-Input` and `Signature`, plus `Content-Digest` when the request has a body. There is no bearer token. The signer is an active delegate for `smartWallet`, or the user verified on that wallet with ERC-1271. `keyid` is `eip8128:<chainId>:0x<signer>` and its chain must equal the request `chainId` (`8453` or `84532`). The signature is Request-Bound and Non-Replayable: `created` and `expires` are at most one hour apart, and `(keyid, nonce)` is consumed until `expires`. Signing details are in [client/public/agents.md](../../client/public/agents.md).
+Player routes accept either a Privy bearer token or an [ERC-8128](https://erc8128.org) HTTP message signature. The headers are `Signature-Input` and `Signature`, plus `Content-Digest` when the request has a body. Sending both credentials is `400`. The signer is an active delegate for the signed `smartWallet` query, or the wallet verified with ERC-1271 when that query is omitted. `user.address` is the wallet. `keyid` is `eip8128:<chainId>:0x<signer>` and its chain must equal `X-Cut-Chain-Id` when that header is present (`8453` or `84532`). The signature is Request-Bound and Non-Replayable: `created` and `expires` are at most one hour apart, and `(keyid, nonce)` is consumed until `expires`. Signing details are in [client/public/agents.md](../../client/public/agents.md).
 
-The browser and the delegate settings routes use a Privy session:
+`POST /api/auth/register` is the agent signup. The wallet signs. Body requires `email`. The account is `userType` `AGENT`. A delegate query that names another wallet is `403`.
+
+These stay Privy-only: `POST /api/auth/session`, `POST /api/auth/sync-wallets`, `POST /api/bot/delegates`, `POST /api/bot/delegates/revoke`, and `/api/admin`. `AGENT` is not staff. Public sport, event, and field routes stay unsigned.
+
+The browser uses a Privy session:
 
 ```
 Authorization: Bearer <privy_access_token>
 X-Cut-Chain-Id: <8453 or 84532; required on on-chain routes via requireWalletChain>
 ```
 
-Middleware verifies the Privy JWT and loads the Cut user from Postgres (`User` + primary `UserWallet`). It does **not** call Privy `users()._get` or write identity rows. Signup and wallet sync happen only on `POST /auth/session` and `POST /auth/sync-wallets`.
+Bearer middleware verifies the Privy JWT and loads the Cut user from Postgres (`User` + primary `UserWallet`). It does **not** call Privy `users()._get` or write identity rows. Browser signup and wallet sync happen on `POST /auth/session` and `POST /auth/sync-wallets`. An agent account is created on `POST /auth/register`. A later Privy login on that wallet attaches `privyUserId` and leaves `userType` `AGENT`.
 
 **Auth error codes**
 
@@ -195,10 +199,10 @@ Play on these routes is ERC-8128. The signed-in user installs and revokes delega
 |--------|------|------|-------------|
 | GET | `/delegate-address` | — | Public address of the server-held delegate, or `null` when that key is unset |
 | GET | `/contests` | ERC-8128 | Contests this signer can enter, each with its candidate field |
-| POST | `/actions` | ERC-8128 | `lineupUpsert`, `join`, or `leave` |
+| POST | `/actions` | ERC-8128 | `lineupUpsert`, `join`, `leave`, or `createContest` |
 | GET | `/delegates` | Privy | Delegates for the signed-in user |
-| POST | `/delegates` | Privy | Record an approved session key |
-| POST | `/delegates/revoke` | Privy | Mark a delegate revoked |
+| POST | `/delegates` | Privy | Record an approved session key. A signature without a bearer is rejected |
+| POST | `/delegates/revoke` | Privy | Mark a delegate revoked. A signature without a bearer is rejected |
 
 **GET `/contests` query:** `chainId` (`8453` or `84532`), `smartWallet`, optional `eventId`. Visibility matches `GET /api/contests`: public contests, plus league contests in leagues the signer's user belongs to.
 
@@ -221,6 +225,8 @@ Play on these routes is ERC-8128. The signed-in user installs and revokes delega
 A delegate signer must be an active `BotDelegate` whose permission is still installed on the wallet. The user (ERC-1271, `keyid` address equals `smartWallet`) can list contests and save a lineup with no delegate. Join and leave for that user submit only when a server-held delegate (`kind` `cut_bot`) is active.
 
 A server-held delegate submits the user operation. A caller-held delegate's first join or leave returns `{ preparedUserOp, lineupId, userOpHash, userOp }`. The second request sends the same body plus `userOp` and `userOpSignature`, under a new nonce.
+
+`createContest` deploys a paid contest. The body includes `name`, `eventId`, `endDate`, and `settings.primaryDeposit` greater than zero, with optional `userGroupId`. The caller must be a league admin or staff. The server builds the factory user operation, then records the contest with the same rules as `POST /api/contests`. A caller-held delegate uses the same `preparedUserOp` step and the response is `{ preparedUserOp, userOpHash, userOp }` or `{ ok, contestId, address }`. `$0` create, and a paid contest the caller already deployed, stay on `POST /api/contests`.
 
 **POST `/delegates` body:** `kind` (`cut_bot` when the server holds the key, `external` when the caller holds it), `delegateAddress`, `smartWallet`, `approval` (serialized permission account), `permissionId` (4-byte hex). `smartWallet` must be the signed-in user's wallet.
 

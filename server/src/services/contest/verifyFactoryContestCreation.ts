@@ -34,6 +34,66 @@ export type VerifyFactoryContestResult =
     }
   | { ok: false; error: VerifyFactoryContestError };
 
+export function factoryCreatedContestAddress(
+  receipt: TransactionReceipt,
+  factoryAddress: string,
+): `0x${string}` | null {
+  const factory = getAddress(factoryAddress);
+  const logs = parseEventLogs({
+    abi: factoryAbi,
+    eventName: "ContestCreated",
+    logs: receipt.logs,
+  }).filter((log) => getAddress(log.address) === factory);
+  if (logs.length !== 1) return null;
+  const args = logs[0]?.args as { contest?: `0x${string}` } | undefined;
+  if (!args?.contest) return null;
+  return getAddress(args.contest);
+}
+
+async function factoryReceipt(params: {
+  chainId: number;
+  transactionHash: `0x${string}`;
+}): Promise<
+  | { ok: true; receipt: TransactionReceipt; factoryAddress: `0x${string}` }
+  | { ok: false; error: VerifyFactoryContestError }
+> {
+  const factoryAddress = getContestFactoryAddress(params.chainId);
+  if (!factoryAddress) return { ok: false, error: "rpc_error" };
+  const chainConfig = getChainConfig(params.chainId);
+  const publicClient = createPublicClient({
+    chain: chainConfig.chain,
+    transport: http(chainConfig.rpcUrl, { timeout: RECEIPT_TIMEOUT_MS }),
+  });
+  try {
+    const receipt = await publicClient.getTransactionReceipt({ hash: params.transactionHash });
+    if (receipt.status !== "success") return { ok: false, error: "receipt_failed" };
+    return { ok: true, receipt, factoryAddress };
+  } catch (error) {
+    const name = error instanceof Error ? error.name : "";
+    if (
+      name === "TransactionReceiptNotFoundError" ||
+      name === "WaitForTransactionReceiptTimeoutError"
+    ) {
+      return { ok: false, error: "receipt_not_found" };
+    }
+    console.error("factory receipt rpc error:", error);
+    return { ok: false, error: "rpc_error" };
+  }
+}
+
+export async function readFactoryCreatedContestAddress(params: {
+  chainId: number;
+  transactionHash: `0x${string}`;
+}): Promise<
+  { ok: true; contestAddress: `0x${string}` } | { ok: false; error: VerifyFactoryContestError }
+> {
+  const loaded = await factoryReceipt(params);
+  if (!loaded.ok) return loaded;
+  const contestAddress = factoryCreatedContestAddress(loaded.receipt, loaded.factoryAddress);
+  if (!contestAddress) return { ok: false, error: "not_factory_contest" };
+  return { ok: true, contestAddress };
+}
+
 export function matchingFactoryCreatedContest(
   receipt: TransactionReceipt,
   factoryAddress: string,

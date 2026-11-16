@@ -157,6 +157,14 @@ describe("promotePrivyTestUserType", () => {
     );
     expect(prismaMock.user.updateMany).not.toHaveBeenCalled();
   });
+
+  it("leaves an AGENT account as AGENT", async () => {
+    const { promotePrivyTestUserType } = await import("./privyUserProvisioning.js");
+    await expect(promotePrivyTestUserType("agent-1", "agent@example.com", "AGENT")).resolves.toBe(
+      "AGENT",
+    );
+    expect(prismaMock.user.updateMany).not.toHaveBeenCalled();
+  });
 });
 
 describe("syncUserWalletsForPrivyUser", () => {

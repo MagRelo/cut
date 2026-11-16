@@ -2,6 +2,7 @@ import { Context, Next } from "hono";
 import { getPrivyClient } from "../lib/privyClient.js";
 import {
   AuthNeedsProvisioningError,
+  type CutAuthUser,
   PrivyWalletIdentityConflictError,
   ReferralProvisionError,
   resolveChainId,
@@ -9,6 +10,17 @@ import {
   WalletConflictError,
   WalletNotProvisionedError,
 } from "../lib/privyUserProvisioning.js";
+import { resolveSignedAccount } from "../services/bot/resolveSignedAccount.js";
+import { verifyBotRequest } from "../services/bot/verifyBotRequest.js";
+
+export class RequestCredentialError extends Error {
+  readonly status: 400 | 401 | 403 | 503;
+  constructor(status: 400 | 401 | 403 | 503, message: string) {
+    super(message);
+    this.name = "RequestCredentialError";
+    this.status = status;
+  }
+}
 
 declare module "hono" {
   interface ContextVariableMap {
@@ -38,6 +50,9 @@ function parseBearerToken(c: Context): string | null {
 }
 
 export function authErrorResponse(c: Context, error: unknown): Response {
+  if (error instanceof RequestCredentialError) {
+    return c.json({ error: error.message }, error.status);
+  }
   if (error instanceof AuthNeedsProvisioningError) {
     return c.json({ error: error.message, code: error.code }, 401);
   }
@@ -73,15 +88,59 @@ export async function verifyPrivyJwt(c: Context, next: Next): Promise<Response |
   }
 }
 
+function hasRequestSignature(c: Context): boolean {
+  return Boolean(c.req.header("signature") || c.req.header("signature-input"));
+}
+
+function rejectMixedCredentials(c: Context): void {
+  if (parseBearerToken(c) && hasRequestSignature(c)) {
+    throw new RequestCredentialError(
+      400,
+      "Request uses both a bearer token and a signature",
+    );
+  }
+}
+
+async function authenticateSignedRequest(c: Context): Promise<void> {
+  const verified = await verifyBotRequest(c.req.raw.clone());
+  if (!verified.ok) {
+    throw new RequestCredentialError(verified.status, verified.error);
+  }
+  const headerChain = parsePreferredChainId(c);
+  if (headerChain !== undefined && headerChain !== verified.chainId) {
+    throw new RequestCredentialError(400, "Signature chain does not match the request");
+  }
+  const resolved = await resolveSignedAccount({
+    signer: verified.signer,
+    chainId: verified.chainId,
+    smartWallet: c.req.query("smartWallet"),
+  });
+  if (!resolved.ok) {
+    throw new RequestCredentialError(resolved.status, resolved.error);
+  }
+  c.set("user", resolved.user);
+}
+
+function sessionUser(c: Context): CutAuthUser | undefined {
+  try {
+    return c.get("user");
+  } catch {
+    return undefined;
+  }
+}
+
 type AuthResult = "ok" | "missing" | "unprovisioned";
 
 async function authenticateRequest(
   c: Context,
   options?: { requireUser?: boolean },
 ): Promise<AuthResult> {
+  rejectMixedCredentials(c);
   const token = parseBearerToken(c);
   if (!token) {
-    return "missing";
+    if (!hasRequestSignature(c)) return "missing";
+    await authenticateSignedRequest(c);
+    return "ok";
   }
 
   const chainId = resolveChainId(parsePreferredChainId(c));
@@ -120,6 +179,14 @@ export function getOptionalPrivyUserId(c: Context): string | null {
   }
 }
 
+/** After `requireAuth`. Session, wallet sync, and delegate install stay on the Privy bearer. */
+export const requirePrivySession = async (c: Context, next: Next): Promise<Response | void> => {
+  if (!c.get("privyUserId")) {
+    return c.json({ error: "No token provided" }, 401);
+  }
+  await next();
+};
+
 export const requireAuth = async (c: Context, next: Next): Promise<Response | void> => {
   try {
     const result = await authenticateRequest(c);
@@ -132,7 +199,7 @@ export const requireAuth = async (c: Context, next: Next): Promise<Response | vo
   }
 };
 
-/** Sets `user` on the context when a valid Bearer token is present; continues without user otherwise. */
+/** Sets `user` when a Bearer token or an ERC-8128 signature is present; continues without a user otherwise. */
 export const optionalAuth = async (c: Context, next: Next): Promise<Response | void> => {
   try {
     const result = await authenticateRequest(c, { requireUser: false });
@@ -149,8 +216,12 @@ export const optionalAuth = async (c: Context, next: Next): Promise<Response | v
 /** Verify Privy JWT when present; no Cut user or wallet lookup. Invalid tokens 401. */
 export const optionalPrivyJwt = async (c: Context, next: Next): Promise<Response | void> => {
   try {
+    rejectMixedCredentials(c);
     const token = parseBearerToken(c);
     if (!token) {
+      if (hasRequestSignature(c)) {
+        await authenticateSignedRequest(c);
+      }
       await next();
       return;
     }
@@ -175,7 +246,21 @@ export const requireWalletChain = async (c: Context, next: Next): Promise<Respon
       return c.json({ error: "X-Cut-Chain-Id must be 8453 or 84532" }, 400);
     }
 
-    const privyUserId = c.get("privyUserId");
+    const signedIn = sessionUser(c);
+    let privyUserId: string | undefined;
+    try {
+      privyUserId = c.get("privyUserId");
+    } catch {
+      privyUserId = undefined;
+    }
+    if (!privyUserId && signedIn?.address) {
+      if (signedIn.chainId !== parsed) {
+        return c.json({ error: "Signature chain does not match the request" }, 400);
+      }
+      await next();
+      return;
+    }
+
     if (!privyUserId) {
       const token = parseBearerToken(c);
       if (!token) {

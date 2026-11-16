@@ -3,7 +3,7 @@ import { createTtlCache } from "../../lib/ttlCache.js";
 import {
   contestDirectoryEventSelect,
   contestDirectorySelect,
-  contestPrivyVisibilityOr,
+  contestViewerVisibilityOr,
 } from "../../utils/contestListQuery.js";
 import {
   directoryEventFromRecord,
@@ -68,8 +68,10 @@ const directoryCache = createTtlCache<ContestDirectoryResponse>(DIRECTORY_CACHE_
 export function contestDirectoryCacheKey(
   privyUserId: string | null,
   scope: ContestDirectoryScope,
+  userId?: string | null,
 ): string {
-  return `${scope}:${privyUserId ?? "anon"}`;
+  const viewer = privyUserId ?? (userId ? `user:${userId}` : "anon");
+  return `${scope}:${viewer}`;
 }
 
 export function invalidateContestDirectory(): void {
@@ -79,9 +81,10 @@ export function invalidateContestDirectory(): void {
 export async function getContestDirectory(
   privyUserId: string | null,
   scope: ContestDirectoryScope = "all",
+  userId?: string | null,
 ): Promise<ContestDirectoryResponse> {
-  return directoryCache.getOrLoad(contestDirectoryCacheKey(privyUserId, scope), () =>
-    listContestDirectory(privyUserId, scope),
+  return directoryCache.getOrLoad(contestDirectoryCacheKey(privyUserId, scope, userId), () =>
+    listContestDirectory(privyUserId, scope, userId),
   );
 }
 
@@ -197,6 +200,7 @@ function shouldListDirectoryEvent(
 export async function listContestDirectory(
   privyUserId: string | null,
   scope: ContestDirectoryScope = "all",
+  userId?: string | null,
 ): Promise<ContestDirectoryResponse> {
   const lookbackDate = new Date();
   lookbackDate.setUTCDate(lookbackDate.getUTCDate() - PAST_EVENT_LOOKBACK_DAYS);
@@ -216,7 +220,7 @@ export async function listContestDirectory(
   const [rows, eventRows] = await Promise.all([
     prisma.contest.findMany({
       where: {
-        OR: contestPrivyVisibilityOr(privyUserId),
+        OR: contestViewerVisibilityOr({ privyUserId, userId }),
         event: eventWhere,
       },
       select: contestDirectorySelect,

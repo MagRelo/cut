@@ -14,5 +14,8 @@ export const requireAdmin = async (c: Context, next: Next): Promise<Response | v
   if (!isStaffUserType(user.userType)) {
     return c.json({ error: "Forbidden" }, 403);
   }
+  if (!c.get("privyUserId")) {
+    return c.json({ error: "No token provided" }, 401);
+  }
   await next();
 };

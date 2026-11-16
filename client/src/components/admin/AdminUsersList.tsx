@@ -19,7 +19,7 @@ function formatPaymentBalance(wei: string | null): string {
   }
 }
 
-const USER_TYPE_OPTIONS = ["USER", "TEST", "ADMIN", "SUPER_ADMIN", "PUBLIC"] as const;
+const USER_TYPE_OPTIONS = ["USER", "TEST", "ADMIN", "SUPER_ADMIN", "PUBLIC", "AGENT"] as const;
 
 function formatLastContestEntry(iso: string | null): string {
   if (!iso) return "—";

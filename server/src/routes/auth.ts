@@ -1,8 +1,13 @@
 import { Hono } from "hono";
 import type { Prisma } from "@prisma/client";
+import { getAddress, isAddress } from "viem";
+import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { buildAuthProfile } from "../lib/authProfile.js";
 import { getPrivyClient } from "../lib/privyClient.js";
+import { NAME_MAX_LENGTH } from "../schemas/limits.js";
+import { registerAgentAccount } from "../services/auth/registerAgent.js";
+import { verifyBotRequest } from "../services/bot/verifyBotRequest.js";
 import {
   authErrorResponse,
   parsePreferredChainId,
@@ -22,6 +27,41 @@ import { recordOnchainPaymentSchema } from "../schemas/onchainPayment.js";
 import { recordValueTransfer, ValueTransferError } from "../services/contest/onchainPayment.js";
 
 const authRouter = new Hono();
+
+const registerSchema = z.object({
+  email: z.string().trim().email("A valid email is required"),
+  name: z.string().trim().min(1).max(NAME_MAX_LENGTH).optional(),
+  referralCode: z.string().trim().min(1).max(32).optional(),
+});
+
+authRouter.post("/register", async (c) => {
+  try {
+    const verified = await verifyBotRequest(c.req.raw.clone());
+    if (!verified.ok) return c.json({ error: verified.error }, verified.status);
+    const headerChain = parsePreferredChainId(c);
+    if (headerChain !== undefined && headerChain !== verified.chainId) {
+      return c.json({ error: "Signature chain does not match the request" }, 400);
+    }
+    const named = c.req.query("smartWallet")?.trim();
+    if (named && (!isAddress(named) || getAddress(named) !== verified.signer)) {
+      return c.json({ error: "A delegate cannot register an account" }, 403);
+    }
+    const parsed = registerSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) {
+      return c.json({ error: "Invalid request body", details: parsed.error.errors }, 400);
+    }
+    const account = await registerAgentAccount({
+      signer: verified.signer,
+      chainId: verified.chainId,
+      email: parsed.data.email,
+      ...(parsed.data.name ? { name: parsed.data.name } : {}),
+      ...(parsed.data.referralCode ? { referralCode: parsed.data.referralCode } : {}),
+    });
+    return c.json(account, account.created ? 201 : 200);
+  } catch (error) {
+    return authErrorResponse(c, error);
+  }
+});
 
 // Provision or sync Cut identity (signup entry point)
 authRouter.post("/session", verifyPrivyJwt, async (c) => {
