@@ -4,7 +4,7 @@ Base URL: `/api` (e.g. `http://localhost:3000/api`)
 
 ## Authentication
 
-Agents call `GET /api/bot/contests` and `POST /api/bot/actions` with an [ERC-8128](https://erc8128.org) HTTP message signature. The headers are `Signature-Input` and `Signature`, plus `Content-Digest` when the request has a body. There is no bearer token. The signer is an active Kernel session key for `smartWallet`, or that smart wallet verified with ERC-1271. `keyid` is `eip8128:<chainId>:0x<signer>` and its chain must equal the request `chainId` (`8453` or `84532`). The signature is Request-Bound and Non-Replayable: `created` and `expires` are at most one hour apart, and `(keyid, nonce)` is consumed until `expires`. Signing details are in [client/public/agents.md](../../client/public/agents.md).
+A delegate calls `GET /api/bot/contests` and `POST /api/bot/actions` with an [ERC-8128](https://erc8128.org) HTTP message signature. The user can sign the same requests as the smart wallet. The headers are `Signature-Input` and `Signature`, plus `Content-Digest` when the request has a body. There is no bearer token. The signer is an active delegate for `smartWallet`, or the user verified on that wallet with ERC-1271. `keyid` is `eip8128:<chainId>:0x<signer>` and its chain must equal the request `chainId` (`8453` or `84532`). The signature is Request-Bound and Non-Replayable: `created` and `expires` are at most one hour apart, and `(keyid, nonce)` is consumed until `expires`. Signing details are in [client/public/agents.md](../../client/public/agents.md).
 
 The browser and the delegate settings routes use a Privy session:
 
@@ -41,7 +41,7 @@ JSON bodies are capped at 128 KiB.
 | `/admin` | `admin.ts` | ✅ staff |
 | `/cron` | `cron.ts` | ✅ |
 | `/unsubscribe` | `unsubscribe.ts` | ✅ |
-| `/bot` | `bot.ts` | ✅ agent play + delegate settings |
+| `/bot` | `bot.ts` | ✅ delegate play and settings |
 | `/tournaments` | `legacy.ts` | ❌ 501 |
 | `/lineup` | `legacy.ts` | ❌ 501 |
 
@@ -189,11 +189,11 @@ Staff only (`requireAdmin`).
 
 ## Bot (`/api/bot`)
 
-Agent play is ERC-8128. Delegate install and revoke are the signed-in browser user.
+Play on these routes is ERC-8128. The signed-in user installs and revokes delegates in the browser.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/delegate-address` | — | Cut Bot's public address, or `null` when the server key is unset |
+| GET | `/delegate-address` | — | Public address of the server-held delegate, or `null` when that key is unset |
 | GET | `/contests` | ERC-8128 | Contests this signer can enter, each with its candidate field |
 | POST | `/actions` | ERC-8128 | `lineupUpsert`, `join`, or `leave` |
 | GET | `/delegates` | Privy | Delegates for the signed-in user |
@@ -218,11 +218,11 @@ Agent play is ERC-8128. Delegate install and revoke are the signed-in browser us
 
 `lineupId` `""` creates a lineup. A lineup id updates it. `join` and `leave` send the lineup id and omit `candidates`. `prediction` is optional on `lineupUpsert`.
 
-A session-key signer must be an active `BotDelegate` whose permission is still installed on the wallet. The wallet owner (ERC-1271, `keyid` address equals `smartWallet`) can list contests and save a lineup with no delegate. Join and leave for that owner submit only when the user has an active `cut_bot` delegate.
+A delegate signer must be an active `BotDelegate` whose permission is still installed on the wallet. The user (ERC-1271, `keyid` address equals `smartWallet`) can list contests and save a lineup with no delegate. Join and leave for that user submit only when a server-held delegate (`kind` `cut_bot`) is active.
 
-Cut Bot submits the user operation. A personal delegate's first join or leave returns `{ preparedUserOp, lineupId, userOpHash, userOp }`. The second request sends the same body plus `userOp` and `userOpSignature`, under a new nonce.
+A server-held delegate submits the user operation. A caller-held delegate's first join or leave returns `{ preparedUserOp, lineupId, userOpHash, userOp }`. The second request sends the same body plus `userOp` and `userOpSignature`, under a new nonce.
 
-**POST `/delegates` body:** `kind` (`cut_bot` or `external`), `delegateAddress`, `smartWallet`, `approval` (serialized permission account), `permissionId` (4-byte hex). `smartWallet` must be the signed-in account's wallet.
+**POST `/delegates` body:** `kind` (`cut_bot` when the server holds the key, `external` when the caller holds it), `delegateAddress`, `smartWallet`, `approval` (serialized permission account), `permissionId` (4-byte hex). `smartWallet` must be the signed-in user's wallet.
 
 ---
 

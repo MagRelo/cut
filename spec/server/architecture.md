@@ -105,7 +105,7 @@ HTML is never cached so crawlers and share unfurls pick up the rewrite on the ne
 
 ## Security
 
-- ERC-8128 signatures on agent play (`/api/bot/contests`, `/api/bot/actions`). Request-bound, single-use nonce, at most one hour. Signer is a session key or the smart wallet (ERC-1271)
+- ERC-8128 signatures on delegate play (`/api/bot/contests`, `/api/bot/actions`). Request-bound, single-use nonce, at most one hour. Signer is a delegate, or the user signing as the smart wallet (ERC-1271)
 - Privy Bearer tokens on browser routes, including delegate install and revoke
 - League contests hidden from non-members (404)
 - Admin routes require staff `userType`

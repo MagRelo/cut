@@ -23,7 +23,7 @@ flowchart TB
 | **Lineups** | Event-scoped. A user builds a roster from that event's candidate pool, then enters it into one or more contests for that event. |
 | **Contests** | Paid competitions tied to a single event, or $0 contests with no on-chain escrow. Lifecycle: `OPEN → ACTIVE → LOCKED → SETTLED`, or `CANCELLED` before settlement. `CLOSED` is a legacy database value. Paid contests deploy via `ContestFactory` / `ContestController`. $0 contests are database-only (no wallet, no Winner Pool). |
 | **Leagues** | Cross-sport social groups (`UserGroup`). No sport field on the league—a single league can host golf and NFL contests simultaneously. Sport is determined per contest via the event. |
-| **Account** | One user, one wallet, one referral graph. An agent plays with that wallet. Lineups and contest entries span sports under the same identity. |
+| **Account** | One user, one wallet, one referral graph. A delegate plays for that user. Lineups and contest entries span sports under the same identity. |
 
 ---
 
@@ -33,7 +33,7 @@ flowchart TB
 
 The platform owns everything that applies to any tournament-style competition:
 
-- **Identity & social** — one wallet per user. An agent signs HTTP requests as that wallet or as a session key installed on it (ERC-8128, `/api/bot`). Privy is how the browser reaches the same account and installs that key. Leagues are cross-sport |
+- **Identity & social** — one wallet per user. A delegate signs HTTP requests for that user (ERC-8128, `/api/bot`). The user can also sign as the wallet. Privy is how the browser reaches the same account and installs that key. Leagues are cross-sport |
 - **Events** — schedule, status, one active event per sport
 - **Lineups & entries** — roster assembly from a candidate pool; each contest entry uses an isolated lineup copy (clone-on-join when reusing across contests)
 - **Contests** — lifecycle, settings, on-chain contracts, secondary prediction market

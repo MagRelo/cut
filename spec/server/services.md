@@ -70,9 +70,9 @@ Orchestrated by `cron/scheduler.ts`.
 | `bot/verifyBotRequest.ts` | ERC-8128 verify: EOA recovery or ERC-1271, nonce consume, one-hour window |
 | `bot/botNonceStore.ts` | Postgres `BotRequestNonce` via `createUniqueInsertNonceStore` |
 | `bot/listBotContests.ts` | Contests visible to the signer, with each event's candidate pool |
-| `bot/executeBotAction.ts` | `lineupUpsert`, `join`, `leave`. Owner join and leave submit through an active Cut Bot key |
+| `bot/executeBotAction.ts` | `lineupUpsert`, `join`, `leave`. A user's join and leave submit through an active server-held delegate |
 | `bot/sessionKeyEnabled.ts` | Chain `permissionConfig` is the source of truth for an installed key |
-| `bot/submitSessionKeyUserOp.ts` | Cut Bot signs and submits, or a personal delegate returns a prepared user operation |
+| `bot/submitSessionKeyUserOp.ts` | A server-held delegate signs and submits. A caller-held delegate returns a prepared user operation |
 
 Reference signer: `scripts/signBotRequest.ts`.
 

@@ -16,7 +16,7 @@ The `v4` branch is the platform codebase. PGA Golf and Formula 1 are registered 
 
 - User Mangement: all standard features regrading User management, including registraion, email login, account amangement, password reset, etc.
 
-- Agent play: an agent signs each request with ERC-8128 and uses `/api/bot/contests` and `/api/bot/actions` to list contests, save a lineup, join, and leave. The browser Privy session is how a person installs that delegate. See `client/public/agents.md`.
+- Delegate play: a delegate signs each request with ERC-8128 and uses `/api/bot/contests` and `/api/bot/actions` to list contests, save a lineup, join, and leave. The key may be held by the server or by the caller. The browser Privy session is how the user installs that delegate. See `client/public/agents.md`.
 
 - Fantasy Management:
 
