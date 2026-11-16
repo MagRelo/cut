@@ -70,6 +70,12 @@ Note: the Node SDK's `getTestAccessToken()` (headless token) is rejected here be
   either a funded wallet or a Pimlico sponsorship policy (`VITE_PIMLICO_SPONSORSHIP_POLICY_ID`).
   Without those, contest creation/entry fails at the wallet transaction step.
 
+### Release
+`pnpm run deploy` builds and pushes the production image. `pnpm run launch` (and
+`launch:staging`, plus `scp`/`ssh` to `root@157.230.6.6`) needs the droplet SSH password.
+The agent does not have that password. Stop after the image push and give the user
+`pnpm run launch`.
+
 ### Lint / test
 - Server tests: `pnpm --filter server run test:run` (vitest).
 - Client lint: `pnpm run client:lint` — currently reports **pre-existing** errors in the
