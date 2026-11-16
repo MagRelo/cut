@@ -179,7 +179,8 @@ export function BotDelegationSettings() {
                 <span className="ml-2 text-sm font-normal text-slate-500">(coming soon!)</span>
               </h3>
               <p id="cut-bot-description" className="mt-1 text-sm leading-6 text-slate-600">
-                Let CutBot sign transactions for this wallet without your permission.
+                Let CutBot take the wheel. It will enter you into all of your league contests so you
+                don't miss any of the action.
               </p>
             </div>
 
@@ -264,7 +265,7 @@ export function BotDelegationSettings() {
             </div>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-5">
             <h4 className="text-sm font-medium text-slate-800">
               2. Paste that address and grant access
             </h4>
