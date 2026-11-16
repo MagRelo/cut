@@ -55,6 +55,7 @@ export const contestListSelect = {
   },
   onchainPayments: {
     select: {
+      kind: true,
       amountWei: true,
     },
   },
@@ -96,6 +97,7 @@ export const contestDirectorySelect = {
   },
   onchainPayments: {
     select: {
+      kind: true,
       amountWei: true,
     },
   },

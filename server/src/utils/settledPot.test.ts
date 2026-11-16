@@ -22,20 +22,44 @@ describe("settledPotFromPayments", () => {
 });
 
 describe("settledPotForContestRow", () => {
-  it("sums payments on settled contests", () => {
+  it("sums settlement credits on settled contests", () => {
     expect(
       settledPotForContestRow({
         status: "SETTLED",
-        onchainPayments: TOUR_PAYMENTS.map((amountWei) => ({ amountWei })),
+        onchainPayments: [
+          { kind: "REFERRAL", amountWei: "10500000" },
+          { kind: "REFERRAL", amountWei: "6300000" },
+          { kind: "PRIMARY", amountWei: "156240000" },
+          { kind: "PRIMARY", amountWei: "44640000" },
+          { kind: "PRIMARY", amountWei: "22320000" },
+        ],
       }),
     ).toBe(240);
+  });
+
+  it("leaves entry deposits and refunds out of the pot", () => {
+    expect(
+      settledPotForContestRow({
+        status: "SETTLED",
+        onchainPayments: [
+          { kind: "ENTRY", amountWei: "20000000" },
+          { kind: "ENTRY", amountWei: "20000000" },
+          { kind: "ENTRY", amountWei: "20000000" },
+          { kind: "ENTRY", amountWei: "20000000" },
+          { kind: "ENTRY", amountWei: "20000000" },
+          { kind: "REFUND", amountWei: "20000000" },
+          { kind: "PRIMARY", amountWei: "93000000" },
+          { kind: "REFERRAL", amountWei: "7000000" },
+        ],
+      }),
+    ).toBe(100);
   });
 
   it("is null for open contests even when payments exist", () => {
     expect(
       settledPotForContestRow({
         status: "OPEN",
-        onchainPayments: TOUR_PAYMENTS.map((amountWei) => ({ amountWei })),
+        onchainPayments: TOUR_PAYMENTS.map((amountWei) => ({ kind: "PRIMARY", amountWei })),
       }),
     ).toBeNull();
   });

@@ -385,6 +385,7 @@ userGroupRouter.get("/:id/contests", requireAuth, requireUserGroupMember, async 
         },
         onchainPayments: {
           select: {
+            kind: true,
             amountWei: true,
           },
         },

@@ -142,7 +142,7 @@ describe("listContestDirectory", () => {
     await listContestDirectory(null, "all");
 
     expect(findMany.mock.calls[0]?.[0]?.select.onchainPayments).toEqual({
-      select: { amountWei: true },
+      select: { kind: true, amountWei: true },
     });
   });
 
@@ -151,11 +151,11 @@ describe("listContestDirectory", () => {
       contestRow(golfEvent(), {
         status: "SETTLED",
         onchainPayments: [
-          { amountWei: "10500000" },
-          { amountWei: "6300000" },
-          { amountWei: "156240000" },
-          { amountWei: "44640000" },
-          { amountWei: "22320000" },
+          { kind: "REFERRAL", amountWei: "10500000" },
+          { kind: "REFERRAL", amountWei: "6300000" },
+          { kind: "PRIMARY", amountWei: "156240000" },
+          { kind: "PRIMARY", amountWei: "44640000" },
+          { kind: "PRIMARY", amountWei: "22320000" },
         ],
       }),
     ]);
@@ -167,7 +167,7 @@ describe("listContestDirectory", () => {
   it("does not use live payment rows for unsettled contests", async () => {
     findMany.mockResolvedValue([
       contestRow(golfEvent(), {
-        onchainPayments: [{ amountWei: "240000000" }],
+        onchainPayments: [{ kind: "PRIMARY", amountWei: "240000000" }],
       }),
     ]);
 

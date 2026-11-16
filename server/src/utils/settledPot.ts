@@ -2,6 +2,9 @@ import { formatUnits } from "viem";
 
 const SETTLED_POT_STATUSES = new Set(["SETTLED", "CLOSED"]);
 
+/** Settlement credits that left the contract. Entry deposits and refunds stay on the wallet ledger. */
+const SETTLED_POT_KINDS = new Set(["PRIMARY", "SECONDARY", "REFERRAL"]);
+
 function parseWei(value: unknown): bigint | null {
   if (value == null) return null;
   try {
@@ -41,13 +44,15 @@ export function settledPotFromPayments(
 export function settledPotForContestRow(
   row: {
     status: string;
-    onchainPayments?: { amountWei: string }[];
+    onchainPayments?: { kind: string; amountWei: string }[];
   },
   decimals = 6,
 ): number | null {
   if (!SETTLED_POT_STATUSES.has(row.status)) return null;
   return settledPotFromPayments(
-    row.onchainPayments?.map((payment) => payment.amountWei),
+    row.onchainPayments
+      ?.filter((payment) => SETTLED_POT_KINDS.has(payment.kind))
+      .map((payment) => payment.amountWei),
     decimals,
   );
 }

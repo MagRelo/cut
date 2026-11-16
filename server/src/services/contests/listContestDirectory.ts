@@ -135,7 +135,7 @@ function formatDirectoryContest(row: {
   settings: unknown;
   userGroup: { id: string; name: string } | null;
   _count: { contestLineups: number };
-  onchainPayments?: { amountWei: string }[];
+  onchainPayments?: { kind: string; amountWei: string }[];
 }): DirectoryContest {
   return {
     id: row.id,
