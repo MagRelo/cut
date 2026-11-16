@@ -36,8 +36,10 @@ actual user login/auth flows** and a funded oracle wallet + Base Sepolia RPC for
 contest settlement.
 
 ### Logging in during dev (Privy test accounts)
-The app gates all user actions (build a lineup, enter a contest) behind Privy email OTP login,
-so real inbox access is normally needed. For automated/dev login, use Privy **test accounts**:
+A delegate plays through signed `GET /api/bot/contests` and `POST /api/bot/actions` requests
+(ERC-8128). See `client/public/agents.md`. The browser still gates the user's own actions behind Privy
+email OTP login, which is also how the user installs a delegate. For that browser login, use
+Privy **test accounts**:
 1. App owner enables it once in the Privy Dashboard: **User management → Authentication →
    Advanced → Enable test accounts** (the app already has `email_auth` on and `localhost:5173`
    in allowed domains).
@@ -54,6 +56,9 @@ Note: the Node SDK's `getTestAccessToken()` (headless token) is rejected here be
 `allowed_domains` configured, so use the UI OTP flow above rather than the headless token.
 
 ### Exercising the fantasy flow (events, leagues, contests, lineups)
+- Delegate play: `pnpm --filter server run script:sign-bot-request` signs a contest list and a lineup
+  save. Set `BOT_DELEGATE_PRIVATE_KEY` and `SMART_WALLET`. The signer must be an active delegate
+  for that wallet, or the user signing as the wallet.
 - Seeding an event: `pnpm --filter server run service:init-event pga-golf <pgaTourId>` pulls a real
   PGA tournament into Postgres and marks it the active event (newest wins). It reads `PGA_API_KEY`
   from the shell env (Prisma auto-loads `.env` for `DATABASE_URL`, but this script does **not**
@@ -69,6 +74,12 @@ Note: the Node SDK's `getTestAccessToken()` (headless token) is rejected here be
   / ContestController) on Base Sepolia via the user's Privy smart wallet, so they need gas —
   either a funded wallet or a Pimlico sponsorship policy (`VITE_PIMLICO_SPONSORSHIP_POLICY_ID`).
   Without those, contest creation/entry fails at the wallet transaction step.
+
+### Release
+`pnpm run deploy` builds and pushes the production image. `pnpm run launch` (and
+`launch:staging`, plus `scp`/`ssh` to `root@157.230.6.6`) needs the droplet SSH password.
+The agent does not have that password. Stop after the image push and give the user
+`pnpm run launch`.
 
 ### Lint / test
 - Server tests: `pnpm --filter server run test:run` (vitest).

@@ -2,11 +2,10 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { getAddress, zeroHash, type Hex } from "viem";
+import { getAddress, type Address } from "viem";
 import { describe, expect, it, vi } from "vitest";
 import { packApproval } from "./approvalEnvelope.js";
-import { assertJoinCalls, buildJoinCalls, hashPicks } from "./botCalls.js";
-import { signBotAction } from "./botActionSignature.js";
+import { assertJoinCalls, buildJoinCalls } from "./botCalls.js";
 import {
   executeBotAction,
   type BotActionDeps,
@@ -23,7 +22,7 @@ const USER_ID = "user-1";
 
 const cutBotKey = generatePrivateKey();
 const cutBot = privateKeyToAccount(cutBotKey);
-const strangerKey = generatePrivateKey();
+const stranger = privateKeyToAccount(generatePrivateKey());
 
 function contest(overrides: Partial<BotContest> = {}): BotContest {
   return {
@@ -53,6 +52,8 @@ function delegate(overrides: Partial<BotDelegateRow> = {}): BotDelegateRow {
 function deps(partial: Partial<BotActionDeps> = {}): BotActionDeps {
   return {
     findDelegate: vi.fn(async () => delegate()),
+    findOwner: vi.fn(async () => null),
+    findCutBot: vi.fn(async () => null),
     sessionEnabled: vi.fn(async () => true),
     loadContest: vi.fn(async () => contest()),
     isGroupMember: vi.fn(async () => true),
@@ -88,17 +89,7 @@ function deps(partial: Partial<BotActionDeps> = {}): BotActionDeps {
   };
 }
 
-async function signedJoin(key: Hex, lineupId = "lineup-1"): Promise<ExecuteBotActionInput> {
-  const deadline = BigInt(Math.floor(Date.now() / 1000) + 60);
-  const message = {
-    action: "join" as const,
-    smartWallet: SMART_WALLET,
-    contestId: "contest-1",
-    lineupId,
-    picksHash: hashPicks([]),
-    callsHash: zeroHash,
-    deadline,
-  };
+function signedJoin(signer: Address = cutBot.address, lineupId = "lineup-1"): ExecuteBotActionInput {
   return {
     chainId: CHAIN_ID,
     action: "join",
@@ -106,9 +97,7 @@ async function signedJoin(key: Hex, lineupId = "lineup-1"): Promise<ExecuteBotAc
     contestId: "contest-1",
     lineupId,
     picks: [],
-    deadline,
-    signature: await signBotAction(key, CHAIN_ID, message),
-    nowSeconds: Number(deadline) - 30,
+    signer,
   };
 }
 
@@ -143,7 +132,7 @@ describe("assertJoinCalls", () => {
 describe("executeBotAction", () => {
   it("rejects a signature from an address that is not a delegate", async () => {
     const used = deps({ findDelegate: vi.fn(async () => null) });
-    const result = await executeBotAction(await signedJoin(strangerKey, ""), used);
+    const result = await executeBotAction(signedJoin(stranger.address, ""), used);
     expect(result).toMatchObject({ ok: false, status: 403 });
     expect(used.insertContestEntry).not.toHaveBeenCalled();
     expect(used.log).not.toHaveBeenCalled();
@@ -155,7 +144,7 @@ describe("executeBotAction", () => {
       sessionEnabled: vi.fn(async () => false),
       log,
     });
-    const result = await executeBotAction(await signedJoin(cutBotKey), used);
+    const result = await executeBotAction(signedJoin(), used);
     expect(result).toMatchObject({ ok: false, error: "Session key is not enabled" });
     expect(used.insertContestEntry).not.toHaveBeenCalled();
     expect(log).toHaveBeenCalledTimes(1);
@@ -172,7 +161,7 @@ describe("executeBotAction", () => {
     });
     const previous = process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
     process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = cutBotKey;
-    const result = await executeBotAction(await signedJoin(cutBotKey), used);
+    const result = await executeBotAction(signedJoin(), used);
     if (previous === undefined) delete process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
     else process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = previous;
     expect(result).toMatchObject({ ok: false, error: "bundler reverted" });
@@ -183,16 +172,6 @@ describe("executeBotAction", () => {
 
   it("saves a lineup without submitting a user operation", async () => {
     const log = vi.fn(async () => undefined);
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 60);
-    const message = {
-      action: "lineupUpsert" as const,
-      smartWallet: SMART_WALLET,
-      contestId: "contest-1",
-      lineupId: "",
-      picksHash: hashPicks(["p1", "p2"]),
-      callsHash: zeroHash,
-      deadline,
-    };
     const used = deps({ log });
     const result = await executeBotAction(
       {
@@ -202,9 +181,7 @@ describe("executeBotAction", () => {
         contestId: "contest-1",
         lineupId: "",
         picks: ["p1", "p2"],
-        deadline,
-        signature: await signBotAction(cutBotKey, CHAIN_ID, message),
-        nowSeconds: Number(deadline) - 10,
+        signer: cutBot.address,
       },
       used,
     );
@@ -219,13 +196,48 @@ describe("executeBotAction", () => {
     const previous = process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
     process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = cutBotKey;
     const used = deps();
-    const result = await executeBotAction(await signedJoin(cutBotKey), used);
+    const result = await executeBotAction(signedJoin(), used);
     if (previous === undefined) delete process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
     else process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = previous;
     expect(result).toMatchObject({ ok: true, lineupId: "lineup-1" });
     expect(used.createLineup).not.toHaveBeenCalled();
     expect(used.updateLineup).not.toHaveBeenCalled();
     expect(used.submitCalls).toHaveBeenCalledOnce();
+  });
+
+  it("saves a lineup signed by the wallet owner", async () => {
+    const used = deps({
+      findOwner: vi.fn(async () => ({ userId: USER_ID })),
+    });
+    const result = await executeBotAction(
+      {
+        chainId: CHAIN_ID,
+        action: "lineupUpsert",
+        smartWallet: SMART_WALLET,
+        contestId: "contest-1",
+        lineupId: "",
+        picks: ["p1", "p2"],
+        signer: SMART_WALLET,
+      },
+      used,
+    );
+    expect(result).toMatchObject({ ok: true, lineupId: "lineup-1" });
+    expect(used.findDelegate).not.toHaveBeenCalled();
+    expect(used.sessionEnabled).not.toHaveBeenCalled();
+    expect(used.submitCalls).not.toHaveBeenCalled();
+  });
+
+  it("rejects an owner join when Cut Bot is not installed", async () => {
+    const used = deps({
+      findOwner: vi.fn(async () => ({ userId: USER_ID })),
+    });
+    const result = await executeBotAction(signedJoin(SMART_WALLET), used);
+    expect(result).toMatchObject({
+      ok: false,
+      status: 403,
+      error: "No Cut Bot delegate is installed",
+    });
+    expect(used.submitCalls).not.toHaveBeenCalled();
   });
 });
 

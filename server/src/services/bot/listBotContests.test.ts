@@ -1,17 +1,16 @@
 import { getAddress } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it, vi } from "vitest";
-import { signBotRead } from "./botActionSignature.js";
 import { listSignedBotContests, type ListBotContestsDeps } from "./listBotContests.js";
 
 const CHAIN_ID = 8453;
 const SMART_WALLET = getAddress("0x1111111111111111111111111111111111111111");
-const key = generatePrivateKey();
-const delegate = privateKeyToAccount(key);
+const delegate = privateKeyToAccount(generatePrivateKey());
 
 function deps(partial: Partial<ListBotContestsDeps> = {}): ListBotContestsDeps {
   return {
     findDelegate: vi.fn(async () => ({ userId: "user-1" })),
+    findOwner: vi.fn(async () => null),
     loadContests: vi.fn(async () => [
       {
         id: "contest-public",
@@ -53,28 +52,14 @@ function deps(partial: Partial<ListBotContestsDeps> = {}): ListBotContestsDeps {
   };
 }
 
-async function signed(now = Math.floor(Date.now() / 1000)) {
-  const deadline = BigInt(now + 60);
-  const signature = await signBotRead(key, {
-    action: "contests",
-    smartWallet: SMART_WALLET,
-    chainId: BigInt(CHAIN_ID),
-    deadline,
-  });
-  return { deadline, signature, nowSeconds: now };
-}
-
 describe("listSignedBotContests", () => {
   it("returns visible contests and loads each event field once", async () => {
     const used = deps();
-    const auth = await signed();
     const result = await listSignedBotContests(
       {
         chainId: CHAIN_ID,
         smartWallet: SMART_WALLET,
-        deadline: auth.deadline,
-        signature: auth.signature,
-        nowSeconds: auth.nowSeconds,
+        signer: delegate.address,
       },
       used,
     );
@@ -90,16 +75,13 @@ describe("listSignedBotContests", () => {
     expect(used.findDelegate).toHaveBeenCalledWith(SMART_WALLET, getAddress(delegate.address));
   });
 
-  it("rejects a signature that is not an active delegate", async () => {
+  it("rejects a signer that is not an active delegate", async () => {
     const used = deps({ findDelegate: vi.fn(async () => null) });
-    const auth = await signed();
     const result = await listSignedBotContests(
       {
         chainId: CHAIN_ID,
         smartWallet: SMART_WALLET,
-        deadline: auth.deadline,
-        signature: auth.signature,
-        nowSeconds: auth.nowSeconds,
+        signer: delegate.address,
       },
       used,
     );
@@ -107,19 +89,20 @@ describe("listSignedBotContests", () => {
     expect(used.loadContests).not.toHaveBeenCalled();
   });
 
-  it("rejects an expired signature", async () => {
-    const now = Math.floor(Date.now() / 1000);
-    const auth = await signed(now - 120);
+  it("lists contests for the wallet owner", async () => {
+    const used = deps({
+      findOwner: vi.fn(async () => ({ userId: "owner-1" })),
+    });
     const result = await listSignedBotContests(
       {
         chainId: CHAIN_ID,
         smartWallet: SMART_WALLET,
-        deadline: auth.deadline,
-        signature: auth.signature,
-        nowSeconds: now,
+        signer: SMART_WALLET,
       },
-      deps(),
+      used,
     );
-    expect(result).toMatchObject({ ok: false, status: 400 });
+    expect(result.ok).toBe(true);
+    expect(used.findDelegate).not.toHaveBeenCalled();
+    expect(used.loadContests).toHaveBeenCalledWith("owner-1", CHAIN_ID);
   });
 });

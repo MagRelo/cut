@@ -14,7 +14,7 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 - `userType`: `USER` (default), `TEST`, `ADMIN`, `SUPER_ADMIN`, `PUBLIC`
 - Privy dashboard test emails (`test-…@privy.io`) provision as `TEST`. Existing `USER` rows with those emails are promoted to `TEST`. Staff types are not changed.
 - Referral fields: `referralCode` (opaque `?ref=` invite code, unique), `referrerAddress`, `referralGroupId`, `referredByUserId`, etc.
-- Relations: `lineups`, `contestLineups`, `wallets`, `userGroups`
+- Relations: `lineups`, `contestLineups`, `wallets`, `userGroups`, `botDelegates`
 
 ### UserWallet
 - `chainId` + `publicKey` (unique per chain)
@@ -26,6 +26,19 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 
 ### UserGroupMember
 - `role`: `ADMIN` | `MEMBER`
+
+### BotDelegate
+- Session key the user installs on `smartWallet`: `delegateAddress`, `kind` (`cut_bot` when the server holds the key, `external` when the caller holds it), `status` (`active` | `revoked`)
+- `approval` is the serialized permission account plus the permission id
+- Unique per user and delegate address
+
+### BotActionLog
+- `action`: `delegate` | `revoke` | `lineupUpsert` | `join` | `leave` | `error`
+- Records that an action happened. Lineup, contest, and transaction hash stay on their own rows
+
+### BotRequestNonce
+- Primary key is the ERC-8128 replay key (`keyid` + nonce)
+- `expiresAt` is how long that nonce stays consumed
 
 ---
 

@@ -77,6 +77,32 @@ sequenceDiagram
 - **Test accounts:** Privy dashboard emails (`test-…@privy.io`) are stored as `userType=TEST` and excluded from marketing email (`userType=USER` only)
 - **Signup referral:** `X-Cut-Referral-Code` attaches `referredByUserId` when the opaque code matches `User.referralCode`. Wallet `0x…` values are ignored. It does not require the inviter to be on ReferralGraph. After Privy email OTP, session create must not fail because referral could not be applied. Cron registers invitees on-chain once the parent is registered.
 
+## Delegate play
+
+```mermaid
+sequenceDiagram
+  participant Caller
+  participant API as /api/bot
+  participant DB
+  participant Chain
+
+  Caller->>API: Signed GET /contests or POST /actions
+  API->>API: ERC-8128 verify and consume nonce
+  API->>DB: User, or a delegate installed for that user
+  alt join or leave, server holds the delegate key
+    API->>Chain: User operation signed by that delegate
+  else join or leave, caller holds the delegate key
+    API-->>Caller: prepared user operation
+    Caller->>API: Same action with userOpSignature
+    API->>Chain: Submit that user operation
+  end
+```
+
+- **Signer:** a delegate installed for the user's wallet, or the user signing as that wallet (ERC-1271)
+- **User join and leave:** submitted only when a server-held delegate is active for that user
+- **League contests:** included when the resolved user is a member
+- **Browser:** the user installs and revokes a delegate with a Privy session, and can still join from the app
+
 ---
 
 ## Event lifecycle (golf example)
@@ -209,7 +235,8 @@ Preview: `pnpm --filter server run script:email-preview contest-announcement`
 | Contest ranks / timeline | Server DB (derived from scores + chain) |
 | Deposits, entry ownership, payouts | On-chain contracts |
 | Contest status | Both — server mirrors after chain ops |
-| Auth session | Privy |
+| Delegate play | ERC-8128 signature over the HTTP request |
+| Browser session | Privy |
 
 ---
 
@@ -230,7 +257,7 @@ Preview: `pnpm --filter server run script:email-preview contest-announcement`
 | Layer | Control |
 |-------|---------|
 | Client | Privy session, route guards, form validation |
-| API | Bearer verification, Zod bodies, `requireEventEditable` |
+| API | ERC-8128 on `/api/bot/contests` and `/api/bot/actions`; Privy bearer on browser routes; Zod bodies; `requireEventEditable` |
 | Admin | Staff role + separate batch endpoints |
 | Chain | Contract access control, oracle role on server |
 

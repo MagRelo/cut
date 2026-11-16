@@ -1,24 +1,42 @@
 # Agents
 
-Play The Cut has three ways to sign a contest entry.
+The user is the account: one person, one smart wallet. In the browser that user signs in with Privy, installs or revokes a delegate, and can enter a contest from the app.
 
-1. **No delegate.** The logged-in client signs. Nothing in this document applies.
-2. **Cut Bot.** The user allows Cut Bot's address in Settings. The server holds that key and can save a lineup, then join or leave, while the user is away.
-3. **Personal delegate.** The user pastes a public address and approves the same install. That bot signs with its own key. The server checks the signature and relays it. The private key is never sent to Play The Cut.
+A delegate is a key the user installs on that wallet so another client can act for them. The delegate signs this API. The server may hold the key, or the caller may hold it. Both are the same kind of key.
 
-Both delegates are a Kernel v3.1 session key on EntryPoint 0.7. The key is a blank check: it can submit any call the wallet can. It is not a second owner. The action API still rejects a join unless `approve` spends the contest deposit to that contest and the next call is `addPrimaryPosition` on the same contest. A key that skips the API is not limited by that check.
+Three ways to sign a contest entry:
 
-Revoke removes the session key on-chain. A database row that still says active cannot keep a removed key working.
+1. **The user, in the browser.** The logged-in client signs the chain transaction. These routes do not apply.
+2. **A delegate the server holds.** The user allows that address in Settings. The server can submit a join or leave while the user is away. Stored as `kind` `cut_bot`.
+3. **A delegate the caller holds.** The user pastes a public address and approves the same install. That key signs requests and user operations. The private key never comes to Play The Cut. Stored as `kind` `external`.
+
+A delegate is a Kernel v3.1 session key on EntryPoint 0.7, installed on the user's wallet. It can submit any call the wallet can. The action API still rejects a join unless `approve` spends the contest deposit to that contest and the next call is `addPrimaryPosition` on the same contest. A key that skips the API is not limited by that check.
+
+The user can also sign the HTTP request as the smart wallet. The server checks that signature with ERC-1271. Contest reads and lineup saves need no delegate. Join and leave still go out through an active server-held delegate.
+
+## Authentication
+
+`GET /api/bot/contests` and `POST /api/bot/actions` use [ERC-8128](https://erc8128.org). There is no Privy session and no signature field in the query or body.
+
+Sign with `@slicekit/erc8128` `signRequest`. The signature is Request-Bound and Non-Replayable. `@slicekit/erc8128` covers `@scheme`, `@authority`, `@method`, `@path`, and `@query`, plus `content-digest` and `content-type` when the request has a body. Parameters are `keyid`, `created`, `expires`, `nonce`, and `tag="erc8128"`.
+
+`keyid` is `eip8128:<chainId>:0x<signer>`. The chain is `8453` or `84532` and must equal `chainId` on the request. `created` and `expires` are unix seconds. `expires - created` is at most one hour. `nonce` is a single-use ASCII string of at most 128 bytes. The server stores `(keyid, nonce)` until `expires`.
+
+The signer is the delegate address, or the smart wallet when the user signs. A signature over a changed method, path, query, or body is rejected.
+
+`server/src/scripts/signBotRequest.ts` signs one contest list and one lineup save:
+
+```
+BOT_DELEGATE_PRIVATE_KEY=0x… SMART_WALLET=0x… pnpm --filter server run script:sign-bot-request
+```
 
 ## Contests
 
-`GET /api/bot/contests` returns the contests this delegate can enter, each with its field. No Privy session. The request is signed.
+`GET /api/bot/contests` returns the contests this signer can enter, each with its field.
 
-The signature is an EIP-712 `BotRead`. Domain name `Cut Bot`, version `1`, `chainId` the query chain, `verifyingContract` the user's smart wallet. Message: `action` `contests`, `smartWallet`, `chainId`, `deadline` (unix seconds, at most one hour ahead).
+Query: `chainId`, `smartWallet`. Optional `eventId` limits the list to one event.
 
-Query: `chainId`, `smartWallet`, `deadline`, `signature`. Optional `eventId` limits the list to one event. `chainId` is `8453` or `84532`, and the list is contests on that chain.
-
-Visibility matches `GET /api/contests`: public contests, plus league contests in leagues the delegate's user belongs to.
+Visibility matches `GET /api/contests`: public contests, plus league contests in leagues the signer's user belongs to.
 
 ```json
 {
@@ -53,7 +71,7 @@ Contests on the same event share one candidate pool. `lineupUpsert` sends the ch
 
 ## POST /api/bot/actions
 
-No Privy session. One signed request does one thing. Save the lineup first. Join and leave use that lineup id and do not change its picks.
+One signed request does one thing. Save the lineup first. Join and leave use that lineup id and do not change its picks.
 
 `candidates` is an ordered array of `eventParticipantId` values. Order is the lineup order. Only `lineupUpsert` sends it. `join` and `leave` omit it.
 
@@ -69,13 +87,11 @@ Creates a lineup when `lineupId` is `""`. Updates that lineup when `lineupId` is
   "contestId": "contest id",
   "lineupId": "",
   "candidates": ["eventParticipantId", "eventParticipantId"],
-  "prediction": { "type": "winningLineupTotal", "value": 142 },
-  "deadline": "1710000000",
-  "signature": "0x…"
+  "prediction": { "type": "winningLineupTotal", "value": 142 }
 }
 ```
 
-`prediction` is optional. Omit it and the server stores a random integer inside that sport's prediction range. For golf the number is the winning-score tiebreaker. Send `{ "type": "winningLineupTotal", "value": 142 }` to choose it. `value` is an integer. A value outside the sport's range is rejected. The signature does not cover `prediction`.
+`prediction` is optional. Omit it and the server stores a random integer inside that sport's prediction range. For golf the number is the winning-score tiebreaker. Send `{ "type": "winningLineupTotal", "value": 142 }` to choose it. `value` is an integer. A value outside the sport's range is rejected. The HTTP signature covers `prediction` because it covers the body.
 
 The response is `{ ok: true, lineupId }`.
 
@@ -83,13 +99,13 @@ The response is `{ ok: true, lineupId }`.
 
 Open contests only. Requires the `lineupId` from `lineupUpsert`. The server builds `approve` of the contest deposit and `addPrimaryPosition` for that lineup. It does not read `candidates`.
 
-Cut Bot signs the user operation. The response is `{ ok: true, lineupId }`.
+A server-held delegate signs the user operation, including when the user signed the HTTP request and that delegate is installed. The response is `{ ok: true, lineupId }`. A user with no active server-held delegate receives `403`.
 
-A personal delegate omits `userOpSignature` on the first join. The response is `{ preparedUserOp: true, lineupId, userOpHash, userOp }`. Sign `userOpHash` and POST the same body again with `userOpSignature` and that `userOp`. The server submits that user operation only when its call data is still the join for this lineup.
+A caller-held delegate omits `userOpSignature` on the first join. The response is `{ preparedUserOp: true, lineupId, userOpHash, userOp }`. Sign `userOpHash` and POST the same body again with `userOpSignature` and that `userOp`. That second request needs its own nonce. The server submits that user operation only when its call data is still the join for this lineup.
 
 ### 3. leave
 
-Open or cancelled contests. Same request shape as join, with `action` `leave` and the lineup id. The server submits `removePrimaryPosition`. A personal delegate uses the same `preparedUserOp` step.
+Open or cancelled contests. Same request shape as join, with `action` `leave` and the lineup id. The server submits `removePrimaryPosition`. A caller-held delegate uses the same `preparedUserOp` step. A server-held delegate signs leave the same way it signs join.
 
 ```json
 {
@@ -98,31 +114,12 @@ Open or cancelled contests. Same request shape as join, with `action` `leave` an
   "smartWallet": "0x…",
   "contestId": "contest id",
   "lineupId": "lineup id",
-  "deadline": "1710000000",
-  "signature": "0x…",
   "userOpSignature": "0x…",
   "userOp": {}
 }
 ```
 
-`userOpSignature` and `userOp` are only on the personal delegate's second join or leave. Cut Bot omits both.
-
-Domain:
-
-- name: `Cut Bot`
-- version: `1`
-- chainId: the contest chain
-- verifyingContract: the user's smart wallet
-
-Message:
-
-- `action`: `lineupUpsert`, `join`, or `leave`
-- `smartWallet`: the user's smart wallet
-- `contestId`: contest id
-- `lineupId`: lineup id, or `""` when creating a lineup
-- `picksHash`: `keccak256` of the UTF-8 string of `candidates` joined by `|`. `join` and `leave` sign the hash of an empty string. `prediction` is not included
-- `callsHash`: the zero hash. These actions do not authorize a custom call list
-- `deadline`: unix seconds, at most one hour ahead
+`userOpSignature` and `userOp` are only on the second join or leave of a caller-held delegate. A server-held delegate, and the user signing as the wallet, omit both.
 
 `userOpSignature` is the delegate's EIP-191 signature of the raw 32-byte `userOpHash`: `signMessage({ message: { raw: userOpHash } })`. Do not prefix it. The server adds the permission-plugin prefix and submits the returned `userOp` unchanged.
 
@@ -130,14 +127,16 @@ A failed join is logged as `error` and does not create an entry. The log stores 
 
 ## Settings
 
-`GET /api/bot/delegate-address` returns Cut Bot's public address, or `null` when the server key is unset.
+`GET /api/bot/delegate-address` returns the public address of the server-held delegate, or `null` when that key is unset. No signature.
 
-A signed-in user records an approval with `POST /api/bot/delegates`. The first approval is the owner's enable signature. Kernel installs the key and grants `execute` on the first `join` or `leave`. Allowing the same key again after a revoke sends an install transaction:
+The signed-in user records an approval with `POST /api/bot/delegates`. These settings routes use the Privy bearer token. The first approval is the user's enable signature on the wallet. Kernel installs the key and grants `execute` on the first `join` or `leave`. Allowing the same key again after a revoke sends an install transaction:
 
-- `kind`: `cut_bot` or `external`
+- `kind`: `cut_bot` (the server holds the key) or `external` (the caller holds the key)
 - `delegateAddress`
 - `smartWallet`
 - `approval`: serialized permission account
 - `permissionId`: the 4-byte Kernel permission id
 
 `POST /api/bot/delegates/revoke` with `delegateAddress` records the revoke. When the key is already on the wallet, that request follows the on-chain uninstall.
+
+`GET /api/bot/delegates` lists the signed-in user's delegates.
