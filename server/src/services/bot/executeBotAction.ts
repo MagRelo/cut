@@ -344,7 +344,7 @@ async function upsertLineup(
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
   if (input.picks.length === 0) {
-    return { ok: false, status: 400, error: "Lineup requires picks" };
+    return { ok: false, status: 400, error: "Lineup requires candidates" };
   }
   if (input.lineupId) {
     const existing = await requireLineup(input, userId, contest, deps);

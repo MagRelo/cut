@@ -19,7 +19,7 @@ Architecture and behavior documentation for the **v4 platform** (`v4` branch). T
 | Sport logic | Inline PGA services | `SportModule` plugins |
 | Client routing | Tournament-centric home | `/contests`, `/leagues/*` |
 
-Legacy routes `/api/tournaments` and `/api/lineup` return **501** on v4.
+The v4 server does not mount `/api/tournaments` or `/api/lineup`. The route list is [server/api.md](server/api.md).
 
 ---
 

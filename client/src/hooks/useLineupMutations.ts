@@ -98,7 +98,7 @@ export function useCreateLineup() {
           contestId: contestId ?? null,
           name: name || `Lineup #${(previousLineups?.length ?? 0) + 1}`,
           prediction: null,
-          picks: [],
+          candidates: [],
           score: 0,
           contestLineups: [],
           createdAt: now,
@@ -132,7 +132,7 @@ export function useCreateLineup() {
           user_id: userId,
           tournament_id: eventId,
           lineup_id: data.id,
-          player_count: data.picks.length,
+          player_count: data.candidates.length,
           is_first_lineup: isFirstLineup,
         });
       }
@@ -210,7 +210,7 @@ export function useUpdateLineup() {
             return {
               ...lineup,
               name: name || lineup.name,
-              picks: nextPicks,
+              candidates: nextPicks,
               score: lineupScoreFromPicks(nextPicks),
               ...(predictionValue !== undefined
                 ? {

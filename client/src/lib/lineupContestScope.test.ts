@@ -17,7 +17,7 @@ function lineup(
     name: `Lineup ${id}`,
     eventId: "event-1",
     contestId,
-    picks: pickIds.map((eventParticipantId, slotIndex) => ({
+    candidates: pickIds.map((eventParticipantId, slotIndex) => ({
       id: `pick-${id}-${slotIndex}`,
       slotIndex,
       eventParticipantId,

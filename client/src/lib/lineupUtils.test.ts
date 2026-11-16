@@ -65,7 +65,7 @@ describe("mergeUpdatedLineupIntoList", () => {
     ]);
 
     const merged = mergeUpdatedLineupIntoList([existing, other], updated);
-    expect(merged[0]?.picks).toEqual(updated.picks);
+    expect(merged[0]?.candidates).toEqual(updated.candidates);
     expect(merged[0]?.score).toBe(updated.score);
     expect(merged[0]?.contestLineups).toBe(contestLineups);
     expect(merged[1]).toBe(other);

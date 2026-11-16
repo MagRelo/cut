@@ -98,17 +98,16 @@ HTML is never cached so crawlers and share unfurls pick up the rewrite on the ne
 - `lib/email/` — contest announcement outbox (`EmailSendLog` per contest + user)
 - Preview / test: `scripts/emailPreview.ts`, `scripts/sendTestEmail.ts`
 
-### Legacy
+### Retired routes
 
-- `routes/legacy.ts` — 501 for `/tournaments` and `/lineup`
-- Old route files (`tournament.ts`, `lineup.ts`) excluded from build; not mounted
+The server does not mount `/api/tournaments` or `/api/lineup`. Data cutover is `scripts/migrate-from-legacy.ts`.
 
 ## Security
 
-- ERC-8128 signatures on delegate play (`/api/bot/contests`, `/api/bot/actions`). Request-bound, single-use nonce, at most one hour. Signer is a delegate, or the user signing as the smart wallet (ERC-1271)
-- Privy Bearer tokens on browser routes, including delegate install and revoke
+- ERC-8128 on player routes. Request-bound, single-use nonce, at most one hour. The signer is a delegate (`smartWallet` query) or the wallet (ERC-1271). `GET /api/bot/contests` and `POST /api/bot/actions` are signature-only.
+- Privy bearer on the browser session, wallet sync, delegate install and revoke, and admin.
 - League contests hidden from non-members (404)
-- Admin routes require staff `userType`
+- Admin routes require staff `userType` (`ADMIN`, `SUPER_ADMIN`). `AGENT` is not staff.
 
 ## Scalability notes
 

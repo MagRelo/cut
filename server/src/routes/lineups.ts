@@ -94,12 +94,12 @@ lineupsRouter.post(
           400,
         );
       }
-      const { picks, name, contestId, prediction } = validation.data;
+      const { candidates, name, contestId, prediction } = validation.data;
 
       const result = await createLineupForEvent({
         userId: user.userId,
         eventId,
-        picks,
+        picks: candidates,
         ...(name !== undefined ? { name } : {}),
         ...(prediction != null ? { prediction } : {}),
         ...(contestId !== undefined ? { contestId } : {}),
@@ -154,12 +154,12 @@ lineupsRouter.put(
           400,
         );
       }
-      const { picks, name, prediction } = validation.data;
+      const { candidates, name, prediction } = validation.data;
 
       const result = await updateLineupById({
         userId: user.userId,
         lineupId,
-        picks,
+        picks: candidates,
         ...(name !== undefined ? { name } : {}),
         ...(prediction != null ? { prediction } : {}),
       });

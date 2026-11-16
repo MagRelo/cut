@@ -3,14 +3,14 @@ import type { PlatformLineupPick } from "../types/event";
 
 export function isLineupWithPicks(
   lineup: ContestLineupShape | undefined,
-): lineup is { id: string; name: string; picks: PlatformLineupPick[] } {
-  return Boolean(lineup && Array.isArray(lineup.picks));
+): lineup is { id: string; name: string; candidates: PlatformLineupPick[] } {
+  return Boolean(lineup && Array.isArray(lineup.candidates));
 }
 
 type ContestLineupShape = {
   id: string;
   name?: string;
-  picks?: PlatformLineupPick[];
+  candidates?: PlatformLineupPick[];
 };
 
 export function lineupPicksFromContestLineup(lineup: {
@@ -19,7 +19,7 @@ export function lineupPicksFromContestLineup(lineup: {
   if (!isLineupWithPicks(lineup.lineup)) {
     return [];
   }
-  return lineup.lineup.picks;
+  return lineup.lineup.candidates;
 }
 
 export function candidatesFromContestLineup(lineup: { lineup?: ContestLineupShape }): Candidate[] {

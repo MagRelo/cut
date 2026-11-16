@@ -18,7 +18,7 @@ export function platformLineupPrediction(lineup: PlatformLineup): number | null 
 }
 
 export function platformLineupEventParticipantIds(lineup: PlatformLineup): string[] {
-  return lineup.picks
+  return lineup.candidates
     .map((pick) => pick.eventParticipantId)
     .filter((id): id is string => Boolean(id));
 }
@@ -44,13 +44,13 @@ function participantLastName(
 }
 
 export function lineupPickLastNames(lineup: PlatformLineup): string[] {
-  return lineup.picks
+  return lineup.candidates
     .map((pick) => (pick.participant ? participantLastName(pick.participant) : null))
     .filter((name): name is string => Boolean(name));
 }
 
 export function candidatesForPlatformLineup(lineup: PlatformLineup): Candidate[] {
-  return candidatesFromLineupPicks(lineup.picks);
+  return candidatesFromLineupPicks(lineup.candidates);
 }
 
 export function lineupScoreFromPicks(picks: PlatformLineupPick[]): number {

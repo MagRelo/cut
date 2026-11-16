@@ -207,7 +207,7 @@ describe("getContestLobby", () => {
       name: "Ada's squad",
       prediction: { value: 272 },
     });
-    expect(lineup[0]?.lineup).not.toHaveProperty("picks");
+    expect(lineup[0]?.lineup).not.toHaveProperty("candidates");
   });
 
   it("keeps summarySections and drops fieldSnapshot from event metadata", async () => {
@@ -232,7 +232,7 @@ describe("getContestLobby", () => {
       lobby?.contestLineups as Array<{
         lineup: {
           prediction: unknown;
-          picks: Array<{
+          candidates: Array<{
             participant: { metadata: Record<string, unknown> | null };
             scoreData: unknown;
             total: number | null;
@@ -242,17 +242,17 @@ describe("getContestLobby", () => {
     )[0]?.lineup;
 
     expect(lineup?.prediction).toEqual({ value: 272 });
-    expect(lineup?.picks).toHaveLength(1);
-    expect(lineup?.picks[0]?.scoreData).toEqual({ hole: 12 });
-    expect(lineup?.picks[0]?.total).toBe(4);
-    expect(lineup?.picks[0]?.participant.metadata).toMatchObject({
+    expect(lineup?.candidates).toHaveLength(1);
+    expect(lineup?.candidates[0]?.scoreData).toEqual({ hole: 12 });
+    expect(lineup?.candidates[0]?.total).toBe(4);
+    expect(lineup?.candidates[0]?.participant.metadata).toMatchObject({
       firstName: "Rory",
       lastName: "McIlroy",
       imageUrl: "https://example.com/rory.png",
       country: "NIR",
     });
-    expect(lineup?.picks[0]?.participant.metadata).not.toHaveProperty("performance");
-    expect(lineup?.picks[0]?.participant.metadata).not.toHaveProperty("priceHistory");
+    expect(lineup?.candidates[0]?.participant.metadata).not.toHaveProperty("performance");
+    expect(lineup?.candidates[0]?.participant.metadata).not.toHaveProperty("priceHistory");
   });
 
   it("sets settledPot from the payment ledger on settled contests", async () => {

@@ -172,7 +172,7 @@ export function createBotActionDeps(): BotActionDeps {
             userId,
             eventId: result.lineup.eventId,
             contestId: result.lineup.contestId,
-            picks: result.lineup.picks.map((pick) => pick.eventParticipantId),
+            picks: result.lineup.candidates.map((pick) => pick.eventParticipantId),
           },
         };
       }

@@ -14,7 +14,7 @@ export function lineupDisplayScore(contestLineup: ContestLineup): number {
     return contestLineup.score ?? 0;
   }
   const platform = contestLineup.lineup;
-  if (platform && "picks" in platform) {
+  if (platform && "candidates" in platform) {
     return scoreFromPlatformLineup(platform);
   }
   return contestLineup.score ?? 0;

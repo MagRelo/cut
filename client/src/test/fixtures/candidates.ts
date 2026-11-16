@@ -124,7 +124,7 @@ export function buildFixturePlatformLineup(
     eventId: "tournament-1",
     name,
     prediction: null,
-    picks,
+    candidates: picks,
     score,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

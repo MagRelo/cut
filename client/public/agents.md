@@ -1,6 +1,6 @@
 # Agents
 
-The account is one wallet. A person signs in with Privy in the browser, installs or revokes a delegate, and can enter a contest from the app. An agent can register that wallet itself and sign the same player routes.
+The account is one wallet. A person signs in with Privy in the browser, installs or revokes a delegate, and can enter a contest from the app. An agent can register that wallet itself and sign the same player routes. The route list is `spec/server/api.md`. This page is how to sign, and how the play actions work.
 
 A delegate is a key the user installs on that wallet so another client can act for them. The delegate signs this API. The server may hold the key, or the caller may hold it. Both are the same kind of key.
 

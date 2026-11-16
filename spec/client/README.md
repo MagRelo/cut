@@ -91,8 +91,7 @@ client/src/
 - Base path: `/api` via `apiClient`
 - Auth: `Authorization: Bearer <privy_access_token>`
 - Optional: `X-Cut-Chain-Id` for multi-chain wallet resolution
-- Live APIs: `/sports`, `/lineups`, `/contests`, `/userGroups`, `/auth`
-- Legacy `/tournaments` and `/lineup` return **501** — client must not call them on v4
+- Live APIs: [spec/server/api.md](../server/api.md)
 
 ---
 

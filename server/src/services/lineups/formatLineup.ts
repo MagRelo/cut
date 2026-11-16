@@ -42,7 +42,7 @@ export function formatLineupResponse(lineup: LineupWithPicks) {
     contestId: lineup.contestId,
     name: lineup.name,
     prediction: lineup.prediction,
-    picks,
+    candidates: picks,
     score,
     createdAt: lineup.createdAt,
     updatedAt: lineup.updatedAt,

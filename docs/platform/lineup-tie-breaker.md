@@ -91,7 +91,7 @@ The client runs the same roster + prediction check before save (slot editor and 
 
 | Action | Request |
 | --- | --- |
-| Change slider | Debounced **~400 ms** → `PUT /api/lineups/:lineupId` with current `picks` + `prediction` |
+| Change slider | Debounced **~400 ms** → `PUT /api/lineups/:lineupId` with current `candidates` + `prediction` |
 | Add/swap/remove player | Immediate save via slot editor with current `prediction` |
 
 Slider and roster saves share the same API shape so prediction and picks stay in sync. Inline error under the slider on duplicate or API failure.
@@ -108,7 +108,7 @@ Base path: `/api/lineups` (auth required; event must be editable for writes).
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `picks` | Yes | 0–4 `eventParticipantId` values |
+| `candidates` | Yes | Ordered `eventParticipantId` values, at most 8 |
 | `name` | No | Default `"My Lineup"` |
 | `prediction` | No | `{ type: "winningLineupTotal", value }` within sport `predictionRules` range; if omitted, server assigns random default |
 
@@ -116,7 +116,7 @@ Base path: `/api/lineups` (auth required; event must be editable for writes).
 
 | Field | Required | Notes |
 | --- | --- | --- |
-| `picks` | Yes | Full roster replacement (0–4 `eventParticipantId` values) |
+| `candidates` | Yes | Full roster replacement (ordered `eventParticipantId` values, at most 8) |
 | `name` | No | |
 | `prediction` | No | Updates prediction when provided; otherwise keeps existing |
 
@@ -128,7 +128,7 @@ Example body:
 
 ```json
 {
-  "picks": ["cuid1", "cuid2", "cuid3", "cuid4"],
+  "candidates": ["cuid1", "cuid2", "cuid3", "cuid4"],
   "name": "Lineup #1",
   "prediction": { "type": "winningLineupTotal", "value": 142 }
 }
@@ -201,12 +201,12 @@ sequenceDiagram
 
   User->>Client: Adjust prediction slider
   Client->>Client: Debounce 400ms
-  Client->>API: PUT lineup picks + prediction
+  Client->>API: PUT lineup candidates + prediction
   API->>DB: Duplicate check roster + prediction
   API->>DB: Persist Lineup
 
   User->>Client: Pick player in slot
-  Client->>API: PUT lineup picks + prediction
+  Client->>API: PUT lineup candidates + prediction
   API->>DB: Persist roster
 
   User->>Client: Enter contest

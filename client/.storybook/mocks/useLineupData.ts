@@ -43,7 +43,7 @@ export function useLineupData(_options: { eventId: string; enabled?: boolean }) 
         lineup.id === lineupId
           ? {
               ...lineup,
-              picks: lineupPicks,
+              candidates: lineupPicks,
               score,
               ...(options?.predictionValue !== undefined
                 ? { prediction: { type: "winningLineupTotal", value: options.predictionValue } }
@@ -58,7 +58,7 @@ export function useLineupData(_options: { eventId: string; enabled?: boolean }) 
         eventId: updated?.eventId ?? "",
         name: updated?.name ?? "Lineup #1",
         prediction: updated?.prediction ?? null,
-        picks: lineupPicks,
+        candidates: lineupPicks,
         score,
         createdAt: updated?.createdAt ?? new Date().toISOString(),
         updatedAt: new Date().toISOString(),

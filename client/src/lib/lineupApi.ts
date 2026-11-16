@@ -12,7 +12,7 @@ export async function createLineupForEvent(params: {
   const response = await apiClient.post<{ lineup: PlatformLineup }>(
     `/lineups/${params.eventId}`,
     {
-      picks: params.picks,
+      candidates: params.picks,
       name: params.name,
       contestId: params.contestId,
       prediction: toLineupPredictionValue(params.predictionValue),
@@ -32,7 +32,7 @@ export async function updateLineupById(params: {
   const response = await apiClient.put<{ lineup: PlatformLineup }>(
     `/lineups/${params.lineupId}`,
     {
-      picks: params.picks,
+      candidates: params.picks,
       name: params.name,
       prediction: toLineupPredictionValue(params.predictionValue),
     },

@@ -10,9 +10,9 @@ export const lineupPredictionSchema = z
   .strict();
 
 export const lineupWriteBodySchema = z.object({
-  picks: z
+  candidates: z
     .array(z.string().min(1), {
-      invalid_type_error: "picks must be an array of eventParticipant IDs",
+      invalid_type_error: "candidates must be an array of eventParticipant IDs",
     })
     .max(LINEUP_PICKS_MAX),
   name: z.string().trim().min(1).max(NAME_MAX_LENGTH).optional(),

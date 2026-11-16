@@ -61,7 +61,6 @@ const playActionSchema = z.object({
   contestId: z.string().min(1),
   lineupId: z.string().default(""),
   candidates: z.array(z.string().min(1)).optional(),
-  picks: z.array(z.string().min(1)).optional(),
   prediction: z.unknown().optional(),
   userOpSignature: hexSchema.optional(),
   userOp: userOpSchema.optional(),
@@ -85,17 +84,8 @@ const createContestActionSchema = z
 
 const actionSchema = z.discriminatedUnion("action", [playActionSchema, createContestActionSchema]);
 
-function selectedCandidates(body: {
-  candidates?: string[] | undefined;
-  picks?: string[] | undefined;
-}): string[] | { error: string } {
-  if (body.candidates && body.picks) {
-    const same =
-      body.candidates.length === body.picks.length &&
-      body.candidates.every((id, index) => id === body.picks?.[index]);
-    if (!same) return { error: "candidates and picks do not match" };
-  }
-  return body.candidates ?? body.picks ?? [];
+function selectedCandidates(body: { candidates?: string[] | undefined }): string[] {
+  return body.candidates ?? [];
 }
 
 botRouter.get("/delegate-address", (c) => {
@@ -263,9 +253,6 @@ botRouter.post("/actions", async (c) => {
     return c.json({ ok: true, contestId: result.contestId, address: result.address });
   }
   const candidates = selectedCandidates(body);
-  if (!Array.isArray(candidates)) {
-    return c.json({ error: candidates.error }, 400);
-  }
   const result = await executeBotAction(
     {
       chainId: body.chainId,

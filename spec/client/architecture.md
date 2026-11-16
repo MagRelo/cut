@@ -100,7 +100,7 @@ All production UI uses platform types:
 |------|--------|----------|
 | `Candidate` | `@cut/sport-sdk` | Picker, rows, detail modal |
 | `ActiveEventResponse` | `types/event.ts` | Event metadata + status |
-| `PlatformLineup` | `types/event.ts` | User lineups (`picks`, `score`) |
+| `PlatformLineup` | `types/event.ts` | User lineups (`candidates`, `score`) |
 | `ContestLineup` | `types/lineup.ts` | Contest entries (`score`, `position`) |
 
 Golf scorecard shapes (`RoundData`, `TournamentPlayerData`) live in `sports/pga-golf/types.ts` — plugin-internal only.

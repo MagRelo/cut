@@ -82,7 +82,7 @@ See [contracts/README.md](../contracts/README.md).
 
 ---
 
-## Live vs legacy API surface
+## Mounted routes
 
 | Mounted in `server/src/routes/api.ts` | Status |
 |---------------------------------------|--------|
@@ -92,11 +92,9 @@ See [contracts/README.md](../contracts/README.md).
 | `/api/userGroups` | ✅ Live |
 | `/api/admin` | ✅ Live |
 | `/api/auth` | ✅ Live |
-| `/api/bot` | ✅ Live. Delegate play is ERC-8128. The user installs a delegate in the Privy session |
+| `/api/bot` | ✅ Live. Player routes accept ERC-8128. Delegate install stays on the Privy session |
 | `/api/cron` | ✅ Live |
 | `/api/unsubscribe` | ✅ Live |
-| `/api/tournaments` | ❌ 501 legacy stub |
-| `/api/lineup` | ❌ 501 legacy stub |
 
 ---
 

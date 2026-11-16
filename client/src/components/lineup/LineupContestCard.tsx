@@ -129,7 +129,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const [sliderError, setSliderError] = useState<string | null>(null);
   const [isSavingPrediction, setIsSavingPrediction] = useState(false);
 
-  const platformLineup = lineup.lineup && "picks" in lineup.lineup ? lineup.lineup : null;
+  const platformLineup = lineup.lineup && "candidates" in lineup.lineup ? lineup.lineup : null;
   const lineupId = lineup.lineupId ?? platformLineup?.id ?? "";
   const lineupName = contestLineupDisplayName(lineup);
   const canEditSlots = Boolean(isEditable && isEventEditable && lineupId);
@@ -149,7 +149,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
   const expectedPickIdsBySlot = useMemo(
     () =>
       pickIdsBySlot(
-        platformLineup?.picks ?? lineupPicksFromContestLineup(lineup),
+        platformLineup?.candidates ?? lineupPicksFromContestLineup(lineup),
         slotCount,
       ),
     [platformLineup, lineup, slotCount],

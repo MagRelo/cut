@@ -78,7 +78,7 @@ function buildPlatformLineup(eventParticipantIds: string[] = []): PlatformLineup
     contestId: STORYBOOK_CONTEST_ID,
     name: "Lineup #1",
     prediction: { type: "winningLineupTotal", value: 150 },
-    picks,
+    candidates: picks,
     score,
     createdAt: now,
     updatedAt: now,
@@ -88,7 +88,7 @@ function buildPlatformLineup(eventParticipantIds: string[] = []): PlatformLineup
 
 export function buildContestLineupForCard(eventParticipantIds: string[] = []): ContestLineup {
   const platformLineup = buildPlatformLineup(eventParticipantIds);
-  const score = platformLineup.picks.reduce((sum, pick) => sum + (pick.total ?? 0), 0);
+  const score = platformLineup.candidates.reduce((sum, pick) => sum + (pick.total ?? 0), 0);
 
   return {
     id: "contest-lineup-storybook",

@@ -38,7 +38,7 @@ export interface PlatformLineup {
   contestId?: string | null;
   name: string;
   prediction: unknown;
-  picks: PlatformLineupPick[];
+  candidates: PlatformLineupPick[];
   /** Sum of pick totals — maintained by the server on each lineup fetch. */
   score: number;
   createdAt: string;

@@ -229,7 +229,7 @@ function formatLobbyPicks(lineup: ContestLobbyRow["contestLineups"][number]["lin
     contestId: lineup.contestId,
     name: lineup.name,
     prediction: lineup.prediction,
-    picks,
+    candidates: picks,
     score,
     createdAt: lineup.createdAt,
     updatedAt: lineup.updatedAt,
