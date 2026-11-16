@@ -7,6 +7,8 @@ import { mergeUserSettings, type UpdateUserSettingsBody } from "../../schemas/us
 import { getPublicClient } from "../shared/contractClient.js";
 import { packApproval } from "./approvalEnvelope.js";
 import type { BotActor } from "./botActor.js";
+import { createApprovalCheckDeps } from "./delegateGrantRuntime.js";
+import { validateDelegateApproval, type ApprovalCheckDeps } from "./delegatePolicy.js";
 
 type Fail = { ok: false; status: 400 | 403 | 404 | 502 | 503; error: string };
 
@@ -63,18 +65,20 @@ export type DelegateDeps = {
   }) => Promise<void>;
   revokeDelegate: (userId: string, delegateAddress: string) => Promise<boolean>;
   isCutBot: (address: string) => boolean;
+  approvals: ApprovalCheckDeps;
 };
 
 export async function addDelegate(
   actor: BotActor,
   input: {
+    chainId: number;
     kind: "cut_bot" | "external";
     delegateAddress: string;
     approval: string;
     permissionId: Hex;
   },
   deps: DelegateDeps,
-): Promise<{ ok: true; status: "active"; delegateAddress: string } | Fail> {
+): Promise<{ ok: true; status: "active"; delegateAddress: string; contests: string[] } | Fail> {
   if (actor.role !== "owner") {
     return { ok: false, status: 403, error: "Only the wallet owner can add a delegate" };
   }
@@ -88,6 +92,17 @@ export async function addDelegate(
   if (input.kind === "external" && deps.isCutBot(delegateAddress)) {
     return { ok: false, status: 400, error: "Use kind cut_bot for the Cut Bot address" };
   }
+  const checked = await validateDelegateApproval(
+    {
+      chainId: input.chainId,
+      smartWallet: actor.smartWallet,
+      delegateAddress: getAddress(delegateAddress),
+      approval: input.approval,
+      permissionId: input.permissionId,
+    },
+    deps.approvals,
+  );
+  if (!checked.ok) return { ok: false, status: 400, error: checked.error };
   let approval: string;
   try {
     approval = packApproval({ approval: input.approval, permissionId: input.permissionId });
@@ -105,7 +120,7 @@ export async function addDelegate(
     kind: input.kind,
     approval,
   });
-  return { ok: true, status: "active", delegateAddress };
+  return { ok: true, status: "active", delegateAddress, contests: checked.grant.contests };
 }
 
 export async function revokeDelegate(
@@ -140,6 +155,7 @@ export function createDelegateDeps(): DelegateDeps {
       return updated.count > 0;
     },
     isCutBot: isCutBotAddress,
+    approvals: createApprovalCheckDeps(),
   };
 }
 

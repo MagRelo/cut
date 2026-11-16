@@ -5,7 +5,8 @@
  *   1. Create (or load) a private key. That key owns the account.
  *   2. register (optional refCode). The server returns the Kernel smart wallet to fund.
  *   3. Signed reads: balance, contests (no nonce).
- *   4. Optional: add a delegate session key (delegateAdd, owner only).
+ *   4. Optional: add a delegate session key (delegateAdd, owner only). The delegate may only
+ *      approve the entry fee to, join, and leave the open contests listed at grant time.
  *   5. Optional: lineupUpsert, then join (prepare -> sign userOpHash -> submit).
  *
  * Every write carries a fresh nonce. ERC-8128 spec version: draft-2026-01-16
@@ -97,17 +98,71 @@ async function signedFetch(
 // Optional: build a delegate approval (owner signs the Kernel enable digest)
 // ---------------------------------------------------------------------------
 
+type DelegatePolicyInfo = { paymentToken: Address; contests: Address[] };
+
+/**
+ * The only grant the server accepts (it rejects sudo and anything else):
+ * - ZeroDev CallPolicy 0.0.5, plain CALL, value 0:
+ *   approve(spender ONE_OF contests) on the payment token,
+ *   addPrimaryPosition / removePrimaryPosition on each contest.
+ * - SignatureCallerPolicy with no allowed callers (the key cannot sign ERC-1271 / permit).
+ * Contests are sorted by lowercase address so the permission id is reproducible.
+ */
+async function delegatePolicies(info: DelegatePolicyInfo) {
+  const { CallPolicyVersion, CallType, ParamCondition, toCallPolicy, toSignatureCallerPolicy } =
+    await import("@zerodev/permissions/policies");
+  const { getAddress, pad } = await import("viem");
+  const contests = [...new Set(info.contests.map((c) => c.toLowerCase()))]
+    .sort()
+    .map((c) => getAddress(c));
+  const permissions = [
+    {
+      callType: CallType.CALL,
+      target: getAddress(info.paymentToken),
+      selector: "0x095ea7b3" as Hex, // approve(address,uint256)
+      valueLimit: 0n,
+      rules: [
+        {
+          condition: ParamCondition.ONE_OF,
+          offset: 0,
+          params: contests.map((c) => pad(c.toLowerCase() as Hex, { size: 32 })),
+        },
+      ],
+    },
+    ...contests.flatMap((contest) => [
+      {
+        callType: CallType.CALL,
+        target: contest,
+        selector: "0xe1db226a" as Hex, // addPrimaryPosition(uint256,bytes32[])
+        valueLimit: 0n,
+        rules: [],
+      },
+      {
+        callType: CallType.CALL,
+        target: contest,
+        selector: "0x7e8f1234" as Hex, // removePrimaryPosition(uint256)
+        valueLimit: 0n,
+        rules: [],
+      },
+    ]),
+  ];
+  return [
+    toCallPolicy({ policyVersion: CallPolicyVersion.V0_0_5, permissions }),
+    toSignatureCallerPolicy({ allowedCallers: [] }),
+  ];
+}
+
 async function buildDelegateApproval(
   owner: PrivateKeyAccount,
   smartWallet: Address,
   delegate: Address,
+  info: DelegatePolicyInfo,
 ) {
   const { addressToEmptyAccount, createKernelAccount } = await import("@zerodev/sdk");
   const { KERNEL_V3_1 } = await import("@zerodev/sdk/constants");
   const { serializePermissionAccount, toPermissionValidator } =
     await import("@zerodev/permissions");
   const { toECDSASigner } = await import("@zerodev/permissions/signers");
-  const { toSudoPolicy } = await import("@zerodev/permissions/policies");
   const { signerToEcdsaValidator } = await import("@zerodev/ecdsa-validator");
 
   const chain = CHAIN_ID === 8453 ? base : baseSepolia;
@@ -117,7 +172,7 @@ async function buildDelegateApproval(
     entryPoint,
     kernelVersion: KERNEL_V3_1,
     signer: await toECDSASigner({ signer: addressToEmptyAccount(delegate) }),
-    policies: [toSudoPolicy({})],
+    policies: await delegatePolicies(info),
   });
   const sudo = await signerToEcdsaValidator(publicClient, {
     signer: owner,
@@ -179,7 +234,19 @@ async function main() {
   // 3. optional delegate
   const delegate = process.env.CUT_DELEGATE as Address | undefined;
   if (delegate) {
-    const { approval, permissionId } = await buildDelegateApproval(owner, smartWallet, delegate);
+    // Unsigned: payment token and the open contests a delegate may enter right now.
+    const res = await fetch(`${API_BASE}/api/bot/delegate-policy?chainId=${CHAIN_ID}`);
+    const info = (await res.json()) as DelegatePolicyInfo;
+    if (!res.ok || info.contests.length === 0) {
+      console.log("No open contests to grant a delegate yet; skipping delegateAdd.");
+      return;
+    }
+    const { approval, permissionId } = await buildDelegateApproval(
+      owner,
+      smartWallet,
+      delegate,
+      info,
+    );
     show(
       "delegateAdd",
       await signedFetch(owner, "POST", "/api/bot/actions", {

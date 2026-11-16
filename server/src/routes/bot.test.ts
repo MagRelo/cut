@@ -2,7 +2,14 @@ import { Hono } from "hono";
 import { getAddress, type Address } from "viem";
 import { generatePrivateKey, privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import { describe, expect, it, vi } from "vitest";
+import { toSudoPolicy } from "@zerodev/permissions/policies";
 import { packApproval } from "../services/bot/approvalEnvelope.js";
+import {
+  cutDelegateApproval,
+  fakeApprovalDeps,
+  permissionIdFor,
+  serializeApproval,
+} from "../test/delegateApproval.js";
 import type { BotDelegateRow } from "../services/bot/botActor.js";
 import { signErc8128Request } from "../services/bot/erc8128.js";
 import { kernelAddressForOwner } from "../services/bot/kernelWallet.js";
@@ -12,6 +19,8 @@ import { createBotRouter, type BotRouterDeps } from "./bot.js";
 
 const HOST = "api.playthecut.test";
 const CHAIN_ID = 84532;
+const TOKEN = getAddress("0x3333333333333333333333333333333333333333");
+const CONTEST = getAddress("0xc0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0");
 
 type World = {
   app: Hono;
@@ -129,6 +138,7 @@ function world(): World {
         return found;
       },
       isCutBot: () => false,
+      approvals: fakeApprovalDeps({ paymentToken: TOKEN, contests: [CONTEST] }),
     },
     balance: {
       paymentToken: () => getAddress("0x3333333333333333333333333333333333333333"),
@@ -139,6 +149,23 @@ function world(): World {
       loadContests: vi.fn(async () => []),
       loadCandidates: vi.fn(async () => []),
     },
+    delegatePolicy: async (chainId) =>
+      chainId === CHAIN_ID
+        ? {
+            chainId,
+            paymentToken: TOKEN,
+            contests: [CONTEST],
+            maxContests: 10,
+            callPolicy: {
+              version: "0.0.5",
+              address: getAddress("0x85770b902D1e503D5f5141d9eaC16d0d08eEaDd2"),
+            },
+            signaturePolicy: {
+              address: getAddress("0xF6A936c88D97E6fad13b98d2FD731Ff17eeD591d"),
+              allowedCallers: [],
+            },
+          }
+        : null,
     registerLimitByIp: createRateLimiter({ limit: 100, windowMs: 60_000 }),
     registerLimitBySigner: createRateLimiter({ limit: 100, windowMs: 60_000 }),
   };
@@ -378,6 +405,11 @@ async function registered(w: World) {
 
 async function addDelegate(w: World, owner: PrivateKeyAccount, smartWallet: Address) {
   const delegate = privateKeyToAccount(generatePrivateKey());
+  const { approval, permissionId } = await cutDelegateApproval({
+    smartWallet,
+    delegate: delegate.address,
+    grant: { paymentToken: TOKEN, contests: [CONTEST] },
+  });
   const res = await signedFetch(w, owner, {
     method: "POST",
     path: "/api/bot/actions",
@@ -387,11 +419,11 @@ async function addDelegate(w: World, owner: PrivateKeyAccount, smartWallet: Addr
       smartWallet,
       kind: "external",
       delegateAddress: delegate.address,
-      approval: "serialized-permission-account",
-      permissionId: "0x5a677774",
+      approval,
+      permissionId,
     },
   });
-  return { res, delegate };
+  return { res, delegate, approval, permissionId };
 }
 
 describe("bot API: signers", () => {
@@ -436,12 +468,16 @@ describe("bot API: signers", () => {
   it("lets an added delegate update settings, and stops it after revoke", async () => {
     const w = world();
     const { owner, smartWallet } = await registered(w);
-    const { res: added, delegate } = await addDelegate(w, owner, smartWallet);
+    const {
+      res: added,
+      delegate,
+      approval,
+      permissionId,
+    } = await addDelegate(w, owner, smartWallet);
     expect(added.status).toBe(200);
+    expect(await added.json()).toMatchObject({ status: "active", contests: [CONTEST] });
     expect(w.delegates.size).toBe(1);
-    expect([...w.delegates.values()][0]?.approval).toBe(
-      packApproval({ approval: "serialized-permission-account", permissionId: "0x5a677774" }),
-    );
+    expect([...w.delegates.values()][0]?.approval).toBe(packApproval({ approval, permissionId }));
 
     const settings = {
       action: "userSettingsUpsert",
@@ -482,6 +518,73 @@ describe("bot API: signers", () => {
     const { delegate } = await addDelegate(w, owner, smartWallet);
     const { res } = await addDelegate(w, delegate, smartWallet);
     expect(res.status).toBe(403);
+  });
+
+  it("rejects a sudo delegate approval from the owner", async () => {
+    const w = world();
+    const { owner, smartWallet } = await registered(w);
+    const delegate = privateKeyToAccount(generatePrivateKey());
+    const policies = [toSudoPolicy({})];
+    const permissionId = await permissionIdFor(delegate.address, policies);
+    const res = await signedFetch(w, owner, {
+      method: "POST",
+      path: "/api/bot/actions",
+      body: {
+        action: "delegateAdd",
+        chainId: CHAIN_ID,
+        smartWallet,
+        kind: "external",
+        delegateAddress: delegate.address,
+        approval: serializeApproval({ smartWallet, policies, permissionId }),
+        permissionId,
+      },
+    });
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toMatch(/Sudo/);
+    expect(w.delegates.size).toBe(0);
+  });
+
+  it("rejects a delegate approval for a contest Cut does not know", async () => {
+    const w = world();
+    const { owner, smartWallet } = await registered(w);
+    const delegate = privateKeyToAccount(generatePrivateKey());
+    const { approval, permissionId } = await cutDelegateApproval({
+      smartWallet,
+      delegate: delegate.address,
+      grant: {
+        paymentToken: TOKEN,
+        contests: [getAddress("0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddead")],
+      },
+    });
+    const res = await signedFetch(w, owner, {
+      method: "POST",
+      path: "/api/bot/actions",
+      body: {
+        action: "delegateAdd",
+        chainId: CHAIN_ID,
+        smartWallet,
+        kind: "external",
+        delegateAddress: delegate.address,
+        approval,
+        permissionId,
+      },
+    });
+    expect(res.status).toBe(400);
+    expect(w.delegates.size).toBe(0);
+  });
+
+  it("serves the delegate grant inputs unsigned", async () => {
+    const w = world();
+    const res = await w.app.request(`https://${HOST}/api/bot/delegate-policy?chainId=${CHAIN_ID}`);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      paymentToken: TOKEN,
+      contests: [CONTEST],
+      callPolicy: { version: "0.0.5" },
+      signaturePolicy: { allowedCallers: [] },
+    });
+    const other = await w.app.request(`https://${HOST}/api/bot/delegate-policy?chainId=1`);
+    expect(other.status).toBe(404);
   });
 
   it("rejects a stranger key on someone else's wallet", async () => {

@@ -11,7 +11,7 @@ There is one way to authenticate: **ERC-8128 signed HTTP requests**. There are n
 3. **Fund.** Send USDC (Base) to the smart wallet. Contest deposits come from it.
 4. **Read.** `GET /api/bot/balance` and `GET /api/bot/contests`. No nonce.
 5. **Play.** `lineupUpsert`, then `join` (and `leave`). Each write has a fresh nonce.
-6. **Optional: add a delegate.** The owner key can allow a second key (a Kernel session key) with `delegateAdd`, and remove it with `delegateRevoke`.
+6. **Optional: add a delegate.** The owner key can allow a second key (a Kernel session key limited to entering and leaving contests) with `delegateAdd`, and remove it with `delegateRevoke`.
 
 A runnable version of this flow is [`server/scripts/erc8128-client-example.ts`](https://github.com/MagRelo/cut/blob/main/server/scripts/erc8128-client-example.ts).
 
@@ -28,7 +28,16 @@ A request for a smart wallet can be signed by:
 - **The owner key.** The server checks ownership on-chain once the wallet is deployed (the owner the ECDSA validator stores for it), and by the counterfactual address before that. The owner can do everything.
 - **An active delegate.** A Kernel permission session key the owner allowed: Cut Bot (`kind: "cut_bot"`, the server holds its key) or any other key (`kind: "external"`). A delegate can read, update settings, save lineups, join, and leave. It cannot add delegates, and can revoke only itself.
 
-A delegate is a blank check on-chain: it can submit any call the wallet can. The API still only builds the calls described below.
+### What a delegate can do on-chain
+
+A delegate's key is limited on-chain by the policies the owner signs, not only by this API. The server accepts exactly one grant (see `delegateAdd`):
+
+- **Can:** call `approve(spender, amount)` on the payment token where `spender` is one of the granted contests; call `addPrimaryPosition` (join) and `removePrimaryPosition` (leave) on those contests. Plain calls only, no ETH value. Several of these in one batch are checked one by one.
+- **Cannot:** call the wallet itself, so it cannot add delegates, change the owner, or upgrade the wallet; transfer tokens or approve any other spender; delegatecall; send ETH; sign messages for the wallet (ERC-1271, so no `permit`); touch contests it was not granted.
+
+Contests are separate contracts, and the policy names exact addresses, so a grant lists the contests it covers (at most 10, from `GET /api/bot/delegate-policy`). A contest created later needs a new grant: the owner calls `delegateAdd` again. Until then the API answers `403` for a delegate join on an ungranted contest.
+
+Off-chain, through this API, a delegate can also read, update settings, and save lineups.
 
 ## ERC-8128 signing
 
@@ -216,7 +225,15 @@ Owner only (a delegate may revoke itself).
 }
 ```
 
-`approval` is the ZeroDev `serializePermissionAccount` output for a permission validator with the delegate as its ECDSA signer and a sudo policy, signed by the owner (the enable signature). Kernel installs the key with its first `join` or `leave`. `permissionId` is the validator's 4-byte id. `kind` is `cut_bot` only for Cut Bot's address (`GET /api/bot/delegate-address`). The example script builds both.
+`approval` is the ZeroDev `serializePermissionAccount` output (`@zerodev/permissions` 5.6.x) for a permission validator whose ECDSA signer is the delegate, with exactly these two policies in this order, signed by the owner (the enable signature):
+
+1. **CallPolicy `0.0.5`** (`0x85770b902D1e503D5f5141d9eaC16d0d08eEaDd2`), flag `0x0000`. Permissions, all `callType` CALL (`0x00`) and `valueLimit` 0, with the contest addresses sorted by lowercase address:
+   - target the payment token, selector `0x095ea7b3` (`approve(address,uint256)`), one rule: `ONE_OF` at offset 0 with each contest address left-padded to 32 bytes
+   - for each contest: target the contest, selector `0xe1db226a` (`addPrimaryPosition(uint256,bytes32[])`), no rules
+   - for each contest: target the contest, selector `0x7e8f1234` (`removePrimaryPosition(uint256)`), no rules
+2. **SignatureCallerPolicy** (`0xF6A936c88D97E6fad13b98d2FD731Ff17eeD591d`), flag `0x0000`, `allowedCallers: []`.
+
+Get the payment token and the open contests from `GET /api/bot/delegate-policy?chainId=…`; any subset of Cut's contests on that chain (1 to 10) is accepted. The server rebuilds the policies from the grant and rejects anything else: a sudo policy, extra policies or permissions, an approve without the spender rule, a contest Cut does not know, another wallet, or a `permissionId` that does not match. Kernel installs the key with its first `join` or `leave`. `permissionId` is the validator's 4-byte id; it depends on the grant, so each grant is a new key slot. `kind` is `cut_bot` only for Cut Bot's address (`GET /api/bot/delegate-address`). The example script builds both. The response lists the granted contests. Calling `delegateAdd` again for the same delegate replaces its grant in the API; the earlier permission stays installed on-chain (still limited to its own contests) until the owner uninstalls it with `uninstallValidation`, which the web app does for you.
 
 ```json
 { "action": "delegateRevoke", "chainId": 8453, "smartWallet": "0x…", "delegateAddress": "0x…" }
@@ -282,9 +299,24 @@ Owner or delegate. Contests on the keyid chain that this account can see: public
 
 Unsigned. Cut Bot's public address, or `null` when the server key is unset.
 
+### GET /api/bot/delegate-policy?chainId=8453
+
+Unsigned. What a delegate grant needs: the payment token, open contests on that chain (soonest end first, at most 10), and the policy contracts.
+
+```json
+{
+  "chainId": 8453,
+  "paymentToken": "0x…",
+  "contests": ["0x…"],
+  "maxContests": 10,
+  "callPolicy": { "version": "0.0.5", "address": "0x85770b902D1e503D5f5141d9eaC16d0d08eEaDd2" },
+  "signaturePolicy": { "address": "0xF6A936c88D97E6fad13b98d2FD731Ff17eeD591d", "allowedCallers": [] }
+}
+```
+
 ## Errors
 
-`400` bad body or parameters, `401` missing or invalid signature, `403` signer is not the owner or an active delegate (or the action is owner-only), `404` unknown contest or unregistered wallet, `409` reused nonce or contest not open, `429` rate limited, `502` user operation failed.
+`400` bad body or parameters, `401` missing or invalid signature, `403` signer is not the owner or an active delegate (or the action is owner-only, or the contest is outside the delegate's grant), `404` unknown contest or unregistered wallet, `409` reused nonce or contest not open, `429` rate limited, `502` user operation failed.
 
 ## Web app
 

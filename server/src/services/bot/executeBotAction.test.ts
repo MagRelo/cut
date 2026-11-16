@@ -12,6 +12,7 @@ import {
   type BotContest,
   type ExecuteBotActionInput,
 } from "./executeBotAction.js";
+import { cutDelegateApproval } from "../../test/delegateApproval.js";
 
 const CHAIN_ID = 84532;
 const SMART_WALLET = getAddress("0x1111111111111111111111111111111111111111");
@@ -23,6 +24,12 @@ const cutBotKey = generatePrivateKey();
 const cutBot = privateKeyToAccount(cutBotKey);
 const owner = privateKeyToAccount(generatePrivateKey());
 const external = privateKeyToAccount(generatePrivateKey());
+// A real Cut grant covering CONTEST only.
+const { approval: APPROVAL } = await cutDelegateApproval({
+  smartWallet: SMART_WALLET,
+  delegate: cutBot.address,
+  grant: { paymentToken: TOKEN, contests: [CONTEST] },
+});
 
 function contest(overrides: Partial<BotContest> = {}): BotContest {
   return {
@@ -53,7 +60,7 @@ function delegateActor(kind: "cut_bot" | "external" = "cut_bot"): BotActor {
     smartWallet: SMART_WALLET,
     signer: getAddress(signer),
     delegate,
-    approval: "serialized",
+    approval: APPROVAL,
     permissionId: "0x5a677774",
   };
 }
@@ -203,7 +210,7 @@ describe("executeBotAction", () => {
     expect(used.submitCalls).toHaveBeenCalledWith(
       expect.objectContaining({
         privateKey: cutBotKey,
-        authority: expect.objectContaining({ kind: "session", approval: "serialized" }),
+        authority: expect.objectContaining({ kind: "session", approval: APPROVAL }),
       }),
     );
     expect(used.insertContestEntry).toHaveBeenCalledOnce();
@@ -260,11 +267,20 @@ describe("executeBotAction", () => {
       expect.objectContaining({
         authority: {
           kind: "session",
-          approval: "serialized",
+          approval: APPROVAL,
           delegateAddress: getAddress(external.address),
         },
       }),
     );
+  });
+
+  it("refuses a delegate join for a contest outside its grant before building a user operation", async () => {
+    const other = getAddress("0x4444444444444444444444444444444444444444");
+    const used = deps({ loadContest: vi.fn(async () => contest({ address: other })) });
+    const result = await executeBotAction(join(delegateActor("external")), used);
+    expect(result).toMatchObject({ ok: false, status: 403 });
+    expect(used.prepareUserOp).not.toHaveBeenCalled();
+    expect(used.insertContestEntry).not.toHaveBeenCalled();
   });
 
   it("rejects a userOpSignature without the prepared userOp", async () => {

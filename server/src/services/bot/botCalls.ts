@@ -86,7 +86,8 @@ export function buildLeaveCalls(input: { contest: Address; entryId: bigint }): B
 
 /**
  * A join batch is approve(contest, deposit) and addPrimaryPosition on that same contest.
- * The call policy cannot name future contests, so this check runs on the action path.
+ * This checks the exact amount and entry; the delegate call policy (delegatePolicy.ts) only
+ * limits a delegate to the granted contests, so this check still runs on the action path.
  */
 export function assertJoinCalls(
   calls: BotCall[],
