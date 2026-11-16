@@ -86,7 +86,7 @@ export function createApprovalCheckDeps(): ApprovalCheckDeps {
 export type DelegatePolicyInfo = {
   chainId: number;
   contestFactory: Address;
-  /** NoSelfCallPolicy from `ContestFactory.delegatePolicy()`; null until the factory has one. */
+  /** CutContestPolicy from `ContestFactory.delegatePolicy()`; null until the factory has one. */
   policyAddress: Address | null;
   /** Kernel policy flag to install it with (always 0x0000). */
   policyFlag: Hex;

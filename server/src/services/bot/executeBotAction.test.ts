@@ -24,7 +24,7 @@ const cutBotKey = generatePrivateKey();
 const cutBot = privateKeyToAccount(cutBotKey);
 const owner = privateKeyToAccount(generatePrivateKey());
 const external = privateKeyToAccount(generatePrivateKey());
-// A real Cut delegate approval (NoSelfCallPolicy at the test policy address).
+// A real Cut delegate approval (CutContestPolicy at the test policy address).
 const { approval: APPROVAL } = await cutDelegateApproval({
   smartWallet: SMART_WALLET,
   delegate: cutBot.address,

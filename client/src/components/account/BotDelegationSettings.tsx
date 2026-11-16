@@ -186,9 +186,9 @@ export function BotDelegationSettings() {
 
         <p className="text-sm leading-6 text-slate-600">
           Give another wallet permission to act for this smart wallet without asking you each time:
-          manage lineups, enter and leave contests, and make any other transaction from it. A
-          delegate can move your funds. It cannot add other delegates, change the owner, upgrade the
-          wallet, or sign messages for it.
+          manage lineups and enter, leave and edit Cut contests. A delegate can only approve USDC to
+          Cut contests; it cannot move your funds anywhere else, add other delegates, change the
+          owner, upgrade the wallet, or sign messages for it.
         </p>
       </div>
 
@@ -207,9 +207,9 @@ export function BotDelegationSettings() {
               Warning - Experimental
             </h3>
             <p className="mt-1 text-sm leading-6 text-slate-800">
-              A delegate can send any funds in this wallet anywhere. Bugs or a compromised delegate
-              could lose them. Only use funds you can afford to lose. Revoking access won’t undo
-              past transactions.
+              A delegate can spend this wallet’s USDC on Cut contest entries. Bugs or a compromised
+              delegate could lose it that way. Only use funds you can afford to lose. Revoking
+              access won’t undo past transactions.
             </p>
           </div>
         </div>

@@ -968,11 +968,11 @@ export const FAQPage: React.FC = () => {
             the private key stays with whoever runs that bot.
           </p>
           <p>
-            A delegate is a session key on your smart wallet. On-chain it can make any transaction
-            from the wallet except calls into the wallet itself, so it can send your {tokenLabel}
-            and other funds anywhere. It cannot add other delegates, change the owner, upgrade the
-            wallet, or sign messages for it. Only allow keys you trust with your funds. You can
-            revoke it from{" "}
+            A delegate is a session key on your smart wallet. On-chain it can only enter, leave and
+            edit Cut contests and approve {tokenLabel} to them. It cannot send your {tokenLabel} or
+            other funds anywhere else, add other delegates, change the owner, upgrade the wallet, or
+            sign messages for it. It can still spend your {tokenLabel} on Cut contest entries, so
+            only allow keys you trust. You can revoke it from{" "}
             <Link to="/account/settings" className="text-blue-600 hover:underline">
               Settings
             </Link>

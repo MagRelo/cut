@@ -219,7 +219,7 @@ export function createBotRouter(deps: BotRouterDeps): Hono {
   });
 
   /**
-   * Unsigned. The policy a delegate permission must use: NoSelfCallPolicy, read from the
+   * Unsigned. The policy a delegate permission must use: CutContestPolicy, read from the
    * chain's ContestFactory (`delegatePolicy()`). `policyAddress` is null until the factory that
    * deploys it is live. See agents.md.
    */

@@ -50,8 +50,8 @@ function publicClientFor(chain: Chain) {
 }
 
 /**
- * The delegate's permission: Cut's NoSelfCallPolicy (any call except into the wallet itself,
- * the EntryPoint, or a module's onInstall/onUninstall; no ERC-1271 signatures). The permission
+ * The delegate's permission: Cut's CutContestPolicy (only calls to contests the ContestFactory
+ * created and payment-token approvals to them; no ETH, no ERC-1271 signatures). The permission
  * id depends on the policy address, so a new ContestFactory (new policy) is a new key slot.
  */
 async function permissionFor(chain: Chain, delegateAddress: Address, policyAddress: Address) {

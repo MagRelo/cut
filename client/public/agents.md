@@ -11,7 +11,7 @@ There is one way to authenticate: **ERC-8128 signed HTTP requests**. There are n
 3. **Fund.** Send USDC (Base) to the smart wallet. Contest deposits come from it.
 4. **Read.** `GET /api/bot/balance` and `GET /api/bot/contests`. No nonce.
 5. **Play.** `lineupUpsert`, then `join` (and `leave`). Each write has a fresh nonce.
-6. **Optional: add a delegate.** The owner key can allow a second key (a Kernel session key that can make any call except into the wallet itself) with `delegateAdd`, and remove it with `delegateRevoke`.
+6. **Optional: add a delegate.** The owner key can allow a second key (a Kernel session key that can only enter, leave and edit Cut contests) with `delegateAdd`, and remove it with `delegateRevoke`.
 
 A runnable version of this flow is [`server/scripts/erc8128-client-example.ts`](https://github.com/MagRelo/cut/blob/main/server/scripts/erc8128-client-example.ts).
 
@@ -30,10 +30,11 @@ A request for a smart wallet can be signed by:
 
 ### What a delegate can do on-chain
 
-A delegate's key is limited on-chain by one policy the owner signs, Cut's [`NoSelfCallPolicy`](https://github.com/MagRelo/contestCatalyst/blob/7e46f55e7ba265947e1516780f6745a198751521/src/NoSelfCallPolicy.sol), not only by this API. The ContestFactory deploys it and exposes it as `delegatePolicy()`; `GET /api/bot/delegate-policy` returns the address.
+A delegate's key is limited on-chain by one policy the owner signs, Cut's [`CutContestPolicy`](https://github.com/MagRelo/contestCatalyst/blob/c2648b65daaf541687bba6a1832e9fbe4340f296/src/CutContestPolicy.sol), not only by this API. The ContestFactory deploys it and exposes it as `delegatePolicy()`; `GET /api/bot/delegate-policy` returns the address.
 
-- **Can:** make any plain call from the wallet, to any other contract or address, with any ETH value, alone or in a batch. That includes transferring or approving every token and sending all ETH. **A delegate can move all the wallet's funds.**
-- **Cannot:** call the wallet itself, so it cannot add delegates, change the owner, uninstall validators, or upgrade the wallet; call the EntryPoint; call `onInstall` or `onUninstall` on any contract (wallet modules key their state by caller, so these would let it rewrite the owner); delegatecall or use any Kernel entry other than `execute`; sign messages for the wallet (ERC-1271, so no `permit`). A batch is rejected if any one call breaks these rules.
+- **Can:** call any contest created by Cut's ContestFactory (enter, leave, edit), including contests created after the delegate was added; and `approve` USDC (the factory's payment token) to such a contest. No ETH value. Alone or in a batch.
+- **Cannot:** move funds anywhere else: no USDC `transfer`, `transferFrom`, `permit`, or approval to any other address; no calls to any other contract or address; no call to the wallet itself, so it cannot add delegates, change the owner, uninstall validators, or upgrade the wallet; no delegatecall or Kernel entry other than `execute`; no signing messages for the wallet (ERC-1271). A batch is rejected if any one call breaks these rules.
+- **How the policy knows a contest is Cut's:** each call carries the contest's CREATE nonce from the ContestFactory, and the policy recomputes the address (it does not read the factory's storage, which ERC-4337 bundlers forbid during validation). The server adds this proof to the user operation after the delegate signs; delegates using this API sign only the `userOpHash`, as usual.
 
 Off-chain, through this API, a delegate can also read, update settings, and save lineups.
 
@@ -223,9 +224,9 @@ Owner only (a delegate may revoke itself).
 }
 ```
 
-`approval` is the ZeroDev `serializePermissionAccount` output (`@zerodev/permissions` 5.6.x) for a permission validator whose ECDSA signer is the delegate, with exactly one policy, signed by the owner (the enable signature): **NoSelfCallPolicy** at the address from `GET /api/bot/delegate-policy?chainId=…`, flag `0x0000`, no policy data.
+`approval` is the ZeroDev `serializePermissionAccount` output (`@zerodev/permissions` 5.6.x) for a permission validator whose ECDSA signer is the delegate, with exactly one policy, signed by the owner (the enable signature): **CutContestPolicy** at the address from `GET /api/bot/delegate-policy?chainId=…`, flag `0x0000`, no policy data.
 
-The ZeroDev SDK has no type for a custom policy, so build it as `toSudoPolicy({ policyAddress })` with that address. That only reuses the SDK's shape (flag + address, empty data); the contract at the address is NoSelfCallPolicy, not ZeroDev's sudo policy. The server rejects anything else: ZeroDev's sudo policy contract, any other policy address or extra policy, a skip flag (`0x0001`/`0x0002`, which would make Kernel skip the policy), another wallet, or a `permissionId` that does not match. Kernel installs the key with its first user operation. `permissionId` is the validator's 4-byte id; it depends on the delegate and the policy address. `kind` is `cut_bot` only for Cut Bot's address (`GET /api/bot/delegate-address`). The example script builds it. Response: `{ "ok": true, "status": "active", "delegateAddress": "0x…", "policyAddress": "0x…" }`. `503` when the chain's ContestFactory has no delegate policy yet.
+The ZeroDev SDK has no type for a custom policy, so build it as `toSudoPolicy({ policyAddress })` with that address. That only reuses the SDK's shape (flag + address, empty data); the contract at the address is CutContestPolicy, not ZeroDev's sudo policy. The server rejects anything else: ZeroDev's sudo policy contract, any other policy address or extra policy, a skip flag (`0x0001`/`0x0002`, which would make Kernel skip the policy), another wallet, or a `permissionId` that does not match. Kernel installs the key with its first user operation. `permissionId` is the validator's 4-byte id; it depends on the delegate and the policy address. `kind` is `cut_bot` only for Cut Bot's address (`GET /api/bot/delegate-address`). The example script builds it. Response: `{ "ok": true, "status": "active", "delegateAddress": "0x…", "policyAddress": "0x…" }`. `503` when the chain's ContestFactory has no delegate policy yet.
 
 ```json
 { "action": "delegateRevoke", "chainId": 8453, "smartWallet": "0x…", "delegateAddress": "0x…" }

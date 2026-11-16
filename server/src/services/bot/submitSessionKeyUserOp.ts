@@ -1,4 +1,11 @@
-import { createPublicClient, getAddress, http, type Address, type Hex, type LocalAccount } from "viem";
+import {
+  createPublicClient,
+  getAddress,
+  http,
+  type Address,
+  type Hex,
+  type LocalAccount,
+} from "viem";
 import {
   entryPoint07Address,
   formatUserOperationRequest,
@@ -13,6 +20,7 @@ import { toECDSASigner } from "@zerodev/permissions/signers";
 import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
 import { getChainConfig } from "../../lib/chainConfig.js";
 import type { BotCall } from "./botCalls.js";
+import { policyProofForChain, withPolicyProof } from "./delegateProof.js";
 
 /** Signature length used while the bundler estimates gas. Not a real authorization. */
 const DUMMY_USER_OP_SIGNATURE =
@@ -84,12 +92,8 @@ function bundlerUrl(): string | null {
 
 type SessionClient = {
   account: {
-    encodeCalls: (
-      calls: { to: Address; value: bigint; data: Hex }[],
-    ) => Promise<Hex>;
-    signUserOperation: (
-      parameters: UserOperation<"0.7"> & { chainId?: number },
-    ) => Promise<Hex>;
+    encodeCalls: (calls: { to: Address; value: bigint; data: Hex }[]) => Promise<Hex>;
+    signUserOperation: (parameters: UserOperation<"0.7"> & { chainId?: number }) => Promise<Hex>;
   };
   kernelClient: {
     prepareUserOperation: (args: { callData: Hex }) => Promise<UserOperation<"0.7">>;
@@ -116,7 +120,9 @@ async function sessionClient(
     transport: http(chainConfig.rpcUrl),
   });
   const signerAddress =
-    input.authority.kind === "session" ? input.authority.delegateAddress : input.authority.ownerAddress;
+    input.authority.kind === "session"
+      ? input.authority.delegateAddress
+      : input.authority.ownerAddress;
   const signer = input.privateKey
     ? privateKeyToAccount(input.privateKey)
     : fixedSignatureAccount(signerAddress, signature);
@@ -145,6 +151,17 @@ async function sessionClient(
         });
   if (getAddress(account.address) !== getAddress(input.smartWallet)) {
     return { ok: false, error: "Signer does not control this smart wallet" };
+  }
+  if (input.authority.kind === "session") {
+    // The delegate policy needs a contest proof in its signature slot (see delegateProof.ts).
+    const proof = await policyProofForChain(input.chainId, input.calls);
+    if (!proof.ok) return proof;
+    const getStubSignature = account.getStubSignature.bind(account);
+    const signUserOperation = account.signUserOperation.bind(account);
+    account.getStubSignature = (async (...args: Parameters<typeof getStubSignature>) =>
+      withPolicyProof(await getStubSignature(...args), proof.proof)) as typeof getStubSignature;
+    account.signUserOperation = (async (...args: Parameters<typeof signUserOperation>) =>
+      withPolicyProof(await signUserOperation(...args), proof.proof)) as typeof signUserOperation;
   }
   const sponsorshipPolicyId = process.env.PIMLICO_SPONSORSHIP_POLICY_ID?.trim();
   const kernelClient = createKernelAccountClient({
@@ -226,9 +243,7 @@ export function parseUserOp(userOp: SerializedUserOp): UserOperation<"0.7"> {
  */
 export async function prepareSessionKeyUserOp(
   input: SubmitSessionKeyInput,
-): Promise<
-  { ok: true; userOpHash: Hex; userOp: SerializedUserOp } | { ok: false; error: string }
-> {
+): Promise<{ ok: true; userOpHash: Hex; userOp: SerializedUserOp } | { ok: false; error: string }> {
   try {
     const session = await sessionClient(input, DUMMY_USER_OP_SIGNATURE);
     if ("ok" in session) return session;

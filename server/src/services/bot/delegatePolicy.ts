@@ -6,27 +6,29 @@ import { toSudoPolicy } from "@zerodev/permissions/policies";
  * The only on-chain grant Cut accepts for a delegate session key.
  *
  * A delegate is a Kernel v3.1 permission validator (ECDSA signer = the delegate address) with
- * exactly one policy: Cut's NoSelfCallPolicy (contestCatalyst `src/NoSelfCallPolicy.sol`),
+ * exactly one policy: Cut's CutContestPolicy (contestCatalyst `src/CutContestPolicy.sol`),
  * deployed by the ContestFactory and read from `ContestFactory.delegatePolicy()`.
  *
- * The policy lets the delegate send any plain CALL (single or batch, any target, any value)
- * except:
- * - a call to the wallet itself (so no `installValidations`, owner change, or upgrade),
- * - a call to the EntryPoint,
- * - `onInstall(bytes)` / `onUninstall(bytes)` on any contract (modules key state by caller,
- *   so these would let the wallet rewrite its own validator's owner),
- * - delegatecall, static call, `executeUserOp`, `executeFromExecutor` or any other top-level
- *   selector.
- * It never approves an ERC-1271 signature, so the key cannot sign messages or `permit`s.
- * A delegate CAN move every token and all ETH in the wallet.
+ * The policy allows only plain `execute` CALLs (single or batch, no ETH value) where every
+ * call is either
+ * - any call to a contest this ContestFactory created, or
+ * - `approve(contest, amount)` on the factory's payment token, to such a contest.
+ * Nothing else: no transfers, no other targets, no call to the wallet itself (so no new
+ * delegates, owner change, or upgrade), no delegatecall, and it never approves an ERC-1271
+ * signature. A batch is rejected if any one call breaks these rules.
+ *
+ * The policy checks "created by this factory" without reading factory storage (ERC-7562 bans
+ * that during validation): each call carries the contest's CREATE nonce in the policy's
+ * signature slot, and the policy recomputes the address. delegateProof.ts builds that proof;
+ * the server adds it after the delegate signs (it is not covered by the userOpHash).
  *
  * Policy flag must be 0x0000: a SKIP flag would make Kernel skip the policy.
  *
  * The ZeroDev SDK has no type for a custom policy, so the approval carries it as a
  * `toSudoPolicy({ policyAddress })` entry: the SDK's "sudo" shape (flag + address, empty data)
- * pointed at NoSelfCallPolicy. The SDK's own sudo policy contract (SUDO_POLICY_CONTRACT) is
+ * pointed at CutContestPolicy. The SDK's own sudo policy contract (SUDO_POLICY_CONTRACT) is
  * rejected. `deserializePermissionAccount` rebuilds the same entry, so delegate user operations
- * are checked by NoSelfCallPolicy on-chain.
+ * are checked by CutContestPolicy on-chain.
  *
  * The client builds the same policy in client/src/lib/botDelegatePolicy.ts. Keep them in step;
  * delegatePolicy.test.ts checks both produce the same bytes.
@@ -132,7 +134,7 @@ export const POLICY_NOT_DEPLOYED =
 type CheckFail = { ok: false; error: string; status?: 503 };
 
 /**
- * Accept only the exact Cut delegate grant: one NoSelfCallPolicy entry at flag 0x0000 with
+ * Accept only the exact Cut delegate grant: one CutContestPolicy entry at flag 0x0000 with
  * empty data, at the address the chain's ContestFactory reports. Rejects the SDK sudo policy,
  * any other or extra policy, and approvals for another wallet. The server builds every
  * delegate user operation from these stored params, so what gets installed on-chain is

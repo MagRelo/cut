@@ -48,7 +48,7 @@ async function approvalWith(policies: { policyParams: unknown }[]) {
 }
 
 describe("delegate policy", () => {
-  it("is one NoSelfCallPolicy entry at flag 0x0000 with empty data", () => {
+  it("is one CutContestPolicy entry at flag 0x0000 with empty data", () => {
     const policies = delegatePolicies(POLICY);
     expect(policies).toHaveLength(1);
     expect(policies[0]!.getPolicyInfoInBytes()).toBe(concatHex(["0x0000", POLICY]));

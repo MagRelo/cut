@@ -102,9 +102,11 @@ type DelegatePolicyInfo = { policyAddress: Address | null };
 
 /**
  * The only policy the server accepts (it rejects ZeroDev sudo and anything else): Cut's
- * NoSelfCallPolicy at `policyAddress` (ContestFactory.delegatePolicy()), flag 0x0000, no data.
- * The delegate may make any call except into the wallet itself, the EntryPoint, or a module's
- * onInstall/onUninstall, and cannot sign ERC-1271 messages. It CAN move the wallet's funds.
+ * CutContestPolicy at `policyAddress` (ContestFactory.delegatePolicy()), flag 0x0000, no data.
+ * The delegate may only call contests that ContestFactory created and approve the payment
+ * token (USDC) to them. It cannot move funds anywhere else or sign ERC-1271 messages. The
+ * server adds the policy's contest proof to each delegate user operation; you sign only the
+ * userOpHash as usual.
  * The SDK has no custom-policy type, so it is carried in toSudoPolicy's shape with our address.
  */
 async function delegatePolicies(policyAddress: Address) {
