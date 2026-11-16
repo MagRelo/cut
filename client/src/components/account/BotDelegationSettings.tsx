@@ -179,8 +179,8 @@ export function BotDelegationSettings() {
                 <span className="ml-2 text-sm font-normal text-slate-500">(coming soon!)</span>
               </h3>
               <p id="cut-bot-description" className="mt-1 text-sm leading-6 text-slate-600">
-                Let CutBot take the wheel. It will enter you into all of your league contests so you
-                don't miss any of the action.
+                Don't miss any of the action - CutBot will automatically enter you into all of your
+                league contests. You can edit your lineups until the contest begins.
               </p>
             </div>
 
@@ -252,53 +252,67 @@ export function BotDelegationSettings() {
             </ul>
           ) : null}
 
-          <div className="mt-5">
-            <h4 className="text-sm font-medium text-slate-800">
-              1. Have your agent set up a wallet
-            </h4>
-            <p id="delegate-address-help" className="mt-1 text-sm leading-6 text-slate-600">
-              Copy these instructions. The agent creates a wallet and replies with the public
-              address.
-            </p>
-            <div className="mt-3 flex justify-end">
-              <CopyButton text={agentPrompt} idleLabel="Copy prompt" />
-            </div>
-          </div>
-
-          <div className="mt-5">
-            <h4 className="text-sm font-medium text-slate-800">
-              2. Paste that address and grant access
-            </h4>
-            <label
-              htmlFor="delegate-address"
-              className="mt-3 block text-sm font-medium text-slate-800"
-            >
-              Public address
-            </label>
-            <input
-              id="delegate-address"
-              name="delegateAddress"
-              value={delegateInput}
-              onChange={(event) => setDelegateInput(event.target.value.trim())}
-              type="text"
-              placeholder="0x..."
-              autoComplete="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              aria-describedby="delegate-address-note"
-              disabled={pending !== null}
-              className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-gray-100"
-            />
-            <p id="delegate-address-note" className="mt-2 text-xs leading-5 text-slate-500">
-              Double-check the address before granting access.
-            </p>
-            <div className="mt-5 flex flex-col items-end gap-2">
-              <Button type="submit" disabled={pending !== null}>
-                {pending === "external" ? "Granting…" : "Grant full access"}
-              </Button>
-              {error ? <ErrorMessage message={error} /> : null}
-            </div>
-          </div>
+          <ol className="mt-6 list-none">
+            <li className="grid grid-cols-[1.75rem_minmax(0,1fr)] gap-x-4">
+              <div className="flex flex-col items-center" aria-hidden>
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-300 text-xs font-semibold text-slate-900">
+                  1
+                </span>
+                <span className="mt-2 w-px flex-1 bg-slate-300" />
+              </div>
+              <div className="pb-8">
+                <h4 className="text-sm font-medium leading-7 text-slate-900">
+                  Have your agent set up a wallet
+                </h4>
+                <p id="delegate-address-help" className="mt-1 text-sm leading-6 text-slate-600">
+                  Copy these instructions. The agent creates a wallet and replies with the public
+                  address.
+                </p>
+                <div className="mt-3">
+                  <CopyButton text={agentPrompt} idleLabel="Copy prompt" />
+                </div>
+              </div>
+            </li>
+            <li className="grid grid-cols-[1.75rem_minmax(0,1fr)] gap-x-4">
+              <div aria-hidden>
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-300 text-xs font-semibold text-slate-900">
+                  2
+                </span>
+              </div>
+              <div>
+                <label
+                  htmlFor="delegate-address"
+                  className="block text-sm font-medium leading-7 text-slate-900"
+                >
+                  Paste that address and grant access
+                </label>
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <input
+                    id="delegate-address"
+                    name="delegateAddress"
+                    value={delegateInput}
+                    onChange={(event) => setDelegateInput(event.target.value.trim())}
+                    type="text"
+                    placeholder="0x..."
+                    autoComplete="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                    aria-describedby="delegate-address-note"
+                    aria-invalid={error ? true : undefined}
+                    disabled={pending !== null}
+                    className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  />
+                  <Button type="submit" disabled={pending !== null} className="w-full sm:w-auto">
+                    {pending === "external" ? "Granting…" : "Grant full access"}
+                  </Button>
+                </div>
+                <p id="delegate-address-note" className="mt-2 text-xs leading-5 text-slate-500">
+                  Double-check the address before granting access.
+                </p>
+                {error ? <ErrorMessage message={error} className="mt-2" /> : null}
+              </div>
+            </li>
+          </ol>
         </form>
       </div>
     </section>
