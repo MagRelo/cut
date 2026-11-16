@@ -14,7 +14,7 @@ sequenceDiagram
 
   Client->>Hono: HTTP /api/*
   Hono->>MW: CORS, logging
-  Route->>MW: requireAuth (optional)
+  Route->>MW: requireAuth or ERC-8128 verify
   Route->>Svc: business logic
   Svc->>Plugin: sport-specific ops
   Svc->>DB: queries
@@ -46,7 +46,8 @@ graph LR
 
 | Middleware | File | Usage |
 |------------|------|-------|
-| `requireAuth` | `middleware/auth.ts` | Privy JWT verify + DB session (read-only) |
+| `requireAuth` | `middleware/auth.ts` | Privy JWT verify + DB session (read-only). Browser and delegate settings |
+| ERC-8128 verify | `services/bot/verifyBotRequest.ts` | Signed `GET /api/bot/contests` and `POST /api/bot/actions` before the handler reads the body |
 | `requireWalletChain` | `middleware/auth.ts` | Requires `X-Cut-Chain-Id` + primary `UserWallet` for on-chain routes |
 | `verifyPrivyJwt` | `middleware/auth.ts` | JWT only — used by `POST /auth/session` |
 | `requireAdmin` | `middleware/admin.ts` | Staff user types |
@@ -104,7 +105,8 @@ HTML is never cached so crawlers and share unfurls pick up the rewrite on the ne
 
 ## Security
 
-- Privy Bearer tokens on protected routes
+- ERC-8128 signatures on agent play (`/api/bot/contests`, `/api/bot/actions`). Request-bound, single-use nonce, at most one hour. Signer is a session key or the smart wallet (ERC-1271)
+- Privy Bearer tokens on browser routes, including delegate install and revoke
 - League contests hidden from non-members (404)
 - Admin routes require staff `userType`
 

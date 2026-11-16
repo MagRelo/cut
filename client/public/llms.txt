@@ -1,5 +1,5 @@
 # Play The Cut
 
-Contest entries are signed by the logged-in user, by Cut Bot, or by a personal delegate.
+An agent plays by signing each request with ERC-8128 and calling `/api/bot/*`. The browser uses a Privy session to install a delegate and to enter a contest itself.
 
 - [Agents](/agents.md)

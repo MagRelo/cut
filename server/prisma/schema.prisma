@@ -113,6 +113,15 @@ model BotActionLog {
   @@index([userId, createdAt])
 }
 
+// One ERC-8128 nonce per signer. Retained through `expiresAt`.
+model BotRequestNonce {
+  key       String   @id
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
 model UserGroup {
   id                    String   @id @default(cuid())
   name                  String

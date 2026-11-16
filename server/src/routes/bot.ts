@@ -9,6 +9,7 @@ import { botContestListDeps, listSignedBotContests } from "../services/bot/listB
 import { executeBotAction } from "../services/bot/executeBotAction.js";
 import { createBotActionDeps } from "../services/bot/botActionRuntime.js";
 import type { SerializedUserOp } from "../services/bot/submitSessionKeyUserOp.js";
+import { verifyBotRequest } from "../services/bot/verifyBotRequest.js";
 
 const botRouter = new Hono();
 const deps = createBotActionDeps();
@@ -55,8 +56,6 @@ const actionSchema = z.object({
   candidates: z.array(z.string().min(1)).optional(),
   picks: z.array(z.string().min(1)).optional(),
   prediction: z.unknown().optional(),
-  deadline: z.string().regex(/^\d+$/),
-  signature: hexSchema,
   userOpSignature: hexSchema.optional(),
   userOp: userOpSchema.optional(),
 });
@@ -83,23 +82,21 @@ const listDeps = botContestListDeps();
 botRouter.get("/contests", async (c) => {
   const chainId = Number(c.req.query("chainId"));
   const smartWallet = c.req.query("smartWallet") ?? "";
-  const deadline = c.req.query("deadline") ?? "";
-  const signature = c.req.query("signature") ?? "";
   const eventId = c.req.query("eventId")?.trim();
   if (chainId !== 8453 && chainId !== 84532) {
     return c.json({ error: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)" }, 400);
   }
-  if (!/^0x[0-9a-fA-F]+$/.test(signature) || !/^\d+$/.test(deadline)) {
-    return c.json({ error: "Invalid request" }, 400);
+  const verified = await verifyBotRequest(c.req.raw.clone());
+  if (!verified.ok) return c.json({ error: verified.error }, verified.status);
+  if (verified.chainId !== chainId) {
+    return c.json({ error: "Signature chain does not match the request" }, 400);
   }
   const result = await listSignedBotContests(
     {
       chainId,
       smartWallet,
-      deadline: BigInt(deadline),
-      signature: signature as Hex,
+      signer: verified.signer,
       ...(eventId ? { eventId } : {}),
-      nowSeconds: Math.floor(Date.now() / 1000),
     },
     listDeps,
   );
@@ -197,11 +194,16 @@ botRouter.post("/delegates/revoke", requireAuth, async (c) => {
 });
 
 botRouter.post("/actions", async (c) => {
+  const verified = await verifyBotRequest(c.req.raw.clone());
+  if (!verified.ok) return c.json({ error: verified.error }, verified.status);
   const parsed = actionSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) {
     return c.json({ error: "Invalid request body", details: parsed.error.errors }, 400);
   }
   const body = parsed.data;
+  if (body.chainId !== verified.chainId) {
+    return c.json({ error: "Signature chain does not match the request" }, 400);
+  }
   const candidates = selectedCandidates(body);
   if (!Array.isArray(candidates)) {
     return c.json({ error: candidates.error }, 400);
@@ -215,11 +217,9 @@ botRouter.post("/actions", async (c) => {
       lineupId: body.lineupId,
       picks: candidates,
       ...(body.prediction !== undefined ? { prediction: body.prediction } : {}),
-      deadline: BigInt(body.deadline),
-      signature: body.signature as Hex,
+      signer: verified.signer,
       ...(body.userOpSignature ? { userOpSignature: body.userOpSignature as Hex } : {}),
       ...(body.userOp ? { userOp: body.userOp as SerializedUserOp } : {}),
-      nowSeconds: Math.floor(Date.now() / 1000),
     },
     deps,
   );

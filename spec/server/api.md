@@ -4,7 +4,9 @@ Base URL: `/api` (e.g. `http://localhost:3000/api`)
 
 ## Authentication
 
-Protected routes:
+Agents call `GET /api/bot/contests` and `POST /api/bot/actions` with an [ERC-8128](https://erc8128.org) HTTP message signature. The headers are `Signature-Input` and `Signature`, plus `Content-Digest` when the request has a body. There is no bearer token. The signer is an active Kernel session key for `smartWallet`, or that smart wallet verified with ERC-1271. `keyid` is `eip8128:<chainId>:0x<signer>` and its chain must equal the request `chainId` (`8453` or `84532`). The signature is Request-Bound and Non-Replayable: `created` and `expires` are at most one hour apart, and `(keyid, nonce)` is consumed until `expires`. Signing details are in [client/public/agents.md](../../client/public/agents.md).
+
+The browser and the delegate settings routes use a Privy session:
 
 ```
 Authorization: Bearer <privy_access_token>
@@ -39,6 +41,7 @@ JSON bodies are capped at 128 KiB.
 | `/admin` | `admin.ts` | ✅ staff |
 | `/cron` | `cron.ts` | ✅ |
 | `/unsubscribe` | `unsubscribe.ts` | ✅ |
+| `/bot` | `bot.ts` | ✅ agent play + delegate settings |
 | `/tournaments` | `legacy.ts` | ❌ 501 |
 | `/lineup` | `legacy.ts` | ❌ 501 |
 
@@ -181,6 +184,45 @@ Staff only (`requireAdmin`).
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/` | Marketing unsubscribe (signed token) |
+
+---
+
+## Bot (`/api/bot`)
+
+Agent play is ERC-8128. Delegate install and revoke are the signed-in browser user.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/delegate-address` | — | Cut Bot's public address, or `null` when the server key is unset |
+| GET | `/contests` | ERC-8128 | Contests this signer can enter, each with its candidate field |
+| POST | `/actions` | ERC-8128 | `lineupUpsert`, `join`, or `leave` |
+| GET | `/delegates` | Privy | Delegates for the signed-in user |
+| POST | `/delegates` | Privy | Record an approved session key |
+| POST | `/delegates/revoke` | Privy | Mark a delegate revoked |
+
+**GET `/contests` query:** `chainId` (`8453` or `84532`), `smartWallet`, optional `eventId`. Visibility matches `GET /api/contests`: public contests, plus league contests in leagues the signer's user belongs to.
+
+**POST `/actions` body:**
+
+```json
+{
+  "chainId": 8453,
+  "action": "lineupUpsert",
+  "smartWallet": "0x…",
+  "contestId": "contest id",
+  "lineupId": "",
+  "candidates": ["eventParticipantId"],
+  "prediction": { "type": "winningLineupTotal", "value": 142 }
+}
+```
+
+`lineupId` `""` creates a lineup. A lineup id updates it. `join` and `leave` send the lineup id and omit `candidates`. `prediction` is optional on `lineupUpsert`.
+
+A session-key signer must be an active `BotDelegate` whose permission is still installed on the wallet. The wallet owner (ERC-1271, `keyid` address equals `smartWallet`) can list contests and save a lineup with no delegate. Join and leave for that owner submit only when the user has an active `cut_bot` delegate.
+
+Cut Bot submits the user operation. A personal delegate's first join or leave returns `{ preparedUserOp, lineupId, userOpHash, userOp }`. The second request sends the same body plus `userOp` and `userOpSignature`, under a new nonce.
+
+**POST `/delegates` body:** `kind` (`cut_bot` or `external`), `delegateAddress`, `smartWallet`, `approval` (serialized permission account), `permissionId` (4-byte hex). `smartWallet` must be the signed-in account's wallet.
 
 ---
 

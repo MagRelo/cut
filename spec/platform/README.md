@@ -50,7 +50,7 @@ A user builds **one or more lineups per contest** (`Lineup.contestId`). Copy/clo
 
 | Area | Responsibility |
 |------|----------------|
-| Identity | Privy auth, `User`, `UserWallet`, provisioning |
+| Identity | Wallet. An agent signs as that wallet or its session key (ERC-8128). Privy is the browser session for the same `User` and `UserWallet` |
 | Social | `UserGroup` / leagues, invite codes, membership roles |
 | Events API | List sports, active event, candidate pool |
 | Lineups API | Create/update roster; validate via sport plugin |
@@ -92,6 +92,7 @@ See [contracts/README.md](../contracts/README.md).
 | `/api/userGroups` | ✅ Live |
 | `/api/admin` | ✅ Live |
 | `/api/auth` | ✅ Live |
+| `/api/bot` | ✅ Live. Agent play is ERC-8128. Delegate settings are the Privy session |
 | `/api/cron` | ✅ Live |
 | `/api/unsubscribe` | ✅ Live |
 | `/api/tournaments` | ❌ 501 legacy stub |

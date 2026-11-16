@@ -11,7 +11,7 @@ import { createLineupForEvent } from "../lineups/createLineupForEvent.js";
 import { updateLineupById } from "../lineups/updateLineupById.js";
 import { getPublicClient } from "../shared/contractClient.js";
 import { invalidateContestLobby } from "../contests/getContestLobby.js";
-import type { BotActionDeps, BotLineup } from "./executeBotAction.js";
+import type { BotActionDeps, BotDelegateRow, BotLineup } from "./executeBotAction.js";
 import { readSessionKeyEnabled } from "./sessionKeyEnabled.js";
 import { prepareSessionKeyUserOp, submitSessionKeyUserOp } from "./submitSessionKeyUserOp.js";
 
@@ -31,6 +31,22 @@ const depositAbi = [
     outputs: [{ name: "", type: "address" }],
   },
 ] as const;
+
+function toDelegate(row: {
+  userId: string;
+  smartWallet: string;
+  delegateAddress: string;
+  kind: string;
+  approval: string;
+}): BotDelegateRow {
+  return {
+    userId: row.userId,
+    smartWallet: row.smartWallet,
+    delegateAddress: row.delegateAddress,
+    kind: row.kind === "external" ? "external" : "cut_bot",
+    approval: row.approval,
+  };
+}
 
 function toLineup(row: {
   id: string;
@@ -59,13 +75,24 @@ export function createBotActionDeps(): BotActionDeps {
         },
       });
       if (!row || (row.kind !== "cut_bot" && row.kind !== "external")) return null;
-      return {
-        userId: row.userId,
-        smartWallet: row.smartWallet,
-        delegateAddress: row.delegateAddress,
-        kind: row.kind,
-        approval: row.approval,
-      };
+      return toDelegate(row);
+    },
+    findOwner: async (smartWallet, chainId) => {
+      return prisma.userWallet.findUnique({
+        where: { chainId_publicKey: { chainId, publicKey: smartWallet.toLowerCase() } },
+        select: { userId: true },
+      });
+    },
+    findCutBot: async (userId, smartWallet) => {
+      const row = await prisma.botDelegate.findFirst({
+        where: {
+          userId,
+          smartWallet: smartWallet.toLowerCase(),
+          kind: "cut_bot",
+          status: "active",
+        },
+      });
+      return row ? toDelegate(row) : null;
     },
     sessionEnabled: readSessionKeyEnabled,
     loadContest: async (contestId) => {

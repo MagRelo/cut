@@ -77,6 +77,32 @@ sequenceDiagram
 - **Test accounts:** Privy dashboard emails (`test-…@privy.io`) are stored as `userType=TEST` and excluded from marketing email (`userType=USER` only)
 - **Signup referral:** `X-Cut-Referral-Code` attaches `referredByUserId` when the opaque code matches `User.referralCode`. Wallet `0x…` values are ignored. It does not require the inviter to be on ReferralGraph. After Privy email OTP, session create must not fail because referral could not be applied. Cron registers invitees on-chain once the parent is registered.
 
+## Agent play
+
+```mermaid
+sequenceDiagram
+  participant Agent
+  participant API as /api/bot
+  participant DB
+  participant Chain
+
+  Agent->>API: Signed GET /contests or POST /actions
+  API->>API: ERC-8128 verify and consume nonce
+  API->>DB: Session key or wallet owner
+  alt join or leave with Cut Bot
+    API->>Chain: User operation from the Cut Bot key
+  else personal delegate join or leave
+    API-->>Agent: prepared user operation
+    Agent->>API: Same action with userOpSignature
+    API->>Chain: Submit that user operation
+  end
+```
+
+- **Signer:** active `BotDelegate` for `smartWallet`, or the smart wallet itself (ERC-1271)
+- **Owner join and leave:** submitted only when that user has an active Cut Bot delegate
+- **League contests:** included when the resolved user is a member
+- **Browser:** Privy session installs and revokes the delegate. The same person can still join from the app
+
 ---
 
 ## Event lifecycle (golf example)
@@ -209,7 +235,8 @@ Preview: `pnpm --filter server run script:email-preview contest-announcement`
 | Contest ranks / timeline | Server DB (derived from scores + chain) |
 | Deposits, entry ownership, payouts | On-chain contracts |
 | Contest status | Both — server mirrors after chain ops |
-| Auth session | Privy |
+| Agent play | ERC-8128 signature over the HTTP request |
+| Browser session | Privy |
 
 ---
 
@@ -230,7 +257,7 @@ Preview: `pnpm --filter server run script:email-preview contest-announcement`
 | Layer | Control |
 |-------|---------|
 | Client | Privy session, route guards, form validation |
-| API | Bearer verification, Zod bodies, `requireEventEditable` |
+| API | ERC-8128 on `/api/bot/contests` and `/api/bot/actions`; Privy bearer on browser routes; Zod bodies; `requireEventEditable` |
 | Admin | Staff role + separate batch endpoints |
 | Chain | Contract access control, oracle role on server |
 
