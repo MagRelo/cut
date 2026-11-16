@@ -5,6 +5,7 @@ import {
 } from "@cut/sport-pga-golf";
 import { prisma } from "../../lib/prisma.js";
 import { prepareEventAnnouncementEmailSafe } from "../../lib/email/prepareEventAnnouncement.js";
+import { ensurePublicContestSafe } from "../../services/contest/ensurePublicContest.js";
 
 function startMs(metadata: unknown): number | null {
   const golf = parseGolfEventMetadata(metadata);
@@ -58,6 +59,7 @@ export async function maybePromotePreparedGolfEvent(): Promise<{
     data: { isActive: true },
   });
   await prepareEventAnnouncementEmailSafe(next.id);
+  await ensurePublicContestSafe(next.id);
 
   console.log(
     `[pga-golf] Promoted prepared event ${next.id} (${next.externalId}); previous ${active.id} (${active.externalId})`,

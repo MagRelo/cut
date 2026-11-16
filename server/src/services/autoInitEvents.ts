@@ -6,6 +6,7 @@ import {
 } from "@cut/sport-commodities";
 import { golfEventStatusFromMetadata, PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 import { prisma } from "../lib/prisma.js";
+import { ensurePublicContestSafe } from "./contest/ensurePublicContest.js";
 import { getUpcomingCommoditiesWeekExternalId } from "../sports/commodities/externalId.js";
 import { generateCommoditiesWeekBriefSafe } from "../sports/commodities/generateWeekBrief.js";
 import { initCommoditiesEvent } from "../sports/commodities/initEvent.js";
@@ -51,6 +52,14 @@ export function sportsForEventInitTick(
   return [];
 }
 
+async function attachPublicContest(
+  eventId: string | undefined,
+  options: AutoInitOptions,
+): Promise<void> {
+  if (!eventId || options.dryRun) return;
+  await ensurePublicContestSafe(eventId, { logSkips: true });
+}
+
 function resolveSports(options: AutoInitOptions): AutoInitSport[] {
   const now = options.now ?? new Date();
   if (options.respectWeekday) {
@@ -69,6 +78,7 @@ async function autoInitCommodities(options: AutoInitOptions): Promise<AutoInitRe
     where: { sportId: COMMODITIES_SPORT_ID, externalId: weekKey },
   });
   if (existing) {
+    await attachPublicContest(existing.id, options);
     return {
       sportId: "commodities",
       action: "skipped",
@@ -107,6 +117,7 @@ async function autoInitCommodities(options: AutoInitOptions): Promise<AutoInitRe
   if (created?.id && !options.skipSummary) {
     await generateCommoditiesWeekBriefSafe(created.id);
   }
+  await attachPublicContest(created?.id, options);
   return {
     sportId: "commodities",
     action: "inited",
@@ -135,6 +146,7 @@ async function autoInitGolf(options: AutoInitOptions): Promise<AutoInitResult> {
   }
 
   if (active?.externalId === next.id) {
+    await attachPublicContest(active.id, options);
     return {
       sportId: "pga-golf",
       action: "skipped",
@@ -149,6 +161,7 @@ async function autoInitGolf(options: AutoInitOptions): Promise<AutoInitResult> {
     where: { sportId: PGA_GOLF_SPORT_ID, externalId: next.id },
   });
   if (existing?.isActive) {
+    await attachPublicContest(existing.id, options);
     return {
       sportId: "pga-golf",
       action: "skipped",
@@ -175,6 +188,7 @@ async function autoInitGolf(options: AutoInitOptions): Promise<AutoInitResult> {
   if (!options.skipSummary) {
     await generateGolfEventSummarySafe(inited.id);
   }
+  await attachPublicContest(inited.id, options);
 
   return {
     sportId: "pga-golf",

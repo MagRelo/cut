@@ -118,11 +118,12 @@ Optional: `pnpm run service:sync-event-metadata <eventId>` or `pnpm run service:
 
 ### 5. Contests (same week)
 
-Not part of init — handle when the week opens.
+Auto-init opens one free public contest for the event (no entry fee, no contract, expiry 7 days after the tournament end). An event that already has a public contest is left alone. A failed contest write leaves the event in place; the next init or promotion of that event tries again.
 
 | Task | How |
 |------|-----|
-| Open public contests | App create-contest flow or league manage tab |
+| Public contest | Created by auto-init. Extra public contests: app create-contest flow |
+| League contests | League manage tab |
 | Activate contests | Cron (`batchActivateContests`) when `ENABLE_CRON=true` |
 | Lock contests | Admin **Lock eligible contests** or `service:batch-lock-contests` |
 | Settle / close contests | Cron when `ENABLE_CRON=true`, or batch CLI scripts |

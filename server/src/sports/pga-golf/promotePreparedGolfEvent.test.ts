@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   updateMany: vi.fn(),
   prepare: vi.fn(),
+  ensurePublicContest: vi.fn(),
 }));
 
 vi.mock("../../lib/prisma.js", () => ({
@@ -23,6 +24,10 @@ vi.mock("../../lib/email/prepareEventAnnouncement.js", () => ({
   prepareEventAnnouncementEmailSafe: mocks.prepare,
 }));
 
+vi.mock("../../services/contest/ensurePublicContest.js", () => ({
+  ensurePublicContestSafe: mocks.ensurePublicContest,
+}));
+
 import { maybePromotePreparedGolfEvent } from "./promotePreparedGolfEvent.js";
 
 describe("maybePromotePreparedGolfEvent", () => {
@@ -31,6 +36,7 @@ describe("maybePromotePreparedGolfEvent", () => {
     mocks.update.mockResolvedValue({});
     mocks.updateMany.mockResolvedValue({ count: 1 });
     mocks.prepare.mockResolvedValue(undefined);
+    mocks.ensurePublicContest.mockResolvedValue(undefined);
   });
 
   it("does nothing while the active golf event is LIVE", async () => {
@@ -82,5 +88,6 @@ describe("maybePromotePreparedGolfEvent", () => {
       data: { isActive: true },
     });
     expect(mocks.prepare).toHaveBeenCalledWith("next");
+    expect(mocks.ensurePublicContest).toHaveBeenCalledWith("next");
   });
 });

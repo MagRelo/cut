@@ -145,6 +145,8 @@ Detect path (`detectAndEnqueueContestFeed`) advances `lastHoleState` / `lastCont
 | Monday | pga-golf | Next upcoming PGA Tour event with a published field. If the active golf event is still LIVE or SCHEDULED, init with `activate: false`. Score pipeline promotes that row when the current event is COMPLETE. |
 | Other days | — | No-op |
 
+After a successful golf or commodities init, and when init skips because that event row already exists, the job opens one free public contest for the event if none exists (`userGroupId` null). The contest is a database row only: `primaryDeposit` 0, no contract address, expiry 7 days after session close (commodities) or tournament end (golf). `chainId` is `REFERRAL_SYNC_CHAIN_ID`. A contest-creation failure leaves the event in place; the next init that sees that event tries again. Promoting a prepared golf event does the same check. League contests stay manual.
+
 After a successful golf init, the job writes `CompetitionEvent.metadata.summarySections` when copy is missing and the DataGolf win board matches this event. The generator researches current reporting and stamps sportsbook prices from that board. If the board does not match yet, nothing is written; the overview pipeline retries. A failed attempt waits 3 hours. Init succeeds even if copy generation fails. Manual rewrite: `pnpm --filter server run script:golf-event-summary <pgaTourId> [--force]`.
 
 After a commodities init, the same job writes `summarySections` when copy is missing. If that write fails, or the week already exists without copy, the overview pipeline retries. A failed attempt waits 3 hours. Manual rewrite: `pnpm --filter server run script:commodities-week-brief <YYYY-Www> [--force]`.

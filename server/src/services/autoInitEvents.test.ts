@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   resolveNext: vi.fn(),
   generateSummary: vi.fn(),
   generateWeekBrief: vi.fn(),
+  ensurePublicContest: vi.fn(),
 }));
 
 vi.mock("../lib/prisma.js", () => ({
@@ -35,6 +36,10 @@ vi.mock("../sports/pga-golf/resolveNextGolfEvent.js", () => ({
 
 vi.mock("../sports/pga-golf/generateEventSummary.js", () => ({
   generateGolfEventSummarySafe: mocks.generateSummary,
+}));
+
+vi.mock("./contest/ensurePublicContest.js", () => ({
+  ensurePublicContestSafe: mocks.ensurePublicContest,
 }));
 
 import {
@@ -89,6 +94,7 @@ describe("runAutoInitEvents", () => {
     });
     mocks.generateSummary.mockResolvedValue(undefined);
     mocks.generateWeekBrief.mockResolvedValue(undefined);
+    mocks.ensurePublicContest.mockResolvedValue(undefined);
   });
 
   it("skips commodities when the week already exists", async () => {
@@ -100,6 +106,7 @@ describe("runAutoInitEvents", () => {
     expect(result?.action).toBe("skipped");
     expect(result?.reason).toMatch(/already exists/);
     expect(mocks.initCommodities).not.toHaveBeenCalled();
+    expect(mocks.ensurePublicContest).toHaveBeenCalledWith("existing", { logSkips: true });
   });
 
   it("skips commodities when the active event is LIVE", async () => {
@@ -124,6 +131,7 @@ describe("runAutoInitEvents", () => {
     expect(result?.action).toBe("skipped");
     expect(result?.reason).toMatch(/LIVE/);
     expect(mocks.initCommodities).not.toHaveBeenCalled();
+    expect(mocks.ensurePublicContest).not.toHaveBeenCalled();
   });
 
   it("inits the upcoming commodities week on Saturday", async () => {
@@ -137,6 +145,7 @@ describe("runAutoInitEvents", () => {
     });
     expect(mocks.initCommodities).toHaveBeenCalledWith("2026-W41");
     expect(mocks.generateWeekBrief).toHaveBeenCalledWith("cmd-event");
+    expect(mocks.ensurePublicContest).toHaveBeenCalledWith("cmd-event", { logSkips: true });
   });
 
   it("skips the commodities week brief when requested", async () => {
@@ -169,6 +178,7 @@ describe("runAutoInitEvents", () => {
     expect(result?.action).toBe("prepared");
     expect(mocks.initGolf).toHaveBeenCalledWith("R2", { activate: false });
     expect(mocks.generateSummary).toHaveBeenCalledWith("golf-event");
+    expect(mocks.ensurePublicContest).toHaveBeenCalledWith("golf-event", { logSkips: true });
   });
 
   it("prepares golf without activating when the current event is still SCHEDULED", async () => {
@@ -209,6 +219,7 @@ describe("runAutoInitEvents", () => {
     await runAutoInitEvents({ sports: "pga-golf", skipSummary: true });
     expect(mocks.initGolf).toHaveBeenCalled();
     expect(mocks.generateSummary).not.toHaveBeenCalled();
+    expect(mocks.ensurePublicContest).toHaveBeenCalledWith("golf-event", { logSkips: true });
   });
 
   it("does not write on dry-run", async () => {
@@ -221,6 +232,7 @@ describe("runAutoInitEvents", () => {
     expect(golf?.reason).toBe("dry-run");
     expect(mocks.initCommodities).not.toHaveBeenCalled();
     expect(mocks.initGolf).not.toHaveBeenCalled();
+    expect(mocks.ensurePublicContest).not.toHaveBeenCalled();
   });
 
   it("skips golf when no published field is available", async () => {
@@ -229,6 +241,7 @@ describe("runAutoInitEvents", () => {
     expect(result?.action).toBe("skipped");
     expect(result?.reason).toMatch(/published field/);
     expect(mocks.initGolf).not.toHaveBeenCalled();
+    expect(mocks.ensurePublicContest).not.toHaveBeenCalled();
   });
 
   it("skips golf when the next event is already active", async () => {
@@ -241,6 +254,7 @@ describe("runAutoInitEvents", () => {
     const [result] = await runAutoInitEvents({ sports: "pga-golf" });
     expect(result?.action).toBe("skipped");
     expect(mocks.initGolf).not.toHaveBeenCalled();
+    expect(mocks.ensurePublicContest).toHaveBeenCalledWith("current", { logSkips: true });
   });
 
   it("respects weekday on the cron path", async () => {

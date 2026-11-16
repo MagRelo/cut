@@ -173,7 +173,7 @@ Optional `eventId` as final argument on each command.
 
 ### 6. Next trading week
 
-Saturday 10:00 ET auto-init creates the next ISO week (skips if the row already exists). Manual: `pnpm --filter server run service:init-next-event commodities` or `service:init-event commodities YYYY-Www`. Init deactivates the previous commodities event when it activates the new one.
+Saturday 10:00 ET auto-init creates the next ISO week (skips if the row already exists) and opens one free public contest for that event when it does not already have one (no entry fee, no contract, expiry 7 days after `sessionClose`). A failed contest write leaves the event in place; initializing that same week again tries the contest once more. Manual: `pnpm --filter server run service:init-next-event commodities` or `service:init-event commodities YYYY-Www`. Init deactivates the previous commodities event when it activates the new one.
 
 ---
 
