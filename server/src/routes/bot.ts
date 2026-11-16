@@ -28,8 +28,11 @@ import {
 import {
   readDelegatePolicyInfo,
   type DelegatePolicyInfo,
-} from "../services/bot/delegateGrantRuntime.js";
-import { grantFromApproval, validateDelegateApproval } from "../services/bot/delegatePolicy.js";
+} from "../services/bot/delegatePolicyRuntime.js";
+import {
+  policyAddressFromApproval,
+  validateDelegateApproval,
+} from "../services/bot/delegatePolicy.js";
 import { createBotNonceStore, type BotNonceStore } from "../services/bot/botNonce.js";
 import { authenticateBotRequest } from "../services/bot/botRequestAuth.js";
 import { executeBotAction, type BotActionDeps } from "../services/bot/executeBotAction.js";
@@ -216,8 +219,9 @@ export function createBotRouter(deps: BotRouterDeps): Hono {
   });
 
   /**
-   * Unsigned. The grant a delegate gets: the payment token, the open contests it may enter
-   * (public contest addresses), and the ZeroDev policy contracts. See agents.md.
+   * Unsigned. The policy a delegate permission must use: NoSelfCallPolicy, read from the
+   * chain's ContestFactory (`delegatePolicy()`). `policyAddress` is null until the factory that
+   * deploys it is live. See agents.md.
    */
   router.get("/delegate-policy", async (c) => {
     const chainId = Number(c.req.query("chainId"));
@@ -456,14 +460,15 @@ export function createBotRouter(deps: BotRouterDeps): Hono {
     });
     const delegates = rows.map(({ approval, ...row }) => {
       // What the browser needs to uninstall this exact permission on revoke.
-      let grant: { permissionId: string; paymentToken: string; contests: string[] } | null = null;
+      let permission: { permissionId: string; policyAddress: string } | null = null;
       try {
         const envelope = unpackApproval(approval);
-        grant = { permissionId: envelope.permissionId, ...grantFromApproval(envelope.approval) };
+        const policyAddress = policyAddressFromApproval(envelope.approval);
+        permission = policyAddress ? { permissionId: envelope.permissionId, policyAddress } : null;
       } catch {
-        grant = null;
+        permission = null;
       }
-      return { ...row, grant };
+      return { ...row, permission };
     });
     return c.json({ delegates, cutBotAddress: getCutBotAddress() });
   });
@@ -497,7 +502,7 @@ export function createBotRouter(deps: BotRouterDeps): Hono {
       },
       deps.delegates.approvals,
     );
-    if (!checked.ok) return c.json({ error: checked.error }, 400);
+    if (!checked.ok) return c.json({ error: checked.error }, checked.status ?? 400);
     const approval = packApproval({
       approval: body.approval,
       permissionId: body.permissionId as Hex,
@@ -523,7 +528,7 @@ export function createBotRouter(deps: BotRouterDeps): Hono {
     await prisma.botActionLog.create({
       data: { userId: user.userId, action: "delegate" },
     });
-    return c.json({ status: "active", delegateAddress, contests: checked.grant.contests });
+    return c.json({ status: "active", delegateAddress, policyAddress: checked.policyAddress });
   });
 
   router.post("/delegates/revoke", requireAuth, async (c) => {

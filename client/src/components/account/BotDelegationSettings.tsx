@@ -19,22 +19,21 @@ import {
 } from "../../lib/botSessionKey";
 import apiClient from "../../utils/apiClient";
 
-type DelegateGrantRow = {
+type DelegatePermissionRow = {
   permissionId: string;
-  paymentToken: string;
-  contests: string[];
+  policyAddress: string;
 };
 
 type DelegateRow = {
   delegateAddress: string;
   kind: "cut_bot" | "external";
   status: string;
-  grant: DelegateGrantRow | null;
+  permission: DelegatePermissionRow | null;
 };
 
 type DelegatePolicyResponse = {
-  paymentToken: string;
-  contests: string[];
+  /** ContestFactory.delegatePolicy(); null until the factory that deploys it is live. */
+  policyAddress: string | null;
 };
 
 type DelegateResponse = {
@@ -98,8 +97,8 @@ export function BotDelegationSettings() {
     const policy = await apiClient.get<DelegatePolicyResponse>(
       `/bot/delegate-policy?chainId=${chain.id}`,
     );
-    if (policy.contests.length === 0) {
-      throw new Error("There are no open contests to allow yet");
+    if (!policy.policyAddress) {
+      throw new Error("Delegates are not available on this network yet");
     }
     const installed = await prepareBotSessionKey({
       chain,
@@ -107,29 +106,24 @@ export function BotDelegationSettings() {
       ownerAddress: getAddress(embedded.address),
       smartWallet: getAddress(smartWallet),
       delegateAddress: getAddress(delegateAddress),
-      grant: {
-        paymentToken: getAddress(policy.paymentToken),
-        contests: policy.contests.map((contest) => getAddress(contest)),
-      },
+      policyAddress: getAddress(policy.policyAddress),
     });
     if (installed.call) await send(chain.id, installed.call);
-    // A new grant is a new permission. Remove the previous one on-chain so it does not linger.
+    // A new policy address (new ContestFactory) is a new permission. Remove the previous one
+    // on-chain so it does not linger.
     const previous = rows.find(
       (row) =>
         row.status === "active" &&
         row.delegateAddress.toLowerCase() === delegateAddress.toLowerCase() &&
-        row.grant &&
-        row.grant.permissionId.toLowerCase() !== installed.permissionId.toLowerCase(),
+        row.permission &&
+        row.permission.permissionId.toLowerCase() !== installed.permissionId.toLowerCase(),
     );
-    if (previous?.grant) {
+    if (previous?.permission) {
       const removeOld = await prepareBotSessionRevoke({
         chain,
         smartWallet: getAddress(smartWallet),
         delegateAddress: getAddress(delegateAddress),
-        grant: {
-          paymentToken: getAddress(previous.grant.paymentToken),
-          contests: previous.grant.contests.map((contest) => getAddress(contest)),
-        },
+        policyAddress: getAddress(previous.permission.policyAddress),
       });
       if (removeOld) await send(chain.id, removeOld);
     }
@@ -155,15 +149,12 @@ export function BotDelegationSettings() {
     const row = rows.find(
       (candidate) => candidate.delegateAddress.toLowerCase() === delegateAddress.toLowerCase(),
     );
-    const call = row?.grant
+    const call = row?.permission
       ? await prepareBotSessionRevoke({
           chain,
           smartWallet: getAddress(smartWallet),
           delegateAddress: getAddress(delegateAddress),
-          grant: {
-            paymentToken: getAddress(row.grant.paymentToken),
-            contests: row.grant.contests.map((contest) => getAddress(contest)),
-          },
+          policyAddress: getAddress(row.permission.policyAddress),
         })
       : null;
     if (call) await send(chain.id, call);
@@ -194,11 +185,10 @@ export function BotDelegationSettings() {
         </h2>
 
         <p className="text-sm leading-6 text-slate-600">
-          Give another wallet permission to manage lineups and enter and leave contests for this
-          smart wallet without asking you each time. A delegate can only approve the entry fee to,
-          join, and leave the open contests listed when you allow it. It cannot send funds
-          elsewhere, add other delegates, or sign messages for this wallet. New contests need you to
-          allow it again.
+          Give another wallet permission to act for this smart wallet without asking you each time:
+          manage lineups, enter and leave contests, and make any other transaction from it. A
+          delegate can move your funds. It cannot add other delegates, change the owner, upgrade the
+          wallet, or sign messages for it.
         </p>
       </div>
 
@@ -217,8 +207,9 @@ export function BotDelegationSettings() {
               Warning - Experimental
             </h3>
             <p className="mt-1 text-sm leading-6 text-slate-800">
-              Bugs or a compromised delegate could spend entry fees on the allowed contests. Only
-              use funds you can afford to lose. Revoking access won’t undo past transactions.
+              A delegate can send any funds in this wallet anywhere. Bugs or a compromised delegate
+              could lose them. Only use funds you can afford to lose. Revoking access won’t undo
+              past transactions.
             </p>
           </div>
         </div>
@@ -234,7 +225,7 @@ export function BotDelegationSettings() {
                 <span className="ml-2 text-sm font-normal text-slate-500">(coming soon!)</span>
               </h3>
               <p id="cut-bot-description" className="mt-1 text-sm leading-6 text-slate-600">
-                Let CutBot enter and leave the allowed contests for this wallet.
+                Let CutBot manage lineups and enter and leave contests for this wallet.
               </p>
             </div>
 

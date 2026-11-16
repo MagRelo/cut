@@ -7,6 +7,7 @@ import { packApproval } from "../services/bot/approvalEnvelope.js";
 import {
   cutDelegateApproval,
   fakeApprovalDeps,
+  TEST_DELEGATE_POLICY,
   permissionIdFor,
   serializeApproval,
 } from "../test/delegateApproval.js";
@@ -138,7 +139,7 @@ function world(): World {
         return found;
       },
       isCutBot: () => false,
-      approvals: fakeApprovalDeps({ paymentToken: TOKEN, contests: [CONTEST] }),
+      approvals: fakeApprovalDeps(),
     },
     balance: {
       paymentToken: () => getAddress("0x3333333333333333333333333333333333333333"),
@@ -153,17 +154,9 @@ function world(): World {
       chainId === CHAIN_ID
         ? {
             chainId,
-            paymentToken: TOKEN,
-            contests: [CONTEST],
-            maxContests: 10,
-            callPolicy: {
-              version: "0.0.5",
-              address: getAddress("0x85770b902D1e503D5f5141d9eaC16d0d08eEaDd2"),
-            },
-            signaturePolicy: {
-              address: getAddress("0xF6A936c88D97E6fad13b98d2FD731Ff17eeD591d"),
-              allowedCallers: [],
-            },
+            contestFactory: getAddress("0xfFE5ab468Feb2CcD02f3A96d3e750d451e115E4d"),
+            policyAddress: TEST_DELEGATE_POLICY,
+            policyFlag: "0x0000",
           }
         : null,
     registerLimitByIp: createRateLimiter({ limit: 100, windowMs: 60_000 }),
@@ -408,7 +401,6 @@ async function addDelegate(w: World, owner: PrivateKeyAccount, smartWallet: Addr
   const { approval, permissionId } = await cutDelegateApproval({
     smartWallet,
     delegate: delegate.address,
-    grant: { paymentToken: TOKEN, contests: [CONTEST] },
   });
   const res = await signedFetch(w, owner, {
     method: "POST",
@@ -475,7 +467,10 @@ describe("bot API: signers", () => {
       permissionId,
     } = await addDelegate(w, owner, smartWallet);
     expect(added.status).toBe(200);
-    expect(await added.json()).toMatchObject({ status: "active", contests: [CONTEST] });
+    expect(await added.json()).toMatchObject({
+      status: "active",
+      policyAddress: getAddress(TEST_DELEGATE_POLICY),
+    });
     expect(w.delegates.size).toBe(1);
     expect([...w.delegates.values()][0]?.approval).toBe(packApproval({ approval, permissionId }));
 
@@ -544,17 +539,14 @@ describe("bot API: signers", () => {
     expect(w.delegates.size).toBe(0);
   });
 
-  it("rejects a delegate approval for a contest Cut does not know", async () => {
+  it("rejects a delegate approval for a policy that is not the factory's", async () => {
     const w = world();
     const { owner, smartWallet } = await registered(w);
     const delegate = privateKeyToAccount(generatePrivateKey());
     const { approval, permissionId } = await cutDelegateApproval({
       smartWallet,
       delegate: delegate.address,
-      grant: {
-        paymentToken: TOKEN,
-        contests: [getAddress("0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddead")],
-      },
+      policyAddress: getAddress("0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddead"),
     });
     const res = await signedFetch(w, owner, {
       method: "POST",
@@ -573,15 +565,13 @@ describe("bot API: signers", () => {
     expect(w.delegates.size).toBe(0);
   });
 
-  it("serves the delegate grant inputs unsigned", async () => {
+  it("serves the delegate policy address unsigned", async () => {
     const w = world();
     const res = await w.app.request(`https://${HOST}/api/bot/delegate-policy?chainId=${CHAIN_ID}`);
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({
-      paymentToken: TOKEN,
-      contests: [CONTEST],
-      callPolicy: { version: "0.0.5" },
-      signaturePolicy: { allowedCallers: [] },
+      policyAddress: TEST_DELEGATE_POLICY,
+      policyFlag: "0x0000",
     });
     const other = await w.app.request(`https://${HOST}/api/bot/delegate-policy?chainId=1`);
     expect(other.status).toBe(404);

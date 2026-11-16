@@ -5,12 +5,10 @@ import { addressToEmptyAccount } from "@zerodev/sdk";
 import { KERNEL_V3_1 } from "@zerodev/sdk/constants";
 import { toPermissionValidator } from "@zerodev/permissions";
 import { toECDSASigner } from "@zerodev/permissions/signers";
-import {
-  delegatePolicies,
-  normalizeGrant,
-  type ApprovalCheckDeps,
-  type DelegateGrant,
-} from "../services/bot/delegatePolicy.js";
+import { delegatePolicies, type ApprovalCheckDeps } from "../services/bot/delegatePolicy.js";
+
+/** Stand-in for ContestFactory.delegatePolicy() in tests (no chain is read). */
+export const TEST_DELEGATE_POLICY = "0x7e57000000000000000000000000000000000bad" as Address;
 
 /** No RPC calls are made: toPermissionValidator only needs the chain id. */
 const offlineClient = createPublicClient({
@@ -55,11 +53,11 @@ export function serializeApproval(input: {
 export async function cutDelegateApproval(input: {
   smartWallet: Address;
   delegate: Address;
-  grant: { paymentToken: Address; contests: Address[] };
+  policyAddress?: Address;
   isPreInstalled?: boolean;
-}): Promise<{ approval: string; permissionId: Hex; grant: DelegateGrant }> {
-  const grant = normalizeGrant(input.grant);
-  const policies = delegatePolicies(grant);
+}): Promise<{ approval: string; permissionId: Hex; policyAddress: Address }> {
+  const policyAddress = input.policyAddress ?? TEST_DELEGATE_POLICY;
+  const policies = delegatePolicies(policyAddress);
   const permissionId = await permissionIdFor(input.delegate, policies);
   return {
     approval: serializeApproval({
@@ -69,20 +67,21 @@ export async function cutDelegateApproval(input: {
       ...(input.isPreInstalled ? { isPreInstalled: true } : {}),
     }),
     permissionId,
-    grant,
+    policyAddress,
   };
 }
 
-export function fakeApprovalDeps(input: {
-  paymentToken: Address;
-  contests: Address[];
-  installed?: { signer: Address; policyData: Hex[] } | null;
-}): ApprovalCheckDeps {
-  const known = new Set(input.contests.map((c) => c.toLowerCase()));
+export function fakeApprovalDeps(
+  input: {
+    /** null = factory has no policy yet. Defaults to TEST_DELEGATE_POLICY. */
+    policyAddress?: Address | null;
+    installed?: { signer: Address; policyData: Hex[] } | null;
+  } = {},
+): ApprovalCheckDeps {
+  const policyAddress =
+    input.policyAddress === undefined ? TEST_DELEGATE_POLICY : input.policyAddress;
   return {
-    paymentToken: () => input.paymentToken,
-    knownContests: async (_chainId, addresses) =>
-      new Set(addresses.map((a) => a.toLowerCase()).filter((a) => known.has(a))),
+    delegatePolicyAddress: async () => policyAddress,
     readPermissionConfig: async () => input.installed ?? null,
     permissionIdFor: async (_chainId, delegate, policies) => permissionIdFor(delegate, policies),
   };

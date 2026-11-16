@@ -86,8 +86,8 @@ export function buildLeaveCalls(input: { contest: Address; entryId: bigint }): B
 
 /**
  * A join batch is approve(contest, deposit) and addPrimaryPosition on that same contest.
- * This checks the exact amount and entry; the delegate call policy (delegatePolicy.ts) only
- * limits a delegate to the granted contests, so this check still runs on the action path.
+ * This checks the exact amount and entry before Cut builds the user operation. (The delegate
+ * policy only stops calls into the wallet itself; it does not know about contests.)
  */
 export function assertJoinCalls(
   calls: BotCall[],

@@ -20,7 +20,7 @@ import { KERNEL_V3_1, VALIDATOR_TYPE } from "@zerodev/sdk/constants";
 import { serializePermissionAccount, toPermissionValidator } from "@zerodev/permissions";
 import { toECDSASigner } from "@zerodev/permissions/signers";
 import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
-import { delegatePolicies, normalizeGrant, type DelegateGrant } from "./botDelegatePolicy";
+import { delegatePolicies } from "./botDelegatePolicy";
 
 const entryPoint = { address: entryPoint07Address, version: "0.7" as const };
 
@@ -50,18 +50,18 @@ function publicClientFor(chain: Chain) {
 }
 
 /**
- * The delegate's permission: the Cut call policy (payment-token approve to the granted
- * contests, join and leave on those contests, nothing else) plus a policy that refuses
- * ERC-1271 signatures. The permission id depends on the grant, so each grant is its own key slot.
+ * The delegate's permission: Cut's NoSelfCallPolicy (any call except into the wallet itself,
+ * the EntryPoint, or a module's onInstall/onUninstall; no ERC-1271 signatures). The permission
+ * id depends on the policy address, so a new ContestFactory (new policy) is a new key slot.
  */
-async function permissionFor(chain: Chain, delegateAddress: Address, grant: DelegateGrant) {
+async function permissionFor(chain: Chain, delegateAddress: Address, policyAddress: Address) {
   const publicClient = publicClientFor(chain);
   const signer = await toECDSASigner({ signer: addressToEmptyAccount(delegateAddress) });
   const plugin = await toPermissionValidator(publicClient, {
     entryPoint,
     kernelVersion: KERNEL_V3_1,
     signer,
-    policies: delegatePolicies(normalizeGrant(grant)),
+    policies: delegatePolicies(policyAddress),
   });
   return { publicClient, plugin, permissionId: plugin.getIdentifier() };
 }
@@ -189,13 +189,13 @@ export async function prepareBotSessionKey(input: {
   ownerAddress: Address;
   smartWallet: Address;
   delegateAddress: Address;
-  /** From `GET /api/bot/delegate-policy`: payment token and the contests to allow. */
-  grant: DelegateGrant;
+  /** From `GET /api/bot/delegate-policy` (ContestFactory.delegatePolicy()). */
+  policyAddress: Address;
 }): Promise<PreparedSessionKey> {
   const { publicClient, plugin, permissionId } = await permissionFor(
     input.chain,
     input.delegateAddress,
-    input.grant,
+    input.policyAddress,
   );
   const ownerClient = createWalletClient({
     account: input.ownerAddress,
@@ -246,18 +246,19 @@ export async function prepareBotSessionKey(input: {
 
 /**
  * Build the wallet call that removes the session key. Null when it was never installed.
- * `grant` is the stored grant from `GET /api/bot/delegates`, so the same permission is rebuilt.
+ * `policyAddress` is the stored one from `GET /api/bot/delegates`, so the same permission is
+ * rebuilt.
  */
 export async function prepareBotSessionRevoke(input: {
   chain: Chain;
   smartWallet: Address;
   delegateAddress: Address;
-  grant: DelegateGrant;
+  policyAddress: Address;
 }): Promise<WalletCall | null> {
   const { publicClient, plugin, permissionId } = await permissionFor(
     input.chain,
     input.delegateAddress,
-    input.grant,
+    input.policyAddress,
   );
   const state = await permissionState(publicClient, input.smartWallet, permissionId);
   if (state !== "active") return null;

@@ -1,119 +1,43 @@
-import { getAddress, isAddress, isHex, pad, type Address, type Hex } from "viem";
-import {
-  CALL_POLICY_CONTRACT_V0_0_5,
-  SIGNATURE_POLICY_CONTRACT,
-  SUDO_POLICY_CONTRACT,
-} from "@zerodev/permissions";
-import {
-  CallPolicyVersion,
-  CallType,
-  ParamCondition,
-  toCallPolicy,
-  toSignatureCallerPolicy,
-} from "@zerodev/permissions/policies";
+import { getAddress, isAddress, isHex, type Address, type Hex } from "viem";
+import { PolicyFlags, SUDO_POLICY_CONTRACT } from "@zerodev/permissions";
+import { toSudoPolicy } from "@zerodev/permissions/policies";
 
 /**
  * The only on-chain grant Cut accepts for a delegate session key.
  *
- * A delegate is a Kernel permission validator (ECDSA signer = the delegate address) with
- * exactly two policies:
+ * A delegate is a Kernel v3.1 permission validator (ECDSA signer = the delegate address) with
+ * exactly one policy: Cut's NoSelfCallPolicy (contestCatalyst `src/NoSelfCallPolicy.sol`),
+ * deployed by the ContestFactory and read from `ContestFactory.delegatePolicy()`.
  *
- * 1. ZeroDev CallPolicy 0.0.5. Plain CALL only (no delegatecall), value 0, and only:
- *    - `approve(spender, amount)` on the chain's payment token, spender ONE_OF the granted contests
- *    - `addPrimaryPosition(entryId, merkleProof)` on each granted contest
- *    - `removePrimaryPosition(entryId)` on each granted contest
- *    Batches are checked call by call. The wallet itself is never a target, so a delegate
- *    cannot call `installValidations` (no new delegates), change the owner, or upgrade the wallet.
- * 2. ZeroDev SignatureCallerPolicy with no allowed callers. The key can never produce an
- *    ERC-1271 signature for the wallet, so it cannot sign a token `permit` either.
+ * The policy lets the delegate send any plain CALL (single or batch, any target, any value)
+ * except:
+ * - a call to the wallet itself (so no `installValidations`, owner change, or upgrade),
+ * - a call to the EntryPoint,
+ * - `onInstall(bytes)` / `onUninstall(bytes)` on any contract (modules key state by caller,
+ *   so these would let the wallet rewrite its own validator's owner),
+ * - delegatecall, static call, `executeUserOp`, `executeFromExecutor` or any other top-level
+ *   selector.
+ * It never approves an ERC-1271 signature, so the key cannot sign messages or `permit`s.
+ * A delegate CAN move every token and all ETH in the wallet.
  *
- * Contests are separate contracts created by the factory, and CallPolicy matches exact
- * targets. So a grant lists the contests it covers (up to MAX_DELEGATE_CONTESTS). A contest
- * created later needs a new grant signed by the owner (call delegateAdd again).
+ * Policy flag must be 0x0000: a SKIP flag would make Kernel skip the policy.
  *
- * The client builds the same policies in client/src/lib/botDelegatePolicy.ts. Keep them in step;
+ * The ZeroDev SDK has no type for a custom policy, so the approval carries it as a
+ * `toSudoPolicy({ policyAddress })` entry: the SDK's "sudo" shape (flag + address, empty data)
+ * pointed at NoSelfCallPolicy. The SDK's own sudo policy contract (SUDO_POLICY_CONTRACT) is
+ * rejected. `deserializePermissionAccount` rebuilds the same entry, so delegate user operations
+ * are checked by NoSelfCallPolicy on-chain.
+ *
+ * The client builds the same policy in client/src/lib/botDelegatePolicy.ts. Keep them in step;
  * delegatePolicy.test.ts checks both produce the same bytes.
  */
 
-export const DELEGATE_CALL_POLICY_VERSION = CallPolicyVersion.V0_0_5;
-export const DELEGATE_CALL_POLICY_ADDRESS = getAddress(CALL_POLICY_CONTRACT_V0_0_5);
-export const DELEGATE_SIGNATURE_POLICY_ADDRESS = getAddress(SIGNATURE_POLICY_CONTRACT);
-/** Each contest adds two permissions and one ONE_OF entry; the install runs inside validation gas. */
-export const MAX_DELEGATE_CONTESTS = 10;
+export const DELEGATE_POLICY_FLAG = PolicyFlags.FOR_ALL_VALIDATION;
 
-export const SELECTORS = {
-  approve: "0x095ea7b3",
-  addPrimaryPosition: "0xe1db226a",
-  removePrimaryPosition: "0x7e8f1234",
-} as const;
-
-export type DelegateGrant = {
-  paymentToken: Address;
-  /** Checksummed, sorted by lowercase address, no duplicates. */
-  contests: Address[];
-};
-
-export function normalizeGrant(input: { paymentToken: string; contests: string[] }): DelegateGrant {
-  if (!isAddress(input.paymentToken)) throw new Error("Invalid payment token address");
-  const seen = new Set<string>();
-  const contests: Address[] = [];
-  for (const raw of input.contests) {
-    if (!isAddress(raw)) throw new Error(`Invalid contest address ${raw}`);
-    const lower = raw.toLowerCase();
-    if (seen.has(lower)) continue;
-    seen.add(lower);
-    contests.push(getAddress(raw));
-  }
-  contests.sort((a, b) => (a.toLowerCase() < b.toLowerCase() ? -1 : 1));
-  if (contests.length === 0) throw new Error("A delegate grant needs at least one contest");
-  if (contests.length > MAX_DELEGATE_CONTESTS) {
-    throw new Error(`A delegate grant covers at most ${MAX_DELEGATE_CONTESTS} contests`);
-  }
-  return { paymentToken: getAddress(input.paymentToken), contests };
-}
-
-export function delegatePermissions(grant: DelegateGrant) {
+/** The policy, in a list, for `toPermissionValidator`. */
+export function delegatePolicies(policyAddress: Address) {
   return [
-    {
-      callType: CallType.CALL,
-      target: grant.paymentToken,
-      selector: SELECTORS.approve as Hex,
-      valueLimit: 0n,
-      rules: [
-        {
-          condition: ParamCondition.ONE_OF,
-          offset: 0,
-          params: grant.contests.map((contest) => pad(contest.toLowerCase() as Hex, { size: 32 })),
-        },
-      ],
-    },
-    ...grant.contests.flatMap((contest) => [
-      {
-        callType: CallType.CALL,
-        target: contest,
-        selector: SELECTORS.addPrimaryPosition as Hex,
-        valueLimit: 0n,
-        rules: [],
-      },
-      {
-        callType: CallType.CALL,
-        target: contest,
-        selector: SELECTORS.removePrimaryPosition as Hex,
-        valueLimit: 0n,
-        rules: [],
-      },
-    ]),
-  ];
-}
-
-/** The policies, in order, for `toPermissionValidator`. */
-export function delegatePolicies(grant: DelegateGrant) {
-  return [
-    toCallPolicy({
-      policyVersion: DELEGATE_CALL_POLICY_VERSION,
-      permissions: delegatePermissions(grant),
-    }),
-    toSignatureCallerPolicy({ allowedCallers: [] }),
+    toSudoPolicy({ policyAddress: getAddress(policyAddress), policyFlag: DELEGATE_POLICY_FLAG }),
   ];
 }
 
@@ -171,39 +95,21 @@ function lower(value: unknown): string {
   return typeof value === "string" ? value.toLowerCase() : "";
 }
 
-/**
- * Read the payment token and contests out of the approval's call policy, without trusting it.
- * `validateDelegateApproval` rebuilds the policies from this grant and requires the same bytes.
- */
-export function grantFromApproval(approval: string): DelegateGrant {
-  const parsed = parseApproval(approval);
-  const call = parsed.policies.find((policy) => policy.policyParams?.type === "call");
-  const permissions = call?.policyParams?.permissions;
-  if (!Array.isArray(permissions)) throw new Error("Approval has no call policy");
-  const approve = permissions.find(
-    (permission: { selector?: unknown }) => lower(permission.selector) === SELECTORS.approve,
-  ) as { target?: unknown } | undefined;
-  if (!approve || typeof approve.target !== "string") {
-    throw new Error("Approval call policy has no approve permission");
+/** The policy contract named in a stored approval (already validated), or null. */
+export function policyAddressFromApproval(approval: string): Address | null {
+  try {
+    const address = parseApproval(approval).policies[0]?.policyParams?.policyAddress;
+    return typeof address === "string" && isAddress(address.toLowerCase())
+      ? getAddress(address.toLowerCase())
+      : null;
+  } catch {
+    return null;
   }
-  const contests = permissions
-    .filter(
-      (permission: { selector?: unknown }) =>
-        lower(permission.selector) === SELECTORS.addPrimaryPosition,
-    )
-    .map((permission: { target?: unknown }) => String(permission.target));
-  return normalizeGrant({ paymentToken: approve.target, contests });
 }
 
-export type ExpectedPermission = {
-  permissionId: Hex;
-  policyInfos: Hex[];
-};
-
 export type ApprovalCheckDeps = {
-  paymentToken: (chainId: number) => Address | null;
-  /** Lowercase addresses from `addresses` that are Cut contests on that chain. */
-  knownContests: (chainId: number, addresses: Address[]) => Promise<Set<string>>;
+  /** `ContestFactory.delegatePolicy()` on this chain; null when the factory has none yet. */
+  delegatePolicyAddress: (chainId: number) => Promise<Address | null>;
   /** Kernel `permissionConfig` for an installed permission; null when the wallet has no code. */
   readPermissionConfig: (
     chainId: number,
@@ -220,13 +126,17 @@ export type ApprovalCheckDeps = {
 
 export const ECDSA_SIGNER_CONTRACT = getAddress("0x6A6F069E2a08c2468e7724Ab3250CdBFBA14D4FF");
 
-type CheckFail = { ok: false; error: string };
+export const POLICY_NOT_DEPLOYED =
+  "The Cut delegate policy is not deployed on this chain yet (ContestFactory.delegatePolicy)";
+
+type CheckFail = { ok: false; error: string; status?: 503 };
 
 /**
- * Accept only the exact Cut delegate grant. Rejects sudo policies, extra policies, any
- * permission outside the grant, contests Cut does not know on this chain, and approvals for
- * another wallet. The server builds every delegate user operation from these stored params,
- * so what gets installed on-chain is exactly what was checked here.
+ * Accept only the exact Cut delegate grant: one NoSelfCallPolicy entry at flag 0x0000 with
+ * empty data, at the address the chain's ContestFactory reports. Rejects the SDK sudo policy,
+ * any other or extra policy, and approvals for another wallet. The server builds every
+ * delegate user operation from these stored params, so what gets installed on-chain is
+ * exactly what was checked here.
  */
 export async function validateDelegateApproval(
   input: {
@@ -237,7 +147,7 @@ export async function validateDelegateApproval(
     permissionId: Hex;
   },
   deps: ApprovalCheckDeps,
-): Promise<{ ok: true; grant: DelegateGrant } | CheckFail> {
+): Promise<{ ok: true; policyAddress: Address } | CheckFail> {
   let parsed: ParsedApproval;
   try {
     parsed = parseApproval(input.approval);
@@ -250,84 +160,49 @@ export async function validateDelegateApproval(
   if (lower(parsed.accountAddress) !== input.smartWallet.toLowerCase()) {
     return { ok: false, error: "Approval is for a different smart wallet" };
   }
-  for (const policy of parsed.policies) {
-    const params = policy.policyParams ?? {};
-    if (
-      params.type === "sudo" ||
-      lower(params.policyAddress) === SUDO_POLICY_CONTRACT.toLowerCase()
-    ) {
-      return {
-        ok: false,
-        error: "Sudo delegates are not accepted. Use the Cut call policy (see agents.md)",
-      };
-    }
-  }
-  const types = parsed.policies.map((policy) => policy.policyParams?.type);
-  if (types.length !== 2 || types[0] !== "call" || types[1] !== "signature-caller") {
+  if (
+    parsed.policies.some(
+      (policy) => lower(policy.policyParams?.policyAddress) === SUDO_POLICY_CONTRACT.toLowerCase(),
+    )
+  ) {
     return {
       ok: false,
-      error: "Approval must have exactly the Cut call policy and the no-signature policy",
+      error: "Sudo delegates are not accepted. Use the Cut delegate policy (see agents.md)",
     };
   }
 
-  let grant: DelegateGrant;
-  try {
-    grant = grantFromApproval(input.approval);
-  } catch (error) {
-    return { ok: false, error: (error as Error).message };
+  const policyAddress = await deps.delegatePolicyAddress(input.chainId);
+  if (!policyAddress) return { ok: false, error: POLICY_NOT_DEPLOYED, status: 503 };
+
+  const params = parsed.policies[0]?.policyParams ?? {};
+  if (
+    parsed.policies.length !== 1 ||
+    params.type !== "sudo" ||
+    lower(params.policyAddress) !== policyAddress.toLowerCase()
+  ) {
+    return {
+      ok: false,
+      error: `Approval must have exactly one policy: the Cut delegate policy ${policyAddress}`,
+    };
   }
-  const token = deps.paymentToken(input.chainId);
-  if (!token || token.toLowerCase() !== grant.paymentToken.toLowerCase()) {
-    return { ok: false, error: "Approval approve target is not this chain's payment token" };
-  }
-  const known = await deps.knownContests(input.chainId, grant.contests);
-  const unknown = grant.contests.filter((contest) => !known.has(contest.toLowerCase()));
-  if (unknown.length > 0) {
-    return { ok: false, error: `Not a Cut contest on this chain: ${unknown.join(", ")}` };
+  if (params.policyFlag !== undefined && params.policyFlag !== DELEGATE_POLICY_FLAG) {
+    return { ok: false, error: "The delegate policy must apply to user operations and signatures" };
   }
 
-  // Same bytes as the policies Cut would build for this grant.
-  const expected = delegatePolicies(grant);
-  let rebuilt: { getPolicyData: () => Hex; getPolicyInfoInBytes: () => Hex }[];
+  // Same bytes as the policy Cut would build.
+  const expected = delegatePolicies(policyAddress);
   try {
-    const call = parsed.policies[0]?.policyParams ?? {};
-    const sig = parsed.policies[1]?.policyParams ?? {};
-    if (
-      call.policyAddress !== undefined &&
-      lower(call.policyAddress) !== DELEGATE_CALL_POLICY_ADDRESS.toLowerCase()
-    ) {
-      return { ok: false, error: "Approval call policy is not CallPolicy 0.0.5" };
-    }
-    if (
-      sig.policyAddress !== undefined &&
-      lower(sig.policyAddress) !== DELEGATE_SIGNATURE_POLICY_ADDRESS.toLowerCase()
-    ) {
-      return { ok: false, error: "Approval signature policy is not the ZeroDev signature policy" };
-    }
-    rebuilt = [
-      // biome-ignore lint/suspicious/noExplicitAny: params come from JSON
-      toCallPolicy(call as any),
-      // biome-ignore lint/suspicious/noExplicitAny: params come from JSON
-      toSignatureCallerPolicy(sig as any),
-    ];
-  } catch {
-    return { ok: false, error: "Approval policies could not be read" };
-  }
-  for (let i = 0; i < expected.length; i++) {
-    const want = expected[i]!;
-    const got = rebuilt[i]!;
+    // biome-ignore lint/suspicious/noExplicitAny: params come from JSON
+    const got = toSudoPolicy(params as any);
+    const want = expected[0]!;
     if (
       got.getPolicyInfoInBytes().toLowerCase() !== want.getPolicyInfoInBytes().toLowerCase() ||
       got.getPolicyData().toLowerCase() !== want.getPolicyData().toLowerCase()
     ) {
-      return {
-        ok: false,
-        error:
-          i === 0
-            ? "Approval call policy does not match the Cut delegate policy"
-            : "Approval signature policy must allow no callers",
-      };
+      return { ok: false, error: "Approval policy does not match the Cut delegate policy" };
     }
+  } catch {
+    return { ok: false, error: "Approval policies could not be read" };
   }
 
   const permissionId = (
@@ -341,7 +216,7 @@ export async function validateDelegateApproval(
   }
 
   if (parsed.isPreInstalled) {
-    // Already installed by the owner: the chain must hold the same signer and policies.
+    // Already installed by the owner: the chain must hold the same signer and policy.
     const config = await deps.readPermissionConfig(
       input.chainId,
       input.smartWallet,
@@ -363,29 +238,5 @@ export async function validateDelegateApproval(
   } else if (!parsed.enableSignature || !isHex(parsed.enableSignature)) {
     return { ok: false, error: "Approval is missing the owner's enable signature" };
   }
-  return { ok: true, grant };
-}
-
-/** True when every call is inside the delegate's grant (same rules the call policy enforces). */
-export function callsWithinGrant(
-  grant: DelegateGrant,
-  calls: { to: Address; data: Hex; value: bigint }[],
-): boolean {
-  const contests = new Set(grant.contests.map((contest) => contest.toLowerCase()));
-  const token = grant.paymentToken.toLowerCase();
-  return calls.every((call) => {
-    if (call.value !== 0n) return false;
-    const to = call.to.toLowerCase();
-    const selector = call.data.slice(0, 10).toLowerCase();
-    if (to === token && selector === SELECTORS.approve) {
-      const spender = `0x${call.data.slice(34, 74)}`.toLowerCase();
-      return contests.has(spender);
-    }
-    if (contests.has(to)) {
-      return (
-        selector === SELECTORS.addPrimaryPosition || selector === SELECTORS.removePrimaryPosition
-      );
-    }
-    return false;
-  });
+  return { ok: true, policyAddress };
 }

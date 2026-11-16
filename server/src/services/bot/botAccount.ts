@@ -7,7 +7,7 @@ import { mergeUserSettings, type UpdateUserSettingsBody } from "../../schemas/us
 import { getPublicClient } from "../shared/contractClient.js";
 import { packApproval } from "./approvalEnvelope.js";
 import type { BotActor } from "./botActor.js";
-import { createApprovalCheckDeps } from "./delegateGrantRuntime.js";
+import { createApprovalCheckDeps } from "./delegatePolicyRuntime.js";
 import { validateDelegateApproval, type ApprovalCheckDeps } from "./delegatePolicy.js";
 
 type Fail = { ok: false; status: 400 | 403 | 404 | 502 | 503; error: string };
@@ -78,7 +78,7 @@ export async function addDelegate(
     permissionId: Hex;
   },
   deps: DelegateDeps,
-): Promise<{ ok: true; status: "active"; delegateAddress: string; contests: string[] } | Fail> {
+): Promise<{ ok: true; status: "active"; delegateAddress: string; policyAddress: string } | Fail> {
   if (actor.role !== "owner") {
     return { ok: false, status: 403, error: "Only the wallet owner can add a delegate" };
   }
@@ -102,7 +102,7 @@ export async function addDelegate(
     },
     deps.approvals,
   );
-  if (!checked.ok) return { ok: false, status: 400, error: checked.error };
+  if (!checked.ok) return { ok: false, status: checked.status ?? 400, error: checked.error };
   let approval: string;
   try {
     approval = packApproval({ approval: input.approval, permissionId: input.permissionId });
@@ -120,7 +120,7 @@ export async function addDelegate(
     kind: input.kind,
     approval,
   });
-  return { ok: true, status: "active", delegateAddress, contests: checked.grant.contests };
+  return { ok: true, status: "active", delegateAddress, policyAddress: checked.policyAddress };
 }
 
 export async function revokeDelegate(

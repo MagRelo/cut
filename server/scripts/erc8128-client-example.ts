@@ -98,65 +98,26 @@ async function signedFetch(
 // Optional: build a delegate approval (owner signs the Kernel enable digest)
 // ---------------------------------------------------------------------------
 
-type DelegatePolicyInfo = { paymentToken: Address; contests: Address[] };
+type DelegatePolicyInfo = { policyAddress: Address | null };
 
 /**
- * The only grant the server accepts (it rejects sudo and anything else):
- * - ZeroDev CallPolicy 0.0.5, plain CALL, value 0:
- *   approve(spender ONE_OF contests) on the payment token,
- *   addPrimaryPosition / removePrimaryPosition on each contest.
- * - SignatureCallerPolicy with no allowed callers (the key cannot sign ERC-1271 / permit).
- * Contests are sorted by lowercase address so the permission id is reproducible.
+ * The only policy the server accepts (it rejects ZeroDev sudo and anything else): Cut's
+ * NoSelfCallPolicy at `policyAddress` (ContestFactory.delegatePolicy()), flag 0x0000, no data.
+ * The delegate may make any call except into the wallet itself, the EntryPoint, or a module's
+ * onInstall/onUninstall, and cannot sign ERC-1271 messages. It CAN move the wallet's funds.
+ * The SDK has no custom-policy type, so it is carried in toSudoPolicy's shape with our address.
  */
-async function delegatePolicies(info: DelegatePolicyInfo) {
-  const { CallPolicyVersion, CallType, ParamCondition, toCallPolicy, toSignatureCallerPolicy } =
-    await import("@zerodev/permissions/policies");
-  const { getAddress, pad } = await import("viem");
-  const contests = [...new Set(info.contests.map((c) => c.toLowerCase()))]
-    .sort()
-    .map((c) => getAddress(c));
-  const permissions = [
-    {
-      callType: CallType.CALL,
-      target: getAddress(info.paymentToken),
-      selector: "0x095ea7b3" as Hex, // approve(address,uint256)
-      valueLimit: 0n,
-      rules: [
-        {
-          condition: ParamCondition.ONE_OF,
-          offset: 0,
-          params: contests.map((c) => pad(c.toLowerCase() as Hex, { size: 32 })),
-        },
-      ],
-    },
-    ...contests.flatMap((contest) => [
-      {
-        callType: CallType.CALL,
-        target: contest,
-        selector: "0xe1db226a" as Hex, // addPrimaryPosition(uint256,bytes32[])
-        valueLimit: 0n,
-        rules: [],
-      },
-      {
-        callType: CallType.CALL,
-        target: contest,
-        selector: "0x7e8f1234" as Hex, // removePrimaryPosition(uint256)
-        valueLimit: 0n,
-        rules: [],
-      },
-    ]),
-  ];
-  return [
-    toCallPolicy({ policyVersion: CallPolicyVersion.V0_0_5, permissions }),
-    toSignatureCallerPolicy({ allowedCallers: [] }),
-  ];
+async function delegatePolicies(policyAddress: Address) {
+  const { toSudoPolicy } = await import("@zerodev/permissions/policies");
+  const { getAddress } = await import("viem");
+  return [toSudoPolicy({ policyAddress: getAddress(policyAddress) })];
 }
 
 async function buildDelegateApproval(
   owner: PrivateKeyAccount,
   smartWallet: Address,
   delegate: Address,
-  info: DelegatePolicyInfo,
+  policyAddress: Address,
 ) {
   const { addressToEmptyAccount, createKernelAccount } = await import("@zerodev/sdk");
   const { KERNEL_V3_1 } = await import("@zerodev/sdk/constants");
@@ -172,7 +133,7 @@ async function buildDelegateApproval(
     entryPoint,
     kernelVersion: KERNEL_V3_1,
     signer: await toECDSASigner({ signer: addressToEmptyAccount(delegate) }),
-    policies: await delegatePolicies(info),
+    policies: await delegatePolicies(policyAddress),
   });
   const sudo = await signerToEcdsaValidator(publicClient, {
     signer: owner,
@@ -234,18 +195,18 @@ async function main() {
   // 3. optional delegate
   const delegate = process.env.CUT_DELEGATE as Address | undefined;
   if (delegate) {
-    // Unsigned: payment token and the open contests a delegate may enter right now.
+    // Unsigned: the delegate policy the chain's ContestFactory deployed.
     const res = await fetch(`${API_BASE}/api/bot/delegate-policy?chainId=${CHAIN_ID}`);
     const info = (await res.json()) as DelegatePolicyInfo;
-    if (!res.ok || info.contests.length === 0) {
-      console.log("No open contests to grant a delegate yet; skipping delegateAdd.");
+    if (!res.ok || !info.policyAddress) {
+      console.log("No delegate policy on this chain yet; skipping delegateAdd.");
       return;
     }
     const { approval, permissionId } = await buildDelegateApproval(
       owner,
       smartWallet,
       delegate,
-      info,
+      info.policyAddress,
     );
     show(
       "delegateAdd",

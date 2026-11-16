@@ -24,11 +24,10 @@ const cutBotKey = generatePrivateKey();
 const cutBot = privateKeyToAccount(cutBotKey);
 const owner = privateKeyToAccount(generatePrivateKey());
 const external = privateKeyToAccount(generatePrivateKey());
-// A real Cut grant covering CONTEST only.
+// A real Cut delegate approval (NoSelfCallPolicy at the test policy address).
 const { approval: APPROVAL } = await cutDelegateApproval({
   smartWallet: SMART_WALLET,
   delegate: cutBot.address,
-  grant: { paymentToken: TOKEN, contests: [CONTEST] },
 });
 
 function contest(overrides: Partial<BotContest> = {}): BotContest {
@@ -274,13 +273,12 @@ describe("executeBotAction", () => {
     );
   });
 
-  it("refuses a delegate join for a contest outside its grant before building a user operation", async () => {
+  it("builds a delegate join for any contest (no per-contest grant)", async () => {
     const other = getAddress("0x4444444444444444444444444444444444444444");
     const used = deps({ loadContest: vi.fn(async () => contest({ address: other })) });
     const result = await executeBotAction(join(delegateActor("external")), used);
-    expect(result).toMatchObject({ ok: false, status: 403 });
-    expect(used.prepareUserOp).not.toHaveBeenCalled();
-    expect(used.insertContestEntry).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ ok: true });
+    expect(used.prepareUserOp).toHaveBeenCalledOnce();
   });
 
   it("rejects a userOpSignature without the prepared userOp", async () => {

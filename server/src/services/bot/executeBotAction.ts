@@ -16,7 +16,6 @@ import {
 } from "./botCalls.js";
 import type { BotActor } from "./botActor.js";
 import type { SerializedUserOp, UserOpAuthority } from "./submitSessionKeyUserOp.js";
-import { callsWithinGrant, grantFromApproval } from "./delegatePolicy.js";
 
 export type ContestActionName = "lineupUpsert" | "join" | "leave";
 
@@ -300,23 +299,6 @@ async function submitIfNeeded(
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
   if (!onchain) return { ok: true, lineupId };
-  if (input.actor.role === "delegate") {
-    // The call policy would reject these on-chain; say why before building a user operation.
-    let covered = false;
-    try {
-      covered = callsWithinGrant(grantFromApproval(input.actor.approval), calls);
-    } catch {
-      covered = false;
-    }
-    if (!covered) {
-      return {
-        ok: false,
-        status: 403,
-        error:
-          "This delegate's grant does not cover this contest. The wallet owner must add the delegate again with this contest (delegateAdd).",
-      };
-    }
-  }
   const smartWallet = input.actor.smartWallet;
   const authority = authorityFor(input.actor);
   const serverSigned = input.actor.role === "delegate" && input.actor.delegate.kind === "cut_bot";
