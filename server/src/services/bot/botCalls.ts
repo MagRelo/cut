@@ -1,12 +1,4 @@
-import {
-  decodeFunctionData,
-  encodeFunctionData,
-  getAddress,
-  keccak256,
-  toBytes,
-  type Address,
-  type Hex,
-} from "viem";
+import { decodeFunctionData, encodeFunctionData, getAddress, type Address, type Hex } from "viem";
 
 const approveAbi = [
   {
@@ -92,20 +84,10 @@ export function buildLeaveCalls(input: { contest: Address; entryId: bigint }): B
   ];
 }
 
-export function hashCalls(calls: BotCall[]): Hex {
-  const packed = calls
-    .map((call) => `${call.to.toLowerCase()}:${call.value.toString()}:${call.data}`)
-    .join("|");
-  return keccak256(toBytes(packed));
-}
-
-export function hashPicks(picks: readonly string[]): Hex {
-  return keccak256(toBytes([...picks].join("|")));
-}
-
 /**
  * A join batch is approve(contest, deposit) and addPrimaryPosition on that same contest.
- * The call policy cannot name future contests, so this check runs on the action path.
+ * This checks the exact amount and entry before Cut builds the user operation. (The delegate
+ * policy only stops calls into the wallet itself; it does not know about contests.)
  */
 export function assertJoinCalls(
   calls: BotCall[],

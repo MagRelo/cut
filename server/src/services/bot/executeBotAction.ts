@@ -1,4 +1,4 @@
-import { getAddress, isAddress, zeroHash, type Address, type Hex } from "viem";
+import { getAddress, type Address, type Hex } from "viem";
 import { getCutBotPrivateKey } from "../../lib/cutBotKey.js";
 import { generateContestEntryId } from "../../utils/contestEntryId.js";
 import { hasOnchainEscrow } from "../../utils/hasOnchainEscrow.js";
@@ -7,30 +7,17 @@ import {
   canRemovePrimaryPosition,
   type ContestStatus,
 } from "../shared/types.js";
-import { unpackApproval } from "./approvalEnvelope.js";
 import {
   assertJoinCalls,
   assertLeaveCalls,
   buildJoinCalls,
   buildLeaveCalls,
-  hashPicks,
   type BotCall,
 } from "./botCalls.js";
-import {
-  assertDeadline,
-  recoverBotActionSigner,
-  type BotActionMessage,
-  type BotActionName,
-} from "./botActionSignature.js";
-import type { SerializedUserOp } from "./submitSessionKeyUserOp.js";
+import type { BotActor } from "./botActor.js";
+import type { SerializedUserOp, UserOpAuthority } from "./submitSessionKeyUserOp.js";
 
-export type BotDelegateRow = {
-  userId: string;
-  smartWallet: string;
-  delegateAddress: string;
-  kind: "cut_bot" | "external";
-  approval: string;
-};
+export type ContestActionName = "lineupUpsert" | "join" | "leave";
 
 export type BotContest = {
   id: string;
@@ -51,19 +38,20 @@ export type BotLineup = {
   picks: string[];
 };
 
+/**
+ * One contest action. The request was already authenticated (ERC-8128), its nonce
+ * reserved, and the signer resolved to an actor (wallet owner or active delegate).
+ */
 export type ExecuteBotActionInput = {
   chainId: number;
-  action: BotActionName;
-  smartWallet: string;
+  action: ContestActionName;
+  actor: BotActor;
   contestId: string;
   lineupId: string;
   picks: string[];
   prediction?: unknown;
-  deadline: bigint;
-  signature: Hex;
-  userOpSignature?: Hex;
-  userOp?: SerializedUserOp;
-  nowSeconds: number;
+  userOpSignature?: Hex | undefined;
+  userOp?: SerializedUserOp | undefined;
 };
 
 export type ExecuteBotActionResult =
@@ -77,9 +65,14 @@ export type ExecuteBotActionResult =
     }
   | { ok: false; status: number; error: string };
 
+export type PrepareUserOpInput = {
+  chainId: number;
+  authority: UserOpAuthority;
+  calls: BotCall[];
+  smartWallet: Address;
+};
+
 export type BotActionDeps = {
-  findDelegate: (smartWallet: Address, signer: Address) => Promise<BotDelegateRow | null>;
-  sessionEnabled: (smartWallet: Address, permissionId: Hex, chainId: number) => Promise<boolean>;
   loadContest: (contestId: string) => Promise<BotContest | null>;
   isGroupMember: (userId: string, userGroupId: string) => Promise<boolean>;
   findLineup: (lineupId: string) => Promise<BotLineup | null>;
@@ -108,117 +101,47 @@ export type BotActionDeps = {
     picks: string[];
     prediction?: unknown;
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
-  prepareUserOp: (input: {
-    chainId: number;
-    approval: string;
-    calls: BotCall[];
-    delegateAddress: Address;
-    smartWallet: Address;
-  }) => Promise<
+  prepareUserOp: (
+    input: PrepareUserOpInput,
+  ) => Promise<
     { ok: true; userOpHash: Hex; userOp: SerializedUserOp } | { ok: false; error: string }
   >;
-  submitCalls: (input: {
-    chainId: number;
-    approval: string;
-    calls: BotCall[];
-    delegateAddress: Address;
-    smartWallet: Address;
-    privateKey?: Hex;
-    userOpSignature?: Hex;
-    userOp?: SerializedUserOp;
-  }) => Promise<{ ok: true } | { ok: false; error: string }>;
-  log: (userId: string, action: string, error?: string) => Promise<void>;
+  submitCalls: (
+    input: PrepareUserOpInput & {
+      privateKey?: Hex | undefined;
+      userOpSignature?: Hex | undefined;
+      userOp?: SerializedUserOp | undefined;
+    },
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
 };
-
-function messageFor(input: ExecuteBotActionInput, smartWallet: Address): BotActionMessage {
-  const chainAction = input.action === "join" || input.action === "leave";
-  return {
-    action: input.action,
-    smartWallet,
-    contestId: input.contestId,
-    lineupId: input.lineupId,
-    picksHash: chainAction ? hashPicks([]) : hashPicks(input.picks),
-    callsHash: zeroHash,
-    deadline: input.deadline,
-  };
-}
 
 export async function executeBotAction(
   input: ExecuteBotActionInput,
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
-  if (!isAddress(input.smartWallet)) {
-    return { ok: false, status: 400, error: "Invalid smart wallet" };
-  }
-  const smartWallet = getAddress(input.smartWallet);
-
-  try {
-    assertDeadline(input.deadline, input.nowSeconds);
-  } catch (error) {
-    return {
-      ok: false,
-      status: 400,
-      error: error instanceof Error ? error.message : "Invalid deadline",
-    };
-  }
-
-  let signer: Address;
-  try {
-    signer = await recoverBotActionSigner(input.chainId, messageFor(input, smartWallet), input.signature);
-  } catch {
-    return { ok: false, status: 401, error: "Invalid action signature" };
-  }
-
-  const delegate = await deps.findDelegate(smartWallet, signer);
-  if (!delegate) {
-    return { ok: false, status: 403, error: "No active delegate for this signature" };
-  }
-
-  let permissionId: Hex;
-  let approval: string;
-  try {
-    const envelope = unpackApproval(delegate.approval);
-    permissionId = envelope.permissionId;
-    approval = envelope.approval;
-  } catch (error) {
-    return {
-      ok: false,
-      status: 400,
-      error: error instanceof Error ? error.message : "Invalid delegate approval",
-    };
-  }
-
-  const enabled = await deps.sessionEnabled(smartWallet, permissionId, input.chainId);
-  if (!enabled) {
-    await deps.log(delegate.userId, "error", "Session key is not enabled");
-    return { ok: false, status: 403, error: "Session key is not enabled" };
-  }
-
   const contest = await deps.loadContest(input.contestId);
   if (!contest || contest.chainId !== input.chainId) {
     return { ok: false, status: 404, error: "Contest not found" };
   }
   if (contest.userGroupId) {
-    const member = await deps.isGroupMember(delegate.userId, contest.userGroupId);
+    const member = await deps.isGroupMember(input.actor.userId, contest.userGroupId);
     if (!member) {
       return { ok: false, status: 403, error: "You do not have access to this contest" };
     }
   }
 
   if (input.action === "lineupUpsert") {
-    return upsertLineup(input, delegate, contest, deps);
+    return upsertLineup(input, contest, deps);
   }
   if (input.action === "leave") {
-    return leaveAction(input, delegate, contest, approval, deps);
+    return leaveAction(input, contest, deps);
   }
-  return joinAction(input, delegate, contest, approval, deps);
+  return joinAction(input, contest, deps);
 }
 
 async function joinAction(
   input: ExecuteBotActionInput,
-  delegate: BotDelegateRow,
   contest: BotContest,
-  approval: string,
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
   if (!canAddPrimaryPosition(contest.status)) {
@@ -227,7 +150,7 @@ async function joinAction(
   if (input.picks.length > 0) {
     return { ok: false, status: 400, error: "Join does not change the lineup" };
   }
-  const lineup = await requireLineup(input, delegate, contest, deps);
+  const lineup = await requireLineup(input, contest, deps);
   if (!lineup.ok) return { ok: false, status: 400, error: lineup.error };
 
   const existing = await deps.findContestEntry(contest.id, lineup.lineup.id);
@@ -255,39 +178,27 @@ async function joinAction(
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Join calls rejected";
-      await deps.log(delegate.userId, "error", message);
       return { ok: false, status: 400, error: message };
     }
   }
 
-  const submitted = await submitIfNeeded(
-    input,
-    delegate,
-    approval,
-    calls,
-    onchain,
-    lineup.lineup.id,
-    deps,
-  );
+  const submitted = await submitIfNeeded(input, calls, onchain, lineup.lineup.id, deps);
   if (!submitted.ok || submitted.preparedUserOp) return submitted;
 
   await deps.insertContestEntry({
     contestId: contest.id,
     lineupId: lineup.lineup.id,
-    userId: delegate.userId,
+    userId: input.actor.userId,
     entryId: onchain
       ? String(generateContestEntryId(contest.address as string, lineup.lineup.id))
       : null,
   });
-  await deps.log(delegate.userId, "join");
   return { ok: true, lineupId: lineup.lineup.id };
 }
 
 async function leaveAction(
   input: ExecuteBotActionInput,
-  delegate: BotDelegateRow,
   contest: BotContest,
-  approval: string,
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
   if (!canRemovePrimaryPosition(contest.status)) {
@@ -296,7 +207,7 @@ async function leaveAction(
   if (input.picks.length > 0) {
     return { ok: false, status: 400, error: "Leave does not change the lineup" };
   }
-  const lineup = await requireLineup(input, delegate, contest, deps);
+  const lineup = await requireLineup(input, contest, deps);
   if (!lineup.ok) return { ok: false, status: 400, error: lineup.error };
   const entry = await deps.findContestEntry(contest.id, lineup.lineup.id);
   if (!entry) return { ok: true, lineupId: lineup.lineup.id };
@@ -316,30 +227,19 @@ async function leaveAction(
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Leave calls rejected";
-      await deps.log(delegate.userId, "error", message);
       return { ok: false, status: 400, error: message };
     }
   }
 
-  const submitted = await submitIfNeeded(
-    input,
-    delegate,
-    approval,
-    calls,
-    onchain,
-    lineup.lineup.id,
-    deps,
-  );
+  const submitted = await submitIfNeeded(input, calls, onchain, lineup.lineup.id, deps);
   if (!submitted.ok || submitted.preparedUserOp) return submitted;
 
-  await deps.deleteContestEntry(contest.id, lineup.lineup.id, delegate.userId);
-  await deps.log(delegate.userId, "leave");
+  await deps.deleteContestEntry(contest.id, lineup.lineup.id, input.actor.userId);
   return { ok: true, lineupId: lineup.lineup.id };
 }
 
 async function upsertLineup(
   input: ExecuteBotActionInput,
-  delegate: BotDelegateRow,
   contest: BotContest,
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
@@ -347,60 +247,69 @@ async function upsertLineup(
     return { ok: false, status: 400, error: "Lineup requires picks" };
   }
   if (input.lineupId) {
-    const existing = await requireLineup(input, delegate, contest, deps);
+    const existing = await requireLineup(input, contest, deps);
     if (!existing.ok) return { ok: false, status: 400, error: existing.error };
     const result = await deps.updateLineup({
-      userId: delegate.userId,
+      userId: input.actor.userId,
       lineupId: input.lineupId,
       picks: input.picks,
       ...(input.prediction !== undefined ? { prediction: input.prediction } : {}),
     });
     if (!result.ok) {
-      await deps.log(delegate.userId, "error", result.error);
       return { ok: false, status: 400, error: result.error };
     }
-    await deps.log(delegate.userId, "lineupUpsert");
     return { ok: true, lineupId: input.lineupId };
   }
 
-  const match = await deps.findLineupByPicks(delegate.userId, contest.id, input.picks);
+  const match = await deps.findLineupByPicks(input.actor.userId, contest.id, input.picks);
   if (match) return { ok: true, lineupId: match.id };
   const created = await deps.createLineup({
-    userId: delegate.userId,
+    userId: input.actor.userId,
     contest,
     picks: input.picks,
     ...(input.prediction !== undefined ? { prediction: input.prediction } : {}),
   });
   if (!created.ok) {
-    await deps.log(delegate.userId, "error", created.error);
     return { ok: false, status: 400, error: created.error };
   }
-  await deps.log(delegate.userId, "lineupUpsert");
   return { ok: true, lineupId: created.lineup.id };
 }
 
+function authorityFor(actor: BotActor): UserOpAuthority {
+  if (actor.role === "owner") {
+    return { kind: "owner", ownerAddress: actor.signer };
+  }
+  return {
+    kind: "session",
+    approval: actor.approval,
+    delegateAddress: getAddress(actor.delegate.delegateAddress),
+  };
+}
+
+/**
+ * Cut Bot's key lives on the server, so the server signs and submits in one request.
+ * Everyone else (the wallet owner or an external delegate) signs the user operation
+ * themselves: the first request returns `preparedUserOp`, the second sends the signature.
+ */
 async function submitIfNeeded(
   input: ExecuteBotActionInput,
-  delegate: BotDelegateRow,
-  approval: string,
   calls: BotCall[],
   onchain: boolean,
   lineupId: string,
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
   if (!onchain) return { ok: true, lineupId };
-  const smartWallet = getAddress(input.smartWallet);
-  const delegateAddress = getAddress(delegate.delegateAddress);
-  if (delegate.kind === "external" && !input.userOpSignature) {
+  const smartWallet = input.actor.smartWallet;
+  const authority = authorityFor(input.actor);
+  const serverSigned = input.actor.role === "delegate" && input.actor.delegate.kind === "cut_bot";
+  if (!serverSigned && !input.userOpSignature) {
     const prepared = await deps.prepareUserOp({
       chainId: input.chainId,
-      approval,
+      authority,
       calls,
-      delegateAddress,
       smartWallet,
     });
     if (!prepared.ok) {
-      await deps.log(delegate.userId, "error", prepared.error);
       return { ok: false, status: 502, error: prepared.error };
     }
     return {
@@ -411,22 +320,23 @@ async function submitIfNeeded(
       userOp: prepared.userOp,
     };
   }
-  if (delegate.kind === "cut_bot" && !getCutBotPrivateKey()) {
+  if (!serverSigned && !input.userOp) {
+    return { ok: false, status: 400, error: "userOp is required with userOpSignature" };
+  }
+  const privateKey = serverSigned ? getCutBotPrivateKey() : null;
+  if (serverSigned && !privateKey) {
     return { ok: false, status: 503, error: "Cut Bot key is not configured" };
   }
-  const privateKey = delegate.kind === "cut_bot" ? getCutBotPrivateKey() : null;
   const submitted = await deps.submitCalls({
     chainId: input.chainId,
-    approval,
+    authority,
     calls,
-    delegateAddress,
     smartWallet,
     ...(privateKey ? { privateKey } : {}),
-    ...(input.userOpSignature ? { userOpSignature: input.userOpSignature } : {}),
-    ...(input.userOp ? { userOp: input.userOp } : {}),
+    ...(!serverSigned && input.userOpSignature ? { userOpSignature: input.userOpSignature } : {}),
+    ...(!serverSigned && input.userOp ? { userOp: input.userOp } : {}),
   });
   if (!submitted.ok) {
-    await deps.log(delegate.userId, "error", submitted.error);
     return { ok: false, status: 502, error: submitted.error };
   }
   return { ok: true, lineupId };
@@ -434,13 +344,12 @@ async function submitIfNeeded(
 
 async function requireLineup(
   input: ExecuteBotActionInput,
-  delegate: BotDelegateRow,
   contest: BotContest,
   deps: BotActionDeps,
 ): Promise<{ ok: true; lineup: BotLineup } | { ok: false; error: string }> {
   if (!input.lineupId) return { ok: false, error: "Lineup is required" };
   const lineup = await deps.findLineup(input.lineupId);
-  if (!lineup || lineup.userId !== delegate.userId || lineup.eventId !== contest.eventId) {
+  if (!lineup || lineup.userId !== input.actor.userId || lineup.eventId !== contest.eventId) {
     return { ok: false, error: "Lineup not found" };
   }
   if (lineup.contestId && lineup.contestId !== contest.id) {

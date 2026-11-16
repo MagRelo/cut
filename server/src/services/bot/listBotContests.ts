@@ -1,14 +1,14 @@
-import { getAddress, isAddress, type Address, type Hex } from "viem";
 import type { Candidate } from "@cut/sport-sdk";
 import { prisma } from "../../lib/prisma.js";
 import { getEventCandidates } from "../events/getEventCandidates.js";
 import { primaryDepositFromSettings } from "../../utils/canDeleteLeagueContest.js";
 import { contestVisibilityWhere } from "../../utils/contestListQuery.js";
-import {
-  assertDeadline,
-  recoverBotReadSigner,
-  type BotReadMessage,
-} from "./botActionSignature.js";
+
+/**
+ * Contests the signed-in actor's user can see. The request was authenticated with an
+ * ERC-8128 signature (no nonce: reads are replayable within their validity window) and
+ * the signer resolved to the wallet owner or an active delegate before this runs.
+ */
 
 export type BotContestListItem = {
   contestId: string;
@@ -40,59 +40,16 @@ type ContestRow = {
 };
 
 export type ListBotContestsDeps = {
-  findDelegate: (smartWallet: Address, signer: Address) => Promise<{ userId: string } | null>;
   loadContests: (userId: string, chainId: number, eventId?: string) => Promise<ContestRow[]>;
   loadCandidates: (sportId: string, eventId: string) => Promise<Candidate[] | null>;
 };
 
-export async function listSignedBotContests(
-  input: {
-    chainId: number;
-    smartWallet: string;
-    deadline: bigint;
-    signature: Hex;
-    eventId?: string;
-    nowSeconds: number;
-  },
+export async function listBotContests(
+  input: { userId: string; chainId: number; eventId?: string | undefined },
   deps: ListBotContestsDeps,
-): Promise<
-  | { ok: true; contests: BotContestListItem[] }
-  | { ok: false; status: 400 | 401 | 403; error: string }
-> {
-  if (!isAddress(input.smartWallet)) {
-    return { ok: false, status: 400, error: "Invalid smart wallet" };
-  }
-  try {
-    assertDeadline(input.deadline, input.nowSeconds);
-  } catch (error) {
-    return {
-      ok: false,
-      status: 400,
-      error: error instanceof Error ? error.message : "Invalid deadline",
-    };
-  }
-
-  const smartWallet = getAddress(input.smartWallet);
-  const message: BotReadMessage = {
-    action: "contests",
-    smartWallet,
-    chainId: BigInt(input.chainId),
-    deadline: input.deadline,
-  };
-  let signer: Address;
-  try {
-    signer = await recoverBotReadSigner(message, input.signature);
-  } catch {
-    return { ok: false, status: 401, error: "Invalid action signature" };
-  }
-
-  const delegate = await deps.findDelegate(smartWallet, signer);
-  if (!delegate) {
-    return { ok: false, status: 403, error: "No active delegate for this signature" };
-  }
-
+): Promise<{ ok: true; contests: BotContestListItem[] }> {
   const rows = await deps.loadContests(
-    delegate.userId,
+    input.userId,
     input.chainId,
     ...(input.eventId ? [input.eventId] : []),
   );
@@ -125,17 +82,6 @@ export async function listSignedBotContests(
 
 export function botContestListDeps(): ListBotContestsDeps {
   return {
-    findDelegate: async (smartWallet, signer) => {
-      const row = await prisma.botDelegate.findFirst({
-        where: {
-          smartWallet: smartWallet.toLowerCase(),
-          delegateAddress: signer.toLowerCase(),
-          status: "active",
-        },
-        select: { userId: true },
-      });
-      return row;
-    },
     loadContests: async (userId, chainId, eventId) => {
       const visibility = await contestVisibilityWhere(userId, { chainId });
       const rows = await prisma.contest.findMany({

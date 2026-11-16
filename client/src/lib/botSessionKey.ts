@@ -19,8 +19,8 @@ import { addressToEmptyAccount, createKernelAccount, KernelV3_1AccountAbi } from
 import { KERNEL_V3_1, VALIDATOR_TYPE } from "@zerodev/sdk/constants";
 import { serializePermissionAccount, toPermissionValidator } from "@zerodev/permissions";
 import { toECDSASigner } from "@zerodev/permissions/signers";
-import { toSudoPolicy } from "@zerodev/permissions/policies";
 import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
+import { delegatePolicies } from "./botDelegatePolicy";
 
 const entryPoint = { address: entryPoint07Address, version: "0.7" as const };
 
@@ -49,14 +49,19 @@ function publicClientFor(chain: Chain) {
   return createPublicClient({ chain, transport: url ? http(url) : http() });
 }
 
-async function permissionFor(chain: Chain, delegateAddress: Address) {
+/**
+ * The delegate's permission: Cut's CutContestPolicy (only calls to contests the ContestFactory
+ * created and payment-token approvals to them; no ETH, no ERC-1271 signatures). The permission
+ * id depends on the policy address, so a new ContestFactory (new policy) is a new key slot.
+ */
+async function permissionFor(chain: Chain, delegateAddress: Address, policyAddress: Address) {
   const publicClient = publicClientFor(chain);
   const signer = await toECDSASigner({ signer: addressToEmptyAccount(delegateAddress) });
   const plugin = await toPermissionValidator(publicClient, {
     entryPoint,
     kernelVersion: KERNEL_V3_1,
     signer,
-    policies: [toSudoPolicy({})],
+    policies: delegatePolicies(policyAddress),
   });
   return { publicClient, plugin, permissionId: plugin.getIdentifier() };
 }
@@ -72,7 +77,11 @@ type PermissionState = "fresh" | "active" | "revoked";
  * after it bumps that counter for a validator that was already installed at it.
  * Nonce 0 reverts `InvalidNonce()`.
  */
-async function installNonce(publicClient: PublicClient, smartWallet: Address, vId: Hex): Promise<number> {
+async function installNonce(
+  publicClient: PublicClient,
+  smartWallet: Address,
+  vId: Hex,
+): Promise<number> {
   const current = await publicClient.readContract({
     address: smartWallet,
     abi: KernelV3_1AccountAbi,
@@ -158,7 +167,10 @@ function assertApproval(approval: string) {
     enableSignature?: unknown;
   };
   if (parsed.isPreInstalled === true) return;
-  if (typeof parsed.enableSignature === "string" && /^0x[0-9a-fA-F]+$/.test(parsed.enableSignature)) {
+  if (
+    typeof parsed.enableSignature === "string" &&
+    /^0x[0-9a-fA-F]+$/.test(parsed.enableSignature)
+  ) {
     return;
   }
   throw new Error("Session key approval is missing an enable signature");
@@ -177,10 +189,13 @@ export async function prepareBotSessionKey(input: {
   ownerAddress: Address;
   smartWallet: Address;
   delegateAddress: Address;
+  /** From `GET /api/bot/delegate-policy` (ContestFactory.delegatePolicy()). */
+  policyAddress: Address;
 }): Promise<PreparedSessionKey> {
   const { publicClient, plugin, permissionId } = await permissionFor(
     input.chain,
     input.delegateAddress,
+    input.policyAddress,
   );
   const ownerClient = createWalletClient({
     account: input.ownerAddress,
@@ -211,7 +226,13 @@ export async function prepareBotSessionKey(input: {
     assertApproval(approval);
     return { approval, permissionId, call: null };
   }
-  const approval = await serializePermissionAccount(account, undefined, undefined, undefined, plugin);
+  const approval = await serializePermissionAccount(
+    account,
+    undefined,
+    undefined,
+    undefined,
+    plugin,
+  );
   assertApproval(approval);
   return {
     approval,
@@ -223,15 +244,21 @@ export async function prepareBotSessionKey(input: {
   };
 }
 
-/** Build the wallet call that removes the session key. Null when it was never installed. */
+/**
+ * Build the wallet call that removes the session key. Null when it was never installed.
+ * `policyAddress` is the stored one from `GET /api/bot/delegates`, so the same permission is
+ * rebuilt.
+ */
 export async function prepareBotSessionRevoke(input: {
   chain: Chain;
   smartWallet: Address;
   delegateAddress: Address;
+  policyAddress: Address;
 }): Promise<WalletCall | null> {
   const { publicClient, plugin, permissionId } = await permissionFor(
     input.chain,
     input.delegateAddress,
+    input.policyAddress,
   );
   const state = await permissionState(publicClient, input.smartWallet, permissionId);
   if (state !== "active") return null;

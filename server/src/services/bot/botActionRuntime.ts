@@ -12,7 +12,6 @@ import { updateLineupById } from "../lineups/updateLineupById.js";
 import { getPublicClient } from "../shared/contractClient.js";
 import { invalidateContestLobby } from "../contests/getContestLobby.js";
 import type { BotActionDeps, BotLineup } from "./executeBotAction.js";
-import { readSessionKeyEnabled } from "./sessionKeyEnabled.js";
 import { prepareSessionKeyUserOp, submitSessionKeyUserOp } from "./submitSessionKeyUserOp.js";
 
 const depositAbi = [
@@ -50,24 +49,6 @@ function toLineup(row: {
 
 export function createBotActionDeps(): BotActionDeps {
   return {
-    findDelegate: async (smartWallet, signer) => {
-      const row = await prisma.botDelegate.findFirst({
-        where: {
-          smartWallet: smartWallet.toLowerCase(),
-          delegateAddress: signer.toLowerCase(),
-          status: "active",
-        },
-      });
-      if (!row || (row.kind !== "cut_bot" && row.kind !== "external")) return null;
-      return {
-        userId: row.userId,
-        smartWallet: row.smartWallet,
-        delegateAddress: row.delegateAddress,
-        kind: row.kind,
-        approval: row.approval,
-      };
-    },
-    sessionEnabled: readSessionKeyEnabled,
     loadContest: async (contestId) => {
       const contest = await prisma.contest.findUnique({ where: { id: contestId } });
       if (!contest) return null;
@@ -202,15 +183,6 @@ export function createBotActionDeps(): BotActionDeps {
       const result = await submitSessionKeyUserOp(input);
       if (!result.ok) return result;
       return { ok: true };
-    },
-    log: async (userId, action, error) => {
-      await prisma.botActionLog.create({
-        data: {
-          userId,
-          action,
-          ...(error ? { error } : {}),
-        },
-      });
     },
   };
 }

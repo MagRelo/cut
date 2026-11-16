@@ -1,24 +1,263 @@
 # Agents
 
-Play The Cut has three ways to sign a contest entry.
+An agent uses Play The Cut through the bot API (`/api/bot/*`) on the site's origin, for example `https://playthecut.com/api/bot/actions`.
 
-1. **No delegate.** The logged-in client signs. Nothing in this document applies.
-2. **Cut Bot.** The user allows Cut Bot's address in Settings. The server holds that key and can save a lineup, then join or leave, while the user is away.
-3. **Personal delegate.** The user pastes a public address and approves the same install. That bot signs with its own key. The server checks the signature and relays it. The private key is never sent to Play The Cut.
+There is one way to authenticate: **ERC-8128 signed HTTP requests**. There are no API keys, cookies, or Privy sessions. Each request is signed with an Ethereum key, and the signature covers the method, host, path, query, and body.
 
-Both delegates are a Kernel v3.1 session key on EntryPoint 0.7. The key is a blank check: it can submit any call the wallet can. It is not a second owner. The action API still rejects a join unless `approve` spends the contest deposit to that contest and the next call is `addPrimaryPosition` on the same contest. A key that skips the API is not limited by that check.
+## The flow
 
-Revoke removes the session key on-chain. A database row that still says active cannot keep a removed key working.
+1. **Create a key.** The agent generates a private key and keeps it. That key owns the account.
+2. **Register.** `register`, signed with the key, with an optional `refCode`. The server returns the account's smart wallet address. Nothing else is needed: no email, browser, or delegate.
+3. **Fund.** Send USDC (Base) to the smart wallet. Contest deposits come from it.
+4. **Read.** `GET /api/bot/balance` and `GET /api/bot/contests`. No nonce.
+5. **Play.** `lineupUpsert`, then `join` (and `leave`). Each write has a fresh nonce.
+6. **Optional: add a delegate.** The owner key can allow a second key (a Kernel session key that can only enter, leave and edit Cut contests) with `delegateAdd`, and remove it with `delegateRevoke`.
 
-## Contests
+A runnable version of this flow is [`server/scripts/erc8128-client-example.ts`](https://github.com/MagRelo/cut/blob/main/server/scripts/erc8128-client-example.ts).
 
-`GET /api/bot/contests` returns the contests this delegate can enter, each with its field. No Privy session. The request is signed.
+## The account
 
-The signature is an EIP-712 `BotRead`. Domain name `Cut Bot`, version `1`, `chainId` the query chain, `verifyingContract` the user's smart wallet. Message: `action` `contests`, `smartWallet`, `chainId`, `deadline` (unix seconds, at most one hour ahead).
+The account is a ZeroDev **Kernel v3.1** smart wallet on **EntryPoint 0.7**. Its sudo validator is the ZeroDev ECDSA validator (`0x845ADb2C711129d4f3966735eD98a9F09fC4cE57`), and its owner is the key the agent created. The address is counterfactual (CREATE2, index 0), so it exists before anything is deployed and is the same on Base and Base Sepolia. The wallet deploys with its first user operation, usually the first `join`.
 
-Query: `chainId`, `smartWallet`, `deadline`, `signature`. Optional `eventId` limits the list to one event. `chainId` is `8453` or `84532`, and the list is contests on that chain.
+Web users have the same kind of wallet; their owner is the Privy embedded wallet. The bot API treats both alike.
 
-Visibility matches `GET /api/contests`: public contests, plus league contests in leagues the delegate's user belongs to.
+## Signers
+
+A request for a smart wallet can be signed by:
+
+- **The owner key.** The server checks ownership on-chain once the wallet is deployed (the owner the ECDSA validator stores for it), and by the counterfactual address before that. The owner can do everything.
+- **An active delegate.** A Kernel permission session key the owner allowed: Cut Bot (`kind: "cut_bot"`, the server holds its key) or any other key (`kind: "external"`). A delegate can read, update settings, save lineups, join, and leave. It cannot add delegates, and can revoke only itself.
+
+### What a delegate can do on-chain
+
+A delegate's key is limited on-chain by one policy the owner signs, Cut's [`CutContestPolicy`](https://github.com/MagRelo/contestCatalyst/blob/c2648b65daaf541687bba6a1832e9fbe4340f296/src/CutContestPolicy.sol), not only by this API. The ContestFactory deploys it and exposes it as `delegatePolicy()`; `GET /api/bot/delegate-policy` returns the address.
+
+- **Can:** call any contest created by Cut's ContestFactory (enter, leave, edit), including contests created after the delegate was added; and `approve` USDC (the factory's payment token) to such a contest. No ETH value. Alone or in a batch.
+- **Cannot:** move funds anywhere else: no USDC `transfer`, `transferFrom`, `permit`, or approval to any other address; no calls to any other contract or address; no call to the wallet itself, so it cannot add delegates, change the owner, uninstall validators, or upgrade the wallet; no delegatecall or Kernel entry other than `execute`; no signing messages for the wallet (ERC-1271). A batch is rejected if any one call breaks these rules.
+- **How the policy knows a contest is Cut's:** each call carries the contest's CREATE nonce from the ContestFactory, and the policy recomputes the address (it does not read the factory's storage, which ERC-4337 bundlers forbid during validation). The server adds this proof to the user operation after the delegate signs; delegates using this API sign only the `userOpHash`, as usual.
+
+Off-chain, through this API, a delegate can also read, update settings, and save lineups.
+
+## ERC-8128 signing
+
+Spec: [ERC-8128](https://erc8128.slice.so/) draft `2026-01-16`, built on RFC 9421 (HTTP Message Signatures) and RFC 9530 (`Content-Digest`).
+
+Headers:
+
+| Header            | Value                                                                                                                                                    |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Signature-Input` | `eth=("@method" "@authority" "@path" ["@query"] ["content-digest"]);created=<unix>;expires=<unix>[;nonce="<nonce>"];keyid="eip8128:<chainId>:<address>"` |
+| `Signature`       | `eth=:<base64 of the 65-byte signature>:`                                                                                                                |
+| `Content-Digest`  | `sha-256=:<base64 SHA-256 of the exact body bytes>:` (requests with a body)                                                                              |
+
+Rules the server enforces:
+
+- Covered components must include `@method`, `@authority` (the `Host` you send to), and `@path`; also `@query` when the URL has a query, and `content-digest` when there is a body. The digest must match the body.
+- `keyid` is `eip8128:<chainId>:<lowercase address>`. `chainId` is `8453` (Base) or `84532` (Base Sepolia) and selects the chain for the request. A write's body `chainId` must match it.
+- `expires - created` is at most 3600 seconds, and the request must arrive inside that window.
+- The signature is ERC-191 (`personal_sign`) over the RFC 9421 signature base, by the `keyid` address.
+- **Writes require `nonce`** (8 to 128 URL-safe characters, unique per signer). The server records `(signer, nonce)` before doing anything, so a replayed or concurrent duplicate gets `409`. Use a new nonce for every write, including the second half of a join. **Reads take no nonce.**
+
+The signature base, one line per covered component, then the parameters:
+
+```
+"@method": POST
+"@authority": playthecut.com
+"@path": /api/bot/actions
+"content-digest": sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:
+"@signature-params": ("@method" "@authority" "@path" "content-digest");created=1763245000;expires=1763245060;nonce="q1w2e3r4t5y6u7i8";keyid="eip8128:8453:0xabc…"
+```
+
+viem example:
+
+```ts
+import { createHash, randomBytes } from "node:crypto";
+import { toBytes } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+
+const key = generatePrivateKey(); // keep this
+const account = privateKeyToAccount(key);
+const chainId = 8453;
+
+async function signedFetch(method: "GET" | "POST", url: URL, body?: unknown) {
+  const now = Math.floor(Date.now() / 1000);
+  const text = body === undefined ? undefined : JSON.stringify(body);
+  const components = ["@method", "@authority", "@path"];
+  const values: Record<string, string> = {
+    "@method": method,
+    "@authority": url.host,
+    "@path": url.pathname,
+  };
+  const headers: Record<string, string> = {};
+  if (url.search) {
+    components.push("@query");
+    values["@query"] = url.search;
+  }
+  if (text !== undefined) {
+    const digest = `sha-256=:${createHash("sha256").update(text).digest("base64")}:`;
+    components.push("content-digest");
+    values["content-digest"] = digest;
+    headers["content-digest"] = digest;
+    headers["content-type"] = "application/json";
+  }
+  const nonce = method === "POST" ? `;nonce="${randomBytes(16).toString("base64url")}"` : "";
+  const keyid = `eip8128:${chainId}:${account.address.toLowerCase()}`;
+  const params = `(${components.map((c) => `"${c}"`).join(" ")});created=${now};expires=${now + 60}${nonce};keyid="${keyid}"`;
+  const base = [
+    ...components.map((c) => `"${c}": ${values[c]}`),
+    `"@signature-params": ${params}`,
+  ].join("\n");
+  const sig = await account.signMessage({ message: { raw: toBytes(base) } });
+  headers["signature-input"] = `eth=${params}`;
+  headers["signature"] = `eth=:${Buffer.from(sig.slice(2), "hex").toString("base64")}:`;
+  return fetch(url, { method, headers, body: text });
+}
+```
+
+## Writes: `POST /api/bot/actions`
+
+One signed request does one thing. The JSON body names the `action`. Unknown fields are rejected.
+
+### register
+
+Signed by the new key. Creates the Cut account for the key's smart wallet.
+
+```json
+{
+  "action": "register",
+  "chainId": 8453,
+  "refCode": "AbCdEfGh",
+  "name": "Ace",
+  "settings": { "oddsFormat": "decimal" }
+}
+```
+
+`refCode`, `name`, and `settings` are optional. `refCode` is another user's 8-character referral code. The referrer is attached to the account and the account is registered on the ReferralGraph under that referrer by the referral sync job (`referral.onchain` is `pending` until then). Without a `refCode` the account is registered under the platform root when the platform referral group is configured, as web signup does.
+
+Response `201` (created) or `200` (already registered):
+
+```json
+{
+  "created": true,
+  "userId": "…",
+  "name": "Ace",
+  "smartWallet": "0x…",
+  "owner": "0x…",
+  "chainId": 8453,
+  "referralCode": "XyZ23456",
+  "referral": { "applied": true, "referrerAddress": "0x…", "onchain": "pending" }
+}
+```
+
+`register` is idempotent. The same key always maps to the same wallet; a repeat returns the existing account and never changes its referrer (`refCodeIgnored: true` if a code was sent). Errors: `400` with `code` `INVALID_REF_CODE`, `UNKNOWN_REF_CODE`, `SELF_REFERRAL`, or `REFERRER_HAS_NO_WALLET`; `401` for a bad signature; `409` for a reused nonce; `429` when rate limited (per IP and per key).
+
+`referralCode` is the new account's own code to share.
+
+### userSettingsUpsert
+
+Owner or delegate. Sets the display name and/or the settings the app's Settings page edits. Merges; repeating it changes nothing.
+
+```json
+{
+  "action": "userSettingsUpsert",
+  "chainId": 8453,
+  "smartWallet": "0x…",
+  "name": "Ace",
+  "settings": { "color": "#1e90ff", "oddsFormat": "american", "onboardingDismissed": true }
+}
+```
+
+`oddsFormat` is `american`, `decimal`, or `english`. `color` is a hex color. Response: `{ "ok": true, "name": "Ace", "settings": { … } }`.
+
+### lineupUpsert
+
+Creates a lineup when `lineupId` is `""` (or omitted) and updates that lineup when it is set. The same picks for the same contest return the existing id. No transaction.
+
+```json
+{
+  "action": "lineupUpsert",
+  "chainId": 8453,
+  "smartWallet": "0x…",
+  "contestId": "contest id",
+  "lineupId": "",
+  "candidates": ["eventParticipantId", "eventParticipantId"],
+  "prediction": { "type": "winningLineupTotal", "value": 142 }
+}
+```
+
+`candidates` is the ordered list of `eventParticipantId`s from `GET /api/bot/contests`. `prediction` is optional; without it the server picks a random value in the sport's range (for golf, the winning-score tiebreaker). Response: `{ "ok": true, "lineupId": "…" }`.
+
+### join and leave
+
+`join` needs an open contest and the `lineupId` from `lineupUpsert`. The server builds `approve` of the contest deposit to the contest, then `addPrimaryPosition` for that lineup. `leave` (open or cancelled contests) builds `removePrimaryPosition`.
+
+```json
+{
+  "action": "join",
+  "chainId": 8453,
+  "smartWallet": "0x…",
+  "contestId": "contest id",
+  "lineupId": "lineup id"
+}
+```
+
+- **Cut Bot** signs and submits the user operation itself. Response: `{ "ok": true, "lineupId": "…" }`.
+- **The owner key or an external delegate** signs the user operation in two requests:
+  1. Send the body above. Response: `{ "preparedUserOp": true, "lineupId", "userOpHash", "userOp" }`.
+  2. Sign the raw 32-byte hash, `account.signMessage({ message: { raw: userOpHash } })` (EIP-191, no other prefix), and send the same body again with `userOpSignature` and the unchanged `userOp`, under a new nonce. The server submits it only if its call data is still this join or leave. Response: `{ "ok": true, "lineupId": "…" }`.
+
+The first user operation of a new wallet also deploys it. A failed user operation does not create or remove the entry.
+
+### delegateAdd and delegateRevoke
+
+Owner only (a delegate may revoke itself).
+
+```json
+{
+  "action": "delegateAdd",
+  "chainId": 8453,
+  "smartWallet": "0x…",
+  "kind": "external",
+  "delegateAddress": "0x…",
+  "approval": "<serialized Kernel permission account>",
+  "permissionId": "0x1234abcd"
+}
+```
+
+`approval` is the ZeroDev `serializePermissionAccount` output (`@zerodev/permissions` 5.6.x) for a permission validator whose ECDSA signer is the delegate, with exactly one policy, signed by the owner (the enable signature): **CutContestPolicy** at the address from `GET /api/bot/delegate-policy?chainId=…`, flag `0x0000`, no policy data.
+
+The ZeroDev SDK has no type for a custom policy, so build it as `toSudoPolicy({ policyAddress })` with that address. That only reuses the SDK's shape (flag + address, empty data); the contract at the address is CutContestPolicy, not ZeroDev's sudo policy. The server rejects anything else: ZeroDev's sudo policy contract, any other policy address or extra policy, a skip flag (`0x0001`/`0x0002`, which would make Kernel skip the policy), another wallet, or a `permissionId` that does not match. Kernel installs the key with its first user operation. `permissionId` is the validator's 4-byte id; it depends on the delegate and the policy address. `kind` is `cut_bot` only for Cut Bot's address (`GET /api/bot/delegate-address`). The example script builds it. Response: `{ "ok": true, "status": "active", "delegateAddress": "0x…", "policyAddress": "0x…" }`. `503` when the chain's ContestFactory has no delegate policy yet.
+
+```json
+{ "action": "delegateRevoke", "chainId": 8453, "smartWallet": "0x…", "delegateAddress": "0x…" }
+```
+
+Revoke stops the API from accepting the key at once. Removing the key on-chain is a separate wallet call (`uninstallValidation`), which the web app sends when you revoke there.
+
+## Reads (no nonce)
+
+### GET /api/bot/balance?smartWallet=0x…
+
+Owner or delegate. The wallet's contest payment-token balance (USDC on Base, test USDC on Base Sepolia), the balance the app shows.
+
+```json
+{
+  "chainId": 8453,
+  "smartWallet": "0x…",
+  "deployed": false,
+  "paymentToken": {
+    "address": "0x…",
+    "symbol": "USDC",
+    "decimals": 6,
+    "balance": "12500000",
+    "formatted": "12.5"
+  }
+}
+```
+
+### GET /api/bot/contests?smartWallet=0x…[&eventId=…]
+
+Owner or delegate. Contests on the keyid chain that this account can see: public contests plus contests in its leagues. Contests on the same event share one candidate pool.
 
 ```json
 {
@@ -37,8 +276,8 @@ Visibility matches `GET /api/contests`: public contests, plus league contests in
       "endTime": "2026-11-16T00:00:00.000Z",
       "candidates": [
         {
-          "eventParticipantId": "id sent back in lineupUpsert",
-          "participantId": "stable participant id",
+          "eventParticipantId": "id for lineupUpsert",
+          "participantId": "stable id",
           "displayName": "Name",
           "sortKeys": {},
           "metadata": {}
@@ -49,95 +288,27 @@ Visibility matches `GET /api/contests`: public contests, plus league contests in
 }
 ```
 
-Contests on the same event share one candidate pool. `lineupUpsert` sends the chosen `eventParticipantId`s.
+### GET /api/bot/delegate-address
 
-## POST /api/bot/actions
+Unsigned. Cut Bot's public address, or `null` when the server key is unset.
 
-No Privy session. One signed request does one thing. Save the lineup first. Join and leave use that lineup id and do not change its picks.
+### GET /api/bot/delegate-policy?chainId=8453
 
-`candidates` is an ordered array of `eventParticipantId` values. Order is the lineup order. Only `lineupUpsert` sends it. `join` and `leave` omit it.
-
-### 1. lineupUpsert
-
-Creates a lineup when `lineupId` is `""`. Updates that lineup when `lineupId` is set. Same picks for the same contest return the existing id. No transaction.
+Unsigned. The policy a delegate permission must use, read from the chain's ContestFactory (`delegatePolicy()`). `policyAddress` is `null` until a factory that deploys the policy is live on that chain.
 
 ```json
 {
   "chainId": 8453,
-  "action": "lineupUpsert",
-  "smartWallet": "0x…",
-  "contestId": "contest id",
-  "lineupId": "",
-  "candidates": ["eventParticipantId", "eventParticipantId"],
-  "prediction": { "type": "winningLineupTotal", "value": 142 },
-  "deadline": "1710000000",
-  "signature": "0x…"
+  "contestFactory": "0x…",
+  "policyAddress": "0x…",
+  "policyFlag": "0x0000"
 }
 ```
 
-`prediction` is optional. Omit it and the server stores a random integer inside that sport's prediction range. For golf the number is the winning-score tiebreaker. Send `{ "type": "winningLineupTotal", "value": 142 }` to choose it. `value` is an integer. A value outside the sport's range is rejected. The signature does not cover `prediction`.
+## Errors
 
-The response is `{ ok: true, lineupId }`.
+`400` bad body or parameters, `401` missing or invalid signature, `403` signer is not the owner or an active delegate (or the action is owner-only), `404` unknown contest or unregistered wallet, `409` reused nonce or contest not open, `429` rate limited, `502` user operation failed, `503` not configured on this chain (for `delegateAdd`: no delegate policy yet).
 
-### 2. join
+## Web app
 
-Open contests only. Requires the `lineupId` from `lineupUpsert`. The server builds `approve` of the contest deposit and `addPrimaryPosition` for that lineup. It does not read `candidates`.
-
-Cut Bot signs the user operation. The response is `{ ok: true, lineupId }`.
-
-A personal delegate omits `userOpSignature` on the first join. The response is `{ preparedUserOp: true, lineupId, userOpHash, userOp }`. Sign `userOpHash` and POST the same body again with `userOpSignature` and that `userOp`. The server submits that user operation only when its call data is still the join for this lineup.
-
-### 3. leave
-
-Open or cancelled contests. Same request shape as join, with `action` `leave` and the lineup id. The server submits `removePrimaryPosition`. A personal delegate uses the same `preparedUserOp` step.
-
-```json
-{
-  "chainId": 8453,
-  "action": "join",
-  "smartWallet": "0x…",
-  "contestId": "contest id",
-  "lineupId": "lineup id",
-  "deadline": "1710000000",
-  "signature": "0x…",
-  "userOpSignature": "0x…",
-  "userOp": {}
-}
-```
-
-`userOpSignature` and `userOp` are only on the personal delegate's second join or leave. Cut Bot omits both.
-
-Domain:
-
-- name: `Cut Bot`
-- version: `1`
-- chainId: the contest chain
-- verifyingContract: the user's smart wallet
-
-Message:
-
-- `action`: `lineupUpsert`, `join`, or `leave`
-- `smartWallet`: the user's smart wallet
-- `contestId`: contest id
-- `lineupId`: lineup id, or `""` when creating a lineup
-- `picksHash`: `keccak256` of the UTF-8 string of `candidates` joined by `|`. `join` and `leave` sign the hash of an empty string. `prediction` is not included
-- `callsHash`: the zero hash. These actions do not authorize a custom call list
-- `deadline`: unix seconds, at most one hour ahead
-
-`userOpSignature` is the delegate's EIP-191 signature of the raw 32-byte `userOpHash`: `signMessage({ message: { raw: userOpHash } })`. Do not prefix it. The server adds the permission-plugin prefix and submits the returned `userOp` unchanged.
-
-A failed join is logged as `error` and does not create an entry. The log stores the action and the time. The lineup, contest entry, and transaction hash stay on their own records.
-
-## Settings
-
-`GET /api/bot/delegate-address` returns Cut Bot's public address, or `null` when the server key is unset.
-
-A signed-in user records an approval with `POST /api/bot/delegates`. The first approval is the owner's enable signature. Kernel installs the key and grants `execute` on the first `join` or `leave`. Allowing the same key again after a revoke sends an install transaction:
-
-- `kind`: `cut_bot` or `external`
-- `delegateAddress`
-- `smartWallet`
-- `approval`: serialized permission account
-- `permissionId`: the 4-byte Kernel permission id
-
-`POST /api/bot/delegates/revoke` with `delegateAddress` records the revoke. When the key is already on the wallet, that request follows the on-chain uninstall.
+Signed-in users manage delegates from Settings. Those screens use the app's own session routes (`/api/bot/delegates`), which are not part of the agent API.

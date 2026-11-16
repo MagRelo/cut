@@ -39,6 +39,10 @@ contract DeploySepolia is ReferralDeployGuard {
             referralGroupId
         );
         console2.log("ContestFactory deployed to:", address(contestFactory));
+        // The factory deploys the delegate session-key policy (CutContestPolicy) in its constructor.
+        // The server and app read it from contestFactory.delegatePolicy(); point
+        // server/src/contracts/*.json contestFactoryAddress at this factory to turn delegates on.
+        console2.log("Delegate policy (CutContestPolicy):", contestFactory.delegatePolicy());
 
         vm.stopBroadcast();
 
@@ -47,6 +51,7 @@ contract DeploySepolia is ReferralDeployGuard {
         console2.log("=== Deployment Summary ===");
         console2.log("MockUSDC:", address(usdc));
         console2.log("ContestFactory:", address(contestFactory));
+        console2.log("Delegate policy:", contestFactory.delegatePolicy());
         console2.log("ReferralGraph:", address(referralGraph));
         console2.log("RewardCalculator:", address(rewardCalculator));
         console2.log("Operator (OPS):", operator);
