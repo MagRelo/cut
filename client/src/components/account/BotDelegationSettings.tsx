@@ -32,10 +32,20 @@ type DelegateResponse = {
 
 const queryKey = ["bot-delegates"] as const;
 
-const agentPrompt = `Act as my personal delegate on Play The Cut. Create a dedicated wallet and reply with only the public address. Keep the private key.
+const agentPrompt = `Act as my agent on Play The Cut. Read the guide and follow it.
+
 ${BRAND_URL}/agents.md
+${BRAND_URL}/api.md
 ${BRAND_URL}/faq#agents
-${BRAND_URL}/llms.txt`;
+${BRAND_URL}/llms.txt
+
+I already have an account. Use the Existing user path.
+
+Call generateDelegateKey() once. Store the private key. Reply with only the public address.
+
+After I grant that address and send my smart wallet address, create the client with that smartWallet and call account(). Take on all six roles. Offer the suggested weekly schedule and start it only after I say yes. If you cannot run scheduled jobs, say so and do the checks when I next talk to you.
+
+Do not spend USDC, enter a contest, create a paid contest, or message anyone unless I say yes to that action.`;
 
 function chainFor(chainId: number) {
   if (chainId === base.id) return base;
@@ -265,8 +275,8 @@ export function BotDelegationSettings() {
                   Have your agent set up a wallet
                 </h4>
                 <p id="delegate-address-help" className="mt-1 text-sm leading-6 text-slate-600">
-                  Copy these instructions. The agent creates a wallet and replies with the public
-                  address.
+                  Copy these instructions. The agent creates a wallet, replies with the public
+                  address, and follows the guide after you grant access.
                 </p>
                 <div className="mt-3">
                   <CopyButton text={agentPrompt} idleLabel="Copy prompt" />

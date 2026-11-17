@@ -27,9 +27,18 @@ function row(overrides: Partial<ScoutInput> = {}): ScoutInput {
   };
 }
 
+const now = new Date("2026-11-18T00:00:00.000Z");
+
+function classify(
+  rows: ScoutInput[],
+  options: { balanceUsdc: number | null; maxEntryFee: number | null; sports: string[] },
+) {
+  return classifyScout(rows, { ...options, now });
+}
+
 describe("classifyScout", () => {
   it("tags an open league contest the balance can fund", () => {
-    const result = classifyScout([row()], {
+    const result = classify([row()], {
       balanceUsdc: 12,
       maxEntryFee: 10,
       sports: [],
@@ -47,7 +56,7 @@ describe("classifyScout", () => {
   });
 
   it("blocks a paid contest when the balance is short", () => {
-    const result = classifyScout([row({ primaryDeposit: 20 })], {
+    const result = classify([row({ primaryDeposit: 20 })], {
       balanceUsdc: 12,
       maxEntryFee: null,
       sports: [],
@@ -59,7 +68,7 @@ describe("classifyScout", () => {
   });
 
   it("keeps a paid contest visible when the balance read failed, without affordable", () => {
-    const result = classifyScout([row()], {
+    const result = classify([row()], {
       balanceUsdc: null,
       maxEntryFee: null,
       sports: [],
@@ -69,17 +78,25 @@ describe("classifyScout", () => {
     expect(openAffordableCount(result.contests)).toBe(0);
   });
 
-  it("prefers not-open over already-entered", () => {
-    const result = classifyScout([row({ status: "SETTLED", alreadyEntered: true })], {
-      balanceUsdc: 12,
-      maxEntryFee: null,
-      sports: [],
-    });
-    expect(result.blocked[0]?.reason).toBe("not-open");
+  it("omits a contest that is no longer a choice", () => {
+    const result = classify(
+      [
+        row({ contestId: "settled", status: "SETTLED", alreadyEntered: true }),
+        row({ contestId: "live", event: { ...row().event, status: "LIVE" } }),
+        row({ contestId: "ended", endTime: "2026-11-17T00:00:00.000Z" }),
+        row({
+          contestId: "event-ended",
+          event: { ...row().event, end: "2026-11-17T00:00:00.000Z" },
+        }),
+      ],
+      { balanceUsdc: 12, maxEntryFee: null, sports: [] },
+    );
+    expect(result.contests).toEqual([]);
+    expect(result.blocked).toEqual([]);
   });
 
   it("blocks an open entry the account already joined", () => {
-    const result = classifyScout([row({ alreadyEntered: true })], {
+    const result = classify([row({ alreadyEntered: true })], {
       balanceUsdc: 12,
       maxEntryFee: null,
       sports: [],
@@ -88,7 +105,7 @@ describe("classifyScout", () => {
   });
 
   it("blocks an open contest with an empty field", () => {
-    const result = classifyScout([row({ fieldCount: 0 })], {
+    const result = classify([row({ fieldCount: 0 })], {
       balanceUsdc: 12,
       maxEntryFee: null,
       sports: [],
@@ -97,7 +114,7 @@ describe("classifyScout", () => {
   });
 
   it("omits the within-budget tag when the fee is over the cap", () => {
-    const result = classifyScout([row({ primaryDeposit: 25 })], {
+    const result = classify([row({ primaryDeposit: 25 })], {
       balanceUsdc: 40,
       maxEntryFee: 10,
       sports: [],
@@ -107,7 +124,7 @@ describe("classifyScout", () => {
   });
 
   it("drops sports outside the preference list", () => {
-    const result = classifyScout([row(), row({ contestId: "f1", sportId: "f1", name: "Race" })], {
+    const result = classify([row(), row({ contestId: "f1", sportId: "f1", name: "Race" })], {
       balanceUsdc: 40,
       maxEntryFee: null,
       sports: ["f1"],

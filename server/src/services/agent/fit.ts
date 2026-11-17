@@ -1,6 +1,6 @@
 export type ScoutFit = "league" | "affordable" | "open" | "field-ready" | "within-budget";
 
-export type ScoutBlockReason = "not-open" | "already-entered" | "field-empty" | "balance";
+export type ScoutBlockReason = "already-entered" | "field-empty" | "balance";
 
 export type ScoutEvent = {
   id: string;
@@ -71,26 +71,44 @@ function fitFor(row: ScoutInput, balanceUsdc: number | null, maxEntryFee: number
   return fit;
 }
 
-/** Open, playable contests and the single reason each other visible contest is blocked. */
+function ended(iso: string | null, now: number): boolean {
+  if (!iso) return false;
+  const time = Date.parse(iso);
+  return Number.isFinite(time) && time <= now;
+}
+
+/** Still a choice: open, event not started, and the contest end time is ahead. */
+export function scoutStillOpen(row: ScoutInput, now: Date): boolean {
+  if (row.status !== "OPEN") return false;
+  if (row.event.status !== "SCHEDULED") return false;
+  const at = now.getTime();
+  if (ended(row.endTime, at) || ended(row.event.end, at)) return false;
+  return true;
+}
+
+/** Open contests the wallet can still enter, and the single reason each other open contest is blocked. */
 export function classifyScout(
   rows: ScoutInput[],
-  options: { balanceUsdc: number | null; maxEntryFee: number | null; sports: string[] },
+  options: {
+    balanceUsdc: number | null;
+    maxEntryFee: number | null;
+    sports: string[];
+    now?: Date;
+  },
 ): ScoutClassification {
   const sports = new Set(options.sports);
+  const now = options.now ?? new Date();
   const contests: ScoutContest[] = [];
   const blocked: ScoutBlocked[] = [];
 
   for (const row of rows) {
     if (sports.size > 0 && !sports.has(row.sportId)) continue;
+    if (!scoutStillOpen(row, now)) continue;
     const blockedRow = {
       contestId: row.contestId,
       name: row.name,
       primaryDeposit: row.primaryDeposit,
     };
-    if (row.status !== "OPEN") {
-      blocked.push({ ...blockedRow, reason: "not-open" });
-      continue;
-    }
     if (row.alreadyEntered) {
       blocked.push({ ...blockedRow, reason: "already-entered" });
       continue;

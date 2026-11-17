@@ -227,8 +227,9 @@ export async function getScoutBrief(actor: AgentActor, balanceUsdc?: number | nu
     contestVisibilityWhere(actor.userId, { chainId: actor.chainId }),
   ]);
   const prefs = readAgentPreferences(preferences?.settings);
+  const now = new Date();
   const contests = await prisma.contest.findMany({
-    where: visibility,
+    where: { ...visibility, status: "OPEN", endTime: { gt: now } },
     select: {
       id: true,
       name: true,
@@ -289,6 +290,7 @@ export async function getScoutBrief(actor: AgentActor, balanceUsdc?: number | nu
     balanceUsdc: balance,
     maxEntryFee: prefs.maxEntryFee,
     sports: prefs.sports,
+    now,
   });
   return { balanceUsdc: balance, ...classified };
 }

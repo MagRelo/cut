@@ -102,7 +102,7 @@ Treat these as the user's goals, not guaranteed outcomes. Contest results and ea
 | League organizer | Create leagues, generate invitations, and make it easy for the user's community to play. |
 | League operator | Set up league contests, notify members, follow the competition, and summarize results. |
 
-A scheduled job or other persistent runtime is what keeps scout, companion, and operator work going between conversations. Say that monitoring is running only when that job is actually running.
+A scheduled job or other persistent runtime is what keeps scout, companion, and operator work going between conversations. Say that monitoring is running only when that job is actually running. See **Suggested weekly schedule**.
 
 ## Contest scout
 
@@ -134,8 +134,8 @@ Nothing on this role spends money or contacts anyone. Entering is the picks advi
 
 | | |
 |--|--|
-| `contests` | Open, funded or free, field published, not already entered. Each row has `event` (`id`, `name`, `start`, `end`, `status`), `primaryDeposit`, `rosterSize`, `predictionRange`, `fieldCount`, `alreadyEntered: false`, and `fit`. |
-| `blocked` | The rest this account can see. `reason` is `not-open`, then `already-entered`, then `field-empty`, then `balance`. One reason. Includes `primaryDeposit`. |
+| `contests` | Still a choice: status `OPEN`, event `SCHEDULED`, end time still ahead, field published, not already entered, funded or free. Each row has `event` (`id`, `name`, `start`, `end`, `status`), `primaryDeposit`, `rosterSize`, `predictionRange`, `fieldCount`, `alreadyEntered: false`, and `fit`. |
+| `blocked` | The other open contests still ahead. `reason` is `already-entered`, then `field-empty`, then `balance`. One reason. Includes `primaryDeposit`. A contest that is not open, whose event has started, or whose end time has passed is omitted. |
 | `balanceUsdc` | Same read as account. `null` does not block a paid contest and does not mark it `affordable`. A `0` or `null` deposit is `affordable`. |
 
 ## Picks advisor
@@ -312,6 +312,27 @@ Ask before `createContest`, before `leave`, and before `notifyLeagueMembers: tru
 `agent.league(id)` → `GET /api/agent/leagues/:id`. Member required. A league this account is not in is `404`.
 
 See **createContest** for the deploy. `userGroupId` is required, and the signer must be a league admin.
+
+## Suggested weekly schedule
+
+Offer this schedule to the user and start it only after they say yes. If the runtime cannot run scheduled jobs, say so and do these checks when the user next talks to you. Each check calls `tick()` with the stored cursor and stays silent unless a row below says to speak. Times are US Eastern.
+
+| When | What | Message the user when |
+|--|--|--|
+| Daily, ~9:00 AM | `tick()` | `scout.openAffordable` is greater than 0, a new league member, a settlement, or a referral payout. |
+| Saturday, ~12:00 PM (commodities) and Monday, ~12:00 PM (golf) | Hosts: `leagues.needsContest`. When the new event is `SCHEDULED` and the league has no contest on it, create the free league contest. Retry every 20–30 minutes until early evening if the event has not appeared. | The contest is created (send `https://playthecut.com/contest/{contestId}`), or the event never appeared. |
+| ~24 h before lock (golf Wednesday morning, commodities Sunday evening) | `scout()` and `picks()` for contests the user has not entered | Always, when they have not entered: one or two contests and a suggested lineup. |
+| ~2 h before lock | `tick()` | Only when they still have not entered, or a picked player withdrew. |
+| Hosts, same window | `leagues.unentered` | Members have not entered. Offer a draft of a nudge. Do not send it. |
+| During golf (Thursday–Sunday, every 20–30 minutes while play is on) | `tick()`, or `companion()` when the conversation is about one account | `standing-changed` by a meaningful amount, `status-changed`, or a lead or cut-line moment. Batch into one update, a few times a day at most. |
+| Commodities trading days, ~5:00 PM | `tick()` | Once that day, a short recap when standing moved. |
+| After settlement | `tick()` | The result, the payout when there is one, and one line on next week. After a first entry or a win, suggest hosting a league. |
+
+The free league contest on this schedule is `POST /api/contests` with `settings.primaryDeposit` of `0` and `userGroupId`. Omit `notifyLeagueMembers`. `createContest` deploys a paid contest and is not this step. The SDK does not wrap the free create. Saying yes to the schedule approves that free contest only.
+
+- Stay quiet when nothing changed. A quiet day is not a failure.
+- Do not spend money, enter a contest, deploy a paid contest, or message another person from a scheduled run unless the user says yes to that action.
+- Match the chattiness the user chose when they accepted the schedule.
 
 ## Actions
 
