@@ -1,8 +1,28 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { packageDir } from "./agent-sdk-lib.mjs";
+import { packageDir, root } from "./agent-sdk-lib.mjs";
+
+if (!process.env.NPM_TOKEN?.trim()) {
+  const envPath = join(root, ".env");
+  if (existsSync(envPath)) {
+    for (const line of readFileSync(envPath, "utf8").split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq === -1 || trimmed.slice(0, eq).trim() !== "NPM_TOKEN") continue;
+      let value = trimmed.slice(eq + 1).trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+      process.env.NPM_TOKEN = value;
+    }
+  }
+}
 
 const pkg = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"));
 
@@ -42,10 +62,45 @@ if (!token) {
 const dir = mkdtempSync(join(tmpdir(), "cut-npm-"));
 const userconfig = join(dir, "npmrc");
 writeFileSync(userconfig, `//registry.npmjs.org/:_authToken=${token}\n`);
-const result = spawnSync("npm", ["publish", "--access", "public", "--userconfig", userconfig], {
-  cwd: packageDir,
-  stdio: "inherit",
-});
+
+function runNpm(command) {
+  return spawnSync(command[0], command.slice(1), {
+    cwd: packageDir,
+    encoding: "utf8",
+  });
+}
+
+function echo(result) {
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+}
+
+let result = runNpm(["npm", "publish", "--access", "public", "--userconfig", userconfig]);
+const publishedDirectly = result.status === 0;
+const stageOnly =
+  !publishedDirectly && `${result.stdout ?? ""}${result.stderr ?? ""}`.includes("E_STAGE_REQUIRED");
+if (publishedDirectly || !stageOnly) echo(result);
+if (stageOnly) {
+  console.log(
+    `${pkg.name}@${pkg.version} needs a staged publish. A maintainer approves it before it is installable.`,
+  );
+  result = runNpm([
+    "npx",
+    "--yes",
+    "npm@11",
+    "stage",
+    "publish",
+    "--access",
+    "public",
+    "--userconfig",
+    userconfig,
+  ]);
+  echo(result);
+}
 rmSync(dir, { recursive: true, force: true });
 if (result.status !== 0) process.exit(result.status ?? 1);
-console.log(`Published ${pkg.name}@${pkg.version}.`);
+console.log(
+  publishedDirectly
+    ? `Published ${pkg.name}@${pkg.version}.`
+    : `Staged ${pkg.name}@${pkg.version}. Approve it with npm stage approve.`,
+);
