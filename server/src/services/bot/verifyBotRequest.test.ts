@@ -52,9 +52,80 @@ describe("verifyBotRequest", () => {
       },
     });
     await agent.contests();
+    expect(captured!.headers.get("signature-input")).toContain(
+      `keyid="eip155:8453:${account.address.toLowerCase()}"`,
+    );
     const now = Math.floor(Date.now() / 1000);
     const result = await verifyBotRequest(captured!, deps({ now: () => now }));
     expect(result).toMatchObject({ ok: true, chainId: 8453, signer: account.address });
+  });
+
+  it("rejects an eip8128 keyid", async () => {
+    const signed = await signRequest(
+      "https://playthecut.com/api/bot/contests?chainId=8453&smartWallet=" + WALLET,
+      signer(),
+      { created: 1_700_000_000, expires: 1_700_000_060 },
+    );
+    const headers = new Headers(signed.headers);
+    headers.set(
+      "signature-input",
+      headers.get("signature-input")!.replaceAll("eip155:", "eip8128:"),
+    );
+    const result = await verifyBotRequest(new Request(signed, { headers }), deps());
+    expect(result).toMatchObject({ ok: false, status: 401, error: "Invalid action signature" });
+  });
+
+  it("accepts an https signature that nginx forwarded as http", async () => {
+    const signed = await signRequest(
+      "https://playthecut.com/api/bot/contests?chainId=8453&smartWallet=" + WALLET,
+      signer(),
+      { created: 1_700_000_000, expires: 1_700_000_060 },
+    );
+    const headers = new Headers(signed.headers);
+    headers.set("x-forwarded-proto", "https");
+    const proxied = new Request(signed.url.replace(/^https:/, "http:"), {
+      method: signed.method,
+      headers,
+    });
+    const result = await verifyBotRequest(proxied, deps());
+    expect(result).toMatchObject({ ok: true, chainId: 8453, signer: account.address });
+  });
+
+  it("rejects that http url when the forwarded scheme is missing", async () => {
+    const signed = await signRequest(
+      "https://playthecut.com/api/bot/contests?chainId=8453&smartWallet=" + WALLET,
+      signer(),
+      { created: 1_700_000_000, expires: 1_700_000_060 },
+    );
+    const proxied = new Request(signed.url.replace(/^https:/, "http:"), {
+      method: signed.method,
+      headers: signed.headers,
+    });
+    const result = await verifyBotRequest(proxied, deps());
+    expect(result).toMatchObject({ ok: false, status: 401, error: "Invalid action signature" });
+  });
+
+  it("accepts a proxied post whose body is still covered", async () => {
+    const body = JSON.stringify({ action: "lineupUpsert", candidates: ["ep-1"] });
+    const signed = await signRequest(
+      "https://playthecut.com/api/bot/actions",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body,
+      },
+      signer(),
+      { created: 1_700_000_000, expires: 1_700_000_060 },
+    );
+    const headers = new Headers(signed.headers);
+    headers.set("x-forwarded-proto", "https");
+    const proxied = new Request(signed.url.replace(/^https:/, "http:"), {
+      method: "POST",
+      headers,
+      body: await signed.arrayBuffer(),
+    });
+    const result = await verifyBotRequest(proxied, deps());
+    expect(result).toMatchObject({ ok: true, signer: account.address });
   });
 
   it("rejects an expired signature", async () => {

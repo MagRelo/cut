@@ -26,6 +26,7 @@ function json(body: unknown, status = 200): Response {
 describe("createCutAgent", () => {
   it("signs a contest list that names the wallet in the query", async () => {
     const privateKey = generatePrivateKey();
+    const account = privateKeyToAccount(privateKey);
     const requests: Request[] = [];
     const agent = createCutAgent({
       privateKey,
@@ -46,7 +47,9 @@ describe("createCutAgent", () => {
     expect(url.searchParams.get("chainId")).toBe("8453");
     expect(url.searchParams.get("smartWallet")).toBe(SMART_WALLET);
     expect(url.searchParams.get("eventId")).toBe("event-1");
-    expect(request?.headers.get("signature-input")).toBeTruthy();
+    expect(request?.headers.get("signature-input")).toContain(
+      `keyid="eip155:8453:${account.address.toLowerCase()}"`,
+    );
     expect(request?.headers.get("signature")).toBeTruthy();
     expect(request?.headers.get("x-cut-chain-id")).toBe("8453");
   });

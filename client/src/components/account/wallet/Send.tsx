@@ -10,7 +10,6 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../../config/targetChain";
 import { PAYMENT_TOKEN_DECIMALS } from "../../../lib/paymentTokenSpend";
 import { BLOCKCHAIN_NETWORK } from "../../../lib/legalPlaceholders";
-import { getSmartWalletsPaymasterConfig } from "../../../lib/privySmartWalletPaymaster";
 import { AssetChips, walletSpecLabelClassName, walletSpecSecondaryClassName } from "./AssetChips";
 import { formatAddressForDisplay, walletAddressWellClassName } from "./WalletAddressCopy";
 
@@ -50,7 +49,6 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
   const targetSymbol = paymentTokenSymbol ?? defaultPaymentTokenSymbol();
   const showCexOfframp = !isTargetTestnet();
   const networkLabel = showCexOfframp ? BLOCKCHAIN_NETWORK : "Base Sepolia";
-  const gasSponsored = "paymasterContext" in getSmartWalletsPaymasterConfig();
 
   const [recipientAddress, setRecipientAddress] = useState(initialRecipientAddress ?? "");
   const [amount, setAmount] = useState("");
@@ -192,13 +190,11 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
               {formatAddressForDisplay(trimmedRecipient)}
             </p>
           </SendSpec>
-          {gasSponsored ? (
-            <SendSpec label="Network fee">
-              <p className="font-display text-sm font-medium leading-none text-gray-900">
-                No network fee
-              </p>
-            </SendSpec>
-          ) : null}
+          <SendSpec label="Network fee">
+            <p className="font-display text-sm font-medium leading-none text-gray-900">
+              No network fee
+            </p>
+          </SendSpec>
         </div>
       ) : (
         <div className="flex flex-col gap-4">

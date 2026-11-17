@@ -149,7 +149,7 @@ Same libraries. The change is ownership: what may import what, where a query liv
 | --- | --- |
 | React 19, Vite 6, TypeScript, React Router 7 | Already the app. Route table and shell are the right size for one deployment. |
 | TanStack Query + one `fetch` wrapper | Caching, polling, and optimistic join/leave already work. |
-| Privy + `@privy-io/wagmi` + viem | Login, embedded wallet, Base, sponsorship via `VITE_PIMLICO_SPONSORSHIP_POLICY_ID`. |
+| Privy + `@privy-io/wagmi` + viem | Login, embedded wallet, Base. Gas sponsorship is `POST /api/paymaster`. |
 | Tailwind 3 + `@tailwindcss/forms` | The live pipeline. Name the colors and type roles that screens already use. |
 | Headless UI (`Dialog`, `Tab`, `Menu`, `Disclosure`) + Heroicons | The primitives wrap these. A second headless kit adds a second interaction model. |
 | `@cut/sport-sdk` and per-sport packages | The plugin contract is the extension point. Widen it; do not replace it. |
@@ -468,7 +468,6 @@ Stop using `gray-*` and `slate-*` for the same role. `gray.25` can go once nothi
 | `import.meta.env.MODE === "staging"` | Staging mark in the shell |
 | `import.meta.env.PROD` and `VITE_POSTHOG_KEY` | Analytics provider |
 | `VITE_TARGET_CHAIN` | Base vs Base Sepolia |
-| `VITE_PIMLICO_SPONSORSHIP_POLICY_ID` | Paymaster context |
 | `VITE_STREAM_API_KEY` | Commentary socket; absent means the JSON feed only |
 
 **Loading.** First load of a list uses the spinner or a skeleton that matches the layout (lobby already has `ContestLobbyLoadingShell`). Refetch keeps the previous data. `GlobalLoadingOverlay` remains the cold-start gate until the session query resolves, with the current debounce so a fast session does not flash.

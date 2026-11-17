@@ -11,6 +11,8 @@ import { KERNEL_V3_1 } from "@zerodev/sdk/constants";
 import { deserializePermissionAccount } from "@zerodev/permissions";
 import { toECDSASigner } from "@zerodev/permissions/signers";
 import { getChainConfig } from "../../lib/chainConfig.js";
+import { prismaSponsorshipDeps } from "../paymaster/validateSponsorshipUserOp.js";
+import { assertSponsorableCalls } from "../paymaster/sponsorableCalls.js";
 import type { BotCall } from "./botCalls.js";
 
 /** Signature length used while the bundler estimates gas. Not a real authorization. */
@@ -69,6 +71,24 @@ async function pimlicoUserOperationGas(bundlerClient: {
 function bundlerUrl(): string | null {
   const url = process.env.PIMLICO_BUNDLER_URL?.trim();
   return url || null;
+}
+
+/** Same allowlist as POST /api/paymaster, applied before the bundler is contacted. */
+async function gateBotCalls(
+  input: SubmitSessionKeyInput,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const deps = prismaSponsorshipDeps();
+    await assertSponsorableCalls(input.calls, {
+      chainId: input.chainId,
+      sender: getAddress(input.smartWallet),
+      contestExists: (address) => deps.contestExists(input.chainId, address),
+    });
+    return { ok: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "User operation is not sponsorable";
+    return { ok: false, error: message };
+  }
 }
 
 type SessionClient = {
@@ -198,6 +218,8 @@ export async function prepareSessionKeyUserOp(
 ): Promise<
   { ok: true; userOpHash: Hex; userOp: SerializedUserOp } | { ok: false; error: string }
 > {
+  const gated = await gateBotCalls(input);
+  if (!gated.ok) return gated;
   try {
     const session = await sessionClient(input, DUMMY_USER_OP_SIGNATURE);
     if ("ok" in session) return session;
@@ -229,6 +251,8 @@ export async function prepareSessionKeyUserOp(
 export async function submitSessionKeyUserOp(
   input: SubmitSessionKeyInput,
 ): Promise<{ ok: true; txHash: Hex } | { ok: false; error: string }> {
+  const gated = await gateBotCalls(input);
+  if (!gated.ok) return gated;
   if (!input.privateKey && !(input.userOpSignature && input.userOp)) {
     return { ok: false, error: "Missing session key signature" };
   }

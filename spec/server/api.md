@@ -21,7 +21,7 @@ A lineup roster is `candidates` on every request and response. A write is an ord
 | `privy` | Privy bearer only. |
 | `staff` | Privy bearer and `userType` `ADMIN` or `SUPER_ADMIN`. |
 
-Player routes accept either a Privy bearer token or an [ERC-8128](https://erc8128.org) HTTP message signature. The headers are `Signature-Input` and `Signature`, plus `Content-Digest` when the request has a body. Sending both credentials is `400`. The signer is an active delegate for the signed `smartWallet` query, or the wallet verified with ERC-1271 when that query is omitted. `user.address` is the wallet. `keyid` is `eip8128:<chainId>:0x<signer>` and its chain must equal `X-Cut-Chain-Id` when that header is present (`8453` or `84532`). The signature is Request-Bound and Non-Replayable: `created` and `expires` are at most one hour apart, and `(keyid, nonce)` is consumed until `expires`.
+Player routes accept either a Privy bearer token or an [ERC-8128](https://erc8128.org) HTTP message signature. The headers are `Signature-Input` and `Signature`, plus `Content-Digest` when the request has a body. Sending both credentials is `400`. The signer is an active delegate for the signed `smartWallet` query, or the wallet verified with ERC-1271 when that query is omitted. `user.address` is the wallet. `keyid` is `eip155:<chainId>:0x<signer>` (lowercase address) and its chain must equal `X-Cut-Chain-Id` when that header is present (`8453` or `84532`). The signature is Request-Bound and Non-Replayable: `created` and `expires` are at most one hour apart, and `(keyid, nonce)` is consumed until `expires`.
 
 `AGENT` is a player type. It is not staff.
 
@@ -62,6 +62,7 @@ JSON bodies are capped at 128 KiB.
 | `/unsubscribe` | `unsubscribe.ts` |
 | `/stream` | `stream.ts` |
 | `/bot` | `bot.ts` |
+| `/paymaster` | `paymaster.ts` |
 
 ---
 
@@ -70,6 +71,14 @@ JSON bodies are capped at 128 KiB.
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/api/health` | none | `{ status, service, gitSha, timestamp }` |
+
+---
+
+## Paymaster (`/api/paymaster`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/` | none | ERC-7677 paymaster JSON-RPC. Accepts `pm_getPaymasterStubData` and `pm_getPaymasterData`. Privy's dashboard paymaster URL points here. There is no bearer token: Privy posts the user operation from the browser. The server sponsors it only when the chain is Base or Base Sepolia, the EntryPoint is v0.7, the sender is a stored `UserWallet` for that chain, the gas limits are within the server cap, and the Kernel `execute` calldata is on the allowlist. Allowed calls are `createContest` on the contest factory, `approve` of a stored contest and `transfer` on the payment token, the six contest entry and claim functions on a stored contest address, and `installValidations` or `uninstallValidation` on the sender. The server then calls Pimlico with `PIMLICO_SPONSORSHIP_POLICY_ID` and ignores any policy id in the request. A Pimlico result above the gas cap is returned as a JSON-RPC error. |
 
 ---
 

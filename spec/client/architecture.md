@@ -17,7 +17,7 @@ graph TB
 | Provider | Role |
 |----------|------|
 | `PrivyProvider` | Login, embedded wallet, `getAccessToken` |
-| `SmartWalletsProvider` | Paymaster config for gas sponsorship |
+| `SmartWalletsProvider` | Smart wallet client. Gas sponsorship is `POST /api/paymaster`; the client does not send a Pimlico policy id. |
 | `QueryClientProvider` | Server state cache |
 | `WagmiProvider` | Contract reads/writes on Base / Base Sepolia |
 | `AuthProvider` | Privy facade over the profile query (`GET /auth/me`), balances, connect flow |

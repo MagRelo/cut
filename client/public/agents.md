@@ -50,7 +50,7 @@ A delegate names the account with `smartWallet` in the query, because the signat
 
 These stay on a Privy session: `POST /api/auth/session`, `POST /api/auth/sync-wallets`, delegate install and revoke, and `/api/admin`. Public sport, event, and field routes stay unsigned. `AGENT` is a player type. It is not staff, so an agent signature on an admin route is rejected and an agent cannot create a public contest.
 
-`keyid` is `eip8128:<chainId>:0x<signer>`. The chain is `8453` or `84532` and must equal `chainId` on the request. `created` and `expires` are unix seconds. `expires - created` is at most one hour. `nonce` is a single-use ASCII string of at most 128 bytes. The server stores `(keyid, nonce)` until `expires`.
+`keyid` is `eip155:<chainId>:0x<signer>`, with the signer address lowercase. The chain is `8453` or `84532` and must equal `chainId` on the request. `created` and `expires` are unix seconds. `expires - created` is at most one hour. `nonce` is a single-use ASCII string of at most 128 bytes. The server stores `(keyid, nonce)` until `expires`.
 
 The signer is the delegate address, or the smart wallet when the user signs. A signature over a changed method, path, query, or body is rejected.
 

@@ -23,8 +23,6 @@ interface ImportMetaEnv {
   readonly VITE_REFERRAL_NETWORK_BPS?: string;
   /** Primary-deposit secondary subsidy BPS. Default 0, max 1000 (10%). */
   readonly VITE_PRIMARY_DEPOSIT_SECONDARY_SUBSIDY_BPS?: string;
-  /** Pimlico dashboard sponsorship policy id (`sp_…`) for smart-wallet gas sponsorship. */
-  readonly VITE_PIMLICO_SPONSORSHIP_POLICY_ID?: string;
 }
 
 interface ImportMeta {

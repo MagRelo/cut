@@ -72,7 +72,7 @@ Note: the Node SDK's `getTestAccessToken()` (headless token) is rejected here be
 - Creating a league is a pure DB write (no chain) and works with just a logged-in Privy user.
 - Creating a contest and entering lineups deploy/interact with on-chain contracts (ContestFactory
   / ContestController) on Base Sepolia via the user's Privy smart wallet, so they need gas —
-  either a funded wallet or a Pimlico sponsorship policy (`VITE_PIMLICO_SPONSORSHIP_POLICY_ID`).
+  either a funded wallet or the server paymaster (`POST /api/paymaster`, policy id in `PIMLICO_SPONSORSHIP_POLICY_ID`).
   Without those, contest creation/entry fails at the wallet transaction step.
 
 ### Release

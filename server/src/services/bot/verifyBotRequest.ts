@@ -94,12 +94,22 @@ export function defaultBotRequestDeps(): VerifyBotRequestDeps {
   };
 }
 
+/** Nginx terminates TLS, so Node sees `http://`. The signature covers the public `@scheme`. */
+function requestAtPublicOrigin(request: Request): Request {
+  const forwarded = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim().toLowerCase();
+  if (forwarded !== "https" && forwarded !== "http") return request;
+  const url = new URL(request.url);
+  if (url.protocol === `${forwarded}:`) return request;
+  url.protocol = `${forwarded}:`;
+  return new Request(url, request);
+}
+
 export async function verifyBotRequest(
   request: Request,
   deps: VerifyBotRequestDeps = defaultBotRequestDeps(),
 ): Promise<VerifiedBotRequest | RejectedBotRequest> {
   const result = await verifyRequest({
-    request,
+    request: requestAtPublicOrigin(request),
     verifyMessage: createUniversalAccountVerifier({
       getCode: deps.getCode,
       verifySmartAccount: deps.verifySmartAccount,
