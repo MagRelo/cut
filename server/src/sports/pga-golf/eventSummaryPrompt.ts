@@ -95,8 +95,8 @@ PRICES (these labels are the odds; copy a label exactly when you include that pl
 ${playersBlock(ctx)}
 
 Write the week, not a form sheet.
-- "From the 19th Hole": one quote. attribution "${DEFAULT_CUTBOT_ATTRIBUTION}", color "${DEFAULT_QUOTE_COLOR}". The advertisement: the place, what's at stake, at most two names. The player list carries the prices.
-- "Event Blurb": one item, body only. Two sentences. Where the tour is going, what the course is like, who the week is about.
+- "From the 19th Hole": one quote. attribution "${DEFAULT_CUTBOT_ATTRIBUTION}", color "${DEFAULT_QUOTE_COLOR}". Not an advertisement. The thing a knowledgeable person would be giving someone a hard time about: the season, this tournament, or the field — whichever is actually notable. One specific take. Name a player only if they are the point. Do not mention Play The Cut.
+- "Event Blurb": one item, body only. Two plain sentences, no player names. First: where this week sits on the schedule, the venue, and the concrete thing players are still playing for. Second: who headlines the field, as categories, and what kind of scoring week it is. No scenery, no metaphor, no course architecture.
 - "Best Players and Odds": the players you can say something about, in the order above. Leave someone off if you have nothing to say. label is their price line. body is one sentence on why you'd pick them.
 - "Course and Format": how the week plays.
 - "Broadcast Information": only if you found the windows.
