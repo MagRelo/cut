@@ -424,6 +424,42 @@ describe("handlePaymasterRpc", () => {
     expect(response).toMatchObject({ result: { callGasLimit: "0x1000" } });
   });
 
+  it("does not return the bundler URL when Pimlico rejects the request", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const key = "pim_test_secret_key";
+    const response = await handlePaymasterRpc(request(encodeKernelExecute([createContestCall()])), {
+      deps: deps(),
+      forward: async () => {
+        throw new Error(
+          `HTTP request failed.\n\nURL: https://api.pimlico.io/v2/84532/rpc?apikey=${key}\nDetails: sponsorshipPolicy perOpMaximumUsd reached`,
+        );
+      },
+    });
+    expect(response).toMatchObject({ error: { message: "Paymaster request failed" } });
+    expect(JSON.stringify(response)).not.toContain(key);
+    expect(JSON.stringify(response)).not.toContain("pimlico.io");
+    expect(spy.mock.calls.flat().join(" ")).not.toContain(key);
+    spy.mockRestore();
+  });
+
+  it("does not return the bundler URL from a paymaster error message", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const key = "pim_test_secret_key";
+    const response = await handlePaymasterRpc(request(encodeKernelExecute([createContestCall()])), {
+      deps: deps(),
+      forward: async () => ({
+        error: {
+          code: -32602,
+          message: `sponsorshipPolicy perOpMaximumUsd reached at https://api.pimlico.io/v2/84532/rpc?apikey=${key}`,
+        },
+      }),
+    });
+    expect(response).toMatchObject({ error: { message: "Paymaster rejected the user operation" } });
+    expect(JSON.stringify(response)).not.toContain(key);
+    expect(spy.mock.calls.flat().join(" ")).not.toContain(key);
+    spy.mockRestore();
+  });
+
   it("drops a Pimlico result whose gas is above the cap", async () => {
     const response = await handlePaymasterRpc(request(encodeKernelExecute([createContestCall()])), {
       deps: deps(),

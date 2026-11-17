@@ -1,14 +1,13 @@
 import { useState } from "react";
-import { useWallets } from "@privy-io/react-auth";
+import { useSignTypedData, useWallets } from "@privy-io/react-auth";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useChainId, usePublicClient, useReadContract } from "wagmi";
 import {
-  createWalletClient,
-  custom,
   encodeFunctionData,
   erc20Abi,
   formatUnits,
   getAddress,
+  isHex,
   parseSignature,
   toHex,
   type Hex,
@@ -60,7 +59,7 @@ const authorizationTypes = {
     { name: "validBefore", type: "uint256" },
     { name: "nonce", type: "bytes32" },
   ],
-} as const;
+};
 
 function chainFor(chainId: number) {
   if (chainId === base.id) return base;
@@ -84,6 +83,7 @@ export function SweepEmbeddedUsdc() {
   const chainId = useChainId();
   const publicClient = usePublicClient();
   const { wallets } = useWallets();
+  const { signTypedData } = useSignTypedData();
   const { client: smartWalletClient, getClientForChain } = useSmartWallets();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -137,53 +137,55 @@ export function SweepEmbeddedUsdc() {
     const nonce = randomNonce();
     const validAfter = 0n;
     const validBefore = BigInt(Math.floor(Date.now() / 1000) + 60 * 60);
-    const provider = await embedded.getEthereumProvider();
-    const signer = createWalletClient({
-      account: embeddedAddress,
-      chain,
-      transport: custom(provider),
-    });
-    const signature = await signer.signTypedData({
-      account: embeddedAddress,
-      domain: { name, version, chainId: chain.id, verifyingContract: token },
-      types: authorizationTypes,
-      primaryType: "TransferWithAuthorization",
-      message: {
-        from: embeddedAddress,
-        to: destination,
-        value: amount,
-        validAfter,
-        validBefore,
-        nonce,
+    // Privy's SignRequestScreen crashes unless modal data includes signMessage.
+    // Signing without the wallet UI uses the embedded wallet directly.
+    const { signature } = await signTypedData(
+      {
+        domain: { name, version, chainId: chain.id, verifyingContract: token },
+        types: authorizationTypes,
+        primaryType: "TransferWithAuthorization",
+        message: {
+          from: embeddedAddress,
+          to: destination,
+          value: amount.toString(),
+          validAfter: validAfter.toString(),
+          validBefore: validBefore.toString(),
+          nonce,
+        },
       },
-    });
+      { address: embeddedAddress, uiOptions: { showWalletUIs: false } },
+    );
+    if (!isHex(signature)) throw new Error("Embedded wallet returned a non-hex signature");
     const parsed = parseSignature(signature);
     const v = Number(parsed.v ?? (parsed.yParity === 0 ? 27 : 28));
     const client = await getClientForChain({ id: chain.id });
     if (!client) throw new Error("Smart wallet is not ready");
-    const submitted = await client.sendTransaction({
-      calls: [
-        {
-          to: token,
-          value: 0n,
-          data: encodeFunctionData({
-            abi: transferWithAuthorizationAbi,
-            functionName: "transferWithAuthorization",
-            args: [
-              embeddedAddress,
-              destination,
-              amount,
-              validAfter,
-              validBefore,
-              nonce,
-              v,
-              parsed.r,
-              parsed.s,
-            ],
-          }),
-        },
-      ],
-    });
+    const submitted = await client.sendTransaction(
+      {
+        calls: [
+          {
+            to: token,
+            value: 0n,
+            data: encodeFunctionData({
+              abi: transferWithAuthorizationAbi,
+              functionName: "transferWithAuthorization",
+              args: [
+                embeddedAddress,
+                destination,
+                amount,
+                validAfter,
+                validBefore,
+                nonce,
+                v,
+                parsed.r,
+                parsed.s,
+              ],
+            }),
+          },
+        ],
+      },
+      { uiOptions: { showWalletUIs: false } },
+    );
     const receipt = await publicClient.waitForTransactionReceipt({ hash: submitted });
     if (receipt.status === "reverted") throw new Error("Transaction reverted");
     setHash(submitted);

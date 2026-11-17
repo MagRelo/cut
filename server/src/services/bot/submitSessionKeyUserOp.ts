@@ -11,6 +11,7 @@ import { KERNEL_V3_1 } from "@zerodev/sdk/constants";
 import { deserializePermissionAccount } from "@zerodev/permissions";
 import { toECDSASigner } from "@zerodev/permissions/signers";
 import { getChainConfig } from "../../lib/chainConfig.js";
+import { clientSafeErrorMessage } from "../../utils/clientSafeError.js";
 import { prismaSponsorshipDeps } from "../paymaster/validateSponsorshipUserOp.js";
 import { assertSponsorableCalls } from "../paymaster/sponsorableCalls.js";
 import type { BotCall } from "./botCalls.js";
@@ -237,8 +238,7 @@ export async function prepareSessionKeyUserOp(
     });
     return { ok: true, userOpHash, userOp: serializeUserOp(userOp) };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "User operation failed";
-    return { ok: false, error: message };
+    return { ok: false, error: clientSafeErrorMessage(error, "User operation failed") };
   }
 }
 
@@ -269,8 +269,7 @@ export async function submitSessionKeyUserOp(
     const receipt = await session.kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
     return { ok: true, txHash: receipt.receipt.transactionHash };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "User operation failed";
-    return { ok: false, error: message };
+    return { ok: false, error: clientSafeErrorMessage(error, "User operation failed") };
   }
 }
 
@@ -302,8 +301,7 @@ async function submitPreparedSessionKeyUserOp(
     const receipt = await session.kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
     return { ok: true, txHash: receipt.receipt.transactionHash };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "User operation failed";
-    return { ok: false, error: message };
+    return { ok: false, error: clientSafeErrorMessage(error, "User operation failed") };
   }
 }
 

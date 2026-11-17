@@ -1,3 +1,4 @@
+import { clientSafeErrorMessage } from "../../utils/clientSafeError.js";
 import {
   gasFromPaymasterResult,
   assertSponsorshipGas,
@@ -115,15 +116,21 @@ export async function handlePaymasterRpc(
   try {
     forwarded = await (options?.forward ?? pimlicoForward())({ id, method, params });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Sponsorship is not configured";
-    return failure(id, -32603, message);
+    return failure(id, -32603, clientSafeErrorMessage(error, "Paymaster request failed"));
   }
   if (!forwarded || typeof forwarded !== "object") {
     return failure(id, -32603, "Paymaster response is invalid");
   }
   const rpc = forwarded as { error?: { code?: number; message?: string }; result?: unknown };
   if (rpc.error) {
-    return failure(id, rpc.error.code ?? -32603, rpc.error.message ?? "Paymaster rejected the user operation");
+    return failure(
+      id,
+      rpc.error.code ?? -32603,
+      clientSafeErrorMessage(
+        rpc.error.message ?? "Paymaster rejected the user operation",
+        "Paymaster rejected the user operation",
+      ),
+    );
   }
   try {
     assertSponsorshipGas(gasFromPaymasterResult(rpc.result));

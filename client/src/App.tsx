@@ -245,9 +245,9 @@ const AppShell: React.FC = () => {
               }
             />
 
+            <Route path="/debug" element={<DebugPage />} />
             {import.meta.env.DEV && (
               <>
-                <Route path="/debug" element={<DebugPage />} />
                 <Route path="/dev/commodity-icons" element={<CommodityIconPreviewPage />} />
                 <Route path="/dev/commodity-avatar-variants" element={<CommodityAvatarVariantPreviewPage />} />
               </>
