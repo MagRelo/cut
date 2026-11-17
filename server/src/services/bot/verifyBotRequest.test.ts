@@ -1,4 +1,5 @@
 import { BoundedMemoryNonceStore, signRequest, type EthHttpSigner } from "@slicekit/erc8128";
+import { createCutAgent } from "@playthecut/agent";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it, vi } from "vitest";
 import { verifyBotRequest, type VerifyBotRequestDeps } from "./verifyBotRequest.js";
@@ -36,21 +37,49 @@ describe("verifyBotRequest", () => {
     expect(result).toMatchObject({ ok: true, chainId: 8453, signer: account.address });
   });
 
-  it("rejects an expired signature", async () => {
-    const request = await signRequest("https://playthecut.com/api/bot/contests?chainId=8453", signer(), {
-      created: 1_700_000_000 - 120,
-      expires: 1_700_000_000 - 60,
+  it("accepts a signature from @playthecut/agent", async () => {
+    let captured: Request | undefined;
+    const agent = createCutAgent({
+      privateKey: key,
+      smartWallet: WALLET,
+      origin: "https://playthecut.com",
+      fetch: async (request) => {
+        captured = request.clone();
+        return new Response(JSON.stringify({ contests: [] }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      },
     });
+    await agent.contests();
+    const now = Math.floor(Date.now() / 1000);
+    const result = await verifyBotRequest(captured!, deps({ now: () => now }));
+    expect(result).toMatchObject({ ok: true, chainId: 8453, signer: account.address });
+  });
+
+  it("rejects an expired signature", async () => {
+    const request = await signRequest(
+      "https://playthecut.com/api/bot/contests?chainId=8453",
+      signer(),
+      {
+        created: 1_700_000_000 - 120,
+        expires: 1_700_000_000 - 60,
+      },
+    );
     const result = await verifyBotRequest(request, deps());
     expect(result).toMatchObject({ ok: false, status: 401, error: "Action signature has expired" });
   });
 
   it("rejects a reused nonce", async () => {
     const used = deps();
-    const request = await signRequest("https://playthecut.com/api/bot/contests?chainId=8453", signer(), {
-      created: 1_700_000_000,
-      expires: 1_700_000_060,
-    });
+    const request = await signRequest(
+      "https://playthecut.com/api/bot/contests?chainId=8453",
+      signer(),
+      {
+        created: 1_700_000_000,
+        expires: 1_700_000_060,
+      },
+    );
     expect((await verifyBotRequest(request.clone(), used)).ok).toBe(true);
     const again = await verifyBotRequest(request, used);
     expect(again).toMatchObject({ ok: false, error: "Action nonce has already been used" });
@@ -77,10 +106,14 @@ describe("verifyBotRequest", () => {
   });
 
   it("rejects a signature for an unsupported chain", async () => {
-    const request = await signRequest("https://playthecut.com/api/bot/contests?chainId=1", signer(1), {
-      created: 1_700_000_000,
-      expires: 1_700_000_060,
-    });
+    const request = await signRequest(
+      "https://playthecut.com/api/bot/contests?chainId=1",
+      signer(1),
+      {
+        created: 1_700_000_000,
+        expires: 1_700_000_060,
+      },
+    );
     const result = await verifyBotRequest(request, deps());
     expect(result).toMatchObject({
       ok: false,
@@ -91,11 +124,15 @@ describe("verifyBotRequest", () => {
 
   it("accepts an ERC-1271 smart wallet signature", async () => {
     const verifySmartAccount = vi.fn(async () => true as const);
-    const request = await signRequest("https://playthecut.com/api/bot/contests?chainId=8453", {
-      chainId: 8453,
-      address: WALLET,
-      signMessage: (message) => account.signMessage({ message: { raw: message } }),
-    }, { created: 1_700_000_000, expires: 1_700_000_060 });
+    const request = await signRequest(
+      "https://playthecut.com/api/bot/contests?chainId=8453",
+      {
+        chainId: 8453,
+        address: WALLET,
+        signMessage: (message) => account.signMessage({ message: { raw: message } }),
+      },
+      { created: 1_700_000_000, expires: 1_700_000_060 },
+    );
     const result = await verifyBotRequest(
       request,
       deps({

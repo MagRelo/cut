@@ -8,9 +8,8 @@
  */
 
 import "dotenv/config";
-import { signRequest, type EthHttpSigner } from "@slicekit/erc8128";
-import { isAddress, type Hex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { createCutAgent } from "@playthecut/agent";
+import { getAddress, isAddress, type Hex } from "viem";
 
 const key = process.env.BOT_DELEGATE_PRIVATE_KEY?.trim();
 const smartWallet = process.env.SMART_WALLET?.trim();
@@ -27,13 +26,6 @@ if (chainId !== 8453 && chainId !== 84532) {
   process.exit(1);
 }
 
-const account = privateKeyToAccount(key as Hex);
-const signer: EthHttpSigner = {
-  chainId,
-  address: account.address,
-  signMessage: (message) => account.signMessage({ message: { raw: message } }),
-};
-
 async function show(request: Request): Promise<void> {
   console.log(`${request.method} ${request.url}`);
   for (const name of ["content-type", "content-digest", "signature-input", "signature"]) {
@@ -45,26 +37,25 @@ async function show(request: Request): Promise<void> {
   console.log();
 }
 
-const contests = new URL("/api/bot/contests", origin);
-contests.searchParams.set("chainId", String(chainId));
-contests.searchParams.set("smartWallet", smartWallet);
-await show(await signRequest(contests, signer));
-
-await show(
-  await signRequest(
-    `${origin}/api/bot/actions`,
-    {
-      method: "POST",
+const agent = createCutAgent({
+  privateKey: key as Hex,
+  smartWallet: getAddress(smartWallet),
+  chainId,
+  origin,
+  fetch: async (request) => {
+    await show(request);
+    const path = new URL(request.url).pathname;
+    const body = path.endsWith("/actions") ? { ok: true, lineupId: "lineup-id" } : { contests: [] };
+    return new Response(JSON.stringify(body), {
+      status: 200,
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        chainId,
-        action: "lineupUpsert",
-        smartWallet,
-        contestId,
-        lineupId: "",
-        candidates: ["eventParticipantId"],
-      }),
-    },
-    signer,
-  ),
-);
+    });
+  },
+});
+
+await agent.contests();
+await agent.lineupUpsert({
+  contestId,
+  lineupId: "",
+  candidates: ["eventParticipantId"],
+});

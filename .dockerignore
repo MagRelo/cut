@@ -12,6 +12,8 @@
 !packages/secondary-pricing/dist/**
 !packages/sport-sdk/package.json
 !packages/sport-sdk/dist/**
+!packages/agent/package.json
+!packages/agent/dist/**
 !packages/sport-pga-golf/package.json
 !packages/sport-pga-golf/dist/**
 !packages/sport-f1/package.json

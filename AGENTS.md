@@ -37,7 +37,7 @@ contest settlement.
 
 ### Logging in during dev (Privy test accounts)
 A delegate plays through signed `GET /api/bot/contests` and `POST /api/bot/actions` requests
-(ERC-8128). See `client/public/agents.md`. The browser still gates the user's own actions behind Privy
+(ERC-8128). See `spec/agent/agents.md`. The browser still gates the user's own actions behind Privy
 email OTP login, which is also how the user installs a delegate. For that browser login, use
 Privy **test accounts**:
 1. App owner enables it once in the Privy Dashboard: **User management → Authentication →

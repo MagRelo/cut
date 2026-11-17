@@ -53,6 +53,7 @@ Use this order for a full architecture walkthrough:
 | 3 | [Server architecture](server/architecture.md) | Hono app, registries, request flow |
 | 4 | [Data models](server/data-models.md) | Prisma schema (platform) |
 | 5 | [API reference](server/api.md) | Live HTTP routes |
+| 5b | [Agent protocol](agent/agents.md) | ERC-8128 signing and `@playthecut/agent` |
 | 6 | [Services](server/services.md) | Business logic layout |
 | 7 | [Cron pipeline](server/cron.md) | 5-minute multi-sport job |
 | 8 | [Client architecture](client/architecture.md) | Providers, routing, sport context |
@@ -90,6 +91,7 @@ packages/
   sport-sdk/           Shared types + SportModule, SportUIPlugin interfaces
   sport-pga-golf/      PGA golf server plugin (ranking, validation)
   secondary-pricing/   Bonding curve math (sport-agnostic)
+  agent/               @playthecut/agent. Protocol is spec/agent/agents.md
 
 server/
   src/sports/          Sport registries, pga-golf handlers
@@ -113,3 +115,4 @@ contracts/             Solidity (ContestController, Factory, tokens)
 
 - Update `spec/` when behavior changes on `v4`.
 - [docs/platform/architecture.md](../docs/platform/architecture.md) is the design intent; `spec/` is the as-built reference.
+- Agent protocol is [agent/agents.md](agent/agents.md). `pnpm run agent:sync` copies it to the website and `@playthecut/agent`. Bump `packages/agent` and run `pnpm run agent:stamp` when that page or the package source changes. Production deploy publishes the package.

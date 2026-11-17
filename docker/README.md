@@ -13,7 +13,7 @@ The build process follows this sequence:
 
 1. **Client Build**: `pnpm run client:build` - Builds the React frontend
 2. **Server Build**: `pnpm run server:build` - Compiles TypeScript and copies contracts
-3. **Workspace packages**: `@cut/sport-sdk`, `@cut/sport-pga-golf`, `@cut/sport-f1`, `@cut/sport-commodities`, and `@cut/secondary-pricing` must have `dist/` (built by `pnpm run deploy` before `docker:build`)
+3. **Workspace packages**: `@cut/sport-sdk`, `@cut/sport-pga-golf`, `@cut/sport-f1`, `@cut/sport-commodities`, `@cut/secondary-pricing`, and `@playthecut/agent` must have `dist/` (built by `pnpm run deploy` before `docker:build`)
 4. **Docker Build**: `pnpm run docker:build` - Builds and pushes Docker image (uses **pnpm** inside the image for `workspace:*` dependencies)
 
 ## Usage
@@ -21,7 +21,7 @@ The build process follows this sequence:
 ### Full Deployment
 
 ```bash
-pnpm run deploy   # build + push tagged image
+pnpm run deploy   # build + push tagged image; publishes @playthecut/agent when its version is not on npm (NPM_TOKEN)
 pnpm run launch   # deploy to Swarm + append deploy.log
 ```
 

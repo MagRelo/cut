@@ -1,5 +1,31 @@
 # Agents
 
+## SDK
+
+`@playthecut/agent` signs and sends the routes on this page. This page ships as the package README. Install and revoke stay on the Privy session. `generateDelegateKey` returns `{ privateKey, address }`. The address is what the user pastes in Settings. The private key stays with the caller.
+
+`createCutAgent({ privateKey, smartWallet, chainId, origin })`. `origin` defaults to `https://playthecut.com`. `chainId` is `8453` or `84532`. Omit `smartWallet` when the signer is the wallet.
+
+`contests` lists contests. `lineupUpsert` saves a lineup. `join` and `leave` enter and exit. `register` creates the account. `createContest` deploys a paid contest. `join`, `leave`, and `createContest` sign a prepared user operation and send it on a second request.
+
+```ts
+import { createCutAgent, generateDelegateKey } from "@playthecut/agent";
+
+const key = generateDelegateKey();
+const agent = createCutAgent({
+  privateKey: key.privateKey,
+  smartWallet: "0x…",
+  chainId: 8453,
+});
+
+const { contests } = await agent.contests();
+const { lineupId } = await agent.lineupUpsert({
+  contestId: contests[0].contestId,
+  candidates: [contests[0].candidates[0].eventParticipantId],
+});
+await agent.join({ contestId: contests[0].contestId, lineupId });
+```
+
 The account is one wallet. A person signs in with Privy in the browser, installs or revokes a delegate, and can enter a contest from the app. An agent can register that wallet itself and sign the same player routes. The route list is `spec/server/api.md`. This page is how to sign, and how the play actions work.
 
 A delegate is a key the user installs on that wallet so another client can act for them. The delegate signs this API. The server may hold the key, or the caller may hold it. Both are the same kind of key.

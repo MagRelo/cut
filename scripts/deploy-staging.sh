@@ -13,6 +13,8 @@ export VITE_DEPLOY_TAG="$DEPLOY_TAG"
 
 echo "Staging deploy tag: $DEPLOY_TAG"
 
+pnpm run agent:check
+pnpm --filter @playthecut/agent run build
 pnpm --filter @cut/sport-sdk run build
 pnpm --filter @cut/sport-commodities run build
 pnpm --filter @cut/sport-pga-golf run build

@@ -1,3 +1,4 @@
+import { actionSchema } from "@playthecut/agent/contract";
 import { Hono } from "hono";
 import { getAddress, isAddress, type Hex } from "viem";
 import { z } from "zod";
@@ -7,21 +8,17 @@ import { requireAuth, requirePrivySession } from "../middleware/auth.js";
 import { packApproval } from "../services/bot/approvalEnvelope.js";
 import { botContestListDeps, listSignedBotContests } from "../services/bot/listBotContests.js";
 import { executeBotAction } from "../services/bot/executeBotAction.js";
-import { createContestActionDeps, executeCreateContest } from "../services/bot/executeCreateContest.js";
+import {
+  createContestActionDeps,
+  executeCreateContest,
+} from "../services/bot/executeCreateContest.js";
 import { createBotActionDeps } from "../services/bot/botActionRuntime.js";
 import type { SerializedUserOp } from "../services/bot/submitSessionKeyUserOp.js";
 import { verifyBotRequest } from "../services/bot/verifyBotRequest.js";
-import {
-  DESCRIPTION_MAX_LENGTH,
-  NAME_MAX_LENGTH,
-} from "../schemas/limits.js";
-import { contestSettingsSchema } from "../schemas/contest.js";
 
 const botRouter = new Hono();
 const deps = createBotActionDeps();
 const createDeps = createContestActionDeps();
-
-const hexSchema = z.string().regex(/^0x[0-9a-fA-F]*$/);
 
 const enableSchema = z.object({
   kind: z.enum(["cut_bot", "external"]),
@@ -34,55 +31,6 @@ const enableSchema = z.object({
 const revokeSchema = z.object({
   delegateAddress: z.string().refine((value) => isAddress(value), "Invalid delegate address"),
 });
-
-const uintSchema = z.string().regex(/^\d+$/);
-
-const userOpSchema = z.object({
-  sender: z.string().refine((value) => isAddress(value), "Invalid user operation sender"),
-  nonce: uintSchema,
-  callData: hexSchema,
-  callGasLimit: uintSchema,
-  verificationGasLimit: uintSchema,
-  preVerificationGas: uintSchema,
-  maxFeePerGas: uintSchema,
-  maxPriorityFeePerGas: uintSchema,
-  paymaster: z.string().optional(),
-  paymasterData: hexSchema.optional(),
-  paymasterVerificationGasLimit: uintSchema.optional(),
-  paymasterPostOpGasLimit: uintSchema.optional(),
-  factory: z.string().optional(),
-  factoryData: hexSchema.optional(),
-});
-
-const playActionSchema = z.object({
-  chainId: z.number().int(),
-  action: z.enum(["lineupUpsert", "join", "leave"]),
-  smartWallet: z.string(),
-  contestId: z.string().min(1),
-  lineupId: z.string().default(""),
-  candidates: z.array(z.string().min(1)).optional(),
-  prediction: z.unknown().optional(),
-  userOpSignature: hexSchema.optional(),
-  userOp: userOpSchema.optional(),
-});
-
-const createContestActionSchema = z
-  .object({
-    chainId: z.number().int(),
-    action: z.literal("createContest"),
-    smartWallet: z.string(),
-    name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
-    description: z.string().max(DESCRIPTION_MAX_LENGTH).optional(),
-    eventId: z.string().cuid(),
-    userGroupId: z.string().cuid().optional(),
-    endDate: z.union([z.string().datetime(), z.number()]),
-    settings: contestSettingsSchema,
-    notifyLeagueMembers: z.boolean().optional(),
-    userOpSignature: hexSchema.optional(),
-    userOp: userOpSchema.optional(),
-  });
-
-const actionSchema = z.discriminatedUnion("action", [playActionSchema, createContestActionSchema]);
 
 function selectedCandidates(body: { candidates?: string[] | undefined }): string[] {
   return body.candidates ?? [];

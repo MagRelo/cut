@@ -2,7 +2,7 @@
 
 Base URL: `/api` (e.g. `http://localhost:3000/api`)
 
-Signing for agents is in [client/public/agents.md](../../client/public/agents.md). This file is the route list.
+Signing for agents is in [spec/agent/agents.md](../agent/agents.md). This file is the route list.
 
 Two ways to write a lineup or a paid contest:
 

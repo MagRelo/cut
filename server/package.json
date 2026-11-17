@@ -72,6 +72,7 @@
   "dependencies": {
     "@cursor/sdk": "^1.0.23",
     "@cut/secondary-pricing": "workspace:*",
+    "@playthecut/agent": "workspace:*",
     "@cut/sport-commodities": "workspace:*",
     "@cut/sport-f1": "workspace:*",
     "@cut/sport-pga-golf": "workspace:*",

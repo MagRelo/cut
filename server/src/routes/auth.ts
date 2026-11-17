@@ -1,11 +1,10 @@
 import { Hono } from "hono";
 import type { Prisma } from "@prisma/client";
 import { getAddress, isAddress } from "viem";
-import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { buildAuthProfile } from "../lib/authProfile.js";
 import { getPrivyClient } from "../lib/privyClient.js";
-import { NAME_MAX_LENGTH } from "../schemas/limits.js";
+import { registerSchema } from "@playthecut/agent/contract";
 import { registerAgentAccount } from "../services/auth/registerAgent.js";
 import { verifyBotRequest } from "../services/bot/verifyBotRequest.js";
 import {
@@ -22,17 +21,15 @@ import {
 } from "../lib/privyUserProvisioning.js";
 import { getReferralSummary } from "../services/referral/getReferralSummary.js";
 import { getUserTransactions } from "../services/user/getUserTransactions.js";
-import { mergeUserSettings, updateUserNameSchema, updateUserSettingsSchema } from "../schemas/user.js";
+import {
+  mergeUserSettings,
+  updateUserNameSchema,
+  updateUserSettingsSchema,
+} from "../schemas/user.js";
 import { recordOnchainPaymentSchema } from "../schemas/onchainPayment.js";
 import { recordValueTransfer, ValueTransferError } from "../services/contest/onchainPayment.js";
 
 const authRouter = new Hono();
-
-const registerSchema = z.object({
-  email: z.string().trim().email("A valid email is required"),
-  name: z.string().trim().min(1).max(NAME_MAX_LENGTH).optional(),
-  referralCode: z.string().trim().min(1).max(32).optional(),
-});
 
 authRouter.post("/register", async (c) => {
   try {

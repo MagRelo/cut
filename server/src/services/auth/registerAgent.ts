@@ -1,20 +1,11 @@
 import { getAddress, type Address } from "viem";
+import type { RegisteredAgent } from "@playthecut/agent/contract";
 import { prisma } from "../../lib/prisma.js";
 import { mintUSDCToUser } from "../mintUserTokens.js";
 import { tryResolveReferralForNewUser } from "../../lib/referralCode.js";
 import { parseReferralGroupIdFromEnv } from "../../lib/referralConfig.js";
 import { generateUniqueReferralCode } from "../../utils/inviteCode.js";
 import { ReferralProvisionError } from "../../lib/privyUserProvisioning.js";
-
-export type RegisteredAgent = {
-  userId: string;
-  email: string;
-  userType: string;
-  name: string;
-  referralCode: string;
-  smartWallet: string;
-  created: boolean;
-};
 
 async function mintTestnetUsdc(address: string, chainId: number): Promise<void> {
   if (process.env.ENABLE_TOKEN_MINTING !== "true" || chainId !== 84532) return;
