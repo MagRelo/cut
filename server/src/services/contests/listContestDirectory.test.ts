@@ -86,6 +86,7 @@ describe("listContestDirectory", () => {
     expect(findEvents).toHaveBeenCalledTimes(1);
     const where = findMany.mock.calls[0]?.[0]?.where;
     expect(where.OR).toEqual([{ userGroupId: null }]);
+    expect(where.status).toEqual({ not: "CANCELLED" });
     expect(where.chainId).toBeUndefined();
     expect(where.event.sport).toEqual({ isEnabled: true });
     expect(findEvents.mock.calls[0]?.[0]?.where.sport).toEqual({ isEnabled: true });

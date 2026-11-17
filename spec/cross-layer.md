@@ -208,7 +208,7 @@ flowchart TB
 ```
 
 - League has **no** `sportId`
-- `GET /userGroups/:id/contests` returns contests across events with `eventSummary`, unfiltered by chain (same as the directory)
+- `GET /userGroups/:id/contests` returns contests across events with `eventSummary`, unfiltered by chain (same as the directory). Omits `CANCELLED`.
 - Client: `GroupedContestList`, `CreateContestEventPicker`
 
 ---

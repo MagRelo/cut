@@ -4,6 +4,7 @@ import {
   contestDirectoryEventSelect,
   contestDirectorySelect,
   contestViewerVisibilityOr,
+  listedContestStatusWhere,
 } from "../../utils/contestListQuery.js";
 import {
   directoryEventFromRecord,
@@ -220,6 +221,7 @@ export async function listContestDirectory(
   const [rows, eventRows] = await Promise.all([
     prisma.contest.findMany({
       where: {
+        ...listedContestStatusWhere,
         OR: contestViewerVisibilityOr({ privyUserId, userId }),
         event: eventWhere,
       },

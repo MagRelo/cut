@@ -1,7 +1,8 @@
 /**
- * Activate a contest: OPEN → ACTIVE
+ * Activate a contest: OPEN → ACTIVE.
  *
  * Closes primary participant registration; secondary predictions may continue.
+ * An on-chain contest with no entries is cancelled once the event has started.
  */
 
 import { prisma } from "../../lib/prisma.js";
@@ -9,7 +10,10 @@ import { requireSportModule } from "../../sports/registry.js";
 import { getContestContract, verifyOperator, readContestState } from "../shared/contractClient.js";
 import { ContestState, type OperationResult } from "../shared/types.js";
 import { hasOnchainEscrow } from "../../utils/hasOnchainEscrow.js";
+import { cancelContest } from "./cancelContest.js";
 import { confirmContestWrite } from "./confirmContestWrite.js";
+
+export const NO_ENTRIES_CANCEL_REASON = "No entries when the event started";
 
 export async function activateContest(contestId: string): Promise<OperationResult> {
   try {
@@ -39,7 +43,20 @@ export async function activateContest(contestId: string): Promise<OperationResul
 
     const sportModule = requireSportModule(contest.event.sportId);
     const eventStatus = await sportModule.getEventStatus(contest.eventId);
-    if (!sportModule.shouldActivateContest(eventStatus)) {
+    const eventLive = sportModule.shouldActivateContest(eventStatus);
+    const eventComplete = sportModule.shouldSettleContest(eventStatus);
+
+    // A paid contest with nobody in it cannot activate. Cancel it once the
+    // event has started, including when the first pass already sees it complete.
+    if (
+      hasOnchainEscrow(contest) &&
+      contest.contestLineups.length === 0 &&
+      (eventLive || eventComplete)
+    ) {
+      return cancelContest(contestId, NO_ENTRIES_CANCEL_REASON);
+    }
+
+    if (!eventLive) {
       return {
         success: false,
         contestId,
@@ -58,14 +75,6 @@ export async function activateContest(contestId: string): Promise<OperationResul
       return {
         success: true,
         contestId,
-      };
-    }
-
-    if (!contest.contestLineups || contest.contestLineups.length === 0) {
-      return {
-        success: false,
-        contestId,
-        error: "Contest has no entries",
       };
     }
 

@@ -1,6 +1,6 @@
 {
   "name": "@playthecut/agent",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Sign and send Play The Cut agent requests",
   "type": "module",
   "main": "./dist/index.js",

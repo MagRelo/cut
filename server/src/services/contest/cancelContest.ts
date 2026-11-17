@@ -8,6 +8,7 @@ import { prisma } from '../../lib/prisma.js';
 import { getContestContract, verifyOperator, readContestState } from '../shared/contractClient.js';
 import { ContestState, type OperationResult } from '../shared/types.js';
 import { hasOnchainEscrow } from '../../utils/hasOnchainEscrow.js';
+import { invalidateContestDirectory } from '../contests/listContestDirectory.js';
 import { confirmContestWrite } from './confirmContestWrite.js';
 
 function cancelResults(
@@ -67,6 +68,7 @@ export async function cancelContest(contestId: string, reason?: string): Promise
         },
       });
       console.log(`[cancelContest] Cancelled off-chain contest ${contestId}`);
+      invalidateContestDirectory();
       return {
         success: true,
         contestId,
@@ -103,6 +105,7 @@ export async function cancelContest(contestId: string, reason?: string): Promise
         },
       });
       console.log(`[cancelContest] Aligned contest ${contestId} to chain CANCELLED`);
+      invalidateContestDirectory();
       return {
         success: true,
         contestId,
@@ -132,6 +135,7 @@ export async function cancelContest(contestId: string, reason?: string): Promise
     });
 
     console.log(`[cancelContest] Successfully cancelled contest ${contestId}`);
+    invalidateContestDirectory();
 
     return {
       success: true,

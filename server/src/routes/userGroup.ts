@@ -22,6 +22,7 @@ import { pickWalletPublicKeyForChain } from "../utils/pickWalletForChain.js";
 import { formatContestResponse } from "../utils/formatContestResponse.js";
 import { eventSummaryForContest } from "../utils/contestEventSummary.js";
 import { settledPotForContestRow } from "../utils/settledPot.js";
+import { listedContestStatusWhere } from "../utils/contestListQuery.js";
 import { referralStakeForViewer } from "../services/referral/referralStakeForViewer.js";
 
 const userGroupRouter = new Hono();
@@ -350,6 +351,7 @@ userGroupRouter.get("/:id/contests", requireAuth, requireUserGroupMember, async 
     const contests = await prisma.contest.findMany({
       where: {
         userGroupId,
+        ...listedContestStatusWhere,
       },
       orderBy: [{ event: { sportId: "asc" } }, { createdAt: "desc" }],
       select: {

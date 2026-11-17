@@ -2,6 +2,11 @@ import { getMemberUserGroupIds } from "./userGroup.js";
 
 export const CONTEST_LIST_CHAIN_IDS = [8453, 84532] as const;
 
+/** Directory, event, league, and agent contest lists omit cancelled contests. */
+export const listedContestStatusWhere = {
+  status: { not: "CANCELLED" as const },
+};
+
 export const contestListSelect = {
   id: true,
   name: true,

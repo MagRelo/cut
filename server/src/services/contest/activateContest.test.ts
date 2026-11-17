@@ -8,6 +8,7 @@ const {
   verifyOperator,
   activateContestWrite,
   confirmContestWrite,
+  cancelContest,
 } = vi.hoisted(() => ({
   contestFindUnique: vi.fn(),
   contestUpdate: vi.fn(),
@@ -16,6 +17,7 @@ const {
   verifyOperator: vi.fn(),
   activateContestWrite: vi.fn(),
   confirmContestWrite: vi.fn(),
+  cancelContest: vi.fn(),
 }));
 
 vi.mock("../../lib/prisma.js", () => ({
@@ -31,6 +33,7 @@ vi.mock("../../sports/registry.js", () => ({
   requireSportModule: () => ({
     getEventStatus,
     shouldActivateContest: (status: string) => status === "LIVE",
+    shouldSettleContest: (status: string) => status === "COMPLETE",
   }),
 }));
 
@@ -46,7 +49,11 @@ vi.mock("./confirmContestWrite.js", () => ({
   confirmContestWrite,
 }));
 
-import { activateContest } from "./activateContest.js";
+vi.mock("./cancelContest.js", () => ({
+  cancelContest,
+}));
+
+import { activateContest, NO_ENTRIES_CANCEL_REASON } from "./activateContest.js";
 import { ContestState } from "../shared/types.js";
 
 const event = { id: "event-1", sportId: "pga-golf" };
@@ -98,7 +105,50 @@ describe("activateContest", () => {
     expect(readContestState).not.toHaveBeenCalled();
   });
 
-  it("still refuses an on-chain contest that has no entries", async () => {
+  it("cancels an on-chain contest that has no entries once the event is live", async () => {
+    contestFindUnique.mockResolvedValue({
+      id: "contest-paid",
+      status: "OPEN",
+      address: "0xabc",
+      chainId: 8453,
+      eventId: event.id,
+      event,
+      contestLineups: [],
+    });
+    cancelContest.mockResolvedValue({ success: true, contestId: "contest-paid" });
+
+    await expect(activateContest("contest-paid")).resolves.toEqual({
+      success: true,
+      contestId: "contest-paid",
+    });
+    expect(cancelContest).toHaveBeenCalledWith("contest-paid", NO_ENTRIES_CANCEL_REASON);
+    expect(activateContestWrite).not.toHaveBeenCalled();
+    expect(contestUpdate).not.toHaveBeenCalled();
+  });
+
+  it("cancels an empty on-chain contest when the event is already complete", async () => {
+    getEventStatus.mockResolvedValue("COMPLETE");
+    contestFindUnique.mockResolvedValue({
+      id: "contest-paid",
+      status: "OPEN",
+      address: "0xabc",
+      chainId: 8453,
+      eventId: event.id,
+      event,
+      contestLineups: [],
+    });
+    cancelContest.mockResolvedValue({ success: true, contestId: "contest-paid" });
+
+    await expect(activateContest("contest-paid")).resolves.toEqual({
+      success: true,
+      contestId: "contest-paid",
+    });
+    expect(cancelContest).toHaveBeenCalledWith("contest-paid", NO_ENTRIES_CANCEL_REASON);
+    expect(activateContestWrite).not.toHaveBeenCalled();
+  });
+
+  it("leaves an empty on-chain contest open while the event is still scheduled", async () => {
+    getEventStatus.mockResolvedValue("SCHEDULED");
     contestFindUnique.mockResolvedValue({
       id: "contest-paid",
       status: "OPEN",
@@ -109,11 +159,11 @@ describe("activateContest", () => {
       contestLineups: [],
     });
 
-    await expect(activateContest("contest-paid")).resolves.toEqual({
+    await expect(activateContest("contest-paid")).resolves.toMatchObject({
       success: false,
       contestId: "contest-paid",
-      error: "Contest has no entries",
     });
+    expect(cancelContest).not.toHaveBeenCalled();
     expect(contestUpdate).not.toHaveBeenCalled();
   });
 

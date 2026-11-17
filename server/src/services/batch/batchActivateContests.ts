@@ -1,11 +1,12 @@
 /**
  * Batch activate contests (for cron jobs)
  *
- * Finds OPEN contests whose event is ready for activation via the sport plugin.
+ * Finds OPEN contests whose event is live, and empty on-chain contests whose event is already complete.
  */
 
 import { prisma } from "../../lib/prisma.js";
 import { requireSportModule } from "../../sports/registry.js";
+import { hasOnchainEscrow } from "../../utils/hasOnchainEscrow.js";
 import { activateContest } from "../contest/activateContest.js";
 import { type BatchOperationResult } from "../shared/types.js";
 
@@ -21,10 +22,14 @@ export async function batchActivateContests(): Promise<BatchOperationResult> {
       select: {
         id: true,
         name: true,
+        address: true,
         chainId: true,
         eventId: true,
         event: {
           select: { sportId: true },
+        },
+        _count: {
+          select: { contestLineups: true },
         },
       },
     });
@@ -33,7 +38,12 @@ export async function batchActivateContests(): Promise<BatchOperationResult> {
     for (const contest of openContests) {
       const sportModule = requireSportModule(contest.event.sportId);
       const eventStatus = await sportModule.getEventStatus(contest.eventId);
-      if (sportModule.shouldActivateContest(eventStatus)) {
+      const eventLive = sportModule.shouldActivateContest(eventStatus);
+      const emptyOnchain =
+        hasOnchainEscrow(contest) && contest._count.contestLineups === 0;
+      // Live events activate. A completed event still cancels an empty paid
+      // contest that never left OPEN.
+      if (eventLive || (emptyOnchain && sportModule.shouldSettleContest(eventStatus))) {
         contests.push(contest);
       }
     }

@@ -3,7 +3,7 @@ import type { Candidate } from "@cut/sport-sdk";
 import { prisma } from "../../lib/prisma.js";
 import { getEventCandidates } from "../events/getEventCandidates.js";
 import { primaryDepositFromSettings } from "../../utils/canDeleteLeagueContest.js";
-import { contestVisibilityWhere } from "../../utils/contestListQuery.js";
+import { contestVisibilityWhere, listedContestStatusWhere } from "../../utils/contestListQuery.js";
 
 export type BotContestListItem = {
   contestId: string;
@@ -131,6 +131,7 @@ export function botContestListDeps(): ListBotContestsDeps {
       const rows = await prisma.contest.findMany({
         where: {
           ...(eventId ? { eventId } : {}),
+          ...listedContestStatusWhere,
           ...visibility,
         },
         select: {

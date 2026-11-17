@@ -39,7 +39,11 @@ import {
   verifySecondaryBuyReceipt,
 } from "../services/contest/verifySecondaryBuyReceipt.js";
 import { generateContestEntryId } from "../utils/contestEntryId.js";
-import { contestListSelect, contestVisibilityWhere } from "../utils/contestListQuery.js";
+import {
+  contestListSelect,
+  contestVisibilityWhere,
+  listedContestStatusWhere,
+} from "../utils/contestListQuery.js";
 import {
   canDeleteLeagueContest,
   primaryDepositFromSettings,
@@ -171,6 +175,7 @@ contestRouter.get("/", optionalAuth, async (c) => {
     const contests = await prisma.contest.findMany({
       where: {
         eventId: validEventId,
+        ...listedContestStatusWhere,
         ...visibility,
       },
       select: contestListSelect,

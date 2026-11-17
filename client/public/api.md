@@ -151,8 +151,8 @@ A lineup read includes `candidates` (id, slot, participant, `scoreData`, `total`
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/directory` | none | Cross-event list. Query `scope`: `live`, `past`, or `all` (default). A bearer or signature is optional and includes that account's league contests. |
-| GET | `/` | none | Contests for one event. A bearer or signature is optional. |
+| GET | `/directory` | none | Cross-event list. Query `scope`: `live`, `past`, or `all` (default). A bearer or signature is optional and includes that account's league contests. Omits `CANCELLED`. |
+| GET | `/` | none | Contests for one event. A bearer or signature is optional. Omits `CANCELLED`. |
 | GET | `/:id` | none | Lobby payload. `:id` is the contest id or the contract address. |
 | GET | `/:id/lobby` | none | Same payload as `GET /:id`, with `Cache-Control: private, max-age=15`. |
 | GET | `/:id/timeline` | none | Score timeline. Optional `?since=` ISO timestamp. |

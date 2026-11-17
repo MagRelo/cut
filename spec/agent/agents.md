@@ -118,7 +118,7 @@ Lead with one or two contests from `contests` and the `fit` tags that apply: `le
 
 `preferences.sports`, when non-empty, limits scout to those sports. `preferences.maxEntryFee` removes the `within-budget` tag when the fee is higher. The contest stays in the list. Store a sport or a fee cap the user states with `preferences`.
 
-This step stops before `join`. The field is not on this response. `contests()` remains the raw list with every candidate, in any status. It is not the list of contests the wallet has already joined.
+This step stops before `join`. The field is not on this response. `contests()` remains the raw list with every candidate, in any status except `CANCELLED`. It is not the list of contests the wallet has already joined.
 
 ### Ask first
 
@@ -397,7 +397,7 @@ At least one field. Unknown sport ids are `400`. Response is `{ preferences }`.
 | Response | `{ contests }`. Each contest includes `contestId`, `name`, `eventId`, `sportId`, `chainId`, `status`, `address`, `userGroupId`, `userGroupName`, `primaryDeposit`, `endTime`, and `candidates`. An empty `contests` array means this account has no visible contests on that chain. |
 | `primaryDeposit` | Whole USDC. `1` is $1. `null` when the contest has no deposit. |
 
-Visibility matches the contest list: public contests, plus league contests in leagues this account belongs to. An inactive grant is `403` `"No active delegate for this signature"`.
+Visibility matches the contest list: public contests, plus league contests in leagues this account belongs to. `CANCELLED` contests are omitted. An inactive grant is `403` `"No active delegate for this signature"`.
 
 ### lineupUpsert
 

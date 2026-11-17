@@ -82,7 +82,7 @@ Writers, and the database precondition each one checks:
 
 | Function | Database precondition | Then |
 | --- | --- | --- |
-| `activateContest` | `status === "OPEN"` and `shouldActivateContest` (event `LIVE`) | $0: set `ACTIVE` even with zero entries. Paid: require at least one `ContestLineup` and an oracle match. Chain `ACTIVE`: set the row and send nothing. Chain `OPEN`: `write.activateContest()`, `confirmContestWrite` expects `ACTIVE`, then set the row. |
+| `activateContest` | `status === "OPEN"` and `shouldActivateContest` (event `LIVE`) | $0: set `ACTIVE` even with zero entries. Paid with no `ContestLineup`: `cancelContest` once the event is `LIVE` or `COMPLETE`. Paid with entries: require an oracle match. Chain `ACTIVE`: set the row and send nothing. Chain `OPEN`: `write.activateContest()`, `confirmContestWrite` expects `ACTIVE`, then set the row. |
 | `lockContest` | `status === "ACTIVE"` | $0: set `LOCKED`. Paid: chain `LOCKED` sets the row and sends nothing. Chain `ACTIVE`: `write.lockContest()`, confirm `LOCKED`, then set the row. Not part of the 5-minute cron. Admin/CLI only (`spec/server/cron.md`). |
 | `settleContest` | `ACTIVE` or `LOCKED`, and `shouldSettleContest` (event `COMPLETE`) | $0: lock first if `ACTIVE`, then set `SETTLED`. Paid: if chain is `ACTIVE`, call `lockContest` first; if chain is already `SETTLED` and the database is still `ACTIVE` or `LOCKED`, recover without sending settle again; otherwise chain must be `LOCKED`. The settle write goes through `confirmContestWrite` and expects `SETTLED`. |
 | `cancelContest` | Refuse database `SETTLED` or `CLOSED` | Paid: refuse chain `SETTLED`. Chain `CANCELLED`: set the row, keep existing `results`, record `alignedToChain`, send nothing. Otherwise `write.cancelContest()`, confirm `CANCELLED`, then set the row. |
@@ -107,7 +107,7 @@ Other fields change behavior without changing `status`:
 | `LOCKED` | `ACTIVE` | A row written before confirmation, whose lock transaction later reverted. New writes do not create this pair. The row is not rolled back. `lockContest` requires database `ACTIVE`, so it will not resend. |
 | `ACTIVE` or `LOCKED` | `SETTLED` | Recovery inside `settleContest` if the `ContestSettled` log is inside the lookback. Older than that, it refuses. |
 | `SETTLED` | not `SETTLED` | `settleContest` refuses because the row is not `ACTIVE` or `LOCKED`. No rewind. |
-| `CANCELLED` | still `OPEN` / `ACTIVE` / `LOCKED` | A row written before confirmation, whose cancel transaction later reverted. New writes do not create this pair. The row is not rolled back. The inverse (chain `CANCELLED`, row not) is adopted the next time `cancelContest` runs. Cron does not call it, so `cancelExpired` waits for that call. |
+| `CANCELLED` | still `OPEN` / `ACTIVE` / `LOCKED` | A row written before confirmation, whose cancel transaction later reverted. New writes do not create this pair. The row is not rolled back. The inverse (chain `CANCELLED`, row not) is adopted the next time `cancelContest` runs. Cron calls `cancelContest` for an on-chain contest that is still `OPEN` with no entries once the event is live or complete. `cancelExpired` still waits for a later `cancelContest` call. |
 | `CLOSED` | anything | Accepted by types and treated like `SETTLED` for pot display (`server/src/utils/settledPot.ts`) and cancel refusal. Not written by these services. |
 | `ACTIVE`, event still `SCHEDULED` | — | `lockContest` does not check event status. Settle still requires `COMPLETE`. |
 
