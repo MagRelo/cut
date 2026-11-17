@@ -1,6 +1,15 @@
 import { Prisma } from "@prisma/client";
+import { getAddress, isAddress, type Address } from "viem";
 import { prisma } from "../../lib/prisma.js";
+import { getPaymentTokenAddress } from "../../lib/contractAddresses.js";
 import type { PaymentKind } from "@prisma/client";
+import {
+  erc20TransferAt,
+  loadTransactionReceipt,
+  payoutClaimFromReceipt,
+  readContestPaymentToken,
+  type ReceiptLoadError,
+} from "./verifyValueTransferReceipt.js";
 
 export async function resolveUserIdForWallet(
   chainId: number,
@@ -54,7 +63,7 @@ const OUTGOING_KINDS = new Set<PaymentKind>(["ENTRY", "WAGER", "SEND"]);
 export class ValueTransferError extends Error {
   constructor(
     message: string,
-    readonly status: 400 | 403 = 400,
+    readonly status: 400 | 403 | 502 = 400,
   ) {
     super(message);
     this.name = "ValueTransferError";
@@ -70,6 +79,31 @@ function asMetadata(value: unknown): Record<string, unknown> {
 
 function sameAddress(left: string, right: string): boolean {
   return left.toLowerCase() === right.toLowerCase();
+}
+
+const TRANSFER_KINDS = new Set<PaymentKind>(["ENTRY", "WAGER", "WITHDRAW", "REFUND", "SEND"]);
+
+function receiptError(error: ReceiptLoadError): ValueTransferError {
+  if (error === "rpc_error") return new ValueTransferError("Failed to verify payment", 502);
+  if (error === "receipt_failed") return new ValueTransferError("Transaction did not succeed");
+  return new ValueTransferError("Transaction receipt not found");
+}
+
+function checksum(address: string): Address {
+  if (!isAddress(address)) throw new ValueTransferError("Payment does not match the transaction receipt");
+  return getAddress(address);
+}
+
+async function loadVerifiedReceipt(chainId: number, transactionHash: string) {
+  if (!/^0x[0-9a-fA-F]{64}$/.test(transactionHash)) {
+    throw new ValueTransferError("Transaction receipt not found");
+  }
+  const loaded = await loadTransactionReceipt({
+    chainId,
+    transactionHash: transactionHash as `0x${string}`,
+  });
+  if (!loaded.ok) throw receiptError(loaded.error);
+  return loaded.receipt;
 }
 
 export async function recordValueTransfer(input: {
@@ -99,6 +133,10 @@ export async function recordValueTransfer(input: {
     throw new ValueTransferError("Wallet does not belong to this account", 403);
   }
 
+  const receipt = await loadVerifiedReceipt(input.chainId, input.transactionHash);
+  const wallet = checksum(input.walletAddress);
+  const recorded = await verifiedMovement(input, receipt, wallet);
+
   if (PAYOUT_KINDS.has(input.kind)) {
     if (!input.contestId) {
       throw new ValueTransferError("contestId is required");
@@ -107,7 +145,6 @@ export async function recordValueTransfer(input: {
       where: { userId: input.userId, contestId: input.contestId, kind: input.kind },
     });
     const match = existing.find((row) => {
-      if (!input.entryId) return true;
       const meta = asMetadata(row.metadata);
       return meta.entryId == null || String(meta.entryId) === input.entryId;
     });
@@ -128,7 +165,7 @@ export async function recordValueTransfer(input: {
 
   const metadata: Record<string, unknown> = {
     direction: outgoing ? "out" : "in",
-    counterparty: (outgoing ? input.to : input.from).toLowerCase(),
+    counterparty: (outgoing ? recorded.to : recorded.from).toLowerCase(),
   };
   if (input.entryId) metadata.entryId = input.entryId;
   if (input.lineupId) metadata.lineupId = input.lineupId;
@@ -140,31 +177,145 @@ export async function recordValueTransfer(input: {
     userId: input.userId,
     contestId: input.contestId ?? null,
     chainId: input.chainId,
-    tokenAddress: input.tokenAddress,
-    amountWei: input.amountWei,
+    tokenAddress: recorded.tokenAddress,
+    amountWei: recorded.amountWei,
     transactionHash: input.transactionHash,
-    logIndex: input.logIndex,
+    logIndex: recorded.logIndex,
     metadata,
   });
 
-  if (input.kind !== "SEND" || sameAddress(input.from, input.to)) return;
+  if (input.kind !== "SEND" || sameAddress(recorded.from, recorded.to)) return;
 
-  const recipientId = await resolveUserIdForWallet(input.chainId, input.to);
+  const recipientId = await resolveUserIdForWallet(input.chainId, recorded.to);
   if (!recipientId || recipientId === input.userId) return;
 
   await insertOnchainPaymentRow({
     kind: "SEND",
-    walletAddress: input.to,
+    walletAddress: recorded.to,
     userId: recipientId,
     contestId: null,
     chainId: input.chainId,
-    tokenAddress: input.tokenAddress,
-    amountWei: input.amountWei,
+    tokenAddress: recorded.tokenAddress,
+    amountWei: recorded.amountWei,
     transactionHash: input.transactionHash,
-    logIndex: input.logIndex,
+    logIndex: recorded.logIndex,
     metadata: {
       direction: "in",
-      counterparty: input.from.toLowerCase(),
+      counterparty: recorded.from.toLowerCase(),
     },
   });
+}
+
+type VerifiedMovement = {
+  tokenAddress: Address;
+  from: Address;
+  to: Address;
+  amountWei: string;
+  logIndex: number;
+};
+
+async function verifiedMovement(
+  input: {
+    kind: PaymentKind;
+    tokenAddress: string;
+    amountWei: string;
+    from: string;
+    to: string;
+    contestId?: string;
+    entryId?: string;
+    chainId: number;
+    logIndex: number;
+  },
+  receipt: Awaited<ReturnType<typeof loadVerifiedReceipt>>,
+  wallet: Address,
+): Promise<VerifiedMovement> {
+  if (PAYOUT_KINDS.has(input.kind)) {
+    if (input.kind !== "PRIMARY" && input.kind !== "SECONDARY") {
+      throw new ValueTransferError("Payment does not match the transaction receipt");
+    }
+    if (!input.entryId) throw new ValueTransferError("entryId is required");
+    const contest = await contestOnChain(input.contestId, input.chainId);
+    const token = await contestToken(input.chainId, contest);
+    if (checksum(input.tokenAddress) !== token) {
+      throw new ValueTransferError("Payment does not match the transaction receipt");
+    }
+    const claim = payoutClaimFromReceipt({
+      receipt,
+      kind: input.kind,
+      contestAddress: contest,
+      walletAddress: wallet,
+      entryId: input.entryId,
+      amountWei: input.amountWei,
+    });
+    if (!claim) throw new ValueTransferError("Payment does not match the transaction receipt");
+    return {
+      tokenAddress: token,
+      from: contest,
+      to: wallet,
+      amountWei: claim.amountWei,
+      logIndex: claim.logIndex,
+    };
+  }
+
+  if (!TRANSFER_KINDS.has(input.kind)) {
+    throw new ValueTransferError("Payment does not match the transaction receipt");
+  }
+  const transfer = erc20TransferAt(receipt, input.logIndex);
+  if (!transfer) throw new ValueTransferError("Payment does not match the transaction receipt");
+
+  const from = checksum(input.from);
+  const to = checksum(input.to);
+  const token = checksum(input.tokenAddress);
+  if (
+    transfer.from !== from ||
+    transfer.to !== to ||
+    transfer.tokenAddress !== token ||
+    transfer.amountWei !== input.amountWei
+  ) {
+    throw new ValueTransferError("Payment does not match the transaction receipt");
+  }
+
+  if (input.kind === "SEND") {
+    const platform = getPaymentTokenAddress(input.chainId);
+    if (!platform) throw new ValueTransferError("Payment token is not configured");
+    if (transfer.from !== wallet || transfer.tokenAddress !== platform) {
+      throw new ValueTransferError("Payment does not match the transaction receipt");
+    }
+    return { ...transfer, logIndex: input.logIndex };
+  }
+
+  const contest = await contestOnChain(input.contestId, input.chainId);
+  const contestTokenAddress = await contestToken(input.chainId, contest);
+  const paidByAccount = input.kind === "ENTRY" || input.kind === "WAGER";
+  const expectedFrom = paidByAccount ? wallet : contest;
+  const expectedTo = paidByAccount ? contest : wallet;
+  if (
+    transfer.from !== expectedFrom ||
+    transfer.to !== expectedTo ||
+    transfer.tokenAddress !== contestTokenAddress
+  ) {
+    throw new ValueTransferError("Payment does not match the transaction receipt");
+  }
+  return { ...transfer, logIndex: input.logIndex };
+}
+
+async function contestOnChain(contestId: string | undefined, chainId: number): Promise<Address> {
+  if (!contestId) throw new ValueTransferError("contestId is required");
+  const contest = await prisma.contest.findUnique({
+    where: { id: contestId },
+    select: { address: true, chainId: true },
+  });
+  if (!contest?.address || !isAddress(contest.address)) {
+    throw new ValueTransferError("Contest not found");
+  }
+  if (contest.chainId !== chainId) {
+    throw new ValueTransferError("Contest is on a different chain");
+  }
+  return getAddress(contest.address);
+}
+
+async function contestToken(chainId: number, contest: Address): Promise<Address> {
+  const token = await readContestPaymentToken(chainId, contest);
+  if (!token.ok) throw receiptError(token.error);
+  return token.paymentToken;
 }

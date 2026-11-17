@@ -6,6 +6,7 @@ import {
   parseAbiParameters,
   type TransactionReceipt,
 } from "viem";
+import ContestFactory from "../../contracts/ContestFactory.json" with { type: "json" };
 import { matchingFactoryCreatedContest } from "./verifyFactoryContestCreation.js";
 
 const FACTORY = "0x1111111111111111111111111111111111111111";
@@ -17,23 +18,6 @@ const OPERATOR = "0x6666666666666666666666666666666666666666";
 const GRAPH = "0x7777777777777777777777777777777777777777";
 const REWARD = "0x8888888888888888888888888888888888888888";
 const GROUP_ID = ("0x" + "ab".repeat(32)) as `0x${string}`;
-
-const contestCreatedAbi = [
-  {
-    type: "event" as const,
-    name: "ContestCreated" as const,
-    inputs: [
-      { name: "contest", type: "address", indexed: true },
-      { name: "host", type: "address", indexed: true },
-      { name: "contestantDepositAmount", type: "uint256", indexed: false },
-      { name: "paymentToken", type: "address", indexed: false },
-      { name: "operator", type: "address", indexed: false },
-      { name: "referralGraph", type: "address", indexed: false },
-      { name: "rewardCalculator", type: "address", indexed: false },
-      { name: "referralGroupId", type: "bytes32", indexed: false },
-    ],
-  },
-];
 
 function makeReceipt(
   logs: TransactionReceipt["logs"],
@@ -57,17 +41,20 @@ function makeReceipt(
   } as TransactionReceipt;
 }
 
-function createdLog(params: { factory?: string; contest?: string }) {
+function createdLog(params: { factory?: string; contest?: string; host?: string }) {
   const factory = (params.factory ?? FACTORY) as `0x${string}`;
   const contest = (params.contest ?? CONTEST) as `0x${string}`;
+  const host = (params.host ?? HOST) as `0x${string}`;
   const topics = encodeEventTopics({
-    abi: contestCreatedAbi,
+    abi: ContestFactory.abi,
     eventName: "ContestCreated",
-    args: { contest, host: HOST as `0x${string}` },
+    args: { contest, host },
   });
   const data = encodeAbiParameters(
-    parseAbiParameters("uint256, address, address, address, address, bytes32"),
-    [1_000_000n, TOKEN, OPERATOR, GRAPH, REWARD, GROUP_ID],
+    parseAbiParameters(
+      "uint256, address, address, address, address, bytes32, uint256, uint256, uint256",
+    ),
+    [1_000_000n, TOKEN, OPERATOR, GRAPH, REWARD, GROUP_ID, 0n, 0n, 0n],
   );
   return {
     address: factory,
@@ -85,7 +72,10 @@ function createdLog(params: { factory?: string; contest?: string }) {
 describe("matchingFactoryCreatedContest", () => {
   it("returns the contest when ContestCreated is from the factory and matches the claimed address", () => {
     const receipt = makeReceipt([createdLog({})]);
-    expect(matchingFactoryCreatedContest(receipt, FACTORY, CONTEST)).toBe(getAddress(CONTEST));
+    expect(matchingFactoryCreatedContest(receipt, FACTORY, CONTEST)).toEqual({
+      contest: getAddress(CONTEST),
+      host: getAddress(HOST),
+    });
   });
 
   it("ignores ContestCreated from a different factory", () => {
@@ -143,6 +133,7 @@ describe("verifyFactoryContestCreation", () => {
       chainId: 84532,
       transactionHash: "0x" + "aa".repeat(32),
       claimedAddress: CONTEST,
+      host: HOST,
     });
 
     expect(result).toEqual({
@@ -161,6 +152,7 @@ describe("verifyFactoryContestCreation", () => {
       chainId: 84532,
       transactionHash: "0x" + "aa".repeat(32),
       claimedAddress: CONTEST,
+      host: HOST,
     });
 
     expect(result).toEqual({ ok: false, error: "receipt_failed" });
@@ -174,6 +166,7 @@ describe("verifyFactoryContestCreation", () => {
       chainId: 84532,
       transactionHash: "0x" + "aa".repeat(32),
       claimedAddress: CONTEST,
+      host: HOST,
     });
 
     expect(result).toEqual({ ok: false, error: "not_factory_contest" });
@@ -187,9 +180,24 @@ describe("verifyFactoryContestCreation", () => {
       chainId: 84532,
       transactionHash: "0x" + "aa".repeat(32),
       claimedAddress: CONTEST,
+      host: HOST,
     });
 
     expect(result).toEqual({ ok: false, error: "address_mismatch" });
+  });
+
+  it("rejects when ContestCreated host is not the account wallet", async () => {
+    getTransactionReceipt.mockResolvedValue(makeReceipt([createdLog({ host: OTHER })]));
+    const { verifyFactoryContestCreation } = await import("./verifyFactoryContestCreation.js");
+
+    const result = await verifyFactoryContestCreation({
+      chainId: 84532,
+      transactionHash: "0x" + "aa".repeat(32),
+      claimedAddress: CONTEST,
+      host: HOST,
+    });
+
+    expect(result).toEqual({ ok: false, error: "host_mismatch" });
   });
 
   it("rejects when on-chain operator does not match", async () => {
@@ -205,6 +213,7 @@ describe("verifyFactoryContestCreation", () => {
       chainId: 84532,
       transactionHash: "0x" + "aa".repeat(32),
       claimedAddress: CONTEST,
+      host: HOST,
     });
 
     expect(result).toEqual({ ok: false, error: "operator_mismatch" });
@@ -223,6 +232,7 @@ describe("verifyFactoryContestCreation", () => {
       chainId: 84532,
       transactionHash: "0x" + "aa".repeat(32),
       claimedAddress: CONTEST,
+      host: HOST,
     });
 
     expect(result).toEqual({ ok: false, error: "token_mismatch" });
@@ -238,6 +248,7 @@ describe("verifyFactoryContestCreation", () => {
       chainId: 84532,
       transactionHash: "0x" + "aa".repeat(32),
       claimedAddress: CONTEST,
+      host: HOST,
     });
 
     expect(result).toEqual({ ok: false, error: "receipt_not_found" });

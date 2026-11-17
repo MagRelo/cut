@@ -86,7 +86,7 @@ JSON bodies are capped at 128 KiB.
 | PUT | `/settings` | either | Merge `color`, `oddsFormat` (`american`, `decimal`, `english`), and `onboardingDismissed`. Does not change `marketingUnsubscribed`. |
 | GET | `/contests` | either | This account's contest history. |
 | GET | `/transactions` | either | Activity feed: entries, predictions, payouts. |
-| POST | `/onchain-payments` | either | Record a confirmed value transfer. `X-Cut-Chain-Id` required. Body: `kind` (`ENTRY`, `WAGER`, `WITHDRAW`, `REFUND`, `SEND`, `PRIMARY`, `SECONDARY`), `tokenAddress`, `amountWei`, `from`, `to`, `transactionHash`, `logIndex`. `contestId` is required except for `SEND`. Optional `entryId`, `lineupId`. |
+| POST | `/onchain-payments` | either | Record a confirmed value transfer. `X-Cut-Chain-Id` required. Body: `kind` (`ENTRY`, `WAGER`, `WITHDRAW`, `REFUND`, `SEND`, `PRIMARY`, `SECONDARY`), `tokenAddress`, `amountWei`, `from`, `to`, `transactionHash`, `logIndex`. `contestId` is required except for `SEND`. Optional `entryId`, `lineupId`. The server loads the receipt and stores the log amount. `ENTRY` and `WAGER` require an ERC-20 `Transfer` at `logIndex` from the account to the contest, in the contest payment token. `REFUND` and `WITHDRAW` require that transfer in the other direction. `SEND` requires a `Transfer` from the account in the platform payment token. `PRIMARY` and `SECONDARY` require `PrimaryPayoutClaimed` or `SecondaryPayoutClaimed` for this account, entry, and amount. |
 
 ---
 
@@ -156,7 +156,7 @@ A lineup read includes `candidates` (id, slot, participant, `scoreData`, `total`
 
 League contests are `404` to non-members.
 
-**POST `/`** is two creates. `settings.primaryDeposit` of `0` omits `address` and `transactionHash`. A paid contest requires both. The server loads the factory receipt once, requires a `ContestCreated` log for `address`, and overwrites `settings.operator` and `settings.paymentTokenAddress` from the clone. `transactionId` is an alias of `transactionHash` on this route only. A paid contest the server must deploy is `createContest` on `POST /api/bot/actions`, not this route.
+**POST `/`** is two creates. `settings.primaryDeposit` of `0` omits `address` and `transactionHash`. A paid contest requires both. The server loads the factory receipt once, requires a `ContestCreated` log for `address`, and requires that log's `host` to be the authenticated wallet (`403` otherwise). It overwrites `settings.operator` and `settings.paymentTokenAddress` from the clone. One row per chain and contract address; a second registration is `409`. `transactionId` is an alias of `transactionHash` on this route only. A paid contest the server must deploy is `createContest` on `POST /api/bot/actions`, not this route.
 
 Other body fields: `eventId`, `name`, `endDate`, `chainId`, `settings`, optional `userGroupId`, `description`, `notifyLeagueMembers`. `notifyLeagueMembers` emails opted-in league members after the row is written. It is ignored without `userGroupId`.
 

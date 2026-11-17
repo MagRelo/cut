@@ -2,6 +2,7 @@ import {
   createPublicClient,
   getAddress,
   http,
+  isAddress,
   parseEventLogs,
   type Abi,
   type TransactionReceipt,
@@ -21,6 +22,7 @@ export type VerifyFactoryContestError =
   | "receipt_failed"
   | "not_factory_contest"
   | "address_mismatch"
+  | "host_mismatch"
   | "operator_mismatch"
   | "token_mismatch"
   | "rpc_error";
@@ -98,7 +100,7 @@ export function matchingFactoryCreatedContest(
   receipt: TransactionReceipt,
   factoryAddress: string,
   claimedAddress: string,
-): `0x${string}` | null {
+): { contest: `0x${string}`; host: `0x${string}` } | null {
   const factory = getAddress(factoryAddress);
   const claimed = getAddress(claimedAddress as `0x${string}`);
 
@@ -110,9 +112,10 @@ export function matchingFactoryCreatedContest(
 
   for (const log of logs) {
     if (getAddress(log.address) !== factory) continue;
-    const args = log.args as { contest: `0x${string}` };
+    const args = log.args as { contest?: `0x${string}`; host?: `0x${string}` };
+    if (!args.contest || !args.host) continue;
     if (getAddress(args.contest) === claimed) {
-      return claimed;
+      return { contest: claimed, host: getAddress(args.host) };
     }
   }
   return null;
@@ -122,6 +125,7 @@ export async function verifyFactoryContestCreation(params: {
   chainId: number;
   transactionHash: `0x${string}`;
   claimedAddress: string;
+  host: string;
 }): Promise<VerifyFactoryContestResult> {
   const factoryAddress = getContestFactoryAddress(params.chainId);
   const expectedToken = getPaymentTokenAddress(params.chainId);
@@ -180,16 +184,19 @@ export async function verifyFactoryContestCreation(params: {
       error: factoryLogs.length > 0 ? "address_mismatch" : "not_factory_contest",
     };
   }
+  if (!isAddress(params.host) || created.host !== getAddress(params.host)) {
+    return { ok: false, error: "host_mismatch" };
+  }
 
   try {
     const [operatorRaw, paymentTokenRaw] = await Promise.all([
       publicClient.readContract({
-        address: created,
+        address: created.contest,
         abi: contestAbi,
         functionName: "operator",
       }) as Promise<`0x${string}`>,
       publicClient.readContract({
-        address: created,
+        address: created.contest,
         abi: contestAbi,
         functionName: "paymentToken",
       }) as Promise<`0x${string}`>,
@@ -202,7 +209,7 @@ export async function verifyFactoryContestCreation(params: {
     if (paymentToken !== getAddress(expectedToken)) {
       return { ok: false, error: "token_mismatch" };
     }
-    return { ok: true, contestAddress: created, operator, paymentToken };
+    return { ok: true, contestAddress: created.contest, operator, paymentToken };
   } catch (error) {
     console.error("verifyFactoryContestCreation clone read error:", error);
     return { ok: false, error: "rpc_error" };

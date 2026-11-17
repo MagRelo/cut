@@ -448,6 +448,7 @@ contestRouter.post("/", requireAuth, async (c) => {
       endTime,
       chainId,
       address,
+      host: user.address,
       transactionHash: transactionHash as `0x${string}`,
       settings: (settings ?? null) as Record<string, unknown> | null,
       notifyLeagueMembers,

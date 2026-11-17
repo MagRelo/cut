@@ -288,6 +288,7 @@ export function createContestActionDeps(): CreateContestDeps {
         endTime: input.endTime,
         chainId: input.chainId,
         address: input.address,
+        host: input.smartWallet,
         transactionHash: input.transactionHash,
         settings: input.settings,
         notifyLeagueMembers: input.notifyLeagueMembers,

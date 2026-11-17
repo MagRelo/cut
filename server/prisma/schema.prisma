@@ -290,6 +290,7 @@ model Contest {
   commentaryFeedJobs    CommentaryFeedJob[]
   emailSendLogs         EmailSendLog[]
 
+  @@unique([chainId, address])
   @@index([eventId])
   @@index([userGroupId])
   @@index([status])
