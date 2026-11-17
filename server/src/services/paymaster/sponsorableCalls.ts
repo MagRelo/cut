@@ -77,6 +77,26 @@ const contestAbi = [
   },
 ] as const;
 
+const transferWithAuthorizationAbi = [
+  {
+    type: "function",
+    name: "transferWithAuthorization",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+      { name: "validAfter", type: "uint256" },
+      { name: "validBefore", type: "uint256" },
+      { name: "nonce", type: "bytes32" },
+      { name: "v", type: "uint8" },
+      { name: "r", type: "bytes32" },
+      { name: "s", type: "bytes32" },
+    ],
+    outputs: [],
+  },
+] as const;
+
 const accountAbi = [
   {
     type: "function",
@@ -137,7 +157,8 @@ function functionName(abi: readonly unknown[], data: Hex): string | null {
 /**
  * A sponsored user operation may only call the contest factory, the payment
  * token, a contest row already stored for the chain, or the sender account
- * itself for a session-key install.
+ * itself for a session-key install. A payment-token authorization is allowed
+ * only when the tokens are paid to the sender wallet.
  */
 export async function assertSponsorableCalls(
   calls: BotCall[],
@@ -170,6 +191,13 @@ export async function assertSponsorableCalls(
     if (to === paymentToken) {
       const name = functionName(erc20Abi, call.data);
       if (name === "transfer") continue;
+      if (functionName(transferWithAuthorizationAbi, call.data) === "transferWithAuthorization") {
+        const decoded = decodeFunctionData({ abi: transferWithAuthorizationAbi, data: call.data });
+        if (getAddress(decoded.args[1]) !== sender) {
+          throw new Error("Authorized transfer must pay the sender wallet");
+        }
+        continue;
+      }
       if (name === "approve") {
         const decoded = decodeFunctionData({ abi: erc20Abi, data: call.data });
         const spender = getAddress(decoded.args[0] as Address);

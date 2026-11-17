@@ -251,6 +251,76 @@ describe("validateSponsorshipUserOp", () => {
     ).resolves.toHaveLength(2);
   });
 
+  it("accepts a USDC authorization that pays the sender wallet", async () => {
+    const nonce = `0x${"ab".repeat(32)}` as Hex;
+    const data = encodeFunctionData({
+      abi: [
+        {
+          type: "function",
+          name: "transferWithAuthorization",
+          stateMutability: "nonpayable",
+          inputs: [
+            { name: "from", type: "address" },
+            { name: "to", type: "address" },
+            { name: "value", type: "uint256" },
+            { name: "validAfter", type: "uint256" },
+            { name: "validBefore", type: "uint256" },
+            { name: "nonce", type: "bytes32" },
+            { name: "v", type: "uint8" },
+            { name: "r", type: "bytes32" },
+            { name: "s", type: "bytes32" },
+          ],
+          outputs: [],
+        },
+      ],
+      functionName: "transferWithAuthorization",
+      args: [OTHER, SENDER, 3_000_000n, 0n, 2_000_000_000n, nonce, 27, nonce, nonce],
+    });
+    await expect(
+      validateSponsorshipUserOp(
+        {
+          userOp: userOp(encodeKernelExecute([{ to: TOKEN, value: 0n, data }])),
+          entryPoint: entryPoint07Address,
+          chainId: CHAIN_ID,
+        },
+        deps(),
+      ),
+    ).resolves.toHaveLength(1);
+    const elsewhere = encodeFunctionData({
+      abi: [
+        {
+          type: "function",
+          name: "transferWithAuthorization",
+          stateMutability: "nonpayable",
+          inputs: [
+            { name: "from", type: "address" },
+            { name: "to", type: "address" },
+            { name: "value", type: "uint256" },
+            { name: "validAfter", type: "uint256" },
+            { name: "validBefore", type: "uint256" },
+            { name: "nonce", type: "bytes32" },
+            { name: "v", type: "uint8" },
+            { name: "r", type: "bytes32" },
+            { name: "s", type: "bytes32" },
+          ],
+          outputs: [],
+        },
+      ],
+      functionName: "transferWithAuthorization",
+      args: [OTHER, OTHER, 3_000_000n, 0n, 2_000_000_000n, nonce, 27, nonce, nonce],
+    });
+    await expect(
+      validateSponsorshipUserOp(
+        {
+          userOp: userOp(encodeKernelExecute([{ to: TOKEN, value: 0n, data: elsewhere }])),
+          entryPoint: entryPoint07Address,
+          chainId: CHAIN_ID,
+        },
+        deps(),
+      ),
+    ).rejects.toThrow(/must pay the sender wallet/);
+  });
+
   it("accepts installValidations only when the target is the sender", async () => {
     const data = encodeFunctionData({
       abi: installAbi,

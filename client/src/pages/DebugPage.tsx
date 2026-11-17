@@ -8,6 +8,7 @@ import {
   periodDisplayFromMetadata,
 } from "../lib/eventMetadata";
 import { useAccount } from "wagmi";
+import { SweepEmbeddedUsdc } from "../components/debug/SweepEmbeddedUsdc";
 
 export const DebugPage: React.FC = () => {
   const { address, chainId, status: wagmiStatus } = useAccount();
@@ -21,6 +22,8 @@ export const DebugPage: React.FC = () => {
   return (
     <>
       <h1 className="text-2xl font-bold mb-6">Debug Information</h1>
+
+      <SweepEmbeddedUsdc />
 
       <PageSection>
         <h2 className="text-lg font-semibold mb-3 text-gray-800">Dev pages</h2>
