@@ -108,7 +108,7 @@ contestRouter.get("/directory", optionalPrivyJwt, async (c) => {
       return c.json(
         {
           error: "Invalid query parameters",
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
         400,
       );
@@ -143,7 +143,7 @@ contestRouter.get("/", optionalAuth, async (c) => {
       return c.json(
         {
           error: "Invalid query parameters",
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
         400,
       );
@@ -197,7 +197,7 @@ contestRouter.post("/:id/secondary-participants", requireAuth, requireWalletChai
     const body = await c.req.json();
     const validation = recordContestSecondaryParticipantSchema.safeParse(body);
     if (!validation.success) {
-      return c.json({ error: "Invalid request body", details: validation.error.errors }, 400);
+      return c.json({ error: "Invalid request body", details: validation.error.issues }, 400);
     }
     const { entryId, transactionHash, chainId, amountWei } = validation.data;
     const user = c.get("user");
@@ -363,7 +363,7 @@ contestRouter.post("/", requireAuth, async (c) => {
       return c.json(
         {
           error: "Invalid request body",
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
         400,
       );
@@ -473,7 +473,7 @@ contestRouter.post(
       const body = await c.req.json();
       const validation = joinContestSchema.safeParse(body);
       if (!validation.success) {
-        return c.json({ error: "Invalid request body", details: validation.error.errors }, 400);
+        return c.json({ error: "Invalid request body", details: validation.error.issues }, 400);
       }
       const { lineupId } = validation.data;
       const user = c.get("user");

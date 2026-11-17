@@ -90,7 +90,7 @@ botRouter.post("/delegates", requireAuth, requirePrivySession, async (c) => {
   const user = c.get("user");
   const parsed = enableSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) {
-    return c.json({ error: "Invalid request body", details: parsed.error.errors }, 400);
+    return c.json({ error: "Invalid request body", details: parsed.error.issues }, 400);
   }
   const body = parsed.data;
   const smartWallet = getAddress(body.smartWallet).toLowerCase();
@@ -137,7 +137,7 @@ botRouter.post("/delegates/revoke", requireAuth, requirePrivySession, async (c) 
   const user = c.get("user");
   const parsed = revokeSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) {
-    return c.json({ error: "Invalid request body", details: parsed.error.errors }, 400);
+    return c.json({ error: "Invalid request body", details: parsed.error.issues }, 400);
   }
   const delegateAddress = getAddress(parsed.data.delegateAddress).toLowerCase();
   const existing = await prisma.botDelegate.findUnique({
@@ -161,7 +161,7 @@ botRouter.post("/actions", async (c) => {
   if (!verified.ok) return c.json({ error: verified.error }, verified.status);
   const parsed = actionSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) {
-    return c.json({ error: "Invalid request body", details: parsed.error.errors }, 400);
+    return c.json({ error: "Invalid request body", details: parsed.error.issues }, 400);
   }
   const body = parsed.data;
   if (body.chainId !== verified.chainId) {

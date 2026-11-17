@@ -34,7 +34,7 @@ lineupsRouter.post(
       const validation = cloneLineupBodySchema.safeParse(body);
       if (!validation.success) {
         return c.json(
-          { error: "Invalid request body", details: validation.error.errors },
+          { error: "Invalid request body", details: validation.error.issues },
           400,
         );
       }
@@ -90,7 +90,7 @@ lineupsRouter.post(
       const validation = lineupWriteBodySchema.safeParse(body);
       if (!validation.success) {
         return c.json(
-          { error: "Invalid request body", details: validation.error.errors },
+          { error: "Invalid request body", details: validation.error.issues },
           400,
         );
       }
@@ -150,7 +150,7 @@ lineupsRouter.put(
       const validation = lineupWriteBodySchema.safeParse(body);
       if (!validation.success) {
         return c.json(
-          { error: "Invalid request body", details: validation.error.errors },
+          { error: "Invalid request body", details: validation.error.issues },
           400,
         );
       }

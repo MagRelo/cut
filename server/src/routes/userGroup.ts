@@ -84,7 +84,7 @@ userGroupRouter.post("/join", requireAuth, async (c) => {
       return c.json(
         {
           error: "Invalid request body",
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
         400,
       );
@@ -196,7 +196,7 @@ userGroupRouter.post("/", requireAuth, async (c) => {
       return c.json(
         {
           error: "Invalid request body",
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
         400,
       );
@@ -273,7 +273,7 @@ userGroupRouter.put("/:id", requireAuth, requireUserGroupAdmin, async (c) => {
       return c.json(
         {
           error: "Invalid request body",
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
         400,
       );

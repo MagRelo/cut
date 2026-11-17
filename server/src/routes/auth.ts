@@ -45,7 +45,7 @@ authRouter.post("/register", async (c) => {
     }
     const parsed = registerSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) {
-      return c.json({ error: "Invalid request body", details: parsed.error.errors }, 400);
+      return c.json({ error: "Invalid request body", details: parsed.error.issues }, 400);
     }
     const account = await registerAgentAccount({
       signer: verified.signer,
@@ -147,7 +147,7 @@ authRouter.put("/update", requireAuth, async (c) => {
   try {
     const validation = updateUserNameSchema.safeParse(await c.req.json().catch(() => null));
     if (!validation.success) {
-      return c.json({ error: "Invalid request body", details: validation.error.errors }, 400);
+      return c.json({ error: "Invalid request body", details: validation.error.issues }, 400);
     }
     const { name } = validation.data;
     const user = c.get("user");
@@ -177,7 +177,7 @@ authRouter.put("/settings", requireAuth, async (c) => {
     const user = c.get("user");
     const validation = updateUserSettingsSchema.safeParse(await c.req.json().catch(() => null));
     if (!validation.success) {
-      return c.json({ error: "Invalid request body", details: validation.error.errors }, 400);
+      return c.json({ error: "Invalid request body", details: validation.error.issues }, 400);
     }
 
     const existing = await prisma.user.findUnique({
@@ -293,7 +293,7 @@ authRouter.post("/onchain-payments", requireAuth, requireWalletChain, async (c) 
     const body = await c.req.json();
     const validation = recordOnchainPaymentSchema.safeParse(body);
     if (!validation.success) {
-      return c.json({ error: "Invalid request body", details: validation.error.errors }, 400);
+      return c.json({ error: "Invalid request body", details: validation.error.issues }, 400);
     }
     const user = c.get("user");
     const { contestId, entryId, lineupId, ...payment } = validation.data;

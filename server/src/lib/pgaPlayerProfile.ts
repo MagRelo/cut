@@ -187,7 +187,7 @@ export async function getPlayerProfileOverview(
     } catch (validationError) {
       if (validationError instanceof z.ZodError) {
         console.warn(`Validation error for player ${playerId}:`, {
-          errors: validationError.errors.map((err) => ({
+          errors: validationError.issues.map((err) => ({
             path: err.path.join("."),
             message: err.message,
           })),
