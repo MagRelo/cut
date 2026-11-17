@@ -124,6 +124,31 @@ describe("createCutAgent", () => {
     expect(url.search).toBe("");
   });
 
+  it("defaults createContest expiryTimestamp from endDate", async () => {
+    const requests: Request[] = [];
+    const agent = createCutAgent({
+      privateKey: generatePrivateKey(),
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        requests.push(request.clone());
+        return json({ ok: true, contestId: "contest-1", address: SMART_WALLET });
+      },
+    });
+    const endDate = "2026-11-20T00:00:00.000Z";
+    await agent.createContest({
+      name: "Sunday",
+      eventId: "clh0000000000000000000001",
+      userGroupId: "clh0000000000000000000002",
+      endDate,
+      settings: { primaryDeposit: 1 },
+    });
+    const body = JSON.parse(await requests[0]!.text()) as {
+      settings: { primaryDeposit: number; expiryTimestamp: number };
+    };
+    expect(body.settings.primaryDeposit).toBe(1);
+    expect(body.settings.expiryTimestamp).toBe(Math.floor(Date.parse(endDate) / 1000));
+  });
+
   it("throws the server error", async () => {
     const agent = createCutAgent({
       privateKey: generatePrivateKey(),

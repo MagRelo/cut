@@ -1,4 +1,4 @@
-import { getAddress, type Hex } from "viem";
+import { decodeFunctionData, getAddress, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { packApproval } from "./approvalEnvelope.js";
@@ -83,7 +83,49 @@ describe("executeCreateContest", () => {
     expect(calls?.[0]?.to).toBe(FACTORY);
     expect(calls?.[0]?.value).toBe(0n);
     expect(used.recordContest).toHaveBeenCalledWith(
-      expect.objectContaining({ address: CREATED, transactionHash: TX }),
+      expect.objectContaining({
+        address: CREATED,
+        transactionHash: TX,
+        settings: expect.objectContaining({ expiryTimestamp: 1_800_000_000 }),
+      }),
+    );
+  });
+
+  it("defaults expiryTimestamp from endTime when the body omits it", async () => {
+    const used = deps();
+    const endTime = new Date("2026-11-20T00:00:00.000Z");
+    const expiryTimestamp = Math.floor(endTime.getTime() / 1000);
+    const settings = {
+      primaryDeposit: input.settings.primaryDeposit,
+      referralNetworkBps: input.settings.referralNetworkBps,
+      primaryDepositSecondarySubsidyBps: input.settings.primaryDepositSecondarySubsidyBps,
+    };
+    const result = await executeCreateContest({ ...input, endTime, settings }, used);
+    expect(result).toEqual({ ok: true, contestId: "contest-1", address: CREATED });
+    const call = vi.mocked(used.submitCalls).mock.calls[0]?.[0].calls[0];
+    expect(call).toBeDefined();
+    const decoded = decodeFunctionData({
+      abi: [
+        {
+          type: "function",
+          name: "createContest",
+          stateMutability: "nonpayable",
+          inputs: [
+            { name: "contestantDepositAmount", type: "uint256" },
+            { name: "referralNetworkBps", type: "uint256" },
+            { name: "expiry", type: "uint256" },
+            { name: "primaryDepositSecondarySubsidyBps", type: "uint256" },
+          ],
+          outputs: [{ name: "", type: "address" }],
+        },
+      ],
+      data: call!.data,
+    });
+    expect(decoded.args[2]).toBe(BigInt(expiryTimestamp));
+    expect(used.recordContest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        settings: expect.objectContaining({ expiryTimestamp }),
+      }),
     );
   });
 

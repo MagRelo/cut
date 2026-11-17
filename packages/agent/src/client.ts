@@ -50,7 +50,7 @@ export type CreateContestInput = {
   name: string;
   eventId: string;
   endDate: string | number;
-  settings: { primaryDeposit: number };
+  settings: { primaryDeposit: number; expiryTimestamp?: number };
   description?: string;
   userGroupId?: string;
   notifyLeagueMembers?: boolean;
@@ -77,6 +77,18 @@ type PreparedUserOp = {
   userOp: UserOpBody;
   lineupId?: string;
 };
+
+/** Unix seconds. A positive `expiryTimestamp` wins; otherwise derive it from `endDate` (ISO or unix ms). */
+function contestExpiryTimestamp(
+  endDate: string | number,
+  supplied: number | undefined,
+): number | undefined {
+  if (typeof supplied === "number" && Number.isFinite(supplied) && supplied > 0) return supplied;
+  const ms = typeof endDate === "number" ? endDate : Date.parse(endDate);
+  if (!Number.isFinite(ms)) return undefined;
+  const seconds = Math.floor(ms / 1000);
+  return seconds > 0 ? seconds : undefined;
+}
 
 export function generateDelegateKey(): { privateKey: Hex; address: Address } {
   const privateKey = generatePrivateKey();
@@ -252,6 +264,7 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
       return value as RegisteredAgent;
     },
     async createContest(input) {
+      const expiryTimestamp = contestExpiryTimestamp(input.endDate, input.settings.expiryTimestamp);
       const body = parse(actionSchema, {
         chainId,
         action: "createContest",
@@ -259,7 +272,10 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
         name: input.name,
         eventId: input.eventId,
         endDate: input.endDate,
-        settings: input.settings,
+        settings: {
+          ...input.settings,
+          ...(expiryTimestamp !== undefined ? { expiryTimestamp } : {}),
+        },
         ...(input.description !== undefined ? { description: input.description } : {}),
         ...(input.userGroupId !== undefined ? { userGroupId: input.userGroupId } : {}),
         ...(input.notifyLeagueMembers !== undefined

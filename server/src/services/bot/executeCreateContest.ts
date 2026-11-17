@@ -62,6 +62,15 @@ export type CreateContestDeps = Pick<
   >;
 };
 
+/** On-chain expiry is unix seconds. A positive `settings.expiryTimestamp` wins; otherwise use `endTime`. */
+function withDefaultExpiry(input: CreateContestActionInput): CreateContestActionInput {
+  const current = input.settings.expiryTimestamp;
+  if (typeof current === "number" && Number.isFinite(current) && current > 0) return input;
+  const seconds = Math.floor(input.endTime.getTime() / 1000);
+  if (!Number.isFinite(seconds) || seconds <= 0) return input;
+  return { ...input, settings: { ...input.settings, expiryTimestamp: seconds } };
+}
+
 function depositArgs(settings: Record<string, unknown>, chainId: number) {
   const primaryDeposit = settings.primaryDeposit;
   const expiryTimestamp = settings.expiryTimestamp;
@@ -154,7 +163,8 @@ export async function executeCreateContest(
     return { ok: false, status: 404, error: "Event not found" };
   }
 
-  const amounts = depositArgs(input.settings, input.chainId);
+  const action = withDefaultExpiry(input);
+  const amounts = depositArgs(action.settings, action.chainId);
   if (!amounts.ok) return { ok: false, status: 400, error: amounts.error };
   const factory = deps.factoryAddress(input.chainId);
   if (!factory) return { ok: false, status: 400, error: "Contest factory is not configured" };
@@ -234,7 +244,7 @@ export async function executeCreateContest(
   }
 
   const recorded = await deps.recordContest({
-    ...input,
+    ...action,
     address: created.contestAddress,
     transactionHash: submitted.txHash,
   });
