@@ -160,6 +160,64 @@ describe("createCutAgent", () => {
       message: "No active delegate for this signature",
     });
   });
+
+  it("signs scout and tick with the wallet and cursor", async () => {
+    const requests: Request[] = [];
+    const agent = createCutAgent({
+      privateKey: generatePrivateKey(),
+      smartWallet: SMART_WALLET,
+      origin: "https://playthecut.com",
+      fetch: async (request) => {
+        requests.push(request.clone());
+        const url = new URL(request.url);
+        if (url.pathname.endsWith("/tick")) return json({ cursor: "next", updates: [] });
+        return json({ balanceUsdc: 12, contests: [], blocked: [] });
+      },
+    });
+
+    await expect(agent.scout()).resolves.toMatchObject({ contests: [] });
+    await expect(agent.tick({ cursor: "baseline" })).resolves.toMatchObject({ cursor: "next" });
+
+    const scout = new URL(requests[0]?.url ?? "");
+    expect(scout.pathname).toBe("/api/agent/scout");
+    expect(scout.searchParams.get("smartWallet")).toBe(SMART_WALLET);
+    expect(requests[0]?.headers.get("x-cut-chain-id")).toBe("8453");
+
+    const tick = new URL(requests[1]?.url ?? "");
+    expect(tick.pathname).toBe("/api/agent/tick");
+    expect(tick.searchParams.get("cursor")).toBe("baseline");
+  });
+
+  it("stores preferences and creates a league on the signed wallet", async () => {
+    const requests: Request[] = [];
+    const agent = createCutAgent({
+      privateKey: generatePrivateKey(),
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        requests.push(request.clone());
+        const url = new URL(request.url);
+        if (url.pathname.endsWith("/preferences")) {
+          return json({ preferences: { sports: ["pga-golf"], maxEntryFee: 10 } });
+        }
+        return json({ id: "league-1", name: "Saturday", description: null });
+      },
+    });
+
+    await expect(agent.preferences({ sports: ["pga-golf"], maxEntryFee: 10 })).resolves.toEqual({
+      sports: ["pga-golf"],
+      maxEntryFee: 10,
+    });
+    await expect(agent.createLeague({ name: "Saturday" })).resolves.toMatchObject({ id: "league-1" });
+
+    expect(requests[0]?.method).toBe("PUT");
+    expect(new URL(requests[0]?.url ?? "").searchParams.get("smartWallet")).toBe(SMART_WALLET);
+    expect(JSON.parse(await requests[0]!.text())).toEqual({ sports: ["pga-golf"], maxEntryFee: 10 });
+
+    expect(requests[1]?.method).toBe("POST");
+    const leagueUrl = new URL(requests[1]?.url ?? "");
+    expect(leagueUrl.pathname).toBe("/api/userGroups");
+    expect(leagueUrl.searchParams.get("smartWallet")).toBe(SMART_WALLET);
+  });
 });
 
 describe("generateDelegateKey", () => {

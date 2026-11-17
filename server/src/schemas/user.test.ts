@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { mergeUserSettings, updateUserSettingsSchema } from "./user.js";
+import {
+  agentPreferencesSchema,
+  mergeAgentPreferences,
+  mergeUserSettings,
+  readAgentPreferences,
+  updateUserSettingsSchema,
+} from "./user.js";
 
 describe("updateUserSettingsSchema", () => {
   it("accepts color, oddsFormat, and onboardingDismissed", () => {
@@ -42,5 +48,33 @@ describe("mergeUserSettings", () => {
       color: "#0a73eb",
       onboardingDismissed: true,
     });
+  });
+});
+
+describe("agent preferences", () => {
+  it("reads sports and maxEntryFee from settings.agent", () => {
+    expect(
+      readAgentPreferences({
+        color: "#0a73eb",
+        agent: { sports: ["pga-golf"], maxEntryFee: 10 },
+      }),
+    ).toEqual({ sports: ["pga-golf"], maxEntryFee: 10 });
+  });
+
+  it("merges agent preferences without dropping other settings", () => {
+    const merged = mergeAgentPreferences(
+      { color: "#0a73eb", agent: { sports: ["f1"], maxEntryFee: 5 } },
+      { maxEntryFee: null },
+    );
+    expect(merged).toEqual({
+      color: "#0a73eb",
+      agent: { sports: ["f1"] },
+    });
+    expect(readAgentPreferences(merged).maxEntryFee).toBeNull();
+  });
+
+  it("requires a preference field", () => {
+    expect(agentPreferencesSchema.safeParse({}).success).toBe(false);
+    expect(agentPreferencesSchema.safeParse({ sports: ["pga-golf"] }).success).toBe(true);
   });
 });

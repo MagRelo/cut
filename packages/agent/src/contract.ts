@@ -86,6 +86,20 @@ export const registerSchema = z.object({
   referralCode: z.string().trim().min(1).max(32).optional(),
 });
 
+export const createLeagueSchema = z.object({
+  name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
+  description: z.string().max(DESCRIPTION_MAX_LENGTH).optional(),
+});
+
+export const agentPreferencesSchema = z
+  .object({
+    sports: z.array(z.string().trim().min(1)).max(8).optional(),
+    maxEntryFee: z.number().int().min(0).nullable().optional(),
+  })
+  .refine((value) => value.sports !== undefined || value.maxEntryFee !== undefined, {
+    message: "No preferences to update",
+  });
+
 export type UserOpBody = z.infer<typeof userOpSchema>;
 export type PlayActionBody = z.infer<typeof playActionSchema>;
 export type CreateContestActionBody = z.infer<typeof createContestActionSchema>;
@@ -128,3 +142,116 @@ export type RegisteredAgent = {
 export type LineupResult = { ok: true; lineupId: string };
 export type ContestCreated = { ok: true; contestId: string; address: string };
 export type ContestList = { contests: BotContest[] };
+
+export type AgentPreferences = {
+  sports: string[];
+  maxEntryFee: number | null;
+};
+
+export type AgentAccount = {
+  wallet: string;
+  chainId: number;
+  balanceUsdc: number | null;
+  leagues: { id: string; name: string; role: string }[];
+  referral: { code: string; url: string; totalEarned: number };
+  entries: Record<string, number>;
+  preferences: AgentPreferences;
+};
+
+export type ScoutContest = {
+  contestId: string;
+  name: string;
+  sportId: string;
+  chainId: number;
+  status: string;
+  userGroupId: string | null;
+  userGroupName: string | null;
+  primaryDeposit: number | null;
+  endTime: string;
+  rosterSize: number;
+  predictionRange: { min: number; max: number };
+  fieldCount: number;
+  alreadyEntered: false;
+  event: { id: string; name: string; start: string | null; end: string | null; status: string };
+  fit: string[];
+};
+
+export type ScoutBrief = {
+  balanceUsdc: number | null;
+  contests: ScoutContest[];
+  blocked: { contestId: string; name: string; reason: string; primaryDeposit: number | null }[];
+};
+
+export type PicksBrief = {
+  contest: {
+    contestId: string;
+    name: string;
+    sportId: string;
+    chainId: number;
+    status: string;
+    primaryDeposit: number | null;
+    rosterSize: number;
+    predictionRange: { min: number; max: number };
+    endTime: string;
+    userGroupId: string | null;
+    userGroupName: string | null;
+  };
+  lineup: { lineupId: string; candidates: string[]; prediction: unknown } | null;
+  entry: { lineupId: string; position: number | null; total: number | null } | null;
+  candidates: BotCandidate[];
+};
+
+export type CompanionBrief = {
+  cursor: string;
+  unchanged: string[];
+  updates: unknown[];
+};
+
+export type TickBrief = {
+  cursor: string;
+  account: { balanceUsdc: number | null };
+  scout: { openAffordable: number };
+  companion: { updates: unknown[]; unchanged: string[] };
+  leagues: {
+    needsContest: string[];
+    unentered: { contestId: string; leagueId: string; missingMemberIds: string[] }[];
+    settled: {
+      contestId: string;
+      leagueId: string;
+      winnerName: string | null;
+      winningTotal: number | null;
+    }[];
+  };
+  referrals: { totalEarned: number; newMembers: number };
+};
+
+export type ReferralBrief = {
+  code: string;
+  url: string;
+  totalEarned: number;
+  recorded: boolean;
+  levels: { depth: number; count: number }[];
+  earnings: { contestId: string | null; amount: number; settledAt: string }[];
+  recent: { name: string; depth: number; joinedAt: string }[];
+};
+
+export type LeagueSummary = {
+  id: string;
+  name: string;
+  role: string;
+  memberCount: number;
+  openContests: number;
+  activeContests: number;
+  invite: { code: string; url: string } | null;
+};
+
+export type LeagueList = { leagues: LeagueSummary[] };
+
+export type LeagueDetail = {
+  league: { id: string; name: string; role: string; memberCount: number };
+  members: { id: string; name: string }[];
+  contests: unknown[];
+};
+
+export type LeagueCreated = { id: string; name: string; description: string | null };
+export type LeagueInvite = { inviteCode: string; inviteUrl: string };

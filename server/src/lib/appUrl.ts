@@ -5,6 +5,10 @@ export function getAppPublicUrl(): string {
   return (raw || DEFAULT_APP_URL).replace(/\/$/, "");
 }
 
+export function buildReferralUrl(referralCode: string): string {
+  return `${getAppPublicUrl()}/?ref=${encodeURIComponent(referralCode)}`;
+}
+
 export function buildLeagueInviteUrl(
   inviteCode: string,
   referralCode?: string | null,

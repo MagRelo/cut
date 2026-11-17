@@ -10,6 +10,7 @@ import userGroupRoutes from "./userGroup.js";
 import unsubscribeRoutes from "./unsubscribe.js";
 import streamRoutes from "./stream.js";
 import botRoutes from "./bot.js";
+import agentRoutes from "./agent.js";
 import paymasterRoutes from "./paymaster.js";
 import { API_JSON_BODY_MAX_BYTES } from "../schemas/limits.js";
 
@@ -42,6 +43,7 @@ apiRouter.route("/cron", cronRoutes);
 apiRouter.route("/unsubscribe", unsubscribeRoutes);
 apiRouter.route("/stream", streamRoutes);
 apiRouter.route("/bot", botRoutes);
+apiRouter.route("/agent", agentRoutes);
 apiRouter.route("/paymaster", paymasterRoutes);
 
 export default apiRouter;

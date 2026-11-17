@@ -4,11 +4,24 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import type { z } from "zod";
 import {
   actionSchema,
+  agentPreferencesSchema,
+  createLeagueSchema,
   registerSchema,
+  type AgentAccount,
+  type AgentPreferences,
+  type CompanionBrief,
   type ContestCreated,
   type ContestList,
+  type LeagueCreated,
+  type LeagueDetail,
+  type LeagueInvite,
+  type LeagueList,
   type LineupResult,
+  type PicksBrief,
+  type ReferralBrief,
   type RegisteredAgent,
+  type ScoutBrief,
+  type TickBrief,
   type UserOpBody,
 } from "./contract.js";
 
@@ -69,6 +82,20 @@ export type CutAgent = {
     referralCode?: string;
   }): Promise<RegisteredAgent>;
   createContest(input: CreateContestInput): Promise<ContestCreated>;
+  account(): Promise<AgentAccount>;
+  preferences(input: {
+    sports?: string[];
+    maxEntryFee?: number | null;
+  }): Promise<AgentPreferences>;
+  scout(): Promise<ScoutBrief>;
+  picks(contestId: string): Promise<PicksBrief>;
+  companion(input?: { cursor?: string }): Promise<CompanionBrief>;
+  tick(input?: { cursor?: string }): Promise<TickBrief>;
+  referrals(): Promise<ReferralBrief>;
+  leagues(): Promise<LeagueList>;
+  league(id: string): Promise<LeagueDetail>;
+  createLeague(input: { name: string; description?: string }): Promise<LeagueCreated>;
+  inviteLeague(id: string): Promise<LeagueInvite>;
 };
 
 type PreparedUserOp = {
@@ -154,12 +181,34 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
     return send(await signRequest(url.toString(), signer));
   }
 
-  async function post(path: string, body: unknown): Promise<unknown> {
+  async function post(
+    path: string,
+    body: unknown,
+    query: Record<string, string> = {},
+  ): Promise<unknown> {
+    const url = new URL(path, origin);
+    for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value);
     return send(
       await signRequest(
-        `${origin}${path}`,
+        url.toString(),
         {
           method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        },
+        signer,
+      ),
+    );
+  }
+
+  async function put(path: string, body: unknown): Promise<unknown> {
+    const url = new URL(path, origin);
+    url.searchParams.set("smartWallet", smartWallet);
+    return send(
+      await signRequest(
+        url.toString(),
+        {
+          method: "PUT",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
         },
@@ -202,6 +251,29 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
       throw new CutAgentError("Unexpected response", 502, value);
     }
     return { ok: true, lineupId };
+  }
+
+  function cursorQuery(cursor: string | undefined): Record<string, string> {
+    return cursor ? { smartWallet, cursor } : { smartWallet };
+  }
+
+  function readAccount(value: unknown): AgentAccount {
+    if (!value || typeof value !== "object" || typeof (value as AgentAccount).wallet !== "string") {
+      throw new CutAgentError("Unexpected response", 502, value);
+    }
+    return value as AgentAccount;
+  }
+
+  function readCursorBrief(value: unknown): CompanionBrief {
+    if (
+      !value ||
+      typeof value !== "object" ||
+      typeof (value as CompanionBrief).cursor !== "string" ||
+      !Array.isArray((value as CompanionBrief).unchanged)
+    ) {
+      throw new CutAgentError("Unexpected response", 502, value);
+    }
+    return value as CompanionBrief;
   }
 
   return {
@@ -295,6 +367,84 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
         throw new CutAgentError("Unexpected response", 502, value);
       }
       return { ok: true, contestId: created.contestId, address: created.address };
+    },
+    async account() {
+      return readAccount(await get("/api/agent/account", { smartWallet }));
+    },
+    async preferences(input) {
+      const body = parse(agentPreferencesSchema, input);
+      const value = await put("/api/agent/preferences", body);
+      if (!value || typeof value !== "object" || !("preferences" in value)) {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      return (value as { preferences: AgentPreferences }).preferences;
+    },
+    async scout() {
+      const value = await get("/api/agent/scout", { smartWallet });
+      if (!value || typeof value !== "object" || !Array.isArray((value as ScoutBrief).contests)) {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      return value as ScoutBrief;
+    },
+    async picks(contestId) {
+      const value = await get(`/api/agent/contests/${encodeURIComponent(contestId)}/picks`, {
+        smartWallet,
+      });
+      if (!value || typeof value !== "object" || !("contest" in value)) {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      return value as PicksBrief;
+    },
+    async companion(input) {
+      return readCursorBrief(await get("/api/agent/companion", cursorQuery(input?.cursor)));
+    },
+    async tick(input) {
+      const value = await get("/api/agent/tick", cursorQuery(input?.cursor));
+      if (!value || typeof value !== "object" || typeof (value as TickBrief).cursor !== "string") {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      return value as TickBrief;
+    },
+    async referrals() {
+      const value = await get("/api/agent/referrals", { smartWallet });
+      if (!value || typeof value !== "object" || typeof (value as ReferralBrief).code !== "string") {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      return value as ReferralBrief;
+    },
+    async leagues() {
+      const value = await get("/api/agent/leagues", { smartWallet });
+      if (!value || typeof value !== "object" || !Array.isArray((value as LeagueList).leagues)) {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      return value as LeagueList;
+    },
+    async league(id) {
+      const value = await get(`/api/agent/leagues/${encodeURIComponent(id)}`, { smartWallet });
+      if (!value || typeof value !== "object" || !("league" in value)) {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      return value as LeagueDetail;
+    },
+    async createLeague(input) {
+      const body = parse(createLeagueSchema, input);
+      const value = await post("/api/userGroups", body, { smartWallet });
+      if (!value || typeof value !== "object" || typeof (value as LeagueCreated).id !== "string") {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      return value as LeagueCreated;
+    },
+    async inviteLeague(id) {
+      const value = await post(`/api/userGroups/${encodeURIComponent(id)}/invite`, {}, { smartWallet });
+      if (
+        !value ||
+        typeof value !== "object" ||
+        typeof (value as LeagueInvite).inviteCode !== "string" ||
+        typeof (value as LeagueInvite).inviteUrl !== "string"
+      ) {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      return value as LeagueInvite;
     },
   };
 }

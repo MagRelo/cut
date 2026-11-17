@@ -62,6 +62,7 @@ JSON bodies are capped at 128 KiB.
 | `/unsubscribe` | `unsubscribe.ts` |
 | `/stream` | `stream.ts` |
 | `/bot` | `bot.ts` |
+| `/agent` | `agent.ts` |
 | `/paymaster` | `paymaster.ts` |
 
 ---
@@ -232,6 +233,24 @@ The product name is league. The path is `/api/userGroups`. Client pages are `/le
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/token` | either | Stream Feeds user token. `{ apiKey, token, userId, expiresInSeconds }`. `503` when Stream is disabled. |
+
+---
+
+## Agent (`/api/agent`)
+
+`either`. Briefs for the six agent roles. A delegate sends `smartWallet` in the query. `balanceUsdc` is USDC to two decimals, or `null` when the token read failed. The cursor is an opaque string. The first call, with no cursor, is a baseline: companion `updates` is empty. Send the returned cursor on the next call. An invalid cursor is `400` `"Invalid cursor"`.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/account` | either | Wallet, chain, `balanceUsdc`, leagues (`id`, `name`, `role`), `referral` (`code`, `url`, `totalEarned`), `entries` (distinct entered contests keyed by status), `preferences` (`sports`, `maxEntryFee`). |
+| PUT | `/preferences` | either | Merge `settings.agent`. Body: `sports` (enabled sport ids) and/or `maxEntryFee` (whole USDC, or `null` to clear). At least one field. Unknown sport id is `400` `"Unknown sport"`. Response `{ preferences }`. |
+| GET | `/scout` | either | Visible contests on the signed chain, without the field. `contests` are open, not entered, with a published field, and funded when the balance is known. Each row has `event`, `primaryDeposit`, `rosterSize`, `predictionRange`, `fieldCount`, `alreadyEntered: false`, and `fit` (`league`, `affordable`, `open`, `field-ready`, `within-budget`). `blocked` is the rest with one `reason`: `not-open`, `already-entered`, `field-empty`, or `balance`, plus `primaryDeposit`. A non-empty `preferences.sports` omits other sports. A null balance does not block a paid contest and does not mark it `affordable`. |
+| GET | `/contests/:contestId/picks` | either | One visible contest, `rosterSize`, `predictionRange`, the field, the saved `lineup` or `null`, and the `entry` or `null`. `404` `"Contest not found"` when it is missing or not visible. |
+| GET | `/companion` | either | Entered contests on this chain. Query `cursor`. `{ cursor, unchanged, updates }`. An update has `standing`, `picks`, `signals` (`standing-changed`, `pick-changed`, `status-changed`, `commentary`, `payout`), `commentary` (`generatedAt`, `overview`, `items`), and `payout`. Feed `items` are those whose `entryIds` include this account's entry. |
+| GET | `/tick` | either | One poll. Query `cursor`, the same value as companion. `account.balanceUsdc`, `scout.openAffordable`, companion `updates` and `unchanged`, `leagues.needsContest` (admin leagues whose active event is `SCHEDULED` with no open contest), `leagues.unentered` (`contestId`, `leagueId`, `missingMemberIds`), `leagues.settled` (league contests that became settled since the cursor, with `winnerName` and `winningTotal`), and `referrals.totalEarned` plus `referrals.newMembers`. |
+| GET | `/referrals` | either | `code`, `url`, `totalEarned`, `recorded`, `levels`, `earnings` (`contestId`, `amount`, `settledAt`), `recent` (direct invitees, public name, `depth`, `joinedAt`). |
+| GET | `/leagues` | either | `{ leagues }`. `id`, `name`, `role`, `memberCount`, `openContests`, `activeContests`, `invite` (`{ code, url }` for an admin with a code, otherwise `null`). |
+| GET | `/leagues/:id` | either | Member required. `404` `"League not found"` otherwise. `league`, `members` (`id`, `name`), `contests` with `event`, `primaryDeposit`, `referralNetworkBps`, `entryCount`, `memberCount`, `missingMemberIds` (open contests), and `summary` (`winnerName`, `winningTotal`) or `null`. |
 
 ---
 
