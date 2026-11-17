@@ -37,6 +37,29 @@ for (const { target, agentsHref } of apiCopies) {
 }
 
 const pkg = JSON.parse(readFileSync(`${packageDir}/package.json`, "utf8"));
+const installManifestPath = `${packageDir}/package.install.json`;
+let installPkg;
+try {
+  installPkg = JSON.parse(readFileSync(installManifestPath, "utf8"));
+} catch {
+  console.error(`${relative(root, installManifestPath)} is missing.`);
+  process.exit(1);
+}
+if (installPkg.name !== pkg.name) {
+  console.error("packages/agent/package.install.json name does not match package.json.");
+  process.exit(1);
+}
+for (const field of ["dependencies", "devDependencies"]) {
+  const same =
+    JSON.stringify(installPkg[field] ?? {}, Object.keys(installPkg[field] ?? {}).sort()) ===
+    JSON.stringify(pkg[field] ?? {}, Object.keys(pkg[field] ?? {}).sort());
+  if (!same) {
+    console.error(
+      `packages/agent/package.install.json ${field} do not match package.json. The Docker install layer copies the install manifest.`,
+    );
+    process.exit(1);
+  }
+}
 const release = JSON.parse(readFileSync(releasePath, "utf8"));
 const hash = contentHash();
 if (release.version !== pkg.version) {

@@ -1,8 +1,10 @@
 import { clientSafeErrorMessage } from "../../utils/clientSafeError.js";
+import type { BotCall } from "../bot/botCalls.js";
 import {
   gasFromPaymasterResult,
   assertSponsorshipGas,
   prismaSponsorshipDeps,
+  sponsorshipCallGasCap,
   validateSponsorshipUserOp,
   type SponsorshipDeps,
 } from "./validateSponsorshipUserOp.js";
@@ -92,8 +94,11 @@ export async function handlePaymasterRpc(
   }
   const params = record.params;
   const userOp = params[0];
+  let calls: BotCall[];
+  let chainId: number;
   try {
-    await validateSponsorshipUserOp(
+    chainId = parseChainId(params[2]);
+    calls = await validateSponsorshipUserOp(
       {
         userOp: (userOp ?? {}) as {
           sender?: unknown;
@@ -103,7 +108,7 @@ export async function handlePaymasterRpc(
           preVerificationGas?: unknown;
         },
         entryPoint: params[1],
-        chainId: parseChainId(params[2]),
+        chainId,
       },
       options?.deps ?? prismaSponsorshipDeps(),
     );
@@ -133,7 +138,9 @@ export async function handlePaymasterRpc(
     );
   }
   try {
-    assertSponsorshipGas(gasFromPaymasterResult(rpc.result));
+    assertSponsorshipGas(gasFromPaymasterResult(rpc.result), {
+      callGasLimit: sponsorshipCallGasCap(calls, chainId),
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gas limit is too high";
     return failure(id, -32602, message);

@@ -14,7 +14,7 @@ The build process follows this sequence:
 1. **Client Build**: `pnpm run client:build` - Builds the React frontend
 2. **Server Build**: `pnpm run server:build` - Compiles TypeScript and copies contracts
 3. **Workspace packages**: `@cut/sport-sdk`, `@cut/sport-pga-golf`, `@cut/sport-f1`, `@cut/sport-commodities`, `@cut/secondary-pricing`, and `@playthecut/agent` must have `dist/` (built by `pnpm run deploy` before `docker:build`)
-4. **Docker Build**: `pnpm run docker:build` - Builds and pushes Docker image (uses **pnpm** inside the image for `workspace:*` dependencies)
+4. **Docker Build**: `pnpm run docker:build` - Builds and pushes Docker image (uses **pnpm** inside the image for `workspace:*` dependencies). The install layer copies `packages/agent/package.install.json` (name and dependency specifiers only). The real `packages/agent/package.json` and `dist/` are copied after `pnpm install`, so an agent version bump does not redo the dependency install.
 
 ## Usage
 

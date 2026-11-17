@@ -3,14 +3,21 @@ import { entryPoint07Address } from "viem/account-abstraction";
 import { prisma } from "../../lib/prisma.js";
 import type { BotCall } from "../bot/botCalls.js";
 import { decodeKernelExecute } from "./kernelExecute.js";
-import { assertSponsorableCalls } from "./sponsorableCalls.js";
+import { assertSponsorableCalls, callIsCreateContest } from "./sponsorableCalls.js";
 
-/** A real contest entry is a few hundred thousand gas. The drained ops asked for 8,000,000. */
+/** Entry, claim, and token calls are a few hundred thousand gas. The drained ops asked for 8,000,000. */
 export const SPONSORSHIP_GAS_CAPS = {
   callGasLimit: 1_000_000n,
   verificationGasLimit: 1_000_000n,
   preVerificationGas: 300_000n,
 } as const;
+
+/**
+ * createContest deploys ContestController. A direct call on Base is about 4,080,000 gas.
+ * This leaves room for the Kernel execute and the bundler's estimate buffer, and still
+ * rejects the 8,000,000 gas ops.
+ */
+export const CREATE_CONTEST_CALL_GAS_LIMIT = 6_500_000n;
 
 const SUPPORTED_CHAINS = new Set([8453, 84532]);
 
@@ -20,11 +27,21 @@ export type SponsorshipGas = {
   preVerificationGas?: bigint;
 };
 
-export function assertSponsorshipGas(gas: SponsorshipGas): void {
+export function sponsorshipCallGasCap(calls: BotCall[], chainId: number): bigint {
+  const creates = calls.filter((call) => callIsCreateContest(call, chainId)).length;
+  if (creates === 1) return CREATE_CONTEST_CALL_GAS_LIMIT;
+  return SPONSORSHIP_GAS_CAPS.callGasLimit;
+}
+
+export function assertSponsorshipGas(
+  gas: SponsorshipGas,
+  caps: { callGasLimit?: bigint } = {},
+): void {
   const callGasLimit = gas.callGasLimit;
   const verificationGasLimit = gas.verificationGasLimit;
   const preVerificationGas = gas.preVerificationGas;
-  if (callGasLimit != null && callGasLimit > SPONSORSHIP_GAS_CAPS.callGasLimit) {
+  const callGasLimitCap = caps.callGasLimit ?? SPONSORSHIP_GAS_CAPS.callGasLimit;
+  if (callGasLimit != null && callGasLimit > callGasLimitCap) {
     throw new Error("Call gas limit is too high");
   }
   if (verificationGasLimit != null && verificationGasLimit > SPONSORSHIP_GAS_CAPS.verificationGasLimit) {
@@ -118,17 +135,20 @@ export async function validateSponsorshipUserOp(
   const callGasLimit = parseGasQuantity(input.userOp.callGasLimit);
   const verificationGasLimit = parseGasQuantity(input.userOp.verificationGasLimit);
   const preVerificationGas = parseGasQuantity(input.userOp.preVerificationGas);
-  assertSponsorshipGas({
-    ...(callGasLimit != null ? { callGasLimit } : {}),
-    ...(verificationGasLimit != null ? { verificationGasLimit } : {}),
-    ...(preVerificationGas != null ? { preVerificationGas } : {}),
-  });
   const calls = decodeKernelExecute(input.userOp.callData as Hex);
   await assertSponsorableCalls(calls, {
     chainId: input.chainId,
     sender,
     contestExists: (address) => deps.contestExists(input.chainId, address),
   });
+  assertSponsorshipGas(
+    {
+      ...(callGasLimit != null ? { callGasLimit } : {}),
+      ...(verificationGasLimit != null ? { verificationGasLimit } : {}),
+      ...(preVerificationGas != null ? { preVerificationGas } : {}),
+    },
+    { callGasLimit: sponsorshipCallGasCap(calls, input.chainId) },
+  );
   return calls;
 }
 

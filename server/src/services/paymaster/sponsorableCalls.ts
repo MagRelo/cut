@@ -145,6 +145,12 @@ export type SponsorableCallContext = {
   contestExists: (address: Address) => Promise<boolean>;
 };
 
+export function callIsCreateContest(call: BotCall, chainId: number): boolean {
+  const factory = getContestFactoryAddress(chainId);
+  if (!factory || getAddress(call.to) !== factory) return false;
+  return functionName(createContestAbi, call.data) === "createContest";
+}
+
 function functionName(abi: readonly unknown[], data: Hex): string | null {
   try {
     const decoded = decodeFunctionData({ abi: abi as never, data });

@@ -209,6 +209,43 @@ describe("validateSponsorshipUserOp", () => {
     ).rejects.toThrow(/Call gas limit is too high/);
   });
 
+  it("accepts the gas a contest deploy needs", async () => {
+    await expect(
+      validateSponsorshipUserOp(
+        {
+          userOp: userOp(encodeKernelExecute([createContestCall()]), { callGasLimit: "5000000" }),
+          entryPoint: entryPoint07Address,
+          chainId: CHAIN_ID,
+        },
+        deps(),
+      ),
+    ).resolves.toHaveLength(1);
+  });
+
+  it("keeps the lower cap for a contest entry", async () => {
+    const callData = encodeKernelExecute([
+      {
+        to: CONTEST,
+        value: 0n,
+        data: encodeFunctionData({
+          abi: addPrimaryAbi,
+          functionName: "addPrimaryPosition",
+          args: [7n, []],
+        }),
+      },
+    ]);
+    await expect(
+      validateSponsorshipUserOp(
+        {
+          userOp: userOp(callData, { callGasLimit: "5000000" }),
+          entryPoint: entryPoint07Address,
+          chainId: CHAIN_ID,
+        },
+        deps(),
+      ),
+    ).rejects.toThrow(/Call gas limit is too high/);
+  });
+
   it("accepts factory createContest", async () => {
     await expect(
       validateSponsorshipUserOp(
@@ -464,6 +501,34 @@ describe("handlePaymasterRpc", () => {
     const response = await handlePaymasterRpc(request(encodeKernelExecute([createContestCall()])), {
       deps: deps(),
       forward: async () => ({ result: { callGasLimit: "0x7a1200" } }),
+    });
+    expect(response).toMatchObject({ error: { message: "Call gas limit is too high" } });
+    expect(response).not.toHaveProperty("result");
+  });
+
+  it("returns a Pimlico gas estimate that a contest deploy needs", async () => {
+    const response = await handlePaymasterRpc(request(encodeKernelExecute([createContestCall()])), {
+      deps: deps(),
+      forward: async () => ({ result: { callGasLimit: "5000000", paymaster: TOKEN, paymasterData: "0x" } }),
+    });
+    expect(response).toMatchObject({ result: { callGasLimit: "5000000" } });
+  });
+
+  it("drops a high Pimlico gas estimate for a contest entry", async () => {
+    const callData = encodeKernelExecute([
+      {
+        to: CONTEST,
+        value: 0n,
+        data: encodeFunctionData({
+          abi: addPrimaryAbi,
+          functionName: "addPrimaryPosition",
+          args: [7n, []],
+        }),
+      },
+    ]);
+    const response = await handlePaymasterRpc(request(callData), {
+      deps: deps(),
+      forward: async () => ({ result: { callGasLimit: "5000000" } }),
     });
     expect(response).toMatchObject({ error: { message: "Call gas limit is too high" } });
     expect(response).not.toHaveProperty("result");
