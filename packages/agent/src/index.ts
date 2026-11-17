@@ -1,6 +1,7 @@
 export { createCutAgent, generateDelegateKey, CutAgentError } from "./client.js";
 export type {
   CreateContestInput,
+  CreateFreeContestInput,
   CutAgent,
   CutAgentOptions,
   CutChainId,
@@ -15,6 +16,7 @@ export type {
   CompanionBrief,
   ContestCreated,
   ContestList,
+  FreeContestCreated,
   LeagueCreated,
   LeagueDetail,
   LeagueInvite,

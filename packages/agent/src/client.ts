@@ -5,6 +5,7 @@ import type { z } from "zod";
 import {
   actionSchema,
   agentPreferencesSchema,
+  createFreeContestSchema,
   createLeagueSchema,
   registerSchema,
   type AgentAccount,
@@ -12,6 +13,7 @@ import {
   type CompanionBrief,
   type ContestCreated,
   type ContestList,
+  type FreeContestCreated,
   type LeagueCreated,
   type LeagueDetail,
   type LeagueInvite,
@@ -69,6 +71,15 @@ export type CreateContestInput = {
   notifyLeagueMembers?: boolean;
 };
 
+export type CreateFreeContestInput = {
+  name: string;
+  eventId: string;
+  userGroupId: string;
+  endDate: string | number;
+  description?: string;
+  notifyLeagueMembers?: boolean;
+};
+
 export type CutAgent = {
   readonly address: Address;
   readonly smartWallet: Address;
@@ -82,6 +93,7 @@ export type CutAgent = {
     referralCode?: string;
   }): Promise<RegisteredAgent>;
   createContest(input: CreateContestInput): Promise<ContestCreated>;
+  createFreeContest(input: CreateFreeContestInput): Promise<FreeContestCreated>;
   account(): Promise<AgentAccount>;
   preferences(input: {
     sports?: string[];
@@ -367,6 +379,43 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
         throw new CutAgentError("Unexpected response", 502, value);
       }
       return { ok: true, contestId: created.contestId, address: created.address };
+    },
+    async createFreeContest(input) {
+      const body = parse(createFreeContestSchema, input);
+      const value = await post(
+        "/api/contests",
+        {
+          name: body.name,
+          eventId: body.eventId,
+          userGroupId: body.userGroupId,
+          endDate: body.endDate,
+          chainId,
+          settings: { primaryDeposit: 0 },
+          ...(body.description !== undefined ? { description: body.description } : {}),
+          ...(body.notifyLeagueMembers ? { notifyLeagueMembers: true } : {}),
+        },
+        { smartWallet },
+      );
+      if (!value || typeof value !== "object") {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      const created = value as Partial<FreeContestCreated>;
+      if (
+        typeof created.id !== "string" ||
+        typeof created.name !== "string" ||
+        typeof created.eventId !== "string" ||
+        typeof created.userGroupId !== "string" ||
+        typeof created.status !== "string"
+      ) {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      return {
+        id: created.id,
+        name: created.name,
+        eventId: created.eventId,
+        userGroupId: created.userGroupId,
+        status: created.status,
+      };
     },
     async account() {
       return readAccount(await get("/api/agent/account", { smartWallet }));

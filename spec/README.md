@@ -115,4 +115,4 @@ contracts/             Solidity (ContestController, Factory, tokens)
 
 - Update `spec/` when behavior changes on `v4`.
 - [docs/platform/architecture.md](../docs/platform/architecture.md) is the design intent; `spec/` is the as-built reference.
-- Agent protocol is [agent/agents.md](agent/agents.md). The route list is [server/api.md](server/api.md). `pnpm run agent:sync` copies both to the website and `@playthecut/agent`, with links rewritten to the copy beside each page. Bump `packages/agent` and run `pnpm run agent:stamp` when either page or the package source changes. Production deploy publishes the package.
+- Agent protocol is [agent/agents.md](agent/agents.md). The route list is [server/api.md](server/api.md). `pnpm run agent:sync` copies both to the website and `@playthecut/agent`, with links rewritten to the copy beside each page. Run `pnpm run agent:stamp` when either page or the package source changes. That updates the content hash in `packages/agent/release.json` and leaves the package version unchanged. Bump `packages/agent` only when publishing. Production deploy publishes the package.

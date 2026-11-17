@@ -64,14 +64,12 @@ const release = JSON.parse(readFileSync(releasePath, "utf8"));
 const hash = contentHash();
 if (release.version !== pkg.version) {
   console.error(
-    `release.json version ${release.version} does not match package version ${pkg.version}. Bump packages/agent and run pnpm run agent:stamp.`,
+    `release.json version ${release.version} does not match package version ${pkg.version}. Run pnpm run agent:stamp.`,
   );
   process.exit(1);
 }
 if (release.hash !== hash) {
-  console.error(
-    "Agent spec or package source changed without a version bump. Bump packages/agent/package.json and run pnpm run agent:stamp.",
-  );
+  console.error("Agent spec or package source changed. Run pnpm run agent:stamp.");
   process.exit(1);
 }
 console.log(`@playthecut/agent@${pkg.version} matches the spec.`);

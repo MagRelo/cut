@@ -91,6 +91,16 @@ export const createLeagueSchema = z.object({
   description: z.string().max(DESCRIPTION_MAX_LENGTH).optional(),
 });
 
+/** $0 league contest. `POST /api/contests` — no factory deploy. */
+export const createFreeContestSchema = z.object({
+  name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
+  description: z.string().max(DESCRIPTION_MAX_LENGTH).optional(),
+  eventId: z.string().cuid(),
+  userGroupId: z.string().cuid(),
+  endDate: z.union([z.string().datetime(), z.number()]),
+  notifyLeagueMembers: z.boolean().optional(),
+});
+
 export const agentPreferencesSchema = z
   .object({
     sports: z.array(z.string().trim().min(1)).max(8).optional(),
@@ -141,6 +151,13 @@ export type RegisteredAgent = {
 
 export type LineupResult = { ok: true; lineupId: string };
 export type ContestCreated = { ok: true; contestId: string; address: string };
+export type FreeContestCreated = {
+  id: string;
+  name: string;
+  eventId: string;
+  userGroupId: string;
+  status: string;
+};
 export type ContestList = { contests: BotContest[] };
 
 export type AgentPreferences = {

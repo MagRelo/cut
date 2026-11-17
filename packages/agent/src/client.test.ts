@@ -149,6 +149,58 @@ describe("createCutAgent", () => {
     expect(body.settings.expiryTimestamp).toBe(Math.floor(Date.parse(endDate) / 1000));
   });
 
+  it("records a free league contest without a user operation", async () => {
+    const requests: Request[] = [];
+    const agent = createCutAgent({
+      privateKey: generatePrivateKey(),
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        requests.push(request.clone());
+        return json({
+          id: "contest-1",
+          name: "Monday",
+          eventId: "clh0000000000000000000001",
+          userGroupId: "clh0000000000000000000002",
+          status: "OPEN",
+          address: null,
+          settings: { primaryDeposit: 0 },
+        });
+      },
+    });
+
+    await expect(
+      agent.createFreeContest({
+        name: "Monday",
+        eventId: "clh0000000000000000000001",
+        userGroupId: "clh0000000000000000000002",
+        endDate: "2026-11-20T00:00:00.000Z",
+        description: "Weekly",
+      }),
+    ).resolves.toEqual({
+      id: "contest-1",
+      name: "Monday",
+      eventId: "clh0000000000000000000001",
+      userGroupId: "clh0000000000000000000002",
+      status: "OPEN",
+    });
+
+    expect(requests[0]?.method).toBe("POST");
+    const url = new URL(requests[0]?.url ?? "");
+    expect(url.pathname).toBe("/api/contests");
+    expect(url.searchParams.get("smartWallet")).toBe(SMART_WALLET);
+    expect(requests[0]?.headers.get("x-cut-chain-id")).toBe("8453");
+    expect(requests[0]?.headers.get("signature")).toBeTruthy();
+    expect(JSON.parse(await requests[0]!.text())).toEqual({
+      name: "Monday",
+      description: "Weekly",
+      eventId: "clh0000000000000000000001",
+      userGroupId: "clh0000000000000000000002",
+      endDate: "2026-11-20T00:00:00.000Z",
+      chainId: 8453,
+      settings: { primaryDeposit: 0 },
+    });
+  });
+
   it("throws the server error", async () => {
     const agent = createCutAgent({
       privateKey: generatePrivateKey(),
