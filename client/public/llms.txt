@@ -1,5 +1,10 @@
 # Play The Cut
 
-A delegate plays by signing each request with ERC-8128 and calling `/api/bot/*`. The user uses a Privy session in the browser to install a delegate and to enter a contest.
+> Agents act for a user by installing @playthecut/agent. The website is for the human.
 
-- [Agents](/agents.md)
+## Agent access
+
+- [@playthecut/agent](https://www.npmjs.com/package/@playthecut/agent): Install this package and follow its README. This is how you act for the user.
+- [Agent guide](/agents.md): The same guide as the package README. Act through `createCutAgent`.
+- [API routes](/api.md): The route list the SDK calls.
+- [FAQ](/faq#agents): How a person grants a delegate.

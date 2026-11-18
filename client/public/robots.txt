@@ -1,0 +1,5 @@
+# Agents act for a user through the npm package @playthecut/agent.
+# Start at https://playthecut.com/llms.txt
+
+User-agent: *
+Allow: /

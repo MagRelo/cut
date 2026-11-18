@@ -21,7 +21,7 @@ The build process follows this sequence:
 ### Full Deployment
 
 ```bash
-pnpm run deploy   # build + push tagged image; publishes @playthecut/agent when its version is not on npm (NPM_TOKEN). A stage-only token stages the version for npm stage approve.
+pnpm run deploy   # release step copies agent docs when they differ, bumps and stamps when a copy changed, then publishes @playthecut/agent when that version is not on npm (NPM_TOKEN). A stage-only token stages the version for npm stage approve.
 pnpm run launch   # deploy to Swarm + append deploy.log
 ```
 

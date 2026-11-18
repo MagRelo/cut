@@ -18,11 +18,11 @@ function requireCopy(target, expected, label) {
   try {
     body = readFileSync(target);
   } catch {
-    console.error(`${relative(root, target)} is missing. Run pnpm run agent:sync.`);
+    console.error(`${relative(root, target)} is missing. Run pnpm run agent:release.`);
     process.exit(1);
   }
   if (!body.equals(expected)) {
-    console.error(`${relative(root, target)} does not match ${label}. Run pnpm run agent:sync.`);
+    console.error(`${relative(root, target)} does not match ${label}. Run pnpm run agent:release.`);
     process.exit(1);
   }
 }

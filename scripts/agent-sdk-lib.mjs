@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -30,6 +30,39 @@ export function packagedAgents(spec, routeHref) {
     throw new Error("spec/agent/agents.md is missing the link to spec/server/api.md");
   }
   return Buffer.from(text.replaceAll(repoRouteLink, `[${routeHref}](${routeHref})`));
+}
+
+export function writeIfChanged(target, body) {
+  const next = Buffer.isBuffer(body) ? body : Buffer.from(body);
+  if (existsSync(target) && readFileSync(target).equals(next)) return false;
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, next);
+  return true;
+}
+
+/** Copy the agent pages. Returns repo-relative paths that were written. */
+export function syncAgentDocs() {
+  const written = [];
+  const agentsSpec = readFileSync(specPath);
+  for (const { target, routeHref } of copies) {
+    if (writeIfChanged(target, packagedAgents(agentsSpec, routeHref))) {
+      written.push(relative(root, target));
+    }
+  }
+  const api = readFileSync(apiSpecPath);
+  for (const { target, agentsHref } of apiCopies) {
+    if (writeIfChanged(target, packagedApi(api, agentsHref))) {
+      written.push(relative(root, target));
+    }
+  }
+  return written;
+}
+
+export function stampRelease() {
+  const pkg = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"));
+  const hash = contentHash();
+  writeFileSync(releasePath, `${JSON.stringify({ version: pkg.version, hash }, null, 2)}\n`);
+  return { version: pkg.version, hash };
 }
 
 export function packagedApi(spec, agentsHref) {

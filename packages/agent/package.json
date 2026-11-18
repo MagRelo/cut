@@ -1,7 +1,17 @@
 {
   "name": "@playthecut/agent",
-  "version": "0.3.5",
-  "description": "Agent tookkit for Play the Cut (playthecut.com)",
+  "version": "0.3.7",
+  "description": "Agent toolkit for Play the Cut (playthecut.com)",
+  "homepage": "https://playthecut.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MagRelo/cut.git",
+    "directory": "packages/agent"
+  },
+  "keywords": [
+    "playthecut",
+    "agent"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

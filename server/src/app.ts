@@ -78,6 +78,7 @@ async function serveSpaHtmlWithMetadata(c: Context) {
     const baseUrl = getBaseUrl(c);
     const metadata = await resolvePageMetadata(requestUrl, baseUrl);
     const htmlWithMetadata = injectMetadata(indexContent, metadata);
+    c.header("Link", '</llms.txt>; rel="describedby", </agents.md>; rel="alternate"');
     return c.html(htmlWithMetadata);
   } catch (error) {
     console.error("Error serving index.html:", error);

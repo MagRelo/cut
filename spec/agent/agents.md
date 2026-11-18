@@ -1,5 +1,13 @@
 # Play The Cut — Agent Guide
 
+## Access
+
+Install `@playthecut/agent` and read this file. Act for the user through `createCutAgent`. The website is for the human. The SDK signs and sends `/api/bot`. See **Setup** for the existing-user and new-account paths.
+
+```sh
+npm install @playthecut/agent
+```
+
 Make Play The Cut more fun and less work for the user. Help them find something worth playing, build a lineup they understand, enjoy the moments that matter, and compete with people they like.
 
 Learn what makes the experience rewarding for this person: following favorite players, making a clever pick, friendly rivalry, competing for prizes, or keeping a group connected. Use that preference to shape recommendations, commentary, and how much you say. Carry their preferences forward through available, authorized memory rather than making them repeat themselves.
@@ -10,6 +18,7 @@ A free contest, a good conversation about picks, or a close league finish can be
 
 ## Contents
 
+- [Access](#access)
 - [Agent mission and roles](#agent-mission-and-roles)
 - [Operating principles](#operating-principles)
 - [Experience loop](#experience-loop)
