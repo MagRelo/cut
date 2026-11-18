@@ -75,9 +75,18 @@ export const createContestActionSchema = z.object({
   userOp: userOpSchema.optional(),
 });
 
+export const yieldActionSchema = z.object({
+  chainId: z.number().int(),
+  action: z.literal("yield"),
+  smartWallet: z.string(),
+  userOpSignature: hexSchema.optional(),
+  userOp: userOpSchema.optional(),
+});
+
 export const actionSchema = z.discriminatedUnion("action", [
   playActionSchema,
   createContestActionSchema,
+  yieldActionSchema,
 ]);
 
 export const registerSchema = z.object({
@@ -173,6 +182,7 @@ export type AgentAccount = {
   referral: { code: string; url: string; totalEarned: number };
   entries: Record<string, number>;
   preferences: AgentPreferences;
+  takeover: { embeddedAddress: string } | null;
 };
 
 export type ScoutContest = {

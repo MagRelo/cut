@@ -4,7 +4,7 @@ import { prisma } from "../../lib/prisma.js";
 import { getEventCandidates } from "../events/getEventCandidates.js";
 import { primaryDepositFromSettings } from "../../utils/canDeleteLeagueContest.js";
 import { contestVisibilityWhere, listedContestStatusWhere } from "../../utils/contestListQuery.js";
-import { signerControlsWallet } from "./accountKey.js";
+import { classifySigner, type StoredWalletOwner } from "./accountKey.js";
 
 export type BotContestListItem = {
   contestId: string;
@@ -37,7 +37,7 @@ type ContestRow = {
 
 export type ListBotContestsDeps = {
   findDelegate: (smartWallet: Address, signer: Address) => Promise<{ userId: string } | null>;
-  findOwner: (smartWallet: Address, chainId: number) => Promise<{ userId: string } | null>;
+  findOwner: (smartWallet: Address, chainId: number) => Promise<StoredWalletOwner | null>;
   loadContests: (userId: string, chainId: number, eventId?: string) => Promise<ContestRow[]>;
   loadCandidates: (sportId: string, eventId: string) => Promise<Candidate[] | null>;
 };
@@ -60,16 +60,18 @@ export async function listSignedBotContests(
 
   const smartWallet = getAddress(input.smartWallet);
   const signer = getAddress(input.signer);
-  const actor = signerControlsWallet(signer, smartWallet, input.chainId)
-    ? await deps.findOwner(smartWallet, input.chainId)
-    : await deps.findDelegate(smartWallet, signer);
+  const owner = await deps.findOwner(smartWallet, input.chainId);
+  const role = classifySigner(signer, smartWallet, input.chainId, owner?.ownerAddress);
+  const actor =
+    role === "owner" || role === "wallet" ? owner : await deps.findDelegate(smartWallet, signer);
   if (!actor) {
     return {
       ok: false,
       status: 403,
-      error: signerControlsWallet(signer, smartWallet, input.chainId)
-        ? "No account for this wallet"
-        : "No active delegate for this signature",
+      error:
+        role === "owner" || role === "wallet"
+          ? "No account for this wallet"
+          : "No active delegate for this signature",
     };
   }
 
@@ -121,7 +123,7 @@ export function botContestListDeps(): ListBotContestsDeps {
     findOwner: async (smartWallet, chainId) => {
       const row = await prisma.userWallet.findUnique({
         where: { chainId_publicKey: { chainId, publicKey: smartWallet.toLowerCase() } },
-        select: { userId: true },
+        select: { userId: true, ownerAddress: true },
       });
       return row;
     },

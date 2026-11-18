@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePostHog } from "posthog-js/react";
-import { useAccount, useBalance, useReadContract } from "wagmi";
-import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
+import { useBalance, useReadContract } from "wagmi";
+import { useEffectiveWalletAddress } from "./useEffectiveWalletAddress";
 import type { Contest } from "../types/contest";
 import { useAuth } from "../contexts/AuthContext";
 import { useLineupData } from "./useLineupData";
@@ -25,9 +25,7 @@ import { useSportRosterRules } from "./useSportRosterRules";
 
 export function useContestLineupEntry(contest: Contest) {
   const posthog = usePostHog();
-  const { address } = useAccount();
-  const { client: smartWalletClient } = useSmartWallets();
-  const balanceAddress = smartWalletClient?.account?.address ?? address;
+  const balanceAddress = useEffectiveWalletAddress();
   const { user, paymentTokenBalance, balancesUnavailable } = useAuth();
   const joinContest = useJoinContest();
   const leaveContest = useLeaveContest();

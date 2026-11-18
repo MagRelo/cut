@@ -32,6 +32,9 @@ export type OwnerUserOpInput = {
   calls: BotCall[];
   userOpSignature?: Hex;
   userOp?: SerializedUserOp;
+  /** Sign for a Kernel account that this key owns now, even when it did not create the address. */
+  boundAccount?: boolean;
+  pendingOwner?: Address;
 };
 
 async function pimlicoUserOperationGas(bundlerClient: {
@@ -59,7 +62,10 @@ async function gateOwnerCalls(
   input: OwnerUserOpInput,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
-    if (kernelWalletAddress(input.owner, input.chainId) !== getAddress(input.smartWallet)) {
+    if (
+      !input.boundAccount &&
+      kernelWalletAddress(input.owner, input.chainId) !== getAddress(input.smartWallet)
+    ) {
       return { ok: false, error: "User operation sender does not match the smart wallet" };
     }
     const deps = prismaSponsorshipDeps();
@@ -67,6 +73,7 @@ async function gateOwnerCalls(
       chainId: input.chainId,
       sender: getAddress(input.smartWallet),
       contestExists: (address) => deps.contestExists(input.chainId, address),
+      ...(input.pendingOwner ? { pendingOwner: getAddress(input.pendingOwner) } : {}),
     });
     return { ok: true };
   } catch (error) {
@@ -115,6 +122,7 @@ async function ownerClient(
   const account = await createKernelAccount(publicClient, {
     entryPoint,
     kernelVersion: KERNEL_V3_1,
+    ...(input.boundAccount ? { address: getAddress(input.smartWallet) } : {}),
     plugins: { sudo },
   });
   if (getAddress(account.address) !== getAddress(input.smartWallet)) {

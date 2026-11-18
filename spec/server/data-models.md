@@ -11,7 +11,7 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 
 ### User
 - Privy-linked (`privyUserId`), profile, `settings` JSON
-- `userType`: `USER` (default), `TEST`, `ADMIN`, `SUPER_ADMIN`, `PUBLIC`
+- `userType`: `USER` (default), `TEST`, `ADMIN`, `SUPER_ADMIN`, `PUBLIC`, `AGENT`
 - Privy dashboard test emails (`test-…@privy.io`) provision as `TEST`. Existing `USER` rows with those emails are promoted to `TEST`. Staff types are not changed.
 - Referral fields: `referralCode` (opaque `?ref=` invite code, unique), `referrerAddress`, `referralGroupId`, `referredByUserId`, etc.
 - Relations: `lineups`, `contestLineups`, `wallets`, `userGroups`, `botDelegates`
@@ -19,6 +19,8 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 ### UserWallet
 - `chainId` + `publicKey` (unique per chain)
 - `isPrimary` for default wallet
+- `ownerAddress`: current ECDSA root. Empty on a browser wallet. The account key until a human takes the account over.
+- `pendingOwnerAddress`: embedded address recorded while that human is waiting for the agent to yield. Cleared when the yield lands.
 
 ### UserGroup (league)
 - **No sport field** — cross-sport by design

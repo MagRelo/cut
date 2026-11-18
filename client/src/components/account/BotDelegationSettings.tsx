@@ -18,6 +18,8 @@ import {
   type WalletCall,
 } from "../../lib/botSessionKey";
 import apiClient from "../../utils/apiClient";
+import { sendAccountCalls } from "../../lib/accountKernelSend";
+import { useAuth } from "../../contexts/AuthContext";
 
 type DelegateRow = {
   delegateAddress: string;
@@ -36,12 +38,13 @@ const agentPrompt = `Make me a genius on Play The Cut.
 
 The best way is the SDK, @playthecut/agent. Install it and read the docs. That is how you should learn the game and act for me.
 
+${BRAND_URL}/access.md
 ${BRAND_URL}/agents.md
 ${BRAND_URL}/api.md
 ${BRAND_URL}/faq#agents
 ${BRAND_URL}/llms.txt
 
-I already have an account, so use the Existing user path.
+I already have an account. Follow the delegate steps in the account access page.
 
 Call generateDelegateKey() once, store the private key, and reply with only the public address.
 
@@ -60,6 +63,7 @@ export function BotDelegationSettings() {
   const publicClient = usePublicClient();
   const { wallets } = useWallets();
   const { client: smartWalletClient, getClientForChain } = useSmartWallets();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [delegateInput, setDelegateInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +74,8 @@ export function BotDelegationSettings() {
     queryFn: () => apiClient.get<DelegateResponse>("/bot/delegates", { requiresAuth: true }),
   });
 
-  const smartWallet = smartWalletClient?.account?.address;
+  const smartWallet =
+    user?.walletOwner && user.walletAddress ? user.walletAddress : smartWalletClient?.account?.address;
   const embedded = wallets.find(
     (wallet) => wallet.type === "ethereum" && wallet.walletClientType === "privy",
   );
@@ -80,11 +85,23 @@ export function BotDelegationSettings() {
 
   async function send(chainId: number, call: WalletCall) {
     if (!publicClient) throw new Error("Wallet is not ready");
-    const client = await getClientForChain({ id: chainId });
-    if (!client) throw new Error("Wallet is not ready");
-    const hash = await client.sendTransaction({
-      calls: [{ to: call.to, data: call.data, value: 0n }],
-    });
+    const takenOver =
+      !!user?.walletOwner &&
+      !!embedded &&
+      getAddress(user.walletOwner) === getAddress(embedded.address);
+    const hash = takenOver
+      ? await sendAccountCalls({
+          calls: [{ to: call.to, data: call.data }],
+          embedded,
+          chainId,
+        })
+      : await (async () => {
+          const client = await getClientForChain({ id: chainId });
+          if (!client) throw new Error("Wallet is not ready");
+          return client.sendTransaction({
+            calls: [{ to: call.to, data: call.data, value: 0n }],
+          });
+        })();
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     if (receipt.status === "reverted") throw new Error("Transaction reverted");
   }

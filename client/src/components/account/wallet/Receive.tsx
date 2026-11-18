@@ -1,5 +1,5 @@
-import { useAccount, useChainId } from "wagmi";
-import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
+import { useChainId } from "wagmi";
+import { useEffectiveWalletAddress } from "../../../hooks/useEffectiveWalletAddress";
 import { useAuth } from "../../../contexts/AuthContext";
 import { getContractAddress, useTokenSymbol } from "../../../utils/blockchainUtils";
 import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../../config/targetChain";
@@ -9,9 +9,7 @@ import { WalletAddressCopy } from "./WalletAddressCopy";
 
 export const Receive = () => {
   const chainId = useChainId();
-  const { address } = useAccount();
-  const { client: smartWalletClient } = useSmartWallets();
-  const walletAddress = smartWalletClient?.account?.address ?? address ?? "";
+  const walletAddress = useEffectiveWalletAddress() ?? "";
   const paymentTokenAddress = getContractAddress(chainId ?? 0, "paymentTokenAddress");
   const { paymentTokenSymbol } = useAuth();
   const { data: paymentSymbolData } = useTokenSymbol(paymentTokenAddress ?? undefined);

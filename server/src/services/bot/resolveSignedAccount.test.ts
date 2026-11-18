@@ -3,14 +3,15 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { kernelWalletAddress } from "@playthecut/agent";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findUniqueWallet, findDelegate } = vi.hoisted(() => ({
+const { findUniqueWallet, updateManyWallets, findDelegate } = vi.hoisted(() => ({
   findUniqueWallet: vi.fn(),
+  updateManyWallets: vi.fn(),
   findDelegate: vi.fn(),
 }));
 
 vi.mock("../../lib/prisma.js", () => ({
   prisma: {
-    userWallet: { findUnique: findUniqueWallet },
+    userWallet: { findUnique: findUniqueWallet, updateMany: updateManyWallets },
     botDelegate: { findFirst: findDelegate },
   },
 }));
@@ -30,6 +31,7 @@ describe("resolveSignedAccount", () => {
     const wallet = kernelWalletAddress(owner.address, CHAIN_ID);
     findUniqueWallet.mockResolvedValue({
       publicKey: wallet.toLowerCase(),
+      ownerAddress: null,
       user: { id: "agent-1", userType: "AGENT" },
     });
     const result = await resolveSignedAccount({
@@ -47,6 +49,33 @@ describe("resolveSignedAccount", () => {
       },
     });
     expect(findDelegate).not.toHaveBeenCalled();
+    expect(updateManyWallets).toHaveBeenCalledWith({
+      where: { chainId: CHAIN_ID, publicKey: wallet.toLowerCase(), ownerAddress: null },
+      data: { ownerAddress: owner.address.toLowerCase() },
+    });
+  });
+
+  it("uses a delegate after the stored owner is no longer the creation key", async () => {
+    const owner = privateKeyToAccount(generatePrivateKey());
+    const wallet = kernelWalletAddress(owner.address, CHAIN_ID);
+    const human = getAddress("0x3333333333333333333333333333333333333333");
+    findUniqueWallet.mockResolvedValue({
+      publicKey: wallet.toLowerCase(),
+      ownerAddress: human.toLowerCase(),
+      user: { id: "agent-1", userType: "AGENT" },
+    });
+    findDelegate.mockResolvedValue({
+      smartWallet: wallet.toLowerCase(),
+      user: { id: "agent-1", userType: "AGENT" },
+    });
+    const result = await resolveSignedAccount({
+      signer: owner.address,
+      chainId: CHAIN_ID,
+      smartWallet: wallet,
+    });
+    expect(result).toMatchObject({ ok: true, user: { userId: "agent-1" } });
+    expect(findDelegate).toHaveBeenCalled();
+    expect(updateManyWallets).not.toHaveBeenCalled();
   });
 
   it("rejects an owner key when that Kernel wallet is not stored", async () => {

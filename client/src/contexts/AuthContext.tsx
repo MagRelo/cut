@@ -57,6 +57,8 @@ export interface AuthUser {
   userGroups: AuthUserGroupMembership[];
   chainId: number;
   walletAddress: string;
+  walletOwner: string | null;
+  pendingOwner: string | null;
   referralCode: string | null;
   pendingTokenMint?: boolean;
   createdAt?: string;
@@ -110,8 +112,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const posthog = usePostHog();
   const { address, chainId: currentChainId, status } = useAccount();
   const { client: smartWalletClient } = useSmartWallets();
-  /** Sponsored smart-account txs debit ERC20s from the smart wallet, not always the wagmi EOA. */
-  const balanceAddress = smartWalletClient?.account?.address ?? address;
   const { switchChain } = useSwitchChain();
   const { disconnect } = useDisconnect();
   const { ready, authenticated, logout: privyLogout, getAccessToken } = usePrivy();
@@ -206,6 +206,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const user: AuthUser | null = sessionPhase === "ready" ? (profileQuery.data ?? null) : null;
 
   const paymentTokenAddress = getContractAddress(currentChainId ?? 0, "paymentTokenAddress");
+  const balanceAddress =
+    user?.walletOwner && user.walletAddress
+      ? (user.walletAddress as `0x${string}`)
+      : (smartWalletClient?.account?.address ?? address);
 
   const paymentBalanceEnabled = !!balanceAddress && !!paymentTokenAddress && !!user;
 
@@ -615,6 +619,8 @@ const storybookAuthUser: AuthUser = {
   userGroups: [],
   chainId: 84532,
   walletAddress: "0x0000000000000000000000000000000000000001",
+  walletOwner: null,
+  pendingOwner: null,
   referralCode: "AbCdEf23",
 };
 

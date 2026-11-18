@@ -4,8 +4,8 @@ import { Button } from "../common/Button";
 import { TxButton } from "../common/TxButton";
 import { usePostHog } from "posthog-js/react";
 import { formatUnits } from "viem";
-import { useAccount, useBalance, useReadContract } from "wagmi";
-import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
+import { useBalance, useReadContract } from "wagmi";
+import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
 import {
   contestPaymentDecimals,
   hasEnoughTokenBalance,
@@ -73,9 +73,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   const { formatStakeReturnOdds } = useOddsFormat();
   const location = useLocation();
   const posthog = usePostHog();
-  const { address } = useAccount();
-  const { client: smartWalletClient } = useSmartWallets();
-  const balanceAddress = smartWalletClient?.account?.address ?? address;
+  const balanceAddress = useEffectiveWalletAddress();
   const { paymentTokenBalance, user, balancesUnavailable, refetchBalances } = useAuth();
   const [amount, setAmount] = useState<string>("10");
   const [error, setError] = useState<string | null>(null);

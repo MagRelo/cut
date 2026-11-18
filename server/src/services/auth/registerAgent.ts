@@ -64,6 +64,7 @@ async function existingAgent(
 
 const walletSelect = {
   publicKey: true,
+  ownerAddress: true,
   user: {
     select: { id: true, email: true, userType: true, name: true, referralCode: true },
   },
@@ -84,7 +85,15 @@ export async function registerAgentAccount(input: {
     where: { chainId_publicKey: { chainId: input.chainId, publicKey: smartWallet } },
     select: walletSelect,
   });
-  if (existing) return existingAgent(existing.user, smartWallet, email);
+  if (existing) {
+    if (!existing.ownerAddress) {
+      await prisma.userWallet.update({
+        where: { chainId_publicKey: { chainId: input.chainId, publicKey: smartWallet } },
+        data: { ownerAddress: owner },
+      });
+    }
+    return existingAgent(existing.user, smartWallet, email);
+  }
 
   const legacy = await prisma.userWallet.findUnique({
     where: { chainId_publicKey: { chainId: input.chainId, publicKey: owner } },
@@ -93,7 +102,7 @@ export async function registerAgentAccount(input: {
   if (legacy) {
     await prisma.userWallet.update({
       where: { chainId_publicKey: { chainId: input.chainId, publicKey: owner } },
-      data: { publicKey: smartWallet },
+      data: { publicKey: smartWallet, ownerAddress: owner },
     });
     return existingAgent(legacy.user, smartWallet, email);
   }
@@ -134,13 +143,14 @@ export async function registerAgentAccount(input: {
       referredByUserId: referral?.referredByUserId ?? null,
       referralChainId: referral || platformGroupId ? input.chainId : null,
       referralRecordedAt: referral || platformGroupId ? new Date() : null,
-      wallets: {
-        create: {
-          chainId: input.chainId,
-          publicKey: smartWallet,
-          isPrimary: true,
-        },
-      },
+          wallets: {
+            create: {
+              chainId: input.chainId,
+              publicKey: smartWallet,
+              isPrimary: true,
+              ownerAddress: owner,
+            },
+          },
     },
     select: { id: true, email: true, userType: true, name: true, referralCode: true },
   });

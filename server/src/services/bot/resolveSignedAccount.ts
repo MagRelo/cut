@@ -1,7 +1,7 @@
 import { getAddress, isAddress, type Address } from "viem";
 import { prisma } from "../../lib/prisma.js";
 import type { CutAuthUser } from "../../lib/privyUserProvisioning.js";
-import { signerControlsWallet } from "./accountKey.js";
+import { classifySigner, kernelOwnerWallet } from "./accountKey.js";
 
 export async function resolveSignedAccount(input: {
   signer: Address;
@@ -17,13 +17,32 @@ export async function resolveSignedAccount(input: {
   }
   const wallet = named ? getAddress(named) : signer;
 
-  if (signerControlsWallet(signer, wallet, input.chainId)) {
-    const row = await prisma.userWallet.findUnique({
-      where: { chainId_publicKey: { chainId: input.chainId, publicKey: wallet.toLowerCase() } },
-      select: { publicKey: true, user: { select: { id: true, userType: true } } },
-    });
+  const row = await prisma.userWallet.findUnique({
+    where: { chainId_publicKey: { chainId: input.chainId, publicKey: wallet.toLowerCase() } },
+    select: {
+      publicKey: true,
+      ownerAddress: true,
+      user: { select: { id: true, userType: true } },
+    },
+  });
+  const role = classifySigner(signer, wallet, input.chainId, row?.ownerAddress);
+  if (role === "owner" || role === "wallet") {
     if (!row) {
       return { ok: false, status: 403, error: "No account for this wallet" };
+    }
+    if (
+      role === "owner" &&
+      !row.ownerAddress &&
+      kernelOwnerWallet(signer, input.chainId) === wallet
+    ) {
+      await prisma.userWallet.updateMany({
+        where: {
+          chainId: input.chainId,
+          publicKey: wallet.toLowerCase(),
+          ownerAddress: null,
+        },
+        data: { ownerAddress: signer.toLowerCase() },
+      });
     }
     return {
       ok: true,

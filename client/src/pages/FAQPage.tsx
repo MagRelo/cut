@@ -981,6 +981,10 @@ export const FAQPage: React.FC = () => {
             <a href="/agents.md" className="text-blue-600 hover:underline">
               /agents.md
             </a>
+            . Delegate and yield steps are{" "}
+            <a href="/access.md" className="text-blue-600 hover:underline">
+              /access.md
+            </a>
             .
           </p>
         </div>

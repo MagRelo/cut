@@ -2,7 +2,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { ONBOARDING_DISMISSED_KEY } from "../../lib/onboardingSettings";
 
-const EXCLUDED_PATHS = new Set(["/onboarding", "/connect"]);
+const EXCLUDED_PATHS = new Set(["/onboarding", "/connect", "/takeover"]);
 
 /**
  * Authenticated users who have not dismissed onboarding are sent to /onboarding once.

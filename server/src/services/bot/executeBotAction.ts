@@ -7,7 +7,7 @@ import {
   canRemovePrimaryPosition,
   type ContestStatus,
 } from "../shared/types.js";
-import { signerControlsWallet, signerIsKernelOwner } from "./accountKey.js";
+import { classifySigner, kernelOwnerWallet, type StoredWalletOwner } from "./accountKey.js";
 import { unpackApproval } from "./approvalEnvelope.js";
 import {
   assertJoinCalls,
@@ -73,7 +73,8 @@ export type ExecuteBotActionResult =
 
 export type BotActionDeps = {
   findDelegate: (smartWallet: Address, signer: Address) => Promise<BotDelegateRow | null>;
-  findOwner: (smartWallet: Address, chainId: number) => Promise<{ userId: string } | null>;
+  findOwner: (smartWallet: Address, chainId: number) => Promise<StoredWalletOwner | null>;
+  rememberOwner?: (smartWallet: Address, chainId: number, signer: Address) => Promise<void>;
   sessionEnabled: (smartWallet: Address, permissionId: Hex, chainId: number) => Promise<boolean>;
   loadContest: (contestId: string) => Promise<BotContest | null>;
   isGroupMember: (userId: string, userGroupId: string) => Promise<boolean>;
@@ -183,10 +184,19 @@ export async function executeBotAction(
 
   let userId: string;
   let delegate: BotDelegateRow | null;
-  if (signerControlsWallet(signer, smartWallet, input.chainId)) {
-    const owner = await deps.findOwner(smartWallet, input.chainId);
-    if (!owner) return { ok: false, status: 403, error: "No account for this wallet" };
-    userId = owner.userId;
+  let signerRole: "owner" | "wallet" | "other";
+  const ownerRow = await deps.findOwner(smartWallet, input.chainId);
+  signerRole = classifySigner(signer, smartWallet, input.chainId, ownerRow?.ownerAddress);
+  if (signerRole === "owner" || signerRole === "wallet") {
+    if (!ownerRow) return { ok: false, status: 403, error: "No account for this wallet" };
+    if (
+      signerRole === "owner" &&
+      !ownerRow.ownerAddress &&
+      kernelOwnerWallet(signer, input.chainId) === smartWallet
+    ) {
+      await deps.rememberOwner?.(smartWallet, input.chainId, signer);
+    }
+    userId = ownerRow.userId;
     delegate = null;
   } else {
     delegate = await deps.findDelegate(smartWallet, signer);
@@ -218,9 +228,9 @@ export async function executeBotAction(
     return upsertLineup(input, userId, contest, deps);
   }
   if (input.action === "leave") {
-    return leaveAction(input, userId, delegate, contest, approval, deps);
+    return leaveAction(input, userId, delegate, contest, approval, signerRole, deps);
   }
-  return joinAction(input, userId, delegate, contest, approval, deps);
+  return joinAction(input, userId, delegate, contest, approval, signerRole, deps);
 }
 
 async function joinAction(
@@ -229,6 +239,7 @@ async function joinAction(
   delegate: BotDelegateRow | null,
   contest: BotContest,
   approval: string,
+  signerRole: "owner" | "wallet" | "other",
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
   if (!canAddPrimaryPosition(contest.status)) {
@@ -281,6 +292,7 @@ async function joinAction(
     calls,
     onchain,
     lineup.lineup.id,
+    signerRole,
     deps,
   );
   if (!submitted.ok || submitted.preparedUserOp) return submitted;
@@ -303,6 +315,7 @@ async function leaveAction(
   delegate: BotDelegateRow | null,
   contest: BotContest,
   approval: string,
+  signerRole: "owner" | "wallet" | "other",
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
   if (!canRemovePrimaryPosition(contest.status)) {
@@ -344,6 +357,7 @@ async function leaveAction(
     calls,
     onchain,
     lineup.lineup.id,
+    signerRole,
     deps,
   );
   if (!submitted.ok || submitted.preparedUserOp) return submitted;
@@ -403,13 +417,14 @@ async function submitIfNeeded(
   calls: BotCall[],
   onchain: boolean,
   lineupId: string,
+  signerRole: "owner" | "wallet" | "other",
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
   if (!onchain) return { ok: true, lineupId };
   if (!delegate) {
     const smartWallet = getAddress(input.smartWallet);
     const owner = getAddress(input.signer);
-    if (!signerIsKernelOwner(owner, smartWallet, input.chainId)) {
+    if (signerRole !== "owner") {
       return {
         ok: false,
         status: 403,

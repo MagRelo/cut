@@ -81,7 +81,17 @@ export function createBotActionDeps(): BotActionDeps {
     findOwner: async (smartWallet, chainId) => {
       return prisma.userWallet.findUnique({
         where: { chainId_publicKey: { chainId, publicKey: smartWallet.toLowerCase() } },
-        select: { userId: true },
+        select: { userId: true, ownerAddress: true },
+      });
+    },
+    rememberOwner: async (smartWallet, chainId, signer) => {
+      await prisma.userWallet.updateMany({
+        where: {
+          chainId,
+          publicKey: smartWallet.toLowerCase(),
+          ownerAddress: null,
+        },
+        data: { ownerAddress: signer.toLowerCase() },
       });
     },
     sessionEnabled: readSessionKeyEnabled,

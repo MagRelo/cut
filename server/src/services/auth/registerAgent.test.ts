@@ -44,6 +44,7 @@ const KERNEL = kernelWalletAddress(SIGNER, 84532).toLowerCase();
 function walletRow(publicKey: string) {
   return {
     publicKey,
+    ownerAddress: SIGNER.toLowerCase(),
     user: {
       id: "agent-1",
       email: "first@example.com",
@@ -94,6 +95,7 @@ describe("registerAgentAccount", () => {
               chainId: 84532,
               publicKey: KERNEL,
               isPrimary: true,
+              ownerAddress: SIGNER.toLowerCase(),
             },
           },
         }),
@@ -147,7 +149,7 @@ describe("registerAgentAccount", () => {
     expect(account).toMatchObject({ smartWallet: KERNEL, created: false });
     expect(updateWallet).toHaveBeenCalledWith({
       where: { chainId_publicKey: { chainId: 84532, publicKey: SIGNER.toLowerCase() } },
-      data: { publicKey: KERNEL },
+      data: { publicKey: KERNEL, ownerAddress: SIGNER.toLowerCase() },
     });
     expect(createUser).not.toHaveBeenCalled();
   });

@@ -25,6 +25,8 @@ export type AuthProfileResponse = {
   walletAddress: string;
   chainId: number;
   referralCode: string;
+  walletOwner: string | null;
+  pendingOwner: string | null;
 };
 
 /** Shared GET /auth/me and POST /auth/session response body. */
@@ -46,6 +48,10 @@ export async function buildAuthProfile(userId: string, chainId: number, walletAd
 
   const { userGroups, ...userInfo } = userData;
   const referralCode = userInfo.referralCode ?? (await ensureUserReferralCode(userId));
+  const wallet = await prisma.userWallet.findFirst({
+    where: { userId, chainId, publicKey: walletAddress.toLowerCase() },
+    select: { ownerAddress: true, pendingOwnerAddress: true },
+  });
 
   return {
     id: userInfo.id,
@@ -60,5 +66,7 @@ export async function buildAuthProfile(userId: string, chainId: number, walletAd
     walletAddress,
     chainId,
     referralCode,
+    walletOwner: wallet?.ownerAddress ?? null,
+    pendingOwner: wallet?.pendingOwnerAddress ?? null,
   } satisfies AuthProfileResponse;
 }

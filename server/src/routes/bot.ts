@@ -8,6 +8,7 @@ import { requireAuth, requirePrivySession } from "../middleware/auth.js";
 import { packApproval } from "../services/bot/approvalEnvelope.js";
 import { botContestListDeps, listSignedBotContests } from "../services/bot/listBotContests.js";
 import { executeBotAction } from "../services/bot/executeBotAction.js";
+import { executeYield } from "../services/bot/executeYield.js";
 import {
   createContestActionDeps,
   executeCreateContest,
@@ -166,6 +167,27 @@ botRouter.post("/actions", async (c) => {
   const body = parsed.data;
   if (body.chainId !== verified.chainId) {
     return c.json({ error: "Signature chain does not match the request" }, 400);
+  }
+  if (body.action === "yield") {
+    const result = await executeYield({
+      chainId: body.chainId,
+      smartWallet: body.smartWallet,
+      signer: verified.signer,
+      ...(body.userOpSignature ? { userOpSignature: body.userOpSignature as Hex } : {}),
+      ...(body.userOp ? { userOp: body.userOp as SerializedUserOp } : {}),
+    });
+    if (!result.ok) {
+      const status = result.status as 400 | 401 | 403 | 404 | 409 | 502 | 503;
+      return c.json({ error: result.error }, status);
+    }
+    if ("preparedUserOp" in result) {
+      return c.json({
+        preparedUserOp: true,
+        userOpHash: result.userOpHash,
+        userOp: result.userOp,
+      });
+    }
+    return c.json({ ok: true, yielded: true });
   }
   if (body.action === "createContest") {
     const result = await executeCreateContest(

@@ -32,7 +32,7 @@ Authorization: Bearer <privy_access_token>
 X-Cut-Chain-Id: <8453 or 84532; required on on-chain routes via requireWalletChain>
 ```
 
-Bearer middleware verifies the Privy JWT and loads the Cut user from Postgres (`User` + primary `UserWallet`). It does not call Privy `users()._get` or write identity rows. Browser signup and wallet sync happen on `POST /auth/session` and `POST /auth/sync-wallets`. An agent account is created on `POST /auth/register`. A later Privy login on that wallet attaches `privyUserId` and leaves `userType` `AGENT`.
+Bearer middleware verifies the Privy JWT and loads the Cut user from Postgres (`User` + primary `UserWallet`). It does not call Privy `users()._get` or write identity rows. Browser signup and wallet sync happen on `POST /auth/session` and `POST /auth/sync-wallets`. An agent account is created on `POST /auth/register`. A later Privy login with that email attaches `privyUserId` and leaves `userType` `AGENT`. The Kernel wallet stays primary.
 
 **Auth error codes**
 
@@ -87,10 +87,12 @@ JSON bodies are capped at 128 KiB.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/register` | signature | Create an agent account. Wallet signer only. Body requires `email`; optional `name`, `referralCode`. New accounts are `userType` `AGENT`. A `smartWallet` query that is not the signer is `403`. Repeating register for the same wallet returns that account and does not change email or type. `201` when created, `200` when the wallet already has an account. Response: `userId`, `email`, `userType`, `name`, `referralCode`, `smartWallet`, `created`. |
-| POST | `/session` | privy | Signup / sync from Privy. Optional `X-Cut-Referral-Code` is best-effort. Privy dashboard test accounts are stored as `userType` `TEST`. |
-| POST | `/sync-wallets` | privy | Re-sync `UserWallet` rows from Privy linked accounts. |
-| GET | `/me` | either | Profile, leagues, and `referralCode`. Mints a code if the user has none. |
+| POST | `/register` | signature | Create an agent account. The owner key signs. The stored wallet is the Kernel account that key owns. Body requires `email`; optional `name`, `referralCode`. New accounts are `userType` `AGENT`. A `smartWallet` query that is not the signer is `403`. Repeating register for the same wallet returns that account and does not change email or type. `201` when created, `200` when the wallet already has an account. Response: `userId`, `email`, `userType`, `name`, `referralCode`, `smartWallet`, `created`. |
+| POST | `/session` | privy | Signup / sync from Privy. Optional `X-Cut-Referral-Code` is best-effort. Privy dashboard test accounts are stored as `userType` `TEST`. An email already stored on an agent account with no Privy id binds this login to that account and keeps its Kernel wallet primary. |
+| POST | `/sync-wallets` | privy | Re-sync `UserWallet` rows from Privy linked accounts. A primary wallet with an `ownerAddress` stays primary. |
+| GET | `/me` | either | Profile, leagues, and `referralCode`. Mints a code if the user has none. Includes `walletOwner` and `pendingOwner`. |
+| POST | `/takeover` | privy | Body `{ embeddedAddress }`. Stores that embedded key as the pending owner of the agent wallet. The address must be an embedded wallet on this Privy user. |
+| POST | `/account-calls` | privy | Sponsored calls from the Kernel wallet after the embedded key owns it. First body is `{ calls: [{ to, data }] }`. Response is `{ userOpHash, userOp }`. Second body adds `userOp` and `userOpSignature`. Response is `{ txHash }`. |
 | GET | `/referrals/summary` | either | Referral tree summary. |
 | PUT | `/update` | either | Display name, 1–80 characters. |
 | PUT | `/settings` | either | Merge `color`, `oddsFormat` (`american`, `decimal`, `english`), and `onboardingDismissed`. Does not change `marketingUnsubscribed`. |
@@ -286,6 +288,8 @@ The product name is league. The path is `/api/userGroups`. Client pages are `/le
 A delegate signer must be an active `BotDelegate` whose permission is still installed on the wallet. That rule applies when the signer is not the account. The account key can list contests, save a lineup, join, leave, and create a contest with no delegate. A caller-held delegate (`kind` `external`) submits those actions itself and does not need a Cut Bot key. A server-held delegate (`kind` `cut_bot`) submits when that delegate's key signs for the wallet.
 
 A server-held delegate submits the user operation. A caller-held delegate's first join or leave returns `{ preparedUserOp, lineupId, userOpHash, userOp }`. The first `createContest` returns `{ preparedUserOp, userOpHash, userOp }`. The second request sends the same body plus `userOp` and `userOpSignature`, under a new nonce. The account key uses that same prepared user operation. The server sponsors it when the calls are on the sponsorship allowlist. Join with escrow sends `approve` and `addPrimaryPosition` in that one operation.
+
+`yield` is signed by the current owner. `account().takeover` is `{ embeddedAddress }` while a human is waiting, and `null` otherwise. The first response is `{ preparedUserOp, userOpHash, userOp }`. The second is `{ ok, yielded: true }`. The user operation installs the owner key as a delegate and changes the Kernel root to the embedded address. A second `yield` does nothing. The signer is the stored `ownerAddress`, or an active delegate. The creation key is not the owner after that change.
 
 `createContest` deploys a paid contest. `settings.primaryDeposit` is whole USDC (`1` is $1) and must be greater than zero. `endDate` is an ISO timestamp or unix milliseconds and is stored as the contest end. `settings.expiryTimestamp` is the on-chain expiry in unix seconds. When it is omitted, the server sets it to the unix seconds of `endDate`. A positive `expiryTimestamp` is stored as sent. Optional `description`, `userGroupId`, and `notifyLeagueMembers`. `referralNetworkBps` and `primaryDepositSecondarySubsidyBps` default to `0`. A league contest requires `userGroupId` and a league admin. Omitting `userGroupId` is staff only. An `AGENT` creating a public contest is `403`. A `$0` contest is `POST /api/contests`, which this action does not deploy. The server builds the factory call, then records the contest. A caller-held delegate and the account key both use the `preparedUserOp` step above. The response is `{ preparedUserOp, userOpHash, userOp }` or `{ ok, contestId, address }`.
 

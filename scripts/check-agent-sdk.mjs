@@ -4,8 +4,11 @@ import {
   apiCopies,
   apiSpecPath,
   contentHash,
+  accessCopies,
+  accessSpecPath,
   copies,
   packageDir,
+  packagedAccess,
   packagedAgents,
   packagedApi,
   releasePath,
@@ -28,8 +31,12 @@ function requireCopy(target, expected, label) {
 }
 
 const agentsSpec = readFileSync(specPath);
-for (const { target, routeHref } of copies) {
-  requireCopy(target, packagedAgents(agentsSpec, routeHref), "spec/agent/agents.md");
+for (const { target, routeHref, accessHref } of copies) {
+  requireCopy(target, packagedAgents(agentsSpec, routeHref, accessHref), "spec/agent/agents.md");
+}
+const accessSpec = readFileSync(accessSpecPath);
+for (const { target, routeHref } of accessCopies) {
+  requireCopy(target, packagedAccess(accessSpec, routeHref), "spec/agent/access.md");
 }
 const api = readFileSync(apiSpecPath);
 for (const { target, agentsHref } of apiCopies) {

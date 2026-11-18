@@ -1,6 +1,6 @@
 import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { useAccount } from "wagmi";
-import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
+import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
 
 import { Button } from "../../components/common/Button";
 import { CopyButton } from "../../components/common/CopyToClipboard";
@@ -83,8 +83,7 @@ const AccountInfo = ({
 export function SettingsPage() {
   const { logout, user } = useAuth();
   const { address } = useAccount();
-  const { client: smartWalletClient } = useSmartWallets();
-  const smartWalletAddress = smartWalletClient?.account?.address;
+  const smartWalletAddress = useEffectiveWalletAddress();
 
   return (
     <>

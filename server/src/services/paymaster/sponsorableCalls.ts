@@ -1,4 +1,4 @@
-import { decodeFunctionData, erc20Abi, getAddress, type Address, type Hex } from "viem";
+import { concat, decodeFunctionData, erc20Abi, getAddress, type Address, type Hex } from "viem";
 import { entryPoint06Address, entryPoint07Address } from "viem/account-abstraction";
 import { getContestFactoryAddress, getPaymentTokenAddress } from "../../lib/contractAddresses.js";
 import type { BotCall } from "../bot/botCalls.js";
@@ -97,6 +97,9 @@ const transferWithAuthorizationAbi = [
   },
 ] as const;
 
+const ECDSA_VALIDATOR = "0x845ADb2C711129d4f3966735eD98a9F09fC4cE57";
+const ROOT_VALIDATOR = concat(["0x01", getAddress(ECDSA_VALIDATOR)]);
+
 const accountAbi = [
   {
     type: "function",
@@ -128,6 +131,18 @@ const accountAbi = [
     ],
     outputs: [],
   },
+  {
+    type: "function",
+    name: "changeRootValidator",
+    stateMutability: "payable",
+    inputs: [
+      { name: "_rootValidator", type: "bytes21" },
+      { name: "hook", type: "address" },
+      { name: "validatorData", type: "bytes" },
+      { name: "hookData", type: "bytes" },
+    ],
+    outputs: [],
+  },
 ] as const;
 
 const CONTEST_FUNCTIONS = new Set<string>([
@@ -143,12 +158,39 @@ export type SponsorableCallContext = {
   chainId: number;
   sender: Address;
   contestExists: (address: Address) => Promise<boolean>;
+  /** The embedded address a takeover is allowed to install as the new root. */
+  pendingOwner?: Address;
 };
 
 export function callIsCreateContest(call: BotCall, chainId: number): boolean {
   const factory = getContestFactoryAddress(chainId);
   if (!factory || getAddress(call.to) !== factory) return false;
   return functionName(createContestAbi, call.data) === "createContest";
+}
+
+function addressFromBytes(data: Hex): Address | null {
+  const body = data.toLowerCase().replace(/^0x/, "");
+  if (body.length !== 40 && body.length !== 64) return null;
+  const hex = `0x${body.slice(-40)}`;
+  return getAddress(hex);
+}
+
+function assertRootChange(data: Hex, pendingOwner: Address | undefined): void {
+  const decoded = decodeFunctionData({ abi: accountAbi, data });
+  if (decoded.functionName !== "changeRootValidator") {
+    throw new Error("Call is not sponsorable");
+  }
+  const [root, hook, validatorData] = decoded.args;
+  if (root.toLowerCase() !== ROOT_VALIDATOR.toLowerCase()) {
+    throw new Error("Root validator must be the ECDSA validator");
+  }
+  if (getAddress(hook) !== "0x0000000000000000000000000000000000000000") {
+    throw new Error("Root change cannot install a hook");
+  }
+  const next = addressFromBytes(validatorData);
+  if (!pendingOwner || !next || next !== getAddress(pendingOwner)) {
+    throw new Error("Root change must use the pending owner");
+  }
 }
 
 function functionName(abi: readonly unknown[], data: Hex): string | null {
@@ -217,6 +259,10 @@ export async function assertSponsorableCalls(
     if (to === sender) {
       const name = functionName(accountAbi, call.data);
       if (name === "installValidations" || name === "uninstallValidation") continue;
+      if (name === "changeRootValidator") {
+        assertRootChange(call.data, ctx.pendingOwner);
+        continue;
+      }
       throw new Error("Call is not sponsorable");
     }
     if (!(await ctx.contestExists(to))) {

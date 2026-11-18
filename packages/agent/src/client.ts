@@ -96,6 +96,7 @@ export type CutAgent = {
   createContest(input: CreateContestInput): Promise<ContestCreated>;
   createFreeContest(input: CreateFreeContestInput): Promise<FreeContestCreated>;
   account(): Promise<AgentAccount>;
+  yield(): Promise<void>;
   preferences(input: {
     sports?: string[];
     maxEntryFee?: number | null;
@@ -281,7 +282,8 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
     if (!value || typeof value !== "object" || typeof (value as AgentAccount).wallet !== "string") {
       throw new CutAgentError("Unexpected response", 502, value);
     }
-    return value as AgentAccount;
+    const account = value as AgentAccount;
+    return { ...account, takeover: account.takeover ?? null };
   }
 
   function readCursorBrief(value: unknown): CompanionBrief {
@@ -427,6 +429,13 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
     },
     async account() {
       return readAccount(await get("/api/agent/account", { smartWallet }));
+    },
+    async yield() {
+      const body = parse(actionSchema, { chainId, action: "yield", smartWallet });
+      const value = await postAction(body);
+      if (!value || typeof value !== "object" || (value as { yielded?: unknown }).yielded !== true) {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
     },
     async preferences(input) {
       const body = parse(agentPreferencesSchema, input);

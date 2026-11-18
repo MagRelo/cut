@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import type { Prisma } from "@prisma/client";
-import { getAddress, isAddress } from "viem";
+import { getAddress, isAddress, isHex, type Hex } from "viem";
+import { z } from "zod";
+import { userOpSchema } from "@playthecut/agent/contract";
 import { prisma } from "../lib/prisma.js";
 import { buildAuthProfile } from "../lib/authProfile.js";
 import { getPrivyClient } from "../lib/privyClient.js";
@@ -11,6 +13,7 @@ import {
   authErrorResponse,
   parsePreferredChainId,
   requireAuth,
+  requirePrivySession,
   requireWalletChain,
   verifyPrivyJwt,
 } from "../middleware/auth.js";
@@ -28,6 +31,8 @@ import {
 } from "../schemas/user.js";
 import { recordOnchainPaymentSchema } from "../schemas/onchainPayment.js";
 import { recordValueTransfer, ValueTransferError } from "../services/contest/onchainPayment.js";
+import { prepareOwnerUserOp, submitOwnerUserOp } from "../services/bot/ownerUserOp.js";
+import type { SerializedUserOp } from "../services/bot/submitSessionKeyUserOp.js";
 
 const authRouter = new Hono();
 
@@ -127,6 +132,114 @@ authRouter.get("/me", requireAuth, async (c) => {
   } catch (error) {
     console.error("Error fetching user:", error);
     return c.json({ error: "Failed to fetch user information" }, 500);
+  }
+});
+
+const takeoverSchema = z.object({
+  embeddedAddress: z.string().refine((value) => isAddress(value), "Invalid address"),
+});
+
+const accountCallSchema = z.object({
+  calls: z
+    .array(
+      z.object({
+        to: z.string().refine((value) => isAddress(value), "Invalid address"),
+        data: z.string().refine((value) => isHex(value), "Invalid call data"),
+      }),
+    )
+    .min(1)
+    .max(8),
+  userOpSignature: z.string().refine((value) => isHex(value), "Invalid signature").optional(),
+  userOp: userOpSchema.optional(),
+});
+
+function linkedEmbedded(accounts: { type: string; address?: string; chain_type?: string }[]): string[] {
+  return accounts
+    .filter((account) => account.type === "wallet" && account.chain_type === "ethereum" && account.address)
+    .map((account) => getAddress(account.address as string).toLowerCase());
+}
+
+authRouter.post("/takeover", requireAuth, requirePrivySession, async (c) => {
+  try {
+    const user = c.get("user");
+    const privyUserId = c.get("privyUserId");
+    if (!privyUserId) return c.json({ error: "No token provided" }, 401);
+    const parsed = takeoverSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
+    const embedded = getAddress(parsed.data.embeddedAddress).toLowerCase();
+    const privyUser = await getPrivyClient().users()._get(privyUserId);
+    if (!linkedEmbedded(privyUser.linked_accounts).includes(embedded)) {
+      return c.json({ error: "Embedded wallet does not match this login" }, 400);
+    }
+    const wallet = await prisma.userWallet.findFirst({
+      where: { userId: user.userId, chainId: user.chainId, isPrimary: true },
+    });
+    if (!wallet?.ownerAddress) return c.json({ pending: false });
+    const taken = await prisma.userWallet.findFirst({
+      where: { publicKey: embedded, NOT: { userId: user.userId } },
+      select: { id: true },
+    });
+    if (taken) return c.json({ error: "That address already belongs to another account" }, 409);
+    if (getAddress(wallet.ownerAddress) === getAddress(embedded)) {
+      if (wallet.pendingOwnerAddress) {
+        await prisma.userWallet.update({
+          where: { id: wallet.id },
+          data: { pendingOwnerAddress: null },
+        });
+      }
+      return c.json({ pending: false });
+    }
+    await prisma.userWallet.update({
+      where: { id: wallet.id },
+      data: { pendingOwnerAddress: embedded },
+    });
+    return c.json({ pending: true });
+  } catch (error) {
+    return authErrorResponse(c, error);
+  }
+});
+
+authRouter.post("/account-calls", requireAuth, requirePrivySession, async (c) => {
+  try {
+    const user = c.get("user");
+    const privyUserId = c.get("privyUserId");
+    if (!privyUserId) return c.json({ error: "No token provided" }, 401);
+    const parsed = accountCallSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
+    const wallet = await prisma.userWallet.findFirst({
+      where: { userId: user.userId, chainId: user.chainId, isPrimary: true },
+    });
+    if (!wallet?.ownerAddress) {
+      return c.json({ error: "This account is not ready" }, 403);
+    }
+    const privyUser = await getPrivyClient().users()._get(privyUserId);
+    if (!linkedEmbedded(privyUser.linked_accounts).includes(wallet.ownerAddress.toLowerCase())) {
+      return c.json({ error: "This login does not own the account wallet" }, 403);
+    }
+    const calls = parsed.data.calls.map((call) => ({
+      to: getAddress(call.to),
+      data: call.data as Hex,
+      value: 0n,
+    }));
+    const op = {
+      chainId: user.chainId,
+      owner: getAddress(wallet.ownerAddress),
+      smartWallet: getAddress(wallet.publicKey),
+      calls,
+      boundAccount: true,
+      ...(parsed.data.userOpSignature ? { userOpSignature: parsed.data.userOpSignature as Hex } : {}),
+      ...(parsed.data.userOp ? { userOp: parsed.data.userOp as SerializedUserOp } : {}),
+    };
+    if (!parsed.data.userOp || !parsed.data.userOpSignature) {
+      const prepared = await prepareOwnerUserOp(op);
+      if (!prepared.ok) return c.json({ error: prepared.error }, 502);
+      return c.json({ userOpHash: prepared.userOpHash, userOp: prepared.userOp });
+    }
+    const submitted = await submitOwnerUserOp(op);
+    if (!submitted.ok) return c.json({ error: submitted.error }, 502);
+    return c.json({ txHash: submitted.txHash });
+  } catch (error) {
+    return authErrorResponse(c, error);
   }
 });
 

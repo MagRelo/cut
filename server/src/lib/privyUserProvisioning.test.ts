@@ -347,6 +347,35 @@ describe("provisionUserFromPrivy referral", () => {
     process.env.REFERRAL_GROUP_ID = originalGroupId;
   });
 
+  it("binds an agent email instead of creating a second user", async () => {
+    prismaMock.user.findFirst.mockImplementation(async (args: { where?: { userType?: string } }) => {
+      if (args?.where?.userType === "AGENT") {
+        return { id: "agent-1", email: "new@example.com", userType: "AGENT", privyUserId: null };
+      }
+      return null;
+    });
+    prismaMock.user.findUnique.mockImplementation(async (args: { where?: Record<string, unknown> }) => {
+      if (args?.where?.privyUserId || args?.where?.id) {
+        return { id: "agent-1", userType: "AGENT", email: "new@example.com" };
+      }
+      return null;
+    });
+    prismaMock.userWallet.findFirst.mockImplementation(async (args: { where?: { isPrimary?: boolean } }) => {
+      if (args?.where?.isPrimary) {
+        return { publicKey: "0x1111111111111111111111111111111111111111", ownerAddress: "0xabc" };
+      }
+      return null;
+    });
+    const { provisionUserFromPrivy } = await import("./privyUserProvisioning.js");
+    const session = await provisionUserFromPrivy(privyUser, 84532);
+    expect(session.userId).toBe("agent-1");
+    expect(prismaMock.user.create).not.toHaveBeenCalled();
+    expect(prismaMock.user.update).toHaveBeenCalledWith({
+      where: { id: "agent-1" },
+      data: { privyUserId: "did:privy:new" },
+    });
+  });
+
   it("creates the user when the referral code is unknown", async () => {
     prismaMock.user.findUnique.mockImplementation(async (args: { where?: Record<string, unknown> }) => {
       if (args?.where?.referralCode) return null;

@@ -25,7 +25,7 @@ A free contest, a good conversation about picks, or a close league finish can be
 - [Game fundamentals](#game-fundamentals)
 - [Role playbooks](#role-playbooks)
 - [Setup](#setup)
-- [Delegate security](#delegate-security)
+- [Account access](docs/access.md)
 - [USDC and funding the wallet](#usdc-and-funding-the-wallet)
 - [Suggested weekly schedule](#suggested-weekly-schedule)
 - [Example user-facing responses](#example-user-facing-responses)
@@ -439,35 +439,25 @@ Two ways to get a client. Pick the one that matches the account.
 
 `register` is signed by the owner key. A `smartWallet` query that is not that signer is `403` `"A delegate cannot register an account"`.
 
+Delegate and yield are in [Account access](docs/access.md).
+
 ### Existing user
 
-The user already has an account. The agent operates that smart wallet through a delegate. Pass that wallet as `smartWallet` on every call.
-
-1. Call `generateDelegateKey()` once. Store `privateKey` with the caller. Send `address` to the user. Generating another key does not revoke the old key. The new address needs its own grant. Keep using the stored key until you intentionally rotate it.
-2. The user signs in and opens Account → Settings → Delegate account control → Bring your own agent.
-3. The user pastes the address and chooses **Grant full access**.
-4. `createCutAgent({ privateKey, smartWallet, chainId })`. `origin` defaults to `https://playthecut.com`.
-5. Call `account()`. An inactive grant is `403` `"No active delegate for this signature"`.
-
-```ts
-import { generateDelegateKey } from "@playthecut/agent";
-
-const key = generateDelegateKey();
-// Store key.privateKey. Send key.address to the user. Keep using this key until you rotate it.
-```
+The user already has an account. Follow [Delegate](docs/access.md#delegate). Pass their wallet as `smartWallet` on every call.
 
 ### New account
 
-`register` creates the account. The signer of that request is the owner key. The stored wallet is the Kernel account that key owns, and that address holds the USDC.
+`register` creates the account. The signer is the owner key. The stored wallet is the Kernel account that key owns, and that address holds the USDC.
 
 1. `createCutAgent({ privateKey, chainId })`. `privateKey` is the owner key. Leave `smartWallet` unset. The client uses the Kernel address that key owns.
-2. `register({ email, name?, referralCode? })`. Pass `referralCode` when this account was invited.
+2. `register({ email, name?, referralCode? })`. Pass `referralCode` when this account was invited. This email is how the human later signs in.
 3. Contest reads, `lineupUpsert`, `join`, `leave`, `createContest`, league setup, and `createFreeContest` use this signature.
-4. Gas for `join`, `leave`, and paid `createContest` is sponsored when those calls are on the sponsorship allowlist. A delegate is not required. The owner key does not hold the USDC and does not pay gas.
+4. Gas for `join`, `leave`, and paid `createContest` is sponsored when those calls are on the sponsorship allowlist. The owner key does not hold the USDC and does not pay gas.
+5. When the human tells you to yield, follow [Yield](docs/access.md#yield).
 
 ## Delegate security
 
-**A delegate can submit any call the smart wallet can, including sending the USDC in that wallet.** The action API checks the shape of a join. A key that skips the API is not limited by that check. Keep the private key off Play The Cut's servers and out of chat, logs, source control, and requests to external services. The user revokes it from Account → Settings → Delegate account control, which calls `POST /api/bot/delegates/revoke` on their Privy session. Install and revoke stay on that Privy session. The delegate signature cannot revoke itself. Revoke does not reverse a transaction that already landed.
+The grant and the revoke are in [Account access](docs/access.md#delegate).
 
 ## USDC and funding the wallet
 
@@ -707,7 +697,7 @@ The SDK puts `smartWallet` on the query and `X-Cut-Chain-Id` on the request. A s
 
 `agent.register({ email, name?, referralCode? })` → `POST /api/auth/register`.
 
-The smart wallet signs. That signer is the account that holds the funds. A `smartWallet` query that is not the signer is `403` `"A delegate cannot register an account"`. A new account is `userType` `AGENT`. Registering the same wallet again returns that account and does not change the email or type. `201` when the account is new, `200` when the wallet already has one. An email already on another account is `400` with code `EMAIL_ALREADY_BOUND`.
+The owner key signs. The Kernel wallet holds the USDC. A `smartWallet` query that is not the signer is `403` `"A delegate cannot register an account"`. A new account is `userType` `AGENT`. Registering the same wallet again returns that account and does not change the email or type. `201` when the account is new, `200` when the wallet already has one. An email already on another account is `400` with code `EMAIL_ALREADY_BOUND`.
 
 Response: `userId`, `email`, `userType`, `name`, `referralCode`, `smartWallet`, `created`.
 
@@ -738,7 +728,7 @@ Most callers can stop at the actions above. `GET /api/auth/contests`, `GET /api/
 Four ways to enter a contest:
 
 1. **The user, in the browser.** The logged-in client signs the chain transaction. These routes do not apply.
-2. **The account key.** `register` stores the Kernel address this key owns. `join`, `leave`, and `createContest` signed by that key are sponsored user operations from that wallet. No session key is installed. The paymaster pays gas when the calls are on the sponsorship allowlist.
+2. **The account key.** `register` stores the Kernel address this key owns. `join`, `leave`, and `createContest` signed by that key are sponsored user operations from that wallet. No session key is installed until [yield](docs/access.md#yield). The paymaster pays gas when the calls are on the sponsorship allowlist. After a yield this key is a delegate on the same wallet.
 3. **A delegate the server holds.** The user allows that address in Settings. Stored as `kind` `cut_bot`. The server can submit a join, leave, or paid create while the user is away. This signer is not the account.
 4. **A delegate the caller holds.** The user pastes the public address and grants it. Stored as `kind` `external`. The private key never comes to Play The Cut. This is the key `generateDelegateKey` creates. This signer is not the account.
 

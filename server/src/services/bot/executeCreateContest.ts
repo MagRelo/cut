@@ -6,7 +6,7 @@ import { isStaffUserType } from "../../middleware/admin.js";
 import { isUserGroupAdmin } from "../../utils/userGroup.js";
 import { recordPaidContest, FACTORY_CONTEST_VERIFY_MESSAGES } from "../contest/recordPaidContest.js";
 import { readFactoryCreatedContestAddress } from "../contest/verifyFactoryContestCreation.js";
-import { signerControlsWallet, signerIsKernelOwner } from "./accountKey.js";
+import { classifySigner, kernelOwnerWallet } from "./accountKey.js";
 import { unpackApproval } from "./approvalEnvelope.js";
 import { assertCreateContestCall, buildCreateContestCall, type BotCall } from "./botCalls.js";
 import { createBotActionDeps } from "./botActionRuntime.js";
@@ -47,6 +47,7 @@ export type CreateContestDeps = Pick<
   BotActionDeps,
   | "findDelegate"
   | "findOwner"
+  | "rememberOwner"
   | "sessionEnabled"
   | "prepareUserOp"
   | "prepareOwnerUserOp"
@@ -118,10 +119,18 @@ export async function executeCreateContest(
 
   let userId: string;
   let delegate: BotDelegateRow | null;
-  if (signerControlsWallet(signer, smartWallet, input.chainId)) {
-    const owner = await deps.findOwner(smartWallet, input.chainId);
-    if (!owner) return { ok: false, status: 403, error: "No account for this wallet" };
-    userId = owner.userId;
+  const ownerRow = await deps.findOwner(smartWallet, input.chainId);
+  const signerRole = classifySigner(signer, smartWallet, input.chainId, ownerRow?.ownerAddress);
+  if (signerRole === "owner" || signerRole === "wallet") {
+    if (!ownerRow) return { ok: false, status: 403, error: "No account for this wallet" };
+    if (
+      signerRole === "owner" &&
+      !ownerRow.ownerAddress &&
+      kernelOwnerWallet(signer, input.chainId) === smartWallet
+    ) {
+      await deps.rememberOwner?.(smartWallet, input.chainId, signer);
+    }
+    userId = ownerRow.userId;
     delegate = null;
   } else {
     delegate = await deps.findDelegate(smartWallet, signer);
@@ -205,7 +214,7 @@ export async function executeCreateContest(
   const calls: BotCall[] = [call];
   let txHash: Hex | undefined;
   if (!delegate) {
-    if (!signerIsKernelOwner(signer, smartWallet, input.chainId)) {
+    if (signerRole !== "owner") {
       return {
         ok: false,
         status: 403,
@@ -314,6 +323,7 @@ export function createContestActionDeps(): CreateContestDeps {
   return {
     findDelegate: actor.findDelegate,
     findOwner: actor.findOwner,
+    ...(actor.rememberOwner ? { rememberOwner: actor.rememberOwner } : {}),
     sessionEnabled: actor.sessionEnabled,
     prepareUserOp: actor.prepareUserOp,
     prepareOwnerUserOp: actor.prepareOwnerUserOp,

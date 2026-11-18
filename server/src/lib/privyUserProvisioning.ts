@@ -232,6 +232,12 @@ export async function syncUserWalletsForPrivyUser(
   const primary = pickEvmWallet(privyUser, preferredChainId);
   if (!primary) return;
 
+  const kept = await prisma.userWallet.findFirst({
+    where: { userId, chainId: primary.chainId, isPrimary: true },
+    select: { ownerAddress: true },
+  });
+  if (kept?.ownerAddress) return;
+
   const links = collectCutEvmWalletLinks(privyUser, preferredChainId);
 
   for (const { chainId, publicKey } of links) {
@@ -427,6 +433,22 @@ export async function provisionUserFromPrivy(
     return sessionUserAfterProvision(privyId, chainId);
   }
 
+  const email = pickEmailFromPrivyUser(privyUser);
+  if (email) {
+    const agent = await prisma.user.findFirst({
+      where: { email, userType: "AGENT", privyUserId: null },
+      select: { id: true },
+    });
+    if (agent) {
+      await prisma.user.update({
+        where: { id: agent.id },
+        data: { privyUserId: privyId },
+      });
+      await syncUserWalletsForPrivyUser(agent.id, privyUser, preferredChainId);
+      return sessionUserAfterProvision(privyId, chainId);
+    }
+  }
+
   let referral: ResolvedSignupReferral | undefined;
   if (rawReferralCode) {
     try {
@@ -440,7 +462,6 @@ export async function provisionUserFromPrivy(
 
   await maybeMintTestnetUsdc(address, chainId);
 
-  const email = pickEmailFromPrivyUser(privyUser);
   if (email) {
     const taken = await prisma.user.findFirst({
       where: { email },
