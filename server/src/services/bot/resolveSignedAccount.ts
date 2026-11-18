@@ -1,6 +1,7 @@
 import { getAddress, isAddress, type Address } from "viem";
 import { prisma } from "../../lib/prisma.js";
 import type { CutAuthUser } from "../../lib/privyUserProvisioning.js";
+import { signerControlsWallet } from "./accountKey.js";
 
 export async function resolveSignedAccount(input: {
   signer: Address;
@@ -16,7 +17,7 @@ export async function resolveSignedAccount(input: {
   }
   const wallet = named ? getAddress(named) : signer;
 
-  if (signer === wallet) {
+  if (signerControlsWallet(signer, wallet, input.chainId)) {
     const row = await prisma.userWallet.findUnique({
       where: { chainId_publicKey: { chainId: input.chainId, publicKey: wallet.toLowerCase() } },
       select: { publicKey: true, user: { select: { id: true, userType: true } } },

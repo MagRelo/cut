@@ -13,7 +13,7 @@ import { getPublicClient } from "../shared/contractClient.js";
 import { invalidateContestLobby } from "../contests/getContestLobby.js";
 import type { BotActionDeps, BotDelegateRow, BotLineup } from "./executeBotAction.js";
 import { readSessionKeyEnabled } from "./sessionKeyEnabled.js";
-import { prepareOwnerTransaction, submitOwnerTransaction } from "./ownerTransaction.js";
+import { prepareOwnerUserOp, submitOwnerUserOp } from "./ownerUserOp.js";
 import { prepareSessionKeyUserOp, submitSessionKeyUserOp } from "./submitSessionKeyUserOp.js";
 
 const depositAbi = [
@@ -215,8 +215,8 @@ export function createBotActionDeps(): BotActionDeps {
       return { ok: false, error: "Lineup not found" };
     },
     prepareUserOp: async (input) => prepareSessionKeyUserOp(input),
-    prepareOwnerTransaction: async (input) => prepareOwnerTransaction(input),
-    submitOwnerTransaction: async (input) => submitOwnerTransaction(input),
+    prepareOwnerUserOp: async (input) => prepareOwnerUserOp(input),
+    submitOwnerUserOp: async (input) => submitOwnerUserOp(input),
     submitCalls: async (input) => {
       const result = await submitSessionKeyUserOp(input);
       if (!result.ok) return result;

@@ -1,6 +1,7 @@
 import { signRequest, type EthHttpSigner } from "@slicekit/erc8128";
-import { getAddress, isAddress, isHex, type Address, type Hex } from "viem";
+import { getAddress, isHex, type Address, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { kernelWalletAddress } from "./kernelWallet.js";
 import type { z } from "zod";
 import {
   actionSchema,
@@ -117,20 +118,6 @@ type PreparedUserOp = {
   lineupId?: string;
 };
 
-type PreparedTransaction = {
-  preparedTransaction: true;
-  transaction: {
-    to: Address;
-    data: Hex;
-    value: string;
-    chainId: CutChainId;
-    nonce: string;
-    gas: string;
-    maxFeePerGas: string;
-    maxPriorityFeePerGas: string;
-  };
-};
-
 /** Unix seconds. A positive `expiryTimestamp` wins; otherwise derive it from `endDate` (ISO or unix ms). */
 function contestExpiryTimestamp(
   endDate: string | number,
@@ -157,9 +144,16 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
   const account = privateKeyToAccount(options.privateKey);
   let smartWallet: Address;
   try {
-    smartWallet = options.smartWallet ? getAddress(options.smartWallet) : account.address;
-  } catch {
-    throw new CutAgentError("Invalid smart wallet", 400, null);
+    smartWallet = options.smartWallet
+      ? getAddress(options.smartWallet)
+      : kernelWalletAddress(account.address, chainId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid smart wallet";
+    throw new CutAgentError(
+      options.smartWallet ? "Invalid smart wallet" : message,
+      400,
+      null,
+    );
   }
   const origin = (options.origin ?? "https://playthecut.com").replace(/\/$/, "");
   const fetchImpl = options.fetch ?? ((request: Request) => fetch(request));
@@ -243,10 +237,6 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
     );
   }
 
-  function decimal(value: unknown): value is string {
-    return typeof value === "string" && /^\d+$/.test(value);
-  }
-
   function prepared(value: unknown): PreparedUserOp | null {
     if (!value || typeof value !== "object" || !("preparedUserOp" in value)) return null;
     const row = value as Partial<PreparedUserOp>;
@@ -256,88 +246,20 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
     return row as PreparedUserOp;
   }
 
-  function preparedTransaction(value: unknown): PreparedTransaction | null {
-    if (!value || typeof value !== "object" || !("preparedTransaction" in value)) return null;
-    const row = value as { preparedTransaction?: unknown; transaction?: unknown };
-    if (row.preparedTransaction !== true) return null;
-    const tx = row.transaction;
-    if (!tx || typeof tx !== "object") return null;
-    const fields = tx as Record<string, unknown>;
-    if (
-      typeof fields.to !== "string" ||
-      !isAddress(fields.to) ||
-      typeof fields.data !== "string" ||
-      !isHex(fields.data) ||
-      !decimal(fields.value) ||
-      (fields.chainId !== 8453 && fields.chainId !== 84532) ||
-      !decimal(fields.nonce) ||
-      !decimal(fields.gas) ||
-      !decimal(fields.maxFeePerGas) ||
-      !decimal(fields.maxPriorityFeePerGas)
-    ) {
-      return null;
-    }
-    return {
-      preparedTransaction: true,
-      transaction: {
-        to: getAddress(fields.to),
-        data: fields.data,
-        value: fields.value,
-        chainId: fields.chainId,
-        nonce: fields.nonce,
-        gas: fields.gas,
-        maxFeePerGas: fields.maxFeePerGas,
-        maxPriorityFeePerGas: fields.maxPriorityFeePerGas,
-      },
-    };
-  }
-
   async function postAction(body: unknown): Promise<unknown> {
-    let payload = body;
-    for (let step = 0; step < 4; step += 1) {
-      const response = await post("/api/bot/actions", payload);
-      if (
-        response &&
-        typeof response === "object" &&
-        "preparedTransaction" in response &&
-        (response as { preparedTransaction?: unknown }).preparedTransaction === true &&
-        !preparedTransaction(response)
-      ) {
-        throw new CutAgentError("Unexpected response", 502, response);
-      }
-      const transaction = preparedTransaction(response);
-      if (transaction) {
-        if (transaction.transaction.chainId !== chainId) {
-          throw new CutAgentError("Transaction chain does not match the client", 502, response);
-        }
-        const signedTransaction = await account.signTransaction({
-          type: "eip1559",
-          chainId: transaction.transaction.chainId,
-          to: transaction.transaction.to,
-          data: transaction.transaction.data,
-          value: BigInt(transaction.transaction.value),
-          nonce: Number(transaction.transaction.nonce),
-          gas: BigInt(transaction.transaction.gas),
-          maxFeePerGas: BigInt(transaction.transaction.maxFeePerGas),
-          maxPriorityFeePerGas: BigInt(transaction.transaction.maxPriorityFeePerGas),
-        });
-        payload = { ...(body as Record<string, unknown>), signedTransaction };
-        continue;
-      }
-      const ready = prepared(response);
-      if (!ready) return response;
-      const userOpSignature = await account.signMessage({ message: { raw: ready.userOpHash } });
-      const second = await post("/api/bot/actions", {
-        ...(body as Record<string, unknown>),
-        userOp: ready.userOp,
-        userOpSignature,
-      });
-      if (prepared(second)) {
-        throw new CutAgentError("Server returned another prepared user operation", 502, second);
-      }
-      return second;
+    const response = await post("/api/bot/actions", body);
+    const ready = prepared(response);
+    if (!ready) return response;
+    const userOpSignature = await account.signMessage({ message: { raw: ready.userOpHash } });
+    const second = await post("/api/bot/actions", {
+      ...(body as Record<string, unknown>),
+      userOp: ready.userOp,
+      userOpSignature,
+    });
+    if (prepared(second)) {
+      throw new CutAgentError("Server returned another prepared user operation", 502, second);
     }
-    throw new CutAgentError("Server returned another prepared transaction", 502, null);
+    return second;
   }
 
   function lineupResult(value: unknown): LineupResult {

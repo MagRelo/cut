@@ -58,7 +58,6 @@ export const playActionSchema = z.object({
   prediction: z.unknown().optional(),
   userOpSignature: hexSchema.optional(),
   userOp: userOpSchema.optional(),
-  signedTransaction: hexSchema.optional(),
 });
 
 export const createContestActionSchema = z.object({
@@ -74,7 +73,6 @@ export const createContestActionSchema = z.object({
   notifyLeagueMembers: z.boolean().optional(),
   userOpSignature: hexSchema.optional(),
   userOp: userOpSchema.optional(),
-  signedTransaction: hexSchema.optional(),
 });
 
 export const actionSchema = z.discriminatedUnion("action", [

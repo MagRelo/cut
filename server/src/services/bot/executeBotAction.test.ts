@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { getAddress, type Address, type Hex } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { kernelWalletAddress } from "@playthecut/agent";
 import { describe, expect, it, vi } from "vitest";
 import { generateContestEntryId } from "../../utils/contestEntryId.js";
 import { packApproval } from "./approvalEnvelope.js";
@@ -83,11 +84,11 @@ function deps(partial: Partial<BotActionDeps> = {}): BotActionDeps {
       ok: false as const,
       error: "prepare was not expected",
     })),
-    prepareOwnerTransaction: vi.fn(async () => ({
+    prepareOwnerUserOp: vi.fn(async () => ({
       ok: false as const,
       error: "owner prepare was not expected",
     })),
-    submitOwnerTransaction: vi.fn(async () => ({
+    submitOwnerUserOp: vi.fn(async () => ({
       ok: false as const,
       error: "owner submit was not expected",
     })),
@@ -263,7 +264,7 @@ describe("executeBotAction", () => {
     const result = await executeBotAction(signedJoin(SMART_WALLET), used);
     expect(result).toMatchObject({ ok: true, lineupId: "lineup-1" });
     expect(used.findDelegate).not.toHaveBeenCalled();
-    expect(used.prepareOwnerTransaction).not.toHaveBeenCalled();
+    expect(used.prepareOwnerUserOp).not.toHaveBeenCalled();
     expect(used.submitCalls).not.toHaveBeenCalled();
     expect(used.insertContestEntry).toHaveBeenCalledWith({
       contestId: "contest-1",
@@ -273,68 +274,73 @@ describe("executeBotAction", () => {
     });
   });
 
-  it("prepares the account key's approve before writing the entry", async () => {
-    const transaction = {
-      to: TOKEN,
-      data: "0x" as const,
-      value: "0",
-      chainId: CHAIN_ID,
+  it("prepares one sponsored user operation for the account key", async () => {
+    const owner = privateKeyToAccount(generatePrivateKey());
+    const wallet = kernelWalletAddress(owner.address, CHAIN_ID);
+    const userOpHash = `0x${"ab".repeat(32)}` as Hex;
+    const userOp = {
+      sender: wallet,
       nonce: "1",
-      gas: "100000",
+      callData: "0x" as Hex,
+      callGasLimit: "1",
+      verificationGasLimit: "1",
+      preVerificationGas: "1",
       maxFeePerGas: "1",
       maxPriorityFeePerGas: "1",
     };
     const used = deps({
       findOwner: vi.fn(async () => ({ userId: USER_ID })),
-      prepareOwnerTransaction: vi.fn(async () => ({ ok: true as const, transaction })),
+      prepareOwnerUserOp: vi.fn(async () => ({ ok: true as const, userOpHash, userOp })),
     });
-    const result = await executeBotAction(signedJoin(SMART_WALLET), used);
+    const result = await executeBotAction(
+      { ...signedJoin(owner.address), smartWallet: wallet },
+      used,
+    );
     expect(result).toEqual({
       ok: true,
-      preparedTransaction: true,
+      preparedUserOp: true,
       lineupId: "lineup-1",
-      transaction,
+      userOpHash,
+      userOp,
     });
     expect(used.findDelegate).not.toHaveBeenCalled();
     expect(used.submitCalls).not.toHaveBeenCalled();
     expect(used.insertContestEntry).not.toHaveBeenCalled();
-    expect(used.prepareOwnerTransaction).toHaveBeenCalledOnce();
+    expect(used.prepareOwnerUserOp).toHaveBeenCalledOnce();
+    const preparedCalls = vi.mocked(used.prepareOwnerUserOp).mock.calls[0]?.[0].calls;
+    expect(preparedCalls).toHaveLength(2);
   });
 
-  it("stores the entry after the account key's join transaction", async () => {
+  it("stores the entry after the account key's user operation", async () => {
     const owner = privateKeyToAccount(generatePrivateKey());
+    const wallet = kernelWalletAddress(owner.address, CHAIN_ID);
     const entryId = BigInt(generateContestEntryId(CONTEST, "lineup-1"));
-    const calls = buildJoinCalls({
-      paymentToken: TOKEN,
-      contest: CONTEST,
-      depositWei: 5_000_000n,
-      entryId,
-    });
-    const joinTx = calls[1];
-    if (!joinTx) throw new Error("missing join call");
-    const signedTransaction = await owner.signTransaction({
-      type: "eip1559",
-      chainId: CHAIN_ID,
-      to: joinTx.to,
-      data: joinTx.data,
-      value: 0n,
-      nonce: 2,
-      gas: 100_000n,
-      maxFeePerGas: 1n,
-      maxPriorityFeePerGas: 1n,
-    });
-    const txHash = `0x${"cd".repeat(32)}` as Hex;
+    const userOp = {
+      sender: wallet,
+      nonce: "1",
+      callData: "0x" as Hex,
+      callGasLimit: "1",
+      verificationGasLimit: "1",
+      preVerificationGas: "1",
+      maxFeePerGas: "1",
+      maxPriorityFeePerGas: "1",
+    };
     const used = deps({
       findOwner: vi.fn(async () => ({ userId: USER_ID })),
-      submitOwnerTransaction: vi.fn(async () => ({ ok: true as const, txHash })),
+      submitOwnerUserOp: vi.fn(async () => ({ ok: true as const, txHash: `0x${"cd".repeat(32)}` as Hex })),
     });
     const result = await executeBotAction(
-      { ...signedJoin(owner.address), smartWallet: owner.address, signedTransaction },
+      {
+        ...signedJoin(owner.address),
+        smartWallet: wallet,
+        userOp,
+        userOpSignature: `0x${"11".repeat(65)}` as Hex,
+      },
       used,
     );
     expect(result).toEqual({ ok: true, lineupId: "lineup-1" });
-    expect(used.prepareOwnerTransaction).not.toHaveBeenCalled();
-    expect(used.submitOwnerTransaction).toHaveBeenCalledOnce();
+    expect(used.prepareOwnerUserOp).not.toHaveBeenCalled();
+    expect(used.submitOwnerUserOp).toHaveBeenCalledOnce();
     expect(used.insertContestEntry).toHaveBeenCalledWith(
       expect.objectContaining({ userId: USER_ID, entryId: String(entryId) }),
     );

@@ -1,4 +1,5 @@
 export { createCutAgent, generateDelegateKey, CutAgentError } from "./client.js";
+export { kernelWalletAddress } from "./kernelWallet.js";
 export type {
   CreateContestInput,
   CreateFreeContestInput,

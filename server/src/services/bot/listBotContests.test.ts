@@ -1,5 +1,6 @@
 import { getAddress } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { kernelWalletAddress } from "@playthecut/agent";
 import { describe, expect, it, vi } from "vitest";
 import { listSignedBotContests, type ListBotContestsDeps } from "./listBotContests.js";
 
@@ -104,5 +105,24 @@ describe("listSignedBotContests", () => {
     expect(result.ok).toBe(true);
     expect(used.findDelegate).not.toHaveBeenCalled();
     expect(used.loadContests).toHaveBeenCalledWith("owner-1", CHAIN_ID);
+  });
+
+  it("lists contests for the owner key of a Kernel wallet", async () => {
+    const owner = privateKeyToAccount(generatePrivateKey());
+    const wallet = kernelWalletAddress(owner.address, CHAIN_ID);
+    const used = deps({
+      findOwner: vi.fn(async () => ({ userId: "owner-1" })),
+    });
+    const result = await listSignedBotContests(
+      {
+        chainId: CHAIN_ID,
+        smartWallet: wallet,
+        signer: owner.address,
+      },
+      used,
+    );
+    expect(result.ok).toBe(true);
+    expect(used.findDelegate).not.toHaveBeenCalled();
+    expect(used.findOwner).toHaveBeenCalledWith(wallet, CHAIN_ID);
   });
 });

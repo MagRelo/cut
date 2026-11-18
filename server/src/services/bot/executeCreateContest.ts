@@ -6,11 +6,11 @@ import { isStaffUserType } from "../../middleware/admin.js";
 import { isUserGroupAdmin } from "../../utils/userGroup.js";
 import { recordPaidContest, FACTORY_CONTEST_VERIFY_MESSAGES } from "../contest/recordPaidContest.js";
 import { readFactoryCreatedContestAddress } from "../contest/verifyFactoryContestCreation.js";
+import { signerControlsWallet, signerIsKernelOwner } from "./accountKey.js";
 import { unpackApproval } from "./approvalEnvelope.js";
 import { assertCreateContestCall, buildCreateContestCall, type BotCall } from "./botCalls.js";
 import { createBotActionDeps } from "./botActionRuntime.js";
 import type { BotActionDeps, BotDelegateRow } from "./executeBotAction.js";
-import { advanceOwnerTransaction, type OwnerTransaction } from "./ownerTransaction.js";
 import type { SerializedUserOp } from "./submitSessionKeyUserOp.js";
 
 export type CreateContestActionInput = {
@@ -26,7 +26,6 @@ export type CreateContestActionInput = {
   notifyLeagueMembers?: boolean;
   userOpSignature?: Hex;
   userOp?: SerializedUserOp;
-  signedTransaction?: Hex;
 };
 
 export type CreateContestActionResult =
@@ -35,20 +34,12 @@ export type CreateContestActionResult =
       contestId: string;
       address: string;
       preparedUserOp?: undefined;
-      preparedTransaction?: undefined;
     }
   | {
       ok: true;
       preparedUserOp: true;
-      preparedTransaction?: undefined;
       userOpHash: Hex;
       userOp: SerializedUserOp;
-    }
-  | {
-      ok: true;
-      preparedTransaction: true;
-      preparedUserOp?: undefined;
-      transaction: OwnerTransaction;
     }
   | { ok: false; status: number; error: string };
 
@@ -58,8 +49,8 @@ export type CreateContestDeps = Pick<
   | "findOwner"
   | "sessionEnabled"
   | "prepareUserOp"
-  | "prepareOwnerTransaction"
-  | "submitOwnerTransaction"
+  | "prepareOwnerUserOp"
+  | "submitOwnerUserOp"
   | "submitCalls"
   | "log"
 > & {
@@ -127,7 +118,7 @@ export async function executeCreateContest(
 
   let userId: string;
   let delegate: BotDelegateRow | null;
-  if (signer === smartWallet) {
+  if (signerControlsWallet(signer, smartWallet, input.chainId)) {
     const owner = await deps.findOwner(smartWallet, input.chainId);
     if (!owner) return { ok: false, status: 403, error: "No account for this wallet" };
     userId = owner.userId;
@@ -212,43 +203,47 @@ export async function executeCreateContest(
   }
 
   const calls: BotCall[] = [call];
+  let txHash: Hex | undefined;
   if (!delegate) {
-    const advanced = await advanceOwnerTransaction({
+    if (!signerIsKernelOwner(signer, smartWallet, input.chainId)) {
+      return {
+        ok: false,
+        status: 403,
+        error: "On-chain actions from this wallet are signed by its owner key",
+      };
+    }
+    if (!input.userOpSignature || !input.userOp) {
+      const prepared = await deps.prepareOwnerUserOp({
+        chainId: input.chainId,
+        owner: signer,
+        smartWallet,
+        calls,
+      });
+      if (!prepared.ok) {
+        await deps.log(userId, "error", prepared.error);
+        return { ok: false, status: 502, error: prepared.error };
+      }
+      return {
+        ok: true,
+        preparedUserOp: true,
+        userOpHash: prepared.userOpHash,
+        userOp: prepared.userOp,
+      };
+    }
+    const submitted = await deps.submitOwnerUserOp({
       chainId: input.chainId,
-      from: smartWallet,
+      owner: signer,
+      smartWallet,
       calls,
-      ...(input.signedTransaction ? { signedTransaction: input.signedTransaction } : {}),
-      prepareOwnerTransaction: deps.prepareOwnerTransaction,
-      submitOwnerTransaction: deps.submitOwnerTransaction,
+      userOpSignature: input.userOpSignature,
+      userOp: input.userOp,
     });
-    if (!advanced.ok) {
-      await deps.log(userId, "error", advanced.error);
-      return advanced;
+    if (!submitted.ok) {
+      await deps.log(userId, "error", submitted.error);
+      return { ok: false, status: 502, error: submitted.error };
     }
-    if (advanced.step === "prepared") {
-      return { ok: true, preparedTransaction: true, transaction: advanced.transaction };
-    }
-    const created = await deps.readCreatedAddress({
-      chainId: input.chainId,
-      transactionHash: advanced.txHash,
-    });
-    if (!created.ok) {
-      await deps.log(userId, "error", created.error);
-      return { ok: false, status: 400, error: created.error };
-    }
-    const recorded = await deps.recordContest({
-      ...action,
-      address: created.contestAddress,
-      transactionHash: advanced.txHash,
-    });
-    if (!recorded.ok) {
-      await deps.log(userId, "error", recorded.error);
-      return recorded;
-    }
-    await deps.log(userId, "createContest");
-    return { ok: true, contestId: recorded.contestId, address: recorded.address };
-  }
-  if (delegate.kind === "external" && !input.userOpSignature) {
+    txHash = submitted.txHash;
+  } else if (delegate.kind === "external" && !input.userOpSignature) {
     const prepared = await deps.prepareUserOp({
       chainId: input.chainId,
       approval,
@@ -266,34 +261,35 @@ export async function executeCreateContest(
       userOpHash: prepared.userOpHash,
       userOp: prepared.userOp,
     };
-  }
-
-  if (delegate.kind === "cut_bot" && !getCutBotPrivateKey()) {
-    return { ok: false, status: 503, error: "Cut Bot key is not configured" };
-  }
-  const privateKey = delegate.kind === "cut_bot" ? getCutBotPrivateKey() : null;
-  const submitted = await deps.submitCalls({
-    chainId: input.chainId,
-    approval,
-    calls,
-    delegateAddress: getAddress(delegate.delegateAddress),
-    smartWallet,
-    ...(privateKey ? { privateKey } : {}),
-    ...(input.userOpSignature ? { userOpSignature: input.userOpSignature } : {}),
-    ...(input.userOp ? { userOp: input.userOp } : {}),
-  });
-  if (!submitted.ok) {
-    await deps.log(userId, "error", submitted.error);
-    return { ok: false, status: 502, error: submitted.error };
-  }
-  if (!submitted.txHash) {
-    await deps.log(userId, "error", "Contest transaction hash is missing");
-    return { ok: false, status: 502, error: "Contest transaction hash is missing" };
+  } else {
+    if (delegate.kind === "cut_bot" && !getCutBotPrivateKey()) {
+      return { ok: false, status: 503, error: "Cut Bot key is not configured" };
+    }
+    const privateKey = delegate.kind === "cut_bot" ? getCutBotPrivateKey() : null;
+    const submitted = await deps.submitCalls({
+      chainId: input.chainId,
+      approval,
+      calls,
+      delegateAddress: getAddress(delegate.delegateAddress),
+      smartWallet,
+      ...(privateKey ? { privateKey } : {}),
+      ...(input.userOpSignature ? { userOpSignature: input.userOpSignature } : {}),
+      ...(input.userOp ? { userOp: input.userOp } : {}),
+    });
+    if (!submitted.ok) {
+      await deps.log(userId, "error", submitted.error);
+      return { ok: false, status: 502, error: submitted.error };
+    }
+    if (!submitted.txHash) {
+      await deps.log(userId, "error", "Contest transaction hash is missing");
+      return { ok: false, status: 502, error: "Contest transaction hash is missing" };
+    }
+    txHash = submitted.txHash;
   }
 
   const created = await deps.readCreatedAddress({
     chainId: input.chainId,
-    transactionHash: submitted.txHash,
+    transactionHash: txHash,
   });
   if (!created.ok) {
     await deps.log(userId, "error", created.error);
@@ -303,7 +299,7 @@ export async function executeCreateContest(
   const recorded = await deps.recordContest({
     ...action,
     address: created.contestAddress,
-    transactionHash: submitted.txHash,
+    transactionHash: txHash,
   });
   if (!recorded.ok) {
     await deps.log(userId, "error", recorded.error);
@@ -320,8 +316,8 @@ export function createContestActionDeps(): CreateContestDeps {
     findOwner: actor.findOwner,
     sessionEnabled: actor.sessionEnabled,
     prepareUserOp: actor.prepareUserOp,
-    prepareOwnerTransaction: actor.prepareOwnerTransaction,
-    submitOwnerTransaction: actor.submitOwnerTransaction,
+    prepareOwnerUserOp: actor.prepareOwnerUserOp,
+    submitOwnerUserOp: actor.submitOwnerUserOp,
     submitCalls: actor.submitCalls,
     log: actor.log,
     loadUserType: async (userId) => {

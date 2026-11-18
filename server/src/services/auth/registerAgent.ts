@@ -1,5 +1,6 @@
 import { getAddress, type Address } from "viem";
 import type { RegisteredAgent } from "@playthecut/agent/contract";
+import { kernelWalletAddress } from "@playthecut/agent";
 import { prisma } from "../../lib/prisma.js";
 import { mintUSDCToUser } from "../mintUserTokens.js";
 import { tryResolveReferralForNewUser } from "../../lib/referralCode.js";
@@ -19,6 +20,55 @@ async function mintTestnetUsdc(address: string, chainId: number): Promise<void> 
   }
 }
 
+type StoredAgent = {
+  id: string;
+  email: string | null;
+  userType: RegisteredAgent["userType"];
+  name: string | null;
+  referralCode: string | null;
+};
+
+async function existingAgent(
+  user: StoredAgent,
+  smartWallet: string,
+  email: string,
+): Promise<RegisteredAgent> {
+  if (user.email && user.referralCode) {
+    return {
+      userId: user.id,
+      email: user.email,
+      userType: user.userType,
+      name: user.name ?? "",
+      referralCode: user.referralCode,
+      smartWallet,
+      created: false,
+    };
+  }
+  const referralCode = user.referralCode ?? (await generateUniqueReferralCode());
+  if (!user.referralCode) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { referralCode },
+    });
+  }
+  return {
+    userId: user.id,
+    email: user.email ?? email,
+    userType: user.userType,
+    name: user.name ?? "",
+    referralCode,
+    smartWallet,
+    created: false,
+  };
+}
+
+const walletSelect = {
+  publicKey: true,
+  user: {
+    select: { id: true, email: true, userType: true, name: true, referralCode: true },
+  },
+} as const;
+
 export async function registerAgentAccount(input: {
   signer: Address;
   chainId: number;
@@ -26,46 +76,26 @@ export async function registerAgentAccount(input: {
   name?: string;
   referralCode?: string;
 }): Promise<RegisteredAgent> {
-  const smartWallet = getAddress(input.signer).toLowerCase();
+  const owner = getAddress(input.signer).toLowerCase();
+  const smartWallet = kernelWalletAddress(getAddress(input.signer), input.chainId).toLowerCase();
   const email = input.email.trim().toLowerCase();
 
   const existing = await prisma.userWallet.findUnique({
     where: { chainId_publicKey: { chainId: input.chainId, publicKey: smartWallet } },
-    select: {
-      publicKey: true,
-      user: {
-        select: { id: true, email: true, userType: true, name: true, referralCode: true },
-      },
-    },
+    select: walletSelect,
   });
-  if (existing?.user.email && existing.user.referralCode) {
-    return {
-      userId: existing.user.id,
-      email: existing.user.email,
-      userType: existing.user.userType,
-      name: existing.user.name,
-      referralCode: existing.user.referralCode,
-      smartWallet: existing.publicKey,
-      created: false,
-    };
-  }
-  if (existing) {
-    const referralCode = existing.user.referralCode ?? (await generateUniqueReferralCode());
-    if (!existing.user.referralCode) {
-      await prisma.user.update({
-        where: { id: existing.user.id },
-        data: { referralCode },
-      });
-    }
-    return {
-      userId: existing.user.id,
-      email: existing.user.email ?? email,
-      userType: existing.user.userType,
-      name: existing.user.name,
-      referralCode,
-      smartWallet: existing.publicKey,
-      created: false,
-    };
+  if (existing) return existingAgent(existing.user, smartWallet, email);
+
+  const legacy = await prisma.userWallet.findUnique({
+    where: { chainId_publicKey: { chainId: input.chainId, publicKey: owner } },
+    select: walletSelect,
+  });
+  if (legacy) {
+    await prisma.userWallet.update({
+      where: { chainId_publicKey: { chainId: input.chainId, publicKey: owner } },
+      data: { publicKey: smartWallet },
+    });
+    return existingAgent(legacy.user, smartWallet, email);
   }
 
   const taken = await prisma.user.findFirst({
@@ -119,7 +149,7 @@ export async function registerAgentAccount(input: {
     userId: user.id,
     email: user.email ?? email,
     userType: user.userType,
-    name: user.name,
+    name: user.name ?? "",
     referralCode: user.referralCode ?? referralCode,
     smartWallet,
     created: true,

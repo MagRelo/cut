@@ -7,6 +7,7 @@ import {
   canRemovePrimaryPosition,
   type ContestStatus,
 } from "../shared/types.js";
+import { signerControlsWallet, signerIsKernelOwner } from "./accountKey.js";
 import { unpackApproval } from "./approvalEnvelope.js";
 import {
   assertJoinCalls,
@@ -15,10 +16,6 @@ import {
   buildLeaveCalls,
   type BotCall,
 } from "./botCalls.js";
-import {
-  advanceOwnerTransaction,
-  type OwnerTransaction,
-} from "./ownerTransaction.js";
 import type { SerializedUserOp } from "./submitSessionKeyUserOp.js";
 
 export type BotActionName = "lineupUpsert" | "join" | "leave";
@@ -61,25 +58,16 @@ export type ExecuteBotActionInput = {
   signer: Address;
   userOpSignature?: Hex;
   userOp?: SerializedUserOp;
-  signedTransaction?: Hex;
 };
 
 export type ExecuteBotActionResult =
-  | { ok: true; lineupId: string; preparedUserOp?: undefined; preparedTransaction?: undefined }
+  | { ok: true; lineupId: string; preparedUserOp?: undefined }
   | {
       ok: true;
       preparedUserOp: true;
-      preparedTransaction?: undefined;
       lineupId: string;
       userOpHash: Hex;
       userOp: SerializedUserOp;
-    }
-  | {
-      ok: true;
-      preparedTransaction: true;
-      preparedUserOp?: undefined;
-      lineupId: string;
-      transaction: OwnerTransaction;
     }
   | { ok: false; status: number; error: string };
 
@@ -124,16 +112,21 @@ export type BotActionDeps = {
   }) => Promise<
     { ok: true; userOpHash: Hex; userOp: SerializedUserOp } | { ok: false; error: string }
   >;
-  prepareOwnerTransaction: (input: {
+  prepareOwnerUserOp: (input: {
     chainId: number;
-    from: Address;
-    call: BotCall;
-  }) => Promise<{ ok: true; transaction: OwnerTransaction } | { ok: false; error: string }>;
-  submitOwnerTransaction: (input: {
+    owner: Address;
+    smartWallet: Address;
+    calls: BotCall[];
+  }) => Promise<
+    { ok: true; userOpHash: Hex; userOp: SerializedUserOp } | { ok: false; error: string }
+  >;
+  submitOwnerUserOp: (input: {
     chainId: number;
-    from: Address;
-    signedTransaction: Hex;
-    call: BotCall;
+    owner: Address;
+    smartWallet: Address;
+    calls: BotCall[];
+    userOpSignature: Hex;
+    userOp: SerializedUserOp;
   }) => Promise<{ ok: true; txHash: Hex } | { ok: false; error: string }>;
   submitCalls: (input: {
     chainId: number;
@@ -190,7 +183,7 @@ export async function executeBotAction(
 
   let userId: string;
   let delegate: BotDelegateRow | null;
-  if (signer === smartWallet) {
+  if (signerControlsWallet(signer, smartWallet, input.chainId)) {
     const owner = await deps.findOwner(smartWallet, input.chainId);
     if (!owner) return { ok: false, status: 403, error: "No account for this wallet" };
     userId = owner.userId;
@@ -290,7 +283,7 @@ async function joinAction(
     lineup.lineup.id,
     deps,
   );
-  if (!submitted.ok || submitted.preparedUserOp || submitted.preparedTransaction) return submitted;
+  if (!submitted.ok || submitted.preparedUserOp) return submitted;
 
   await deps.insertContestEntry({
     contestId: contest.id,
@@ -353,7 +346,7 @@ async function leaveAction(
     lineup.lineup.id,
     deps,
   );
-  if (!submitted.ok || submitted.preparedUserOp || submitted.preparedTransaction) return submitted;
+  if (!submitted.ok || submitted.preparedUserOp) return submitted;
 
   await deps.deleteContestEntry(contest.id, lineup.lineup.id, userId);
   await deps.log(userId, "leave");
@@ -414,25 +407,45 @@ async function submitIfNeeded(
 ): Promise<ExecuteBotActionResult> {
   if (!onchain) return { ok: true, lineupId };
   if (!delegate) {
-    const advanced = await advanceOwnerTransaction({
-      chainId: input.chainId,
-      from: getAddress(input.smartWallet),
-      calls,
-      ...(input.signedTransaction ? { signedTransaction: input.signedTransaction } : {}),
-      prepareOwnerTransaction: deps.prepareOwnerTransaction,
-      submitOwnerTransaction: deps.submitOwnerTransaction,
-    });
-    if (!advanced.ok) {
-      await deps.log(userId, "error", advanced.error);
-      return advanced;
+    const smartWallet = getAddress(input.smartWallet);
+    const owner = getAddress(input.signer);
+    if (!signerIsKernelOwner(owner, smartWallet, input.chainId)) {
+      return {
+        ok: false,
+        status: 403,
+        error: "On-chain actions from this wallet are signed by its owner key",
+      };
     }
-    if (advanced.step === "prepared") {
+    if (!input.userOpSignature || !input.userOp) {
+      const prepared = await deps.prepareOwnerUserOp({
+        chainId: input.chainId,
+        owner,
+        smartWallet,
+        calls,
+      });
+      if (!prepared.ok) {
+        await deps.log(userId, "error", prepared.error);
+        return { ok: false, status: 502, error: prepared.error };
+      }
       return {
         ok: true,
-        preparedTransaction: true,
+        preparedUserOp: true,
         lineupId,
-        transaction: advanced.transaction,
+        userOpHash: prepared.userOpHash,
+        userOp: prepared.userOp,
       };
+    }
+    const submitted = await deps.submitOwnerUserOp({
+      chainId: input.chainId,
+      owner,
+      smartWallet,
+      calls,
+      userOpSignature: input.userOpSignature,
+      userOp: input.userOp,
+    });
+    if (!submitted.ok) {
+      await deps.log(userId, "error", submitted.error);
+      return { ok: false, status: 502, error: submitted.error };
     }
     return { ok: true, lineupId };
   }

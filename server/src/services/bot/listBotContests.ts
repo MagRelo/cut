@@ -4,6 +4,7 @@ import { prisma } from "../../lib/prisma.js";
 import { getEventCandidates } from "../events/getEventCandidates.js";
 import { primaryDepositFromSettings } from "../../utils/canDeleteLeagueContest.js";
 import { contestVisibilityWhere, listedContestStatusWhere } from "../../utils/contestListQuery.js";
+import { signerControlsWallet } from "./accountKey.js";
 
 export type BotContestListItem = {
   contestId: string;
@@ -59,18 +60,16 @@ export async function listSignedBotContests(
 
   const smartWallet = getAddress(input.smartWallet);
   const signer = getAddress(input.signer);
-  const actor =
-    signer === smartWallet
-      ? await deps.findOwner(smartWallet, input.chainId)
-      : await deps.findDelegate(smartWallet, signer);
+  const actor = signerControlsWallet(signer, smartWallet, input.chainId)
+    ? await deps.findOwner(smartWallet, input.chainId)
+    : await deps.findDelegate(smartWallet, signer);
   if (!actor) {
     return {
       ok: false,
       status: 403,
-      error:
-        signer === smartWallet
-          ? "No account for this wallet"
-          : "No active delegate for this signature",
+      error: signerControlsWallet(signer, smartWallet, input.chainId)
+        ? "No account for this wallet"
+        : "No active delegate for this signature",
     };
   }
 

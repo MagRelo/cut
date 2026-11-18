@@ -1,5 +1,6 @@
 import { decodeFunctionData, getAddress, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { kernelWalletAddress } from "@playthecut/agent";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { packApproval } from "./approvalEnvelope.js";
 import { executeCreateContest, type CreateContestDeps } from "./executeCreateContest.js";
@@ -32,11 +33,11 @@ function deps(partial: Partial<CreateContestDeps> = {}): CreateContestDeps {
     findOwner: vi.fn(async () => null),
     sessionEnabled: vi.fn(async () => true),
     prepareUserOp: vi.fn(async () => ({ ok: false as const, error: "prepare was not expected" })),
-    prepareOwnerTransaction: vi.fn(async () => ({
+    prepareOwnerUserOp: vi.fn(async () => ({
       ok: false as const,
       error: "owner prepare was not expected",
     })),
-    submitOwnerTransaction: vi.fn(async () => ({
+    submitOwnerUserOp: vi.fn(async () => ({
       ok: false as const,
       error: "owner submit was not expected",
     })),
@@ -154,5 +155,34 @@ describe("executeCreateContest", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.status).toBe(400);
     expect(used.recordContest).not.toHaveBeenCalled();
+  });
+
+  it("prepares a sponsored user operation when the account key creates the contest", async () => {
+    const owner = privateKeyToAccount(generatePrivateKey());
+    const wallet = kernelWalletAddress(owner.address, CHAIN_ID);
+    const userOpHash = `0x${"cd".repeat(32)}` as Hex;
+    const userOp = {
+      sender: wallet,
+      nonce: "1",
+      callData: "0x" as Hex,
+      callGasLimit: "1",
+      verificationGasLimit: "1",
+      preVerificationGas: "1",
+      maxFeePerGas: "1",
+      maxPriorityFeePerGas: "1",
+    };
+    const used = deps({
+      findDelegate: vi.fn(async () => null),
+      findOwner: vi.fn(async () => ({ userId: USER_ID })),
+      prepareOwnerUserOp: vi.fn(async () => ({ ok: true as const, userOpHash, userOp })),
+    });
+    const result = await executeCreateContest(
+      { ...input, smartWallet: wallet, signer: owner.address },
+      used,
+    );
+    expect(result).toEqual({ ok: true, preparedUserOp: true, userOpHash, userOp });
+    expect(used.submitCalls).not.toHaveBeenCalled();
+    expect(used.recordContest).not.toHaveBeenCalled();
+    expect(used.prepareOwnerUserOp).toHaveBeenCalledOnce();
   });
 });
