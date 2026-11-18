@@ -9,10 +9,10 @@ import {
   specPath,
 } from "./agent-sdk-lib.mjs";
 
-const agents = packagedAgents(readFileSync(specPath));
-for (const target of copies) {
+const agentsSpec = readFileSync(specPath);
+for (const { target, routeHref } of copies) {
   mkdirSync(dirname(target), { recursive: true });
-  writeFileSync(target, agents);
+  writeFileSync(target, packagedAgents(agentsSpec, routeHref));
 }
 
 const api = readFileSync(apiSpecPath);

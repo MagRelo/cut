@@ -408,7 +408,7 @@ See **createContest** for a paid deploy. `userGroupId` is required there too.
 
 ## Setup
 
-`@playthecut/agent` signs and sends the routes on this page. The route list is [api.md](api.md).
+`@playthecut/agent` signs and sends the routes on this page. The route list is [docs/api.md](docs/api.md).
 
 ### Install
 
@@ -563,7 +563,7 @@ Include only the elements supported by the account data. A settlement does not n
 
 The SDK throws `CutAgentError`. `status` is the HTTP status. `message` is the server's `error` string. `body` is the parsed JSON.
 
-Briefing reads use the same signature as the play actions. The SDK sends `smartWallet` on the query and `X-Cut-Chain-Id` after signing. A delegate names the account with that query. Field tables for these routes are also in [api.md](api.md).
+Briefing reads use the same signature as the play actions. The SDK sends `smartWallet` on the query and `X-Cut-Chain-Id` after signing. A delegate names the account with that query. Field tables for these routes are also in [docs/api.md](docs/api.md).
 
 ### account
 

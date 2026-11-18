@@ -27,9 +27,9 @@ function requireCopy(target, expected, label) {
   }
 }
 
-const agents = packagedAgents(readFileSync(specPath));
-for (const target of copies) {
-  requireCopy(target, agents, "spec/agent/agents.md");
+const agentsSpec = readFileSync(specPath);
+for (const { target, routeHref } of copies) {
+  requireCopy(target, packagedAgents(agentsSpec, routeHref), "spec/agent/agents.md");
 }
 const api = readFileSync(apiSpecPath);
 for (const { target, agentsHref } of apiCopies) {

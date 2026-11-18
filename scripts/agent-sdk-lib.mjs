@@ -12,25 +12,24 @@ export const releasePath = join(packageDir, "release.json");
 const repoRouteLink = "[spec/server/api.md](../server/api.md)";
 const repoAgentsLink = "[spec/agent/agents.md](../agent/agents.md)";
 
+/** Package README links into docs/. The other agents pages sit beside api.md. */
 export const copies = [
-  join(packageDir, "README.md"),
-  join(packageDir, "docs/agents.md"),
-  join(root, "client/public/agents.md"),
+  { target: join(packageDir, "README.md"), routeHref: "docs/api.md" },
+  { target: join(packageDir, "docs/agents.md"), routeHref: "api.md" },
+  { target: join(root, "client/public/agents.md"), routeHref: "api.md" },
 ];
 
-/** Route list shipped next to each agents page so the relative link resolves. */
 export const apiCopies = [
-  { target: join(packageDir, "api.md"), agentsHref: "README.md" },
   { target: join(packageDir, "docs/api.md"), agentsHref: "agents.md" },
   { target: join(root, "client/public/api.md"), agentsHref: "agents.md" },
 ];
 
-export function packagedAgents(spec) {
+export function packagedAgents(spec, routeHref) {
   const text = spec.toString("utf8");
   if (!text.includes(repoRouteLink)) {
     throw new Error("spec/agent/agents.md is missing the link to spec/server/api.md");
   }
-  return Buffer.from(text.replaceAll(repoRouteLink, "[api.md](api.md)"));
+  return Buffer.from(text.replaceAll(repoRouteLink, `[${routeHref}](${routeHref})`));
 }
 
 export function packagedApi(spec, agentsHref) {
