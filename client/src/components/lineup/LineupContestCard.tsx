@@ -187,6 +187,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
     lineupId,
     contestId: platformLineup?.contestId ?? contestId,
     slotCount,
+    minPicks: Math.max(rosterRules?.minPicks ?? 1, 1),
     initialCandidates,
     fieldCandidates: candidates,
     lineups,
@@ -210,6 +211,14 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
         return existingIds === nextIds && platformLineupPrediction(entry) === nextPrediction;
       });
 
+      const minimumPicks = Math.max(rosterRules?.minPicks ?? 1, 1);
+      if (picks.length < minimumPicks) {
+        setSliderError(
+          `Lineup must have at least ${minimumPicks} ${minimumPicks === 1 ? "player" : "players"}`,
+        );
+        return;
+      }
+
       if (duplicate) {
         setSliderError(DUPLICATE_LINEUP_PREDICTION_MESSAGE);
         return;
@@ -232,6 +241,7 @@ export const LineupContestCard: React.FC<LineupContestCardProps> = ({
       lineupId,
       contestId,
       lineups,
+      rosterRules?.minPicks,
       serverPrediction,
       slotEditor.selectedEventParticipantIds,
       updateLineup,

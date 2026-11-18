@@ -49,7 +49,7 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 |-------|---------|
 | `id` | `pga-golf` |
 | `slug` | URL segment |
-| `rosterRules` | `{ slotCount: 4, minPicks: 0, maxPicks: 4, allowDuplicates: false }` |
+| `rosterRules` | `{ slotCount, minPicks: 1, maxPicks, allowDuplicates: false }`. Golf and F1: `slotCount` / `maxPicks` 4. Commodities: 3. A lineup needs at least one pick to save or enter. |
 | `scoringRules` | `{ aggregation: "sum", direction: "higher_wins", popularity?: PopularityRules }` — see [consensus-axis.md](../../docs/platform/consensus-axis.md) |
 
 ### CompetitionEvent

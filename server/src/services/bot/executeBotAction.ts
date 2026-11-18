@@ -229,6 +229,9 @@ async function joinAction(
   }
   const lineup = await requireLineup(input, delegate.userId, contest, deps);
   if (!lineup.ok) return { ok: false, status: 400, error: lineup.error };
+  if (lineup.lineup.picks.length < 1) {
+    return { ok: false, status: 400, error: "Lineup must have at least 1 player" };
+  }
 
   const existing = await deps.findContestEntry(contest.id, lineup.lineup.id);
   if (existing) return { ok: true, lineupId: lineup.lineup.id };

@@ -112,8 +112,9 @@ export const FAQPage: React.FC = () => {
           <div>
             <h3 className="mb-2 text-lg font-semibold text-gray-900">How do I build a lineup?</h3>
             <p className="mb-2 text-gray-700">
-              A lineup is four player slots plus a tie-breaker guess for the tournament week. You
-              can enter the same lineup into multiple contests. While the tournament is open for
+              A lineup is up to four player slots plus a tie-breaker guess for the tournament week.
+              One player is enough to enter. You can enter the same lineup into multiple contests.
+              While the tournament is open for
               editing, go to{" "}
               <Link to="/contests" className="text-blue-600 hover:underline">
                 Live Contests
@@ -126,8 +127,8 @@ export const FAQPage: React.FC = () => {
                 <span className="font-medium">Add Lineup</span> to create a new lineup
               </li>
               <li>
-                On the <span className="font-medium">Players</span> tab, fill the four slots
-                (changes save automatically)
+                On the <span className="font-medium">Players</span> tab, add at least one player.
+                Empty slots can stay empty (changes save automatically)
               </li>
               <li>
                 Set the <span className="font-medium">Tie-Breaker</span> at the bottom of the
@@ -145,7 +146,7 @@ export const FAQPage: React.FC = () => {
             </ul>
             <p className="mt-2 text-gray-700">
               New lineups get a random tie-breaker in the 125–175 range if you do not move the
-              slider. You can build multiple lineups per tournament; each is its own four slots and
+              slider. You can build multiple lineups per tournament; each has its own picks and
               tie-breaker.
             </p>
           </div>
@@ -155,10 +156,9 @@ export const FAQPage: React.FC = () => {
               Can I use the same golfers on two lineups?
             </h3>
             <p className="mb-2 text-gray-700">
-              Yes, if the tie-breaker values differ. Golfer order in your four slots does not
-              matter—only the set of four players and the tie-breaker define a lineup. You cannot
-              save a second lineup with the same four golfers and the same tie-breaker as a lineup
-              you already have.
+              Yes, if the tie-breaker values differ. Golfer order does not matter—only the set of
+              players and the tie-breaker define a lineup. You cannot save a second lineup with the
+              same golfers and the same tie-breaker as a lineup you already have.
             </p>
             <p className="mb-2 text-gray-700">
               In a contest, each lineup can only be entered once. You may enter another lineup with

@@ -71,6 +71,7 @@ interface UseLineupSlotEditorOptions {
   lineupId: string;
   contestId?: string | null;
   slotCount: number;
+  minPicks: number;
   initialCandidates: Candidate[];
   fieldCandidates: Candidate[];
   lineups: PlatformLineupListItem[];
@@ -86,6 +87,7 @@ export function useLineupSlotEditor({
   lineupId,
   contestId,
   slotCount,
+  minPicks,
   initialCandidates,
   fieldCandidates,
   lineups,
@@ -171,6 +173,13 @@ export function useLineupSlotEditor({
 
       const eventParticipantIds = eventParticipantIdsFromSlots(newSlots);
 
+      if (eventParticipantIds.length < minPicks) {
+        setSaveError(
+          `Lineup must have at least ${minPicks} ${minPicks === 1 ? "player" : "players"}`,
+        );
+        return false;
+      }
+
       if (checkForDuplicateLineup(eventParticipantIds, predictionValue)) {
         setSaveError(DUPLICATE_LINEUP_PREDICTION_MESSAGE);
         return false;
@@ -189,7 +198,7 @@ export function useLineupSlotEditor({
         return false;
       }
     },
-    [checkForDuplicateLineup, lineupId, updateLineup, predictionValue],
+    [checkForDuplicateLineup, lineupId, minPicks, updateLineup, predictionValue],
   );
 
   const openSlot = useCallback((index: number) => {

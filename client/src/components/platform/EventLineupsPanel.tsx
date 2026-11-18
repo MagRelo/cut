@@ -18,6 +18,7 @@ import { PageSection } from "../layout/PageSection";
 import { SignInPrompt } from "../auth/SignInPrompt";
 import { LineupContestCard, LineupContestCardLoading } from "../lineup/LineupContestCard";
 import { GuestLineupPicker } from "../lineup/GuestLineupPicker";
+import { CandidatePicker } from "./CandidatePicker";
 import { ContestLineupJoinActions } from "../contest/ContestLineupJoinActions";
 import { lineupsCopyableIntoContest, lineupsForContestPanel } from "../../lib/lineupContestScope";
 import { lineupPickLastNames } from "../../lib/lineupUtils";
@@ -79,6 +80,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
   });
   const contestEntry = useContestLineupEntry(contest);
   const [isCreating, setIsCreating] = useState(false);
+  const [starterOpen, setStarterOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [copyingLineupId, setCopyingLineupId] = useState<string | null>(null);
 
@@ -120,12 +122,19 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
   const showCreatePanel = isLineupEditable && !isAuthLoading && !isLineupsLoading;
   const isCreateBusy = isCreating || copyingLineupId !== null;
 
-  const handleCreateLineup = async () => {
+  const handleCreateLineup = () => {
+    if (isCreating) return;
+    setCreateError(null);
+    setStarterOpen(true);
+  };
+
+  const handleStartLineup = async (eventParticipantId: string) => {
     if (isCreating) return;
     setIsCreating(true);
     setCreateError(null);
     try {
-      await createLineup(eventId, [], contest.id);
+      await createLineup(eventId, [eventParticipantId], contest.id);
+      setStarterOpen(false);
     } catch (error) {
       setCreateError(error instanceof Error ? error.message : "Failed to create lineup");
     } finally {
@@ -157,8 +166,9 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
           "Start a new lineup or copy picks from one you entered in another contest."
         ) : (
           <>
-            Pick players for <span className="font-medium text-gray-800">{displayEventName}</span>,
-            then join this contest.
+            Pick at least one player for{" "}
+            <span className="font-medium text-gray-800">{displayEventName}</span>. You can enter
+            with a short lineup and add more later.
           </>
         )}
       </p>
@@ -197,7 +207,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
                     type="button"
                     size="compact"
                     onClick={() => void handleCopyFromLineup(row.id)}
-                    disabled={isCreateBusy}
+                    disabled={isCreateBusy || players.length === 0}
                   >
                     {isCopying ? "Copying…" : "Copy"}
                   </Button>
@@ -287,6 +297,19 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
       ) : (
         createLineupPanel
       )}
+
+      <CandidatePicker
+        sportId={sportId}
+        eventId={eventId}
+        isOpen={starterOpen}
+        onClose={() => {
+          if (!isCreating) setStarterOpen(false);
+        }}
+        selectedEventParticipantIds={[]}
+        onSelect={(eventParticipantId) => void handleStartLineup(eventParticipantId)}
+        isSaving={isCreating}
+        saveError={createError}
+      />
 
       {!isLineupEditable && !hasLineups ? (
         <PageSection>

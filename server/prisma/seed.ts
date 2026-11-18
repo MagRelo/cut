@@ -11,7 +11,7 @@ const prisma = new PrismaClient({
 
 const PGA_GOLF_ROSTER_RULES = {
   slotCount: 4,
-  minPicks: 0,
+  minPicks: 1,
   maxPicks: 4,
   allowDuplicates: false,
 };
@@ -46,7 +46,7 @@ const PGA_GOLF_PREDICTION_RULES = {
 
 const F1_ROSTER_RULES = {
   slotCount: 4,
-  minPicks: 0,
+  minPicks: 1,
   maxPicks: 4,
   allowDuplicates: false,
 };
@@ -68,7 +68,7 @@ const F1_PREDICTION_RULES = {
 
 const COMMODITIES_ROSTER_RULES = {
   slotCount: 3,
-  minPicks: 0,
+  minPicks: 1,
   maxPicks: 3,
   allowDuplicates: false,
 };

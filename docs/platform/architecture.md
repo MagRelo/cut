@@ -172,6 +172,8 @@ export interface SportModule {
 }
 ```
 
+Every shipped sport sets `minPicks` to 1 and `maxPicks` to `slotCount`. Golf and F1 use 4 slots. Commodities uses 3. A lineup can be saved and entered with any count from 1 through that maximum.
+
 Sport implementations live in dedicated packages (e.g. `packages/sport-pga-golf`, `packages/sport-nfl-fantasy`). The server registry resolves the correct module by `event.sportId`.
 
 ### Scoring signals

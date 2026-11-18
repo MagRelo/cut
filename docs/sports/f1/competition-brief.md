@@ -41,7 +41,7 @@ Pick four drivers for this week's Grand Prix; your lineup scores the sum of thei
 | **Roster rules** | 4 slots, flat pool, no position constraints, no duplicate drivers |
 | **Field lock timing** | Lineup lock at race start (`LIVE` transition) — same as golf at tee-off |
 | **Withdrawal / DNP policy** | DNS, DNF, DSQ, or driver removed from entry list before lock → **0 points** for that pick. No late replacements after user locks. |
-| **Min picks** | 4 required to submit (mirror golf `minPicks` / `maxPicks` = 4) |
+| **Min picks** | 1 to save or enter. Up to 4 (`slotCount` / `maxPicks`). |
 
 ---
 
@@ -175,7 +175,7 @@ Scored against [fit-guide.md](../../competitions/fit-guide.md) evaluation worksh
 // rosterRules
 {
   "slotCount": 4,
-  "minPicks": 4,
+  "minPicks": 1,
   "maxPicks": 4,
   "allowDuplicates": false
 }

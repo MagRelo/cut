@@ -169,7 +169,7 @@ Key exports from `packages/sport-sdk/src/types.ts`:
 | Type | Purpose |
 |------|---------|
 | `Candidate` | Lineup picker row (`eventParticipantId`, `displayName`, `sortKeys`, `metadata`) |
-| `RosterRules` | `slotCount`, `minPicks`, `maxPicks`, `allowDuplicates` |
+| `RosterRules` | `slotCount`, `minPicks`, `maxPicks`, `allowDuplicates`. Shipped sports use `minPicks: 1`. Golf and F1 allow up to 4. Commodities allows up to 3. |
 | `RankedEntry` | Contest ranking output |
 | `PayoutVector` | Basis points per winner |
 

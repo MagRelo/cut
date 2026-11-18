@@ -548,7 +548,7 @@ Stop using `gray-*` and `slate-*` for the same role. `gray.25` can go once nothi
 
 #### Lineup builder
 
-**Current.** Event-scoped lineups, optional `contestId`. Lobby creates with `contestId` set. Cross-contest reuse clones (`POST /lineups/clone/:id`). Editor pads slots to `rosterRules.slotCount`. Prediction is `{ type: "winningLineupTotal", value }`. Guest picker is local state plus a fake save delay and a sign-in footer. Editable only while `canEditLineupForContest` says so, using DB status and on-chain `state()` when an address exists.
+**Current.** Event-scoped lineups, optional `contestId`. Lobby creates with `contestId` set. Cross-contest reuse clones (`POST /lineups/clone/:id`). Editor pads slots to `rosterRules.slotCount`. `minPicks` is 1, so empty slots can stay empty. Prediction is `{ type: "winningLineupTotal", value }`. Guest picker is local state plus a fake save delay and a sign-in footer. Editable only while `canEditLineupForContest` says so, using DB status and on-chain `state()` when an address exists.
 
 **Keep.** Contest-scoped lineup rows, clone-on-reuse, prediction payload, roster rules from the API, guest mode that does not persist.
 

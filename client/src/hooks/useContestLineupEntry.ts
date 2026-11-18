@@ -21,6 +21,7 @@ import {
 } from "../lib/lineupUtils";
 import ContestContract from "../utils/contracts/ContestController.json";
 import { contestRouteKey, hasOnchainEscrow } from "../lib/hasOnchainEscrow";
+import { useSportRosterRules } from "./useSportRosterRules";
 
 export function useContestLineupEntry(contest: Contest) {
   const posthog = usePostHog();
@@ -31,6 +32,7 @@ export function useContestLineupEntry(contest: Contest) {
   const joinContest = useJoinContest();
   const leaveContest = useLeaveContest();
   const { lineups } = useLineupData({ eventId: contest.eventId });
+  const minPicks = Math.max(useSportRosterRules(contest.event?.sportId)?.minPicks ?? 1, 1);
   const onchain = hasOnchainEscrow(contest);
   const routeKey = contestRouteKey(contest);
 
@@ -205,8 +207,10 @@ export function useContestLineupEntry(contest: Contest) {
 
   const handleJoinContest = async (lineupId: string) => {
     const lineup = lineups.find((l) => l.id === lineupId);
-    if (!lineup || platformLineupEventParticipantIds(lineup).length === 0) {
-      setValidationError("Lineup must have at least 1 player");
+    if (!lineup || platformLineupEventParticipantIds(lineup).length < minPicks) {
+      setValidationError(
+        `Lineup must have at least ${minPicks} ${minPicks === 1 ? "player" : "players"}`,
+      );
       return;
     }
     if (checkForDuplicateInContest(lineupId)) {
@@ -383,7 +387,7 @@ export function useContestLineupEntry(contest: Contest) {
     isFailed: joinPhase === "chainFailed" || joinPhase === "recordFailed" || leavePhase === "chainFailed" || leavePhase === "recordFailed",
     hasPlayers: (lineupId: string) => {
       const lineup = lineups.find((l) => l.id === lineupId);
-      return Boolean(lineup && platformLineupEventParticipantIds(lineup).length > 0);
+      return Boolean(lineup && platformLineupEventParticipantIds(lineup).length >= minPicks);
     },
   };
 }

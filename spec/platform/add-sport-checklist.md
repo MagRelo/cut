@@ -141,7 +141,7 @@ Optional, separate track:
 - [ ] Add `server/src/scripts/<sport>DryRun.ts` + `script:<sport>-dry-run` in `server/package.json`
 - [ ] `pnpm --filter server run service:init-event <sportId> <dry-run-externalId>`
 - [ ] Confirm `CompetitionEvent.isActive = true` and field sync populated the candidate pool
-- [ ] Create test lineups (full roster + `winningLineupTotal` prediction)
+- [ ] Create test lineups (at least `minPicks`, up to `maxPicks`, plus a `winningLineupTotal` prediction)
 - [ ] Create a test contest; run `runSportEventPipeline` or enable cron
 - [ ] Confirm scores sync, contest lineups rank correctly, tie-break resolves ties
 - [ ] Confirm `batchActivateContests` at `LIVE` and `batchSettleContests` at `COMPLETE` (on-chain settle needs a real contract; off-chain ranking path is sufficient for plugin verification)

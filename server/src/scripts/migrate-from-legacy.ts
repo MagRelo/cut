@@ -27,7 +27,7 @@ import { PGA_GOLF_SPORT_ID } from "@cut/sport-pga-golf";
 
 const PGA_GOLF_ROSTER_RULES = {
   slotCount: 4,
-  minPicks: 0,
+  minPicks: 1,
   maxPicks: 4,
   allowDuplicates: false,
 };

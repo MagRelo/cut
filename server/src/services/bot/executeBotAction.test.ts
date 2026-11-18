@@ -192,6 +192,26 @@ describe("executeBotAction", () => {
     expect(used.prepareUserOp).not.toHaveBeenCalled();
   });
 
+  it("rejects a join when the lineup has no picks", async () => {
+    const used = deps({
+      findLineup: vi.fn(async () => ({
+        id: "lineup-1",
+        userId: USER_ID,
+        eventId: "event-1",
+        contestId: "contest-1",
+        picks: [],
+      })),
+    });
+    const result = await executeBotAction(signedJoin(), used);
+    expect(result).toMatchObject({
+      ok: false,
+      status: 400,
+      error: "Lineup must have at least 1 player",
+    });
+    expect(used.submitCalls).not.toHaveBeenCalled();
+    expect(used.insertContestEntry).not.toHaveBeenCalled();
+  });
+
   it("joins an existing lineup and does not write picks", async () => {
     const previous = process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
     process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = cutBotKey;

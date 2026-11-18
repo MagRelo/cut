@@ -174,7 +174,7 @@ Lineup header PTS: [`lineupDisplayScore`](../../client/src/lib/lineupScore.ts) f
 | Item | Location | Notes |
 |------|----------|-------|
 | Lineup total prediction | `lib/sportPrediction.ts`, `useSportPredictionRules`, `SportPredictionField` | Slider reads `predictionRules` from `GET /sports`. Canonical JSON shape is `{ type: "winningLineupTotal", value }` |
-| Roster size | `useSportRosterRules` | `rosterRules.slotCount` from `GET /sports`. The lineup card and `EventLineupsPanel` show the loading shell until those rules are present |
+| Roster size | `useSportRosterRules` | `rosterRules.slotCount` slots from `GET /sports`. `minPicks` is 1, so empty slots can stay empty. The lineup card and `EventLineupsPanel` show the loading shell until those rules are present |
 | Event status and dates | `sports/eventPresentation.ts` | Registry lookup by `sportId`. Missing plugin is `SCHEDULED` and null dates |
 | Event round display | Golf plugin reads `roundDisplay` from `eventMetadata` | Not a platform hook field |
 | Home demo | `sports/pga-golf/InfoScorecard` | Golf marketing surface. `Home` imports it; platform components do not |

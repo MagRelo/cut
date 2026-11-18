@@ -8,13 +8,13 @@ Related references: [server API — lineups](../../spec/server/api.md), [data mo
 
 ## Purpose
 
-Fantasy contests rank lineups by **Stableford total** (sum of the four golfers on the roster). When two or more entries finish with the same fantasy score, the product needs a deterministic way to assign **unique positions** (1, 2, 3, …) and **one payout per position**—no shared ranks and no pooled tie splits.
+Fantasy contests rank lineups by the sum of the picks on the roster. Golf scores that sum as Stableford points. When two or more entries finish with the same fantasy score, the product needs a deterministic way to assign **unique positions** (1, 2, 3, …) and **one payout per position**—no shared ranks and no pooled tie splits.
 
 Each **lineup** carries a **winning lineup total prediction**: the user’s guess at the **highest lineup score that will win that contest** (sum of roster participants’ event totals). For golf that is Stableford points; for F1 it is championship points. That number is **not** the PGA Tour leader’s stroke total or course par.
 
 The prediction serves two roles:
 
-1. **Entry differentiation** — Two lineups with the same four players can coexist if their predictions differ.
+1. **Entry differentiation** — Two lineups with the same players can coexist if their predictions differ.
 2. **Tie-breaking** — When fantasy scores tie, the entry whose prediction is closest to the contest’s actual winning score ranks higher; if still tied, earlier entry time (`createdAt`) wins.
 
 ---
@@ -23,7 +23,7 @@ The prediction serves two roles:
 
 | Term | Meaning |
 | --- | --- |
-| **Lineup** | User’s roster for an event (`Lineup`), up to four picks keyed by `eventParticipantId`. |
+| **Lineup** | User’s roster for an event (`Lineup`). At least one pick, up to the sport maximum (golf and F1: 4, commodities: 3), keyed by `eventParticipantId`. |
 | **Contest lineup** | That roster entered into a specific contest (`ContestLineup`); has score, position, `createdAt`. |
 | **Fantasy score** | Contest-ranked total on `ContestLineup.score` (sum of pick totals, with optional popularity bonus after lock — see [consensus-axis.md](consensus-axis.md)). |
 | **Winning lineup total prediction** | Integer in `Lineup.prediction` (`{ type: "winningLineupTotal", value }`); user’s guess of the winning lineup total in a contest. Valid range comes from `Sport.predictionRules`. |

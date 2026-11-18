@@ -3,7 +3,7 @@ import { validateF1Roster } from "./validation.js";
 
 const rules = {
   slotCount: 4,
-  minPicks: 0,
+  minPicks: 1,
   maxPicks: 4,
   allowDuplicates: false,
 };
@@ -11,8 +11,14 @@ const rules = {
 describe("validateF1Roster", () => {
   const validIds = new Set(["a", "b", "c", "d"]);
 
-  it("accepts empty picks while building a lineup", () => {
+  it("rejects an empty lineup", () => {
     const result = validateF1Roster([], rules, validIds);
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]).toMatch(/At least 1/);
+  });
+
+  it("accepts a single pick", () => {
+    const result = validateF1Roster(["a"], rules, validIds);
     expect(result.valid).toBe(true);
     expect(result.errors).toEqual([]);
   });

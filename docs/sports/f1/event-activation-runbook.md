@@ -107,7 +107,7 @@ pnpm --filter server run script:f1-data-spike 9558
 pnpm --filter server run db:seed
 ```
 
-- [ ] `Sport` row `id: f1` exists with `isEnabled: true`, `minPicks: 4`, `maxPicks: 4`
+- [ ] `Sport` row `id: f1` exists with `isEnabled: true`, `minPicks: 1`, `maxPicks: 4`
 
 ---
 

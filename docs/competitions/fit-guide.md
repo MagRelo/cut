@@ -211,11 +211,11 @@ Implementation is easy when the data is not. Before committing, inventory source
 
 ## 6. Roster rules — how big, how hard?
 
-Roster rules live on the `Sport` row (`slotCount`, `minPicks`, `maxPicks`, `allowDuplicates`) and in plugin validation.
+Roster rules live on the `Sport` row (`slotCount`, `minPicks`, `maxPicks`, `allowDuplicates`) and in plugin validation. Shipped sports use `minPicks: 1`. Golf and F1 allow up to 4. Commodities allows up to 3.
 
 **Questions to answer:**
 
-- How many picks? **4** is the golf default — small enough for casual play, large enough for strategy. Many sports land between 4 and 12.
+- How many slots? Golf and F1 use 4. Commodities uses 3. `minPicks` stays 1 unless a new sport has a reason to raise it. Many sports land between 4 and 12 slots.
 - Position slots (fantasy) vs open pool (golf)?
 - Duplicate picks allowed?
 - Minimum picks required if the field shrinks (withdrawals)?

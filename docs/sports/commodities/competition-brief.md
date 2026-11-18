@@ -49,7 +49,7 @@ Pick three commodities for the trading week; your lineup scores the sum of their
 | **Roster rules** | 3 slots, flat pool, no duplicates |
 | **Field lock timing** | Lineup lock at session open (`LIVE` transition) |
 | **DNP policy** | Missing open or close price → **0 points** for that leg |
-| **Min picks** | 3 required to submit (`slotCount` / `maxPicks` = 3; `minPicks` = 0 for draft saves, same as golf/F1) |
+| **Min picks** | 1 to save or enter. Up to 3 (`slotCount` / `maxPicks`). |
 
 ---
 
@@ -147,7 +147,7 @@ Static allowlist in `packages/sport-commodities/src/catalog.ts`. Hyperliquid res
 
 ```json
 {
-  "rosterRules": { "slotCount": 3, "minPicks": 0, "maxPicks": 3, "allowDuplicates": false },
+  "rosterRules": { "slotCount": 3, "minPicks": 1, "maxPicks": 3, "allowDuplicates": false },
   "scoringRules": { "aggregation": "sum", "direction": "higher_wins" },
   "predictionRules": {
     "min": -100,

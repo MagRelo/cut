@@ -20,7 +20,11 @@ export async function validateLineupPicks(
     return { ok: false, error: "not_found" };
   }
 
-  const rosterRules = event.sport.rosterRules as unknown as RosterRules;
+  const storedRules = event.sport.rosterRules as unknown as RosterRules;
+  const rosterRules = {
+    ...storedRules,
+    minPicks: Math.max(storedRules?.minPicks ?? 0, 1),
+  };
   const sportModule = requireSportModule(sportId);
   const validation = await sportModule.validateRoster(eventId, picks, rosterRules);
 

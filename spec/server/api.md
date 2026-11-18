@@ -135,7 +135,7 @@ Event responses are `{ sport, event, status }`. `event.metadata` is sport JSON (
 }
 ```
 
-- `candidates` is an ordered array of `eventParticipantId` values, at most 8.
+- `candidates` is an ordered array of `eventParticipantId` values. At least 1. At most the sport's `maxPicks`: 4 for golf and F1, 3 for commodities. Empty slots may stay empty.
 - `POST` creates a new row. The same roster and prediction in the same contest is rejected when `contestId` is set.
 - `PUT` updates candidates, name, and prediction.
 - `prediction` is `{ "type": "winningLineupTotal", "value": <int> }` inside the sport's range. Omit it on create and the server stores a sport default.
@@ -170,7 +170,7 @@ League contests are `404` to non-members.
 
 Other body fields: `eventId`, `name`, `endDate`, `chainId`, `settings`, optional `userGroupId`, `description`, `notifyLeagueMembers`. `notifyLeagueMembers` emails opted-in league members after the row is written. It is ignored without `userGroupId`.
 
-**POST `/:id/lineups` body:** `lineupId`. An optional `entryId` is ignored. The server sets `entryId` from the contest address and lineup id. On-chain `entryOwner(entryId)` must be the authenticated wallet.
+**POST `/:id/lineups` body:** `lineupId`. An optional `entryId` is ignored. The server sets `entryId` from the contest address and lineup id. On-chain `entryOwner(entryId)` must be the authenticated wallet. The lineup must already contain at least one pick. An empty lineup is `400` `"Lineup must have at least 1 player"`.
 
 **POST `/:id/secondary-participants` body:** `entryId`, `transactionHash`, `chainId`, optional `amountWei`. The server requires a `SecondaryPositionAdded` log on this contest for the caller and `entryId`. Replays of the same `transactionHash` are idempotent.
 
@@ -244,8 +244,8 @@ The product name is league. The path is `/api/userGroups`. Client pages are `/le
 |--------|------|------|-------------|
 | GET | `/account` | either | Wallet, chain, `balanceUsdc`, leagues (`id`, `name`, `role`), `referral` (`code`, `url`, `totalEarned`), `entries` (distinct entered contests keyed by status), `preferences` (`sports`, `maxEntryFee`). |
 | PUT | `/preferences` | either | Merge `settings.agent`. Body: `sports` (enabled sport ids) and/or `maxEntryFee` (whole USDC, or `null` to clear). At least one field. Unknown sport id is `400` `"Unknown sport"`. Response `{ preferences }`. |
-| GET | `/scout` | either | Visible contests on the signed chain that are still a choice, without the field. `contests` are `OPEN`, event `SCHEDULED`, end time still ahead, not entered, with a published field, and funded when the balance is known. Each row has `event`, `primaryDeposit`, `rosterSize`, `predictionRange`, `fieldCount`, `alreadyEntered: false`, and `fit` (`league`, `affordable`, `open`, `field-ready`, `within-budget`). `blocked` is the other open contests still ahead, with one `reason`: `already-entered`, `field-empty`, or `balance`, plus `primaryDeposit`. A contest that is not open, whose event has started, or whose end time has passed is omitted. A non-empty `preferences.sports` omits other sports. A null balance does not block a paid contest and does not mark it `affordable`. |
-| GET | `/contests/:contestId/picks` | either | One visible contest, `rosterSize`, `predictionRange`, the field, the saved `lineup` or `null`, and the `entry` or `null`. `404` `"Contest not found"` when it is missing or not visible. |
+| GET | `/scout` | either | Visible contests on the signed chain that are still a choice, without the field. `contests` are `OPEN`, event `SCHEDULED`, end time still ahead, not entered, with a published field, and funded when the balance is known. Each row has `event`, `primaryDeposit`, `rosterSize` (`maxPicks`; a lineup needs at least 1), `predictionRange`, `fieldCount`, `alreadyEntered: false`, and `fit` (`league`, `affordable`, `open`, `field-ready`, `within-budget`). `blocked` is the other open contests still ahead, with one `reason`: `already-entered`, `field-empty`, or `balance`, plus `primaryDeposit`. A contest that is not open, whose event has started, or whose end time has passed is omitted. A non-empty `preferences.sports` omits other sports. A null balance does not block a paid contest and does not mark it `affordable`. |
+| GET | `/contests/:contestId/picks` | either | One visible contest, `rosterSize` (`maxPicks`; a lineup needs at least 1), `predictionRange`, the field, the saved `lineup` or `null`, and the `entry` or `null`. `404` `"Contest not found"` when it is missing or not visible. |
 | GET | `/companion` | either | Entered contests on this chain. Query `cursor`. `{ cursor, unchanged, updates }`. An update has `standing`, `picks`, `signals` (`standing-changed`, `pick-changed`, `status-changed`, `commentary`, `payout`), `commentary` (`generatedAt`, `overview`, `items`), and `payout`. Feed `items` are those whose `entryIds` include this account's entry. |
 | GET | `/tick` | either | One poll. Query `cursor`, the same value as companion. `account.balanceUsdc`, `scout.openAffordable`, companion `updates` and `unchanged`, `leagues.needsContest` (admin leagues whose active event is `SCHEDULED` with no open contest), `leagues.unentered` (`contestId`, `leagueId`, `missingMemberIds`), `leagues.settled` (league contests that became settled since the cursor, with `winnerName` and `winningTotal`), and `referrals.totalEarned` plus `referrals.newMembers`. |
 | GET | `/referrals` | either | `code`, `url`, `totalEarned`, `recorded`, `levels`, `earnings` (`contestId`, `amount`, `settledAt`), `recent` (direct invitees, public name, `depth`, `joinedAt`). |

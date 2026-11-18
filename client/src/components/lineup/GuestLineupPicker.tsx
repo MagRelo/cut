@@ -170,7 +170,7 @@ export const GuestLineupPicker: React.FC<GuestLineupPickerProps> = ({
             Create your lineup
           </div>
           <div className="truncate text-sm leading-tight text-gray-700">
-            Choose {slotCount} {slotCount === 1 ? "player" : "players"}
+            Add at least 1 player, up to {slotCount}
           </div>
         </div>
       </div>
