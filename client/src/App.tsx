@@ -47,6 +47,7 @@ import { TermsOfService } from "./pages/TermsOfService";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import { ResponsibleGaming } from "./pages/ResponsibleGaming";
 import { Disclosures } from "./pages/Disclosures";
+import { AgentDocPage } from "./pages/AgentDocPage";
 import { FAQPage } from "./pages/FAQPage";
 import { LeagueStarterGuidePage } from "./pages/LeagueStarterGuidePage";
 import { AdminPage } from "./pages/AdminPage";
@@ -102,6 +103,9 @@ const AppShell: React.FC = () => {
             <Route path="/responsible-gaming" element={<ResponsibleGaming />} />
             <Route path="/disclosures" element={<Disclosures />} />
             <Route path="/faq" element={<FAQPage />} />
+            <Route path="/agents" element={<AgentDocPage page="agents" />} />
+            <Route path="/access" element={<AgentDocPage page="access" />} />
+            <Route path="/docs/api" element={<AgentDocPage page="api" />} />
             <Route path="/guides/start-a-league" element={<LeagueStarterGuidePage />} />
             <Route
               path="/onboarding"

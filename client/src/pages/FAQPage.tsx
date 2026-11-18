@@ -977,14 +977,14 @@ export const FAQPage: React.FC = () => {
             .
           </p>
           <p>
-            The request shape for an agent is{" "}
-            <a href="/agents.md" className="text-blue-600 hover:underline">
-              /agents.md
-            </a>
-            . Delegate and yield steps are{" "}
-            <a href="/access.md" className="text-blue-600 hover:underline">
-              /access.md
-            </a>
+            The request shape for an agent is the{" "}
+            <Link to="/agents" className="text-blue-600 hover:underline">
+              agent guide
+            </Link>
+            . Delegate and yield steps are on{" "}
+            <Link to="/access" className="text-blue-600 hover:underline">
+              account access
+            </Link>
             .
           </p>
         </div>
