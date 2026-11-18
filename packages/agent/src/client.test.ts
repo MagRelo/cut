@@ -1,4 +1,4 @@
-import { recoverMessageAddress } from "viem";
+import { parseTransaction, recoverMessageAddress, recoverTransactionAddress } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it } from "vitest";
 import { createCutAgent, generateDelegateKey } from "./client.js";
@@ -97,6 +97,49 @@ describe("createCutAgent", () => {
         signature: secondBody.userOpSignature,
       }),
     ).resolves.toBe(account.address);
+  });
+
+  it("signs each prepared account transaction and posts it back", async () => {
+    const privateKey = generatePrivateKey();
+    const account = privateKeyToAccount(privateKey);
+    const requests: Request[] = [];
+    const prepared = {
+      to: SMART_WALLET,
+      data: "0xabcdef",
+      value: "0",
+      chainId: 8453,
+      nonce: "3",
+      gas: "21000",
+      maxFeePerGas: "2",
+      maxPriorityFeePerGas: "1",
+    };
+    const agent = createCutAgent({
+      privateKey,
+      fetch: async (request) => {
+        requests.push(request.clone());
+        if (requests.length === 1) {
+          return json({ preparedTransaction: true, lineupId: "lineup-1", transaction: prepared });
+        }
+        return json({ ok: true, lineupId: "lineup-1" });
+      },
+    });
+
+    await expect(agent.join({ contestId: "contest-1", lineupId: "lineup-1" })).resolves.toEqual({
+      ok: true,
+      lineupId: "lineup-1",
+    });
+
+    const second = JSON.parse(await requests[1]!.text()) as { signedTransaction: `0x${string}` };
+    const parsed = parseTransaction(second.signedTransaction);
+    await expect(
+      recoverTransactionAddress({ serializedTransaction: second.signedTransaction }),
+    ).resolves.toBe(account.address);
+    expect(parsed.to).toBe(SMART_WALLET);
+    expect(parsed.nonce).toBe(3);
+    expect(parsed.data).toBe("0xabcdef");
+    expect(requests[0]?.headers.get("signature-input")).not.toBe(
+      requests[1]?.headers.get("signature-input"),
+    );
   });
 
   it("registers without a smartWallet query", async () => {

@@ -13,6 +13,7 @@ import { getPublicClient } from "../shared/contractClient.js";
 import { invalidateContestLobby } from "../contests/getContestLobby.js";
 import type { BotActionDeps, BotDelegateRow, BotLineup } from "./executeBotAction.js";
 import { readSessionKeyEnabled } from "./sessionKeyEnabled.js";
+import { prepareOwnerTransaction, submitOwnerTransaction } from "./ownerTransaction.js";
 import { prepareSessionKeyUserOp, submitSessionKeyUserOp } from "./submitSessionKeyUserOp.js";
 
 const depositAbi = [
@@ -82,17 +83,6 @@ export function createBotActionDeps(): BotActionDeps {
         where: { chainId_publicKey: { chainId, publicKey: smartWallet.toLowerCase() } },
         select: { userId: true },
       });
-    },
-    findCutBot: async (userId, smartWallet) => {
-      const row = await prisma.botDelegate.findFirst({
-        where: {
-          userId,
-          smartWallet: smartWallet.toLowerCase(),
-          kind: "cut_bot",
-          status: "active",
-        },
-      });
-      return row ? toDelegate(row) : null;
     },
     sessionEnabled: readSessionKeyEnabled,
     loadContest: async (contestId) => {
@@ -225,6 +215,8 @@ export function createBotActionDeps(): BotActionDeps {
       return { ok: false, error: "Lineup not found" };
     },
     prepareUserOp: async (input) => prepareSessionKeyUserOp(input),
+    prepareOwnerTransaction: async (input) => prepareOwnerTransaction(input),
+    submitOwnerTransaction: async (input) => submitOwnerTransaction(input),
     submitCalls: async (input) => {
       const result = await submitSessionKeyUserOp(input);
       if (!result.ok) return result;

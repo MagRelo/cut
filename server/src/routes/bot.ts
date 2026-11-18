@@ -184,6 +184,7 @@ botRouter.post("/actions", async (c) => {
           : {}),
         ...(body.userOpSignature ? { userOpSignature: body.userOpSignature as Hex } : {}),
         ...(body.userOp ? { userOp: body.userOp as SerializedUserOp } : {}),
+        ...(body.signedTransaction ? { signedTransaction: body.signedTransaction as Hex } : {}),
       },
       createDeps,
     );
@@ -197,6 +198,9 @@ botRouter.post("/actions", async (c) => {
         userOpHash: result.userOpHash,
         userOp: result.userOp,
       });
+    }
+    if (result.preparedTransaction) {
+      return c.json({ preparedTransaction: true, transaction: result.transaction });
     }
     return c.json({ ok: true, contestId: result.contestId, address: result.address });
   }
@@ -213,6 +217,7 @@ botRouter.post("/actions", async (c) => {
       signer: verified.signer,
       ...(body.userOpSignature ? { userOpSignature: body.userOpSignature as Hex } : {}),
       ...(body.userOp ? { userOp: body.userOp as SerializedUserOp } : {}),
+      ...(body.signedTransaction ? { signedTransaction: body.signedTransaction as Hex } : {}),
     },
     deps,
   );
@@ -226,6 +231,13 @@ botRouter.post("/actions", async (c) => {
       lineupId: result.lineupId,
       userOpHash: result.userOpHash,
       userOp: result.userOp,
+    });
+  }
+  if (result.preparedTransaction) {
+    return c.json({
+      preparedTransaction: true,
+      lineupId: result.lineupId,
+      transaction: result.transaction,
     });
   }
   return c.json({ ok: true, lineupId: result.lineupId });

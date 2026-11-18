@@ -2,8 +2,9 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { getAddress, type Address } from "viem";
+import { getAddress, type Address, type Hex } from "viem";
 import { describe, expect, it, vi } from "vitest";
+import { generateContestEntryId } from "../../utils/contestEntryId.js";
 import { packApproval } from "./approvalEnvelope.js";
 import { assertJoinCalls, buildJoinCalls } from "./botCalls.js";
 import {
@@ -53,7 +54,6 @@ function deps(partial: Partial<BotActionDeps> = {}): BotActionDeps {
   return {
     findDelegate: vi.fn(async () => delegate()),
     findOwner: vi.fn(async () => null),
-    findCutBot: vi.fn(async () => null),
     sessionEnabled: vi.fn(async () => true),
     loadContest: vi.fn(async () => contest()),
     isGroupMember: vi.fn(async () => true),
@@ -82,6 +82,14 @@ function deps(partial: Partial<BotActionDeps> = {}): BotActionDeps {
     prepareUserOp: vi.fn(async () => ({
       ok: false as const,
       error: "prepare was not expected",
+    })),
+    prepareOwnerTransaction: vi.fn(async () => ({
+      ok: false as const,
+      error: "owner prepare was not expected",
+    })),
+    submitOwnerTransaction: vi.fn(async () => ({
+      ok: false as const,
+      error: "owner submit was not expected",
     })),
     submitCalls: vi.fn(async () => ({ ok: true as const })),
     log: vi.fn(async () => undefined),
@@ -247,17 +255,89 @@ describe("executeBotAction", () => {
     expect(used.submitCalls).not.toHaveBeenCalled();
   });
 
-  it("rejects an owner join when Cut Bot is not installed", async () => {
+  it("records an off-chain join from the account key without a delegate", async () => {
     const used = deps({
       findOwner: vi.fn(async () => ({ userId: USER_ID })),
+      loadContest: vi.fn(async () => contest({ address: null, paymentToken: null, depositWei: 0n })),
     });
     const result = await executeBotAction(signedJoin(SMART_WALLET), used);
-    expect(result).toMatchObject({
-      ok: false,
-      status: 403,
-      error: "No Cut Bot delegate is installed",
-    });
+    expect(result).toMatchObject({ ok: true, lineupId: "lineup-1" });
+    expect(used.findDelegate).not.toHaveBeenCalled();
+    expect(used.prepareOwnerTransaction).not.toHaveBeenCalled();
     expect(used.submitCalls).not.toHaveBeenCalled();
+    expect(used.insertContestEntry).toHaveBeenCalledWith({
+      contestId: "contest-1",
+      lineupId: "lineup-1",
+      userId: USER_ID,
+      entryId: null,
+    });
+  });
+
+  it("prepares the account key's approve before writing the entry", async () => {
+    const transaction = {
+      to: TOKEN,
+      data: "0x" as const,
+      value: "0",
+      chainId: CHAIN_ID,
+      nonce: "1",
+      gas: "100000",
+      maxFeePerGas: "1",
+      maxPriorityFeePerGas: "1",
+    };
+    const used = deps({
+      findOwner: vi.fn(async () => ({ userId: USER_ID })),
+      prepareOwnerTransaction: vi.fn(async () => ({ ok: true as const, transaction })),
+    });
+    const result = await executeBotAction(signedJoin(SMART_WALLET), used);
+    expect(result).toEqual({
+      ok: true,
+      preparedTransaction: true,
+      lineupId: "lineup-1",
+      transaction,
+    });
+    expect(used.findDelegate).not.toHaveBeenCalled();
+    expect(used.submitCalls).not.toHaveBeenCalled();
+    expect(used.insertContestEntry).not.toHaveBeenCalled();
+    expect(used.prepareOwnerTransaction).toHaveBeenCalledOnce();
+  });
+
+  it("stores the entry after the account key's join transaction", async () => {
+    const owner = privateKeyToAccount(generatePrivateKey());
+    const entryId = BigInt(generateContestEntryId(CONTEST, "lineup-1"));
+    const calls = buildJoinCalls({
+      paymentToken: TOKEN,
+      contest: CONTEST,
+      depositWei: 5_000_000n,
+      entryId,
+    });
+    const joinTx = calls[1];
+    if (!joinTx) throw new Error("missing join call");
+    const signedTransaction = await owner.signTransaction({
+      type: "eip1559",
+      chainId: CHAIN_ID,
+      to: joinTx.to,
+      data: joinTx.data,
+      value: 0n,
+      nonce: 2,
+      gas: 100_000n,
+      maxFeePerGas: 1n,
+      maxPriorityFeePerGas: 1n,
+    });
+    const txHash = `0x${"cd".repeat(32)}` as Hex;
+    const used = deps({
+      findOwner: vi.fn(async () => ({ userId: USER_ID })),
+      submitOwnerTransaction: vi.fn(async () => ({ ok: true as const, txHash })),
+    });
+    const result = await executeBotAction(
+      { ...signedJoin(owner.address), smartWallet: owner.address, signedTransaction },
+      used,
+    );
+    expect(result).toEqual({ ok: true, lineupId: "lineup-1" });
+    expect(used.prepareOwnerTransaction).not.toHaveBeenCalled();
+    expect(used.submitOwnerTransaction).toHaveBeenCalledOnce();
+    expect(used.insertContestEntry).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: USER_ID, entryId: String(entryId) }),
+    );
   });
 });
 

@@ -435,7 +435,7 @@ Two ways to get a client. Pick the one that matches the account.
 | Key the agent stores | A delegate key from `generateDelegateKey()`. The user grants that address. | The smart wallet key. That address is the account and holds the USDC. |
 | Client | `createCutAgent({ privateKey, smartWallet, chainId })` | `createCutAgent({ privateKey, chainId })`, with no `smartWallet`. |
 | First call | `account()` | `register({ email, referralCode? })` |
-| Delegate | Required before the client can act. | Optional, and only after `register`. Reads, `lineupUpsert`, `createLeague`, `inviteLeague`, and `createFreeContest` work on the wallet signature. `join`, `leave`, and `createContest` wait until the user grants a delegate. |
+| Delegate | Required. This key acts on another account. | Not used. This key is the account. A delegate applies only when a different key acts on an account. |
 
 `register` is signed by the smart wallet. A `smartWallet` query that is not that signer is `403` `"A delegate cannot register an account"`.
 
@@ -460,10 +460,10 @@ const key = generateDelegateKey();
 
 `register` creates the account. The signer of that request is the account, and that address holds the USDC.
 
-1. `createCutAgent({ privateKey, chainId })`. `privateKey` is the smart wallet. Leave `smartWallet` unset.
+1. `createCutAgent({ privateKey, chainId })`. `privateKey` is the account. Leave `smartWallet` unset.
 2. `register({ email, name?, referralCode? })`. Pass `referralCode` when this account was invited.
-3. Contest reads, `lineupUpsert`, league setup, and `createFreeContest` work with this signature.
-4. When this client should submit `join`, `leave`, or a paid `createContest`, generate a separate delegate key and complete **Existing user**. That delegate is a different signer. `register` stays on the smart wallet key.
+3. Contest reads, `lineupUpsert`, `join`, `leave`, `createContest`, league setup, and `createFreeContest` use this signature.
+4. The account pays gas for `join`, `leave`, and paid `createContest`. A delegate is not required.
 
 ## Delegate security
 
@@ -471,7 +471,7 @@ const key = generateDelegateKey();
 
 ## USDC and funding the wallet
 
-Paid contests use USDC. The user's smart wallet holds the funds. That is the Play The Cut wallet, and the account the delegate is installed on. Entry fees are paid from that wallet. They are not paid from the delegate key, and they are not paid from the embedded signer.
+Paid contests use USDC. The account wallet holds the funds. That is the Play The Cut wallet. A delegate, when one is installed, is installed on that wallet. Entry fees are paid from that wallet. They are not paid from the delegate key, and they are not paid from the embedded signer. The account key also pays gas for its own transactions.
 
 The available balance determines which paid contests the account can enter. Help the user understand what they have, what an entry costs, and what adding funds would let them play.
 
@@ -655,7 +655,7 @@ The same ordered picks for the same contest, sent without `lineupId`, return the
 | --- | --- |
 | Caller-held delegate (`external`) | The SDK omits `userOpSignature` on the first request, receives `{ preparedUserOp: true, lineupId, userOpHash, userOp }`, signs `userOpHash`, and posts again. The caller receives `{ ok: true, lineupId }`. |
 | Server-held delegate (`cut_bot`) | The server signs and submits. The response is `{ ok: true, lineupId }`. |
-| The smart wallet itself | The server submits only when an active `cut_bot` delegate is installed. Otherwise `403` `"No Cut Bot delegate is installed"`. |
+| The account key | The signer is the account. No delegate is used. A contest with no escrow is stored on the first response. A contest with escrow returns `{ preparedTransaction: true, lineupId, transaction }`. The SDK signs that transaction and posts `signedTransaction`. The server broadcasts it. Join does this once for `approve` and again for `addPrimaryPosition`. The entry is stored after the last transaction succeeds. |
 
 `{ ok: true, lineupId }` means the entry row is stored. When the contest has on-chain escrow, the user operation has a receipt before that row is written. If this lineup is already entered, `join` returns the same shape and does not send another transaction. A repeated `join` is a no-op only when that entry row already exists. After a timeout or `502`, check the lobby or this account's entries before calling `join` again.
 
@@ -686,7 +686,7 @@ A second `createContest` deploys another contest. The call is not idempotent. Af
 
 `createContest` does not create a `$0` contest. That is `createFreeContest`.
 
-The signer rules match join. A caller-held delegate's first response is `{ preparedUserOp: true, userOpHash, userOp }` with no `lineupId`. The SDK signs and posts the second request.
+The signer rules match join. A caller-held delegate's first response is `{ preparedUserOp: true, userOpHash, userOp }` with no `lineupId`. The SDK signs and posts the second request. The account key's first response is `{ preparedTransaction: true, transaction }`. The SDK signs it and posts `signedTransaction`. The server broadcasts that transaction, reads the contest address, and stores the contest.
 
 ### createFreeContest
 
@@ -721,11 +721,11 @@ After a timeout or `502` from a state-changing action, check whether the action 
 | --- | --- | --- |
 | `400` | The body, the lineup, the deposit, the prediction, the preferences, or the cursor is invalid. `EMAIL_ALREADY_BOUND` on register. | Read `error`. An empty lineup is rejected on save and on join. Add at least one pick and retry. Drop a cursor the server rejects and call again with none to set a new baseline. |
 | `401` | The signature is missing, expired, or does not cover this request. A nonce was reused. | Sign the exact method, path, query, and body. Use a new nonce. `created` and `expires` must span at most one hour. |
-| `403` | The signer is not an active delegate, the wallet signer has no Cut Bot key, the account is not a league admin, an `AGENT` tried to create a public contest, or a delegate tried to register. | Confirm the user granted this address, or install a `cut_bot` delegate when the signer is the wallet. Register with the smart wallet key. |
+| `403` | The signer is acting for another account without an active delegate, the account is not a league admin, an `AGENT` tried to create a public contest, or a delegate tried to register. | Grant that delegate on the account, or sign with the account key. Register with the account key. |
 | `404` | Contest, event, league, or user was not found. | Check `contestId`, `eventId`, and league id. A league contest or league the account is not in is `404`. |
 | `409` | Join on a contest that is not `OPEN`, or leave on a contest that is not `OPEN` or `CANCELLED`. A paid contest address was already registered. | Stop retrying the join. Leave only while the contest is open or cancelled. |
 | `502` | The user operation failed or the response shape was unexpected. | Read `error`. Check the lobby, this account's entries, or the chain before sending `join`, `leave`, or `createContest` again. |
-| `503` | The server-held delegate key is not configured. | A caller-held delegate is unaffected. A wallet signer cannot submit until that key is set. |
+| `503` | The server-held delegate key is not configured. | A caller-held delegate and the account key are unaffected. |
 
 ## Technical details
 
@@ -735,11 +735,12 @@ Most callers can stop at the actions above. `GET /api/auth/contests`, `GET /api/
 
 ### Execution paths
 
-Three ways to enter a contest:
+Four ways to enter a contest:
 
 1. **The user, in the browser.** The logged-in client signs the chain transaction. These routes do not apply.
-2. **A delegate the server holds.** The user allows that address in Settings. Stored as `kind` `cut_bot`. The server can submit a join, leave, or paid create while the user is away.
-3. **A delegate the caller holds.** The user pastes the public address and grants it. Stored as `kind` `external`. The private key never comes to Play The Cut. This is the key `generateDelegateKey` creates.
+2. **The account key.** `register` stores this address as the account. `join`, `leave`, and `createContest` signed by that key are ordinary transactions from it. No session key is installed. The account pays gas.
+3. **A delegate the server holds.** The user allows that address in Settings. Stored as `kind` `cut_bot`. The server can submit a join, leave, or paid create while the user is away. This signer is not the account.
+4. **A delegate the caller holds.** The user pastes the public address and grants it. Stored as `kind` `external`. The private key never comes to Play The Cut. This is the key `generateDelegateKey` creates. This signer is not the account.
 
 A delegate is a Kernel v3.1 session key on EntryPoint 0.7, installed on the user's smart wallet.
 
@@ -749,11 +750,15 @@ Player routes accept a Privy bearer token or an [ERC-8128](https://erc8128.org) 
 
 `@slicekit/erc8128` `signRequest` covers `@scheme`, `@authority`, `@method`, `@path`, and `@query`, plus `content-digest` and `content-type` when the request has a body. Parameters are `keyid`, `created`, `expires`, `nonce`, and `tag="erc8128"`. `keyid` is `eip155:<chainId>:0x<signer>` with the signer address lowercase. The chain is `8453` or `84532` and must equal `chainId` on the request. `expires - created` is at most one hour. `nonce` is a single-use ASCII string of at most 128 bytes. The server stores `(keyid, nonce)` until `expires`.
 
-A delegate names the account with `smartWallet` in the query or body, because the signature covers both. When the signer is the wallet, the server checks the signature with ERC-1271. Contest reads, lineup saves, league writes, and `createFreeContest` need no delegate. Join, leave, and `createContest` for that wallet signer go out through an active `cut_bot` delegate.
+A delegate names the account with `smartWallet` in the query or body, because the signature covers both. When the signer is the wallet, the server checks the signature with ERC-1271. Contest reads, lineup saves, league writes, and `createFreeContest` need no delegate. `join`, `leave`, and `createContest` signed by the account are transactions from that account. A delegate is required only when the signer is a different address.
 
 ### User-operation signing
 
 On the second request, `userOpSignature` is the delegate's EIP-191 signature of the raw 32-byte `userOpHash`: `signMessage({ message: { raw: userOpHash } })`. The SDK does this. The server adds the permission-plugin prefix and submits the returned `userOp` unchanged.
+
+### Account-key transactions
+
+When the signer is the account and the action moves funds, the server returns one EIP-1559 transaction: `to`, `data`, `value`, `chainId`, `nonce`, `gas`, `maxFeePerGas`, and `maxPriorityFeePerGas`. `value`, `nonce`, `gas`, and the fee fields are decimal strings. The SDK signs it with the account key and posts `signedTransaction` on the next request. The server broadcasts that raw transaction and waits for a success receipt. A join with escrow is `approve`, then `addPrimaryPosition`, one transaction per request. The account pays gas.
 
 ### Delegate endpoints
 

@@ -30,9 +30,16 @@ function deps(partial: Partial<CreateContestDeps> = {}): CreateContestDeps {
   return {
     findDelegate: vi.fn(async () => delegate()),
     findOwner: vi.fn(async () => null),
-    findCutBot: vi.fn(async () => null),
     sessionEnabled: vi.fn(async () => true),
     prepareUserOp: vi.fn(async () => ({ ok: false as const, error: "prepare was not expected" })),
+    prepareOwnerTransaction: vi.fn(async () => ({
+      ok: false as const,
+      error: "owner prepare was not expected",
+    })),
+    submitOwnerTransaction: vi.fn(async () => ({
+      ok: false as const,
+      error: "owner submit was not expected",
+    })),
     submitCalls: vi.fn(async () => ({ ok: true as const, txHash: TX })),
     log: vi.fn(async () => undefined),
     loadUserType: vi.fn(async () => "AGENT"),

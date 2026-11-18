@@ -10,6 +10,7 @@ import { unpackApproval } from "./approvalEnvelope.js";
 import { assertCreateContestCall, buildCreateContestCall, type BotCall } from "./botCalls.js";
 import { createBotActionDeps } from "./botActionRuntime.js";
 import type { BotActionDeps, BotDelegateRow } from "./executeBotAction.js";
+import { advanceOwnerTransaction, type OwnerTransaction } from "./ownerTransaction.js";
 import type { SerializedUserOp } from "./submitSessionKeyUserOp.js";
 
 export type CreateContestActionInput = {
@@ -25,15 +26,29 @@ export type CreateContestActionInput = {
   notifyLeagueMembers?: boolean;
   userOpSignature?: Hex;
   userOp?: SerializedUserOp;
+  signedTransaction?: Hex;
 };
 
 export type CreateContestActionResult =
-  | { ok: true; contestId: string; address: string; preparedUserOp?: undefined }
+  | {
+      ok: true;
+      contestId: string;
+      address: string;
+      preparedUserOp?: undefined;
+      preparedTransaction?: undefined;
+    }
   | {
       ok: true;
       preparedUserOp: true;
+      preparedTransaction?: undefined;
       userOpHash: Hex;
       userOp: SerializedUserOp;
+    }
+  | {
+      ok: true;
+      preparedTransaction: true;
+      preparedUserOp?: undefined;
+      transaction: OwnerTransaction;
     }
   | { ok: false; status: number; error: string };
 
@@ -41,9 +56,10 @@ export type CreateContestDeps = Pick<
   BotActionDeps,
   | "findDelegate"
   | "findOwner"
-  | "findCutBot"
   | "sessionEnabled"
   | "prepareUserOp"
+  | "prepareOwnerTransaction"
+  | "submitOwnerTransaction"
   | "submitCalls"
   | "log"
 > & {
@@ -115,8 +131,7 @@ export async function executeCreateContest(
     const owner = await deps.findOwner(smartWallet, input.chainId);
     if (!owner) return { ok: false, status: 403, error: "No account for this wallet" };
     userId = owner.userId;
-    delegate = await deps.findCutBot(owner.userId, smartWallet);
-    if (!delegate) return { ok: false, status: 403, error: "No Cut Bot delegate is installed" };
+    delegate = null;
   } else {
     delegate = await deps.findDelegate(smartWallet, signer);
     if (!delegate) {
@@ -125,23 +140,29 @@ export async function executeCreateContest(
     userId = delegate.userId;
   }
 
-  let permissionId: Hex;
-  let approval: string;
-  try {
-    const envelope = unpackApproval(delegate.approval);
-    permissionId = envelope.permissionId;
-    approval = envelope.approval;
-  } catch (error) {
-    return {
-      ok: false,
-      status: 400,
-      error: error instanceof Error ? error.message : "Invalid delegate approval",
-    };
-  }
-  const enabled = await deps.sessionEnabled(getAddress(delegate.smartWallet), permissionId, input.chainId);
-  if (!enabled) {
-    await deps.log(userId, "error", "Session key is not enabled");
-    return { ok: false, status: 403, error: "Session key is not enabled" };
+  let approval = "";
+  if (delegate) {
+    let permissionId: Hex;
+    try {
+      const envelope = unpackApproval(delegate.approval);
+      permissionId = envelope.permissionId;
+      approval = envelope.approval;
+    } catch (error) {
+      return {
+        ok: false,
+        status: 400,
+        error: error instanceof Error ? error.message : "Invalid delegate approval",
+      };
+    }
+    const enabled = await deps.sessionEnabled(
+      getAddress(delegate.smartWallet),
+      permissionId,
+      input.chainId,
+    );
+    if (!enabled) {
+      await deps.log(userId, "error", "Session key is not enabled");
+      return { ok: false, status: 403, error: "Session key is not enabled" };
+    }
   }
 
   const userType = await deps.loadUserType(userId);
@@ -191,6 +212,42 @@ export async function executeCreateContest(
   }
 
   const calls: BotCall[] = [call];
+  if (!delegate) {
+    const advanced = await advanceOwnerTransaction({
+      chainId: input.chainId,
+      from: smartWallet,
+      calls,
+      ...(input.signedTransaction ? { signedTransaction: input.signedTransaction } : {}),
+      prepareOwnerTransaction: deps.prepareOwnerTransaction,
+      submitOwnerTransaction: deps.submitOwnerTransaction,
+    });
+    if (!advanced.ok) {
+      await deps.log(userId, "error", advanced.error);
+      return advanced;
+    }
+    if (advanced.step === "prepared") {
+      return { ok: true, preparedTransaction: true, transaction: advanced.transaction };
+    }
+    const created = await deps.readCreatedAddress({
+      chainId: input.chainId,
+      transactionHash: advanced.txHash,
+    });
+    if (!created.ok) {
+      await deps.log(userId, "error", created.error);
+      return { ok: false, status: 400, error: created.error };
+    }
+    const recorded = await deps.recordContest({
+      ...action,
+      address: created.contestAddress,
+      transactionHash: advanced.txHash,
+    });
+    if (!recorded.ok) {
+      await deps.log(userId, "error", recorded.error);
+      return recorded;
+    }
+    await deps.log(userId, "createContest");
+    return { ok: true, contestId: recorded.contestId, address: recorded.address };
+  }
   if (delegate.kind === "external" && !input.userOpSignature) {
     const prepared = await deps.prepareUserOp({
       chainId: input.chainId,
@@ -261,9 +318,10 @@ export function createContestActionDeps(): CreateContestDeps {
   return {
     findDelegate: actor.findDelegate,
     findOwner: actor.findOwner,
-    findCutBot: actor.findCutBot,
     sessionEnabled: actor.sessionEnabled,
     prepareUserOp: actor.prepareUserOp,
+    prepareOwnerTransaction: actor.prepareOwnerTransaction,
+    submitOwnerTransaction: actor.submitOwnerTransaction,
     submitCalls: actor.submitCalls,
     log: actor.log,
     loadUserType: async (userId) => {

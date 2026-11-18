@@ -15,6 +15,10 @@ import {
   buildLeaveCalls,
   type BotCall,
 } from "./botCalls.js";
+import {
+  advanceOwnerTransaction,
+  type OwnerTransaction,
+} from "./ownerTransaction.js";
 import type { SerializedUserOp } from "./submitSessionKeyUserOp.js";
 
 export type BotActionName = "lineupUpsert" | "join" | "leave";
@@ -57,23 +61,31 @@ export type ExecuteBotActionInput = {
   signer: Address;
   userOpSignature?: Hex;
   userOp?: SerializedUserOp;
+  signedTransaction?: Hex;
 };
 
 export type ExecuteBotActionResult =
-  | { ok: true; lineupId: string; preparedUserOp?: undefined }
+  | { ok: true; lineupId: string; preparedUserOp?: undefined; preparedTransaction?: undefined }
   | {
       ok: true;
       preparedUserOp: true;
+      preparedTransaction?: undefined;
       lineupId: string;
       userOpHash: Hex;
       userOp: SerializedUserOp;
+    }
+  | {
+      ok: true;
+      preparedTransaction: true;
+      preparedUserOp?: undefined;
+      lineupId: string;
+      transaction: OwnerTransaction;
     }
   | { ok: false; status: number; error: string };
 
 export type BotActionDeps = {
   findDelegate: (smartWallet: Address, signer: Address) => Promise<BotDelegateRow | null>;
   findOwner: (smartWallet: Address, chainId: number) => Promise<{ userId: string } | null>;
-  findCutBot: (userId: string, smartWallet: Address) => Promise<BotDelegateRow | null>;
   sessionEnabled: (smartWallet: Address, permissionId: Hex, chainId: number) => Promise<boolean>;
   loadContest: (contestId: string) => Promise<BotContest | null>;
   isGroupMember: (userId: string, userGroupId: string) => Promise<boolean>;
@@ -112,6 +124,17 @@ export type BotActionDeps = {
   }) => Promise<
     { ok: true; userOpHash: Hex; userOp: SerializedUserOp } | { ok: false; error: string }
   >;
+  prepareOwnerTransaction: (input: {
+    chainId: number;
+    from: Address;
+    call: BotCall;
+  }) => Promise<{ ok: true; transaction: OwnerTransaction } | { ok: false; error: string }>;
+  submitOwnerTransaction: (input: {
+    chainId: number;
+    from: Address;
+    signedTransaction: Hex;
+    call: BotCall;
+  }) => Promise<{ ok: true; txHash: Hex } | { ok: false; error: string }>;
   submitCalls: (input: {
     chainId: number;
     approval: string;
@@ -171,11 +194,7 @@ export async function executeBotAction(
     const owner = await deps.findOwner(smartWallet, input.chainId);
     if (!owner) return { ok: false, status: 403, error: "No account for this wallet" };
     userId = owner.userId;
-    delegate =
-      input.action === "lineupUpsert" ? null : await deps.findCutBot(owner.userId, smartWallet);
-    if (input.action !== "lineupUpsert" && !delegate) {
-      return { ok: false, status: 403, error: "No Cut Bot delegate is installed" };
-    }
+    delegate = null;
   } else {
     delegate = await deps.findDelegate(smartWallet, signer);
     if (!delegate) {
@@ -205,18 +224,16 @@ export async function executeBotAction(
   if (input.action === "lineupUpsert") {
     return upsertLineup(input, userId, contest, deps);
   }
-  if (!delegate) {
-    return { ok: false, status: 403, error: "No Cut Bot delegate is installed" };
-  }
   if (input.action === "leave") {
-    return leaveAction(input, delegate, contest, approval, deps);
+    return leaveAction(input, userId, delegate, contest, approval, deps);
   }
-  return joinAction(input, delegate, contest, approval, deps);
+  return joinAction(input, userId, delegate, contest, approval, deps);
 }
 
 async function joinAction(
   input: ExecuteBotActionInput,
-  delegate: BotDelegateRow,
+  userId: string,
+  delegate: BotDelegateRow | null,
   contest: BotContest,
   approval: string,
   deps: BotActionDeps,
@@ -227,7 +244,7 @@ async function joinAction(
   if (input.picks.length > 0) {
     return { ok: false, status: 400, error: "Join does not change the lineup" };
   }
-  const lineup = await requireLineup(input, delegate.userId, contest, deps);
+  const lineup = await requireLineup(input, userId, contest, deps);
   if (!lineup.ok) return { ok: false, status: 400, error: lineup.error };
   if (lineup.lineup.picks.length < 1) {
     return { ok: false, status: 400, error: "Lineup must have at least 1 player" };
@@ -258,13 +275,14 @@ async function joinAction(
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Join calls rejected";
-      await deps.log(delegate.userId, "error", message);
+      await deps.log(userId, "error", message);
       return { ok: false, status: 400, error: message };
     }
   }
 
   const submitted = await submitIfNeeded(
     input,
+    userId,
     delegate,
     approval,
     calls,
@@ -272,23 +290,24 @@ async function joinAction(
     lineup.lineup.id,
     deps,
   );
-  if (!submitted.ok || submitted.preparedUserOp) return submitted;
+  if (!submitted.ok || submitted.preparedUserOp || submitted.preparedTransaction) return submitted;
 
   await deps.insertContestEntry({
     contestId: contest.id,
     lineupId: lineup.lineup.id,
-    userId: delegate.userId,
+    userId,
     entryId: onchain
       ? String(generateContestEntryId(contest.address as string, lineup.lineup.id))
       : null,
   });
-  await deps.log(delegate.userId, "join");
+  await deps.log(userId, "join");
   return { ok: true, lineupId: lineup.lineup.id };
 }
 
 async function leaveAction(
   input: ExecuteBotActionInput,
-  delegate: BotDelegateRow,
+  userId: string,
+  delegate: BotDelegateRow | null,
   contest: BotContest,
   approval: string,
   deps: BotActionDeps,
@@ -299,7 +318,7 @@ async function leaveAction(
   if (input.picks.length > 0) {
     return { ok: false, status: 400, error: "Leave does not change the lineup" };
   }
-  const lineup = await requireLineup(input, delegate.userId, contest, deps);
+  const lineup = await requireLineup(input, userId, contest, deps);
   if (!lineup.ok) return { ok: false, status: 400, error: lineup.error };
   const entry = await deps.findContestEntry(contest.id, lineup.lineup.id);
   if (!entry) return { ok: true, lineupId: lineup.lineup.id };
@@ -319,13 +338,14 @@ async function leaveAction(
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Leave calls rejected";
-      await deps.log(delegate.userId, "error", message);
+      await deps.log(userId, "error", message);
       return { ok: false, status: 400, error: message };
     }
   }
 
   const submitted = await submitIfNeeded(
     input,
+    userId,
     delegate,
     approval,
     calls,
@@ -333,10 +353,10 @@ async function leaveAction(
     lineup.lineup.id,
     deps,
   );
-  if (!submitted.ok || submitted.preparedUserOp) return submitted;
+  if (!submitted.ok || submitted.preparedUserOp || submitted.preparedTransaction) return submitted;
 
-  await deps.deleteContestEntry(contest.id, lineup.lineup.id, delegate.userId);
-  await deps.log(delegate.userId, "leave");
+  await deps.deleteContestEntry(contest.id, lineup.lineup.id, userId);
+  await deps.log(userId, "leave");
   return { ok: true, lineupId: lineup.lineup.id };
 }
 
@@ -384,7 +404,8 @@ async function upsertLineup(
 
 async function submitIfNeeded(
   input: ExecuteBotActionInput,
-  delegate: BotDelegateRow,
+  userId: string,
+  delegate: BotDelegateRow | null,
   approval: string,
   calls: BotCall[],
   onchain: boolean,
@@ -392,6 +413,29 @@ async function submitIfNeeded(
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
   if (!onchain) return { ok: true, lineupId };
+  if (!delegate) {
+    const advanced = await advanceOwnerTransaction({
+      chainId: input.chainId,
+      from: getAddress(input.smartWallet),
+      calls,
+      ...(input.signedTransaction ? { signedTransaction: input.signedTransaction } : {}),
+      prepareOwnerTransaction: deps.prepareOwnerTransaction,
+      submitOwnerTransaction: deps.submitOwnerTransaction,
+    });
+    if (!advanced.ok) {
+      await deps.log(userId, "error", advanced.error);
+      return advanced;
+    }
+    if (advanced.step === "prepared") {
+      return {
+        ok: true,
+        preparedTransaction: true,
+        lineupId,
+        transaction: advanced.transaction,
+      };
+    }
+    return { ok: true, lineupId };
+  }
   const smartWallet = getAddress(input.smartWallet);
   const delegateAddress = getAddress(delegate.delegateAddress);
   if (delegate.kind === "external" && !input.userOpSignature) {
