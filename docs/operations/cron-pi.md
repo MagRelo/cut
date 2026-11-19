@@ -52,11 +52,24 @@ If DigitalOcean shows multi-minute `UPDATE "Participant"` / `ContestLineup` quer
 
 ## Update
 
+Non-interactive SSH does not load `~/.bashrc`. `node` and `pm2` are on the default `PATH`.
+`pnpm` is not — it is installed at `/home/magrelo/.local/share/pnpm`. Export `PNPM_HOME`
+before `pnpm`. Do not `source server/.env`.
+
 ```bash
-ssh magrelo@100.114.121.5
-cd ~/node/cut-v2 && git fetch origin main && git merge origin/main && pnpm install && pnpm server:build && pm2 restart cut-cron
-pm2 logs cut-cron --lines 30
+ssh magrelo@100.114.121.5 'set -euo pipefail
+export PNPM_HOME="/home/magrelo/.local/share/pnpm"
+export PATH="$PNPM_HOME:$PATH"
+cd ~/node/cut-v2
+git fetch origin main && git merge --ff-only origin/main
+pnpm install && pnpm server:build
+cd server && pnpm exec prisma migrate deploy
+pm2 restart cut-cron
+'
 ```
+
+`prisma migrate deploy` belongs before the restart when this release adds migrations.
+Skip it only when `server/prisma/migrations` is unchanged.
 
 If the release has DB migrations, run **before** `pm2 restart`:
 

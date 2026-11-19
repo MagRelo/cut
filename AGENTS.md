@@ -81,6 +81,37 @@ Note: the Node SDK's `getTestAccessToken()` (headless token) is rejected here be
 The agent does not have that password. Stop after the image push and give the user
 `pnpm run launch`.
 
+### Cron host (Raspberry Pi)
+The 5-minute score pipeline runs on the Pi (`docs/operations/cron-pi.md`). Web on the
+droplet stays `ENABLE_CRON=false`.
+
+| | |
+| --- | --- |
+| SSH | `ssh magrelo@100.114.121.5` (Tailscale). Needs `all` permissions from the agent sandbox. |
+| Repo | `~/node/cut-v2`, branch `main` |
+| Process | `cut-cron` → `node dist/src/cron-app.js`, cwd `server/` |
+
+Non-interactive SSH does not load `~/.bashrc`. `node`, `npm`, and `pm2` are already on
+`PATH` (`/usr/bin`). **`pnpm` is not.** It lives at
+`/home/magrelo/.local/share/pnpm/pnpm`. Export that before any remote `pnpm` command.
+Do not `source server/.env` — Prisma loads it.
+
+Update with a fast-forward of `origin/main`, then install, build, migrate, and restart.
+Run `prisma migrate deploy` before `pm2 restart` when `server/prisma/migrations` changed.
+Leave the untracked `package-lock.json` on the Pi alone.
+
+```bash
+ssh magrelo@100.114.121.5 'set -euo pipefail
+export PNPM_HOME="/home/magrelo/.local/share/pnpm"
+export PATH="$PNPM_HOME:$PATH"
+cd ~/node/cut-v2
+git fetch origin main && git merge --ff-only origin/main
+pnpm install && pnpm server:build
+cd server && pnpm exec prisma migrate deploy
+pm2 restart cut-cron
+'
+```
+
 ### Lint / test
 - Server tests: `pnpm --filter server run test:run` (vitest).
 - Client lint: `pnpm run client:lint` — currently reports **pre-existing** errors in the
