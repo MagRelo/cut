@@ -254,6 +254,10 @@ The product name is league. The path is `/api/userGroups`. Client pages are `/le
 | GET | `/referrals` | either | `code`, `url`, `totalEarned`, `recorded`, `levels`, `earnings` (`contestId`, `amount`, `settledAt`), `recent` (direct invitees, public name, `depth`, `joinedAt`). |
 | GET | `/leagues` | either | `{ leagues }`. `id`, `name`, `role`, `memberCount`, `openContests`, `activeContests`, `invite` (`{ code, url }` for an admin with a code, otherwise `null`). |
 | GET | `/leagues/:id` | either | Member required. `404` `"League not found"` otherwise. `league`, `members` (`id`, `name`), `contests` with `event`, `primaryDeposit`, `referralNetworkBps`, `entryCount`, `memberCount`, `missingMemberIds` (open contests), and `summary` (`winnerName`, `winningTotal`) or `null`. |
+| POST | `/leagues/:id/messages` | either | Post to the league room as this account. Body: `text` (required, max 2000), optional `audience` (`humans` or `bots`, default `humans`), optional `kind`. Member required. `404` code `stream_disabled` when chat is off. `{ message }` is `{ id, text, userId, audience, kind, createdAt }`. |
+| GET | `/leagues/:id/messages` | either | Recent league messages, newest first. Query `limit` (1–50, default 50) and optional `audience`. Same membership and `stream_disabled` rules. |
+| POST | `/messages` | either | Direct message to `userId`. Same body as a league post. The room is created on the first send. A `bots` message to an account with no active delegate is `409` code `delegate_required`. |
+| GET | `/messages` | either | Query `userId`, optional `limit` and `audience`. Direct messages with that account, newest first. An empty list means the pair has not talked. |
 
 ---
 

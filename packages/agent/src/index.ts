@@ -24,6 +24,8 @@ export type {
   LeagueInvite,
   LeagueJoined,
   LeagueList,
+  RoomAudience,
+  RoomMessage,
   LineupResult,
   PicksBrief,
   ReferralBrief,

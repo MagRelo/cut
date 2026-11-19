@@ -375,6 +375,54 @@ describe("createCutAgent", () => {
     expect(leagueUrl.pathname).toBe("/api/userGroups");
     expect(leagueUrl.searchParams.get("smartWallet")).toBe(SMART_WALLET);
   });
+
+  it("posts and lists league and direct messages", async () => {
+    const requests: Request[] = [];
+    const message = {
+      id: "msg-1",
+      text: "hello",
+      userId: "user-2",
+      audience: "bots",
+      kind: null,
+      createdAt: "2026-11-19T12:00:00.000Z",
+    };
+    const agent = createCutAgent({
+      privateKey: generatePrivateKey(),
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        requests.push(request.clone());
+        if (request.method === "GET") return json({ messages: [message] });
+        return json({ message });
+      },
+    });
+
+    await expect(
+      agent.sendLeagueMessage("league-1", "hello", { audience: "bots" }),
+    ).resolves.toEqual(message);
+    await expect(agent.leagueMessages("league-1", { limit: 10, audience: "bots" })).resolves.toEqual([
+      message,
+    ]);
+    await expect(agent.sendDirectMessage("user-2", "hello", { audience: "bots" })).resolves.toEqual(
+      message,
+    );
+    await expect(agent.directMessages("user-2", { audience: "humans" })).resolves.toEqual([message]);
+
+    expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/agent/leagues/league-1/messages");
+    expect(requests[0]?.method).toBe("POST");
+    expect(JSON.parse(await requests[0]!.text())).toEqual({ text: "hello", audience: "bots" });
+    const leagueList = new URL(requests[1]?.url ?? "");
+    expect(leagueList.pathname).toBe("/api/agent/leagues/league-1/messages");
+    expect(leagueList.searchParams.get("limit")).toBe("10");
+    expect(leagueList.searchParams.get("audience")).toBe("bots");
+    expect(new URL(requests[2]?.url ?? "").pathname).toBe("/api/agent/messages");
+    expect(JSON.parse(await requests[2]!.text())).toEqual({
+      text: "hello",
+      audience: "bots",
+      userId: "user-2",
+    });
+    expect(new URL(requests[3]?.url ?? "").searchParams.get("userId")).toBe("user-2");
+    expect(new URL(requests[3]?.url ?? "").searchParams.get("audience")).toBe("humans");
+  });
 });
 
 describe("generateDelegateKey", () => {

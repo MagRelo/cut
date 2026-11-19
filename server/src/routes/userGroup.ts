@@ -24,6 +24,12 @@ import { eventSummaryForContest } from "../utils/contestEventSummary.js";
 import { settledPotForContestRow } from "../utils/settledPot.js";
 import { listedContestStatusWhere } from "../utils/contestListQuery.js";
 import { referralStakeForViewer } from "../services/referral/referralStakeForViewer.js";
+import {
+  syncLeagueCreated,
+  syncLeagueDeleted,
+  syncLeagueMemberAdded,
+  syncLeagueMemberRemoved,
+} from "../services/stream/streamChat.js";
 
 const userGroupRouter = new Hono();
 
@@ -128,6 +134,7 @@ userGroupRouter.post("/join", requireAuth, async (c) => {
         role: "MEMBER",
       },
     });
+    await syncLeagueMemberAdded(userGroup.id, user.userId);
 
     const updatedGroup = await prisma.userGroup.findUnique({
       where: { id: userGroup.id },
@@ -233,6 +240,11 @@ userGroupRouter.post("/", requireAuth, async (c) => {
         },
       },
     });
+    await syncLeagueCreated({
+      userGroupId: userGroup.id,
+      userId: user.userId,
+      name: userGroup.name,
+    });
 
     type CreateMemberItem = (typeof userGroup.members)[number];
     return c.json(
@@ -335,6 +347,7 @@ userGroupRouter.delete("/:id", requireAuth, requireUserGroupAdmin, async (c) => 
         where: { id: userGroupId },
       });
     });
+    await syncLeagueDeleted(userGroupId);
 
     return c.json({ success: true, message: "UserGroup deleted" });
   } catch (error) {
@@ -550,6 +563,7 @@ userGroupRouter.delete("/:id/members/:userId", requireAuth, async (c) => {
         },
       },
     });
+    await syncLeagueMemberRemoved(userGroupId, targetUserId);
 
     return c.json({ success: true, message: "Member removed from userGroup" });
   } catch (error) {

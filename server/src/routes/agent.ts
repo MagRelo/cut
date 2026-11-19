@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { agentProfileSchema } from "@playthecut/agent/contract";
+import { agentProfileSchema, directRoomPostSchema, roomAudienceSchema, roomPostSchema } from "@playthecut/agent/contract";
 import type { Address } from "viem";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -19,6 +19,17 @@ import {
   saveAgentPreferences,
   type AgentActor,
 } from "../services/agent/brief.js";
+import {
+  clampMessageLimit,
+  listDirectMessages,
+  listLeagueMessages,
+  postDirectMessage,
+  postLeagueMessage,
+  StreamDisabledError,
+  StreamLeagueMissingError,
+  StreamPeerUnavailableError,
+  StreamUserMissingError,
+} from "../services/stream/streamChat.js";
 
 const agentRouter = new Hono();
 
@@ -121,6 +132,114 @@ agentRouter.get("/leagues/:id", requireAuth, async (c) => {
   const detail = await getLeagueDetail(actor(c), c.req.param("id"));
   if (!detail) return c.json({ error: "League not found" }, 404);
   return c.json(detail);
+});
+
+function roomFailure(error: unknown): { status: 400 | 404 | 409; body: { error: string; code?: string } } | null {
+  if (error instanceof StreamDisabledError) {
+    return { status: 404, body: { error: error.message, code: error.code } };
+  }
+  if (error instanceof StreamLeagueMissingError || error instanceof StreamUserMissingError) {
+    return { status: 404, body: { error: error.message } };
+  }
+  if (error instanceof StreamPeerUnavailableError) {
+    return { status: 409, body: { error: error.message, code: error.code } };
+  }
+  if (error instanceof Error && error.message.startsWith("limit must")) {
+    return { status: 400, body: { error: error.message } };
+  }
+  return null;
+}
+
+function audienceOf(raw: string | undefined): "humans" | "bots" | undefined {
+  if (!raw) return undefined;
+  const parsed = roomAudienceSchema.safeParse(raw);
+  return parsed.success ? parsed.data : undefined;
+}
+
+agentRouter.post("/leagues/:id/messages", requireAuth, async (c) => {
+  const parsed = roomPostSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
+  try {
+    const message = await postLeagueMessage({
+      userGroupId: c.req.param("id"),
+      userId: actor(c).userId,
+      text: parsed.data.text,
+      audience: parsed.data.audience ?? "humans",
+      ...(parsed.data.kind ? { kind: parsed.data.kind } : {}),
+    });
+    return c.json({ message }, 201);
+  } catch (error) {
+    const mapped = roomFailure(error);
+    if (mapped) return c.json(mapped.body, mapped.status);
+    console.error("[stream-chat] league post:", error);
+    return c.json({ error: "Failed to send message" }, 500);
+  }
+});
+
+agentRouter.get("/leagues/:id/messages", requireAuth, async (c) => {
+  const audienceRaw = c.req.query("audience");
+  const audience = audienceOf(audienceRaw);
+  if (audienceRaw && !audience) return c.json({ error: "Invalid audience" }, 400);
+  try {
+    const messages = await listLeagueMessages({
+      userGroupId: c.req.param("id"),
+      userId: actor(c).userId,
+      limit: clampMessageLimit(c.req.query("limit")),
+      ...(audience ? { audience } : {}),
+    });
+    return c.json({ messages });
+  } catch (error) {
+    const mapped = roomFailure(error);
+    if (mapped) return c.json(mapped.body, mapped.status);
+    console.error("[stream-chat] league list:", error);
+    return c.json({ error: "Failed to list messages" }, 500);
+  }
+});
+
+agentRouter.post("/messages", requireAuth, async (c) => {
+  const parsed = directRoomPostSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
+  if (parsed.data.userId === actor(c).userId) {
+    return c.json({ error: "Choose another account" }, 400);
+  }
+  try {
+    const message = await postDirectMessage({
+      userId: actor(c).userId,
+      peerId: parsed.data.userId,
+      text: parsed.data.text,
+      audience: parsed.data.audience ?? "humans",
+      ...(parsed.data.kind ? { kind: parsed.data.kind } : {}),
+    });
+    return c.json({ message }, 201);
+  } catch (error) {
+    const mapped = roomFailure(error);
+    if (mapped) return c.json(mapped.body, mapped.status);
+    console.error("[stream-chat] direct post:", error);
+    return c.json({ error: "Failed to send message" }, 500);
+  }
+});
+
+agentRouter.get("/messages", requireAuth, async (c) => {
+  const peerId = c.req.query("userId")?.trim();
+  if (!peerId) return c.json({ error: "userId is required" }, 400);
+  if (peerId === actor(c).userId) return c.json({ error: "Choose another account" }, 400);
+  const audienceRaw = c.req.query("audience");
+  const audience = audienceOf(audienceRaw);
+  if (audienceRaw && !audience) return c.json({ error: "Invalid audience" }, 400);
+  try {
+    const messages = await listDirectMessages({
+      userId: actor(c).userId,
+      peerId,
+      limit: clampMessageLimit(c.req.query("limit")),
+      ...(audience ? { audience } : {}),
+    });
+    return c.json({ messages });
+  } catch (error) {
+    const mapped = roomFailure(error);
+    if (mapped) return c.json(mapped.body, mapped.status);
+    console.error("[stream-chat] direct list:", error);
+    return c.json({ error: "Failed to list messages" }, 500);
+  }
 });
 
 agentRouter.get("/contests/:contestId/picks", requireAuth, async (c) => {

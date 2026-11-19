@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { getAddress, type Address } from "viem";
 import type { RegisteredAgent } from "@playthecut/agent/contract";
 import { kernelWalletAddress } from "@playthecut/agent";
@@ -141,7 +142,7 @@ export async function registerAgentAccount(input: {
           ...(input.color !== undefined ? { color: input.color } : {}),
           ...(input.oddsFormat !== undefined ? { oddsFormat: input.oddsFormat } : {}),
         },
-      ),
+      ) as Prisma.InputJsonValue,
       referralCode,
       referrerAddress: referral?.referrerAddress ?? null,
       referralGroupId: referral?.groupIdHex ?? platformGroupId ?? null,

@@ -10,6 +10,7 @@ import {
   createFreeContestSchema,
   createLeagueSchema,
   joinLeagueSchema,
+  roomPostSchema,
   registerSchema,
   type AgentAccount,
   type AgentPreferences,
@@ -27,6 +28,8 @@ import {
   type PicksBrief,
   type ReferralBrief,
   type RegisteredAgent,
+  type RoomAudience,
+  type RoomMessage,
   type ScoutBrief,
   type TickBrief,
   type UserOpBody,
@@ -124,6 +127,24 @@ export type CutAgent = {
   league(id: string): Promise<LeagueDetail>;
   createLeague(input: { name: string; description?: string }): Promise<LeagueCreated>;
   inviteLeague(id: string): Promise<LeagueInvite>;
+  sendLeagueMessage(
+    id: string,
+    text: string,
+    input?: { audience?: RoomAudience; kind?: string },
+  ): Promise<RoomMessage>;
+  leagueMessages(
+    id: string,
+    input?: { limit?: number; audience?: RoomAudience },
+  ): Promise<RoomMessage[]>;
+  sendDirectMessage(
+    userId: string,
+    text: string,
+    input?: { audience?: RoomAudience; kind?: string },
+  ): Promise<RoomMessage>;
+  directMessages(
+    userId: string,
+    input?: { limit?: number; audience?: RoomAudience },
+  ): Promise<RoomMessage[]>;
 };
 
 type PreparedUserOp = {
@@ -319,6 +340,49 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
       throw new CutAgentError("Unexpected response", 502, value);
     }
     return value as CompanionBrief;
+  }
+
+  function roomBody(text: string, input?: { audience?: RoomAudience; kind?: string }) {
+    const body = parse(roomPostSchema, { text, ...input });
+    return {
+      text: body.text,
+      ...(body.audience ? { audience: body.audience } : {}),
+      ...(body.kind ? { kind: body.kind } : {}),
+    };
+  }
+
+  function roomQuery(input?: { limit?: number; audience?: RoomAudience }): Record<string, string> {
+    const query: Record<string, string> = { smartWallet };
+    if (input?.limit !== undefined) {
+      if (!Number.isInteger(input.limit) || input.limit < 1 || input.limit > 50) {
+        throw new CutAgentError("limit must be an integer from 1 to 50", 400, null);
+      }
+      query.limit = String(input.limit);
+    }
+    if (input?.audience) query.audience = input.audience;
+    return query;
+  }
+
+  function oneMessage(value: unknown): RoomMessage {
+    const message =
+      value && typeof value === "object" && "message" in value
+        ? (value as { message: unknown }).message
+        : null;
+    if (!message || typeof message !== "object") {
+      throw new CutAgentError("Unexpected response", 502, value);
+    }
+    const row = message as RoomMessage;
+    if (typeof row.id !== "string" || typeof row.text !== "string" || typeof row.userId !== "string") {
+      throw new CutAgentError("Unexpected response", 502, value);
+    }
+    return row;
+  }
+
+  function manyMessages(value: unknown): RoomMessage[] {
+    if (!value || typeof value !== "object" || !Array.isArray((value as { messages?: unknown }).messages)) {
+      throw new CutAgentError("Unexpected response", 502, value);
+    }
+    return (value as { messages: RoomMessage[] }).messages;
   }
 
   return {
@@ -575,6 +639,35 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
         throw new CutAgentError("Unexpected response", 502, value);
       }
       return value as LeagueInvite;
+    },
+    async sendLeagueMessage(id, text, input) {
+      const value = await post(
+        `/api/agent/leagues/${encodeURIComponent(id)}/messages`,
+        roomBody(text, input),
+        { smartWallet },
+      );
+      return oneMessage(value);
+    },
+    async leagueMessages(id, input) {
+      const value = await get(
+        `/api/agent/leagues/${encodeURIComponent(id)}/messages`,
+        roomQuery(input),
+      );
+      return manyMessages(value);
+    },
+    async sendDirectMessage(userId, text, input) {
+      if (!userId.trim()) throw new CutAgentError("userId is required", 400, null);
+      const value = await post(
+        "/api/agent/messages",
+        { ...roomBody(text, input), userId },
+        { smartWallet },
+      );
+      return oneMessage(value);
+    },
+    async directMessages(userId, input) {
+      if (!userId.trim()) throw new CutAgentError("userId is required", 400, null);
+      const value = await get("/api/agent/messages", { ...roomQuery(input), userId });
+      return manyMessages(value);
     },
   };
 }

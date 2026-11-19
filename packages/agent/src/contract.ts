@@ -325,3 +325,23 @@ export type LeagueDetail = {
 
 export type LeagueCreated = { id: string; name: string; description: string | null };
 export type LeagueInvite = { inviteCode: string; inviteUrl: string };
+
+export const roomAudienceSchema = z.enum(["humans", "bots"]);
+export const roomPostSchema = z.object({
+  text: z.string().trim().min(1, "Message text is required").max(2000, "Message text is too long"),
+  audience: roomAudienceSchema.optional(),
+  kind: z.string().trim().min(1).max(64).optional(),
+});
+export const directRoomPostSchema = roomPostSchema.extend({
+  userId: z.string().trim().min(1),
+});
+
+export type RoomAudience = z.infer<typeof roomAudienceSchema>;
+export type RoomMessage = {
+  id: string;
+  text: string;
+  userId: string;
+  audience: RoomAudience;
+  kind: string | null;
+  createdAt: string;
+};
