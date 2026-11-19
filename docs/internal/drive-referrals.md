@@ -41,7 +41,7 @@ https://playthecut.com/?ref=YOUR_CODE
 https://playthecut.com/leagues/join/{inviteCode}?ref=YOUR_CODE
 ```
 
-League join URLs append the generating admin’s **current** referral code. Codes are case-sensitive.
+League join URLs append the sharing member’s current referral code. The league code in the path is the same for every member. Codes are case-sensitive.
 
 Do not put your own invite code in `ref` when creating **your** account (self-referral is ignored; you still get an account). Share a `?ref=` link after your account exists if you want credit for the invite.
 

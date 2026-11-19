@@ -10,7 +10,7 @@ import {
 } from "../schemas/contest.js";
 import { generateUniqueInviteCode } from "../utils/inviteCode.js";
 import { buildLeagueInviteUrl } from "../lib/appUrl.js";
-import { ensureUserReferralCode, resolveInviteReferralCode } from "../lib/referralCode.js";
+import { ensureUserReferralCode } from "../lib/referralCode.js";
 import {
   formatUserGroupDetailResponse,
   getMemberWalletByUserId,
@@ -138,7 +138,7 @@ userGroupRouter.post("/join", requireAuth, async (c) => {
       return c.json({ error: "UserGroup not found" }, 404);
     }
 
-    const inviteReferralCode = await resolveInviteReferralCode(updatedGroup.inviteReferrerAddress);
+    const inviteReferralCode = await ensureUserReferralCode(user.userId);
     return c.json(
       formatUserGroupDetailResponse(updatedGroup, user.userId, { inviteReferralCode }),
       201,
@@ -172,7 +172,7 @@ userGroupRouter.get("/:id", requireAuth, requireUserGroupMember, async (c) => {
 
     return c.json(
       formatUserGroupDetailResponse(userGroup, user.userId, {
-        inviteReferralCode: await resolveInviteReferralCode(userGroup.inviteReferrerAddress),
+        inviteReferralCode: await ensureUserReferralCode(user.userId),
         ...(memberWalletByUserId ? { memberWalletByUserId } : {}),
         ...(referralDepthByUserId && referralDepthByUserId.size > 0
           ? { referralDepthByUserId }

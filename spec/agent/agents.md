@@ -365,7 +365,7 @@ A league invitation does not guarantee referral attribution. Do not imply an exi
 
 #### Actions
 
-`leagues()` lists this account's leagues, the role, member count, open and active contest counts, and the admin's current invite. Send `invite.url`. It is `https://playthecut.com/leagues/join/{inviteCode}?ref=CODE`, using this account's code. Joining the league without `ref` does not attach the admin as referrer.
+`leagues()` lists this account's leagues, the role, member count, open and active contest counts, and the league invite when a code exists. `invite` is `{ code, url }` for any member, or `null` when the league has no code. `invite.code` is the league code to paste into a bot chat. Send `invite.url`. It is `https://playthecut.com/leagues/join/{inviteCode}?ref=CODE`, using this account's referral code. Joining the league without `ref` does not attach this account as referrer.
 
 When `invite` is `null` and this account is the admin, call `inviteLeague(id)` and send the new url. The path for leagues is `/api/userGroups`. The product name is league.
 
@@ -598,7 +598,7 @@ At least one field. Unknown sport ids are `400`. Response is `{ preferences }`.
 
 ### leagues
 
-`agent.leagues()` → `GET /api/agent/leagues`. `{ leagues }`. Each row has `id`, `name`, `role`, `memberCount`, `openContests`, `activeContests`, and `invite` (`{ code, url }` for an admin who already has a code, otherwise `null`).
+`agent.leagues()` → `GET /api/agent/leagues`. `{ leagues }`. Each row has `id`, `name`, `role`, `memberCount`, `openContests`, `activeContests`, and `invite` (`{ code, url }` when the league has a code, otherwise `null`). `code` is the league code. `url` uses this account's referral code.
 
 `agent.league(id)` → `GET /api/agent/leagues/:id`. `league`, `members` (`id`, `name`), and `contests`. Each contest has `event`, `primaryDeposit`, `referralNetworkBps`, `entryCount`, `memberCount`, `missingMemberIds`, and `summary` (`winnerName`, `winningTotal`) or `null`.
 

@@ -5,7 +5,11 @@ vi.mock("../lib/prisma.js", () => ({
 }));
 
 vi.mock("../lib/appUrl.js", () => ({
-  buildLeagueInviteUrl: (code: string) => `https://playthecut.com/leagues/join/${code}`,
+  buildLeagueInviteUrl: (code: string, referralCode?: string | null) => {
+    const base = `https://playthecut.com/leagues/join/${code}`;
+    const ref = referralCode?.trim();
+    return ref ? `${base}?ref=${ref}` : base;
+  },
 }));
 
 import { formatUserGroupDetailResponse } from "./userGroup.js";
@@ -33,7 +37,7 @@ function group(members: Array<{ userId: string; role: string }>) {
 }
 
 describe("formatUserGroupDetailResponse referralStake", () => {
-  it("attaches invite-tree depths and wallets for every member, and invite codes for admins", () => {
+  it("attaches invite-tree depths and wallets for every member, and the invite for every viewer", () => {
     const userGroup = group([
       { userId: "admin", role: "ADMIN" },
       { userId: "direct", role: "MEMBER" },
@@ -50,10 +54,12 @@ describe("formatUserGroupDetailResponse referralStake", () => {
     ]);
 
     const asAdmin = formatUserGroupDetailResponse(userGroup, "admin", {
+      inviteReferralCode: "ADMINREF",
       referralDepthByUserId: depths,
       memberWalletByUserId: wallets,
     });
     expect(asAdmin.inviteCode).toBe("abc123");
+    expect(asAdmin.inviteUrl).toBe("https://playthecut.com/leagues/join/abc123?ref=ADMINREF");
     expect(asAdmin.members).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -72,10 +78,12 @@ describe("formatUserGroupDetailResponse referralStake", () => {
     expect(asAdmin.members.find((m) => m.userId === "admin")).not.toHaveProperty("referralStake");
 
     const asMember = formatUserGroupDetailResponse(userGroup, "direct", {
+      inviteReferralCode: "MEMBERREF",
       referralDepthByUserId: depths,
       memberWalletByUserId: wallets,
     });
-    expect(asMember).not.toHaveProperty("inviteCode");
+    expect(asMember.inviteCode).toBe("abc123");
+    expect(asMember.inviteUrl).toBe("https://playthecut.com/leagues/join/abc123?ref=MEMBERREF");
     expect(asMember.members).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

@@ -102,18 +102,21 @@ export const UserGroupDetailPage = () => {
     />
   );
 
+  const showInvite = isAdmin || Boolean(userGroup.inviteCode || userGroup.inviteUrl);
+
   const membersContent = (
     <div className="overflow-hidden rounded-b-lg border-x border-b border-slate-300 bg-white">
-      {isAdmin ? (
+      {showInvite ? (
         <UserGroupInvitePanel
           userGroupId={userGroup.id}
           leagueName={userGroup.name}
           inviteCode={userGroup.inviteCode}
           inviteUrl={userGroup.inviteUrl}
+          canManage={isAdmin}
           onInviteUpdated={() => refetch()}
         />
       ) : null}
-      <div className={isAdmin ? "border-t border-slate-300 px-4 py-4" : "px-4 py-4"}>
+      <div className={showInvite ? "border-t border-slate-300 px-4 py-4" : "px-4 py-4"}>
         <UserGroupMemberManagement
           userGroupId={userGroup.id}
           members={userGroup.members}

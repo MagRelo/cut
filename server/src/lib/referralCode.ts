@@ -43,28 +43,6 @@ export async function ensureUserReferralCode(userId: string): Promise<string> {
   }
 }
 
-/** Current opaque invite code for the Cut user who owns this wallet, minting if needed. */
-export async function referralCodeForWallet(address: string): Promise<string | null> {
-  const trimmed = address.trim();
-  if (!trimmed || !isAddress(trimmed)) return null;
-
-  const wallet = await prisma.userWallet.findFirst({
-    where: {
-      publicKey: { equals: trimmed.toLowerCase(), mode: "insensitive" },
-    },
-    select: { userId: true },
-  });
-  if (!wallet) return null;
-  return ensureUserReferralCode(wallet.userId);
-}
-
-export async function resolveInviteReferralCode(
-  inviteReferrerAddress: string | null,
-): Promise<string | null> {
-  if (!inviteReferrerAddress) return null;
-  return referralCodeForWallet(inviteReferrerAddress);
-}
-
 /**
  * Best-effort signup referrer from an opaque `User.referralCode`.
  * `0x` addresses and unknown codes return null so account creation is never blocked.

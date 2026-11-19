@@ -57,7 +57,6 @@ export function formatUserGroupDetailResponse(
   options?: FormatUserGroupDetailOptions,
 ) {
   const currentUserMembership = userGroup.members.find((member) => member.userId === currentUserId);
-  const isAdmin = currentUserMembership?.role === "ADMIN";
   const memberWalletByUserId = options?.memberWalletByUserId;
 
   return {
@@ -86,8 +85,8 @@ export function formatUserGroupDetailResponse(
     }),
     ...(userGroup.inviteCode
       ? {
+          inviteCode: userGroup.inviteCode,
           inviteUrl: buildLeagueInviteUrl(userGroup.inviteCode, options?.inviteReferralCode),
-          ...(isAdmin ? { inviteCode: userGroup.inviteCode } : {}),
         }
       : {}),
   };

@@ -14,19 +14,23 @@ interface UserGroupInvitePanelProps {
   leagueName: string;
   inviteCode?: string | null;
   inviteUrl?: string | null;
+  canManage?: boolean;
   onInviteUpdated?: () => void;
 }
 
 export const UserGroupInvitePanel = ({
   userGroupId,
   leagueName,
+  inviteCode,
   inviteUrl,
+  canManage = false,
   onInviteUpdated,
 }: UserGroupInvitePanelProps) => {
   const generateInviteMutation = useGenerateLeagueInvite();
   const [showRotateConfirm, setShowRotateConfirm] = useState(false);
 
   const activeInviteUrl = generateInviteMutation.data?.inviteUrl ?? inviteUrl ?? null;
+  const activeInviteCode = generateInviteMutation.data?.inviteCode ?? inviteCode ?? null;
 
   const handleGenerate = () => {
     generateInviteMutation.mutate(userGroupId, {
@@ -39,6 +43,10 @@ export const UserGroupInvitePanel = ({
 
   const errorMessage =
     generateInviteMutation.error instanceof Error ? generateInviteMutation.error.message : null;
+
+  if (!activeInviteUrl && !canManage) {
+    return null;
+  }
 
   return (
     <div className="space-y-3 font-display">
@@ -63,12 +71,26 @@ export const UserGroupInvitePanel = ({
             <div className="px-4 pt-4">
               <p className={walletSpecLabelClassName}>Invite link</p>
               <p
-                className="mt-1.5 select-all break-all rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm leading-relaxed text-gray-600"
+                className="mt-1.5 select-all break-all rounded-md border border-slate-300 bg-white px-3 py-2 text-sm leading-relaxed text-gray-900"
                 aria-label={activeInviteUrl}
               >
                 {activeInviteUrl}
               </p>
             </div>
+            {activeInviteCode ? (
+              <div className="px-4 pt-4">
+                <p className={walletSpecLabelClassName}>Invite code</p>
+                <p className="mt-1 text-sm leading-relaxed text-gray-600">
+                  Paste this into a bot chat.
+                </p>
+                <p
+                  className="mt-1.5 select-all break-all rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-sm leading-relaxed text-gray-900"
+                  aria-label={activeInviteCode}
+                >
+                  {activeInviteCode}
+                </p>
+              </div>
+            ) : null}
             <div className="flex flex-col gap-2 px-4 py-3">
               <ShareInviteButton
                 url={activeInviteUrl}
@@ -83,17 +105,27 @@ export const UserGroupInvitePanel = ({
                 idleLabel="Copy Invite Link"
                 className="border-slate-300 bg-white text-gray-700 hover:bg-gray-50"
               />
-              <button
-                type="button"
-                onClick={() => setShowRotateConfirm(true)}
-                disabled={generateInviteMutation.isPending}
-                className="flex min-h-11 w-full items-center justify-center text-center text-sm text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-              >
-                Old links still out there?{" "}
-                <span className="ml-1 font-medium text-gray-800 underline decoration-gray-300 underline-offset-2">
-                  Rotate this one
-                </span>
-              </button>
+              {activeInviteCode ? (
+                <CopyButton
+                  text={activeInviteCode}
+                  variant="secondary"
+                  idleLabel="Copy Invite Code"
+                  className="border-slate-300 bg-white text-gray-700 hover:bg-gray-50"
+                />
+              ) : null}
+              {canManage ? (
+                <button
+                  type="button"
+                  onClick={() => setShowRotateConfirm(true)}
+                  disabled={generateInviteMutation.isPending}
+                  className="flex min-h-11 w-full items-center justify-center text-center text-sm text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                >
+                  Old links still out there?{" "}
+                  <span className="ml-1 font-medium text-gray-800 underline decoration-gray-300 underline-offset-2">
+                    Rotate this one
+                  </span>
+                </button>
+              ) : null}
             </div>
           </>
         ) : (

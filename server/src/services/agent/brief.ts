@@ -550,7 +550,6 @@ export async function getLeagueList(actor: AgentActor) {
   return {
     leagues: memberships.map((membership) => {
       const group = membership.userGroup;
-      const admin = membership.role === "ADMIN" && group.inviteCode;
       return {
         id: group.id,
         name: group.name,
@@ -558,8 +557,8 @@ export async function getLeagueList(actor: AgentActor) {
         memberCount: group._count.members,
         openContests: group.contests.filter((contest) => contest.status === "OPEN").length,
         activeContests: group.contests.filter((contest) => contest.status === "ACTIVE").length,
-        invite: admin
-          ? { code: group.inviteCode as string, url: buildLeagueInviteUrl(group.inviteCode as string, referralCode) }
+        invite: group.inviteCode
+          ? { code: group.inviteCode, url: buildLeagueInviteUrl(group.inviteCode, referralCode) }
           : null,
       };
     }),
