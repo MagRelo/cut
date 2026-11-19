@@ -126,6 +126,11 @@ export async function syncGolfLiveScores(eventId: string) {
 
   const currentPeriod = golfMeta?.currentPeriod ?? 1;
   const rawLeaderboard = await fetchLeaderboardRaw();
+  if (rawLeaderboard.tournamentId !== pgaTourId) {
+    throw new Error(
+      `PGA leaderboard is ${rawLeaderboard.tournamentId} (${rawLeaderboard.tournamentName}), expected ${pgaTourId}`,
+    );
+  }
   const byPgaId = new Map(
     rawLeaderboard.players
       .filter((row) => row.player?.id)

@@ -1,10 +1,22 @@
 import * as cheerio from "cheerio";
-import type { PlayerRowV3 } from "../schemas/leaderboard.js";
+
+/** A scored row from the PGA leaderboard payload. Older pages tagged these `PlayerRowV3`. */
+export interface ScrapedLeaderboardPlayer {
+  player: {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+  };
+  scoringData: {
+    position?: string;
+    total?: string | number;
+  };
+}
 
 export interface RawLeaderboard {
   tournamentId: string;
   tournamentName: string;
-  players: PlayerRowV3[];
+  players: ScrapedLeaderboardPlayer[];
 }
 
 interface CacheItem {
@@ -14,6 +26,56 @@ interface CacheItem {
 
 const cache: { [key: string]: CacheItem } = {};
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+function isScoredPlayer(row: unknown): row is ScrapedLeaderboardPlayer {
+  if (!row || typeof row !== "object") return false;
+  const record = row as Record<string, unknown>;
+  const player = record.player;
+  const scoringData = record.scoringData;
+  if (!player || typeof player !== "object" || !scoringData || typeof scoringData !== "object") {
+    return false;
+  }
+  const id = (player as Record<string, unknown>).id;
+  return typeof id === "string" && id.length > 0;
+}
+
+/**
+ * Pulls the scored leaderboard out of a PGA `__NEXT_DATA__` payload.
+ * The page carries several `players` arrays (odds, standings, sponsors). The
+ * leaderboard is the one whose rows have `player.id` and `scoringData`.
+ */
+export function parseLeaderboardPayload(parsedData: unknown): RawLeaderboard {
+  const pageProps = (parsedData as { props?: { pageProps?: Record<string, unknown> } })?.props
+    ?.pageProps;
+  const queries = (pageProps?.dehydratedState as { queries?: unknown[] } | undefined)?.queries ?? [];
+  const rawTournament = pageProps?.tournament as
+    | { id?: unknown; tournamentId?: unknown; tournamentName?: unknown }
+    | undefined;
+  if (!rawTournament) {
+    throw new Error("Could not find tournament data in pageProps");
+  }
+
+  const leaderboardQuery = queries.find((query) => {
+    const players = (query as { state?: { data?: { players?: unknown } } })?.state?.data?.players;
+    return Array.isArray(players) && players.some(isScoredPlayer);
+  }) as { state?: { data?: { players?: unknown[] } } } | undefined;
+
+  const players = (leaderboardQuery?.state?.data?.players ?? []).filter(isScoredPlayer);
+  if (players.length === 0) {
+    throw new Error("Could not find scored players in the PGA leaderboard payload");
+  }
+
+  const tournamentId = rawTournament.tournamentId ?? rawTournament.id;
+  if (typeof tournamentId !== "string" || tournamentId.length === 0) {
+    throw new Error("Could not find tournament id in pageProps");
+  }
+
+  return {
+    tournamentId,
+    tournamentName: typeof rawTournament.tournamentName === "string" ? rawTournament.tournamentName : "",
+    players,
+  };
+}
 
 /**
  * Fetches and parses the PGA leaderboard. Returns raw data only (no bonuses, icons, or display formatting).
@@ -56,27 +118,7 @@ export async function fetchLeaderboardRaw(): Promise<RawLeaderboard> {
     throw new Error("Could not find __NEXT_DATA__ script");
   }
 
-  const parsedData = JSON.parse(nextDataScript);
-  const queries = parsedData.props?.pageProps?.dehydratedState?.queries || [];
-  const leaderboardQuery = queries.find((q: any) => Array.isArray(q.state?.data?.players));
-  if (!leaderboardQuery) {
-    throw new Error("Could not find leaderboard data in dehydratedState.queries");
-  }
-  const rawPlayers = leaderboardQuery.state.data.players;
-  const rawTournament = parsedData.props?.pageProps?.tournament;
-  if (!rawTournament) {
-    throw new Error("Could not find tournament data in pageProps");
-  }
-
-  const players = (rawPlayers as any[]).filter(
-    (p): p is PlayerRowV3 => p?.__typename === "PlayerRowV3" && p?.scoringData && p?.player
-  );
-
-  const result: RawLeaderboard = {
-    tournamentId: rawTournament.id,
-    tournamentName: rawTournament.tournamentName,
-    players,
-  };
+  const result = parseLeaderboardPayload(JSON.parse(nextDataScript));
 
   cache.leaderboard = { data: result, timestamp: now };
   return result;
