@@ -34,7 +34,12 @@ vi.mock("../../lib/prisma.js", () => ({
   },
 }));
 
-import { postDirectMessage, StreamPeerUnavailableError, syncLeagueMemberAdded } from "./streamChat.js";
+import {
+  listDirectMessages,
+  postDirectMessage,
+  StreamPeerUnavailableError,
+  syncLeagueMemberAdded,
+} from "./streamChat.js";
 
 describe("stream chat rooms", () => {
   beforeEach(() => {
@@ -114,5 +119,50 @@ describe("stream chat rooms", () => {
       }),
     ).rejects.toBeInstanceOf(StreamPeerUnavailableError);
     expect(getOrCreate).not.toHaveBeenCalled();
+  });
+
+  it("lists the direct channel for both members", async () => {
+    findUniqueUser.mockResolvedValue({ id: "user-2" });
+    queryChannels.mockResolvedValue({
+      channels: [
+        {
+          messages: [
+            {
+              id: "msg-1",
+              text: "hello",
+              created_at: new Date("2026-11-19T12:00:00.000Z"),
+              custom: { audience: "humans" },
+              user: { id: "user-2" },
+            },
+          ],
+        },
+      ],
+    });
+
+    await expect(
+      listDirectMessages({ userId: "user-1", peerId: "user-2", limit: 20 }),
+    ).resolves.toEqual([
+      {
+        id: "msg-1",
+        text: "hello",
+        userId: "user-2",
+        audience: "humans",
+        kind: null,
+        createdAt: "2026-11-19T12:00:00.000Z",
+      },
+    ]);
+    expect(queryChannels).toHaveBeenCalledWith({
+      filter_conditions: {
+        type: "messaging",
+        member_count: 2,
+        "custom.room": "direct",
+        members: { $in: ["user-1"] },
+        $and: [{ members: { $in: ["user-2"] } }],
+      },
+      message_limit: 20,
+      limit: 1,
+      state: true,
+      user_id: "user-1",
+    });
   });
 });

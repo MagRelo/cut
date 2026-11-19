@@ -325,8 +325,10 @@ export async function listDirectMessages(input: {
   const found = await streamClient().chat.queryChannels({
     filter_conditions: {
       type: CHANNEL_TYPE,
-      members: { $eq: [input.userId, input.peerId] },
+      member_count: 2,
       "custom.room": "direct",
+      members: { $in: [input.userId] },
+      $and: [{ members: { $in: [input.peerId] } }],
     },
     message_limit: input.limit,
     limit: 1,
