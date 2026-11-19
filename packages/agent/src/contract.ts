@@ -89,10 +89,36 @@ export const actionSchema = z.discriminatedUnion("action", [
   yieldActionSchema,
 ]);
 
+const HEX_COLOR = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+export const oddsFormatSchema = z.enum(["american", "decimal", "english"]);
+
 export const registerSchema = z.object({
-  email: z.string().trim().email("A valid email is required"),
+  email: z.string().trim().email("A valid email is required").optional(),
   name: z.string().trim().min(1).max(NAME_MAX_LENGTH).optional(),
   referralCode: z.string().trim().min(1).max(32).optional(),
+  color: z.string().regex(HEX_COLOR, "Invalid color").optional(),
+  oddsFormat: oddsFormatSchema.optional(),
+});
+
+export const agentProfileSchema = z
+  .object({
+    name: z.string().trim().min(1).max(NAME_MAX_LENGTH).optional(),
+    email: z.string().trim().email("A valid email is required").optional(),
+    color: z.string().regex(HEX_COLOR, "Invalid color").optional(),
+    oddsFormat: oddsFormatSchema.optional(),
+  })
+  .refine(
+    (value) =>
+      value.name !== undefined ||
+      value.email !== undefined ||
+      value.color !== undefined ||
+      value.oddsFormat !== undefined,
+    { message: "No profile fields to update" },
+  );
+
+export const joinLeagueSchema = z.object({
+  inviteCode: z.string().trim().min(1).max(32),
 });
 
 export const createLeagueSchema = z.object({
@@ -124,6 +150,8 @@ export type PlayActionBody = z.infer<typeof playActionSchema>;
 export type CreateContestActionBody = z.infer<typeof createContestActionSchema>;
 export type ActionBody = z.infer<typeof actionSchema>;
 export type RegisterBody = z.infer<typeof registerSchema>;
+export type AgentProfilePatch = z.infer<typeof agentProfileSchema>;
+export type OddsFormat = z.infer<typeof oddsFormatSchema>;
 
 export type BotCandidate = {
   eventParticipantId: string;
@@ -150,12 +178,19 @@ export type BotContest = {
 
 export type RegisteredAgent = {
   userId: string;
-  email: string;
+  email: string | null;
   userType: string;
   name: string;
   referralCode: string;
   smartWallet: string;
   created: boolean;
+};
+
+export type AgentProfile = {
+  name: string;
+  email: string | null;
+  color: string | null;
+  oddsFormat: OddsFormat | null;
 };
 
 export type LineupResult = { ok: true; lineupId: string };
@@ -175,14 +210,22 @@ export type AgentPreferences = {
 };
 
 export type AgentAccount = {
+  userId: string;
   wallet: string;
   chainId: number;
   balanceUsdc: number | null;
+  profile: AgentProfile;
   leagues: { id: string; name: string; role: string }[];
   referral: { code: string; url: string; totalEarned: number };
   entries: Record<string, number>;
   preferences: AgentPreferences;
   takeover: { embeddedAddress: string } | null;
+};
+
+export type LeagueJoined = {
+  id: string;
+  name: string;
+  currentUserRole: string | null;
 };
 
 export type ScoutContest = {

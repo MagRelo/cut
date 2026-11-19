@@ -139,10 +139,94 @@ describe("createCutAgent", () => {
       },
     });
 
-    await agent.register({ email: "agent@example.com" });
+    await agent.register({ email: "agent@example.com", color: "#0a73eb", oddsFormat: "decimal" });
     const url = new URL(requests[0]?.url ?? "");
     expect(url.pathname).toBe("/api/auth/register");
     expect(url.search).toBe("");
+    expect(JSON.parse(await requests[0]!.text())).toEqual({
+      email: "agent@example.com",
+      color: "#0a73eb",
+      oddsFormat: "decimal",
+    });
+  });
+
+  it("registers without an email", async () => {
+    const requests: Request[] = [];
+    const agent = createCutAgent({
+      privateKey: generatePrivateKey(),
+      fetch: async (request) => {
+        requests.push(request.clone());
+        return json({
+          userId: "user-1",
+          email: null,
+          userType: "AGENT",
+          name: "Agent",
+          referralCode: "code",
+          smartWallet: SMART_WALLET,
+          created: true,
+        });
+      },
+    });
+
+    await expect(agent.register({})).resolves.toMatchObject({ email: null, created: true });
+    expect(JSON.parse(await requests[0]!.text())).toEqual({});
+  });
+
+  it("updates a profile, joins a league, and leaves with the account user id", async () => {
+    const requests: Request[] = [];
+    const agent = createCutAgent({
+      privateKey: generatePrivateKey(),
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        requests.push(request.clone());
+        const url = new URL(request.url);
+        if (url.pathname.endsWith("/profile")) {
+          return json({
+            name: "Ada",
+            email: "ada@example.com",
+            color: "#0a73eb",
+            oddsFormat: "american",
+          });
+        }
+        if (url.pathname.endsWith("/join")) {
+          return json({ id: "league-1", name: "Saturday", currentUserRole: "MEMBER" });
+        }
+        if (url.pathname.endsWith("/account")) {
+          return json({ userId: "user-1", wallet: SMART_WALLET });
+        }
+        return json({ success: true });
+      },
+    });
+
+    await expect(
+      agent.updateProfile({ name: "Ada", email: "ada@example.com", oddsFormat: "american" }),
+    ).resolves.toMatchObject({ email: "ada@example.com" });
+    await expect(agent.joinLeague({ inviteCode: " INVITE " })).resolves.toEqual({
+      id: "league-1",
+      name: "Saturday",
+      currentUserRole: "MEMBER",
+    });
+    await expect(agent.leaveLeague("league-1")).resolves.toEqual({ success: true });
+
+    expect(requests[0]?.method).toBe("PUT");
+    expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/agent/profile");
+    expect(JSON.parse(await requests[0]!.text())).toEqual({
+      name: "Ada",
+      email: "ada@example.com",
+      oddsFormat: "american",
+    });
+
+    expect(requests[1]?.method).toBe("POST");
+    const join = new URL(requests[1]?.url ?? "");
+    expect(join.pathname).toBe("/api/userGroups/join");
+    expect(join.searchParams.get("smartWallet")).toBe(SMART_WALLET);
+    expect(JSON.parse(await requests[1]!.text())).toEqual({ inviteCode: "INVITE" });
+
+    expect(requests[2]?.method).toBe("GET");
+    expect(requests[3]?.method).toBe("DELETE");
+    const leave = new URL(requests[3]?.url ?? "");
+    expect(leave.pathname).toBe("/api/userGroups/league-1/members/user-1");
+    expect(leave.searchParams.get("smartWallet")).toBe(SMART_WALLET);
   });
 
   it("defaults createContest expiryTimestamp from endDate", async () => {

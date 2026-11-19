@@ -55,9 +55,11 @@ authRouter.post("/register", async (c) => {
     const account = await registerAgentAccount({
       signer: verified.signer,
       chainId: verified.chainId,
-      email: parsed.data.email,
+      ...(parsed.data.email ? { email: parsed.data.email } : {}),
       ...(parsed.data.name ? { name: parsed.data.name } : {}),
       ...(parsed.data.referralCode ? { referralCode: parsed.data.referralCode } : {}),
+      ...(parsed.data.color ? { color: parsed.data.color } : {}),
+      ...(parsed.data.oddsFormat ? { oddsFormat: parsed.data.oddsFormat } : {}),
     });
     return c.json(account, account.created ? 201 : 200);
   } catch (error) {

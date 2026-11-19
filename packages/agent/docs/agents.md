@@ -176,7 +176,9 @@ This step stops before `join`. The field is not on this response. `contests()` r
 
 #### Calls
 
-`agent.account()` → `GET /api/agent/account`. Wallet, chain, `balanceUsdc` (USDC to two decimals, or `null` when the read failed), leagues and role, referral code, url, and `totalEarned`, entry counts keyed by contest status, and `preferences`.
+`agent.account()` → `GET /api/agent/account`. `userId`, wallet, chain, `balanceUsdc` (USDC to two decimals, or `null` when the read failed), `profile` (`name`, `email`, `color`, `oddsFormat`), leagues and role, referral code, url, and `totalEarned`, entry counts keyed by contest status, and `preferences`. `profile.email` is `null` until the owner sets one.
+
+`agent.updateProfile({ name?, email?, color?, oddsFormat? })` → `PUT /api/agent/profile`. At least one field. `color` is `#rgb` or `#rrggbb`. `oddsFormat` is `american`, `decimal`, or `english`. Omit a field to leave it. A delegate may set name, color, and odds format. Only the owner key may set `email`. A delegate that sends `email` is `403` `"A delegate cannot set the login email"`. An account that already has a Privy login is `403` `"This account already has a login"`. An email on another account is `400` with code `EMAIL_ALREADY_BOUND`. The response is the profile.
 
 `agent.preferences({ sports?, maxEntryFee? })` → `PUT /api/agent/preferences`. `sports` replaces the list with enabled sport ids. `maxEntryFee` is whole USDC. Send `null` to clear the cap. Omit a field to leave it.
 
@@ -365,13 +367,17 @@ A league invitation does not guarantee referral attribution. Do not imply an exi
 
 #### Actions
 
-`leagues()` lists this account's leagues, the role, member count, open and active contest counts, and the admin's current invite. Send `invite.url`. It is `https://playthecut.com/leagues/join/{inviteCode}?ref=CODE`, using this account's code. Joining the league without `ref` does not attach the admin as referrer.
+`leagues()` lists this account's leagues, the role, member count, open and active contest counts, and the league invite when a code exists. `invite` is `{ code, url }` for any member, or `null` when the league has no code. `invite.code` is the league code to paste into a bot chat. Send `invite.url`. It is `https://playthecut.com/leagues/join/{inviteCode}?ref=CODE`, using this account's referral code. Joining the league without `ref` does not attach this account as referrer.
 
 When `invite` is `null` and this account is the admin, call `inviteLeague(id)` and send the new url. The path for leagues is `/api/userGroups`. The product name is league.
 
 #### Calls
 
 `agent.leagues()` → `GET /api/agent/leagues`.
+
+`agent.joinLeague({ inviteCode })` → `POST /api/userGroups/join`. Response is `{ id, name, currentUserRole }`. Already a member is `409`.
+
+`agent.leaveLeague(id)` reads `userId` from `account()`, then `DELETE /api/userGroups/:id/members/:userId`. The caller can remove their own membership. The last admin is `400` `"Cannot remove the last admin from the userGroup"`. Not a member is `404`. Response is `{ success: true }`.
 
 `agent.createLeague({ name, description? })` → `POST /api/userGroups`. The creator is the admin. Response includes `id` and `name`.
 
@@ -434,7 +440,7 @@ Two ways to get a client. Pick the one that matches the account.
 | The user | Already has a Play The Cut account and a smart wallet. | Does not have an account yet. |
 | Key the agent stores | A delegate key from `generateDelegateKey()`. The user grants that address. | The owner key. The Kernel account it owns is the wallet and holds the USDC. |
 | Client | `createCutAgent({ privateKey, smartWallet, chainId })` | `createCutAgent({ privateKey, chainId })`, with no `smartWallet`. |
-| First call | `account()` | `register({ email, referralCode? })` |
+| First call | `account()` | `register({ email?, name?, color?, oddsFormat?, referralCode? })` |
 | Delegate | Required. This key acts on another account. | Not used. This key is the account. A delegate applies only when a different key acts on an account. |
 
 `register` is signed by the owner key. A `smartWallet` query that is not that signer is `403` `"A delegate cannot register an account"`.
@@ -450,7 +456,7 @@ The user already has an account. Follow [Delegate](access.md#delegate). Pass the
 `register` creates the account. The signer is the owner key. The stored wallet is the Kernel account that key owns, and that address holds the USDC.
 
 1. `createCutAgent({ privateKey, chainId })`. `privateKey` is the owner key. Leave `smartWallet` unset. The client uses the Kernel address that key owns.
-2. `register({ email, name?, referralCode? })`. Pass `referralCode` when this account was invited. This email is how the human later signs in.
+2. `register({ email?, name?, color?, oddsFormat?, referralCode? })`. Email is optional. Pass `referralCode` when this account was invited. `color` and `oddsFormat` are stored on the new account only.
 3. Contest reads, `lineupUpsert`, `join`, `leave`, `createContest`, league setup, and `createFreeContest` use this signature.
 4. Gas for `join`, `leave`, and paid `createContest` is sponsored when those calls are on the sponsorship allowlist. The owner key does not hold the USDC and does not pay gas.
 5. When the human tells you to yield, follow [Yield](access.md#yield).
@@ -568,7 +574,21 @@ Briefing reads use the same signature as the play actions. The SDK sends `smartW
 
 `agent.account()` → `GET /api/agent/account`.
 
-`wallet`, `chainId`, `balanceUsdc`, `leagues` (`id`, `name`, `role`), `referral` (`code`, `url`, `totalEarned`), `entries` (distinct entered contests keyed by status), and `preferences` (`sports`, `maxEntryFee`).
+`userId`, `wallet`, `chainId`, `balanceUsdc`, `profile` (`name`, `email`, `color`, `oddsFormat`), `leagues` (`id`, `name`, `role`), `referral` (`code`, `url`, `totalEarned`), `entries` (distinct entered contests keyed by status), and `preferences` (`sports`, `maxEntryFee`).
+
+### updateProfile
+
+`agent.updateProfile({ name?, email?, color?, oddsFormat? })` → `PUT /api/agent/profile`.
+
+At least one field. The response is the profile. A delegate may set `name`, `color`, and `oddsFormat`. Only the owner key may set `email`.
+
+### joinLeague
+
+`agent.joinLeague({ inviteCode })` → `POST /api/userGroups/join`. `{ id, name, currentUserRole }`.
+
+### leaveLeague
+
+`agent.leaveLeague(id)` → `DELETE /api/userGroups/:id/members/:userId`, using `userId` from `account()`. `{ success: true }`.
 
 ### preferences
 
@@ -598,7 +618,7 @@ At least one field. Unknown sport ids are `400`. Response is `{ preferences }`.
 
 ### leagues
 
-`agent.leagues()` → `GET /api/agent/leagues`. `{ leagues }`. Each row has `id`, `name`, `role`, `memberCount`, `openContests`, `activeContests`, and `invite` (`{ code, url }` for an admin who already has a code, otherwise `null`).
+`agent.leagues()` → `GET /api/agent/leagues`. `{ leagues }`. Each row has `id`, `name`, `role`, `memberCount`, `openContests`, `activeContests`, and `invite` (`{ code, url }` when the league has a code, otherwise `null`). `code` is the league code. `url` uses this account's referral code.
 
 `agent.league(id)` → `GET /api/agent/leagues/:id`. `league`, `members` (`id`, `name`), and `contests`. Each contest has `event`, `primaryDeposit`, `referralNetworkBps`, `entryCount`, `memberCount`, `missingMemberIds`, and `summary` (`winnerName`, `winningTotal`) or `null`.
 
@@ -695,11 +715,11 @@ The SDK puts `smartWallet` on the query and `X-Cut-Chain-Id` on the request. A s
 
 ### register
 
-`agent.register({ email, name?, referralCode? })` → `POST /api/auth/register`.
+`agent.register({ email?, name?, color?, oddsFormat?, referralCode? })` → `POST /api/auth/register`.
 
-The owner key signs. The Kernel wallet holds the USDC. A `smartWallet` query that is not the signer is `403` `"A delegate cannot register an account"`. A new account is `userType` `AGENT`. Registering the same wallet again returns that account and does not change the email or type. `201` when the account is new, `200` when the wallet already has one. An email already on another account is `400` with code `EMAIL_ALREADY_BOUND`.
+The owner key signs. The Kernel wallet holds the USDC. A `smartWallet` query that is not the signer is `403` `"A delegate cannot register an account"`. A new account is `userType` `AGENT`. Email is optional. When the person wants to sign in, the owner sets it with `updateProfile` before they open the site. `color` is `#rgb` or `#rrggbb`. `oddsFormat` is `american`, `decimal`, or `english`. Those settings are written only when the account is created. Registering the same wallet again returns that account and does not change the email, the name, the settings, or the type. `201` when the account is new, `200` when the wallet already has one. An email already on another account is `400` with code `EMAIL_ALREADY_BOUND`.
 
-Response: `userId`, `email`, `userType`, `name`, `referralCode`, `smartWallet`, `created`.
+Response: `userId`, `email` (`null` when unset), `userType`, `name`, `referralCode`, `smartWallet`, `created`.
 
 ## Errors and recovery
 
@@ -709,11 +729,11 @@ After a timeout or `502` from a state-changing action, check whether the action 
 
 | Status | Meaning | What to do |
 | --- | --- | --- |
-| `400` | The body, the lineup, the deposit, the prediction, the preferences, or the cursor is invalid. `EMAIL_ALREADY_BOUND` on register. | Read `error`. An empty lineup is rejected on save and on join. Add at least one pick and retry. Drop a cursor the server rejects and call again with none to set a new baseline. |
+| `400` | The body, the lineup, the deposit, the prediction, the preferences, the profile, or the cursor is invalid. `EMAIL_ALREADY_BOUND` on register or `updateProfile`. The last league admin cannot leave. | Read `error`. An empty lineup is rejected on save and on join. Add at least one pick and retry. Drop a cursor the server rejects and call again with none to set a new baseline. |
 | `401` | The signature is missing, expired, or does not cover this request. A nonce was reused. | Sign the exact method, path, query, and body. Use a new nonce. `created` and `expires` must span at most one hour. |
-| `403` | The signer is acting for another account without an active delegate, the account is not a league admin, an `AGENT` tried to create a public contest, or a delegate tried to register. | Grant that delegate on the account, or sign with the account key. Register with the account key. |
+| `403` | The signer is acting for another account without an active delegate, the account is not a league admin, an `AGENT` tried to create a public contest, a delegate tried to register, or a delegate tried to set the login email. | Grant that delegate on the account, or sign with the account key. Register and set the email with the account key. |
 | `404` | Contest, event, league, or user was not found. | Check `contestId`, `eventId`, and league id. A league contest or league the account is not in is `404`. |
-| `409` | Join on a contest that is not `OPEN`, or leave on a contest that is not `OPEN` or `CANCELLED`. A paid contest address was already registered. | Stop retrying the join. Leave only while the contest is open or cancelled. |
+| `409` | Join on a contest that is not `OPEN`, or leave on a contest that is not `OPEN` or `CANCELLED`. A paid contest address was already registered. Joining a league this account is already in. | Stop retrying the join. Leave a contest only while it is open or cancelled. |
 | `502` | The user operation failed or the response shape was unexpected. | Read `error`. Check the lobby, this account's entries, or the chain before sending `join`, `leave`, or `createContest` again. |
 | `503` | The server-held delegate key is not configured. | A caller-held delegate and the account key are unaffected. |
 

@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { parseContestCommentaryFeedItems } from "@cut/sport-sdk";
 import { prisma } from "../../lib/prisma.js";
+import { profileFromUser } from "./profile.js";
 import { buildLeagueInviteUrl, buildReferralUrl } from "../../lib/appUrl.js";
 import { ensureUserReferralCode } from "../../lib/referralCode.js";
 import {
@@ -171,6 +172,8 @@ export async function getAgentAccount(actor: AgentActor) {
     prisma.user.findUnique({
       where: { id: actor.userId },
       select: {
+        name: true,
+        email: true,
         settings: true,
         referralCode: true,
         userGroups: {
@@ -184,9 +187,11 @@ export async function getAgentAccount(actor: AgentActor) {
   ]);
   const referralCode = user?.referralCode ?? (await ensureUserReferralCode(actor.userId));
   return {
+    userId: actor.userId,
     wallet: actor.address,
     chainId: actor.chainId,
     balanceUsdc,
+    profile: profileFromUser(user),
     leagues: (user?.userGroups ?? []).map((membership) => ({
       id: membership.userGroup.id,
       name: membership.userGroup.name,

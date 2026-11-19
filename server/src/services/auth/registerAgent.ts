@@ -7,6 +7,7 @@ import { tryResolveReferralForNewUser } from "../../lib/referralCode.js";
 import { parseReferralGroupIdFromEnv } from "../../lib/referralConfig.js";
 import { generateUniqueReferralCode } from "../../utils/inviteCode.js";
 import { ReferralProvisionError } from "../../lib/privyUserProvisioning.js";
+import { mergeUserSettings } from "../../schemas/user.js";
 
 async function mintTestnetUsdc(address: string, chainId: number): Promise<void> {
   if (process.env.ENABLE_TOKEN_MINTING !== "true" || chainId !== 84532) return;
@@ -28,12 +29,8 @@ type StoredAgent = {
   referralCode: string | null;
 };
 
-async function existingAgent(
-  user: StoredAgent,
-  smartWallet: string,
-  email: string,
-): Promise<RegisteredAgent> {
-  if (user.email && user.referralCode) {
+async function existingAgent(user: StoredAgent, smartWallet: string): Promise<RegisteredAgent> {
+  if (user.referralCode) {
     return {
       userId: user.id,
       email: user.email,
@@ -44,16 +41,14 @@ async function existingAgent(
       created: false,
     };
   }
-  const referralCode = user.referralCode ?? (await generateUniqueReferralCode());
-  if (!user.referralCode) {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { referralCode },
-    });
-  }
+  const referralCode = await generateUniqueReferralCode();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { referralCode },
+  });
   return {
     userId: user.id,
-    email: user.email ?? email,
+    email: user.email,
     userType: user.userType,
     name: user.name ?? "",
     referralCode,
@@ -73,13 +68,15 @@ const walletSelect = {
 export async function registerAgentAccount(input: {
   signer: Address;
   chainId: number;
-  email: string;
+  email?: string;
   name?: string;
   referralCode?: string;
+  color?: string;
+  oddsFormat?: "american" | "decimal" | "english";
 }): Promise<RegisteredAgent> {
   const owner = getAddress(input.signer).toLowerCase();
   const smartWallet = kernelWalletAddress(getAddress(input.signer), input.chainId).toLowerCase();
-  const email = input.email.trim().toLowerCase();
+  const email = input.email?.trim().toLowerCase();
 
   const existing = await prisma.userWallet.findUnique({
     where: { chainId_publicKey: { chainId: input.chainId, publicKey: smartWallet } },
@@ -92,7 +89,7 @@ export async function registerAgentAccount(input: {
         data: { ownerAddress: owner },
       });
     }
-    return existingAgent(existing.user, smartWallet, email);
+    return existingAgent(existing.user, smartWallet);
   }
 
   const legacy = await prisma.userWallet.findUnique({
@@ -104,18 +101,20 @@ export async function registerAgentAccount(input: {
       where: { chainId_publicKey: { chainId: input.chainId, publicKey: owner } },
       data: { publicKey: smartWallet, ownerAddress: owner },
     });
-    return existingAgent(legacy.user, smartWallet, email);
+    return existingAgent(legacy.user, smartWallet);
   }
 
-  const taken = await prisma.user.findFirst({
-    where: { email: { equals: email, mode: "insensitive" } },
-    select: { id: true },
-  });
-  if (taken) {
-    throw new ReferralProvisionError(
-      "EMAIL_ALREADY_BOUND",
-      "This email is already linked to another account",
-    );
+  if (email) {
+    const taken = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
+      select: { id: true },
+    });
+    if (taken) {
+      throw new ReferralProvisionError(
+        "EMAIL_ALREADY_BOUND",
+        "This email is already linked to another account",
+      );
+    }
   }
 
   let referral: Awaited<ReturnType<typeof tryResolveReferralForNewUser>> = null;
@@ -134,9 +133,15 @@ export async function registerAgentAccount(input: {
   const user = await prisma.user.create({
     data: {
       name,
-      email,
+      ...(email ? { email } : {}),
       userType: "AGENT",
-      settings: { onboardingDismissed: false },
+      settings: mergeUserSettings(
+        { onboardingDismissed: false },
+        {
+          ...(input.color !== undefined ? { color: input.color } : {}),
+          ...(input.oddsFormat !== undefined ? { oddsFormat: input.oddsFormat } : {}),
+        },
+      ),
       referralCode,
       referrerAddress: referral?.referrerAddress ?? null,
       referralGroupId: referral?.groupIdHex ?? platformGroupId ?? null,
@@ -157,7 +162,7 @@ export async function registerAgentAccount(input: {
 
   return {
     userId: user.id,
-    email: user.email ?? email,
+    email: user.email,
     userType: user.userType,
     name: user.name ?? "",
     referralCode: user.referralCode ?? referralCode,

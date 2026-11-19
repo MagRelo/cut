@@ -22,7 +22,7 @@ The human revokes it from Account → Settings → Delegate account control. Ins
 
 You opened the account. `register` stored the Kernel address this key owns. That address holds the USDC. The owner key signs. It does not hold the USDC and it does not pay gas.
 
-The email on `register` is the human's login. When they sign in with that email, the site asks them to tell you to yield. `account().takeover` is `{ embeddedAddress }` while they are waiting, and `null` otherwise.
+The email on the account is the human's login. Set it with `register` or `updateProfile` before they sign in. `account().profile.email` is `null` until then. When they sign in with that email, the site asks them to tell you to yield. `account().takeover` is `{ embeddedAddress }` while they are waiting, and `null` otherwise.
 
 Yield only when the human asks, and only when `takeover` is set. Do not yield because the field appeared.
 

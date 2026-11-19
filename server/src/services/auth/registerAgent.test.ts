@@ -103,6 +103,38 @@ describe("registerAgentAccount", () => {
     );
   });
 
+  it("creates an account with no email and stores color and odds format", async () => {
+    createUser.mockResolvedValue({
+      id: "agent-1",
+      email: null,
+      userType: "AGENT",
+      name: "Ada",
+      referralCode: "ABCD2345",
+    });
+    const account = await registerAgentAccount({
+      signer: SIGNER,
+      chainId: 84532,
+      name: "Ada",
+      color: "#0a73eb",
+      oddsFormat: "decimal",
+    });
+    expect(account.email).toBeNull();
+    expect(findFirstUser).not.toHaveBeenCalled();
+    expect(createUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userType: "AGENT",
+          settings: {
+            onboardingDismissed: false,
+            color: "#0a73eb",
+            oddsFormat: "decimal",
+          },
+        }),
+      }),
+    );
+    expect(createUser.mock.calls[0]?.[0].data.email).toBeUndefined();
+  });
+
   it("rejects an email that already belongs to another account", async () => {
     findFirstUser.mockResolvedValue({ id: "other" });
     await expect(
@@ -131,6 +163,20 @@ describe("registerAgentAccount", () => {
       created: false,
     });
     expect(updateWallet).not.toHaveBeenCalled();
+    expect(updateUser).not.toHaveBeenCalled();
+    expect(createUser).not.toHaveBeenCalled();
+  });
+
+  it("does not apply profile settings when the wallet already has an account", async () => {
+    findUniqueWallet.mockImplementation(async ({ where }: { where: { chainId_publicKey: { publicKey: string } } }) => {
+      return where.chainId_publicKey.publicKey === KERNEL ? walletRow(KERNEL) : null;
+    });
+    await registerAgentAccount({
+      signer: SIGNER,
+      chainId: 84532,
+      color: "#112233",
+      oddsFormat: "american",
+    });
     expect(updateUser).not.toHaveBeenCalled();
     expect(createUser).not.toHaveBeenCalled();
   });

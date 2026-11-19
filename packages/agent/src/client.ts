@@ -6,11 +6,14 @@ import type { z } from "zod";
 import {
   actionSchema,
   agentPreferencesSchema,
+  agentProfileSchema,
   createFreeContestSchema,
   createLeagueSchema,
+  joinLeagueSchema,
   registerSchema,
   type AgentAccount,
   type AgentPreferences,
+  type AgentProfile,
   type CompanionBrief,
   type ContestCreated,
   type ContestList,
@@ -18,6 +21,7 @@ import {
   type LeagueCreated,
   type LeagueDetail,
   type LeagueInvite,
+  type LeagueJoined,
   type LeagueList,
   type LineupResult,
   type PicksBrief,
@@ -89,10 +93,20 @@ export type CutAgent = {
   join(input: LineupRef): Promise<LineupResult>;
   leave(input: LineupRef): Promise<LineupResult>;
   register(input: {
-    email: string;
+    email?: string;
     name?: string;
     referralCode?: string;
+    color?: string;
+    oddsFormat?: "american" | "decimal" | "english";
   }): Promise<RegisteredAgent>;
+  updateProfile(input: {
+    name?: string;
+    email?: string;
+    color?: string;
+    oddsFormat?: "american" | "decimal" | "english";
+  }): Promise<AgentProfile>;
+  joinLeague(input: { inviteCode: string }): Promise<LeagueJoined>;
+  leaveLeague(id: string): Promise<{ success: true }>;
   createContest(input: CreateContestInput): Promise<ContestCreated>;
   createFreeContest(input: CreateFreeContestInput): Promise<FreeContestCreated>;
   account(): Promise<AgentAccount>;
@@ -222,6 +236,12 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
     );
   }
 
+  async function del(path: string, query: Record<string, string> = {}): Promise<unknown> {
+    const url = new URL(path, origin);
+    for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value);
+    return send(await signRequest(url.toString(), { method: "DELETE" }, signer));
+  }
+
   async function put(path: string, body: unknown): Promise<unknown> {
     const url = new URL(path, origin);
     url.searchParams.set("smartWallet", smartWallet);
@@ -283,6 +303,9 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
       throw new CutAgentError("Unexpected response", 502, value);
     }
     const account = value as AgentAccount;
+    if (typeof account.userId !== "string") {
+      throw new CutAgentError("Unexpected response", 502, value);
+    }
     return { ...account, takeover: account.takeover ?? null };
   }
 
@@ -356,6 +379,47 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
         throw new CutAgentError("Unexpected response", 502, value);
       }
       return value as RegisteredAgent;
+    },
+    async updateProfile(input) {
+      const body = parse(agentProfileSchema, input);
+      const value = await put("/api/agent/profile", body);
+      if (!value || typeof value !== "object" || typeof (value as AgentProfile).name !== "string") {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      return value as AgentProfile;
+    },
+    async joinLeague(input) {
+      const body = parse(joinLeagueSchema, input);
+      const value = await post("/api/userGroups/join", body, { smartWallet });
+      if (
+        !value ||
+        typeof value !== "object" ||
+        typeof (value as LeagueJoined).id !== "string" ||
+        typeof (value as LeagueJoined).name !== "string"
+      ) {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      const role = (value as LeagueJoined).currentUserRole;
+      return {
+        id: (value as LeagueJoined).id,
+        name: (value as LeagueJoined).name,
+        currentUserRole: typeof role === "string" ? role : null,
+      };
+    },
+    async leaveLeague(id) {
+      const current = await get("/api/agent/account", { smartWallet });
+      const userId = (current as AgentAccount | null)?.userId;
+      if (!current || typeof current !== "object" || typeof userId !== "string") {
+        throw new CutAgentError("Unexpected response", 502, current);
+      }
+      const value = await del(
+        `/api/userGroups/${encodeURIComponent(id)}/members/${encodeURIComponent(userId)}`,
+        { smartWallet },
+      );
+      if (!value || typeof value !== "object" || (value as { success?: unknown }).success !== true) {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      return { success: true };
     },
     async createContest(input) {
       const expiryTimestamp = contestExpiryTimestamp(input.endDate, input.settings.expiryTimestamp);
