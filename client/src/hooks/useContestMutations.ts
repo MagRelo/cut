@@ -122,7 +122,7 @@ export function useJoinContest() {
 
   return useMutation({
     mutationFn: async ({ contestId, lineupId, entryId }: JoinContestParams) => {
-      return await apiClient.post<Contest>(`/contests/${contestId}/lineups`, {
+      return await apiClient.post<Contest>(`/contests/${contestId}/entries`, {
         lineupId,
         entryId,
       });
@@ -190,7 +190,7 @@ export function useLeaveContest() {
 
   return useMutation({
     mutationFn: async ({ contestId, contestLineupId }: LeaveContestParams) => {
-      return await apiClient.delete<Contest>(`/contests/${contestId}/lineups/${contestLineupId}`);
+      return await apiClient.delete<Contest>(`/contests/${contestId}/entries/${contestLineupId}`);
     },
 
     onMutate: async ({ contestRouteKey, contestLineupId }) => {

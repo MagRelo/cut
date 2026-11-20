@@ -72,7 +72,7 @@ Indexing: `OnchainPayment` rows with type `REFERRAL` ([`recordSettlementReferral
 
 Signed-in viewers see which **other** contest entries sit in their invite tree. If that lineup is the contest’s **primary winner**, settlement pays the viewer a share of the referral-network fee. Finishing in the money alone does not.
 
-`GET /contests/:id/lobby` may attach a viewer-only field on each `contestLineups[]` item:
+`GET /contests/:id/board` may attach a viewer-only field on each `contestLineups[]` item:
 
 ```ts
 referralStake?: { depth: number }  // 1 = direct invitee, 2–10 = nested

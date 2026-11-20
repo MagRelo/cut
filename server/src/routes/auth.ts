@@ -30,6 +30,7 @@ import {
   updateUserSettingsSchema,
 } from "../schemas/user.js";
 import { recordOnchainPaymentSchema } from "../schemas/onchainPayment.js";
+import { listAccountEntries } from "../services/contests/contestSections.js";
 import { recordValueTransfer, ValueTransferError } from "../services/contest/onchainPayment.js";
 import { prepareOwnerUserOp, submitOwnerUserOp } from "../services/bot/ownerUserOp.js";
 import type { SerializedUserOp } from "../services/bot/submitSessionKeyUserOp.js";
@@ -319,6 +320,17 @@ authRouter.put("/settings", requireAuth, async (c) => {
   } catch (error) {
     console.error("Error updating settings:", error);
     return c.json({ error: "Failed to update user settings" }, 500);
+  }
+});
+
+authRouter.get("/entries", requireAuth, async (c) => {
+  try {
+    const user = c.get("user");
+    const entries = await listAccountEntries(user.userId);
+    return c.json({ entries });
+  } catch (error) {
+    console.error("Error fetching entries:", error);
+    return c.json({ error: "Failed to fetch entries" }, 500);
   }
 });
 

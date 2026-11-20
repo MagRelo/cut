@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import authRoutes from "./auth.js";
 import sportsRoutes from "./sports.js";
+import eventsRoutes from "./events.js";
 import lineupsRoutes from "./lineups.js";
 import contestRoutes from "./contest.js";
 import adminRoutes from "./admin.js";
@@ -35,6 +36,7 @@ apiRouter.get("/health", (c) => {
 
 apiRouter.route("/auth", authRoutes);
 apiRouter.route("/sports", sportsRoutes);
+apiRouter.route("/events", eventsRoutes);
 apiRouter.route("/lineups", lineupsRoutes);
 apiRouter.route("/contests", contestRoutes);
 apiRouter.route("/userGroups", userGroupRoutes);

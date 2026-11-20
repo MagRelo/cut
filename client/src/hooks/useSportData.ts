@@ -60,7 +60,7 @@ export function useEventCandidatesQuery(
     queryKey: queryKeys.sports.candidates(sportId ?? "", eventId ?? ""),
     queryFn: async () => {
       const data = await apiClient.get<{ candidates: Candidate[] }>(
-        `/sports/${sportId}/events/${eventId}/candidates`,
+        `/events/${eventId}/field`,
       );
       return data.candidates;
     },

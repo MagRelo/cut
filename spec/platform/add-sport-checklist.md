@@ -127,7 +127,7 @@ Verify the new sport works through shared platform paths (pass `sportId` from `E
 - [ ] `client/src/lib/lineupApi.ts` — lineup create/update passes `sportId`; prediction serializes as `{ type: "winningLineupTotal", value }`
 - [ ] `SportPredictionField` renders `LineupWinningScoreSlider` from `predictionRules` (`label`, `description`, `min`, `max`, `displayScale`, `step`) for the passed `sportId`
 - [ ] Server lineup services use `parseLineupPrediction` + `Sport.predictionRules` for validation
-- [ ] `GET /sports/:sportId/events/:eventId/candidates` returns sorted candidates with correct `sortKeys`
+- [ ] `GET /events/:eventId/field` returns sorted candidates with correct `sortKeys`
 - [ ] Status, start, end, and period-rule fallback resolve through `SportUIPlugin` (`client/src/sports/eventPresentation.ts`). Platform files do not import `@cut/sport-<id>`
 
 Optional, separate track:

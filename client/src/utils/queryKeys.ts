@@ -18,6 +18,7 @@ export const queryKeys = {
     byId: (id: string) => [...queryKeys.contests.all, id] as const,
     byLobbyRoute: (address: string) => [...queryKeys.contests.all, "lobby", address] as const,
     timeline: (address: string) => [...queryKeys.contests.all, "timeline", address] as const,
+    commentary: (address: string) => [...queryKeys.contests.all, "commentary", address] as const,
     byEvent: (
       eventId: string,
       chainId: number | "all",

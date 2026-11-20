@@ -8,6 +8,7 @@ export interface ContestCommentaryFeedItem {
   text: string;
   generatedAt: string;
   storyType?: string;
+  priority?: number;
   subjects?: ContestCommentaryFeedItemSubjects;
 }
 
@@ -34,6 +35,9 @@ function parseFeedItem(value: unknown): ContestCommentaryFeedItem | null {
   };
   if (typeof value.storyType === "string" && value.storyType.trim()) {
     item.storyType = value.storyType;
+  }
+  if (typeof value.priority === "number" && Number.isFinite(value.priority)) {
+    item.priority = value.priority;
   }
   const subjects = isRecord(value.subjects) ? stringList(value.subjects.entryIds) : undefined;
   if (subjects) {

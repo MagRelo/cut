@@ -24,6 +24,7 @@ describe("parseContestCommentaryFeedItems", () => {
       {
         id: "item-1",
         storyType: "score_swing",
+        priority: 100,
         text: "Scheffler moves the board.",
         generatedAt: "2026-04-10T18:00:00.000Z",
         subjects: { entryIds: ["entry-1"] },

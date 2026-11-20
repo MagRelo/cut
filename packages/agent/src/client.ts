@@ -95,6 +95,12 @@ export type CutAgent = {
   lineupUpsert(input: LineupUpsertInput): Promise<LineupResult>;
   join(input: LineupRef): Promise<LineupResult>;
   leave(input: LineupRef): Promise<LineupResult>;
+  field(eventId: string, input?: { view?: "card" | "full" }): Promise<{ candidates: unknown[] }>;
+  entries(): Promise<{ entries: unknown[] }>;
+  contestCompanion(
+    contestId: string,
+    input?: { since?: string; include?: Array<"timeline" | "commentary" | "standings"> },
+  ): Promise<unknown>;
   register(input: {
     email?: string;
     name?: string;
@@ -257,10 +263,26 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
     );
   }
 
-  async function del(path: string, query: Record<string, string> = {}): Promise<unknown> {
+  async function del(
+    path: string,
+    query: Record<string, string> = {},
+    body?: unknown,
+  ): Promise<unknown> {
     const url = new URL(path, origin);
     for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value);
-    return send(await signRequest(url.toString(), { method: "DELETE" }, signer));
+    return send(
+      await signRequest(
+        url.toString(),
+        body === undefined
+          ? { method: "DELETE" }
+          : {
+              method: "DELETE",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify(body),
+            },
+        signer,
+      ),
+    );
   }
 
   async function put(path: string, body: unknown): Promise<unknown> {
@@ -288,12 +310,15 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
     return row as PreparedUserOp;
   }
 
-  async function postAction(body: unknown): Promise<unknown> {
-    const response = await post("/api/bot/actions", body);
+  async function finishPrepared(
+    sendBody: (body: unknown) => Promise<unknown>,
+    body: unknown,
+  ): Promise<unknown> {
+    const response = await sendBody(body);
     const ready = prepared(response);
     if (!ready) return response;
     const userOpSignature = await account.signMessage({ message: { raw: ready.userOpHash } });
-    const second = await post("/api/bot/actions", {
+    const second = await sendBody({
       ...(body as Record<string, unknown>),
       userOp: ready.userOp,
       userOpSignature,
@@ -302,6 +327,10 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
       throw new CutAgentError("Server returned another prepared user operation", 502, second);
     }
     return second;
+  }
+
+  async function postAction(path: string, body: unknown): Promise<unknown> {
+    return finishPrepared((next) => post(path, next, { smartWallet }), body);
   }
 
   function lineupResult(value: unknown): LineupResult {
@@ -394,43 +423,84 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
         smartWallet,
       };
       if (eventId) query.eventId = eventId;
-      const body = await get("/api/bot/contests", query);
+      const body = await get("/api/contests", query);
       if (!body || typeof body !== "object" || !Array.isArray((body as ContestList).contests)) {
         throw new CutAgentError("Unexpected response", 502, body);
       }
       return { contests: (body as ContestList).contests };
     },
-    async lineupUpsert(input) {
-      const body = parse(actionSchema, {
-        chainId,
-        action: "lineupUpsert",
+    async field(eventId, input) {
+      const view = input?.view ?? "full";
+      if (view !== "card" && view !== "full") {
+        throw new CutAgentError("Invalid view", 400, null);
+      }
+      const body = await get(`/api/events/${encodeURIComponent(eventId)}/field`, {
         smartWallet,
-        contestId: input.contestId,
-        lineupId: input.lineupId ?? "",
-        candidates: input.candidates,
-        ...(input.prediction !== undefined ? { prediction: input.prediction } : {}),
+        view,
       });
-      return lineupResult(await postAction(body));
+      if (!body || typeof body !== "object" || !Array.isArray((body as { candidates?: unknown }).candidates)) {
+        throw new CutAgentError("Unexpected response", 502, body);
+      }
+      return { candidates: (body as { candidates: unknown[] }).candidates };
+    },
+    async entries() {
+      const body = await get("/api/auth/entries", { smartWallet });
+      if (!body || typeof body !== "object" || !Array.isArray((body as { entries?: unknown }).entries)) {
+        throw new CutAgentError("Unexpected response", 502, body);
+      }
+      return { entries: (body as { entries: unknown[] }).entries };
+    },
+    async contestCompanion(contestId, input) {
+      if (input?.since !== undefined && Number.isNaN(Date.parse(input.since))) {
+        throw new CutAgentError("Invalid since timestamp", 400, null);
+      }
+      const allowed = new Set(["timeline", "commentary", "standings"]);
+      if (input?.include?.some((section) => !allowed.has(section))) {
+        throw new CutAgentError("Invalid include", 400, null);
+      }
+      const query: Record<string, string> = { smartWallet };
+      if (input?.since) query.since = input.since;
+      if (input?.include?.length) query.include = input.include.join(",");
+      return get(`/api/contests/${encodeURIComponent(contestId)}/companion`, query);
+    },
+    async lineupUpsert(input) {
+      const prediction =
+        input.prediction !== undefined ? { prediction: input.prediction } : {};
+      if (input.lineupId) {
+        const value = await put(`/api/lineups/${encodeURIComponent(input.lineupId)}`, {
+          candidates: input.candidates,
+          ...prediction,
+        });
+        const lineupId = (value as { lineup?: { id?: string } } | null)?.lineup?.id;
+        if (typeof lineupId !== "string") throw new CutAgentError("Unexpected response", 502, value);
+        return { ok: true as const, lineupId };
+      }
+      const contest = await get(`/api/contests/${encodeURIComponent(input.contestId)}`, {
+        smartWallet,
+      });
+      const eventId = (contest as { eventId?: unknown } | null)?.eventId;
+      if (typeof eventId !== "string") throw new CutAgentError("Unexpected response", 502, contest);
+      const value = await post(
+        `/api/lineups/${encodeURIComponent(eventId)}`,
+        { candidates: input.candidates, contestId: input.contestId, ...prediction },
+        { smartWallet },
+      );
+      const lineupId = (value as { lineup?: { id?: string } } | null)?.lineup?.id;
+      if (typeof lineupId !== "string") throw new CutAgentError("Unexpected response", 502, value);
+      return { ok: true, lineupId };
     },
     async join(input) {
-      const body = parse(actionSchema, {
-        chainId,
-        action: "join",
-        smartWallet,
-        contestId: input.contestId,
-        lineupId: input.lineupId,
-      });
-      return lineupResult(await postAction(body));
+      return lineupResult(
+        await postAction(`/api/contests/${encodeURIComponent(input.contestId)}/entries`, {
+          lineupId: input.lineupId,
+        }),
+      );
     },
     async leave(input) {
-      const body = parse(actionSchema, {
-        chainId,
-        action: "leave",
-        smartWallet,
-        contestId: input.contestId,
-        lineupId: input.lineupId,
-      });
-      return lineupResult(await postAction(body));
+      const path = `/api/contests/${encodeURIComponent(input.contestId)}/entries/${encodeURIComponent(input.lineupId)}`;
+      return lineupResult(
+        await finishPrepared((body) => del(path, { smartWallet }, body), {}),
+      );
     },
     async register(input) {
       const body = parse(registerSchema, input);
@@ -487,13 +557,11 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
     },
     async createContest(input) {
       const expiryTimestamp = contestExpiryTimestamp(input.endDate, input.settings.expiryTimestamp);
-      const body = parse(actionSchema, {
-        chainId,
-        action: "createContest",
-        smartWallet,
+      const body = {
         name: input.name,
         eventId: input.eventId,
         endDate: input.endDate,
+        chainId,
         settings: {
           ...input.settings,
           ...(expiryTimestamp !== undefined ? { expiryTimestamp } : {}),
@@ -503,8 +571,8 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
         ...(input.notifyLeagueMembers !== undefined
           ? { notifyLeagueMembers: input.notifyLeagueMembers }
           : {}),
-      });
-      const value = await postAction(body);
+      };
+      const value = await postAction("/api/contests", body);
       if (!value || typeof value !== "object") {
         throw new CutAgentError("Unexpected response", 502, value);
       }
@@ -560,7 +628,7 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
     },
     async yield() {
       const body = parse(actionSchema, { chainId, action: "yield", smartWallet });
-      const value = await postAction(body);
+      const value = await postAction("/api/bot/actions", body);
       if (!value || typeof value !== "object" || (value as { yielded?: unknown }).yielded !== true) {
         throw new CutAgentError("Unexpected response", 502, value);
       }

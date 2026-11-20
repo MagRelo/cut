@@ -6,20 +6,11 @@ import { getCutBotAddress, isCutBotAddress } from "../lib/cutBotKey.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requirePrivySession } from "../middleware/auth.js";
 import { packApproval } from "../services/bot/approvalEnvelope.js";
-import { botContestListDeps, listSignedBotContests } from "../services/bot/listBotContests.js";
-import { executeBotAction } from "../services/bot/executeBotAction.js";
 import { executeYield } from "../services/bot/executeYield.js";
-import {
-  createContestActionDeps,
-  executeCreateContest,
-} from "../services/bot/executeCreateContest.js";
-import { createBotActionDeps } from "../services/bot/botActionRuntime.js";
 import type { SerializedUserOp } from "../services/bot/submitSessionKeyUserOp.js";
 import { verifyBotRequest } from "../services/bot/verifyBotRequest.js";
 
 const botRouter = new Hono();
-const deps = createBotActionDeps();
-const createDeps = createContestActionDeps();
 
 const enableSchema = z.object({
   kind: z.enum(["cut_bot", "external"]),
@@ -33,41 +24,8 @@ const revokeSchema = z.object({
   delegateAddress: z.string().refine((value) => isAddress(value), "Invalid delegate address"),
 });
 
-function selectedCandidates(body: { candidates?: string[] | undefined }): string[] {
-  return body.candidates ?? [];
-}
-
 botRouter.get("/delegate-address", (c) => {
   return c.json({ address: getCutBotAddress() });
-});
-
-const listDeps = botContestListDeps();
-
-botRouter.get("/contests", async (c) => {
-  const chainId = Number(c.req.query("chainId"));
-  const smartWallet = c.req.query("smartWallet") ?? "";
-  const eventId = c.req.query("eventId")?.trim();
-  if (chainId !== 8453 && chainId !== 84532) {
-    return c.json({ error: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)" }, 400);
-  }
-  const verified = await verifyBotRequest(c.req.raw.clone());
-  if (!verified.ok) return c.json({ error: verified.error }, verified.status);
-  if (verified.chainId !== chainId) {
-    return c.json({ error: "Signature chain does not match the request" }, 400);
-  }
-  const result = await listSignedBotContests(
-    {
-      chainId,
-      smartWallet,
-      signer: verified.signer,
-      ...(eventId ? { eventId } : {}),
-    },
-    listDeps,
-  );
-  if (!result.ok) {
-    return c.json({ error: result.error }, result.status);
-  }
-  return c.json({ contests: result.contests });
 });
 
 botRouter.get("/delegates", requireAuth, async (c) => {
@@ -189,68 +147,7 @@ botRouter.post("/actions", async (c) => {
     }
     return c.json({ ok: true, yielded: true });
   }
-  if (body.action === "createContest") {
-    const result = await executeCreateContest(
-      {
-        chainId: body.chainId,
-        smartWallet: body.smartWallet,
-        signer: verified.signer,
-        name: body.name,
-        ...(body.description !== undefined ? { description: body.description } : {}),
-        eventId: body.eventId,
-        ...(body.userGroupId ? { userGroupId: body.userGroupId } : {}),
-        endTime: new Date(body.endDate),
-        settings: (body.settings ?? {}) as Record<string, unknown>,
-        ...(body.notifyLeagueMembers !== undefined
-          ? { notifyLeagueMembers: body.notifyLeagueMembers }
-          : {}),
-        ...(body.userOpSignature ? { userOpSignature: body.userOpSignature as Hex } : {}),
-        ...(body.userOp ? { userOp: body.userOp as SerializedUserOp } : {}),
-      },
-      createDeps,
-    );
-    if (!result.ok) {
-      const status = result.status as 400 | 401 | 403 | 404 | 409 | 502 | 503;
-      return c.json({ error: result.error }, status);
-    }
-    if (result.preparedUserOp) {
-      return c.json({
-        preparedUserOp: true,
-        userOpHash: result.userOpHash,
-        userOp: result.userOp,
-      });
-    }
-    return c.json({ ok: true, contestId: result.contestId, address: result.address });
-  }
-  const candidates = selectedCandidates(body);
-  const result = await executeBotAction(
-    {
-      chainId: body.chainId,
-      action: body.action,
-      smartWallet: body.smartWallet,
-      contestId: body.contestId,
-      lineupId: body.lineupId,
-      picks: candidates,
-      ...(body.prediction !== undefined ? { prediction: body.prediction } : {}),
-      signer: verified.signer,
-      ...(body.userOpSignature ? { userOpSignature: body.userOpSignature as Hex } : {}),
-      ...(body.userOp ? { userOp: body.userOp as SerializedUserOp } : {}),
-    },
-    deps,
-  );
-  if (!result.ok) {
-    const status = result.status as 400 | 401 | 403 | 404 | 409 | 502 | 503;
-    return c.json({ error: result.error }, status);
-  }
-  if (result.preparedUserOp) {
-    return c.json({
-      preparedUserOp: true,
-      lineupId: result.lineupId,
-      userOpHash: result.userOpHash,
-      userOp: result.userOp,
-    });
-  }
-  return c.json({ ok: true, lineupId: result.lineupId });
+  return c.json({ error: "Use the contest and lineup routes" }, 400);
 });
 
 export default botRouter;

@@ -70,7 +70,7 @@ Handlers inject all database and external API access so the package stays testab
 
 | Call site | Usage |
 |-----------|--------|
-| `GET /sports/:sportId/events/:eventId/candidates` | `getCandidatePool` |
+| `GET /events/:eventId/field` | `getCandidatePool` |
 | `POST /api/lineups/:eventId` | `validateRoster` |
 | `runSportEventPipeline` | sync hooks + live scores + optional `afterLiveScoreSync` |
 | `updateContestLineupsForEvent` | Loads per-pick totals, applies platform popularity when `ScoringRules.popularity.weight ≠ 0`, writes `Contest.pickPopularity` + lineup `baseScore` / `popularityBonus` / `score`; then `rankEntries` |

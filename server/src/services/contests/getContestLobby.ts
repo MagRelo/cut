@@ -236,7 +236,7 @@ function formatLobbyPicks(lineup: ContestLobbyRow["contestLineups"][number]["lin
   };
 }
 
-function formatLobbyRow(row: ContestLobbyRow): ContestLobbyPayload {
+function formatLobbyRow(row: ContestLobbyRow, viewerUserId?: string | null): ContestLobbyPayload {
   const maskPlayers = row.status === "OPEN";
   const contestLineups = row.contestLineups.map((entry) => ({
     id: entry.id,
@@ -262,7 +262,9 @@ function formatLobbyRow(row: ContestLobbyRow): ContestLobbyPayload {
       ? {
           id: entry.lineup.id,
           name: entry.lineup.name,
-          prediction: entry.lineup.prediction,
+          ...(viewerUserId && entry.userId === viewerUserId
+            ? { prediction: entry.lineup.prediction }
+            : {}),
         }
       : formatLobbyPicks(entry.lineup),
   }));
@@ -366,7 +368,7 @@ export async function loadContestLobby(
   });
 
   if (!row) return null;
-  return overlayViewerReferralStakes(formatLobbyRow(row), privyUserId);
+  return overlayViewerReferralStakes(formatLobbyRow(row, userId), privyUserId);
 }
 
 async function overlayViewerReferralStakes(

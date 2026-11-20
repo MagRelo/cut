@@ -18,7 +18,6 @@ import {
   resolveEventStartDateString,
 } from "../../utils/contestEventSummary.js";
 import { humanFromWei, roundMoney } from "../../utils/paymentAmount.js";
-import { getEventCandidates } from "../events/getEventCandidates.js";
 import { getReferralSummary, publicReferralName } from "../referral/getReferralSummary.js";
 import { readWalletUsdc } from "./balance.js";
 import {
@@ -30,6 +29,12 @@ import {
   type WatchPick,
 } from "./cursor.js";
 import { classifyScout, openAffordableCount, type ScoutEvent, type ScoutInput } from "./fit.js";
+import {
+  COMPANION_SECTIONS,
+  listContestCards,
+  loadContestCompanion,
+  loadEventField,
+} from "../contests/contestSections.js";
 
 const ENTRY_STATUSES = ["OPEN", "ACTIVE", "LOCKED", "SETTLED", "CANCELLED", "CLOSED"] as const;
 
@@ -238,30 +243,22 @@ export async function saveAgentPreferences(
 
 export async function getScoutBrief(actor: AgentActor, balanceUsdc?: number | null) {
   const balance = balanceUsdc === undefined ? await readWalletUsdc(actor.chainId, actor.address) : balanceUsdc;
-  const [preferences, visibility] = await Promise.all([
-    prisma.user.findUnique({ where: { id: actor.userId }, select: { settings: true } }),
-    contestVisibilityWhere(actor.userId, { chainId: actor.chainId }),
-  ]);
+  const preferences = await prisma.user.findUnique({
+    where: { id: actor.userId },
+    select: { settings: true },
+  });
   const prefs = readAgentPreferences(preferences?.settings);
   const now = new Date();
-  const contests = await prisma.contest.findMany({
-    where: { ...visibility, status: "OPEN", endTime: { gt: now } },
-    select: {
-      id: true,
-      name: true,
-      chainId: true,
-      status: true,
-      userGroupId: true,
-      endTime: true,
-      settings: true,
-      userGroup: { select: { name: true } },
-      event: { select: { id: true, sportId: true, externalId: true, metadata: true } },
-    },
-    orderBy: { endTime: "asc" },
-  });
-  const eventIds = [...new Set(contests.map((contest) => contest.event.id))];
-  const sportIds = [...new Set(contests.map((contest) => contest.event.sportId))];
-  const [fieldCounts, sports, entered] = await Promise.all([
+  const cards = (
+    await listContestCards({
+      userId: actor.userId,
+      chainId: actor.chainId,
+      status: "OPEN",
+    })
+  ).filter((card) => Date.parse(card.endTime) > now.getTime());
+  const eventIds = [...new Set(cards.map((card) => card.eventId))];
+  const sportIds = [...new Set(cards.map((card) => card.event.sportId))];
+  const [fieldCounts, sports] = await Promise.all([
     eventIds.length === 0
       ? Promise.resolve([])
       : prisma.eventParticipant.groupBy({
@@ -275,31 +272,26 @@ export async function getScoutBrief(actor: AgentActor, balanceUsdc?: number | nu
           where: { id: { in: sportIds } },
           select: { id: true, rosterRules: true, predictionRules: true },
         }),
-    prisma.contestLineup.findMany({
-      where: { userId: actor.userId, contestId: { in: contests.map((contest) => contest.id) } },
-      select: { contestId: true },
-    }),
   ]);
   const fieldByEvent = new Map(fieldCounts.map((row) => [row.eventId, row._count._all]));
   const sportById = new Map(sports.map((sport) => [sport.id, sport]));
-  const enteredIds = new Set(entered.map((row) => row.contestId));
-  const inputs: ScoutInput[] = contests.map((contest) => {
-    const sport = sportById.get(contest.event.sportId);
+  const inputs: ScoutInput[] = cards.map((card) => {
+    const sport = sportById.get(card.event.sportId);
     return {
-      contestId: contest.id,
-      name: contest.name,
-      sportId: contest.event.sportId,
-      chainId: contest.chainId,
-      status: contest.status,
-      userGroupId: contest.userGroupId,
-      userGroupName: contest.userGroup?.name ?? null,
-      primaryDeposit: depositOf(contest.settings),
-      endTime: contest.endTime.toISOString(),
+      contestId: card.id,
+      name: card.name,
+      sportId: card.event.sportId,
+      chainId: card.chainId,
+      status: card.status,
+      userGroupId: card.userGroupId,
+      userGroupName: card.userGroupName,
+      primaryDeposit: card.primaryDeposit,
+      endTime: card.endTime,
       rosterSize: rosterSize(sport?.rosterRules),
       predictionRange: predictionRange(sport?.predictionRules),
-      fieldCount: fieldByEvent.get(contest.event.id) ?? 0,
-      alreadyEntered: enteredIds.has(contest.id),
-      event: eventOf(contest.event),
+      fieldCount: fieldByEvent.get(card.eventId) ?? 0,
+      alreadyEntered: card.entered,
+      event: eventOf(card.event),
     };
   });
   const classified = classifyScout(inputs, {
@@ -334,7 +326,7 @@ export async function getPicksBrief(actor: AgentActor, contestId: string) {
       where: { id: contest.event.sportId },
       select: { rosterRules: true, predictionRules: true },
     }),
-    getEventCandidates(contest.event.sportId, contest.eventId),
+    loadEventField(contest.eventId, "full"),
     prisma.lineup.findMany({
       where: { userId: actor.userId, contestId: contest.id },
       orderBy: { updatedAt: "desc" },
@@ -486,10 +478,28 @@ export async function getCompanionBrief(actor: AgentActor, previous: AgentCursor
     getReferralSummary(actor.userId),
     settledLeagueContestIds(actor.userId, actor.chainId),
   ]);
-  return diffCompanion(previous, rows, {
+  const diff = diffCompanion(previous, rows, {
     referralCount: summary.grandTotal,
     seenSettled,
   });
+  return attachCompanionDelta(diff, previous?.polledAt ?? null);
+}
+
+async function attachCompanionDelta<T extends { updates: { contestId: string }[] }>(
+  diff: T,
+  polledAt: string | null,
+): Promise<T> {
+  if (diff.updates.length === 0) return diff;
+  const since = polledAt ? new Date(polledAt) : null;
+  const updates = [];
+  for (const update of diff.updates) {
+    const companion = await loadContestCompanion(update.contestId, {
+      since: since && !Number.isNaN(since.getTime()) ? since : null,
+      sections: new Set(COMPANION_SECTIONS),
+    });
+    updates.push({ ...update, companion });
+  }
+  return { ...diff, updates };
 }
 
 export async function getReferralBrief(actor: AgentActor) {

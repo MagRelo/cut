@@ -53,6 +53,7 @@ export type AgentCursorState = {
   contests: Record<string, CursorContest>;
   referralCount: number;
   seenSettled: string[];
+  polledAt?: string;
 };
 
 export type CompanionSignal =
@@ -148,6 +149,9 @@ export function decodeCursor(raw: string): AgentCursorState {
     if (typeof json.referralCount !== "number" || !Array.isArray(json.seenSettled)) {
       throw new InvalidCursorError();
     }
+    if (json.polledAt !== undefined && typeof json.polledAt !== "string") {
+      throw new InvalidCursorError();
+    }
     if (!json.seenSettled.every((id) => typeof id === "string")) throw new InvalidCursorError();
     const contests: Record<string, CursorContest> = {};
     for (const [id, contest] of Object.entries(json.contests)) {
@@ -160,6 +164,7 @@ export function decodeCursor(raw: string): AgentCursorState {
       contests,
       referralCount: json.referralCount,
       seenSettled: json.seenSettled,
+      ...(typeof json.polledAt === "string" ? { polledAt: json.polledAt } : {}),
     };
   } catch (error) {
     if (error instanceof InvalidCursorError) throw error;
@@ -306,6 +311,7 @@ export function diffCompanion(
       contests,
       referralCount: meta.referralCount,
       seenSettled: [...meta.seenSettled].sort(),
+      polledAt: new Date().toISOString(),
     }),
     unchanged,
     updates,

@@ -31,6 +31,7 @@ declare module "hono" {
       userType: string;
     };
     privyUserId?: string;
+    signer?: `0x${string}`;
   }
 }
 
@@ -119,6 +120,7 @@ async function authenticateSignedRequest(c: Context): Promise<void> {
     throw new RequestCredentialError(resolved.status, resolved.error);
   }
   c.set("user", resolved.user);
+  c.set("signer", verified.signer);
 }
 
 function sessionUser(c: Context): CutAuthUser | undefined {

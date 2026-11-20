@@ -196,18 +196,24 @@ describe("getContestLobby", () => {
     expect(where).not.toHaveProperty("address");
   });
 
-  it("masks OPEN picks but keeps lineup prediction", async () => {
+  it("masks OPEN picks and other entries' tie-breakers", async () => {
     findFirst.mockResolvedValue(contestRow());
 
-    const lobby = await loadContestLobby(ADDRESS, null);
-    const lineup = lobby?.contestLineups as Array<{ lineup: Record<string, unknown> }>;
+    const anonymous = await loadContestLobby(ADDRESS, null);
+    const hidden = (anonymous?.contestLineups as Array<{ lineup: Record<string, unknown> }>)[0]
+      ?.lineup;
+    expect(hidden).toEqual({ id: "lineup-1", name: "Ada's squad" });
+    expect(hidden).not.toHaveProperty("prediction");
+    expect(hidden).not.toHaveProperty("candidates");
 
-    expect(lineup[0]?.lineup).toEqual({
+    invalidateContestLobbyByAddress(ADDRESS);
+    const own = await loadContestLobby(ADDRESS, null, "user-1");
+    const visible = (own?.contestLineups as Array<{ lineup: Record<string, unknown> }>)[0]?.lineup;
+    expect(visible).toEqual({
       id: "lineup-1",
       name: "Ada's squad",
       prediction: { value: 272 },
     });
-    expect(lineup[0]?.lineup).not.toHaveProperty("candidates");
   });
 
   it("keeps summarySections and drops fieldSnapshot from event metadata", async () => {

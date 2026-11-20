@@ -12,7 +12,8 @@ export function contestDirectoryQueryKey(
 
 export function contestDirectoryRequestPath(scope: ContestDirectoryScope): string {
   const params = new URLSearchParams({ scope });
-  return `/contests/directory?${params.toString()}`;
+  params.set("group", "event");
+  return `/contests?${params.toString()}`;
 }
 
 export async function fetchContestDirectory(

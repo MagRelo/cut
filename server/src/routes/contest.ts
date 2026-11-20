@@ -1,9 +1,9 @@
 import { Context, Hono, type Next } from "hono";
+import { type Address, type Hex } from "viem";
 import type { Prisma } from "@prisma/client";
 import { predictionNumericValue } from "../utils/sportPrediction.js";
 import { prisma } from "../lib/prisma.js";
 import {
-  contestQuerySchema,
   contestDirectoryQuerySchema,
   createContestSchema,
   joinContestSchema,
@@ -12,15 +12,12 @@ import {
 import {
   requireAuth,
   optionalAuth,
-  optionalPrivyJwt,
   getOptionalUserId,
   getOptionalPrivyUserId,
   requireWalletChain,
 } from "../middleware/auth.js";
 import { isStaffUserType } from "../middleware/admin.js";
 import { requireContestPrimaryActionsUnlocked } from "../middleware/contestStatus.js";
-import { formatContestResponse } from "../utils/formatContestResponse.js";
-import { settledPotForContestRow } from "../utils/settledPot.js";
 import {
   hasMinimumPlayers,
   isDuplicateInContest,
@@ -30,6 +27,14 @@ import { canAccessLeagueContest, isUserGroupAdmin } from "../utils/userGroup.js"
 import { getContestTimelineData } from "../utils/contestTimeline.js";
 import { scheduleContestAnnouncementEmails } from "../lib/email/send/contestAnnouncement.js";
 import { recordPaidContest } from "../services/contest/recordPaidContest.js";
+import { createBotActionDeps } from "../services/bot/botActionRuntime.js";
+import { executeBotAction, type ExecuteBotActionResult } from "../services/bot/executeBotAction.js";
+import {
+  createContestActionDeps,
+  executeCreateContest,
+  type CreateContestActionResult,
+} from "../services/bot/executeCreateContest.js";
+import type { SerializedUserOp } from "../services/bot/submitSessionKeyUserOp.js";
 import { resolveContestDbId } from "../utils/contestRouteParam.js";
 import { hasOnchainEscrow } from "../utils/hasOnchainEscrow.js";
 import { cloneLineup } from "../services/lineups/cloneLineup.js";
@@ -39,11 +44,6 @@ import {
   verifySecondaryBuyReceipt,
 } from "../services/contest/verifySecondaryBuyReceipt.js";
 import { generateContestEntryId } from "../utils/contestEntryId.js";
-import {
-  contestListSelect,
-  contestVisibilityWhere,
-  listedContestStatusWhere,
-} from "../utils/contestListQuery.js";
 import {
   canDeleteLeagueContest,
   primaryDepositFromSettings,
@@ -56,6 +56,15 @@ import {
   getContestLobby,
   invalidateContestLobby,
 } from "../services/contests/getContestLobby.js";
+import {
+  listContestCards,
+  loadContestBoard,
+  loadContestCommentary,
+  loadContestCompanion,
+  loadContestIdentity,
+  parseCompanionInclude,
+  parseSince,
+} from "../services/contests/contestSections.js";
 
 async function requireWalletChainIfEscrow(c: Context, next: Next): Promise<Response | void> {
   const contestId = c.req.param("id");
@@ -70,6 +79,37 @@ async function requireWalletChainIfEscrow(c: Context, next: Next): Promise<Respo
 }
 
 const contestRouter = new Hono();
+const botActionDeps = createBotActionDeps();
+const createContestDeps = createContestActionDeps();
+
+function requestSigner(c: Context): Address | undefined {
+  try {
+    return c.get("signer");
+  } catch {
+    return undefined;
+  }
+}
+
+function actionResponse(
+  c: Context,
+  result: CreateContestActionResult | ExecuteBotActionResult,
+) {
+  if (!result.ok) {
+    return c.json({ error: result.error }, result.status as 400);
+  }
+  if (result.preparedUserOp) {
+    return c.json({
+      preparedUserOp: true,
+      ...("lineupId" in result ? { lineupId: result.lineupId } : {}),
+      userOpHash: result.userOpHash,
+      userOp: result.userOp,
+    });
+  }
+  if ("contestId" in result) {
+    return c.json({ ok: true, contestId: result.contestId, address: result.address });
+  }
+  return c.json({ ok: true, lineupId: result.lineupId });
+}
 
 async function leagueContestAccessDenied(
   c: Context,
@@ -100,96 +140,54 @@ async function contestLobbyResponse(
   return c.json(payload, options?.status ?? 200);
 }
 
-contestRouter.get("/directory", optionalPrivyJwt, async (c) => {
-  try {
-    const scopeParam = c.req.query("scope");
-
-    const validation = contestDirectoryQuerySchema.safeParse({
-      scope: scopeParam || "all",
-    });
-
-    if (!validation.success) {
-      return c.json(
-        {
-          error: "Invalid query parameters",
-          details: validation.error.issues,
-        },
-        400,
-      );
-    }
-
-    const { scope } = validation.data;
-    const privyUserId = getOptionalPrivyUserId(c);
-    const directory = await getContestDirectory(privyUserId, scope, getOptionalUserId(c));
-
-    c.header("Cache-Control", "private, max-age=15, stale-while-revalidate=45");
-
-    return c.json(directory);
-  } catch (error) {
-    console.error("Error fetching contest directory:", error);
-    return c.json({ error: "Failed to fetch contest directory" }, 500);
-  }
-});
-
 contestRouter.get("/", optionalAuth, async (c) => {
   try {
-    const eventId = c.req.query("eventId");
-    const chainId = c.req.query("chainId");
-    const userGroupId = c.req.query("userGroupId");
-
-    const validation = contestQuerySchema.safeParse({
-      eventId,
-      chainId: chainId ? parseInt(chainId) : undefined,
-      userGroupId: userGroupId || undefined,
-    });
-
-    if (!validation.success) {
-      return c.json(
-        {
-          error: "Invalid query parameters",
-          details: validation.error.issues,
-        },
-        400,
-      );
-    }
-
-    const {
-      eventId: validEventId,
-      chainId: validChainId,
-      userGroupId: validUserGroupId,
-    } = validation.data;
-
-    const userId = getOptionalUserId(c);
-
-    if (validUserGroupId !== undefined) {
-      if (!userId || !(await canAccessLeagueContest(userId, validUserGroupId))) {
-        return c.json({ error: "Contest not found" }, 404);
+    if (c.req.query("group") === "event") {
+      const scopeParam = c.req.query("scope");
+      const validation = contestDirectoryQuerySchema.safeParse({
+        scope: scopeParam || "all",
+      });
+      if (!validation.success) {
+        return c.json({ error: "Invalid query parameters", details: validation.error.issues }, 400);
       }
+      const directory = await getContestDirectory(
+        getOptionalPrivyUserId(c),
+        validation.data.scope,
+        getOptionalUserId(c),
+      );
+      c.header("Cache-Control", "private, max-age=15, stale-while-revalidate=45");
+      return c.json(directory);
     }
 
-    const visibility = await contestVisibilityWhere(userId, {
-      ...(validChainId !== undefined ? { chainId: validChainId } : {}),
-      ...(validUserGroupId !== undefined ? { userGroupId: validUserGroupId } : {}),
+    const eventId = c.req.query("eventId")?.trim() || undefined;
+    const leagueId = c.req.query("leagueId")?.trim() || c.req.query("userGroupId")?.trim() || undefined;
+    const chainRaw = c.req.query("chainId");
+    const chainId = chainRaw ? Number(chainRaw) : undefined;
+    if (chainRaw && chainId !== 8453 && chainId !== 84532) {
+      return c.json({ error: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)" }, 400);
+    }
+    const status = c.req.query("status")?.trim() || undefined;
+    const scopeParam = c.req.query("scope");
+    const scope =
+      scopeParam === "live" || scopeParam === "past" || scopeParam === "all" ? scopeParam : undefined;
+    if (scopeParam && !scope) return c.json({ error: "Invalid scope" }, 400);
+    const enteredRaw = c.req.query("entered");
+    const entered = enteredRaw === "1" || enteredRaw === "true";
+    const userId = getOptionalUserId(c);
+    if (leagueId && (!userId || !(await canAccessLeagueContest(userId, leagueId)))) {
+      return c.json({ error: "Contest not found" }, 404);
+    }
+    const contests = await listContestCards({
+      userId,
+      privyUserId: getOptionalPrivyUserId(c),
+      ...(eventId ? { eventId } : {}),
+      ...(leagueId ? { leagueId } : {}),
+      ...(chainId !== undefined ? { chainId } : {}),
+      ...(status ? { status } : {}),
+      ...(scope ? { scope } : {}),
+      ...(entered ? { entered } : {}),
     });
-
-    const contests = await prisma.contest.findMany({
-      where: {
-        eventId: validEventId,
-        ...listedContestStatusWhere,
-        ...visibility,
-      },
-      select: contestListSelect,
-    });
-
-    const formattedContests = contests.map((contest) => {
-      const { onchainPayments: _onchainPayments, ...rest } = contest;
-      return {
-        ...formatContestResponse(rest, undefined, validEventId),
-        settledPot: settledPotForContestRow(contest),
-      };
-    });
-
-    return c.json(formattedContests);
+    return c.json({ contests });
   } catch (error) {
     console.error("Error fetching contests:", error);
     return c.json({ error: "Failed to fetch contests" }, 500);
@@ -340,19 +338,79 @@ contestRouter.get("/:id/timeline", optionalAuth, async (c) => {
   }
 });
 
-/** Contest lobby payload — contest detail (no timeline); `:id` may be DB id or contract address. */
-contestRouter.get("/:id/lobby", optionalPrivyJwt, async (c) => {
+async function contestSectionAccess(c: Context, routeParam: string) {
+  const contestId = await resolveContestDbId(routeParam);
+  if (!contestId) return { response: c.json({ error: "Contest not found" }, 404) };
+  const contest = await prisma.contest.findUnique({
+    where: { id: contestId },
+    select: { id: true, userGroupId: true },
+  });
+  if (!contest) return { response: c.json({ error: "Contest not found" }, 404) };
+  const accessDenied = await leagueContestAccessDenied(c, contest.userGroupId);
+  if (accessDenied) return { response: accessDenied };
+  return { contestId };
+}
+
+contestRouter.get("/:id/board", optionalAuth, async (c) => {
   try {
-    return await contestLobbyResponse(c, c.req.param("id"), { cacheControl: true });
+    const access = await contestSectionAccess(c, c.req.param("id"));
+    if ("response" in access && access.response) return access.response;
+    const board = await loadContestBoard(
+      c.req.param("id"),
+      getOptionalPrivyUserId(c),
+      getOptionalUserId(c),
+    );
+    if (!board) return c.json({ error: "Contest not found" }, 404);
+    return c.json(board);
   } catch (error) {
-    console.error("Error fetching contest lobby:", error);
-    return c.json({ error: "Failed to fetch contest lobby" }, 500);
+    console.error("Error fetching contest board:", error);
+    return c.json({ error: "Failed to fetch contest board" }, 500);
   }
 });
 
-contestRouter.get("/:id", optionalPrivyJwt, async (c) => {
+contestRouter.get("/:id/commentary", optionalAuth, async (c) => {
   try {
-    return await contestLobbyResponse(c, c.req.param("id"));
+    const access = await contestSectionAccess(c, c.req.param("id"));
+    if ("response" in access && access.response) return access.response;
+    const since = parseSince(c.req.query("since"));
+    if (!since.ok) return c.json({ error: since.error }, 400);
+    const commentary = await loadContestCommentary(access.contestId, since.since);
+    if (!commentary) return c.json({ error: "Contest not found" }, 404);
+    return c.json(commentary);
+  } catch (error) {
+    console.error("Error fetching contest commentary:", error);
+    return c.json({ error: "Failed to fetch contest commentary" }, 500);
+  }
+});
+
+contestRouter.get("/:id/companion", optionalAuth, async (c) => {
+  try {
+    const access = await contestSectionAccess(c, c.req.param("id"));
+    if ("response" in access && access.response) return access.response;
+    const since = parseSince(c.req.query("since"));
+    if (!since.ok) return c.json({ error: since.error }, 400);
+    const include = parseCompanionInclude(c.req.query("include"));
+    if (!include.ok) return c.json({ error: include.error }, 400);
+    const companion = await loadContestCompanion(access.contestId, {
+      since: since.since,
+      sections: include.sections,
+    });
+    if (!companion) return c.json({ error: "Contest not found" }, 404);
+    return c.json(companion);
+  } catch (error) {
+    console.error("Error fetching contest companion:", error);
+    return c.json({ error: "Failed to fetch contest companion" }, 500);
+  }
+});
+
+contestRouter.get("/:id", optionalAuth, async (c) => {
+  try {
+    const identity = await loadContestIdentity(c.req.param("id"), {
+      privyUserId: getOptionalPrivyUserId(c),
+      userId: getOptionalUserId(c),
+    });
+    if (!identity) return c.json({ error: "Contest not found" }, 404);
+    return c.json(identity);
   } catch (error) {
     console.error("Error fetching contest:", error);
     return c.json({ error: "Failed to fetch contest" }, 500);
@@ -441,6 +499,28 @@ contestRouter.post("/", requireAuth, async (c) => {
       return c.json(contest, 201);
     }
 
+    const signer = requestSigner(c);
+    if (!transactionHash && !address && signer) {
+      const result = await executeCreateContest(
+        {
+          chainId,
+          smartWallet: user.address,
+          signer,
+          name,
+          ...(description !== undefined ? { description } : {}),
+          eventId,
+          ...(userGroupId ? { userGroupId } : {}),
+          endTime,
+          settings: (settings ?? {}) as Record<string, unknown>,
+          ...(notifyLeagueMembers !== undefined ? { notifyLeagueMembers } : {}),
+          ...(body.userOpSignature ? { userOpSignature: body.userOpSignature as Hex } : {}),
+          ...(body.userOp ? { userOp: body.userOp as SerializedUserOp } : {}),
+        },
+        createContestDeps,
+      );
+      return actionResponse(c, result);
+    }
+
     if (!transactionHash || !address) {
       return c.json({ error: "transactionHash and address are required for paid contests" }, 400);
     }
@@ -468,12 +548,7 @@ contestRouter.post("/", requireAuth, async (c) => {
   }
 });
 
-contestRouter.post(
-  "/:id/lineups",
-  requireContestPrimaryActionsUnlocked,
-  requireAuth,
-  requireWalletChainIfEscrow,
-  async (c) => {
+async function joinContestEntry(c: Context) {
     try {
       const body = await c.req.json();
       const validation = joinContestSchema.safeParse(body);
@@ -483,6 +558,26 @@ contestRouter.post(
       const { lineupId } = validation.data;
       const user = c.get("user");
       const contestId = c.req.param("id");
+      const signer = requestSigner(c);
+      const userOp = (body as { userOp?: SerializedUserOp }).userOp;
+      const userOpSignature = (body as { userOpSignature?: Hex }).userOpSignature;
+      if (signer || userOp) {
+        const result = await executeBotAction(
+          {
+            chainId: user.chainId,
+            action: "join",
+            smartWallet: user.address,
+            contestId,
+            lineupId,
+            picks: [],
+            signer: signer ?? (user.address as Address),
+            ...(userOpSignature ? { userOpSignature } : {}),
+            ...(userOp ? { userOp } : {}),
+          },
+          botActionDeps,
+        );
+        return actionResponse(c, result);
+      }
 
       const contestCheck = await prisma.contest.findUnique({
         where: { id: contestId },
@@ -633,7 +728,21 @@ contestRouter.post(
       console.error("Error adding lineup to contest:", error);
       return c.json({ error: "Failed to add lineup to contest" }, 500);
     }
-  },
+}
+
+contestRouter.post(
+  "/:id/lineups",
+  requireContestPrimaryActionsUnlocked,
+  requireAuth,
+  requireWalletChainIfEscrow,
+  joinContestEntry,
+);
+contestRouter.post(
+  "/:id/entries",
+  requireContestPrimaryActionsUnlocked,
+  requireAuth,
+  requireWalletChainIfEscrow,
+  joinContestEntry,
 );
 
 contestRouter.delete("/:id", requireAuth, async (c) => {
@@ -711,15 +820,37 @@ contestRouter.delete("/:id", requireAuth, async (c) => {
   }
 });
 
-contestRouter.delete(
-  "/:id/lineups/:lineupId",
-  requireContestPrimaryActionsUnlocked,
-  requireAuth,
-  async (c) => {
+async function leaveContestEntry(c: Context) {
     try {
       const user = c.get("user");
       const contestId = c.req.param("id");
-      const contestLineupId = c.req.param("lineupId");
+      const contestLineupId = c.req.param("lineupId") || c.req.param("entryId");
+      const signer = requestSigner(c);
+      const raw = (await c.req.json().catch(() => null)) as {
+        userOp?: SerializedUserOp;
+        userOpSignature?: Hex;
+      } | null;
+      if (signer || raw?.userOp) {
+        const linked = await prisma.contestLineup.findFirst({
+          where: { contestId, OR: [{ id: contestLineupId }, { lineupId: contestLineupId }] },
+          select: { lineupId: true },
+        });
+        const result = await executeBotAction(
+          {
+            chainId: user.chainId,
+            action: "leave",
+            smartWallet: user.address,
+            contestId,
+            lineupId: linked?.lineupId ?? contestLineupId,
+            picks: [],
+            signer: signer ?? (user.address as Address),
+            ...(raw?.userOpSignature ? { userOpSignature: raw.userOpSignature } : {}),
+            ...(raw?.userOp ? { userOp: raw.userOp } : {}),
+          },
+          botActionDeps,
+        );
+        return actionResponse(c, result);
+      }
 
       const lineup = await prisma.contestLineup.findFirst({
         where: {
@@ -764,7 +895,19 @@ contestRouter.delete(
       console.error("Error removing lineup from contest:", error);
       return c.json({ error: "Failed to remove lineup from contest" }, 500);
     }
-  },
+}
+
+contestRouter.delete(
+  "/:id/lineups/:lineupId",
+  requireContestPrimaryActionsUnlocked,
+  requireAuth,
+  leaveContestEntry,
+);
+contestRouter.delete(
+  "/:id/entries/:entryId",
+  requireContestPrimaryActionsUnlocked,
+  requireAuth,
+  leaveContestEntry,
 );
 
 export default contestRouter;

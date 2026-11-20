@@ -8,7 +8,14 @@ import { ErrorMessage } from "../components/common/ErrorMessage";
 import { ContestLobbyView } from "../components/contest/lobby/ContestLobbyView";
 import { ContestLobbyLoadingShell } from "../components/contest/lobby/ContestLobbyLoadingShell";
 import { ContestListConnectHint } from "../components/contest/ContestList";
-import { useContestQuery } from "../hooks/useContestQuery";
+import {
+  isContestSectionClock,
+  useContestCommentaryQuery,
+  useContestLiveClock,
+  useContestQuery,
+} from "../hooks/useContestQuery";
+import { queryKeys } from "../utils/queryKeys";
+import { normalizeContestAddress } from "../utils/contestRoutes";
 import { useContestTimelineQuery } from "../hooks/useContestTimelineQuery";
 import { useContestLobbyState } from "../hooks/useContestLobbyState";
 import { isApiError } from "../utils/apiError";
@@ -64,24 +71,41 @@ export const ContestLobby: React.FC = () => {
     isPlaceholderData,
     error: queryError,
   } = useContestQuery(contestAddress);
+  const { data: commentary } = useContestCommentaryQuery(contestAddress, Boolean(contestAddress));
+  const contestForView = useMemo(() => {
+    if (!contest) return contest;
+    if (!commentary) return contest;
+    return {
+      ...contest,
+      commentary: commentary.commentary,
+      commentaryGeneratedAt: commentary.commentaryGeneratedAt,
+      commentaryFeed: { items: commentary.commentaryFeed },
+    };
+  }, [contest, commentary]);
+  const routeKey = contestAddress ? normalizeContestAddress(contestAddress) : "";
+  useContestLiveClock(isContestSectionClock(contestForView), [
+    queryKeys.contests.byLobbyRoute(routeKey),
+    queryKeys.contests.timeline(routeKey),
+    queryKeys.contests.commentary(routeKey),
+  ]);
   const isContestDataPending = isFetching && isPlaceholderData;
-  const { viewModel, contestStateOnChain } = useContestLobbyState(contest, {
+  const { viewModel, contestStateOnChain } = useContestLobbyState(contestForView, {
     isContestDataPending,
   });
   const {
     data: timelineData,
     isLoading: isTimelineLoading,
     isFetching: isTimelineFetching,
-  } = useContestTimelineQuery(contestAddress, contest, contestStateOnChain);
+  } = useContestTimelineQuery(contestAddress, contestForView, contestStateOnChain);
 
   const eventShell = useMemo((): CompetitionEventShell | null => {
-    if (contest?.event?.sportId) {
+    if (contestForView?.event?.sportId) {
       return {
-        id: contest.event.id,
-        sportId: contest.event.sportId,
-        externalId: contest.event.externalId,
-        isActive: contest.event.isActive,
-        metadata: contest.event.metadata,
+        id: contestForView.event.id,
+        sportId: contestForView.event.sportId,
+        externalId: contestForView.event.externalId,
+        isActive: contestForView.event.isActive,
+        metadata: contestForView.event.metadata,
       };
     }
 
@@ -94,7 +118,7 @@ export const ContestLobby: React.FC = () => {
     }
 
     return null;
-  }, [contest, location.state, contestAddress, queryClient]);
+  }, [contestForView, location.state, contestAddress, queryClient]);
 
   const isTimelinePending = timelineData === undefined && (isTimelineLoading || isTimelineFetching);
 
@@ -116,7 +140,7 @@ export const ContestLobby: React.FC = () => {
     );
   }
 
-  if (!contest || !viewModel) {
+  if (!contestForView || !viewModel) {
     if (eventShell && isContestDataPending) {
       return <ContestLobbyLoadingShell eventShell={eventShell} />;
     }
@@ -124,7 +148,7 @@ export const ContestLobby: React.FC = () => {
     return <ContestNotFound isAuthenticated={Boolean(user)} />;
   }
 
-  if (!contest.event?.sportId) {
+  if (!contestForView.event?.sportId) {
     return (
       <div className="p-4">
         <ErrorMessage message="This contest's event data is unavailable." />
@@ -134,7 +158,7 @@ export const ContestLobby: React.FC = () => {
 
   return (
     <ContestLobbyView
-      contest={contest}
+      contest={contestForView}
       viewModel={viewModel}
       currentUserId={user?.id}
       isAuthenticated={Boolean(user)}

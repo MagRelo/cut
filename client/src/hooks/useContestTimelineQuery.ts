@@ -50,12 +50,7 @@ export function useContestTimelineQuery(
         ? SERVER_SYNC_INTERVAL_MS
         : Infinity;
     },
-    refetchInterval: (query) => {
-      if (query.state.data?.contestFinished) return false;
-      return contest && timelinePollsLive(contest, contestStateOnChain)
-        ? SERVER_SYNC_INTERVAL_MS
-        : false;
-    },
+    refetchInterval: false,
     gcTime: CONTEST_LOBBY_GC_MS,
     refetchOnWindowFocus: true,
     retry: 1,

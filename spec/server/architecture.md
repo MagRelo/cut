@@ -47,7 +47,7 @@ graph LR
 | Middleware | File | Usage |
 |------------|------|-------|
 | `requireAuth` | `middleware/auth.ts` | Privy JWT verify + DB session (read-only). Browser and delegate settings |
-| ERC-8128 verify | `services/bot/verifyBotRequest.ts` | Signed `GET /api/bot/contests` and `POST /api/bot/actions` before the handler reads the body |
+| ERC-8128 verify | `services/bot/verifyBotRequest.ts` | Signed contest, lineup, and `POST /api/bot/actions` requests before the handler reads the body |
 | `requireWalletChain` | `middleware/auth.ts` | Requires `X-Cut-Chain-Id` + primary `UserWallet` for on-chain routes |
 | `verifyPrivyJwt` | `middleware/auth.ts` | JWT only — used by `POST /auth/session` |
 | `requireAdmin` | `middleware/admin.ts` | Staff user types |
@@ -104,7 +104,7 @@ The server does not mount `/api/tournaments` or `/api/lineup`. Data cutover is `
 
 ## Security
 
-- ERC-8128 on player routes. Request-bound, single-use nonce, at most one hour. The signer is a delegate (`smartWallet` query) or the wallet (ERC-1271). `GET /api/bot/contests` and `POST /api/bot/actions` are signature-only.
+- ERC-8128 on player routes. Request-bound, single-use nonce, at most one hour. The signer is a delegate (`smartWallet` query) or the wallet (ERC-1271). Contest reads accept a bearer or a signature. `POST /api/bot/actions` is `yield` and is signature-only.
 - Privy bearer on the browser session, wallet sync, delegate install and revoke, and admin.
 - League contests hidden from non-members (404)
 - Admin routes require staff `userType` (`ADMIN`, `SUPER_ADMIN`). `AGENT` is not staff.

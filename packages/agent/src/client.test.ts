@@ -44,7 +44,7 @@ describe("createCutAgent", () => {
     const request = requests[0];
     expect(request?.method).toBe("GET");
     const url = new URL(request?.url ?? "");
-    expect(url.pathname).toBe("/api/bot/contests");
+    expect(url.pathname).toBe("/api/contests");
     expect(url.searchParams.get("chainId")).toBe("8453");
     expect(url.searchParams.get("smartWallet")).toBe(SMART_WALLET);
     expect(url.searchParams.get("eventId")).toBe("event-1");
@@ -82,6 +82,9 @@ describe("createCutAgent", () => {
     });
 
     expect(requests).toHaveLength(2);
+    expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/contests/contest-1/entries");
+    expect(requests[0]?.method).toBe("POST");
+    expect(requests[1]?.method).toBe("POST");
     const firstBody = JSON.parse(await requests[0]!.text()) as { userOpSignature?: string };
     const secondBody = JSON.parse(await requests[1]!.text()) as {
       userOp: typeof USER_OP;

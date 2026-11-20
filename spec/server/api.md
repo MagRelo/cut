@@ -4,18 +4,20 @@ Base URL: `/api` (e.g. `http://localhost:3000/api`)
 
 Signing for agents is in [spec/agent/agents.md](../agent/agents.md). This file is the route list.
 
-Two ways to write a lineup or a paid contest:
+A write is one verb. The body decides the completion. A confirmed transaction is recorded. A signed request with no receipt returns a prepared user operation, and the second call sends `userOp` and `userOpSignature`.
 
-- `/api/lineups` and `/api/contests` record a transaction the wallet already sent.
-- `POST /api/bot/actions` is where the server builds and submits the user operation (`lineupUpsert`, `join`, `leave`, `createContest`).
+- Lineup create and update are `/api/lineups`. Those writes do not build a user operation.
+- Join, leave, and contest create are `/api/contests`. A bearer request that already has a receipt records the row. A signature, or a body that carries `userOp`, prepares or completes the user operation.
+- `POST /api/bot/actions` is `yield` only.
 
-A lineup roster is `candidates` on every request and response. A write is an ordered array of `eventParticipantId` strings. A read is that roster with scores. `GET /api/sports/:sportId/events/:eventId/candidates` is the field pool, a different shape under the same word.
+A lineup roster is `candidates` on every lineup request and response. A write is an ordered array of `eventParticipantId` strings. A read is that roster with scores. `GET /api/events/:eventId/field` is the field pool, a different shape under the same word.
 
 ## Authentication
 
 | Value | Meaning |
 |-------|---------|
-| `none` | No credential. A bearer or signature is optional where the description says so. |
+| `none` | No credential. A bearer or signature is ignored. |
+| `optional` | No credential required. A Privy bearer or an ERC-8128 signature, when sent, is verified and resolved to the Cut user. A missing credential is anonymous. An invalid one is rejected. |
 | `either` | Privy bearer or an ERC-8128 signature. One is required. |
 | `signature` | ERC-8128 only. |
 | `privy` | Privy bearer only. |
@@ -54,6 +56,7 @@ JSON bodies are capped at 128 KiB.
 | `/health` | `api.ts` |
 | `/auth` | `auth.ts` |
 | `/sports` | `sports.ts` |
+| `/events` | `events.ts` |
 | `/lineups` | `lineups.ts` |
 | `/contests` | `contest.ts` |
 | `/userGroups` | `userGroup.ts` |
@@ -97,6 +100,7 @@ JSON bodies are capped at 128 KiB.
 | PUT | `/update` | either | Display name, 1–80 characters. |
 | PUT | `/settings` | either | Merge `color`, `oddsFormat` (`american`, `decimal`, `english`), and `onboardingDismissed`. Does not change `marketingUnsubscribed`. |
 | GET | `/contests` | either | This account's contest history. |
+| GET | `/entries` | either | This account's entries: `contestId`, `status`, `lineupId`, `position`, `total`, `payout`. |
 | GET | `/transactions` | either | Activity feed: entries, predictions, payouts. |
 | POST | `/onchain-payments` | either | Record a confirmed value transfer. `X-Cut-Chain-Id` required. Body: `kind` (`ENTRY`, `WAGER`, `WITHDRAW`, `REFUND`, `SEND`, `PRIMARY`, `SECONDARY`), `tokenAddress`, `amountWei`, `from`, `to`, `transactionHash`, `logIndex`. `contestId` is required except for `SEND`. Optional `entryId`, `lineupId`. The server loads the receipt and stores the log amount. `ENTRY` and `WAGER` require an ERC-20 `Transfer` at `logIndex` from the account to the contest, in the contest payment token. `REFUND` and `WITHDRAW` require that transfer in the other direction. `SEND` requires a `Transfer` from the account in the platform payment token. `PRIMARY` and `SECONDARY` require `PrimaryPayoutClaimed` or `SecondaryPayoutClaimed` for this account, entry, and amount. |
 
@@ -111,9 +115,16 @@ Unsigned.
 | GET | `/` | none | Enabled sports. |
 | GET | `/:sportId/events/active` | none | Active event and status. `404` if none. |
 | GET | `/:sportId/events/:eventId` | none | One event for that sport. `404` if it is not that sport's event. |
-| GET | `/:sportId/events/:eventId/candidates` | none | Field pool: `{ candidates }`. |
 
 Event responses are `{ sport, event, status }`. `event.metadata` is sport JSON (golf: name, dates, course, round status).
+
+---
+
+## Events (`/api/events`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/:eventId/field` | none | Field pool: `{ candidates }`. Query `view`: `full` (default) is the candidate metadata. `card` is `eventParticipantId`, `displayName`, and `sortKeys`. Any other `view` is `400`. `404` when the event is missing. |
 
 ---
 
@@ -151,32 +162,43 @@ A lineup read includes `candidates` (id, slot, participant, `scoreData`, `total`
 
 ## Contests (`/api/contests`)
 
+A bearer or an ERC-8128 signature is optional on the reads. League contests are `404` to non-members. `:id` is the contest id or the contract address.
+
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/directory` | none | Cross-event list. Query `scope`: `live`, `past`, or `all` (default). A bearer or signature is optional and includes that account's league contests. Omits `CANCELLED`. |
-| GET | `/` | none | Contests for one event. A bearer or signature is optional. Omits `CANCELLED`. |
-| GET | `/:id` | none | Lobby payload. `:id` is the contest id or the contract address. |
-| GET | `/:id/lobby` | none | Same payload as `GET /:id`, with `Cache-Control: private, max-age=15`. |
-| GET | `/:id/timeline` | none | Score timeline. Optional `?since=` ISO timestamp. |
+| GET | `/` | optional | Contest cards, or the homepage buckets when `group=event`. |
+| GET | `/:id` | optional | Contest identity: rules, status, pot, counts, event summary, and `myEntry` or `null`. |
+| GET | `/:id/board` | optional | Entries with owner, color, position, score, popularity, and rosters. Rosters are omitted while the contest is `OPEN`. No commentary, timeline, or field. |
+| GET | `/:id/timeline` | optional | Score timeline. Optional `?since=` ISO timestamp. One chart series. |
+| GET | `/:id/commentary` | optional | Overview, `commentaryGeneratedAt`, and feed items. |
+| GET | `/:id/companion` | optional | Slim standings, the timeline document, and the commentary section. |
 | POST | `/` | either | Create a contest. Staff for a public contest, league admin for a league contest. |
-| POST | `/:id/lineups` | either | Join with a lineup. `X-Cut-Chain-Id` when the contest has escrow. |
-| DELETE | `/:id/lineups/:lineupId` | either | Leave. `:lineupId` is the contest-lineup id. |
+| POST | `/:id/entries` | either | Join with a lineup. `POST /:id/lineups` is the same handler. `X-Cut-Chain-Id` when the contest has escrow. |
+| DELETE | `/:id/entries/:entryId` | either | Leave. `DELETE /:id/lineups/:lineupId` is the same handler. The param is a contest-lineup id or a lineup id. |
 | DELETE | `/:id` | either | Delete an open league contest. League admin. Paid contests that already have entries are rejected. |
 | POST | `/:id/secondary-participants` | either | Index a winner-pool buy from a confirmed transaction. `X-Cut-Chain-Id` required. |
 
-**GET `/` query:** `eventId` (required), optional `chainId`, optional `userGroupId` (member required).
+**GET `/` query:** `status`, `eventId`, `leagueId` (`userGroupId` is an alias), `entered` (`1` or `true`), `chainId` (`8453` or `84532`), `scope` (`live`, `past`, or `all`). `group=event` returns `{ upcoming, live, past }` from the same cards, with `scope` defaulting to `all`. A bad `scope` or `chainId` is `400`.
 
-League contests are `404` to non-members.
+A card is `id`, `name`, `status`, `eventId`, `chainId`, `address`, `userGroupId`, `userGroupName`, `primaryDeposit`, `endTime`, `entryCount`, `pot`, `entered`, and `event`. `CANCELLED` is omitted unless `status=CANCELLED`.
 
-**POST `/`** is two creates. `settings.primaryDeposit` of `0` omits `address` and `transactionHash`. A paid contest requires both. The server loads the factory receipt once, requires a `ContestCreated` log for `address`, and requires that log's `host` to be the authenticated wallet (`403` otherwise). It overwrites `settings.operator` and `settings.paymentTokenAddress` from the clone. One row per chain and contract address; a second registration is `409`. `transactionId` is an alias of `transactionHash` on this route only. A paid contest the server must deploy is `createContest` on `POST /api/bot/actions`, not this route. A $0 league contest is this route. `@playthecut/agent` `createFreeContest` posts `settings.primaryDeposit` of `0` and `userGroupId`.
+**GET `/:id`** returns `rules` (`rosterSize`, `predictionRange`, `primaryDeposit`, referral and subsidy bps, `expiryTimestamp`), `status`, `pot`, `entryCount`, `event`, and `myEntry` (`lineupId`, `entryId`, `position`, `total`) or `null`.
+
+**GET `/:id/commentary` query:** `since`. An overview that was not regenerated after `since` comes back as `commentary: null` and `commentaryGeneratedAt: null`, with only newer feed items. A bad `since` is `400` `"Invalid since timestamp"`. Feed items keep `priority`.
+
+**GET `/:id/companion` query:** `since` and `include`. `include` is a comma-separated subset of `timeline`, `commentary`, and `standings`. The default is all three. An unknown token is `400` `"Invalid include"`. A bad `since` is `400` `"Invalid since timestamp"`. Omitted sections are absent. Standings are `contestLineupId`, `userId`, `userName`, `color`, `position`, and `score`. Hole-by-hole lineups stay on `GET /api/lineups/:eventId`.
+
+**POST `/`** records or prepares. `settings.primaryDeposit` of `0` records a league contest and omits `address` and `transactionHash`. A positive deposit with `transactionHash` and `address` records the contest: the server loads the factory receipt once, requires a `ContestCreated` log for `address`, and requires that log's `host` to be the authenticated wallet (`403` otherwise). It overwrites `settings.operator` and `settings.paymentTokenAddress` from the clone. One row per chain and contract address; a second registration is `409`. `transactionId` is an alias of `transactionHash` on this route only. A positive deposit with a signature and no receipt returns `{ preparedUserOp, userOpHash, userOp }`. The second call sends `userOp` and `userOpSignature` and then records the contest as `{ ok, contestId, address }`. `@playthecut/agent` `createContest` and `createFreeContest` both use this route.
 
 Other body fields: `eventId`, `name`, `endDate`, `chainId`, `settings`, optional `userGroupId`, `description`, `notifyLeagueMembers`. `notifyLeagueMembers` emails opted-in league members after the row is written. It is ignored without `userGroupId`.
 
-**POST `/:id/lineups` body:** `lineupId`. An optional `entryId` is ignored. The server sets `entryId` from the contest address and lineup id. On-chain `entryOwner(entryId)` must be the authenticated wallet. The lineup must already contain at least one pick. An empty lineup is `400` `"Lineup must have at least 1 player"`.
+**POST `/:id/entries` body:** `lineupId`. An optional `entryId` is ignored. A bearer request with no `userOp` records the entry: on-chain `entryOwner(entryId)` must be the authenticated wallet, and the response is the board payload. A signature, or a body with `userOp`, uses the prepared user operation. The first response is `{ preparedUserOp, lineupId, userOpHash, userOp }`. The second sends `userOp` and `userOpSignature` and returns `{ ok, lineupId }`. The lineup must already contain at least one pick. An empty lineup is `400` `"Lineup must have at least 1 player"`.
+
+**DELETE `/:id/entries/:entryId`** records the leave for a bearer request. A signature, or a JSON body with `userOp`, prepares or completes `removePrimaryPosition` the same way as join. An empty body is the record path.
 
 **POST `/:id/secondary-participants` body:** `entryId`, `transactionHash`, `chainId`, optional `amountWei`. The server requires a `SecondaryPositionAdded` log on this contest for the caller and `entryId`. Replays of the same `transactionHash` are idempotent.
 
-A signed-in lobby may include `contestLineups[].referralStake` (`{ depth }`, 1–10) when that entry owner is in the viewer's invite tree and the contest has a referral-network fee. Unsigned payloads omit it. Open contests omit roster `candidates`.
+A signed-in board may include `contestLineups[].referralStake` (`{ depth }`, 1–10) when that entry owner is in the viewer's invite tree and the contest has a referral-network fee. Unsigned payloads omit it. Open contests omit roster `candidates` and every other entry's tie-breaker. The signed-in entry keeps its own `prediction`.
 
 ---
 
@@ -249,8 +271,8 @@ The product name is league. The path is `/api/userGroups`. Client pages are `/le
 | PUT | `/preferences` | either | Merge `settings.agent`. Body: `sports` (enabled sport ids) and/or `maxEntryFee` (whole USDC, or `null` to clear). At least one field. Unknown sport id is `400` `"Unknown sport"`. Response `{ preferences }`. |
 | GET | `/scout` | either | Visible contests on the signed chain that are still a choice, without the field. `contests` are `OPEN`, event `SCHEDULED`, end time still ahead, not entered, with a published field, and funded when the balance is known. Each row has `event`, `primaryDeposit`, `rosterSize` (`maxPicks`; a lineup needs at least 1), `predictionRange`, `fieldCount`, `alreadyEntered: false`, and `fit` (`league`, `affordable`, `open`, `field-ready`, `within-budget`). `blocked` is the other open contests still ahead, with one `reason`: `already-entered`, `field-empty`, or `balance`, plus `primaryDeposit`. A contest that is not open, whose event has started, or whose end time has passed is omitted. A non-empty `preferences.sports` omits other sports. A null balance does not block a paid contest and does not mark it `affordable`. |
 | GET | `/contests/:contestId/picks` | either | One visible contest, `rosterSize` (`maxPicks`; a lineup needs at least 1), `predictionRange`, the field, the saved `lineup` or `null`, and the `entry` or `null`. `404` `"Contest not found"` when it is missing or not visible. |
-| GET | `/companion` | either | Entered contests on this chain. Query `cursor`. `{ cursor, unchanged, updates }`. An update has `standing`, `picks`, `signals` (`standing-changed`, `pick-changed`, `status-changed`, `commentary`, `payout`), `commentary` (`generatedAt`, `overview`, `items`), and `payout`. Feed `items` are those whose `entryIds` include this account's entry. |
-| GET | `/tick` | either | One poll. Query `cursor`, the same value as companion. `account.balanceUsdc`, `scout.openAffordable`, companion `updates` and `unchanged`, `leagues.needsContest` (admin leagues whose active event is `SCHEDULED` with no open contest), `leagues.unentered` (`contestId`, `leagueId`, `missingMemberIds`), `leagues.settled` (league contests that became settled since the cursor, with `winnerName` and `winningTotal`), and `referrals.totalEarned` plus `referrals.newMembers`. |
+| GET | `/companion` | either | Entered contests on this chain. Query `cursor`. `{ cursor, unchanged, updates }`. An update has `standing`, `picks`, `signals` (`standing-changed`, `pick-changed`, `status-changed`, `commentary`, `payout`), `commentary` (`generatedAt`, `overview`, `items`), `payout`, and `companion` (the contest companion document since the previous poll). `unchanged` has no `companion`. Feed `items` are those whose `entryIds` include this account's entry. |
+| GET | `/tick` | either | One poll. Query `cursor`, the same value as companion. `account.balanceUsdc`, `scout.openAffordable`, companion `updates` and `unchanged` (updates carry the same `companion` delta), `leagues.needsContest` (admin leagues whose active event is `SCHEDULED` with no open contest), `leagues.unentered` (`contestId`, `leagueId`, `missingMemberIds`), `leagues.settled` (league contests that became settled since the cursor, with `winnerName` and `winningTotal`), and `referrals.totalEarned` plus `referrals.newMembers`. |
 | GET | `/referrals` | either | `code`, `url`, `totalEarned`, `recorded`, `levels`, `earnings` (`contestId`, `amount`, `settledAt`), `recent` (direct invitees, public name, `depth`, `joinedAt`). |
 | GET | `/leagues` | either | `{ leagues }`. `id`, `name`, `role`, `memberCount`, `openContests`, `activeContests`, `invite` (`{ code, url }` for an admin with a code, otherwise `null`). |
 | GET | `/leagues/:id` | either | Member required. `404` `"League not found"` otherwise. `league`, `members` (`id`, `name`), `contests` with `event`, `primaryDeposit`, `referralNetworkBps`, `entryCount`, `memberCount`, `missingMemberIds` (open contests), and `summary` (`winnerName`, `winningTotal`) or `null`. |
@@ -266,36 +288,13 @@ The product name is league. The path is `/api/userGroups`. Client pages are `/le
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/delegate-address` | none | Public address of the server-held delegate, or `null` when that key is unset. |
-| GET | `/contests` | signature | Contests this signer can enter, each with its field. |
-| POST | `/actions` | signature | `lineupUpsert`, `join`, `leave`, or `createContest`. |
+| POST | `/actions` | signature | `yield` only. Any other `action` is `400` `"Use the contest and lineup routes"`. |
 | GET | `/delegates` | either | Delegates for the account. |
 | POST | `/delegates` | privy | Record an approved session key. |
 | POST | `/delegates/revoke` | privy | Mark a delegate revoked. |
 
-**GET `/contests` query:** `chainId` (`8453` or `84532`), `smartWallet`, optional `eventId`. Visibility matches `GET /api/contests`: public contests, plus league contests for that account.
-
-**POST `/actions` lineup body:**
-
-```json
-{
-  "chainId": 8453,
-  "action": "lineupUpsert",
-  "smartWallet": "0x…",
-  "contestId": "contest id",
-  "lineupId": "",
-  "candidates": ["eventParticipantId"],
-  "prediction": { "type": "winningLineupTotal", "value": 142 }
-}
-```
-
-`lineupId` `""` creates a lineup. A lineup id updates it. `join` and `leave` send the lineup id and omit `candidates`. `prediction` is optional on `lineupUpsert`.
-
-A delegate signer must be an active `BotDelegate` whose permission is still installed on the wallet. That rule applies when the signer is not the account. The account key can list contests, save a lineup, join, leave, and create a contest with no delegate. A caller-held delegate (`kind` `external`) submits those actions itself and does not need a Cut Bot key. A server-held delegate (`kind` `cut_bot`) submits when that delegate's key signs for the wallet.
-
-A server-held delegate submits the user operation. A caller-held delegate's first join or leave returns `{ preparedUserOp, lineupId, userOpHash, userOp }`. The first `createContest` returns `{ preparedUserOp, userOpHash, userOp }`. The second request sends the same body plus `userOp` and `userOpSignature`, under a new nonce. The account key uses that same prepared user operation. The server sponsors it when the calls are on the sponsorship allowlist. Join with escrow sends `approve` and `addPrimaryPosition` in that one operation.
+Contest list, lineup save, join, leave, and contest create are the contest and lineup routes. A delegate signer must be an active `BotDelegate` whose permission is still installed on the wallet when the signer is not the account. The account key can call those routes with no delegate. A caller-held delegate (`kind` `external`) submits join, leave, and paid create itself and does not need a Cut Bot key. A server-held delegate (`kind` `cut_bot`) submits when that delegate's key signs for the wallet.
 
 `yield` is signed by the current owner. `account().takeover` is `{ embeddedAddress }` while a human is waiting, and `null` otherwise. The first response is `{ preparedUserOp, userOpHash, userOp }`. The second is `{ ok, yielded: true }`. The user operation installs the owner key as a delegate and changes the Kernel root to the embedded address. A second `yield` does nothing. The signer is the stored `ownerAddress`, or an active delegate. The creation key is not the owner after that change.
-
-`createContest` deploys a paid contest. `settings.primaryDeposit` is whole USDC (`1` is $1) and must be greater than zero. `endDate` is an ISO timestamp or unix milliseconds and is stored as the contest end. `settings.expiryTimestamp` is the on-chain expiry in unix seconds. When it is omitted, the server sets it to the unix seconds of `endDate`. A positive `expiryTimestamp` is stored as sent. Optional `description`, `userGroupId`, and `notifyLeagueMembers`. `referralNetworkBps` and `primaryDepositSecondarySubsidyBps` default to `0`. A league contest requires `userGroupId` and a league admin. Omitting `userGroupId` is staff only. An `AGENT` creating a public contest is `403`. A `$0` contest is `POST /api/contests`, which this action does not deploy. The server builds the factory call, then records the contest. A caller-held delegate and the account key both use the `preparedUserOp` step above. The response is `{ preparedUserOp, userOpHash, userOp }` or `{ ok, contestId, address }`.
 
 **POST `/delegates` body:** `kind` (`cut_bot` or `external`), `delegateAddress`, `smartWallet`, `approval`, `permissionId` (4-byte hex). `smartWallet` must be the signed-in account's wallet.

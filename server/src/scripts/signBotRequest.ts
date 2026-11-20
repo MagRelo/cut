@@ -45,7 +45,11 @@ const agent = createCutAgent({
   fetch: async (request) => {
     await show(request);
     const path = new URL(request.url).pathname;
-    const body = path.endsWith("/actions") ? { ok: true, lineupId: "lineup-id" } : { contests: [] };
+    const body = path.includes("/lineups")
+      ? { lineup: { id: "lineup-id" } }
+      : /\/contests\/[^/]+$/.test(path)
+        ? { eventId: "event-id" }
+        : { contests: [] };
     return new Response(JSON.stringify(body), {
       status: 200,
       headers: { "content-type": "application/json" },

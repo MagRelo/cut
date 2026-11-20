@@ -21,10 +21,11 @@
 |-------------|-----|-------|
 | `sports.list()` | `GET /sports` | |
 | `sports.activeEvent(sportId)` | `GET /sports/:id/events/active` | |
-| `sports.candidates(sportId, eventId)` | `GET .../candidates` | |
+| `sports.candidates(sportId, eventId)` | `GET /events/:eventId/field` | |
 | `contests.byEvent(eventId, ...)` | `GET /contests?eventId=` | Mutation invalidation key |
-| `contests.directory(scope, ...)` | `GET /contests/directory?scope=` | Multi-sport hub list |
-| `contests.byLobbyRoute(address)` | `GET /contests/:address/lobby` | Standings/status only — no timeline |
+| `contests.directory(scope, ...)` | `GET /contests?group=event&scope=` | Multi-sport hub list |
+| `contests.byLobbyRoute(address)` | `GET /contests/:address` and `GET /contests/:address/board` | Identity plus standings |
+| `contests.commentary(address)` | `GET /contests/:address/commentary` | Overview and feed |
 | `contests.timeline(address)` | `GET /contests/:address/timeline` | Chart history; refreshes use `?since=` |
 | `lineups.byEvent(userId, eventId)` | `GET /lineups/:eventId` | User-scoped; response includes `PlatformLineup.score` |
 
@@ -89,14 +90,15 @@ sequenceDiagram
 
 ## Contest lobby flow
 
-`/contest/:address` loads two queries in parallel after the contest status is known:
+`/contest/:address` loads identity, board, and commentary together. Timeline starts once the contest is `ACTIVE` or `LOCKED`.
 
 | Hook | Key | API | Refresh |
 |------|-----|-----|---------|
-| `useContestQuery` | `contests.byLobbyRoute(address)` | `GET /contests/:address/lobby` | 5m poll + focus while ACTIVE/LOCKED |
-| `useContestTimelineQuery` | `contests.timeline(address)` | `GET /contests/:address/timeline` (`?since=` on refresh) | Same cadence while ACTIVE/LOCKED; enabled only when primary entry is locked (`status !== OPEN`) |
+| `useContestQuery` | `contests.byLobbyRoute(address)` | `GET /contests/:address` and `GET /contests/:address/board` | Focus and reconnect while stale. No private interval. |
+| `useContestCommentaryQuery` | `contests.commentary(address)` | `GET /contests/:address/commentary` | Same |
+| `useContestTimelineQuery` | `contests.timeline(address)` | `GET /contests/:address/timeline` (`?since=` on refresh) | Same. Disabled while the contest is `OPEN`. |
 
-Timeline `queryFn` merges deltas into the cached full series (`mergeTimelineData`). Lobby standings are replaced wholesale each fetch.
+While the contest is `ACTIVE` or `LOCKED`, one page timer refetches board, timeline, and commentary together, a few seconds after each 5-minute score run. `staleTime` stays 5 minutes, so a return inside that window does not refetch. Timeline `queryFn` merges deltas into the cached full series (`mergeTimelineData`). Board standings are replaced wholesale each fetch.
 
 Join/leave optimistically patches `byLobbyRoute` and matching directory cache entries, then invalidates `contests.all` on success.
 
@@ -105,11 +107,11 @@ sequenceDiagram
   participant Page as ContestLobbyPage
   participant ContestQ as useContestQuery
   participant TimelineQ as useContestTimelineQuery
-  participant LobbyAPI as GET_lobby
+  participant BoardAPI as GET_board
   participant TimelineAPI as GET_timeline
 
   Page->>ContestQ: address
-  ContestQ->>LobbyAPI: contest standings
+  ContestQ->>BoardAPI: contest standings
   Page->>TimelineQ: address plus locked status
   TimelineQ->>TimelineAPI: full or since lastTs
   TimelineQ->>TimelineQ: mergeTimelineData
@@ -124,7 +126,7 @@ sequenceDiagram
   participant User
   participant UI as ContestLobby
   participant Chain as Wagmi
-  participant API as POST /contests/:id/lineups
+  participant API as POST /contests/:id/entries
 
   User->>UI: Join with lineup
   UI->>Chain: addPrimaryPosition(entryId)
@@ -139,7 +141,7 @@ Order: **on-chain first**, then server indexes the entry. Server links `lineupId
 
 ## Contest list flow
 
-**Multi-sport hub** (`/contests`): `useContestDirectory("all")` → `GET /contests/directory?scope=all` (upcoming / live / past sections). `staleTime: 15m`, focus refetch when stale; no interval poll.
+**Multi-sport hub** (`/contests`): `useContestDirectory("all")` → `GET /contests?group=event&scope=all` (upcoming / live / past sections). `staleTime: 15m`, focus refetch when stale; no interval poll.
 
 `/sports/:sportId` redirects to `/contests`. `/sports/:sportId/leaderboard` (no event id) resolves the sport’s active event once and redirects to `/sports/:sportId/events/:eventId/leaderboard` (or `/contests` if none).
 

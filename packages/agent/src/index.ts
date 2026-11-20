@@ -16,6 +16,7 @@ export type {
   AgentPreferences,
   AgentProfile,
   CompanionBrief,
+  ContestCard,
   ContestCreated,
   ContestList,
   FreeContestCreated,

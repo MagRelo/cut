@@ -101,14 +101,14 @@ Play The Cut is a contest on a live competition. A user, or an agent acting for 
 | Term | Meaning |
 | --- | --- |
 | Event | One competition, such as a golf tournament, a race, or a commodities week. |
-| Field | The candidate pool for that event. On `contests()`, this is `candidates`. |
+| Field | The candidate pool for that event. `field(eventId)` reads it. |
 | Lineup | The ordered picks sent to `lineupUpsert`. The JSON field is also named `candidates`. |
 | Entry | A lineup that has joined a contest. |
 | Contest | A paid or free competition over one event. Public, or inside a league. |
 | League | A private group. League contests require membership. Creating one requires a league admin. |
 | Tie-breaker | `prediction`: `{ "type": "winningLineupTotal", "value": <integer> }`. Closest absolute distance to the contest's winning lineup total, then earlier entry time. |
 
-`candidates` on a contest is the field. `candidates` on `lineupUpsert` is the lineup, in order. The ids are `eventParticipantId` values from that field. Order is stored with the lineup. It does not change the score.
+`field(eventId)` is the field. `candidates` on `lineupUpsert` is the lineup, in order. The ids are `eventParticipantId` values from that field. Order is stored with the lineup. It does not change the score.
 
 ### Roster sizes and tie-breakers
 
@@ -136,7 +136,7 @@ Send a link when you name a contest or a player. The human opens it in the brows
 
 `contestId` comes from `scout`, `contests`, `picks`, or `createFreeContest`. The lobby accepts that id.
 
-`sportId` is `pga-golf`, `f1`, or `commodities`. It is on `scout`, `picks().contest.sportId`, and `contests()`.
+`sportId` is `pga-golf`, `f1`, or `commodities`. It is on `scout`, `picks().contest.sportId`, and `contests().event.sportId`.
 
 `eventId` is the event id on that contest: `scout().event.id` or `contests().eventId`.
 
@@ -172,7 +172,7 @@ Lead with one or two contests from `contests` and the `fit` tags that apply: `le
 
 `preferences.sports`, when non-empty, limits scout to those sports. `preferences.maxEntryFee` removes the `within-budget` tag when the fee is higher. The contest stays in the list. Store a sport or a fee cap the user states with `preferences`.
 
-This step stops before `join`. The field is not on this response. `contests()` remains the raw list with every candidate, in any status except `CANCELLED`. It is not the list of contests the wallet has already joined.
+This step stops before `join`. The field is not on this response. `field(eventId)` reads it. `contests()` is the card list, in any status except `CANCELLED`. It is not the list of contests the wallet has already joined. `entered` on a card is that flag. `entries()` is the account's entries.
 
 #### Calls
 
@@ -291,7 +291,9 @@ On later calls, speak only about contests in `updates`. Use `signals`:
 
 A contest in `unchanged` gets no message. Golf refreshes the overview about every 20 minutes for entered contests on a live event, once the contest is `ACTIVE` or `LOCKED`. Commodities refreshes it when a trading day settles. Commodities has no rolling feed.
 
-The public lobby is `GET /api/contests/:id/lobby` (the same payload as `GET /api/contests/:id`). Use it when the user wants the full document. `commentary` there is the overview. `commentaryFeed` is the rolling story.
+`contestCompanion(contestId, { since?, include? })` reads `GET /api/contests/:id/companion`. It returns slim standings, the timeline document, and the commentary section. `since` is an ISO timestamp. `include` is any of `timeline`, `commentary`, and `standings`, and defaults to all three. A bad `since` or `include` is `400` before the request is sent. Omitted sections are absent. Feed items include `priority`. Hole-by-hole lineups stay on `GET /api/lineups/:eventId`.
+
+Each contest in `updates` also carries that companion document as `companion`, from the previous poll. Contests in `unchanged` do not. `GET /api/contests/:id` is the contest identity. `GET /api/contests/:id/board` is the standings. `GET /api/contests/:id/commentary` is the overview and the feed.
 
 `GET /api/auth/transactions` is the activity feed of entries, predictions, and payouts. Use it when the user asks for entry costs separately from winnings. The SDK does not wrap that route. It takes the same signature as the other player routes.
 
@@ -610,7 +612,7 @@ At least one field. Unknown sport ids are `400`. Response is `{ preferences }`.
 
 ### companion
 
-`agent.companion({ cursor? })` → `GET /api/agent/companion`. `{ cursor, unchanged, updates }`. See **Contest companion**.
+`agent.companion({ cursor? })` → `GET /api/agent/companion`. `{ cursor, unchanged, updates }`. Each contest in `updates` includes `companion`. See **Contest companion**.
 
 ### tick
 
@@ -652,20 +654,32 @@ At least one field. Unknown sport ids are `400`. Response is `{ preferences }`.
 
 ### contests
 
-`agent.contests(eventId?)` → `GET /api/bot/contests`.
+`agent.contests(eventId?)` → `GET /api/contests`.
 
 | Item | Details |
 | --- | --- |
 | Required query | `chainId`, `smartWallet` (the SDK sends both) |
-| Optional query | `eventId` limits the list to one event |
-| Response | `{ contests }`. Each contest includes `contestId`, `name`, `eventId`, `sportId`, `chainId`, `status`, `address`, `userGroupId`, `userGroupName`, `primaryDeposit`, `endTime`, and `candidates`. An empty `contests` array means this account has no visible contests on that chain. |
+| Optional query | `eventId` limits the list to one event. The route also accepts `status`, `leagueId`, `entered`, and `scope` (`live`, `past`, `all`). |
+| Response | `{ contests }`. Each card includes `id`, `name`, `status`, `eventId`, `chainId`, `address`, `userGroupId`, `userGroupName`, `primaryDeposit`, `endTime`, `entryCount`, `pot`, `entered`, and `event`. An empty `contests` array means this account has no visible contests on that chain. |
 | `primaryDeposit` | Whole USDC. `1` is $1. `null` when the contest has no deposit. |
 
-Visibility matches the contest list: public contests, plus league contests in leagues this account belongs to. `CANCELLED` contests are omitted. An inactive grant is `403` `"No active delegate for this signature"`.
+Visibility matches the contest list: public contests, plus league contests in leagues this account belongs to. `CANCELLED` contests are omitted unless the route is called with `status=CANCELLED`. The field is `field(eventId)`, not this list.
+
+### field
+
+`agent.field(eventId, { view? })` → `GET /api/events/:eventId/field`. `{ candidates }`. `view` is `full` (default) or `card`. `card` is `eventParticipantId`, `displayName`, and `sortKeys`. Any other view is `400` before the request is sent.
+
+### entries
+
+`agent.entries()` → `GET /api/auth/entries`. `{ entries }`. Each row is `contestId`, `status`, `lineupId`, `position`, `total`, and `payout`.
+
+### contestCompanion
+
+`agent.contestCompanion(contestId, { since?, include? })` → `GET /api/contests/:id/companion`. See **Contest companion**. `include` is a subset of `timeline`, `commentary`, and `standings`. A bad `since` or `include` is `400` `"Invalid since timestamp"` or `"Invalid include"` and is not sent.
 
 ### lineupUpsert
 
-`agent.lineupUpsert({ contestId, candidates, lineupId?, prediction? })`.
+`agent.lineupUpsert({ contestId, candidates, lineupId?, prediction? })` → `POST /api/lineups/:eventId` or `PUT /api/lineups/:lineupId`. The create reads `eventId` from `GET /api/contests/:id` first.
 
 | Item | Details |
 | --- | --- |
@@ -679,7 +693,7 @@ The same ordered picks for the same contest, sent without `lineupId`, return the
 
 ### join
 
-`agent.join({ contestId, lineupId })`. Open contests only. The server builds `approve` of the contest deposit and `addPrimaryPosition` for that lineup. It does not read `candidates`. The lineup already has to contain at least one pick. Empty slots may stay empty. An empty lineup is `400` `"Lineup must have at least 1 player"`.
+`agent.join({ contestId, lineupId })` → `POST /api/contests/:id/entries`. Open contests only. The server builds `approve` of the contest deposit and `addPrimaryPosition` for that lineup. It does not read `candidates`. The lineup already has to contain at least one pick. Empty slots may stay empty. An empty lineup is `400` `"Lineup must have at least 1 player"`.
 
 | Signer | What happens |
 | --- | --- |
@@ -693,13 +707,13 @@ A caller-held delegate does not need a Cut Bot key.
 
 ### leave
 
-`agent.leave({ contestId, lineupId })`. Open or cancelled contests. The server submits `removePrimaryPosition`. The signer rules match join.
+`agent.leave({ contestId, lineupId })` → `DELETE /api/contests/:id/entries/:lineupId`. Open or cancelled contests. The server submits `removePrimaryPosition`. The signer rules match join.
 
 `{ ok: true, lineupId }` means the entry is absent. It was already gone, or the remove user operation has a receipt and the row was deleted. A repeated `leave` is a no-op only when the entry row is already gone. After a timeout or `502`, check the lobby or this account's entries before calling `leave` again.
 
 ### createContest
 
-`agent.createContest({ name, eventId, endDate, settings, description?, userGroupId?, notifyLeagueMembers? })`.
+`agent.createContest({ name, eventId, endDate, settings, description?, userGroupId?, notifyLeagueMembers? })` → `POST /api/contests`.
 
 Deploys a paid contest. `settings.primaryDeposit` is whole USDC and must be greater than zero. `endDate` is an ISO timestamp or unix milliseconds and is stored as the contest end. `settings.expiryTimestamp` is the on-chain expiry in unix seconds. When it is omitted, the SDK and the server set it to the unix seconds of `endDate`. A positive `expiryTimestamp` is sent as given.
 
@@ -761,7 +775,7 @@ After a timeout or `502` from a state-changing action, check whether the action 
 
 ### Additional account routes
 
-Most callers can stop at the actions above. `GET /api/auth/contests`, `GET /api/auth/transactions`, and `GET /api/lineups/:eventId` stay available for history, the activity feed, and event lineups. The SDK does not wrap them. Sign one the same way as the briefing reads.
+Most callers can stop at the actions above. `entries()` wraps `GET /api/auth/entries`. `GET /api/auth/contests`, `GET /api/auth/transactions`, and `GET /api/lineups/:eventId` stay available for history, the activity feed, and event lineups. The SDK does not wrap those three. Sign one the same way as the briefing reads.
 
 ### Execution paths
 
@@ -776,7 +790,7 @@ A delegate is a Kernel v3.1 session key on EntryPoint 0.7, installed on the user
 
 ### Authentication and request signing
 
-Player routes accept a Privy bearer token or an [ERC-8128](https://erc8128.org) signature. `GET /api/bot/contests` and `POST /api/bot/actions` are signature-only. A request that sends both a bearer token and a signature is rejected. There is no signature field in the query or body.
+Player routes accept a Privy bearer token or an [ERC-8128](https://erc8128.org) signature. Contest reads take either, and a missing credential is anonymous. `POST /api/bot/actions` is signature-only and accepts `yield`. A request that sends both a bearer token and a signature is rejected. There is no signature field in the query or body.
 
 `@slicekit/erc8128` `signRequest` covers `@scheme`, `@authority`, `@method`, `@path`, and `@query`, plus `content-digest` and `content-type` when the request has a body. Parameters are `keyid`, `created`, `expires`, `nonce`, and `tag="erc8128"`. `keyid` is `eip155:<chainId>:0x<signer>` with the signer address lowercase. The chain is `8453` or `84532` and must equal `chainId` on the request. `expires - created` is at most one hour. `nonce` is a single-use ASCII string of at most 128 bytes. The server stores `(keyid, nonce)` until `expires`.
 

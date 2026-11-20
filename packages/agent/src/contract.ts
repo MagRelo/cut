@@ -202,7 +202,33 @@ export type FreeContestCreated = {
   userGroupId: string;
   status: string;
 };
-export type ContestList = { contests: BotContest[] };
+export type ContestCard = {
+  id: string;
+  name: string;
+  status: string;
+  eventId: string;
+  chainId: number;
+  address: string | null;
+  userGroupId: string | null;
+  userGroupName: string | null;
+  primaryDeposit: number | null;
+  endTime: string;
+  entryCount: number;
+  pot: number | null;
+  entered: boolean;
+  event: {
+    id: string;
+    sportId: string;
+    sportName: string;
+    externalId: string;
+    name: string;
+    startDate: string | null;
+    endDate: string | null;
+    isActive: boolean;
+  };
+};
+
+export type ContestList = { contests: ContestCard[] };
 
 export type AgentPreferences = {
   sports: string[];
