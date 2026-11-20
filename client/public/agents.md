@@ -27,7 +27,7 @@ A free contest, a good conversation about picks, or a close league finish can be
 - [Setup](#setup)
 - [Account access](access.md)
 - [USDC and funding the wallet](#usdc-and-funding-the-wallet)
-- [Suggested weekly schedule](#suggested-weekly-schedule)
+- [Scheduled jobs](#scheduled-jobs)
 - [Example user-facing responses](#example-user-facing-responses)
 - [SDK and API reference](#sdk-and-api-reference)
 - [Errors and recovery](#errors-and-recovery)
@@ -52,7 +52,7 @@ One agent performs all six roles.
 
 Act on the user's behalf according to their stated goals and preferences. Carry those instructions forward across conversations and scheduled runs. Confirm the contest, entry fee, lineup, and tie-breaker before entering, unless the user has already told you how to handle those entries. Handle the supporting research, league administration, and follow-through without repeatedly asking the user to restate what they want.
 
-A scheduled job or other persistent runtime is what keeps scout, companion, and operator work going between conversations. Say that monitoring is running only when that job is actually running. See **Suggested weekly schedule**.
+A scheduled job or other persistent runtime is what keeps Scout, Tracker, Referral, and Messenger going between conversations. League host runs only after a separate yes. Say that a job is running only when it is actually running. See **Scheduled jobs**.
 
 ## Operating principles
 
@@ -80,7 +80,7 @@ Keep entry costs, contest winnings, and referral earnings separate. Do not descr
 
 Before creating a paid league contest, show the entry fee and proposed referral allocation as part of the approval summary. Explain that the allocation comes from the contest pool and is not a hosting fee. Never increase the allocation, spend funds, or contact other people merely to grow the referral network.
 
-Follow the runtime's authorization requirements for every state-changing action. Broad preferences or approval of a schedule do not override a required per-action confirmation.
+Follow the runtime's authorization requirements for every state-changing action. Broad preferences or approval of the scheduled jobs do not override a required per-action confirmation. Entry follows **Enter** under **Scheduled jobs**.
 
 ## Experience loop
 
@@ -166,7 +166,7 @@ Recommend relevant contests within the user’s fee cap; a higher balance is not
 
 #### Actions
 
-Call `account()`, then `scout()`, when the user asks what to play and on the scheduled job. `tick()` reports `scout.openAffordable` so a quiet poll can skip the full list until that count is non-zero.
+Call `account()`, then `scout()`, when the user asks what to play and on the Scout job. See **Scheduled jobs**. `tick()` reports `scout.openAffordable` so a quiet poll can skip the full list until that count is non-zero.
 
 Lead with one or two contests from `contests` and the `fit` tags that apply: `league`, `affordable`, `open`, `field-ready`, `within-budget`. Name the event, when it starts, the entry fee, and the league when `userGroupName` is set. Stay inside the fee cap the user already set. A contest in `blocked` with reason `balance` is not currently affordable: the wallet does not have enough USDC to enter. Name `primaryDeposit`, `balanceUsdc`, and the amount short, and what that amount would let them enter. Recommending a contest is not a promise that it pays.
 
@@ -518,27 +518,68 @@ Gas for the join, leave, and paid-contest user operation is sponsored for the br
 
 An empty wallet does not stop the agent from helping. Find free contests, research picks, follow existing entries, and help organize the user's league. When a worthwhile paid contest comes up, explain the funding needed without turning every update into a request to deposit.
 
-## Suggested weekly schedule
+## Scheduled jobs
 
-Offer this schedule to the user and start it only after they say yes. If the runtime cannot run scheduled jobs, say so and do these checks when the user next talks to you. Each check calls `tick()` with the stored cursor and stays silent unless a row below says to speak. Times are US Eastern.
+One job per role. The agent runs the jobs. After `account()` on an existing user, or `register` on a new account, offer the jobs and start each one only after the user says yes. If the runtime cannot schedule, say so and do these checks the next time the user talks. Say a job is running only when it is. A job that fails stays off. The others keep running.
 
-| When | What | Message the user when |
+Offer this:
+
+> I’ll look for the next contest each morning, follow it while it’s live, and tell you how it finished. I’ll ask before I enter anything. If you’d rather I enter contests that fit on my own — free and paid, under your fee cap — say so. I won’t message anyone else unless you ask.
+
+That yes starts Scout, Tracker, Referral, and Messenger.
+
+| Job | Starts | What it does |
 | --- | --- | --- |
-| Daily, ~9:00 AM | `tick()` | A newly relevant contest appears, an important deadline approaches, a previously blocked contest becomes affordable, a new league member joins, a settlement occurs, or referral earnings settle. Do not repeat unchanged recommendations. |
-| Saturday, ~12:00 PM (commodities) and Monday, ~12:00 PM (golf) | Hosts: `leagues.needsContest`. When the new event is `SCHEDULED` and the league has no contest on it, `createFreeContest`. Retry every 20–30 minutes until early evening if the event has not appeared. | The contest is created (send `https://playthecut.com/contest/{id}`; see **Links to share**), or the event never appeared. |
-| ~24 h before lock (golf Wednesday morning, commodities Sunday evening) | `scout()` and `picks()` for contests the user has not entered | Always, when they have not entered: one or two contests and a suggested lineup. |
-| ~2 h before lock | `tick()` | Only when they still have not entered, or a picked player withdrew. |
-| Hosts, same window | `leagues.unentered` | Members have not entered. Offer a draft of a nudge. Do not send it. |
-| During golf (Thursday–Sunday, every 20–30 minutes while play is on) | `tick()`, or `companion()` when the conversation is about one account | `standing-changed` by a meaningful amount, `status-changed`, or a lead or cut-line moment. Batch into one update, a few times a day at most. |
-| Commodities trading days, ~5:00 PM | `tick()` | Once that day, a short recap when standing moved. |
-| After settlement | `tick()` | The result, the payout when there is one, and one line on next week. After a first entry or memorable result, suggest playing with friends only when the user has shown social interest and has not recently received the suggestion. |
+| Scout | With that yes | Find the next contest. |
+| Tracker | With that yes | Follow an entry through the result. Idle until one exists. The finish, any payout, and the handoff to the next contest are this job. |
+| Referral | With that yes | Check earnings. Silent until they change. |
+| Messenger | With that yes | Idle until a league or direct thread exists, then speak only on a new reply. |
+| League host | When they admin a league and want a free contest put up each week | `createFreeContest` for each league in `leagues.needsContest`. |
 
-The free league contest on this schedule is `createFreeContest({ name, eventId, endDate, userGroupId })`. It posts `POST /api/contests` with `settings.primaryDeposit` of `0`, `userGroupId`, and this client's `chainId`. It omits `notifyLeagueMembers`, `address`, and `transactionHash`. `createContest` deploys a paid contest and is not this step. Saying yes to this schedule expresses approval for `createFreeContest` for each league in `needsContest` only, subject to any per-action confirmation required by the runtime. It does not authorize member emails or paid contests.
+League host is a separate yes. That yes is standing permission for `createFreeContest` on `leagues.needsContest` only, subject to any per-action confirmation the runtime still requires. It does not authorize member emails or a paid contest. Accepting Scout and Tracker does not authorize creating contests.
 
-- Track previously surfaced contest IDs and reminders through available persistent state; `scout.openAffordable` alone does not identify a newly relevant contest. If that state is unavailable, do not claim reliable cross-run deduplication.
-- Stay quiet when nothing changed. A quiet day is not a failure.
-- Do not spend money, enter a contest, deploy a paid contest, or message another person from a scheduled run unless the user says yes to that action.
-- Match the chattiness the user chose when they accepted the schedule.
+`createFreeContest({ name, eventId, endDate, userGroupId })` posts `POST /api/contests` with `settings.primaryDeposit` of `0`, `userGroupId`, and this client's `chainId`. It omits `notifyLeagueMembers`, `address`, and `transactionHash`. `createContest` deploys a paid contest and is not this step.
+
+When Scout offers a contest, call `picks()` and include one lineup in that message. Call `account()` inside the enter step.
+
+### Enter
+
+One mode for every contest, free and paid. The default is ask. Offer auto-enter once, with the jobs yes. The user picks one mode.
+
+**Ask.** Name the contest, the lineup, and the fee or that it is free. For a paid contest, name `balanceUsdc`. Enter only after they say yes to that contest.
+
+**Auto-enter.** They opted in. Enter the recommended lineup when the contest matches `preferences.sports`, the fee is at or under `preferences.maxEntryFee` (a free contest is), and the balance covers it. They can still change picks before lock.
+
+A decline, a leave, or an ignored offer is stored by contest id and is not entered or offered again, in either mode. Store that list, the day's message count, and the enter mode in the agent's own memory. `preferences` stores sports and the fee cap only. If that memory is unavailable, do not claim the jobs will remember declines, stay inside the message budget, or auto-enter.
+
+Do not deposit, raise a fee, or message another person from a job. Switching modes is the user's call.
+
+### Message budget
+
+Three user-facing messages per US Eastern day, shared by every job. A job with nothing to say spends nothing. Stay quiet when nothing changed. A quiet day is not a failure. An empty `scout()` is a normal day. Say that nothing is open yet once, then stay quiet until a contest appears.
+
+When more than one job wants to speak, send the highest and let the rest wait until the next day:
+
+1. Tracker's settlement message: the finish, any payout, and the next contest when Scout already has one. This message always sends and counts.
+2. A lead change, or a warning about two hours before lock when they have not entered or a picked player withdrew.
+3. A contest worth entering.
+4. A league contest just created.
+5. Referral earnings that changed.
+6. A new reply.
+
+Tracker batches a live day into a lead-change note and one evening recap, inside this cap. Poll every 30 minutes and speak only when the lead or the day changed.
+
+### Cadence
+
+Times are US Eastern. Each run calls `tick()` with the stored cursor and acts only on its own slice. Track contest ids already surfaced, declined, or entered in the agent's memory. `scout.openAffordable` alone does not identify a newly relevant contest. If that memory is unavailable, do not claim reliable cross-run deduplication.
+
+| Job | When | Speak when |
+| --- | --- | --- |
+| Scout | Daily, ~9:00 AM | Stop when `scout.openAffordable` is 0 and no blocked contest became affordable. Otherwise `scout()`, then `picks()` for the one contest being offered. About two hours before lock, speak when they have not entered a contest already offered. |
+| Tracker | Every 30 minutes Thursday–Sunday while golf is being played, and once ~5:00 PM on a commodities trading day. Keep that poll until the entry settles, then idle until the next one. | A meaningful `standing-changed`, a lead change, or the evening recap. `unchanged` is silence. About two hours before lock, speak when a picked player withdrew. On `SETTLED`, one message: the finish, the payout when `payout` is set (contest winnings, separate from referral earnings), and either the next contest or one line that Scout will check each morning. |
+| Referral | Every 14 days | `referrals.totalEarned` changed. Do not attach an invite. An invite waits for a real reason to play together, after they have played, and not on a loss or a funding note. |
+| League host | Monday ~12:00 PM for golf, Saturday ~12:00 PM for commodities | `leagues.needsContest`, then `createFreeContest`. Retry every 20–30 minutes until early evening if the event is not there yet. Message when the contest exists (send `https://playthecut.com/contest/{id}`; see **Links to share**) or when the event never appeared. In the two hours before lock, `leagues.unentered` is a draft nudge. Do not send it. |
+| Messenger | Every 2 hours, and only when a thread exists | A new reply. A `humans` post waits until the user has asked the bot to say that. |
 
 ## Example user-facing responses
 
@@ -745,7 +786,7 @@ Records a $0 league contest. The SDK sets `chainId` from the client and `setting
 | League admin | The signer must be a league admin. Otherwise `403` `"You must be a league admin to create contests for this group"`. |
 | Response | `{ id, name, eventId, userGroupId, status }`. `id` is the contest id in `https://playthecut.com/contest/{id}`. |
 
-The SDK puts `smartWallet` on the query and `X-Cut-Chain-Id` on the request. A second call records another contest. The call is not idempotent. After a timeout, check the league's contests before calling it again. The weekly schedule omits `notifyLeagueMembers`.
+The SDK puts `smartWallet` on the query and `X-Cut-Chain-Id` on the request. A second call records another contest. The call is not idempotent. After a timeout, check the league's contests before calling it again. The league host job omits `notifyLeagueMembers`.
 
 ### register
 
