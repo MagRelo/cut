@@ -149,6 +149,7 @@ export async function registerAgentAccount(input: {
       referredByUserId: referral?.referredByUserId ?? null,
       referralChainId: referral || platformGroupId ? input.chainId : null,
       referralRecordedAt: referral || platformGroupId ? new Date() : null,
+      tosAcceptedAt: new Date(),
           wallets: {
             create: {
               chainId: input.chainId,

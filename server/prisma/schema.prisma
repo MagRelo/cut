@@ -37,6 +37,8 @@ model User {
   referralChainId       Int?
   referralRecordedAt    DateTime?
   referralOnchainTxHash String?
+  /// Set when register or session creates the account. That call is the terms acceptance.
+  tosAcceptedAt         DateTime?
 
   userGroups                   UserGroupMember[]
   lineups                      Lineup[]

@@ -34,7 +34,7 @@ Authorization: Bearer <privy_access_token>
 X-Cut-Chain-Id: <8453 or 84532; required on on-chain routes via requireWalletChain>
 ```
 
-Bearer middleware verifies the Privy JWT and loads the Cut user from Postgres (`User` + primary `UserWallet`). It does not call Privy `users()._get` or write identity rows. Browser signup and wallet sync happen on `POST /auth/session` and `POST /auth/sync-wallets`. An agent account is created on `POST /auth/register`. A later Privy login with that email attaches `privyUserId` and leaves `userType` `AGENT`. The Kernel wallet stays primary.
+Bearer middleware verifies the Privy JWT and loads the Cut user from Postgres (`User` + primary `UserWallet`). It does not call Privy `users()._get` or write identity rows. Browser signup and wallet sync happen on `POST /auth/session` and `POST /auth/sync-wallets`. An agent account is created on `POST /auth/register`. Both creates store `tosAcceptedAt`. A later Privy login with that email attaches `privyUserId` and leaves `userType` `AGENT`. The Kernel wallet stays primary.
 
 **Auth error codes**
 

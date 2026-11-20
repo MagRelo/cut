@@ -394,6 +394,7 @@ describe("provisionUserFromPrivy referral", () => {
           referredByUserId: null,
           referrerAddress: null,
           referralCode: expect.stringMatching(/^[A-HJ-NP-Za-hj-km-np-z2-9]{8}$/),
+          tosAcceptedAt: expect.any(Date),
         }),
       }),
     );
@@ -444,6 +445,7 @@ describe("provisionUserFromPrivy referral", () => {
         data: expect.objectContaining({
           email: "test-abcd@privy.io",
           userType: "TEST",
+          tosAcceptedAt: expect.any(Date),
         }),
       }),
     );

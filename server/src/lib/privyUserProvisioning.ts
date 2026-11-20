@@ -492,6 +492,7 @@ export async function provisionUserFromPrivy(
       referredByUserId: referral?.referredByUserId ?? null,
       referralChainId: referral || platformGroupId ? chainId : null,
       referralRecordedAt: referral || platformGroupId ? new Date() : null,
+      tosAcceptedAt: new Date(),
       wallets: {
         create: {
           chainId,

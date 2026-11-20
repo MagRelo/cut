@@ -90,6 +90,7 @@ describe("registerAgentAccount", () => {
           email: "agent@example.com",
           userType: "AGENT",
           name: "Ada",
+          tosAcceptedAt: expect.any(Date),
           wallets: {
             create: {
               chainId: 84532,
@@ -124,6 +125,7 @@ describe("registerAgentAccount", () => {
       expect.objectContaining({
         data: expect.objectContaining({
           userType: "AGENT",
+          tosAcceptedAt: expect.any(Date),
           settings: {
             onboardingDismissed: false,
             color: "#0a73eb",

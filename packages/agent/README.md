@@ -462,7 +462,7 @@ The user already has an account. Follow [Delegate](docs/access.md#delegate). Pas
 `register` creates the account. The signer is the owner key. The stored wallet is the Kernel account that key owns, and that address holds the USDC.
 
 1. `createCutAgent({ privateKey, chainId })`. `privateKey` is the owner key. Leave `smartWallet` unset. The client uses the Kernel address that key owns.
-2. `register({ email?, name?, color?, oddsFormat?, referralCode? })`. Email is optional. Pass `referralCode` when this account was invited. `color` and `oddsFormat` are stored on the new account only.
+2. `register({ email?, name?, color?, oddsFormat?, referralCode? })`. Email is optional. Pass `referralCode` when this account was invited. `color` and `oddsFormat` are stored on the new account only. In the same message, say "Creating your account means you agree to the Terms of Service (https://playthecut.com/terms) and Privacy Policy (https://playthecut.com/privacy)." and call `register`. Do not ask a question and do not wait. Do not paste either document. Do not say it again when `account()` already returns a user, or when `register` returns `created: false`. If the person has already said they do not agree, do not register. The create stores `tosAcceptedAt`. A repeat call does not change it.
 3. Contest reads, `lineupUpsert`, `join`, `leave`, `createContest`, league setup, and `createFreeContest` use this signature.
 4. Gas for `join`, `leave`, and paid `createContest` is sponsored when those calls are on the sponsorship allowlist. The owner key does not hold the USDC and does not pay gas.
 5. When the human tells you to yield, follow [Yield](docs/access.md#yield).
@@ -793,6 +793,8 @@ The SDK puts `smartWallet` on the query and `X-Cut-Chain-Id` on the request. A s
 `agent.register({ email?, name?, color?, oddsFormat?, referralCode? })` → `POST /api/auth/register`.
 
 The owner key signs. The Kernel wallet holds the USDC. A `smartWallet` query that is not the signer is `403` `"A delegate cannot register an account"`. A new account is `userType` `AGENT`. Email is optional. When the person wants to sign in, the owner sets it with `updateProfile` before they open the site. `color` is `#rgb` or `#rrggbb`. `oddsFormat` is `american`, `decimal`, or `english`. Those settings are written only when the account is created. Registering the same wallet again returns that account and does not change the email, the name, the settings, or the type. `201` when the account is new, `200` when the wallet already has one. An email already on another account is `400` with code `EMAIL_ALREADY_BOUND`.
+
+Creating an account includes this sentence in the same message as the call: "Creating your account means you agree to the Terms of Service (https://playthecut.com/terms) and Privacy Policy (https://playthecut.com/privacy)." Say it and call `register` in the same turn. Do not ask a question and do not wait. Do not paste either document. Do not say it when `account()` already returns a user, or when this call returns `created: false`. If the person has already said they do not agree, do not register. The server stores that moment as `tosAcceptedAt` on the new account. Browser signup on `POST /auth/session` stores the same field. Registering the same wallet again does not change it.
 
 Response: `userId`, `email` (`null` when unset), `userType`, `name`, `referralCode`, `smartWallet`, `created`.
 
