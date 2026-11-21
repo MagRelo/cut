@@ -426,6 +426,71 @@ describe("createCutAgent", () => {
     expect(new URL(requests[3]?.url ?? "").searchParams.get("userId")).toBe("user-2");
     expect(new URL(requests[3]?.url ?? "").searchParams.get("audience")).toBe("humans");
   });
+
+  it("reads event odds from the signed event route", async () => {
+    const requests: Request[] = [];
+    const odds = {
+      source: "live",
+      eventName: "The RSM Classic",
+      updatedAt: "2026-11-20 4:57 PM",
+      deadHeats: true,
+      players: [],
+    };
+    const agent = createCutAgent({
+      privateKey: generatePrivateKey(),
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        requests.push(request.clone());
+        return json(odds);
+      },
+    });
+
+    await expect(agent.odds("event-1")).resolves.toEqual(odds);
+    const url = new URL(requests[0]?.url ?? "");
+    expect(url.pathname).toBe("/api/events/event-1/odds");
+    expect(url.searchParams.get("smartWallet")).toBe(SMART_WALLET);
+
+    const broken = createCutAgent({
+      privateKey: generatePrivateKey(),
+      smartWallet: SMART_WALLET,
+      fetch: async () => json({ players: [] }),
+    });
+    await expect(broken.odds("event-1")).rejects.toMatchObject({ status: 502 });
+  });
+
+  it("signs a send, then posts the user operation", async () => {
+    const privateKey = generatePrivateKey();
+    const account = privateKeyToAccount(privateKey);
+    const requests: Request[] = [];
+    const agent = createCutAgent({
+      privateKey,
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        requests.push(request.clone());
+        if (requests.length === 1) {
+          return json({ preparedUserOp: true, userOpHash: USER_OP_HASH, userOp: USER_OP });
+        }
+        return json({ ok: true, txHash: `0x${"cd".repeat(32)}`, to: SMART_WALLET, amount: "4.50" });
+      },
+    });
+
+    await expect(agent.send({ to: SMART_WALLET, amount: "4.50" })).resolves.toMatchObject({
+      ok: true,
+      amount: "4.50",
+    });
+    expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/auth/transfers");
+    expect(requests[0]?.method).toBe("POST");
+    const secondBody = JSON.parse(await requests[1]!.text()) as { userOpSignature: `0x${string}` };
+    await expect(
+      recoverMessageAddress({
+        message: { raw: USER_OP_HASH },
+        signature: secondBody.userOpSignature,
+      }),
+    ).resolves.toBe(account.address);
+    await expect(agent.send({ to: "not-an-address", amount: "1" })).rejects.toMatchObject({
+      status: 400,
+    });
+  });
 });
 
 describe("generateDelegateKey", () => {

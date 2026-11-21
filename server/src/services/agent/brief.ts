@@ -12,6 +12,7 @@ import {
 } from "../../schemas/user.js";
 import { primaryDepositFromSettings } from "../../utils/canDeleteLeagueContest.js";
 import { contestVisibilityWhere } from "../../utils/contestListQuery.js";
+import { getMemberWalletByUserId } from "../../utils/userGroup.js";
 import { eventStatusFromMetadata } from "../../utils/eventStatus.js";
 import {
   resolveEventEndDateString,
@@ -612,6 +613,7 @@ export async function getLeagueDetail(actor: AgentActor, leagueId: string) {
   });
   if (!group) return null;
   const memberIds = group.members.map((member) => member.userId);
+  const wallets = await getMemberWalletByUserId(memberIds, actor.chainId);
   return {
     league: {
       id: group.id,
@@ -622,6 +624,7 @@ export async function getLeagueDetail(actor: AgentActor, leagueId: string) {
     members: group.members.map((member) => ({
       id: member.userId,
       name: member.user.name?.trim() || "Player",
+      wallet: wallets.get(member.userId) ?? null,
     })),
     contests: group.contests.map((contest) => {
       const entered = new Set(contest.contestLineups.map((lineup) => lineup.userId));

@@ -343,9 +343,37 @@ export type LeagueSummary = {
 
 export type LeagueList = { leagues: LeagueSummary[] };
 
+export type EventOddsPlayer = {
+  dgId: number | null;
+  pgaTourId: string | null;
+  eventParticipantId: string | null;
+  participantId: string | null;
+  playerName: string;
+  displayName: string;
+  country: string | null;
+  win: number | null;
+  top5: number | null;
+  top10: number | null;
+};
+
+export type EventOdds = {
+  source: "live" | "pre-tournament";
+  eventName: string;
+  updatedAt: string;
+  deadHeats: boolean;
+  players: EventOddsPlayer[];
+};
+
+export type SendResult = {
+  ok: true;
+  txHash: string;
+  to: string;
+  amount: string;
+};
+
 export type LeagueDetail = {
   league: { id: string; name: string; role: string; memberCount: number };
-  members: { id: string; name: string }[];
+  members: { id: string; name: string; wallet: string | null }[];
   contests: unknown[];
 };
 

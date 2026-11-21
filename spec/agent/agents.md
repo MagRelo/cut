@@ -667,7 +667,7 @@ At least one field. Unknown sport ids are `400`. Response is `{ preferences }`.
 
 `agent.leagues()` → `GET /api/agent/leagues`. `{ leagues }`. Each row has `id`, `name`, `role`, `memberCount`, `openContests`, `activeContests`, and `invite` (`{ code, url }` when the league has a code, otherwise `null`). `code` is the league code. `url` uses this account's referral code.
 
-`agent.league(id)` → `GET /api/agent/leagues/:id`. `league`, `members` (`id`, `name`), and `contests`. Each contest has `event`, `primaryDeposit`, `referralNetworkBps`, `entryCount`, `memberCount`, `missingMemberIds`, and `summary` (`winnerName`, `winningTotal`) or `null`.
+`agent.league(id)` → `GET /api/agent/leagues/:id`. `league`, `members` (`id`, `name`, `wallet`), and `contests`. `wallet` is that member's smart wallet on this chain, or `null`. Each contest has `event`, `primaryDeposit`, `referralNetworkBps`, `entryCount`, `memberCount`, `missingMemberIds`, and `summary` (`winnerName`, `winningTotal`) or `null`.
 
 ### createLeague
 
@@ -709,6 +709,18 @@ Visibility matches the contest list: public contests, plus league contests in le
 ### field
 
 `agent.field(eventId, { view? })` → `GET /api/events/:eventId/field`. `{ candidates }`. `view` is `full` (default) or `card`. `card` is `eventParticipantId`, `displayName`, and `sortKeys`. Any other view is `400` before the request is sent.
+
+### odds
+
+`agent.odds(eventId)` → `GET /api/events/:eventId/odds`. Decimal DataGolf prices for win, top 5, and top 10, with dead-heat ties. `source` is `live` when the in-play board is this event. Otherwise it is `pre-tournament`, the baseline plus course history and fit. Each player has `dgId`, `pgaTourId`, `eventParticipantId`, `participantId`, `playerName`, `displayName`, `country`, `win`, `top5`, and `top10`. A price is a decimal number, or `null`. An id that cannot be matched is `null`. `404` when this event has no board. `503` when the feed is down.
+
+### send
+
+`agent.send({ to, amount })` → `POST /api/auth/transfers`. Moves platform USDC from this account's smart wallet. `amount` is a positive decimal USDC string with at most 6 decimal places. The SDK signs the prepared user operation and returns `{ ok, txHash, to, amount }`.
+
+`send` pays another player in a league this account belongs to. `to` is that player's smart wallet, `league().members[].wallet`. A send to any address that is not a member wallet — an exchange, a contract, or some other wallet — is extreme caution. Confirm that address with the user before calling `send`.
+
+A `502` that says `"The transfer was submitted. Do not send it again."` means the chain transfer already went out. Do not call `send` again for that amount.
 
 ### entries
 

@@ -21,6 +21,7 @@ export type {
   ContestList,
   FreeContestCreated,
   LeagueCreated,
+  EventOdds,
   LeagueDetail,
   LeagueInvite,
   LeagueJoined,
@@ -32,5 +33,6 @@ export type {
   ReferralBrief,
   RegisteredAgent,
   ScoutBrief,
+  SendResult,
   TickBrief,
 } from "./contract.js";

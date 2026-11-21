@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { Prisma } from "@prisma/client";
-import { getAddress, isAddress, isHex, type Hex } from "viem";
+import { getAddress, isAddress, isHex, type Address, type Hex } from "viem";
 import { z } from "zod";
 import { userOpSchema } from "@playthecut/agent/contract";
 import { prisma } from "../lib/prisma.js";
@@ -33,9 +33,19 @@ import { recordOnchainPaymentSchema } from "../schemas/onchainPayment.js";
 import { listAccountEntries } from "../services/contests/contestSections.js";
 import { recordValueTransfer, ValueTransferError } from "../services/contest/onchainPayment.js";
 import { prepareOwnerUserOp, submitOwnerUserOp } from "../services/bot/ownerUserOp.js";
+import { createBotActionDeps } from "../services/bot/botActionRuntime.js";
+import { executeSend, recordSubmittedSend } from "../services/bot/executeSend.js";
 import type { SerializedUserOp } from "../services/bot/submitSessionKeyUserOp.js";
 
 const authRouter = new Hono();
+const sendDeps = { ...createBotActionDeps(), recordSend: recordSubmittedSend };
+
+const transferSchema = z.object({
+  to: z.string(),
+  amount: z.string(),
+  userOpSignature: z.string().refine((value) => isHex(value), "Invalid signature").optional(),
+  userOp: userOpSchema.optional(),
+});
 
 authRouter.post("/register", async (c) => {
   try {
@@ -412,6 +422,46 @@ authRouter.get("/contests", requireAuth, async (c) => {
   } catch (error) {
     console.error("Error fetching user contest history:", error);
     return c.json({ error: "Failed to fetch contest history" }, 500);
+  }
+});
+
+authRouter.post("/transfers", requireAuth, requireWalletChain, async (c) => {
+  try {
+    const parsed = transferSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
+    let signer: Address | undefined;
+    try {
+      signer = c.get("signer");
+    } catch {
+      signer = undefined;
+    }
+    if (!signer) return c.json({ error: "A signature is required to send" }, 400);
+    const user = c.get("user");
+    const result = await executeSend(
+      {
+        chainId: user.chainId,
+        smartWallet: user.address,
+        signer,
+        to: parsed.data.to,
+        amount: parsed.data.amount,
+        ...(parsed.data.userOpSignature ? { userOpSignature: parsed.data.userOpSignature as Hex } : {}),
+        ...(parsed.data.userOp ? { userOp: parsed.data.userOp as SerializedUserOp } : {}),
+      },
+      sendDeps,
+    );
+    if (!result.ok) {
+      return c.json(
+        { error: result.error, ...(result.txHash ? { txHash: result.txHash } : {}) },
+        result.status as 400,
+      );
+    }
+    if (result.preparedUserOp) {
+      return c.json({ preparedUserOp: true, userOpHash: result.userOpHash, userOp: result.userOp });
+    }
+    return c.json({ ok: true, txHash: result.txHash, to: result.to, amount: result.amount });
+  } catch (error) {
+    console.error("Error sending transfer:", error);
+    return c.json({ error: "Failed to send" }, 500);
   }
 });
 

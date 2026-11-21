@@ -1,5 +1,5 @@
 import { signRequest, type EthHttpSigner } from "@slicekit/erc8128";
-import { getAddress, isHex, type Address, type Hex } from "viem";
+import { getAddress, isAddress, isHex, type Address, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { kernelWalletAddress } from "./kernelWallet.js";
 import type { z } from "zod";
@@ -18,12 +18,14 @@ import {
   type CompanionBrief,
   type ContestCreated,
   type ContestList,
+  type EventOdds,
   type FreeContestCreated,
   type LeagueCreated,
   type LeagueDetail,
   type LeagueInvite,
   type LeagueJoined,
   type LeagueList,
+  type SendResult,
   type LineupResult,
   type PicksBrief,
   type ReferralBrief,
@@ -96,6 +98,8 @@ export type CutAgent = {
   join(input: LineupRef): Promise<LineupResult>;
   leave(input: LineupRef): Promise<LineupResult>;
   field(eventId: string, input?: { view?: "card" | "full" }): Promise<{ candidates: unknown[] }>;
+  odds(eventId: string): Promise<EventOdds>;
+  send(input: { to: string; amount: string }): Promise<SendResult>;
   entries(): Promise<{ entries: unknown[] }>;
   contestCompanion(
     contestId: string,
@@ -407,6 +411,18 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
     return row;
   }
 
+  function isEventOdds(value: unknown): value is EventOdds {
+    if (!value || typeof value !== "object" || !Array.isArray((value as EventOdds).players)) return false;
+    const source = (value as EventOdds).source;
+    return source === "live" || source === "pre-tournament";
+  }
+
+  function isSendResult(value: unknown): value is SendResult {
+    if (!value || typeof value !== "object") return false;
+    const row = value as SendResult;
+    return row.ok === true && typeof row.txHash === "string" && typeof row.to === "string" && typeof row.amount === "string";
+  }
+
   function manyMessages(value: unknown): RoomMessage[] {
     if (!value || typeof value !== "object" || !Array.isArray((value as { messages?: unknown }).messages)) {
       throw new CutAgentError("Unexpected response", 502, value);
@@ -442,6 +458,22 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
         throw new CutAgentError("Unexpected response", 502, body);
       }
       return { candidates: (body as { candidates: unknown[] }).candidates };
+    },
+    async odds(eventId) {
+      const body = await get(`/api/events/${encodeURIComponent(eventId)}/odds`, { smartWallet });
+      if (!isEventOdds(body)) throw new CutAgentError("Unexpected response", 502, body);
+      return body;
+    },
+    async send(input) {
+      const to = input.to.trim();
+      const amount = input.amount.trim();
+      if (!isAddress(to)) throw new CutAgentError("Invalid wallet address", 400, null);
+      if (!/^\d+(\.\d{1,6})?$/.test(amount) || Number(amount) <= 0) {
+        throw new CutAgentError("Invalid amount", 400, null);
+      }
+      const value = await postAction("/api/auth/transfers", { to, amount });
+      if (!isSendResult(value)) throw new CutAgentError("Unexpected response", 502, value);
+      return value;
     },
     async entries() {
       const body = await get("/api/auth/entries", { smartWallet });
