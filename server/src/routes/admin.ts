@@ -68,6 +68,79 @@ adminRouter.post("/contests/:contestId/lock", requireAuth, requireAdmin, async (
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
+const BALANCE_MULTICALL_BATCH = 100;
+
+type AdminUserListRow = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  userType: string;
+  createdAt: Date;
+  lastContestEntryAt: string | null;
+  chainId: number;
+  walletAddress: string | null;
+  wallet: { publicKey: string; isPrimary: boolean; chainId: number } | null;
+  paymentTokenBalanceWei: string | null;
+};
+
+/** Highest balance first. Missing wallets stay last. Ties follow last contest entry, then name. */
+function compareAdminUsersByBalance(a: AdminUserListRow, b: AdminUserListRow): number {
+  const aBal = a.paymentTokenBalanceWei;
+  const bBal = b.paymentTokenBalanceWei;
+  if (aBal !== null || bBal !== null) {
+    if (aBal === null) return 1;
+    if (bBal === null) return -1;
+    const aWei = BigInt(aBal);
+    const bWei = BigInt(bBal);
+    if (aWei !== bWei) return aWei > bWei ? -1 : 1;
+  }
+
+  const aEntry = a.lastContestEntryAt ? Date.parse(a.lastContestEntryAt) : Number.NEGATIVE_INFINITY;
+  const bEntry = b.lastContestEntryAt ? Date.parse(b.lastContestEntryAt) : Number.NEGATIVE_INFINITY;
+  if (aEntry !== bEntry) return bEntry - aEntry;
+  return a.name.localeCompare(b.name);
+}
+
+/** `null` when the chain read fails, so the caller can fall back to last-entry order. */
+async function readPaymentTokenBalances(
+  chainId: number,
+  items: Array<{ id: string; walletAddress: string | null }>,
+): Promise<Map<string, bigint> | null> {
+  const paymentToken = getPaymentTokenAddress(chainId);
+  if (!paymentToken) return new Map();
+
+  const withWallets = items.filter(
+    (item): item is { id: string; walletAddress: string } => item.walletAddress != null,
+  );
+  if (withWallets.length === 0) return new Map();
+
+  const balances = new Map<string, bigint>();
+  try {
+    const publicClient = getPublicClient(chainId);
+    for (let start = 0; start < withWallets.length; start += BALANCE_MULTICALL_BATCH) {
+      const batch = withWallets.slice(start, start + BALANCE_MULTICALL_BATCH);
+      const results = await publicClient.multicall({
+        contracts: batch.map((item) => ({
+          address: paymentToken,
+          abi: erc20Abi,
+          functionName: "balanceOf" as const,
+          args: [item.walletAddress as `0x${string}`],
+        })),
+        allowFailure: true,
+      });
+      results.forEach((res, idx) => {
+        const item = batch[idx];
+        if (!item) return;
+        balances.set(item.id, res.status === "success" ? (res.result as bigint) : 0n);
+      });
+    }
+    return balances;
+  } catch (e) {
+    console.error("admin users payment token multicall:", e);
+    return null;
+  }
+}
 
 // GET /api/admin/users
 adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {
@@ -94,48 +167,34 @@ adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {
     const offset = Math.max(0, offsetRaw ? parseInt(offsetRaw, 10) || 0 : 0);
     const where = { userType };
 
-    type AdminUserSortRow = {
+    type LastEntryRow = {
       id: string;
       lastContestEntryAt: Date | null;
     };
 
-    const [sortedUserRows, total] = await Promise.all([
-      prisma.$queryRaw<AdminUserSortRow[]>`
+    const [users, lastEntryRows, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        include: {
+          wallets: {
+            where: { chainId },
+            orderBy: { isPrimary: "desc" },
+          },
+        },
+      }),
+      prisma.$queryRaw<LastEntryRow[]>`
         SELECT u.id, MAX(cl."createdAt") AS "lastContestEntryAt"
         FROM "User" u
-        LEFT JOIN "ContestLineup" cl ON cl."userId" = u.id
+        INNER JOIN "ContestLineup" cl ON cl."userId" = u.id
         WHERE u."userType" = ${userType}
         GROUP BY u.id
-        ORDER BY MAX(cl."createdAt") DESC NULLS LAST
-        LIMIT ${limit} OFFSET ${offset}
       `,
       prisma.user.count({ where }),
     ]);
 
-    const userIds = sortedUserRows.map((r) => r.id);
-    const lastEntryByUserId = new Map(
-      sortedUserRows.map((r) => [r.id, r.lastContestEntryAt]),
-    );
+    const lastEntryByUserId = new Map(lastEntryRows.map((r) => [r.id, r.lastContestEntryAt]));
 
-    const users =
-      userIds.length === 0
-        ? []
-        : await prisma.user.findMany({
-            where: { id: { in: userIds } },
-            include: {
-              wallets: {
-                where: { chainId },
-                orderBy: { isPrimary: "desc" },
-              },
-            },
-          });
-
-    const usersById = new Map(users.map((u) => [u.id, u]));
-    const orderedUsers = userIds
-      .map((id) => usersById.get(id))
-      .filter((u): u is NonNullable<typeof u> => u !== undefined);
-
-    const items = orderedUsers.map((u) => {
+    const items: AdminUserListRow[] = users.map((u) => {
       const wallet = pickWalletForChain(u.wallets, chainId);
       const lastContestEntryAt = lastEntryByUserId.get(u.id);
       return {
@@ -151,65 +210,33 @@ adminRouter.get("/users", requireAuth, requireAdmin, async (c) => {
         wallet: wallet
           ? { publicKey: wallet.publicKey, isPrimary: wallet.isPrimary, chainId: wallet.chainId }
           : null,
+        paymentTokenBalanceWei: null,
       };
     });
 
-    const paymentToken = getPaymentTokenAddress(chainId);
-    let totalPaymentTokenBalanceWei = "0";
-    let itemsWithBalances = items.map((item) => ({
-      ...item,
-      paymentTokenBalanceWei: null as string | null,
-    }));
-
-    if (paymentToken) {
-      const indexByContractPos: number[] = [];
-      const contracts = items.flatMap((item, i) => {
-        if (!item.walletAddress) return [];
-        indexByContractPos.push(i);
-        return [
-          {
-            address: paymentToken,
-            abi: erc20Abi,
-            functionName: "balanceOf" as const,
-            args: [item.walletAddress as `0x${string}`],
-          },
-        ];
-      });
-
-      if (contracts.length > 0) {
-        let totalWei = 0n;
-        const balanceByUserIndex = new Map<number, bigint>();
-        try {
-          const publicClient = getPublicClient(chainId);
-          const results = await publicClient.multicall({ contracts, allowFailure: true });
-          results.forEach((res, idx) => {
-            const userIdx = indexByContractPos[idx];
-            if (userIdx === undefined) return;
-            const bal = res.status === "success" ? (res.result as bigint) : 0n;
-            balanceByUserIndex.set(userIdx, bal);
-            totalWei += bal;
-          });
-          totalPaymentTokenBalanceWei = totalWei.toString();
-          itemsWithBalances = items.map((item, i) => ({
-            ...item,
-            paymentTokenBalanceWei: item.walletAddress
-              ? (balanceByUserIndex.get(i) ?? 0n).toString()
-              : null,
-          }));
-        } catch (e) {
-          console.error("admin users payment token multicall:", e);
-        }
+    const balances = await readPaymentTokenBalances(chainId, items);
+    if (balances) {
+      for (const item of items) {
+        const bal = balances.get(item.id);
+        item.paymentTokenBalanceWei = bal === undefined ? null : bal.toString();
       }
     }
 
+    items.sort(compareAdminUsersByBalance);
+    const page = items.slice(offset, offset + limit);
+    let totalWei = 0n;
+    for (const item of page) {
+      if (item.paymentTokenBalanceWei) totalWei += BigInt(item.paymentTokenBalanceWei);
+    }
+
     return c.json({
-      items: itemsWithBalances,
+      items: page,
       total,
       limit,
       offset,
       chainId,
       userType,
-      totalPaymentTokenBalanceWei,
+      totalPaymentTokenBalanceWei: totalWei.toString(),
     });
   } catch (error) {
     console.error("admin list users error:", error);

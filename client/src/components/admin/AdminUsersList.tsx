@@ -43,7 +43,7 @@ export function AdminUsersList() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-gray-600 space-y-0.5">
           <p>
-            Staff-only list, sorted by last contest entry.{" "}
+            Staff-only list, highest balance first.{" "}
             {data ? `${data.total} user(s) total` : null}
           </p>
           {data ? (
