@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { agentProfileSchema, directRoomPostSchema, roomAudienceSchema, roomPostSchema } from "@playthecut/agent/contract";
+import { agentProfileSchema, messagePostSchema, roomAudienceSchema, roomRefSchema } from "@playthecut/agent/contract";
 import type { Address } from "viem";
 import { requireAuth } from "../middleware/auth.js";
 import { verifyBotRequest } from "../services/bot/verifyBotRequest.js";
@@ -18,14 +18,14 @@ import {
 } from "../services/agent/brief.js";
 import {
   clampMessageLimit,
-  listDirectMessages,
-  listLeagueMessages,
-  postDirectMessage,
-  postLeagueMessage,
+  listMessages,
+  postMessage,
   StreamDisabledError,
   StreamLeagueMissingError,
+  StreamMessageInvalidError,
   StreamPeerUnavailableError,
   StreamUserMissingError,
+  type RoomFile,
 } from "../services/stream/streamChat.js";
 
 const agentRouter = new Hono();
@@ -121,6 +121,9 @@ function roomFailure(error: unknown): { status: 400 | 404 | 409; body: { error: 
   if (error instanceof StreamPeerUnavailableError) {
     return { status: 409, body: { error: error.message, code: error.code } };
   }
+  if (error instanceof StreamMessageInvalidError) {
+    return { status: 400, body: { error: error.message } };
+  }
   if (error instanceof Error && error.message.startsWith("limit must")) {
     return { status: 400, body: { error: error.message } };
   }
@@ -133,80 +136,104 @@ function audienceOf(raw: string | undefined): "humans" | "bots" | undefined {
   return parsed.success ? parsed.data : undefined;
 }
 
-agentRouter.post("/leagues/:id/messages", requireAuth, async (c) => {
-  const parsed = roomPostSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
-  try {
-    const message = await postLeagueMessage({
-      userGroupId: c.req.param("id"),
-      userId: actor(c).userId,
-      text: parsed.data.text,
-      audience: parsed.data.audience ?? "humans",
-      ...(parsed.data.kind ? { kind: parsed.data.kind } : {}),
-    });
-    return c.json({ message }, 201);
-  } catch (error) {
-    const mapped = roomFailure(error);
-    if (mapped) return c.json(mapped.body, mapped.status);
-    console.error("[stream-chat] league post:", error);
-    return c.json({ error: "Failed to send message" }, 500);
-  }
-});
+function formText(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
 
-agentRouter.get("/leagues/:id/messages", requireAuth, async (c) => {
-  const audienceRaw = c.req.query("audience");
-  const audience = audienceOf(audienceRaw);
-  if (audienceRaw && !audience) return c.json({ error: "Invalid audience" }, 400);
-  try {
-    const messages = await listLeagueMessages({
-      userGroupId: c.req.param("id"),
-      userId: actor(c).userId,
-      limit: clampMessageLimit(c.req.query("limit")),
-      ...(audience ? { audience } : {}),
-    });
-    return c.json({ messages });
-  } catch (error) {
-    const mapped = roomFailure(error);
-    if (mapped) return c.json(mapped.body, mapped.status);
-    console.error("[stream-chat] league list:", error);
-    return c.json({ error: "Failed to list messages" }, 500);
+function formFiles(value: unknown): File[] | null {
+  if (value == null) return [];
+  const list = Array.isArray(value) ? value : [value];
+  const files: File[] = [];
+  for (const item of list) {
+    if (!(item instanceof File)) return null;
+    files.push(item);
   }
-});
+  return files;
+}
+
+async function roomFiles(files: File[]): Promise<RoomFile[]> {
+  return Promise.all(
+    files.map(async (file) => ({
+      data: new Uint8Array(await file.arrayBuffer()),
+      filename: file.name || "file",
+      mimeType: file.type || "application/octet-stream",
+    })),
+  );
+}
 
 agentRouter.post("/messages", requireAuth, async (c) => {
-  const parsed = directRoomPostSchema.safeParse(await c.req.json().catch(() => null));
+  const multipart = (c.req.header("content-type") ?? "").includes("multipart/form-data");
+  let raw: unknown;
+  let files: RoomFile[] = [];
+  if (multipart) {
+    const body = await c.req.parseBody({ all: true });
+    const uploaded = formFiles(body.file);
+    if (!uploaded) return c.json({ error: "Invalid request body" }, 400);
+    files = await roomFiles(uploaded);
+    let attachments: unknown;
+    const attachmentsField = formText(body.attachments);
+    if (attachmentsField) {
+      try {
+        attachments = JSON.parse(attachmentsField) as unknown;
+      } catch {
+        return c.json({ error: "Invalid request body" }, 400);
+      }
+    }
+    raw = {
+      room: { type: formText(body.type), id: formText(body.id) },
+      text: formText(body.text) ?? "",
+      ...(formText(body.audience) ? { audience: formText(body.audience) } : {}),
+      ...(formText(body.kind) ? { kind: formText(body.kind) } : {}),
+      ...(attachments !== undefined ? { attachments } : {}),
+    };
+  } else {
+    raw = await c.req.json().catch(() => null);
+  }
+  const parsed = messagePostSchema.safeParse(raw);
   if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
-  if (parsed.data.userId === actor(c).userId) {
+  if (parsed.data.room.type === "direct" && parsed.data.room.id === actor(c).userId) {
     return c.json({ error: "Choose another account" }, 400);
   }
   try {
-    const message = await postDirectMessage({
+    const message = await postMessage({
       userId: actor(c).userId,
-      peerId: parsed.data.userId,
+      room: parsed.data.room,
       text: parsed.data.text,
       audience: parsed.data.audience ?? "humans",
       ...(parsed.data.kind ? { kind: parsed.data.kind } : {}),
+      ...(parsed.data.attachments
+        ? {
+            attachments: parsed.data.attachments.map((item) => ({
+              type: item.type,
+              url: item.url,
+              ...(item.name ? { name: item.name } : {}),
+            })),
+          }
+        : {}),
+      ...(files.length > 0 ? { files } : {}),
     });
     return c.json({ message }, 201);
   } catch (error) {
     const mapped = roomFailure(error);
     if (mapped) return c.json(mapped.body, mapped.status);
-    console.error("[stream-chat] direct post:", error);
+    console.error("[stream-chat] post:", error);
     return c.json({ error: "Failed to send message" }, 500);
   }
 });
 
 agentRouter.get("/messages", requireAuth, async (c) => {
-  const peerId = c.req.query("userId")?.trim();
-  if (!peerId) return c.json({ error: "userId is required" }, 400);
-  if (peerId === actor(c).userId) return c.json({ error: "Choose another account" }, 400);
+  const room = roomRefSchema.safeParse({ type: c.req.query("type"), id: c.req.query("id") });
+  if (!room.success) return c.json({ error: "Invalid room" }, 400);
+  if (room.data.type === "direct" && room.data.id === actor(c).userId) {
+    return c.json({ error: "Choose another account" }, 400);
+  }
   const audienceRaw = c.req.query("audience");
   const audience = audienceOf(audienceRaw);
   if (audienceRaw && !audience) return c.json({ error: "Invalid audience" }, 400);
   try {
-    const messages = await listDirectMessages({
+    const messages = await listMessages({
       userId: actor(c).userId,
-      peerId,
+      room: room.data,
       limit: clampMessageLimit(c.req.query("limit")),
       ...(audience ? { audience } : {}),
     });
@@ -214,7 +241,7 @@ agentRouter.get("/messages", requireAuth, async (c) => {
   } catch (error) {
     const mapped = roomFailure(error);
     if (mapped) return c.json(mapped.body, mapped.status);
-    console.error("[stream-chat] direct list:", error);
+    console.error("[stream-chat] list:", error);
     return c.json({ error: "Failed to list messages" }, 500);
   }
 });

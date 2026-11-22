@@ -376,6 +376,7 @@ describe("createCutAgent", () => {
       audience: "bots",
       kind: null,
       createdAt: "2026-11-19T12:00:00.000Z",
+      attachments: [],
     };
     const agent = createCutAgent({
       privateKey: generatePrivateKey(),
@@ -388,31 +389,97 @@ describe("createCutAgent", () => {
     });
 
     await expect(
-      agent.sendLeagueMessage("league-1", "hello", { audience: "bots" }),
+      agent.sendMessage({ type: "league", id: "league-1" }, "hello", { audience: "bots" }),
     ).resolves.toEqual(message);
-    await expect(agent.leagueMessages("league-1", { limit: 10, audience: "bots" })).resolves.toEqual([
-      message,
-    ]);
-    await expect(agent.sendDirectMessage("user-2", "hello", { audience: "bots" })).resolves.toEqual(
-      message,
-    );
-    await expect(agent.directMessages("user-2", { audience: "humans" })).resolves.toEqual([message]);
+    await expect(
+      agent.messages({ type: "league", id: "league-1" }, { limit: 10, audience: "bots" }),
+    ).resolves.toEqual([message]);
+    await expect(
+      agent.sendMessage({ type: "direct", id: "user-2" }, "hello", { audience: "bots" }),
+    ).resolves.toEqual(message);
+    await expect(
+      agent.messages({ type: "direct", id: "user-2" }, { audience: "humans" }),
+    ).resolves.toEqual([message]);
 
-    expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/agent/leagues/league-1/messages");
+    expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/agent/messages");
     expect(requests[0]?.method).toBe("POST");
-    expect(JSON.parse(await requests[0]!.text())).toEqual({ text: "hello", audience: "bots" });
+    expect(JSON.parse(await requests[0]!.text())).toEqual({
+      room: { type: "league", id: "league-1" },
+      text: "hello",
+      audience: "bots",
+    });
     const leagueList = new URL(requests[1]?.url ?? "");
-    expect(leagueList.pathname).toBe("/api/agent/leagues/league-1/messages");
+    expect(leagueList.pathname).toBe("/api/agent/messages");
+    expect(leagueList.searchParams.get("type")).toBe("league");
+    expect(leagueList.searchParams.get("id")).toBe("league-1");
     expect(leagueList.searchParams.get("limit")).toBe("10");
     expect(leagueList.searchParams.get("audience")).toBe("bots");
     expect(new URL(requests[2]?.url ?? "").pathname).toBe("/api/agent/messages");
     expect(JSON.parse(await requests[2]!.text())).toEqual({
+      room: { type: "direct", id: "user-2" },
       text: "hello",
       audience: "bots",
-      userId: "user-2",
     });
-    expect(new URL(requests[3]?.url ?? "").searchParams.get("userId")).toBe("user-2");
-    expect(new URL(requests[3]?.url ?? "").searchParams.get("audience")).toBe("humans");
+    const directList = new URL(requests[3]?.url ?? "");
+    expect(directList.searchParams.get("type")).toBe("direct");
+    expect(directList.searchParams.get("id")).toBe("user-2");
+    expect(directList.searchParams.get("audience")).toBe("humans");
+  });
+
+  it("posts a link attachment as json and a file as one signed multipart body", async () => {
+    const requests: Request[] = [];
+    const message = {
+      id: "msg-1",
+      text: "",
+      userId: "user-1",
+      audience: "humans",
+      kind: null,
+      createdAt: "2026-11-19T12:00:00.000Z",
+      attachments: [
+        {
+          type: "image",
+          url: "https://cdn.example/meme.png",
+          thumbUrl: null,
+          name: "meme.png",
+        },
+      ],
+    };
+    const agent = createCutAgent({
+      privateKey: generatePrivateKey(),
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        requests.push(request.clone());
+        return json({ message });
+      },
+    });
+
+    await expect(
+      agent.sendMessage({ type: "league", id: "league-1" }, "", {
+        attachments: [{ type: "image", url: "https://example.com/a.png", name: "a" }],
+      }),
+    ).resolves.toEqual(message);
+    await expect(
+      agent.sendMessage({ type: "league", id: "league-1" }, "", {
+        files: [{ data: new Uint8Array([1, 2, 3]), filename: "meme.png", mimeType: "image/png" }],
+      }),
+    ).resolves.toEqual(message);
+
+    expect(requests[0]?.headers.get("content-type")).toContain("application/json");
+    expect(JSON.parse(await requests[0]!.text())).toEqual({
+      room: { type: "league", id: "league-1" },
+      text: "",
+      attachments: [{ type: "image", url: "https://example.com/a.png", name: "a" }],
+    });
+    const contentType = requests[1]?.headers.get("content-type") ?? "";
+    expect(contentType).toMatch(/^multipart\/form-data; boundary=/);
+    const boundary = contentType.slice("multipart/form-data; boundary=".length);
+    const raw = new TextDecoder().decode(await requests[1]!.arrayBuffer());
+    expect(raw).toContain(`--${boundary}`);
+    expect(raw).toContain('name="type"');
+    expect(raw).toContain("league");
+    expect(raw).toContain('filename="meme.png"');
+    expect(raw).toContain("image/png");
+    expect(requests[1]?.headers.get("signature")).toBeTruthy();
   });
 
   it("reads event odds from the signed event route", async () => {

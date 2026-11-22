@@ -13,17 +13,21 @@ import streamRoutes from "./stream.js";
 import botRoutes from "./bot.js";
 import agentRoutes from "./agent.js";
 import paymasterRoutes from "./paymaster.js";
-import { API_JSON_BODY_MAX_BYTES } from "../schemas/limits.js";
+import { API_JSON_BODY_MAX_BYTES, API_MESSAGE_UPLOAD_MAX_BYTES } from "../schemas/limits.js";
 
 const apiRouter = new Hono();
 
-apiRouter.use(
-  "*",
-  bodyLimit({
-    maxSize: API_JSON_BODY_MAX_BYTES,
-    onError: (c) => c.json({ error: "Request body too large" }, 413),
-  }),
-);
+apiRouter.use("*", async (c, next) => {
+  const upload =
+    c.req.method === "POST" &&
+    c.req.path.endsWith("/agent/messages") &&
+    (c.req.header("content-type") ?? "").includes("multipart/form-data");
+  const limit = bodyLimit({
+    maxSize: upload ? API_MESSAGE_UPLOAD_MAX_BYTES : API_JSON_BODY_MAX_BYTES,
+    onError: (ctx) => ctx.json({ error: "Request body too large" }, 413),
+  });
+  return limit(c, next);
+});
 
 apiRouter.get("/health", (c) => {
   return c.json({

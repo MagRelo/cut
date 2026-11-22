@@ -9,7 +9,7 @@ import {
   createFreeContestSchema,
   createLeagueSchema,
   joinLeagueSchema,
-  roomPostSchema,
+  messagePostSchema,
   registerSchema,
   type AgentAccount,
   type AgentProfile,
@@ -28,14 +28,22 @@ import {
   type PicksBrief,
   type ReferralBrief,
   type RegisteredAgent,
+  type RoomAttachmentInput,
   type RoomAudience,
   type RoomMessage,
+  type RoomRef,
   type ScoutBrief,
   type TickBrief,
   type UserOpBody,
 } from "./contract.js";
 
 export type CutChainId = 8453 | 84532;
+
+export type RoomFile = {
+  data: Uint8Array;
+  filename: string;
+  mimeType: string;
+};
 
 export class CutAgentError extends Error {
   readonly status: number;
@@ -131,22 +139,18 @@ export type CutAgent = {
   league(id: string): Promise<LeagueDetail>;
   createLeague(input: { name: string; description?: string }): Promise<LeagueCreated>;
   inviteLeague(id: string): Promise<LeagueInvite>;
-  sendLeagueMessage(
-    id: string,
+  sendMessage(
+    room: RoomRef,
     text: string,
-    input?: { audience?: RoomAudience; kind?: string },
+    input?: {
+      audience?: RoomAudience;
+      kind?: string;
+      files?: RoomFile[];
+      attachments?: RoomAttachmentInput[];
+    },
   ): Promise<RoomMessage>;
-  leagueMessages(
-    id: string,
-    input?: { limit?: number; audience?: RoomAudience },
-  ): Promise<RoomMessage[]>;
-  sendDirectMessage(
-    userId: string,
-    text: string,
-    input?: { audience?: RoomAudience; kind?: string },
-  ): Promise<RoomMessage>;
-  directMessages(
-    userId: string,
+  messages(
+    room: RoomRef,
     input?: { limit?: number; audience?: RoomAudience },
   ): Promise<RoomMessage[]>;
 };
@@ -173,6 +177,36 @@ function contestExpiryTimestamp(
 export function generateDelegateKey(): { privateKey: Hex; address: Address } {
   const privateKey = generatePrivateKey();
   return { privateKey, address: privateKeyToAccount(privateKey).address };
+}
+
+function encodeMultipart(
+  fields: Record<string, string>,
+  files: RoomFile[],
+): { body: Uint8Array; contentType: string } {
+  const boundary = `cut${crypto.randomUUID().replace(/-/g, "")}`;
+  const encoder = new TextEncoder();
+  const parts: Uint8Array[] = [];
+  const push = (value: string) => parts.push(encoder.encode(value));
+  for (const [name, value] of Object.entries(fields)) {
+    push(`--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`);
+  }
+  for (const file of files) {
+    const filename = file.filename.replace(/["\r\n\\]/g, "").trim() || "file";
+    const mime = file.mimeType.replace(/[\r\n]/g, "") || "application/octet-stream";
+    push(
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${mime}\r\n\r\n`,
+    );
+    parts.push(file.data);
+    push("\r\n");
+  }
+  push(`--${boundary}--\r\n`);
+  const body = new Uint8Array(parts.reduce((sum, part) => sum + part.byteLength, 0));
+  let offset = 0;
+  for (const part of parts) {
+    body.set(part, offset);
+    offset += part.byteLength;
+  }
+  return { body, contentType: `multipart/form-data; boundary=${boundary}` };
 }
 
 export function createCutAgent(options: CutAgentOptions): CutAgent {
@@ -369,13 +403,30 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
     return value as CompanionBrief;
   }
 
-  function roomBody(text: string, input?: { audience?: RoomAudience; kind?: string }) {
-    const body = parse(roomPostSchema, { text, ...input });
-    return {
-      text: body.text,
-      ...(body.audience ? { audience: body.audience } : {}),
-      ...(body.kind ? { kind: body.kind } : {}),
-    };
+  function messageFields(
+    room: RoomRef,
+    text: string,
+    input?: {
+      audience?: RoomAudience;
+      kind?: string;
+      files?: RoomFile[];
+      attachments?: RoomAttachmentInput[];
+    },
+  ) {
+    const body = parse(messagePostSchema, {
+      room,
+      text,
+      ...(input?.audience ? { audience: input.audience } : {}),
+      ...(input?.kind ? { kind: input.kind } : {}),
+      ...(input?.attachments ? { attachments: input.attachments } : {}),
+    });
+    const files = input?.files ?? [];
+    const count = (body.attachments?.length ?? 0) + files.length;
+    if (count > 10) throw new CutAgentError("Too many attachments", 400, null);
+    if (!body.text && count === 0) {
+      throw new CutAgentError("Message text or an attachment is required", 400, null);
+    }
+    return { body, files };
   }
 
   function roomQuery(input?: { limit?: number; audience?: RoomAudience }): Record<string, string> {
@@ -402,7 +453,10 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
     if (typeof row.id !== "string" || typeof row.text !== "string" || typeof row.userId !== "string") {
       throw new CutAgentError("Unexpected response", 502, value);
     }
-    return row;
+    if (row.attachments != null && !Array.isArray(row.attachments)) {
+      throw new CutAgentError("Unexpected response", 502, value);
+    }
+    return { ...row, attachments: row.attachments ?? [] };
   }
 
   function isEventOdds(value: unknown): value is EventOdds {
@@ -421,7 +475,7 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
     if (!value || typeof value !== "object" || !Array.isArray((value as { messages?: unknown }).messages)) {
       throw new CutAgentError("Unexpected response", 502, value);
     }
-    return (value as { messages: RoomMessage[] }).messages;
+    return (value as { messages: unknown[] }).messages.map((message) => oneMessage({ message }));
   }
 
   return {
@@ -726,33 +780,42 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
       }
       return value as LeagueInvite;
     },
-    async sendLeagueMessage(id, text, input) {
-      const value = await post(
-        `/api/agent/leagues/${encodeURIComponent(id)}/messages`,
-        roomBody(text, input),
-        { smartWallet },
+    async sendMessage(room, text, input) {
+      const { body, files } = messageFields(room, text, input);
+      if (files.length === 0) {
+        const value = await post("/api/agent/messages", body, { smartWallet });
+        return oneMessage(value);
+      }
+      const fields: Record<string, string> = {
+        type: body.room.type,
+        id: body.room.id,
+        text: body.text,
+      };
+      if (body.audience) fields.audience = body.audience;
+      if (body.kind) fields.kind = body.kind;
+      if (body.attachments?.length) fields.attachments = JSON.stringify(body.attachments);
+      const encoded = encodeMultipart(fields, files);
+      const url = new URL("/api/agent/messages", origin);
+      url.searchParams.set("smartWallet", smartWallet);
+      const value = await send(
+        await signRequest(
+          url.toString(),
+          {
+            method: "POST",
+            headers: { "content-type": encoded.contentType },
+            body: encoded.body,
+          },
+          signer,
+        ),
       );
       return oneMessage(value);
     },
-    async leagueMessages(id, input) {
-      const value = await get(
-        `/api/agent/leagues/${encodeURIComponent(id)}/messages`,
-        roomQuery(input),
-      );
-      return manyMessages(value);
-    },
-    async sendDirectMessage(userId, text, input) {
-      if (!userId.trim()) throw new CutAgentError("userId is required", 400, null);
-      const value = await post(
-        "/api/agent/messages",
-        { ...roomBody(text, input), userId },
-        { smartWallet },
-      );
-      return oneMessage(value);
-    },
-    async directMessages(userId, input) {
-      if (!userId.trim()) throw new CutAgentError("userId is required", 400, null);
-      const value = await get("/api/agent/messages", { ...roomQuery(input), userId });
+    async messages(room, input) {
+      const value = await get("/api/agent/messages", {
+        ...roomQuery(input),
+        type: room.type,
+        id: room.id,
+      });
       return manyMessages(value);
     },
   };

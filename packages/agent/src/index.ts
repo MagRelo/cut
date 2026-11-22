@@ -1,4 +1,5 @@
 export { createCutAgent, generateDelegateKey, CutAgentError } from "./client.js";
+export type { RoomFile } from "./client.js";
 export { kernelWalletAddress } from "./kernelWallet.js";
 export type {
   CreateContestInput,
@@ -25,8 +26,11 @@ export type {
   LeagueInvite,
   LeagueJoined,
   LeagueList,
+  RoomAttachment,
+  RoomAttachmentInput,
   RoomAudience,
   RoomMessage,
+  RoomRef,
   LineupResult,
   PicksBrief,
   ReferralBrief,

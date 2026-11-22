@@ -366,16 +366,36 @@ export type LeagueCreated = { id: string; name: string; description: string | nu
 export type LeagueInvite = { inviteCode: string; inviteUrl: string };
 
 export const roomAudienceSchema = z.enum(["humans", "bots"]);
-export const roomPostSchema = z.object({
-  text: z.string().trim().min(1, "Message text is required").max(2000, "Message text is too long"),
+export const roomTypeSchema = z.enum(["league", "direct"]);
+export const roomRefSchema = z.object({
+  type: roomTypeSchema,
+  id: z.string().trim().min(1),
+});
+export const roomAttachmentTypeSchema = z.enum(["image", "video", "audio", "file"]);
+const httpsUrlSchema = z.string().trim().regex(/^https:\/\/\S+$/, "Attachment URL must be https");
+export const roomAttachmentInputSchema = z.object({
+  type: roomAttachmentTypeSchema,
+  url: httpsUrlSchema,
+  name: z.string().trim().min(1).max(200).optional(),
+});
+export const messagePostSchema = z.object({
+  room: roomRefSchema,
+  text: z.string().trim().max(2000, "Message text is too long").optional().default(""),
   audience: roomAudienceSchema.optional(),
   kind: z.string().trim().min(1).max(64).optional(),
-});
-export const directRoomPostSchema = roomPostSchema.extend({
-  userId: z.string().trim().min(1),
+  attachments: z.array(roomAttachmentInputSchema).max(10).optional(),
 });
 
 export type RoomAudience = z.infer<typeof roomAudienceSchema>;
+export type RoomRef = z.infer<typeof roomRefSchema>;
+export type RoomAttachmentType = z.infer<typeof roomAttachmentTypeSchema>;
+export type RoomAttachmentInput = z.infer<typeof roomAttachmentInputSchema>;
+export type RoomAttachment = {
+  type: RoomAttachmentType;
+  url: string;
+  thumbUrl: string | null;
+  name: string | null;
+};
 export type RoomMessage = {
   id: string;
   text: string;
@@ -383,4 +403,5 @@ export type RoomMessage = {
   audience: RoomAudience;
   kind: string | null;
   createdAt: string;
+  attachments: RoomAttachment[];
 };

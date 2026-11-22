@@ -1,16 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { upsertUsers, queryChannels, getOrCreate, update, sendMessage, get, channel } = vi.hoisted(
-  () => ({
-    upsertUsers: vi.fn(),
-    queryChannels: vi.fn(),
-    getOrCreate: vi.fn(),
-    update: vi.fn(),
-    sendMessage: vi.fn(),
-    get: vi.fn(),
-    channel: vi.fn(),
-  }),
-);
+const {
+  upsertUsers,
+  queryChannels,
+  getOrCreate,
+  update,
+  sendMessage,
+  get,
+  uploadChannelImage,
+  uploadChannelFile,
+  channel,
+} = vi.hoisted(() => ({
+  upsertUsers: vi.fn(),
+  queryChannels: vi.fn(),
+  getOrCreate: vi.fn(),
+  update: vi.fn(),
+  sendMessage: vi.fn(),
+  get: vi.fn(),
+  uploadChannelImage: vi.fn(),
+  uploadChannelFile: vi.fn(),
+  channel: vi.fn(),
+}));
 
 vi.mock("@stream-io/node-sdk", () => ({
   StreamClient: class {
@@ -35,8 +45,8 @@ vi.mock("../../lib/prisma.js", () => ({
 }));
 
 import {
-  listDirectMessages,
-  postDirectMessage,
+  listMessages,
+  postMessage,
   StreamPeerUnavailableError,
   syncLeagueMemberAdded,
 } from "./streamChat.js";
@@ -53,6 +63,8 @@ describe("stream chat rooms", () => {
       update,
       sendMessage,
       get,
+      uploadChannelImage,
+      uploadChannelFile,
     }));
     findMany.mockResolvedValue([{ id: "user-1", name: "Ada" }]);
     update.mockResolvedValue({});
@@ -87,9 +99,9 @@ describe("stream chat rooms", () => {
       where.id.in.map((id: string) => ({ id, name: id })),
     );
 
-    await postDirectMessage({
+    await postMessage({
       userId: "user-1",
-      peerId: "user-2",
+      room: { type: "direct", id: "user-2" },
       text: "hello",
       audience: "bots",
     });
@@ -111,9 +123,9 @@ describe("stream chat rooms", () => {
     findDelegate.mockResolvedValue(null);
 
     await expect(
-      postDirectMessage({
+      postMessage({
         userId: "user-1",
-        peerId: "user-2",
+        room: { type: "direct", id: "user-2" },
         text: "hello",
         audience: "bots",
       }),
@@ -140,7 +152,7 @@ describe("stream chat rooms", () => {
     });
 
     await expect(
-      listDirectMessages({ userId: "user-1", peerId: "user-2", limit: 20 }),
+      listMessages({ userId: "user-1", room: { type: "direct", id: "user-2" }, limit: 20 }),
     ).resolves.toEqual([
       {
         id: "msg-1",
@@ -149,6 +161,7 @@ describe("stream chat rooms", () => {
         audience: "humans",
         kind: null,
         createdAt: "2026-11-19T12:00:00.000Z",
+        attachments: [],
       },
     ]);
     expect(queryChannels).toHaveBeenCalledWith({
@@ -164,5 +177,161 @@ describe("stream chat rooms", () => {
       state: true,
       user_id: "user-1",
     });
+  });
+
+  it("posts to the league channel for a member", async () => {
+    findMember.mockResolvedValue({ userId: "user-1" });
+
+    await postMessage({
+      userId: "user-1",
+      room: { type: "league", id: "league-1" },
+      text: "hello",
+      audience: "humans",
+    });
+
+    expect(channel).toHaveBeenCalledWith("messaging", "league-league-1");
+    expect(sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.objectContaining({ text: "hello", user_id: "user-1" }),
+      }),
+    );
+    expect(uploadChannelImage).not.toHaveBeenCalled();
+  });
+
+  it("uploads an image and sends it as an attachment", async () => {
+    findMember.mockResolvedValue({ userId: "user-1" });
+    uploadChannelImage.mockResolvedValue({
+      file: "https://cdn.example/meme.png",
+      thumb_url: "https://cdn.example/meme-thumb.png",
+    });
+    sendMessage.mockImplementation(async (request: { message: { text: string; attachments?: unknown[] } }) => ({
+      message: {
+        id: "msg-1",
+        text: request.message.text,
+        created_at: new Date("2026-11-19T12:00:00.000Z"),
+        custom: { audience: "humans" },
+        user: { id: "user-1" },
+        attachments: request.message.attachments,
+      },
+    }));
+
+    await expect(
+      postMessage({
+        userId: "user-1",
+        room: { type: "league", id: "league-1" },
+        text: "",
+        audience: "humans",
+        files: [{ data: new Uint8Array([1, 2, 3]), filename: "meme.png", mimeType: "image/png" }],
+      }),
+    ).resolves.toMatchObject({
+      text: "",
+      attachments: [
+        {
+          type: "image",
+          url: "https://cdn.example/meme.png",
+          thumbUrl: "https://cdn.example/meme-thumb.png",
+          name: "meme.png",
+        },
+      ],
+    });
+
+    const uploaded = uploadChannelImage.mock.calls[0]?.[0].file as File;
+    expect(uploaded).toBeInstanceOf(File);
+    expect(uploaded.name).toBe("meme.png");
+    expect(uploadChannelFile).not.toHaveBeenCalled();
+    expect(sendMessage.mock.calls[0]?.[0].message.attachments[0]).toMatchObject({
+      type: "image",
+      image_url: "https://cdn.example/meme.png",
+      thumb_url: "https://cdn.example/meme-thumb.png",
+    });
+  });
+
+  it("uploads a video through the file endpoint", async () => {
+    findMember.mockResolvedValue({ userId: "user-1" });
+    uploadChannelFile.mockResolvedValue({
+      file: "https://cdn.example/clip.mp4",
+      thumb_url: "https://cdn.example/clip-thumb.jpg",
+    });
+
+    await postMessage({
+      userId: "user-1",
+      room: { type: "league", id: "league-1" },
+      text: "clip",
+      audience: "humans",
+      files: [{ data: new Uint8Array([1]), filename: "clip.mp4", mimeType: "video/mp4" }],
+    });
+
+    expect(uploadChannelImage).not.toHaveBeenCalled();
+    expect(uploadChannelFile.mock.calls[0]?.[0].file).toBeInstanceOf(File);
+    expect(sendMessage.mock.calls[0]?.[0].message.attachments[0]).toMatchObject({
+      type: "video",
+      asset_url: "https://cdn.example/clip.mp4",
+      thumb_url: "https://cdn.example/clip-thumb.jpg",
+      title: "clip.mp4",
+    });
+  });
+
+  it("sends a link attachment without uploading", async () => {
+    findMember.mockResolvedValue({ userId: "user-1" });
+
+    await postMessage({
+      userId: "user-1",
+      room: { type: "league", id: "league-1" },
+      text: "look",
+      audience: "humans",
+      attachments: [{ type: "image", url: "https://example.com/a.png", name: "a" }],
+    });
+
+    expect(uploadChannelImage).not.toHaveBeenCalled();
+    expect(uploadChannelFile).not.toHaveBeenCalled();
+    expect(sendMessage.mock.calls[0]?.[0].message.attachments[0]).toMatchObject({
+      type: "image",
+      image_url: "https://example.com/a.png",
+      fallback: "a",
+    });
+  });
+
+  it("reads image attachments from a league list", async () => {
+    findMember.mockResolvedValue({ userId: "user-1" });
+    get.mockResolvedValue({
+      messages: [
+        {
+          id: "msg-1",
+          text: "",
+          created_at: new Date("2026-11-19T12:00:00.000Z"),
+          custom: { audience: "humans" },
+          user: { id: "user-1" },
+          attachments: [
+            {
+              type: "image",
+              image_url: "https://cdn.example/meme.png",
+              thumb_url: "https://cdn.example/meme-thumb.png",
+              fallback: "meme.png",
+            },
+          ],
+        },
+      ],
+    });
+
+    await expect(
+      listMessages({ userId: "user-1", room: { type: "league", id: "league-1" }, limit: 10 }),
+    ).resolves.toEqual([
+      {
+        id: "msg-1",
+        text: "",
+        userId: "user-1",
+        audience: "humans",
+        kind: null,
+        createdAt: "2026-11-19T12:00:00.000Z",
+        attachments: [
+          {
+            type: "image",
+            url: "https://cdn.example/meme.png",
+            thumbUrl: "https://cdn.example/meme-thumb.png",
+            name: "meme.png",
+          },
+        ],
+      },
+    ]);
   });
 });

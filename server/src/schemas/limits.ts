@@ -14,6 +14,8 @@ export const BPS_MIN = 0;
 export const BPS_MAX = 10_000;
 
 export const API_JSON_BODY_MAX_BYTES = 128 * 1024;
+/** Stream's own cap for an uploaded image or file. Multipart chat posts only. */
+export const API_MESSAGE_UPLOAD_MAX_BYTES = 100 * 1024 * 1024;
 /** Hard cap on lineup write `candidates` (sport roster max is 3–4; 8 is a safe ceiling). */
 export const LINEUP_PICKS_MAX = 8;
 
