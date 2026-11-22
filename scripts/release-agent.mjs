@@ -1,25 +1,29 @@
-import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { packageDir, stampRelease, syncAgentDocs } from "./agent-sdk-lib.mjs";
+import { prepareAgentRelease } from "./agent-sdk-lib.mjs";
 
-const written = syncAgentDocs();
-if (written.length === 0) {
-  console.log("Agent docs already match. @playthecut/agent was not bumped.");
-  process.exit(0);
-}
-
-console.log(`Copied agent docs:\n${written.join("\n")}`);
-
-const pkgPath = join(packageDir, "package.json");
-const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
-const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(pkg.version);
-if (!match) {
-  console.error(`Cannot bump @playthecut/agent version ${pkg.version}.`);
+let result;
+try {
+  result = await prepareAgentRelease();
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
   process.exit(1);
 }
-pkg.version = `${match[1]}.${match[2]}.${Number(match[3]) + 1}`;
-writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
-console.log(`Bumped @playthecut/agent to ${pkg.version}.`);
 
-stampRelease();
-console.log(`Stamped @playthecut/agent@${pkg.version}.`);
+if (result.written.length > 0) {
+  console.log(`Copied agent docs:\n${result.written.join("\n")}`);
+}
+if (result.bump) {
+  console.log(`Bumped @playthecut/agent to ${result.version}.`);
+}
+if (result.stamp || result.bump) {
+  console.log(`Stamped @playthecut/agent@${result.version}.`);
+} else if (result.published) {
+  console.log(`@playthecut/agent@${result.version} is already on npm.`);
+} else if (result.staged) {
+  console.log(
+    result.stageId
+      ? `@playthecut/agent@${result.version} is already staged. Approve it with npm stage approve ${result.stageId}.`
+      : `@playthecut/agent@${result.version} is already staged.`,
+  );
+} else {
+  console.log(`@playthecut/agent@${result.version} matches the spec. It is not on npm yet.`);
+}

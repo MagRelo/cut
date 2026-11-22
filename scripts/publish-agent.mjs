@@ -1,61 +1,64 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { packageDir, root } from "./agent-sdk-lib.mjs";
-
-if (!process.env.NPM_TOKEN?.trim()) {
-  const envPath = join(root, ".env");
-  if (existsSync(envPath)) {
-    for (const line of readFileSync(envPath, "utf8").split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      const eq = trimmed.indexOf("=");
-      if (eq === -1 || trimmed.slice(0, eq).trim() !== "NPM_TOKEN") continue;
-      let value = trimmed.slice(eq + 1).trim();
-      if (
-        (value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))
-      ) {
-        value = value.slice(1, -1);
-      }
-      process.env.NPM_TOKEN = value;
-    }
-  }
-}
+import {
+  bumpLocalPackage,
+  contentHash,
+  decidePublish,
+  findStageId,
+  listStaged,
+  loadNpmToken,
+  packageDir,
+  publishedVersions,
+  readRelease,
+  stageIdFromText,
+  writeRelease,
+} from "./agent-sdk-lib.mjs";
 
 const pkg = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"));
-
-function compare(left, right) {
-  const a = left.split(".").map(Number);
-  const b = right.split(".").map(Number);
-  for (let index = 0; index < 3; index += 1) {
-    const delta = (a[index] ?? 0) - (b[index] ?? 0);
-    if (delta !== 0) return delta;
-  }
-  return 0;
-}
-
-const response = await fetch(`https://registry.npmjs.org/${pkg.name.replace("/", "%2f")}`);
-if (response.status !== 404 && !response.ok) {
-  console.error(`npm registry returned ${response.status} for ${pkg.name}.`);
+const release = readRelease();
+const hash = contentHash();
+const token = loadNpmToken();
+if (!token) {
+  console.error(`NPM_TOKEN is required to publish ${pkg.name}@${pkg.version}.`);
   process.exit(1);
 }
-const published =
-  response.status === 404 ? { versions: {}, "dist-tags": {} } : await response.json();
-const versions = published.versions ?? {};
-if (versions[pkg.version]) {
+
+let published;
+let stage;
+try {
+  published = await publishedVersions(pkg.name);
+  stage = findStageId(listStaged(pkg.name, token), pkg.version);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
+  process.exit(1);
+}
+
+const decision = decidePublish({
+  version: pkg.version,
+  hash,
+  release,
+  published: published.has(pkg.version),
+  stageId: stage ? stage.id ?? pkg.version : "",
+});
+if (decision.action === "skip" && decision.reason === "published") {
   console.log(`${pkg.name}@${pkg.version} is already on npm.`);
   process.exit(0);
 }
-const latest = published["dist-tags"]?.latest;
-if (latest && compare(pkg.version, latest) < 0) {
-  console.error(`${pkg.name}@${pkg.version} is behind npm latest ${latest}.`);
-  process.exit(1);
+if (decision.action === "skip" && decision.reason === "staged") {
+  console.log(`${pkg.name}@${pkg.version} is already staged.`);
+  console.log(
+    decision.id && decision.id !== pkg.version
+      ? `Approve it with npm stage approve ${decision.id}.`
+      : `Approve it from npm stage list ${pkg.name}.`,
+  );
+  process.exit(0);
 }
-const token = process.env.NPM_TOKEN?.trim();
-if (!token) {
-  console.error(`NPM_TOKEN is required to publish ${pkg.name}@${pkg.version}.`);
+if (decision.action === "bump") {
+  console.error(
+    `${pkg.name}@${pkg.version} is already staged. A source or doc change needs a new patch. Run pnpm run agent:release, then publish.`,
+  );
   process.exit(1);
 }
 
@@ -98,9 +101,28 @@ if (stageOnly) {
   echo(result);
 }
 rmSync(dir, { recursive: true, force: true });
-if (result.status !== 0) process.exit(result.status ?? 1);
-console.log(
-  publishedDirectly
-    ? `Published ${pkg.name}@${pkg.version}.`
-    : `Staged ${pkg.name}@${pkg.version}. Approve it with npm stage approve.`,
-);
+if (result.status !== 0) {
+  const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
+  if (output.includes("Cannot stage previously published version")) {
+    const next = bumpLocalPackage();
+    console.error(
+      `${pkg.name}@${pkg.version} is already used. Bumped to ${next}. Run pnpm run deploy again to stage it.`,
+    );
+  }
+  process.exit(result.status ?? 1);
+}
+if (!publishedDirectly) {
+  const stageId = stageIdFromText(`${result.stdout ?? ""}${result.stderr ?? ""}`);
+  writeRelease(pkg.version, hash, {
+    version: pkg.version,
+    hash,
+    ...(stageId ? { id: stageId } : {}),
+  });
+  console.log(
+    stageId
+      ? `Staged ${pkg.name}@${pkg.version}. Approve it with npm stage approve ${stageId}.`
+      : `Staged ${pkg.name}@${pkg.version}. Approve it with npm stage list ${pkg.name}, then npm stage approve <id>.`,
+  );
+} else {
+  console.log(`Published ${pkg.name}@${pkg.version}.`);
+}

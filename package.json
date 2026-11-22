@@ -35,6 +35,7 @@
     "agent:stamp": "node scripts/stamp-agent-sdk.mjs",
     "agent:release": "node scripts/release-agent.mjs",
     "agent:publish": "node scripts/publish-agent.mjs",
+    "agent:since": "node scripts/agent-since.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:sport-boundary": "node scripts/check-sport-boundary.mjs",

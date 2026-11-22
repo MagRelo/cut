@@ -76,7 +76,14 @@ Note: the Node SDK's `getTestAccessToken()` (headless token) is rejected here be
   Without those, contest creation/entry fails at the wallet transaction step.
 
 ### Release
-`pnpm run deploy` builds and pushes the production image. `pnpm run launch` (and
+`pnpm run deploy` builds and pushes the production image. It also releases
+`@playthecut/agent`. A change to the agent source or the agent spec pages bumps the
+patch when that version is already on npm or in `npm stage list`, then stages the
+new version. If npm rejects the version as already used, publish bumps the patch
+and stops; run deploy again to stage the new number. Approve it with
+`npm stage approve <id>` before it can be installed. `pnpm run agent:since` lists
+commits since the last published agent version. Only commits that touch the agent
+source or the agent spec pages ship in the next package. `pnpm run launch` (and
 `launch:staging`, plus `scp`/`ssh` to `root@157.230.6.6`) needs the droplet SSH password.
 The agent does not have that password. Stop after the image push and give the user
 `pnpm run launch`.
