@@ -5,6 +5,8 @@ import { createExplorerLinkJSX } from "../../utils/blockchainUtils";
 
 export interface WalletTokenBalancesCardProps {
   title: string;
+  /** Short line under the title, such as a results display name. */
+  detail?: string;
   address: string;
   chainId: number;
   paymentTokenAddress: string;
@@ -16,6 +18,7 @@ export interface WalletTokenBalancesCardProps {
 
 export const WalletTokenBalancesCard: React.FC<WalletTokenBalancesCardProps> = ({
   title,
+  detail,
   address,
   chainId,
   paymentTokenAddress,
@@ -45,6 +48,7 @@ export const WalletTokenBalancesCard: React.FC<WalletTokenBalancesCardProps> = (
     return (
       <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">{title}</h2>
+        {detail ? <p className="mb-2 text-sm text-gray-600">{detail}</p> : null}
         <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
           {addressMissingMessage ?? "No wallet is linked for this user on the current network."}
         </p>
@@ -55,8 +59,9 @@ export const WalletTokenBalancesCard: React.FC<WalletTokenBalancesCardProps> = (
   return (
     <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
       <div className="mb-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">{title}</h2>
-        <div className="text-sm text-gray-600 font-mono break-all">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{title}</h2>
+        {detail ? <p className="mt-1 text-sm text-gray-600">{detail}</p> : null}
+        <div className="mt-2 text-sm text-gray-600 font-mono break-all">
           {createExplorerLinkJSX(
             address,
             chainId,

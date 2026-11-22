@@ -45,7 +45,8 @@ export const AdminWalletsPanel: React.FC = () => {
         />
 
         <WalletTokenBalancesCard
-          title="Referral Platform Root"
+          title="Rich Bouquet"
+          detail="Referral platform root. Contest results use this name for payouts to this wallet."
           address={referralPlatformRootAddress}
           chainId={chainId}
           paymentTokenAddress={paymentTokenAddress ?? ""}
@@ -73,10 +74,12 @@ export const AdminWalletsPanel: React.FC = () => {
             </dd>
           </div>
           <div>
-            <dt className="font-medium text-gray-900">Referral Platform Root</dt>
+            <dt className="font-medium text-gray-900">Rich Bouquet</dt>
             <dd className="text-gray-600 mt-0.5">
-              Cold wallet that receives the platform's share of referral network fees.
-              Organic parent under REFERRAL_ROOT in the referral tree.
+              Cold referral platform root. Contest results label payouts to this wallet as Rich
+              Bouquet. It receives the leftover referral fee at the top of a winner&apos;s chain.
+              Players who join without an invite are attached under it. The app does not hold its
+              key.
             </dd>
           </div>
         </dl>
