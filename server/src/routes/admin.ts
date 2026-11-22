@@ -18,6 +18,12 @@ import { resolveEventIdParam } from "../services/admin/adminEventContext.js";
 import { pickWalletForChain } from "../utils/pickWalletForChain.js";
 import { getRequestChainId } from "../utils/requestChainId.js";
 import { ADMIN_LIST_USER_TYPES } from "../schemas/limits.js";
+import {
+  clampMessageLimit,
+  observeLeagueMessages,
+  StreamDisabledError,
+  StreamLeagueMissingError,
+} from "../services/stream/streamChat.js";
 
 const adminRouter = new Hono();
 
@@ -33,6 +39,34 @@ adminRouter.get("/dashboard", requireAuth, requireAdmin, async (c) => {
   } catch (error) {
     console.error("admin dashboard error:", error);
     return c.json({ error: "Failed to load admin dashboard" }, 500);
+  }
+});
+
+/** GET /api/admin/leagues/:leagueId/messages — read a league chat without membership. */
+adminRouter.get("/leagues/:leagueId/messages", requireAuth, requireAdmin, async (c) => {
+  const leagueId = c.req.param("leagueId")?.trim();
+  if (!leagueId) {
+    return c.json({ error: "leagueId is required" }, 400);
+  }
+  let limit: number;
+  try {
+    limit = clampMessageLimit(c.req.query("limit"));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid limit";
+    return c.json({ error: message }, 400);
+  }
+  try {
+    const data = await observeLeagueMessages(leagueId, limit);
+    return c.json(data);
+  } catch (error) {
+    if (error instanceof StreamLeagueMissingError) {
+      return c.json({ error: error.message }, 404);
+    }
+    if (error instanceof StreamDisabledError) {
+      return c.json({ error: error.message }, 503);
+    }
+    console.error("admin league messages error:", error);
+    return c.json({ error: "Failed to load league messages" }, 500);
   }
 });
 

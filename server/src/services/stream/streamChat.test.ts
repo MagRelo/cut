@@ -29,16 +29,18 @@ vi.mock("@stream-io/node-sdk", () => ({
   },
 }));
 
-const { findMany, findUniqueUser, findMember, findDelegate } = vi.hoisted(() => ({
+const { findMany, findUniqueUser, findMember, findDelegate, findGroup } = vi.hoisted(() => ({
   findMany: vi.fn(),
   findUniqueUser: vi.fn(),
   findMember: vi.fn(),
   findDelegate: vi.fn(),
+  findGroup: vi.fn(),
 }));
 
 vi.mock("../../lib/prisma.js", () => ({
   prisma: {
     user: { findMany, findUnique: findUniqueUser },
+    userGroup: { findUnique: findGroup },
     userGroupMember: { findUnique: findMember },
     botDelegate: { findFirst: findDelegate },
   },
@@ -46,7 +48,9 @@ vi.mock("../../lib/prisma.js", () => ({
 
 import {
   listMessages,
+  observeLeagueMessages,
   postMessage,
+  StreamLeagueMissingError,
   StreamPeerUnavailableError,
   syncLeagueMemberAdded,
 } from "./streamChat.js";
@@ -333,5 +337,78 @@ describe("stream chat rooms", () => {
         ],
       },
     ]);
+  });
+
+  it("reads a league channel without membership or joining", async () => {
+    findGroup.mockResolvedValue({ id: "league-1", name: "Sunday" });
+    findMany.mockResolvedValue([{ id: "user-2", name: "Bea" }]);
+    get.mockResolvedValue({
+      messages: [
+        {
+          id: "msg-old",
+          text: "earlier",
+          created_at: new Date("2026-11-19T11:00:00.000Z"),
+          custom: { audience: "humans" },
+          user: { id: "user-2" },
+        },
+        {
+          id: "msg-new",
+          text: "later",
+          created_at: new Date("2026-11-19T12:00:00.000Z"),
+          custom: { audience: "bots", kind: "lineup" },
+          user: { id: "missing-user" },
+        },
+      ],
+    });
+
+    await expect(observeLeagueMessages("league-1", 10)).resolves.toEqual({
+      league: { id: "league-1", name: "Sunday" },
+      messages: [
+        {
+          id: "msg-old",
+          text: "earlier",
+          userId: "user-2",
+          userName: "Bea",
+          audience: "humans",
+          kind: null,
+          createdAt: "2026-11-19T11:00:00.000Z",
+          attachments: [],
+        },
+        {
+          id: "msg-new",
+          text: "later",
+          userId: "missing-user",
+          userName: null,
+          audience: "bots",
+          kind: "lineup",
+          createdAt: "2026-11-19T12:00:00.000Z",
+          attachments: [],
+        },
+      ],
+    });
+    expect(findMember).not.toHaveBeenCalled();
+    expect(getOrCreate).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+    expect(upsertUsers).not.toHaveBeenCalled();
+    expect(channel).toHaveBeenCalledWith("messaging", "league-league-1");
+  });
+
+  it("returns an empty transcript when the league channel does not exist", async () => {
+    findGroup.mockResolvedValue({ id: "league-1", name: "Sunday" });
+    get.mockRejectedValue({ code: 16 });
+
+    await expect(observeLeagueMessages("league-1", 10)).resolves.toEqual({
+      league: { id: "league-1", name: "Sunday" },
+      messages: [],
+    });
+  });
+
+  it("refuses an unknown league before contacting Stream", async () => {
+    findGroup.mockResolvedValue(null);
+
+    await expect(observeLeagueMessages("missing", 10)).rejects.toBeInstanceOf(
+      StreamLeagueMissingError,
+    );
+    expect(channel).not.toHaveBeenCalled();
   });
 });

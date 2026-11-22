@@ -55,6 +55,30 @@ export interface AdminDashboardContest {
   endTime: string;
 }
 
+export interface AdminLeagueMessageAttachment {
+  type: "image" | "video" | "audio" | "file";
+  url: string;
+  thumbUrl: string | null;
+  name: string | null;
+}
+
+export interface AdminLeagueMessage {
+  id: string;
+  text: string;
+  userId: string;
+  userName: string | null;
+  audience: "humans" | "bots";
+  kind: string | null;
+  createdAt: string;
+  attachments: AdminLeagueMessageAttachment[];
+}
+
+/** Response from `GET /api/admin/leagues/:leagueId/messages`. */
+export interface AdminLeagueMessagesResponse {
+  league: { id: string; name: string };
+  messages: AdminLeagueMessage[];
+}
+
 export interface AdminDashboardLeague {
   id: string;
   name: string;

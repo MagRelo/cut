@@ -53,6 +53,7 @@ import { LeagueStarterGuidePage } from "./pages/LeagueStarterGuidePage";
 import { AdminPage } from "./pages/AdminPage";
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 import { AdminUserDetailPage } from "./pages/admin/AdminUserDetailPage";
+import { AdminLeagueChatPage } from "./pages/admin/AdminLeagueChatPage";
 import { AdminRoute } from "./components/common/AdminRoute";
 import { UserGroupListPage } from "./pages/UserGroupListPage";
 import { UserGroupDetailPage } from "./pages/UserGroupDetailPage";
@@ -235,6 +236,16 @@ const AppShell: React.FC = () => {
                 <ProtectedRoute>
                   <AdminRoute>
                     <AdminPage />
+                  </AdminRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/leagues/:leagueId/chat"
+              element={
+                <ProtectedRoute>
+                  <AdminRoute>
+                    <AdminLeagueChatPage />
                   </AdminRoute>
                 </ProtectedRoute>
               }

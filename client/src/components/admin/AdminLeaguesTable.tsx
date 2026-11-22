@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import type { AdminDashboardLeague } from "../../types/admin";
 
 function formatDate(iso: string): string {
@@ -6,6 +7,10 @@ function formatDate(iso: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+export function adminLeagueChatPath(leagueId: string): string {
+  return `/admin/leagues/${encodeURIComponent(leagueId)}/chat`;
 }
 
 export function AdminLeaguesTable({ leagues }: { leagues: AdminDashboardLeague[] }) {
@@ -22,6 +27,7 @@ export function AdminLeaguesTable({ leagues }: { leagues: AdminDashboardLeague[]
             <th className="px-3 py-2 font-medium text-right">Members</th>
             <th className="px-3 py-2 font-medium text-right">Contests</th>
             <th className="px-3 py-2 font-medium">Created</th>
+            <th className="px-3 py-2 font-medium">Chat</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-300">
@@ -41,6 +47,14 @@ export function AdminLeaguesTable({ leagues }: { leagues: AdminDashboardLeague[]
               <td className="px-3 py-2 text-right tabular-nums">{league.contestCount}</td>
               <td className="px-3 py-2 text-gray-600 whitespace-nowrap">
                 {formatDate(league.createdAt)}
+              </td>
+              <td className="px-3 py-2">
+                <Link
+                  to={adminLeagueChatPath(league.id)}
+                  className="font-medium text-blue-600 hover:text-blue-800"
+                >
+                  Chat
+                </Link>
               </td>
             </tr>
           ))}

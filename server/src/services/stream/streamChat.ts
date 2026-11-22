@@ -1,4 +1,4 @@
-import { StreamClient } from "@stream-io/node-sdk";
+import { nsToDate, StreamClient } from "@stream-io/node-sdk";
 import { prisma } from "../../lib/prisma.js";
 
 const CHANNEL_TYPE = "messaging";
@@ -157,10 +157,16 @@ function readAttachments(raw: unknown): RoomAttachment[] {
   return rows;
 }
 
+function createdAtOf(value: Date | string | number): string {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "number") return nsToDate(value).toISOString();
+  return new Date(value).toISOString();
+}
+
 function roomMessage(message: {
   id?: string;
   text?: string;
-  created_at?: Date | string;
+  created_at?: Date | string | number;
   custom?: Record<string, unknown>;
   attachments?: unknown;
   user?: { id?: string };
@@ -170,10 +176,7 @@ function roomMessage(message: {
   if (!message.id || text === null || !message.created_at) return null;
   const audience = message.custom?.audience === "bots" ? "bots" : "humans";
   const kind = typeof message.custom?.kind === "string" ? message.custom.kind : null;
-  const createdAt =
-    message.created_at instanceof Date
-      ? message.created_at.toISOString()
-      : new Date(message.created_at).toISOString();
+  const createdAt = createdAtOf(message.created_at);
   return {
     id: message.id,
     text,
@@ -313,7 +316,7 @@ async function uploadFiles(channel: LeagueChannel, userId: string, files: RoomFi
     const mime = file.mimeType.trim().toLowerCase() || "application/octet-stream";
     const kind = mimeKind(mime);
     const blob = new File([new Uint8Array(file.data)], safeFilename(file.filename), { type: mime });
-    const request = { file: blob as unknown as string, user: { id: userId } };
+    const request = { file: blob, user: { id: userId } };
     const uploaded =
       kind === "image" ? await channel.uploadChannelImage(request) : await channel.uploadChannelFile(request);
     if (!uploaded.file) throw new Error("Stream chat returned no file");
@@ -459,6 +462,46 @@ export async function listMessages(input: {
     user_id: input.userId,
   });
   return recent(found.channels[0]?.messages, input.audience, input.limit);
+}
+
+export type ObservedLeagueMessage = RoomMessage & { userName: string | null };
+
+/**
+ * Read a league channel with the server credential. Does not require the caller
+ * to be a member and does not join or create the channel.
+ * Messages are oldest first.
+ */
+export async function observeLeagueMessages(
+  userGroupId: string,
+  limit: number,
+): Promise<{ league: { id: string; name: string }; messages: ObservedLeagueMessage[] }> {
+  const league = await prisma.userGroup.findUnique({
+    where: { id: userGroupId },
+    select: { id: true, name: true },
+  });
+  if (!league) throw new StreamLeagueMissingError();
+  if (!isStreamChatEnabled()) throw new StreamDisabledError();
+
+  const channel = streamClient().chat.channel(CHANNEL_TYPE, leagueChannelId(userGroupId));
+  let rows: RoomMessage[] = [];
+  try {
+    const state = await channel.get({ state: true, messages_limit: limit });
+    rows = recent(state.messages, undefined, limit);
+  } catch (error) {
+    if (!isMissingChannel(error)) throw error;
+  }
+
+  const people = await namedUsers(rows.map((row) => row.userId));
+  const nameById = new Map(
+    people.flatMap((person) => (person.name ? [[person.id, person.name] as const] : [])),
+  );
+  return {
+    league,
+    messages: [...rows].reverse().map((row) => ({
+      ...row,
+      userName: nameById.get(row.userId) ?? null,
+    })),
+  };
 }
 
 export function clampMessageLimit(raw: string | undefined): number {
