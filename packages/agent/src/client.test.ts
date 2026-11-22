@@ -348,33 +348,21 @@ describe("createCutAgent", () => {
     expect(tick.searchParams.get("cursor")).toBe("baseline");
   });
 
-  it("stores preferences and creates a league on the signed wallet", async () => {
+  it("creates a league on the signed wallet", async () => {
     const requests: Request[] = [];
     const agent = createCutAgent({
       privateKey: generatePrivateKey(),
       smartWallet: SMART_WALLET,
       fetch: async (request) => {
         requests.push(request.clone());
-        const url = new URL(request.url);
-        if (url.pathname.endsWith("/preferences")) {
-          return json({ preferences: { sports: ["pga-golf"], maxEntryFee: 10 } });
-        }
         return json({ id: "league-1", name: "Saturday", description: null });
       },
     });
 
-    await expect(agent.preferences({ sports: ["pga-golf"], maxEntryFee: 10 })).resolves.toEqual({
-      sports: ["pga-golf"],
-      maxEntryFee: 10,
-    });
     await expect(agent.createLeague({ name: "Saturday" })).resolves.toMatchObject({ id: "league-1" });
 
-    expect(requests[0]?.method).toBe("PUT");
-    expect(new URL(requests[0]?.url ?? "").searchParams.get("smartWallet")).toBe(SMART_WALLET);
-    expect(JSON.parse(await requests[0]!.text())).toEqual({ sports: ["pga-golf"], maxEntryFee: 10 });
-
-    expect(requests[1]?.method).toBe("POST");
-    const leagueUrl = new URL(requests[1]?.url ?? "");
+    expect(requests[0]?.method).toBe("POST");
+    const leagueUrl = new URL(requests[0]?.url ?? "");
     expect(leagueUrl.pathname).toBe("/api/userGroups");
     expect(leagueUrl.searchParams.get("smartWallet")).toBe(SMART_WALLET);
   });

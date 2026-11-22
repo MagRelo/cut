@@ -81,15 +81,12 @@ model UserWallet {
   @@index([publicKey])
 }
 
-// A Kernel session key the user installed. Cut Bot's key lives on the server.
-// A personal delegate's private key does not.
+// A Kernel session key the user installed. The private key stays with the caller.
 model BotDelegate {
   id              String    @id @default(cuid())
   userId          String
   smartWallet     String
   delegateAddress String
-  /// cut_bot | external
-  kind            String
   /// active | revoked
   status          String
   /// Serialized permission account plus the installed validator address.

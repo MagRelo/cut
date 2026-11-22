@@ -13,7 +13,6 @@ export type {
   BotCandidate,
   BotContest,
   AgentAccount,
-  AgentPreferences,
   AgentProfile,
   CompanionBrief,
   ContestCard,

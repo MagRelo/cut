@@ -60,7 +60,7 @@ A scheduled job or other persistent runtime is what keeps Scout, Tracker, Referr
 
 Learn through conversation rather than an onboarding questionnaire. Notice whether the user prefers quick recommendations or detailed reasoning, familiar favorites or surprising picks, quiet tracking or occasional commentary, and solo competition or playing with friends. Ask only when the answer materially changes what you do.
 
-Use those preferences immediately. Persist them only through an available, authorized memory mechanism. The `preferences()` endpoint stores sports and the entry-fee cap; do not imply that it stores commentary style, favorite players, or social preferences. If durable memory is unavailable, do not claim you will remember across sessions.
+Use those preferences immediately. Persist sports, an entry-fee cap, commentary style, favorite players, and who they want to play with through an available, authorized memory mechanism. If durable memory is unavailable, do not claim you will remember across sessions.
 
 Do the research and administration, but leave room for the parts the user enjoys. Offer a clear recommendation without treating their own picks as a mistake to eliminate. Be enthusiastic about interesting play, not about spending. Never frame a deposit, a paid entry, or recruiting friends as necessary to enjoy the game.
 
@@ -168,19 +168,15 @@ Recommend relevant contests within the user’s fee cap; a higher balance is not
 
 Call `account()`, then `scout()`, when the user asks what to play and on the Scout job. See **Scheduled jobs**. `tick()` reports `scout.openAffordable` so a quiet poll can skip the full list until that count is non-zero.
 
-Lead with one or two contests from `contests` and the `fit` tags that apply: `league`, `affordable`, `open`, `field-ready`, `within-budget`. Name the event, when it starts, the entry fee, and the league when `userGroupName` is set. Stay inside the fee cap the user already set. A contest in `blocked` with reason `balance` is not currently affordable: the wallet does not have enough USDC to enter. Name `primaryDeposit`, `balanceUsdc`, and the amount short, and what that amount would let them enter. Recommending a contest is not a promise that it pays.
-
-`preferences.sports`, when non-empty, limits scout to those sports. `preferences.maxEntryFee` removes the `within-budget` tag when the fee is higher. The contest stays in the list. Store a sport or a fee cap the user states with `preferences`.
+Lead with one or two contests from `contests` and the `fit` tags that apply: `league`, `affordable`, `open`, `field-ready`. Name the event, when it starts, the entry fee, and the league when `userGroupName` is set. Scout lists every sport. Recommend the sports the user plays, and stay inside a fee cap they have set. Remember both in the agent's own memory. A contest in `blocked` with reason `balance` is not currently affordable: the wallet does not have enough USDC to enter. Name `primaryDeposit`, `balanceUsdc`, and the amount short, and what that amount would let them enter. Recommending a contest is not a promise that it pays.
 
 This step stops before `join`. The field is not on this response. `field(eventId)` reads it. `contests()` is the card list, in any status except `CANCELLED`. It is not the list of contests the wallet has already joined. `entered` on a card is that flag. `entries()` is the account's entries.
 
 #### Calls
 
-`agent.account()` → `GET /api/agent/account`. `userId`, wallet, chain, `balanceUsdc` (USDC to two decimals, or `null` when the read failed), `profile` (`name`, `email`, `color`, `oddsFormat`), leagues and role, referral code, url, and `totalEarned`, entry counts keyed by contest status, and `preferences`. `profile.email` is `null` until the owner sets one.
+`agent.account()` → `GET /api/agent/account`. `userId`, wallet, chain, `balanceUsdc` (USDC to two decimals, or `null` when the read failed), `profile` (`name`, `email`, `color`, `oddsFormat`), leagues and role, referral code, url, and `totalEarned`, and entry counts keyed by contest status. `profile.email` is `null` until the owner sets one.
 
 `agent.updateProfile({ name?, email?, color?, oddsFormat? })` → `PUT /api/agent/profile`. At least one field. `color` is `#rgb` or `#rrggbb`. `oddsFormat` is `american`, `decimal`, or `english`. Omit a field to leave it. A delegate may set name, color, and odds format. Only the owner key may set `email`. A delegate that sends `email` is `403` `"A delegate cannot set the login email"`. An account that already has a Privy login is `403` `"This account already has a login"`. An email on another account is `400` with code `EMAIL_ALREADY_BOUND`. The response is the profile.
-
-`agent.preferences({ sports?, maxEntryFee? })` → `PUT /api/agent/preferences`. `sports` replaces the list with enabled sport ids. `maxEntryFee` is whole USDC. Send `null` to clear the cap. Omit a field to leave it.
 
 `agent.scout()` → `GET /api/agent/scout`.
 
@@ -548,9 +544,9 @@ One mode for every contest, free and paid. The default is ask. Offer auto-enter 
 
 **Ask.** Name the contest, the lineup, and the fee or that it is free. For a paid contest, name `balanceUsdc`. Enter only after they say yes to that contest.
 
-**Auto-enter.** They opted in. Enter the recommended lineup when the contest matches `preferences.sports`, the fee is at or under `preferences.maxEntryFee` (a free contest is), and the balance covers it. They can still change picks before lock.
+**Auto-enter.** They opted in. Enter the recommended lineup when it is a sport they play, the fee is at or under the cap they set (a free contest is), and the balance covers it. They can still change picks before lock.
 
-A decline, a leave, or an ignored offer is stored by contest id and is not entered or offered again, in either mode. Store that list, the day's message count, and the enter mode in the agent's own memory. `preferences` stores sports and the fee cap only. If that memory is unavailable, do not claim the jobs will remember declines, stay inside the message budget, or auto-enter.
+A decline, a leave, or an ignored offer is stored by contest id and is not entered or offered again, in either mode. Store that list, the day's message count, the sports they play, any fee cap, and the enter mode in the agent's own memory. If that memory is unavailable, do not claim the jobs will remember declines, stay inside the message budget, or auto-enter.
 
 Do not deposit, raise a fee, or message another person from a job. Switching modes is the user's call.
 
@@ -621,7 +617,7 @@ Briefing reads use the same signature as the play actions. The SDK sends `smartW
 
 `agent.account()` → `GET /api/agent/account`.
 
-`userId`, `wallet`, `chainId`, `balanceUsdc`, `profile` (`name`, `email`, `color`, `oddsFormat`), `leagues` (`id`, `name`, `role`), `referral` (`code`, `url`, `totalEarned`), `entries` (distinct entered contests keyed by status), and `preferences` (`sports`, `maxEntryFee`).
+`userId`, `wallet`, `chainId`, `balanceUsdc`, `profile` (`name`, `email`, `color`, `oddsFormat`), `leagues` (`id`, `name`, `role`), `referral` (`code`, `url`, `totalEarned`), and `entries` (distinct entered contests keyed by status).
 
 ### updateProfile
 
@@ -636,12 +632,6 @@ At least one field. The response is the profile. A delegate may set `name`, `col
 ### leaveLeague
 
 `agent.leaveLeague(id)` → `DELETE /api/userGroups/:id/members/:userId`, using `userId` from `account()`. `{ success: true }`.
-
-### preferences
-
-`agent.preferences({ sports?, maxEntryFee? })` → `PUT /api/agent/preferences`.
-
-At least one field. Unknown sport ids are `400`. Response is `{ preferences }`.
 
 ### scout
 
@@ -750,13 +740,10 @@ The same ordered picks for the same contest, sent without `lineupId`, return the
 
 | Signer | What happens |
 | --- | --- |
-| Caller-held delegate (`external`) | The SDK omits `userOpSignature` on the first request, receives `{ preparedUserOp: true, lineupId, userOpHash, userOp }`, signs `userOpHash`, and posts again. The caller receives `{ ok: true, lineupId }`. |
-| Server-held delegate (`cut_bot`) | The server signs and submits. The response is `{ ok: true, lineupId }`. |
+| Delegate | The SDK omits `userOpSignature` on the first request, receives `{ preparedUserOp: true, lineupId, userOpHash, userOp }`, signs `userOpHash`, and posts again. The caller receives `{ ok: true, lineupId }`. |
 | The account key | The signer owns the Kernel wallet. No delegate is used. A contest with no escrow is stored on the first response. A contest with escrow returns `{ preparedUserOp: true, lineupId, userOpHash, userOp }`. The SDK signs `userOpHash` and posts `userOp` and `userOpSignature`. The server submits that sponsored user operation. Join sends `approve` and `addPrimaryPosition` in that one operation. The entry is stored after it succeeds. |
 
 `{ ok: true, lineupId }` means the entry row is stored. When the contest has on-chain escrow, the user operation has a receipt before that row is written. If this lineup is already entered, `join` returns the same shape and does not send another transaction. A repeated `join` is a no-op only when that entry row already exists. After a timeout or `502`, check the lobby or this account's entries before calling `join` again.
-
-A caller-held delegate does not need a Cut Bot key.
 
 ### leave
 
@@ -783,13 +770,13 @@ A second `createContest` deploys another contest. The call is not idempotent. Af
 
 `createContest` does not create a `$0` contest. That is `createFreeContest`.
 
-The signer rules match join. A caller-held delegate's first response is `{ preparedUserOp: true, userOpHash, userOp }` with no `lineupId`. The SDK signs and posts the second request. The account key uses that same prepared user operation. The server submits it, reads the contest address, and stores the contest.
+The signer rules match join. A delegate's first response is `{ preparedUserOp: true, userOpHash, userOp }` with no `lineupId`. The SDK signs and posts the second request. The account key uses that same prepared user operation. The server submits it, reads the contest address, and stores the contest.
 
 ### createFreeContest
 
 `agent.createFreeContest({ name, eventId, endDate, userGroupId, description?, notifyLeagueMembers? })` → `POST /api/contests`.
 
-Records a $0 league contest. The SDK sets `chainId` from the client and `settings.primaryDeposit` to `0`. It omits `address` and `transactionHash`. There is no user operation and no USDC movement. A wallet signature is enough. A Cut Bot key is not required.
+Records a $0 league contest. The SDK sets `chainId` from the client and `settings.primaryDeposit` to `0`. It omits `address` and `transactionHash`. There is no user operation and no USDC movement. A wallet signature is enough.
 
 | Item | Details |
 | --- | --- |
@@ -818,13 +805,12 @@ After a timeout or `502` from a state-changing action, check whether the action 
 
 | Status | Meaning | What to do |
 | --- | --- | --- |
-| `400` | The body, the lineup, the deposit, the prediction, the preferences, the profile, or the cursor is invalid. `EMAIL_ALREADY_BOUND` on register or `updateProfile`. The last league admin cannot leave. | Read `error`. An empty lineup is rejected on save and on join. Add at least one pick and retry. Drop a cursor the server rejects and call again with none to set a new baseline. |
+| `400` | The body, the lineup, the deposit, the prediction, the profile, or the cursor is invalid. `EMAIL_ALREADY_BOUND` on register or `updateProfile`. The last league admin cannot leave. | Read `error`. An empty lineup is rejected on save and on join. Add at least one pick and retry. Drop a cursor the server rejects and call again with none to set a new baseline. |
 | `401` | The signature is missing, expired, or does not cover this request. A nonce was reused. | Sign the exact method, path, query, and body. Use a new nonce. `created` and `expires` must span at most one hour. |
 | `403` | The signer is acting for another account without an active delegate, the account is not a league admin, an `AGENT` tried to create a public contest, a delegate tried to register, or a delegate tried to set the login email. | Grant that delegate on the account, or sign with the account key. Register and set the email with the account key. |
 | `404` | Contest, event, league, or user was not found. | Check `contestId`, `eventId`, and league id. A league contest or league the account is not in is `404`. |
 | `409` | Join on a contest that is not `OPEN`, or leave on a contest that is not `OPEN` or `CANCELLED`. A paid contest address was already registered. Joining a league this account is already in. | Stop retrying the join. Leave a contest only while it is open or cancelled. |
 | `502` | The user operation failed or the response shape was unexpected. | Read `error`. Check the lobby, this account's entries, or the chain before sending `join`, `leave`, or `createContest` again. |
-| `503` | The server-held delegate key is not configured. | A caller-held delegate and the account key are unaffected. |
 
 ## Technical details
 
@@ -834,12 +820,11 @@ Most callers can stop at the actions above. `entries()` wraps `GET /api/auth/ent
 
 ### Execution paths
 
-Four ways to enter a contest:
+Three ways to enter a contest:
 
 1. **The user, in the browser.** The logged-in client signs the chain transaction. These routes do not apply.
 2. **The account key.** `register` stores the Kernel address this key owns. `join`, `leave`, and `createContest` signed by that key are sponsored user operations from that wallet. No session key is installed until [yield](docs/access.md#yield). The paymaster pays gas when the calls are on the sponsorship allowlist. After a yield this key is a delegate on the same wallet.
-3. **A delegate the server holds.** The user allows that address in Settings. Stored as `kind` `cut_bot`. The server can submit a join, leave, or paid create while the user is away. This signer is not the account.
-4. **A delegate the caller holds.** The user pastes the public address and grants it. Stored as `kind` `external`. The private key never comes to Play The Cut. This is the key `generateDelegateKey` creates. This signer is not the account.
+3. **A delegate the caller holds.** The user pastes the public address and grants it. The private key never comes to Play The Cut. This is the key `generateDelegateKey` creates. This signer is not the account. The server prepares a user operation and submits the signature the caller sends back.
 
 A delegate is a Kernel v3.1 session key on EntryPoint 0.7, installed on the user's smart wallet.
 
@@ -857,8 +842,8 @@ On the second request, `userOpSignature` is the delegate's EIP-191 signature of 
 
 ### Account-key user operations
 
-When the signer is the owner key and the action moves funds, the server returns one sponsored user operation, the same shape a caller-held delegate receives. The SDK signs `userOpHash` with the owner key and posts `userOp` and `userOpSignature`. The server checks the calls against the sponsorship allowlist, submits the user operation, and waits for a success receipt. The first operation deploys the Kernel account. A join with escrow is `approve` and `addPrimaryPosition` in that one operation. The paymaster pays the gas.
+When the signer is the owner key and the action moves funds, the server returns one sponsored user operation, the same shape a delegate receives. The SDK signs `userOpHash` with the owner key and posts `userOp` and `userOpSignature`. The server checks the calls against the sponsorship allowlist, submits the user operation, and waits for a success receipt. The first operation deploys the Kernel account. A join with escrow is `approve` and `addPrimaryPosition` in that one operation. The paymaster pays the gas.
 
 ### Delegate endpoints
 
-`GET /api/bot/delegate-address` returns the public address of the server-held delegate, or `null` when that key is unset. No signature. `POST /api/bot/delegates` records an approval on the Privy session: `kind` (`cut_bot` or `external`), `delegateAddress`, `smartWallet`, `approval`, and `permissionId`.
+`POST /api/bot/delegates` records an approval on the Privy session: `delegateAddress`, `smartWallet`, `approval`, and `permissionId`.

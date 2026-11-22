@@ -37,14 +37,12 @@ function toDelegate(row: {
   userId: string;
   smartWallet: string;
   delegateAddress: string;
-  kind: string;
   approval: string;
 }): BotDelegateRow {
   return {
     userId: row.userId,
     smartWallet: row.smartWallet,
     delegateAddress: row.delegateAddress,
-    kind: row.kind === "external" ? "external" : "cut_bot",
     approval: row.approval,
   };
 }
@@ -75,7 +73,7 @@ export function createBotActionDeps(): BotActionDeps {
           status: "active",
         },
       });
-      if (!row || (row.kind !== "cut_bot" && row.kind !== "external")) return null;
+      if (!row) return null;
       return toDelegate(row);
     },
     findOwner: async (smartWallet, chainId) => {

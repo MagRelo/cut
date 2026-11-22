@@ -1,9 +1,7 @@
 import { Hono } from "hono";
 import { agentProfileSchema, directRoomPostSchema, roomAudienceSchema, roomPostSchema } from "@playthecut/agent/contract";
 import type { Address } from "viem";
-import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
-import { agentPreferencesSchema } from "../schemas/user.js";
 import { verifyBotRequest } from "../services/bot/verifyBotRequest.js";
 import { updateAgentProfile } from "../services/agent/profile.js";
 import { decodeCursor, InvalidCursorError } from "../services/agent/cursor.js";
@@ -16,7 +14,6 @@ import {
   getPicksBrief,
   getReferralBrief,
   getScoutBrief,
-  saveAgentPreferences,
   type AgentActor,
 } from "../services/agent/brief.js";
 import {
@@ -74,26 +71,6 @@ agentRouter.put("/profile", requireAuth, async (c) => {
     );
   }
   return c.json(result.profile);
-});
-
-agentRouter.put("/preferences", requireAuth, async (c) => {
-  const parsed = agentPreferencesSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) {
-    return c.json({ error: "Invalid request body" }, 400);
-  }
-  if (parsed.data.sports) {
-    const sports = await prisma.sport.findMany({
-      where: { isEnabled: true },
-      select: { id: true },
-    });
-    const known = new Set(sports.map((sport) => sport.id));
-    if (parsed.data.sports.some((id) => !known.has(id))) {
-      return c.json({ error: "Unknown sport" }, 400);
-    }
-  }
-  const preferences = await saveAgentPreferences(actor(c).userId, parsed.data);
-  if (!preferences) return c.json({ error: "User not found" }, 404);
-  return c.json({ preferences });
 });
 
 agentRouter.get("/scout", requireAuth, async (c) => {

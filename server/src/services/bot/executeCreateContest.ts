@@ -1,5 +1,4 @@
 import { getAddress, isAddress, type Address, type Hex } from "viem";
-import { getCutBotPrivateKey } from "../../lib/cutBotKey.js";
 import { getContestFactoryAddress, primaryDepositWeiFromSettings } from "../../lib/contractAddresses.js";
 import { prisma } from "../../lib/prisma.js";
 import { isStaffUserType } from "../../middleware/admin.js";
@@ -252,7 +251,7 @@ export async function executeCreateContest(
       return { ok: false, status: 502, error: submitted.error };
     }
     txHash = submitted.txHash;
-  } else if (delegate.kind === "external" && !input.userOpSignature) {
+  } else if (!input.userOpSignature || !input.userOp) {
     const prepared = await deps.prepareUserOp({
       chainId: input.chainId,
       approval,
@@ -271,19 +270,14 @@ export async function executeCreateContest(
       userOp: prepared.userOp,
     };
   } else {
-    if (delegate.kind === "cut_bot" && !getCutBotPrivateKey()) {
-      return { ok: false, status: 503, error: "Cut Bot key is not configured" };
-    }
-    const privateKey = delegate.kind === "cut_bot" ? getCutBotPrivateKey() : null;
     const submitted = await deps.submitCalls({
       chainId: input.chainId,
       approval,
       calls,
       delegateAddress: getAddress(delegate.delegateAddress),
       smartWallet,
-      ...(privateKey ? { privateKey } : {}),
-      ...(input.userOpSignature ? { userOpSignature: input.userOpSignature } : {}),
-      ...(input.userOp ? { userOp: input.userOp } : {}),
+      userOpSignature: input.userOpSignature,
+      userOp: input.userOp,
     });
     if (!submitted.ok) {
       await deps.log(userId, "error", submitted.error);

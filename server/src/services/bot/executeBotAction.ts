@@ -1,5 +1,4 @@
 import { getAddress, isAddress, type Address, type Hex } from "viem";
-import { getCutBotPrivateKey } from "../../lib/cutBotKey.js";
 import { generateContestEntryId } from "../../utils/contestEntryId.js";
 import { hasOnchainEscrow } from "../../utils/hasOnchainEscrow.js";
 import {
@@ -24,7 +23,6 @@ export type BotDelegateRow = {
   userId: string;
   smartWallet: string;
   delegateAddress: string;
-  kind: "cut_bot" | "external";
   approval: string;
 };
 
@@ -135,9 +133,8 @@ export type BotActionDeps = {
     calls: BotCall[];
     delegateAddress: Address;
     smartWallet: Address;
-    privateKey?: Hex;
-    userOpSignature?: Hex;
-    userOp?: SerializedUserOp;
+    userOpSignature: Hex;
+    userOp: SerializedUserOp;
   }) => Promise<{ ok: true; txHash?: Hex } | { ok: false; error: string }>;
   log: (userId: string, action: string, error?: string) => Promise<void>;
 };
@@ -466,7 +463,7 @@ async function submitIfNeeded(
   }
   const smartWallet = getAddress(input.smartWallet);
   const delegateAddress = getAddress(delegate.delegateAddress);
-  if (delegate.kind === "external" && !input.userOpSignature) {
+  if (!input.userOpSignature || !input.userOp) {
     const prepared = await deps.prepareUserOp({
       chainId: input.chainId,
       approval,
@@ -486,19 +483,14 @@ async function submitIfNeeded(
       userOp: prepared.userOp,
     };
   }
-  if (delegate.kind === "cut_bot" && !getCutBotPrivateKey()) {
-    return { ok: false, status: 503, error: "Cut Bot key is not configured" };
-  }
-  const privateKey = delegate.kind === "cut_bot" ? getCutBotPrivateKey() : null;
   const submitted = await deps.submitCalls({
     chainId: input.chainId,
     approval,
     calls,
     delegateAddress,
     smartWallet,
-    ...(privateKey ? { privateKey } : {}),
-    ...(input.userOpSignature ? { userOpSignature: input.userOpSignature } : {}),
-    ...(input.userOp ? { userOp: input.userOp } : {}),
+    userOpSignature: input.userOpSignature,
+    userOp: input.userOp,
   });
   if (!submitted.ok) {
     await deps.log(delegate.userId, "error", submitted.error);

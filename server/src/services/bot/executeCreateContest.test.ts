@@ -1,7 +1,7 @@
 import { decodeFunctionData, getAddress, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { kernelWalletAddress } from "@playthecut/agent";
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { packApproval } from "./approvalEnvelope.js";
 import { executeCreateContest, type CreateContestDeps } from "./executeCreateContest.js";
 import type { BotDelegateRow } from "./executeBotAction.js";
@@ -13,15 +13,24 @@ const CREATED = getAddress("0x5555555555555555555555555555555555555555");
 const TX = `0x${"ab".repeat(32)}` as Hex;
 const USER_ID = "user-1";
 
-const cutBotKey = generatePrivateKey();
-const cutBot = privateKeyToAccount(cutBotKey);
+const delegateAccount = privateKeyToAccount(generatePrivateKey());
+const USER_OP = {
+  sender: SMART_WALLET,
+  nonce: "1",
+  callData: "0x" as Hex,
+  callGasLimit: "1",
+  verificationGasLimit: "1",
+  preVerificationGas: "1",
+  maxFeePerGas: "1",
+  maxPriorityFeePerGas: "1",
+};
+const USER_OP_SIGNATURE = `0x${"22".repeat(65)}` as Hex;
 
 function delegate(overrides: Partial<BotDelegateRow> = {}): BotDelegateRow {
   return {
     userId: USER_ID,
     smartWallet: SMART_WALLET.toLowerCase(),
-    delegateAddress: cutBot.address.toLowerCase(),
-    kind: "cut_bot",
+    delegateAddress: delegateAccount.address.toLowerCase(),
     approval: packApproval({ approval: "serialized", permissionId: "0x5a677774" }),
     ...overrides,
   };
@@ -60,7 +69,9 @@ function deps(partial: Partial<CreateContestDeps> = {}): CreateContestDeps {
 const input = {
   chainId: CHAIN_ID,
   smartWallet: SMART_WALLET,
-  signer: cutBot.address,
+  signer: delegateAccount.address,
+  userOp: USER_OP,
+  userOpSignature: USER_OP_SIGNATURE,
   name: "Sunday",
   eventId: "clh0000000000000000000001",
   userGroupId: "clh0000000000000000000002",
@@ -74,14 +85,18 @@ const input = {
 };
 
 describe("executeCreateContest", () => {
-  const previous = process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
-  beforeEach(() => {
-    process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = cutBotKey;
+  it("prepares a user operation when the delegate has not signed", async () => {
+    const userOpHash = `0x${"cd".repeat(32)}` as Hex;
+    const used = deps({
+      prepareUserOp: vi.fn(async () => ({ ok: true as const, userOpHash, userOp: USER_OP })),
+    });
+    const unsigned = { ...input, userOp: undefined, userOpSignature: undefined };
+    const result = await executeCreateContest(unsigned, used);
+    expect(result).toEqual({ ok: true, preparedUserOp: true, userOpHash, userOp: USER_OP });
+    expect(used.submitCalls).not.toHaveBeenCalled();
+    expect(used.recordContest).not.toHaveBeenCalled();
   });
-  afterEach(() => {
-    if (previous === undefined) delete process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
-    else process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = previous;
-  });
+
   it("submits the factory call and records the contest for a league admin", async () => {
     const used = deps();
     const result = await executeCreateContest(input, used);
@@ -177,7 +192,13 @@ describe("executeCreateContest", () => {
       prepareOwnerUserOp: vi.fn(async () => ({ ok: true as const, userOpHash, userOp })),
     });
     const result = await executeCreateContest(
-      { ...input, smartWallet: wallet, signer: owner.address },
+      {
+        ...input,
+        smartWallet: wallet,
+        signer: owner.address,
+        userOp: undefined,
+        userOpSignature: undefined,
+      },
       used,
     );
     expect(result).toEqual({ ok: true, preparedUserOp: true, userOpHash, userOp });

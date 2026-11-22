@@ -118,13 +118,11 @@ async function recordYield(input: {
         userId: input.userId,
         smartWallet: input.smartWallet.toLowerCase(),
         delegateAddress,
-        kind: "external",
         status: "active",
         approval,
       },
       update: {
         smartWallet: input.smartWallet.toLowerCase(),
-        kind: "external",
         status: "active",
         approval,
         revokedAt: null,

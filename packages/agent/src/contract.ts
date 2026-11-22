@@ -136,15 +136,6 @@ export const createFreeContestSchema = z.object({
   notifyLeagueMembers: z.boolean().optional(),
 });
 
-export const agentPreferencesSchema = z
-  .object({
-    sports: z.array(z.string().trim().min(1)).max(8).optional(),
-    maxEntryFee: z.number().int().min(0).nullable().optional(),
-  })
-  .refine((value) => value.sports !== undefined || value.maxEntryFee !== undefined, {
-    message: "No preferences to update",
-  });
-
 export type UserOpBody = z.infer<typeof userOpSchema>;
 export type PlayActionBody = z.infer<typeof playActionSchema>;
 export type CreateContestActionBody = z.infer<typeof createContestActionSchema>;
@@ -230,11 +221,6 @@ export type ContestCard = {
 
 export type ContestList = { contests: ContestCard[] };
 
-export type AgentPreferences = {
-  sports: string[];
-  maxEntryFee: number | null;
-};
-
 export type AgentAccount = {
   userId: string;
   wallet: string;
@@ -244,7 +230,6 @@ export type AgentAccount = {
   leagues: { id: string; name: string; role: string }[];
   referral: { code: string; url: string; totalEarned: number };
   entries: Record<string, number>;
-  preferences: AgentPreferences;
   takeover: { embeddedAddress: string } | null;
 };
 

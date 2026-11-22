@@ -9,7 +9,6 @@ import {
   type Hex,
   type TransactionReceipt,
 } from "viem";
-import { getCutBotPrivateKey } from "../../lib/cutBotKey.js";
 import { getPaymentTokenAddress } from "../../lib/contractAddresses.js";
 import { kernelOwnerWallet, classifySigner } from "./accountKey.js";
 import { unpackApproval } from "./approvalEnvelope.js";
@@ -202,7 +201,7 @@ export async function executeSend(input: ExecuteSendInput, deps: SendDeps): Prom
     return finish(deps, { userId, chainId: input.chainId, from: smartWallet, to, amountWei, amount, txHash: submitted.txHash });
   }
 
-  if (delegate.kind === "external" && !input.userOpSignature) {
+  if (!input.userOpSignature || !input.userOp) {
     const prepared = await deps.prepareUserOp({
       chainId: input.chainId,
       approval,
@@ -217,19 +216,14 @@ export async function executeSend(input: ExecuteSendInput, deps: SendDeps): Prom
     return { ok: true, preparedUserOp: true, userOpHash: prepared.userOpHash, userOp: prepared.userOp };
   }
 
-  if (delegate.kind === "cut_bot" && !getCutBotPrivateKey()) {
-    return { ok: false, status: 503, error: "Cut Bot key is not configured" };
-  }
-  const privateKey = delegate.kind === "cut_bot" ? getCutBotPrivateKey() : null;
   const submitted = await deps.submitCalls({
     chainId: input.chainId,
     approval,
     calls,
     delegateAddress: getAddress(delegate.delegateAddress),
     smartWallet,
-    ...(privateKey ? { privateKey } : {}),
-    ...(input.userOpSignature ? { userOpSignature: input.userOpSignature } : {}),
-    ...(input.userOp ? { userOp: input.userOp } : {}),
+    userOpSignature: input.userOpSignature,
+    userOp: input.userOp,
   });
   if (!submitted.ok || !submitted.txHash) {
     const error = submitted.ok ? "User operation failed" : submitted.error;

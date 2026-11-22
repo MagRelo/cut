@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Switch } from "@headlessui/react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWallets } from "@privy-io/react-auth";
@@ -23,13 +22,11 @@ import { useAuth } from "../../contexts/AuthContext";
 
 type DelegateRow = {
   delegateAddress: string;
-  kind: "cut_bot" | "external";
   status: string;
 };
 
 type DelegateResponse = {
   delegates: DelegateRow[];
-  cutBotAddress: string | null;
 };
 
 const queryKey = ["bot-delegates"] as const;
@@ -75,13 +72,14 @@ export function BotDelegationSettings() {
   });
 
   const smartWallet =
-    user?.walletOwner && user.walletAddress ? user.walletAddress : smartWalletClient?.account?.address;
+    user?.walletOwner && user.walletAddress
+      ? user.walletAddress
+      : smartWalletClient?.account?.address;
   const embedded = wallets.find(
     (wallet) => wallet.type === "ethereum" && wallet.walletClientType === "privy",
   );
   const rows = delegates.data?.delegates ?? [];
-  const cutBotAddress = delegates.data?.cutBotAddress ?? null;
-  const externalActive = rows.filter((row) => row.kind === "external" && row.status === "active");
+  const active = rows.filter((row) => row.status === "active");
 
   async function send(chainId: number, call: WalletCall) {
     if (!publicClient) throw new Error("Wallet is not ready");
@@ -106,7 +104,7 @@ export function BotDelegationSettings() {
     if (receipt.status === "reverted") throw new Error("Transaction reverted");
   }
 
-  async function enable(kind: "cut_bot" | "external", delegateAddress: string) {
+  async function enable(delegateAddress: string) {
     const chain = chainFor(chainId);
     if (!chain || !smartWallet || !embedded) {
       throw new Error("Wallet is not ready");
@@ -123,7 +121,6 @@ export function BotDelegationSettings() {
     await apiClient.post(
       "/bot/delegates",
       {
-        kind,
         delegateAddress,
         smartWallet,
         approval: installed.approval,
@@ -166,9 +163,33 @@ export function BotDelegationSettings() {
       aria-labelledby="delegate-heading"
     >
       <div className="max-w-3xl">
-        <h2 id="delegate-heading" className="mb-3 font-display text-lg font-semibold text-gray-700">
+        <h2 id="delegate-heading" className="font-display text-lg font-semibold text-gray-700">
           Enable Agent Control
         </h2>
+
+        <div
+          role="note"
+          aria-labelledby="delegate-warning"
+          className="my-6 border border-orange-500 px-4 py-3 sm:px-5"
+        >
+          <div className="flex items-start gap-3">
+            <ExclamationTriangleIcon
+              className="mt-0.5 h-5 w-5 shrink-0 text-orange-600"
+              aria-hidden
+            />
+            <div>
+              <h3 id="delegate-warning" className="text-sm font-semibold text-orange-600">
+                Warning - Experimental
+              </h3>
+              <p className="mt-1 text-sm leading-6 text-slate-800">
+                Bugs or compromised delegates could drain this wallet. Only use funds you can afford
+                to lose.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <h3 className="text-base font-semibold text-slate-900">Agent Setup</h3>
 
         <p className="text-sm leading-6 text-slate-600">
           Copy the setup prompt and paste it into your AI agent. It’ll help you connect your account
@@ -180,109 +201,16 @@ export function BotDelegationSettings() {
         </div>
       </div>
 
-      <div
-        role="note"
-        aria-labelledby="delegate-warning"
-        className="mt-6 border border-orange-500 px-4 py-4 sm:px-5"
-      >
-        <div className="flex items-start gap-3">
-          <ExclamationTriangleIcon
-            className="mt-0.5 h-5 w-5 shrink-0 text-orange-600"
-            aria-hidden
-          />
-          <div>
-            <h3 id="delegate-warning" className="text-sm font-semibold text-orange-600">
-              Warning - Experimental
-            </h3>
-            <p className="mt-1 text-sm leading-6 text-slate-800">
-              Bugs or compromised delegates could drain this wallet. Only use funds you can afford
-              to lose. Revoking access won’t undo past transactions.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <table className="mt-8 w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-slate-300 text-xs uppercase tracking-wide text-gray-500">
-            <th className="py-2 pr-3 font-semibold">Delegate</th>
-            <th className="py-2 pl-3 text-right font-semibold">Access</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr className="border-b border-slate-300 bg-white">
-            <td className="border-l-4 border-slate-900 py-3 pl-4 pr-3 align-top">
-              <h3 id="cut-bot-label" className="text-base font-semibold text-slate-900">
-                <span className="mr-1 text-xl">🤖</span>
-                CutBot
-                <span className="ml-2 text-sm font-normal text-slate-500">(coming soon!)</span>
-              </h3>
-              <p id="cut-bot-description" className="mt-1 text-sm leading-6 text-slate-600">
-                Don't miss any of the action - CutBot will automatically enter you into all of your
-                league contests. You can edit your lineups until the contest begins.
-              </p>
-            </td>
-            <td className="py-3 pl-3 text-right align-top">
-              <Switch
-                checked={false}
-                disabled
-                aria-labelledby="cut-bot-label"
-                aria-describedby="cut-bot-description"
-                onChange={(next) => {
-                  if (!cutBotAddress) return;
-                  if (next) {
-                    void run("cut_bot", () => enable("cut_bot", cutBotAddress));
-                    return;
-                  }
-                  void run(cutBotAddress, () => revoke(cutBotAddress));
-                }}
-                className="group relative mt-1 inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full bg-slate-300 transition-colors focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 data-[disabled]:cursor-not-allowed data-[checked]:bg-blue-600 data-[disabled]:opacity-50"
-              >
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform group-data-[checked]:translate-x-5"
-                />
-              </Switch>
-            </td>
-          </tr>
-          {externalActive.map((row) => (
-            <tr key={row.delegateAddress} className="border-b border-slate-300">
-              <td className="py-3 pr-3 align-middle">
-                <span
-                  className="min-w-0 break-all font-mono text-xs leading-5 text-slate-600"
-                  title={row.delegateAddress}
-                >
-                  {row.delegateAddress}
-                </span>
-              </td>
-              <td className="py-3 pl-3 text-right align-middle">
-                <Button
-                  type="button"
-                  variant="neutral"
-                  size="compact"
-                  disabled={pending !== null}
-                  onClick={() => {
-                    void run(row.delegateAddress, () => revoke(row.delegateAddress));
-                  }}
-                >
-                  Revoke
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
       <form
-        className="mt-8 rounded-lg border border-slate-300 p-4 sm:p-5"
+        className="mt-8"
         onSubmit={(event) => {
           event.preventDefault();
           if (!isAddress(delegateInput)) {
             setError("Enter a valid address");
             return;
           }
-          void run("external", async () => {
-            await enable("external", delegateInput);
+          void run("grant", async () => {
+            await enable(delegateInput);
             setDelegateInput("");
           });
         }}
@@ -290,12 +218,6 @@ export function BotDelegationSettings() {
         <h3 className="text-base font-semibold text-slate-900">Add an Agent</h3>
 
         <div className="mt-3">
-          <label
-            htmlFor="delegate-address"
-            className="block text-sm font-medium leading-7 text-slate-900"
-          >
-            Paste that address and grant access
-          </label>
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
             <input
               id="delegate-address"
@@ -313,7 +235,7 @@ export function BotDelegationSettings() {
               className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100"
             />
             <Button type="submit" disabled={pending !== null} className="w-full sm:w-auto">
-              {pending === "external" ? "Granting…" : "Grant full access"}
+              {pending === "grant" ? "Granting…" : "Grant full access"}
             </Button>
           </div>
           <p id="delegate-address-note" className="mt-2 text-xs leading-5 text-slate-500">
@@ -321,6 +243,44 @@ export function BotDelegationSettings() {
           </p>
           {error ? <ErrorMessage message={error} className="mt-2" /> : null}
         </div>
+
+        {active.length > 0 ? (
+          <table className="mt-6 w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-300 text-xs uppercase tracking-wide text-gray-500">
+                <th className="py-2 pr-3 font-semibold">Agent Account</th>
+                <th className="py-2 pl-3 text-right font-semibold">Access</th>
+              </tr>
+            </thead>
+            <tbody>
+              {active.map((row) => (
+                <tr key={row.delegateAddress} className="border-b border-slate-300">
+                  <td className="py-3 pr-3 align-middle">
+                    <span
+                      className="font-mono text-xs leading-5 text-slate-600"
+                      title={row.delegateAddress}
+                    >
+                      {`${row.delegateAddress.slice(0, 6)}…${row.delegateAddress.slice(-6)}`}
+                    </span>
+                  </td>
+                  <td className="py-3 pl-3 text-right align-middle">
+                    <Button
+                      type="button"
+                      variant="neutral"
+                      size="compact"
+                      disabled={pending !== null}
+                      onClick={() => {
+                        void run(row.delegateAddress, () => revoke(row.delegateAddress));
+                      }}
+                    >
+                      Revoke
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : null}
       </form>
     </section>
   );

@@ -962,10 +962,9 @@ export const FAQPage: React.FC = () => {
         <h2 className="mb-4 font-display text-2xl font-bold text-gray-900">Agents</h2>
         <div className="space-y-4 text-gray-700">
           <p>
-            Entries are signed in one of three ways. If you have not added a delegate, you sign
-            from the app. If you allow Cut Bot, the server can save a lineup, then join or leave,
-            while you are away. If you paste a public address, that address can do the same, and
-            the private key stays with whoever runs that bot.
+            Entries are signed in one of two ways. If you have not added a delegate, you sign
+            from the app. If you paste a public address, that address can save a lineup, then join
+            or leave, while you are away. The private key stays with whoever runs that agent.
           </p>
           <p>
             A delegate is a session key on your smart wallet. It can sign any transaction for that

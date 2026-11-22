@@ -5,7 +5,6 @@ import {
   getUserOperationHash,
   type UserOperation,
 } from "viem/account-abstraction";
-import { privateKeyToAccount } from "viem/accounts";
 import { createKernelAccountClient } from "@zerodev/sdk";
 import { KERNEL_V3_1 } from "@zerodev/sdk/constants";
 import { deserializePermissionAccount } from "@zerodev/permissions";
@@ -48,7 +47,6 @@ export type SubmitSessionKeyInput = {
   calls: BotCall[];
   delegateAddress: Address;
   smartWallet: Address;
-  privateKey?: Hex;
   userOpSignature?: Hex;
   userOp?: SerializedUserOp;
 };
@@ -103,7 +101,6 @@ type SessionClient = {
   };
   kernelClient: {
     prepareUserOperation: (args: { callData: Hex }) => Promise<UserOperation<"0.7">>;
-    sendUserOperation: (args: { callData: Hex }) => Promise<Hex>;
     waitForUserOperationReceipt: (args: {
       hash: Hex;
     }) => Promise<{ receipt: { transactionHash: Hex } }>;
@@ -125,9 +122,7 @@ async function sessionClient(
     chain: chainConfig.chain,
     transport: http(chainConfig.rpcUrl),
   });
-  const signer = input.privateKey
-    ? privateKeyToAccount(input.privateKey)
-    : fixedSignatureAccount(input.delegateAddress, signature);
+  const signer = fixedSignatureAccount(input.delegateAddress, signature);
   const modularSigner = await toECDSASigner({ signer });
   const account = await deserializePermissionAccount(
     publicClient,
@@ -211,8 +206,8 @@ export function parseUserOp(userOp: SerializedUserOp): UserOperation<"0.7"> {
 }
 
 /**
- * Fill gas, nonce, and paymaster data for the canonical calls and return the hash a
- * personal delegate signs. Cut Bot does not use this. The server signs at submit time.
+ * Fill gas, nonce, and paymaster data for the canonical calls and return the hash the
+ * delegate signs.
  */
 export async function prepareSessionKeyUserOp(
   input: SubmitSessionKeyInput,
@@ -243,34 +238,18 @@ export async function prepareSessionKeyUserOp(
 }
 
 /**
- * Submit calls already authorized by a session key.
- * Cut Bot passes its private key and the server signs the user operation it builds.
- * A personal delegate passes the signature over a previously returned userOpHash,
- * and the server submits that same user operation.
+ * Submit a user operation the delegate already signed. The signature is over the
+ * userOpHash returned by prepareSessionKeyUserOp.
  */
 export async function submitSessionKeyUserOp(
   input: SubmitSessionKeyInput,
 ): Promise<{ ok: true; txHash: Hex } | { ok: false; error: string }> {
   const gated = await gateBotCalls(input);
   if (!gated.ok) return gated;
-  if (!input.privateKey && !(input.userOpSignature && input.userOp)) {
+  if (!input.userOpSignature || !input.userOp) {
     return { ok: false, error: "Missing session key signature" };
   }
-  if (input.userOp && input.userOpSignature) {
-    return submitPreparedSessionKeyUserOp(input);
-  }
-
-  try {
-    const session = await sessionClient(input, DUMMY_USER_OP_SIGNATURE);
-    if ("ok" in session) return session;
-    const userOpHash = await session.kernelClient.sendUserOperation({
-      callData: await session.account.encodeCalls(callDataFor(input.calls)),
-    });
-    const receipt = await session.kernelClient.waitForUserOperationReceipt({ hash: userOpHash });
-    return { ok: true, txHash: receipt.receipt.transactionHash };
-  } catch (error) {
-    return { ok: false, error: clientSafeErrorMessage(error, "User operation failed") };
-  }
+  return submitPreparedSessionKeyUserOp(input);
 }
 
 async function submitPreparedSessionKeyUserOp(

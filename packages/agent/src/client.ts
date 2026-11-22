@@ -5,7 +5,6 @@ import { kernelWalletAddress } from "./kernelWallet.js";
 import type { z } from "zod";
 import {
   actionSchema,
-  agentPreferencesSchema,
   agentProfileSchema,
   createFreeContestSchema,
   createLeagueSchema,
@@ -13,7 +12,6 @@ import {
   roomPostSchema,
   registerSchema,
   type AgentAccount,
-  type AgentPreferences,
   type AgentProfile,
   type CompanionBrief,
   type ContestCreated,
@@ -124,10 +122,6 @@ export type CutAgent = {
   createFreeContest(input: CreateFreeContestInput): Promise<FreeContestCreated>;
   account(): Promise<AgentAccount>;
   yield(): Promise<void>;
-  preferences(input: {
-    sports?: string[];
-    maxEntryFee?: number | null;
-  }): Promise<AgentPreferences>;
   scout(): Promise<ScoutBrief>;
   picks(contestId: string): Promise<PicksBrief>;
   companion(input?: { cursor?: string }): Promise<CompanionBrief>;
@@ -664,14 +658,6 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
       if (!value || typeof value !== "object" || (value as { yielded?: unknown }).yielded !== true) {
         throw new CutAgentError("Unexpected response", 502, value);
       }
-    },
-    async preferences(input) {
-      const body = parse(agentPreferencesSchema, input);
-      const value = await put("/api/agent/preferences", body);
-      if (!value || typeof value !== "object" || !("preferences" in value)) {
-        throw new CutAgentError("Unexpected response", 502, value);
-      }
-      return (value as { preferences: AgentPreferences }).preferences;
     },
     async scout() {
       const value = await get("/api/agent/scout", { smartWallet });

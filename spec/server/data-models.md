@@ -30,7 +30,7 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 - `role`: `ADMIN` | `MEMBER`
 
 ### BotDelegate
-- Session key the user installs on `smartWallet`: `delegateAddress`, `kind` (`cut_bot` when the server holds the key, `external` when the caller holds it), `status` (`active` | `revoked`)
+- Session key the user installs on `smartWallet`: `delegateAddress`, `status` (`active` | `revoked`). The private key stays with the caller.
 - `approval` is the serialized permission account plus the permission id
 - Unique per user and delegate address
 

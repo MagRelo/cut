@@ -1,4 +1,4 @@
-export type ScoutFit = "league" | "affordable" | "open" | "field-ready" | "within-budget";
+export type ScoutFit = "league" | "affordable" | "open" | "field-ready";
 
 export type ScoutBlockReason = "already-entered" | "field-empty" | "balance";
 
@@ -58,16 +58,10 @@ function canAfford(deposit: number | null, balanceUsdc: number | null): boolean 
   return cents(balanceUsdc) >= cents(deposit);
 }
 
-function withinBudget(deposit: number | null, maxEntryFee: number | null): boolean {
-  if (maxEntryFee == null || isFree(deposit) || deposit == null) return true;
-  return cents(deposit) <= cents(maxEntryFee);
-}
-
-function fitFor(row: ScoutInput, balanceUsdc: number | null, maxEntryFee: number | null): ScoutFit[] {
+function fitFor(row: ScoutInput, balanceUsdc: number | null): ScoutFit[] {
   const fit: ScoutFit[] = ["open", "field-ready"];
   if (row.userGroupId) fit.push("league");
   if (canAfford(row.primaryDeposit, balanceUsdc)) fit.push("affordable");
-  if (withinBudget(row.primaryDeposit, maxEntryFee)) fit.push("within-budget");
   return fit;
 }
 
@@ -91,18 +85,14 @@ export function classifyScout(
   rows: ScoutInput[],
   options: {
     balanceUsdc: number | null;
-    maxEntryFee: number | null;
-    sports: string[];
     now?: Date;
   },
 ): ScoutClassification {
-  const sports = new Set(options.sports);
   const now = options.now ?? new Date();
   const contests: ScoutContest[] = [];
   const blocked: ScoutBlocked[] = [];
 
   for (const row of rows) {
-    if (sports.size > 0 && !sports.has(row.sportId)) continue;
     if (!scoutStillOpen(row, now)) continue;
     const blockedRow = {
       contestId: row.contestId,
@@ -129,7 +119,7 @@ export function classifyScout(
     contests.push({
       ...rest,
       alreadyEntered: false,
-      fit: fitFor(row, options.balanceUsdc, options.maxEntryFee),
+      fit: fitFor(row, options.balanceUsdc),
     });
   }
 

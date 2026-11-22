@@ -89,9 +89,7 @@ sequenceDiagram
   Caller->>API: Signed GET /contests or POST /actions
   API->>API: ERC-8128 verify and consume nonce
   API->>DB: User, or a delegate installed for that user
-  alt join or leave, server holds the delegate key
-    API->>Chain: User operation signed by that delegate
-  else join or leave, caller holds the delegate key
+  alt join or leave
     API-->>Caller: prepared user operation
     Caller->>API: Same action with userOpSignature
     API->>Chain: Submit that user operation
@@ -99,7 +97,7 @@ sequenceDiagram
 ```
 
 - **Signer:** a delegate installed for the user's wallet, or the user signing as that wallet (ERC-1271)
-- **User join and leave:** submitted only when a server-held delegate is active for that user
+- **User join and leave:** the caller signs the prepared user operation, and the server submits it
 - **League contests:** included when the resolved user is a member
 - **Browser:** the user installs and revokes a delegate with a Privy session, and can still join from the app
 

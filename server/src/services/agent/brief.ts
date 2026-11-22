@@ -1,15 +1,8 @@
-import { Prisma } from "@prisma/client";
 import { parseContestCommentaryFeedItems } from "@cut/sport-sdk";
 import { prisma } from "../../lib/prisma.js";
 import { profileFromUser } from "./profile.js";
 import { buildLeagueInviteUrl, buildReferralUrl } from "../../lib/appUrl.js";
 import { ensureUserReferralCode } from "../../lib/referralCode.js";
-import {
-  mergeAgentPreferences,
-  readAgentPreferences,
-  type AgentPreferences,
-  type AgentPreferencesPatch,
-} from "../../schemas/user.js";
 import { primaryDepositFromSettings } from "../../utils/canDeleteLeagueContest.js";
 import { contestVisibilityWhere } from "../../utils/contestListQuery.js";
 import { getMemberWalletByUserId } from "../../utils/userGroup.js";
@@ -209,7 +202,6 @@ export async function getAgentAccount(actor: AgentActor) {
       totalEarned: summary.totalEarned,
     },
     entries,
-    preferences: readAgentPreferences(user?.settings),
     takeover: await takeoverFor(actor),
   };
 }
@@ -224,31 +216,8 @@ async function takeoverFor(actor: AgentActor): Promise<{ embeddedAddress: string
   return { embeddedAddress: pending };
 }
 
-export async function saveAgentPreferences(
-  userId: string,
-  patch: AgentPreferencesPatch,
-): Promise<AgentPreferences | null> {
-  const existing = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { settings: true },
-  });
-  if (!existing) return null;
-  const settings = mergeAgentPreferences(existing.settings, patch);
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data: { settings: settings as Prisma.InputJsonValue },
-    select: { settings: true },
-  });
-  return readAgentPreferences(updated.settings);
-}
-
 export async function getScoutBrief(actor: AgentActor, balanceUsdc?: number | null) {
   const balance = balanceUsdc === undefined ? await readWalletUsdc(actor.chainId, actor.address) : balanceUsdc;
-  const preferences = await prisma.user.findUnique({
-    where: { id: actor.userId },
-    select: { settings: true },
-  });
-  const prefs = readAgentPreferences(preferences?.settings);
   const now = new Date();
   const cards = (
     await listContestCards({
@@ -297,8 +266,6 @@ export async function getScoutBrief(actor: AgentActor, balanceUsdc?: number | nu
   });
   const classified = classifyScout(inputs, {
     balanceUsdc: balance,
-    maxEntryFee: prefs.maxEntryFee,
-    sports: prefs.sports,
     now,
   });
   return { balanceUsdc: balance, ...classified };

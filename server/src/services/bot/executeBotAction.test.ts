@@ -22,9 +22,19 @@ const CONTEST = getAddress("0x2222222222222222222222222222222222222222");
 const TOKEN = getAddress("0x3333333333333333333333333333333333333333");
 const USER_ID = "user-1";
 
-const cutBotKey = generatePrivateKey();
-const cutBot = privateKeyToAccount(cutBotKey);
+const delegateAccount = privateKeyToAccount(generatePrivateKey());
 const stranger = privateKeyToAccount(generatePrivateKey());
+const USER_OP = {
+  sender: SMART_WALLET,
+  nonce: "1",
+  callData: "0x" as Hex,
+  callGasLimit: "1",
+  verificationGasLimit: "1",
+  preVerificationGas: "1",
+  maxFeePerGas: "1",
+  maxPriorityFeePerGas: "1",
+};
+const USER_OP_SIGNATURE = `0x${"11".repeat(65)}` as Hex;
 
 function contest(overrides: Partial<BotContest> = {}): BotContest {
   return {
@@ -44,8 +54,7 @@ function delegate(overrides: Partial<BotDelegateRow> = {}): BotDelegateRow {
   return {
     userId: USER_ID,
     smartWallet: SMART_WALLET.toLowerCase(),
-    delegateAddress: cutBot.address.toLowerCase(),
-    kind: "cut_bot",
+    delegateAddress: delegateAccount.address.toLowerCase(),
     approval: packApproval({ approval: "serialized", permissionId: "0x5a677774" }),
     ...overrides,
   };
@@ -98,7 +107,7 @@ function deps(partial: Partial<BotActionDeps> = {}): BotActionDeps {
   };
 }
 
-function signedJoin(signer: Address = cutBot.address, lineupId = "lineup-1"): ExecuteBotActionInput {
+function signedJoin(signer: Address = delegateAccount.address, lineupId = "lineup-1"): ExecuteBotActionInput {
   return {
     chainId: CHAIN_ID,
     action: "join",
@@ -107,6 +116,8 @@ function signedJoin(signer: Address = cutBot.address, lineupId = "lineup-1"): Ex
     lineupId,
     picks: [],
     signer,
+    userOp: USER_OP,
+    userOpSignature: USER_OP_SIGNATURE,
   };
 }
 
@@ -168,11 +179,7 @@ describe("executeBotAction", () => {
       log,
       insertContestEntry,
     });
-    const previous = process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
-    process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = cutBotKey;
     const result = await executeBotAction(signedJoin(), used);
-    if (previous === undefined) delete process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
-    else process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = previous;
     expect(result).toMatchObject({ ok: false, error: "bundler reverted" });
     expect(insertContestEntry).not.toHaveBeenCalled();
     expect(log.mock.calls[0]?.slice(0, 2)).toEqual([USER_ID, "error"]);
@@ -190,7 +197,7 @@ describe("executeBotAction", () => {
         contestId: "contest-1",
         lineupId: "",
         picks: ["p1", "p2"],
-        signer: cutBot.address,
+        signer: delegateAccount.address,
       },
       used,
     );
@@ -222,12 +229,8 @@ describe("executeBotAction", () => {
   });
 
   it("joins an existing lineup and does not write picks", async () => {
-    const previous = process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
-    process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = cutBotKey;
     const used = deps();
     const result = await executeBotAction(signedJoin(), used);
-    if (previous === undefined) delete process.env.CUT_BOT_DELEGATE_PRIVATE_KEY;
-    else process.env.CUT_BOT_DELEGATE_PRIVATE_KEY = previous;
     expect(result).toMatchObject({ ok: true, lineupId: "lineup-1" });
     expect(used.createLineup).not.toHaveBeenCalled();
     expect(used.updateLineup).not.toHaveBeenCalled();
@@ -274,6 +277,24 @@ describe("executeBotAction", () => {
     });
   });
 
+  it("prepares a user operation when the delegate has not signed", async () => {
+    const userOpHash = `0x${"ab".repeat(32)}` as Hex;
+    const used = deps({
+      prepareUserOp: vi.fn(async () => ({ ok: true as const, userOpHash, userOp: USER_OP })),
+    });
+    const unsigned = { ...signedJoin(), userOp: undefined, userOpSignature: undefined };
+    const result = await executeBotAction(unsigned, used);
+    expect(result).toEqual({
+      ok: true,
+      preparedUserOp: true,
+      lineupId: "lineup-1",
+      userOpHash,
+      userOp: USER_OP,
+    });
+    expect(used.submitCalls).not.toHaveBeenCalled();
+    expect(used.insertContestEntry).not.toHaveBeenCalled();
+  });
+
   it("prepares one sponsored user operation for the account key", async () => {
     const owner = privateKeyToAccount(generatePrivateKey());
     const wallet = kernelWalletAddress(owner.address, CHAIN_ID);
@@ -293,7 +314,12 @@ describe("executeBotAction", () => {
       prepareOwnerUserOp: vi.fn(async () => ({ ok: true as const, userOpHash, userOp })),
     });
     const result = await executeBotAction(
-      { ...signedJoin(owner.address), smartWallet: wallet },
+      {
+        ...signedJoin(owner.address),
+        smartWallet: wallet,
+        userOp: undefined,
+        userOpSignature: undefined,
+      },
       used,
     );
     expect(result).toEqual({
