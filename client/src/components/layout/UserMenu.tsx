@@ -57,7 +57,7 @@ export const UserMenu: React.FC = () => {
             ? "bg-slate-100 font-semibold text-slate-950"
             : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
         ].join(" ")}
-        aria-label="My Account menu"
+        aria-label={user?.name ? `${user.name} menu` : "Account menu"}
       >
         {totalBalance !== null ? (
           <span className="font-normal tabular-nums tracking-normal">${totalBalance}</span>
@@ -132,6 +132,12 @@ export const UserMenu: React.FC = () => {
         })}
 
         <div className="my-1 border-t border-slate-300" role="separator" />
+
+        {user?.name ? (
+          <p className="truncate px-4 pb-1 pt-1.5 font-display text-sm font-medium uppercase tracking-wider text-slate-600">
+            {user.name}
+          </p>
+        ) : null}
 
         {ACCOUNT_SUB_LINKS.map((link) => {
           const active = link.match(location.pathname);

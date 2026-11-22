@@ -44,6 +44,13 @@ function ContestResultsSection({
   );
 }
 
+function hasPositivePayment(rows: OnchainPaymentView[]): boolean {
+  return rows.some((row) => {
+    const wei = parseAmountWei(row);
+    return wei !== null && wei > 0n;
+  });
+}
+
 function formatShareBps(shareBps: number) {
   const percent = shareBps / 100;
   const fractionDigits = shareBps % 100 === 0 ? 0 : 2;
@@ -171,6 +178,9 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
   isLoading = false,
 }) => {
   const { primary, secondary, referral, hasAnyRows } = useContestPayoutSections(contest);
+  const showWinners = primary.length > 0;
+  const showWinnerPool = hasPositivePayment(secondary);
+  const showReferral = hasPositivePayment(referral);
   const paymentDecimals = contestPaymentDecimals(
     contest.chainId,
     contest.settings?.paymentTokenAddress ?? "",
@@ -190,7 +200,7 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
     );
   }
 
-  if (!hasAnyRows) {
+  if (!hasAnyRows || (!showWinners && !showWinnerPool && !showReferral)) {
     return (
       <ContestPayoutLayout>
         <p className="text-sm text-slate-500">Results not available.</p>
@@ -200,59 +210,57 @@ export const ContestResultsPanel: React.FC<ContestResultsPanelProps> = ({
 
   return (
     <ContestPayoutLayout>
-      <ContestResultsSection
-        title="Contest Winners"
-        description={
-          <>
-            {contestWinnerPayoutBlurb(contest)}{" "}
-            <Link to="/faq#contest-gameplay" className="text-blue-600 hover:underline">
-              Learn more...
-            </Link>
-          </>
-        }
-      >
-        {primary.length === 0 ? (
-          <p className="mt-1 pl-2 text-sm text-slate-500">&bull; No contest payouts</p>
-        ) : (
+      {showWinners ? (
+        <ContestResultsSection
+          title="Contest Winners"
+          description={
+            <>
+              {contestWinnerPayoutBlurb(contest)}{" "}
+              <Link to="/faq#contest-gameplay" className="text-blue-600 hover:underline">
+                Learn more...
+              </Link>
+            </>
+          }
+        >
           <ContestWinnerRows rows={primary} paymentDecimals={paymentDecimals} />
-        )}
-      </ContestResultsSection>
+        </ContestResultsSection>
+      ) : null}
 
-      <ContestResultsSection
-        title="Winner Pool Payouts"
-        description={
-          <>
-            Winner-ticket holders split the pool proportionally.{" "}
-            <Link to="/faq#winner-pool" className="text-blue-600 hover:underline">
-              Learn more...
-            </Link>
-          </>
-        }
-      >
-        {secondary.length === 0 ? (
-          <p className="mt-1 pl-2 text-sm text-slate-500">&bull; No winner pool payouts</p>
-        ) : (
+      {showWinnerPool ? (
+        <ContestResultsSection
+          title="Winner Pool Payouts"
+          description={
+            <>
+              Winner-ticket holders split the pool proportionally.{" "}
+              <Link to="/faq#winner-pool" className="text-blue-600 hover:underline">
+                Learn more...
+              </Link>
+            </>
+          }
+        >
           <WinnerPoolRows rows={secondary} paymentDecimals={paymentDecimals} />
-        )}
-      </ContestResultsSection>
+        </ContestResultsSection>
+      ) : null}
 
-      <ContestResultsSection
-        title="Referral Rewards"
-        description={
-          <>
-            When your friends win, you win.{" "}
-            <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
-              Learn more...
-            </Link>
-          </>
-        }
-      >
-        <ReferralRewardsTree
-          referralPayments={referral}
-          paymentDecimals={paymentDecimals}
-          winners={primary}
-        />
-      </ContestResultsSection>
+      {showReferral ? (
+        <ContestResultsSection
+          title="Referral Rewards"
+          description={
+            <>
+              When your friends win, you win.{" "}
+              <Link to="/faq#referral-network" className="text-blue-600 hover:underline">
+                Learn more...
+              </Link>
+            </>
+          }
+        >
+          <ReferralRewardsTree
+            referralPayments={referral}
+            paymentDecimals={paymentDecimals}
+            winners={primary}
+          />
+        </ContestResultsSection>
+      ) : null}
     </ContestPayoutLayout>
   );
 };

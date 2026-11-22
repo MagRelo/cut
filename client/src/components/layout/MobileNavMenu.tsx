@@ -189,8 +189,8 @@ export const MobileNavMenu: React.FC = () => {
                             </div>
 
                             <div className="flex flex-col">
-                              <p className="px-3 py-2 font-display text-sm font-medium uppercase tracking-wider text-slate-600">
-                                Account
+                              <p className="truncate px-3 py-2 font-display text-sm font-medium uppercase tracking-wider text-slate-600">
+                                {user.name}
                               </p>
 
                               <div className={mobileInsetListClass}>
