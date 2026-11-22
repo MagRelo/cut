@@ -46,6 +46,8 @@ export const GolfParticipantRow: React.FC<ParticipantRowProps> = ({
 
   const leaderboardTotalRaw = meta.scoreData?.leaderboardTotal?.trim();
   const leaderboardPositionRaw = meta.scoreData?.leaderboardPosition?.trim();
+  const missedCut = leaderboardPositionRaw?.toUpperCase() === "CUT";
+  const nameColor = missedCut ? "text-gray-400" : "text-gray-900";
   const leaderboardPositionDisplay = isPlaceholderLeaderboardValue(leaderboardPositionRaw)
     ? "\u00A0"
     : leaderboardPositionRaw;
@@ -97,12 +99,16 @@ export const GolfParticipantRow: React.FC<ParticipantRowProps> = ({
   const liveContent = (
     <div className="flex min-w-0 items-center justify-between gap-3">
       <div className="flex w-4 shrink-0 flex-col items-center justify-center gap-1.5 text-center tabular-nums">
-        <span className="text-xs font-semibold leading-none text-gray-800">
+        <span className={`text-xs font-semibold leading-none ${nameColor}`}>
           {leaderboardPositionDisplay}
         </span>
         <span
           className={`text-xs font-semibold leading-none ${
-            leaderboardTotalRaw?.startsWith("-") ? "text-red-600" : "text-gray-900"
+            missedCut
+              ? nameColor
+              : leaderboardTotalRaw?.startsWith("-")
+                ? "text-red-600"
+                : "text-gray-900"
           }`}
         >
           {leaderboardTotalDisplay}
@@ -113,7 +119,7 @@ export const GolfParticipantRow: React.FC<ParticipantRowProps> = ({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <div className="truncate text-md font-semibold leading-tight text-gray-900">
+          <div className={`truncate text-md font-semibold leading-tight ${nameColor}`}>
             {displayName}
           </div>
           {icon ? (
