@@ -255,7 +255,7 @@ Preview: `pnpm --filter server run script:email-preview contest-announcement`
 | Layer | Control |
 |-------|---------|
 | Client | Privy session, route guards, form validation |
-| API | ERC-8128 or a Privy bearer on contest and lineup routes; `POST /api/bot/actions` is `yield`; Zod bodies; `requireEventEditable` |
+| API | ERC-8128 or a Privy bearer on player routes; `POST /api/auth/yield` requires a signature; Zod bodies; `requireEventEditable` |
 | Admin | Staff role + separate batch endpoints |
 | Chain | Contract access control, oracle role on server |
 

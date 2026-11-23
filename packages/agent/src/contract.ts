@@ -48,47 +48,12 @@ export const userOpSchema = z.object({
   factoryData: hexSchema.optional(),
 });
 
-export const playActionSchema = z.object({
-  chainId: z.number().int(),
-  action: z.enum(["lineupUpsert", "join", "leave"]),
-  smartWallet: z.string(),
-  contestId: z.string().min(1),
-  lineupId: z.string().default(""),
-  candidates: z.array(z.string().min(1)).optional(),
-  prediction: z.unknown().optional(),
-  userOpSignature: hexSchema.optional(),
-  userOp: userOpSchema.optional(),
-});
-
-export const createContestActionSchema = z.object({
-  chainId: z.number().int(),
-  action: z.literal("createContest"),
-  smartWallet: z.string(),
-  name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
-  description: z.string().max(DESCRIPTION_MAX_LENGTH).optional(),
-  eventId: z.string().cuid(),
-  userGroupId: z.string().cuid().optional(),
-  endDate: z.union([z.string().datetime(), z.number()]),
-  settings: contestSettingsSchema,
-  notifyLeagueMembers: z.boolean().optional(),
-  userOpSignature: hexSchema.optional(),
-  userOp: userOpSchema.optional(),
-});
-
-export const yieldActionSchema = z.object({
-  chainId: z.number().int(),
-  action: z.literal("yield"),
-  smartWallet: z.string(),
+/** `POST /api/auth/yield`. The first body is empty. Later steps add the signatures. */
+export const yieldSchema = z.object({
   enableSignature: hexSchema.optional(),
   userOpSignature: hexSchema.optional(),
   userOp: userOpSchema.optional(),
 });
-
-export const actionSchema = z.discriminatedUnion("action", [
-  playActionSchema,
-  createContestActionSchema,
-  yieldActionSchema,
-]);
 
 const HEX_COLOR = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
@@ -138,9 +103,7 @@ export const createFreeContestSchema = z.object({
 });
 
 export type UserOpBody = z.infer<typeof userOpSchema>;
-export type PlayActionBody = z.infer<typeof playActionSchema>;
-export type CreateContestActionBody = z.infer<typeof createContestActionSchema>;
-export type ActionBody = z.infer<typeof actionSchema>;
+export type YieldBody = z.infer<typeof yieldSchema>;
 export type RegisterBody = z.infer<typeof registerSchema>;
 export type AgentProfilePatch = z.infer<typeof agentProfileSchema>;
 export type OddsFormat = z.infer<typeof oddsFormatSchema>;

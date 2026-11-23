@@ -1,13 +1,9 @@
-import { actionSchema } from "@playthecut/agent/contract";
 import { Hono } from "hono";
 import { getAddress, isAddress, type Hex } from "viem";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requirePrivySession } from "../middleware/auth.js";
 import { packApproval } from "../services/bot/approvalEnvelope.js";
-import { executeYield } from "../services/bot/executeYield.js";
-import type { SerializedUserOp } from "../services/bot/submitSessionKeyUserOp.js";
-import { verifyBotRequest } from "../services/bot/verifyBotRequest.js";
 
 const botRouter = new Hono();
 
@@ -98,45 +94,6 @@ botRouter.post("/delegates/revoke", requireAuth, requirePrivySession, async (c) 
     data: { userId: user.userId, action: "revoke" },
   });
   return c.json({ status: "revoked", delegateAddress });
-});
-
-botRouter.post("/actions", async (c) => {
-  const verified = await verifyBotRequest(c.req.raw.clone());
-  if (!verified.ok) return c.json({ error: verified.error }, verified.status);
-  const parsed = actionSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) {
-    return c.json({ error: "Invalid request body", details: parsed.error.issues }, 400);
-  }
-  const body = parsed.data;
-  if (body.chainId !== verified.chainId) {
-    return c.json({ error: "Signature chain does not match the request" }, 400);
-  }
-  if (body.action === "yield") {
-    const result = await executeYield({
-      chainId: body.chainId,
-      smartWallet: body.smartWallet,
-      signer: verified.signer,
-      ...(body.enableSignature ? { enableSignature: body.enableSignature as Hex } : {}),
-      ...(body.userOpSignature ? { userOpSignature: body.userOpSignature as Hex } : {}),
-      ...(body.userOp ? { userOp: body.userOp as SerializedUserOp } : {}),
-    });
-    if (!result.ok) {
-      const status = result.status as 400 | 401 | 403 | 404 | 409 | 502 | 503;
-      return c.json({ error: result.error }, status);
-    }
-    if ("enableHash" in result) {
-      return c.json({ enableHash: result.enableHash });
-    }
-    if ("preparedUserOp" in result) {
-      return c.json({
-        preparedUserOp: true,
-        userOpHash: result.userOpHash,
-        userOp: result.userOp,
-      });
-    }
-    return c.json({ ok: true, yielded: true });
-  }
-  return c.json({ error: "Use the contest and lineup routes" }, 400);
 });
 
 export default botRouter;

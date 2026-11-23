@@ -8,7 +8,7 @@ A write is one verb. The body decides the completion. A confirmed transaction is
 
 - Lineup create and update are `/api/lineups`. Those writes do not build a user operation.
 - Join, leave, and contest create are `/api/contests`. A bearer request that already has a receipt records the row. A signature, or a body that carries `userOp`, prepares or completes the user operation.
-- `POST /api/bot/actions` is `yield` only.
+- `POST /api/auth/yield` hands the wallet to the human who is waiting. A signature is required.
 
 A lineup roster is `candidates` on every lineup request and response. A write is an ordered array of `eventParticipantId` strings. A read is that roster with scores. `GET /api/events/:eventId/field` is the field pool, a different shape under the same word.
 
@@ -103,6 +103,7 @@ JSON bodies are capped at 128 KiB.
 | GET | `/entries` | either | This account's entries: `contestId`, `status`, `lineupId`, `position`, `total`, `payout`. |
 | GET | `/transactions` | either | Activity feed: entries, predictions, payouts. |
 | POST | `/transfers` | either | Send platform USDC from this account's smart wallet. `X-Cut-Chain-Id` required. A signature is required. Body: `to`, `amount` (positive decimal USDC, at most 6 places). The first response is `{ preparedUserOp, userOpHash, userOp }`. The second body adds `userOp` and `userOpSignature`. The finished response is `{ ok, txHash, to, amount }`. The call is one payment-token `transfer`. After the receipt the server records `SEND`. An invalid address or amount is `400`. A failed user operation is `502`. A receipt that cannot be recorded is `502` `"The transfer was submitted. Do not send it again."` and includes `txHash`. |
+| POST | `/yield` | either | Hand this account's Kernel wallet to the embedded key stored as the pending owner. `X-Cut-Chain-Id` required. A signature is required. A bearer session is `400` `"A signature is required to yield"`. The first body is `{}`. The response is `{ enableHash }`. The caller signs that 32-byte digest with the owner key, without the Ethereum message prefix, and posts `{ enableSignature }`. The next response is `{ preparedUserOp, userOpHash, userOp }`. The caller signs `userOpHash` and posts `{ enableSignature, userOp, userOpSignature }`. That user operation grants this key the execute selector as a delegate and changes the Kernel root to the embedded address. The last response is `{ ok, yielded: true }`. A second yield does nothing. The signer is the stored `ownerAddress`. An active delegate when no takeover is waiting gets `{ ok, yielded: true }`. A delegate while a takeover is waiting is `403` `"On-chain actions from this wallet are signed by its owner key"`. No waiting takeover, and a signer who is not an active delegate, is `403` `"No takeover is waiting"`. |
 | POST | `/onchain-payments` | either | Record a confirmed value transfer. `X-Cut-Chain-Id` required. Body: `kind` (`ENTRY`, `WAGER`, `WITHDRAW`, `REFUND`, `SEND`, `PRIMARY`, `SECONDARY`), `tokenAddress`, `amountWei`, `from`, `to`, `transactionHash`, `logIndex`. `contestId` is required except for `SEND`. Optional `entryId`, `lineupId`. The server loads the receipt and stores the log amount. `ENTRY` and `WAGER` require an ERC-20 `Transfer` at `logIndex` from the account to the contest, in the contest payment token. `REFUND` and `WITHDRAW` require that transfer in the other direction. `SEND` requires a `Transfer` from the account in the platform payment token. `PRIMARY` and `SECONDARY` require `PrimaryPayoutClaimed` or `SecondaryPayoutClaimed` for this account, entry, and amount. |
 
 ---
@@ -286,13 +287,10 @@ The product name is league. The path is `/api/userGroups`. Client pages are `/le
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/actions` | signature | `yield` only. Any other `action` is `400` `"Use the contest and lineup routes"`. |
 | GET | `/delegates` | either | Delegates for the account. |
 | POST | `/delegates` | privy | Record an approved session key. |
 | POST | `/delegates/revoke` | privy | Mark a delegate revoked. |
 
-Contest list, lineup save, join, leave, and contest create are the contest and lineup routes. A delegate signer must be an active `BotDelegate` whose permission is still installed on the wallet when the signer is not the account. The account key can call those routes with no delegate. A delegate's first join, leave, or paid create returns a prepared user operation. The caller signs it and posts again. The server submits that user operation.
-
-`yield` is signed by the current owner. `account().takeover` is `{ embeddedAddress }` while a human is waiting, and `null` otherwise. The first response is `{ enableHash }`. The caller signs that 32-byte digest with the owner key, without the Ethereum message prefix, and posts `{ enableSignature }`. The next response is `{ preparedUserOp, userOpHash, userOp }`. The caller signs `userOpHash` and posts the user operation. That user operation grants this key the execute selector as a delegate and changes the Kernel root to the embedded address. The last response is `{ ok, yielded: true }`. A second `yield` does nothing. The signer is the stored `ownerAddress`, or an active delegate. The creation key is not the owner after that change. An installed delegate whose execute selector was never granted gets `403` `"Session key cannot execute"` from a sponsored action, instead of a bundler failure.
+Contest list, lineup save, join, leave, and contest create are the contest and lineup routes. Yield is `POST /api/auth/yield`. A delegate signer must be an active `BotDelegate` whose permission is still installed on the wallet when the signer is not the account. The account key can call those routes with no delegate. A delegate's first join, leave, or paid create returns a prepared user operation. The caller signs it and posts again. The server submits that user operation. The creation key is not the owner after a yield. An installed delegate whose execute selector was never granted gets `403` `"Session key cannot execute"` from a sponsored action, instead of a bundler failure.
 
 **POST `/delegates` body:** `delegateAddress`, `smartWallet`, `approval`, `permissionId` (4-byte hex). `smartWallet` must be the signed-in account's wallet.

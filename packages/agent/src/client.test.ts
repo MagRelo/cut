@@ -566,7 +566,7 @@ describe("createCutAgent", () => {
     });
 
     await expect(agent.yield()).resolves.toBeUndefined();
-    expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/bot/actions");
+    expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/auth/yield");
     const enableBody = JSON.parse(await requests[1]!.text()) as { enableSignature: Hex };
     await expect(recoverAddress({ hash: enableHash, signature: enableBody.enableSignature })).resolves.toBe(
       account.address,

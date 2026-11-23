@@ -708,6 +708,10 @@ Visibility matches the contest list: public contests, plus league contests in le
 
 A `502` that says `"The transfer was submitted. Do not send it again."` means the chain transfer already went out. Do not call `send` again for that amount.
 
+### yield
+
+`agent.yield()` → `POST /api/auth/yield`. The owner key signs. A bearer session is `400` `"A signature is required to yield"`. See [Yield](docs/access.md#yield).
+
 ### entries
 
 `agent.entries()` → `GET /api/auth/entries`. `{ entries }`. Each row is `contestId`, `status`, `lineupId`, `position`, `total`, and `payout`.
@@ -826,7 +830,7 @@ A delegate is a Kernel v3.1 session key on EntryPoint 0.7, installed on the user
 
 ### Authentication and request signing
 
-Player routes accept a Privy bearer token or an [ERC-8128](https://erc8128.org) signature. Contest reads take either, and a missing credential is anonymous. `POST /api/bot/actions` is signature-only and accepts `yield`. A request that sends both a bearer token and a signature is rejected. There is no signature field in the query or body.
+Player routes accept a Privy bearer token or an [ERC-8128](https://erc8128.org) signature. Contest reads take either, and a missing credential is anonymous. `POST /api/auth/yield` requires a signature. A request that sends both a bearer token and a signature is rejected. There is no signature field in the query or body.
 
 `@slicekit/erc8128` `signRequest` covers `@scheme`, `@authority`, `@method`, `@path`, and `@query`, plus `content-digest` and `content-type` when the request has a body. Parameters are `keyid`, `created`, `expires`, `nonce`, and `tag="erc8128"`. `keyid` is `eip155:<chainId>:0x<signer>` with the signer address lowercase. The chain is `8453` or `84532` and must equal `chainId` on the request. `expires - created` is at most one hour. `nonce` is a single-use ASCII string of at most 128 bytes. The server stores `(keyid, nonce)` until `expires`.
 

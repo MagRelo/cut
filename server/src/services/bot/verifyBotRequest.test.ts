@@ -108,7 +108,7 @@ describe("verifyBotRequest", () => {
   it("accepts a proxied post whose body is still covered", async () => {
     const body = JSON.stringify({ action: "lineupUpsert", candidates: ["ep-1"] });
     const signed = await signRequest(
-      "https://playthecut.com/api/bot/actions",
+      "https://playthecut.com/api/auth/yield",
       {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -158,7 +158,7 @@ describe("verifyBotRequest", () => {
 
   it("rejects a tampered body", async () => {
     const signed = await signRequest(
-      "https://playthecut.com/api/bot/actions",
+      "https://playthecut.com/api/auth/yield",
       {
         method: "POST",
         headers: { "content-type": "application/json" },

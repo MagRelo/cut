@@ -36,7 +36,7 @@ actual user login/auth flows** and a funded oracle wallet + Base Sepolia RPC for
 contest settlement.
 
 ### Logging in during dev (Privy test accounts)
-A delegate plays through signed contest, lineup, and `POST /api/bot/actions` (`yield`) requests
+A delegate plays through signed contest, lineup, and `POST /api/auth/yield` requests
 (ERC-8128). See `spec/agent/agents.md`. The browser still gates the user's own actions behind Privy
 email OTP login, which is also how the user installs a delegate. For that browser login, use
 Privy **test accounts**:

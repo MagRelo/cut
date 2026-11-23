@@ -4,7 +4,6 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { kernelWalletAddress } from "./kernelWallet.js";
 import type { z } from "zod";
 import {
-  actionSchema,
   agentProfileSchema,
   createFreeContestSchema,
   createLeagueSchema,
@@ -35,6 +34,7 @@ import {
   type ScoutBrief,
   type TickBrief,
   type UserOpBody,
+  yieldSchema,
 } from "./contract.js";
 
 export type CutChainId = 8453 | 84532;
@@ -707,16 +707,15 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
       return readAccount(await get("/api/agent/account", { smartWallet }));
     },
     async yield() {
-      const base = parse(actionSchema, { chainId, action: "yield", smartWallet });
-      let body: Record<string, unknown> = { ...base };
+      let body: Record<string, unknown> = {};
       for (let step = 0; step < 4; step += 1) {
-        const value = await post("/api/bot/actions", body, { smartWallet });
+        const value = await post("/api/auth/yield", parse(yieldSchema, body), { smartWallet });
         if (value && typeof value === "object" && (value as { yielded?: unknown }).yielded === true) {
           return;
         }
         const enableHash = (value as { enableHash?: unknown } | null)?.enableHash;
         if (typeof enableHash === "string" && isHex(enableHash) && enableHash.length === 66) {
-          body = { ...base, enableSignature: await account.sign({ hash: enableHash }) };
+          body = { enableSignature: await account.sign({ hash: enableHash }) };
           continue;
         }
         const ready = prepared(value);

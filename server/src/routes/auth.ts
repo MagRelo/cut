@@ -2,11 +2,10 @@ import { Hono } from "hono";
 import type { Prisma } from "@prisma/client";
 import { getAddress, isAddress, isHex, type Address, type Hex } from "viem";
 import { z } from "zod";
-import { userOpSchema } from "@playthecut/agent/contract";
+import { registerSchema, userOpSchema, yieldSchema } from "@playthecut/agent/contract";
 import { prisma } from "../lib/prisma.js";
 import { buildAuthProfile } from "../lib/authProfile.js";
 import { getPrivyClient } from "../lib/privyClient.js";
-import { registerSchema } from "@playthecut/agent/contract";
 import { registerAgentAccount } from "../services/auth/registerAgent.js";
 import { verifyBotRequest } from "../services/bot/verifyBotRequest.js";
 import {
@@ -35,6 +34,7 @@ import { recordValueTransfer, ValueTransferError } from "../services/contest/onc
 import { prepareOwnerUserOp, submitOwnerUserOp } from "../services/bot/ownerUserOp.js";
 import { createBotActionDeps } from "../services/bot/botActionRuntime.js";
 import { executeSend, recordSubmittedSend } from "../services/bot/executeSend.js";
+import { executeYield } from "../services/bot/executeYield.js";
 import type { SerializedUserOp } from "../services/bot/submitSessionKeyUserOp.js";
 
 const authRouter = new Hono();
@@ -462,6 +462,45 @@ authRouter.post("/transfers", requireAuth, requireWalletChain, async (c) => {
   } catch (error) {
     console.error("Error sending transfer:", error);
     return c.json({ error: "Failed to send" }, 500);
+  }
+});
+
+authRouter.post("/yield", requireAuth, requireWalletChain, async (c) => {
+  try {
+    const parsed = yieldSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
+    let signer: Address | undefined;
+    try {
+      signer = c.get("signer");
+    } catch {
+      signer = undefined;
+    }
+    if (!signer) return c.json({ error: "A signature is required to yield" }, 400);
+    const user = c.get("user");
+    const result = await executeYield({
+      chainId: user.chainId,
+      smartWallet: user.address,
+      signer,
+      ...(parsed.data.enableSignature ? { enableSignature: parsed.data.enableSignature as Hex } : {}),
+      ...(parsed.data.userOpSignature ? { userOpSignature: parsed.data.userOpSignature as Hex } : {}),
+      ...(parsed.data.userOp ? { userOp: parsed.data.userOp as SerializedUserOp } : {}),
+    });
+    if (!result.ok) {
+      const status = result.status as 400 | 401 | 403 | 404 | 409 | 502 | 503;
+      return c.json({ error: result.error }, status);
+    }
+    if ("enableHash" in result) return c.json({ enableHash: result.enableHash });
+    if ("preparedUserOp" in result) {
+      return c.json({
+        preparedUserOp: true,
+        userOpHash: result.userOpHash,
+        userOp: result.userOp,
+      });
+    }
+    return c.json({ ok: true, yielded: true });
+  } catch (error) {
+    console.error("Error yielding account:", error);
+    return c.json({ error: "Failed to yield" }, 500);
   }
 });
 
