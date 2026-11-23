@@ -189,15 +189,15 @@ export function BotDelegationSettings() {
           </div>
         </div>
 
-        <h3 className="text-base font-semibold text-slate-900">Agent Setup</h3>
+        <h3 className="text-base font-semibold text-slate-900">Agent Instructions</h3>
 
         <p className="text-sm leading-6 text-slate-600">
-          Copy the setup prompt and paste it into your AI agent. It’ll help you connect your account
-          and build a game plan.
+          Copy the instructions and paste them into your AI agent chat. It will guide your through
+          connecting your agent.
         </p>
 
         <div className="mt-3">
-          <CopyButton text={agentPrompt} idleLabel="Copy Agent Setup" />
+          <CopyButton text={agentPrompt} idleLabel="Copy Agent Instructions" />
         </div>
       </div>
 
@@ -260,7 +260,7 @@ export function BotDelegationSettings() {
                       className="font-mono text-xs leading-5 text-slate-600"
                       title={row.delegateAddress}
                     >
-                      {`${row.delegateAddress.slice(0, 6)}…${row.delegateAddress.slice(-6)}`}
+                      {`${row.delegateAddress.slice(0, 8)}…${row.delegateAddress.slice(-8)}`}
                     </span>
                   </td>
                   <td className="py-3 pl-3 text-right align-middle">
