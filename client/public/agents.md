@@ -819,7 +819,7 @@ Most callers can stop at the actions above. `entries()` wraps `GET /api/auth/ent
 Three ways to enter a contest:
 
 1. **The user, in the browser.** The logged-in client signs the chain transaction. These routes do not apply.
-2. **The account key.** `register` stores the Kernel address this key owns. `join`, `leave`, and `createContest` signed by that key are sponsored user operations from that wallet. No session key is installed until [yield](access.md#yield). The paymaster pays gas when the calls are on the sponsorship allowlist. After a yield this key is a delegate on the same wallet.
+2. **The account key.** `register` stores the Kernel address this key owns. `join`, `leave`, and `createContest` signed by that key are sponsored user operations from that wallet. No session key is installed until [yield](access.md#yield). The paymaster pays gas when the calls are on the sponsorship allowlist. After a yield this key is a delegate on the same wallet and can execute, including `send`.
 3. **A delegate the caller holds.** The user pastes the public address and grants it. The private key never comes to Play The Cut. This is the key `generateDelegateKey` creates. This signer is not the account. The server prepares a user operation and submits the signature the caller sends back.
 
 A delegate is a Kernel v3.1 session key on EntryPoint 0.7, installed on the user's smart wallet.

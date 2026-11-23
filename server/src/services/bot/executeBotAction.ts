@@ -8,6 +8,7 @@ import {
 } from "../shared/types.js";
 import { classifySigner, kernelOwnerWallet, type StoredWalletOwner } from "./accountKey.js";
 import { unpackApproval } from "./approvalEnvelope.js";
+import { sessionKeyRefusal } from "./sessionKeyEnabled.js";
 import {
   assertJoinCalls,
   assertLeaveCalls,
@@ -73,7 +74,11 @@ export type BotActionDeps = {
   findDelegate: (smartWallet: Address, signer: Address) => Promise<BotDelegateRow | null>;
   findOwner: (smartWallet: Address, chainId: number) => Promise<StoredWalletOwner | null>;
   rememberOwner?: (smartWallet: Address, chainId: number, signer: Address) => Promise<void>;
-  sessionEnabled: (smartWallet: Address, permissionId: Hex, chainId: number) => Promise<boolean>;
+  sessionEnabled: (
+    smartWallet: Address,
+    permissionId: Hex,
+    chainId: number,
+  ) => Promise<boolean | "cannot-execute">;
   loadContest: (contestId: string) => Promise<BotContest | null>;
   isGroupMember: (userId: string, userGroupId: string) => Promise<boolean>;
   findLineup: (lineupId: string) => Promise<BotLineup | null>;
@@ -162,9 +167,10 @@ async function requireEnabledSession(
     permissionId,
     chainId,
   );
-  if (!enabled) {
-    await deps.log(delegate.userId, "error", "Session key is not enabled");
-    return { ok: false, status: 403, error: "Session key is not enabled" };
+  const refusal = sessionKeyRefusal(enabled);
+  if (refusal) {
+    await deps.log(delegate.userId, "error", refusal);
+    return { ok: false, status: 403, error: refusal };
   }
   return { ok: true, approval };
 }

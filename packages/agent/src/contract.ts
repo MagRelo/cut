@@ -79,6 +79,7 @@ export const yieldActionSchema = z.object({
   chainId: z.number().int(),
   action: z.literal("yield"),
   smartWallet: z.string(),
+  enableSignature: hexSchema.optional(),
   userOpSignature: hexSchema.optional(),
   userOp: userOpSchema.optional(),
 });

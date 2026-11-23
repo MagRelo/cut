@@ -116,12 +116,16 @@ botRouter.post("/actions", async (c) => {
       chainId: body.chainId,
       smartWallet: body.smartWallet,
       signer: verified.signer,
+      ...(body.enableSignature ? { enableSignature: body.enableSignature as Hex } : {}),
       ...(body.userOpSignature ? { userOpSignature: body.userOpSignature as Hex } : {}),
       ...(body.userOp ? { userOp: body.userOp as SerializedUserOp } : {}),
     });
     if (!result.ok) {
       const status = result.status as 400 | 401 | 403 | 404 | 409 | 502 | 503;
       return c.json({ error: result.error }, status);
+    }
+    if ("enableHash" in result) {
+      return c.json({ enableHash: result.enableHash });
     }
     if ("preparedUserOp" in result) {
       return c.json({

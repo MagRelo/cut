@@ -707,11 +707,27 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
       return readAccount(await get("/api/agent/account", { smartWallet }));
     },
     async yield() {
-      const body = parse(actionSchema, { chainId, action: "yield", smartWallet });
-      const value = await postAction("/api/bot/actions", body);
-      if (!value || typeof value !== "object" || (value as { yielded?: unknown }).yielded !== true) {
-        throw new CutAgentError("Unexpected response", 502, value);
+      const base = parse(actionSchema, { chainId, action: "yield", smartWallet });
+      let body: Record<string, unknown> = { ...base };
+      for (let step = 0; step < 4; step += 1) {
+        const value = await post("/api/bot/actions", body, { smartWallet });
+        if (value && typeof value === "object" && (value as { yielded?: unknown }).yielded === true) {
+          return;
+        }
+        const enableHash = (value as { enableHash?: unknown } | null)?.enableHash;
+        if (typeof enableHash === "string" && isHex(enableHash) && enableHash.length === 66) {
+          body = { ...base, enableSignature: await account.sign({ hash: enableHash }) };
+          continue;
+        }
+        const ready = prepared(value);
+        if (!ready) throw new CutAgentError("Unexpected response", 502, value);
+        body = {
+          ...body,
+          userOp: ready.userOp,
+          userOpSignature: await account.signMessage({ message: { raw: ready.userOpHash } }),
+        };
       }
+      throw new CutAgentError("Server returned another prepared user operation", 502, null);
     },
     async scout() {
       const value = await get("/api/agent/scout", { smartWallet });

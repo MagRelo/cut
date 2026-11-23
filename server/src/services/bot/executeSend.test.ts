@@ -1,5 +1,6 @@
 import { getAddress, type Address, type Hex } from "viem";
 import { describe, expect, it, vi } from "vitest";
+import { packApproval } from "./approvalEnvelope.js";
 import { executeSend, type SendDeps } from "./executeSend.js";
 
 const CHAIN_ID = 8453;
@@ -82,6 +83,26 @@ describe("executeSend", () => {
         txHash: TX,
       }),
     );
+  });
+
+  it("refuses a yield delegate that cannot execute before preparing a user operation", async () => {
+    const delegate = getAddress("0x4444444444444444444444444444444444444444");
+    const used = deps({
+      findDelegate: vi.fn(async () => ({
+        userId: "user-1",
+        smartWallet: WALLET,
+        delegateAddress: delegate,
+        approval: packApproval({ approval: "serialized", permissionId: "0x5a677774" }),
+      })),
+      sessionEnabled: vi.fn(async () => "cannot-execute" as const),
+    });
+    const result = await executeSend(
+      { chainId: CHAIN_ID, smartWallet: WALLET, signer: delegate, to: TO, amount: "0.01" },
+      used,
+    );
+    expect(result).toEqual({ ok: false, status: 403, error: "Session key cannot execute" });
+    expect(used.prepareUserOp).not.toHaveBeenCalled();
+    expect(used.prepareOwnerUserOp).not.toHaveBeenCalled();
   });
 
   it("tells the caller not to resend when the receipt record fails", async () => {

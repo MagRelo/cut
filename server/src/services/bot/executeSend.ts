@@ -12,6 +12,7 @@ import {
 import { getPaymentTokenAddress } from "../../lib/contractAddresses.js";
 import { kernelOwnerWallet, classifySigner } from "./accountKey.js";
 import { unpackApproval } from "./approvalEnvelope.js";
+import { sessionKeyRefusal } from "./sessionKeyEnabled.js";
 import type { BotCall } from "./botCalls.js";
 import type { BotActionDeps, BotDelegateRow } from "./executeBotAction.js";
 import type { SerializedUserOp } from "./submitSessionKeyUserOp.js";
@@ -123,9 +124,10 @@ async function enabledApproval(
     };
   }
   const enabled = await deps.sessionEnabled(getAddress(delegate.smartWallet), permissionId, chainId);
-  if (!enabled) {
-    await deps.log(delegate.userId, "error", "Session key is not enabled");
-    return { ok: false, status: 403, error: "Session key is not enabled" };
+  const refusal = sessionKeyRefusal(enabled);
+  if (refusal) {
+    await deps.log(delegate.userId, "error", refusal);
+    return { ok: false, status: 403, error: refusal };
   }
   return { ok: true, approval };
 }

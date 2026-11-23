@@ -1,4 +1,4 @@
-import { getAddress, recoverMessageAddress } from "viem";
+import { getAddress, recoverAddress, recoverMessageAddress, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it } from "vitest";
 import { createCutAgent, generateDelegateKey } from "./client.js";
@@ -545,6 +545,37 @@ describe("createCutAgent", () => {
     await expect(agent.send({ to: "not-an-address", amount: "1" })).rejects.toMatchObject({
       status: 400,
     });
+  });
+
+  it("signs the yield enable digest, then the user operation", async () => {
+    const privateKey = generatePrivateKey();
+    const account = privateKeyToAccount(privateKey);
+    const enableHash = `0x${"ef".repeat(32)}` as Hex;
+    const requests: Request[] = [];
+    const agent = createCutAgent({
+      privateKey,
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        requests.push(request.clone());
+        if (requests.length === 1) return json({ enableHash });
+        if (requests.length === 2) {
+          return json({ preparedUserOp: true, userOpHash: USER_OP_HASH, userOp: USER_OP });
+        }
+        return json({ ok: true, yielded: true });
+      },
+    });
+
+    await expect(agent.yield()).resolves.toBeUndefined();
+    expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/bot/actions");
+    const enableBody = JSON.parse(await requests[1]!.text()) as { enableSignature: Hex };
+    await expect(recoverAddress({ hash: enableHash, signature: enableBody.enableSignature })).resolves.toBe(
+      account.address,
+    );
+    const signed = JSON.parse(await requests[2]!.text()) as { userOpSignature: Hex; enableSignature: Hex };
+    expect(signed.enableSignature).toBe(enableBody.enableSignature);
+    await expect(
+      recoverMessageAddress({ message: { raw: USER_OP_HASH }, signature: signed.userOpSignature }),
+    ).resolves.toBe(account.address);
   });
 });
 

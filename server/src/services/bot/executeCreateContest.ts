@@ -7,6 +7,7 @@ import { recordPaidContest, FACTORY_CONTEST_VERIFY_MESSAGES } from "../contest/r
 import { readFactoryCreatedContestAddress } from "../contest/verifyFactoryContestCreation.js";
 import { classifySigner, kernelOwnerWallet } from "./accountKey.js";
 import { unpackApproval } from "./approvalEnvelope.js";
+import { sessionKeyRefusal } from "./sessionKeyEnabled.js";
 import { assertCreateContestCall, buildCreateContestCall, type BotCall } from "./botCalls.js";
 import { createBotActionDeps } from "./botActionRuntime.js";
 import type { BotActionDeps, BotDelegateRow } from "./executeBotAction.js";
@@ -158,9 +159,10 @@ export async function executeCreateContest(
       permissionId,
       input.chainId,
     );
-    if (!enabled) {
-      await deps.log(userId, "error", "Session key is not enabled");
-      return { ok: false, status: 403, error: "Session key is not enabled" };
+    const refusal = sessionKeyRefusal(enabled);
+    if (refusal) {
+      await deps.log(userId, "error", refusal);
+      return { ok: false, status: 403, error: refusal };
     }
   }
 

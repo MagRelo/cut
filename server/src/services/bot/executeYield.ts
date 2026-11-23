@@ -2,12 +2,13 @@ import { getAddress, type Address, type Hex } from "viem";
 import { prisma } from "../../lib/prisma.js";
 import { classifySigner } from "./accountKey.js";
 import { packApproval } from "./approvalEnvelope.js";
-import { prepareOwnerUserOp, submitOwnerUserOp } from "./ownerUserOp.js";
 import type { SerializedUserOp } from "./submitSessionKeyUserOp.js";
 import { buildYieldCalls } from "./yieldCalls.js";
+import { prepareYieldUserOp, submitYieldUserOp } from "./yieldUserOp.js";
 
 export type YieldResult =
   | { ok: true; yielded: true }
+  | { ok: true; enableHash: Hex }
   | { ok: true; preparedUserOp: true; userOpHash: Hex; userOp: SerializedUserOp }
   | { ok: false; status: number; error: string };
 
@@ -15,6 +16,7 @@ export async function executeYield(input: {
   chainId: number;
   smartWallet: string;
   signer: Address;
+  enableSignature?: Hex;
   userOpSignature?: Hex;
   userOp?: SerializedUserOp;
 }): Promise<YieldResult> {
@@ -64,18 +66,24 @@ export async function executeYield(input: {
     chainId: input.chainId,
     owner: signer,
     smartWallet,
+    embedded: getAddress(pending),
     calls: built.calls,
-    pendingOwner: getAddress(pending),
+    permissionId: built.permissionId,
+    ...(input.enableSignature ? { enableSignature: input.enableSignature } : {}),
     ...(input.userOpSignature ? { userOpSignature: input.userOpSignature } : {}),
     ...(input.userOp ? { userOp: input.userOp } : {}),
   };
   if (!input.userOp || !input.userOpSignature) {
-    const prepared = await prepareOwnerUserOp(op);
+    const prepared = await prepareYieldUserOp(op);
     if (!prepared.ok) return { ok: false, status: 502, error: prepared.error };
+    if ("enableHash" in prepared) return { ok: true, enableHash: prepared.enableHash };
     return { ok: true, preparedUserOp: true, userOpHash: prepared.userOpHash, userOp: prepared.userOp };
   }
-  const submitted = await submitOwnerUserOp(op);
-  if (!submitted.ok) return { ok: false, status: 502, error: submitted.error };
+  const submitted = await submitYieldUserOp(op);
+  if (!submitted.ok) {
+    const status = submitted.error === "Invalid enable signature" ? 400 : 502;
+    return { ok: false, status, error: submitted.error };
+  }
   await recordYield({
     userId: row.userId,
     smartWallet,

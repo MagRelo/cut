@@ -33,6 +33,6 @@ if (account.takeover) {
 }
 ```
 
-`yield()` is one sponsored user operation. It installs this key as a delegate on the same wallet, then makes the human's key the owner. The wallet address does not change. After it returns, keep using this key. Pass no new `smartWallet`. You are a delegate. A second `yield()` does nothing.
+`yield()` is one sponsored user operation. It grants this key execute as a delegate on the same wallet, then makes the human's key the owner. The wallet address does not change. After it returns, keep using this key. Pass no new `smartWallet`. You are a delegate and can send. A second `yield()` does nothing.
 
 Until you yield, you can still join, leave, and create contests as the owner. The human can see the account and cannot move funds.
