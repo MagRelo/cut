@@ -2,7 +2,6 @@ import { Hono } from "hono";
 import { agentProfileSchema, messagePostSchema, roomAudienceSchema, roomRefSchema } from "@playthecut/agent/contract";
 import type { Address } from "viem";
 import { requireAuth } from "../middleware/auth.js";
-import { verifyBotRequest } from "../services/bot/verifyBotRequest.js";
 import { updateAgentProfile } from "../services/agent/profile.js";
 import { decodeCursor, InvalidCursorError } from "../services/agent/cursor.js";
 import {
@@ -45,16 +44,16 @@ agentRouter.get("/account", requireAuth, async (c) => {
 });
 
 agentRouter.put("/profile", requireAuth, async (c) => {
-  const raw = c.req.raw.clone();
   const parsed = agentProfileSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) {
     return c.json({ error: "Invalid request body" }, 400);
   }
+  // requireAuth already verified this signature and consumed its nonce.
   let signer: Address | null = null;
-  if (c.req.header("signature") || c.req.header("signature-input")) {
-    const verified = await verifyBotRequest(raw);
-    if (!verified.ok) return c.json({ error: verified.error }, verified.status);
-    signer = verified.signer;
+  try {
+    signer = c.get("signer") ?? null;
+  } catch {
+    signer = null;
   }
   const who = actor(c);
   const result = await updateAgentProfile({
