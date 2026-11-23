@@ -4,13 +4,20 @@ import {
   encodeFunctionData,
   getAddress,
   http,
+  toHex,
   zeroAddress,
+  zeroHash,
   type Address,
   type Hex,
   type PublicClient,
 } from "viem";
 import { entryPoint07Address } from "viem/account-abstraction";
-import { addressToEmptyAccount, createKernelAccount, KernelV3_1AccountAbi } from "@zerodev/sdk";
+import {
+  addressToEmptyAccount,
+  createKernelAccount,
+  KernelV3_1AccountAbi,
+  KernelV3ExecuteAbi,
+} from "@zerodev/sdk";
 import { KERNEL_V3_1 } from "@zerodev/sdk/constants";
 import { serializePermissionAccount, toPermissionValidator } from "@zerodev/permissions";
 import { toECDSASigner } from "@zerodev/permissions/signers";
@@ -23,11 +30,23 @@ const entryPoint = { address: entryPoint07Address, version: "0.7" as const };
 const ECDSA_VALIDATOR = getAddress("0x845ADb2C711129d4f3966735eD98a9F09fC4cE57");
 
 /**
- * Rotate the root to `embedded` and serialize the yielding key as an already
- * installed session key. The user operation that carries `calls` must be enable
- * mode: `installValidations` does not grant the execute selector, and a later
- * sponsored call from this key reverts until that selector is set.
+ * Rotate the root to `embedded` and serialize the yielding key as a session key.
+ * The user operation is enable mode. It grants this key the `execute` selector,
+ * and the call data is that `execute`, which performs the root change.
  */
+
+/** Kernel single-call `execute`. Enable mode allows this selector and no other. */
+export function encodeYieldCallData(calls: BotCall[]): Hex {
+  const call = calls[0];
+  if (calls.length !== 1 || !call) {
+    throw new Error("Yield is one call");
+  }
+  return encodeFunctionData({
+    abi: KernelV3ExecuteAbi,
+    functionName: "execute",
+    args: [zeroHash, concatHex([call.to, toHex(call.value, { size: 32 }), call.data])],
+  });
+}
 export async function buildYieldCalls(input: {
   chainId: number;
   owner: Address;

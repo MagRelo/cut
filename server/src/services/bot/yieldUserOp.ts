@@ -25,6 +25,7 @@ import { clientSafeErrorMessage } from "../../utils/clientSafeError.js";
 import { assertSponsorableCalls } from "../paymaster/sponsorableCalls.js";
 import type { BotCall } from "./botCalls.js";
 import { parseUserOp, serializeUserOp, type SerializedUserOp } from "./submitSessionKeyUserOp.js";
+import { encodeYieldCallData } from "./yieldCalls.js";
 
 /** Signature length used while the bundler estimates gas. Not a real authorization. */
 const DUMMY_USER_OP_SIGNATURE =
@@ -117,14 +118,6 @@ async function gate(input: YieldUserOpInput): Promise<{ ok: true } | { ok: false
     const message = error instanceof Error ? error.message : "User operation is not sponsorable";
     return { ok: false, error: message };
   }
-}
-
-function callDataFor(calls: BotCall[]) {
-  return calls.map((call) => ({
-    to: call.to,
-    value: call.value,
-    data: call.data,
-  }));
 }
 
 function permissionSigner(owner: Address, userOpSignature: Hex): LocalAccount {
@@ -237,7 +230,7 @@ export async function prepareYieldUserOp(
   if (!bundler) return { ok: false, error: "Bundler is not configured" };
   try {
     const session = await yieldAccount(input, DUMMY_USER_OP_SIGNATURE, bundler);
-    const callData = await session.account.encodeCalls(callDataFor(input.calls));
+    const callData = encodeYieldCallData(input.calls);
     const prepared = await session.kernelClient.prepareUserOperation({ callData });
     if (getAddress(prepared.sender) !== getAddress(input.smartWallet)) {
       return { ok: false, error: "User operation sender does not match the smart wallet" };
@@ -272,7 +265,7 @@ export async function submitYieldUserOp(
   if (!bundler) return { ok: false, error: "Bundler is not configured" };
   try {
     const session = await yieldAccount(input, input.userOpSignature, bundler);
-    const callData = await session.account.encodeCalls(callDataFor(input.calls));
+    const callData = encodeYieldCallData(input.calls);
     const userOp = parseUserOp(input.userOp);
     if (getAddress(userOp.sender) !== getAddress(input.smartWallet)) {
       return { ok: false, error: "User operation sender does not match the smart wallet" };
