@@ -2,7 +2,6 @@ import { Dialog, DialogPanel, Transition, TransitionChild } from "@headlessui/re
 import { ArrowTopRightOnSquareIcon, Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Fragment, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { formatUnits } from "viem";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   BRAND_PROSE,
@@ -15,15 +14,12 @@ import {
 } from "../../lib/brand";
 import { signInReturnFrom } from "../../lib/navRoutes";
 import {
-  ACCOUNT_WALLET_LINK,
-  ACCOUNT_REFERRALS_LINK,
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
   LEAGUES_TAB,
   LEFT_TABS,
   leagueNavItemsFromAuth,
 } from "../../lib/navTabs";
-import { ReferralMenuTotal } from "../account/ReferralMenuTotal";
 import { BrandLogo } from "../common/BrandLogo";
 import { DiscordIcon } from "../common/DiscordIcon";
 import { StagingBadge } from "./StagingBadge";
@@ -54,17 +50,13 @@ const mobileInsetListClass = "ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-
 export const MobileNavMenu: React.FC = () => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const { user, paymentTokenBalance, balancesUnavailable, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const showAdminNav = Boolean(user) && isAdmin();
   const leagues = leagueNavItemsFromAuth(user?.userGroups);
 
   useEffect(() => {
     setOpen(false);
   }, [location.pathname]);
-
-  const totalBalance = balancesUnavailable
-    ? null
-    : Number(formatUnits(paymentTokenBalance ?? 0n, 6)).toFixed(2);
 
   const closeMenu = () => setOpen(false);
 
@@ -205,20 +197,7 @@ export const MobileNavMenu: React.FC = () => {
                                     className={`${mobileSubItemClass(link.match(location.pathname))} inline-flex w-full items-center gap-2`}
                                   >
                                     <link.Icon className="h-4 w-4 shrink-0" aria-hidden />
-                                    <span className="min-w-0 flex-1">{link.label}</span>
-                                    {link.to === ACCOUNT_WALLET_LINK.to ? (
-                                      totalBalance !== null ? (
-                                        <span className="shrink-0 font-normal tabular-nums tracking-normal">
-                                          ${totalBalance}
-                                        </span>
-                                      ) : (
-                                        <span className="shrink-0 font-normal tabular-nums tracking-normal text-amber-800">
-                                          —
-                                        </span>
-                                      )
-                                    ) : link.to === ACCOUNT_REFERRALS_LINK.to ? (
-                                      <ReferralMenuTotal />
-                                    ) : null}
+                                    {link.label}
                                   </Link>
                                 ))}
                               </div>

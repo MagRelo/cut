@@ -1,4 +1,4 @@
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 
 import { Connect } from "../components/auth/Connect";
 import { BrandLogo } from "../components/common/BrandLogo";
@@ -8,25 +8,15 @@ import { useAuth } from "../contexts/AuthContext";
 export function ConnectPage() {
   const { user } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
 
-  // Get the return URL from location state, default to /contests (soft landing after sign-in)
-  const returnLocation = (location.state as { from?: Location })?.from;
+  const returnLocation = (location.state as { from?: Location } | null)?.from;
   const returnUrl = returnLocation
     ? `${returnLocation.pathname}${returnLocation.search}`
     : "/contests";
 
-  // Redirect if already connected
   if (user) {
     return <Navigate to={returnUrl} replace />;
   }
-
-  const handleConnectSuccess = () => {
-    // Small delay to show success state, then redirect back to where they came from
-    setTimeout(() => {
-      navigate(returnUrl, { replace: true });
-    }, 1000);
-  };
 
   return (
     <div className="flex w-full flex-1 flex-col items-center px-6 py-10 sm:py-14">
@@ -38,7 +28,7 @@ export function ConnectPage() {
           </h1>
         </div>
 
-        <Connect onSuccess={handleConnectSuccess} />
+        <Connect />
       </div>
     </div>
   );

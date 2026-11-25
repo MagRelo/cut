@@ -1,6 +1,5 @@
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { ArrowTopRightOnSquareIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
-import { formatUnits } from "viem";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { accountMatch } from "../../lib/navRoutes";
@@ -14,15 +13,12 @@ import {
 import { BrandLogo } from "../common/BrandLogo";
 import { DiscordIcon } from "../common/DiscordIcon";
 import {
-  ACCOUNT_WALLET_LINK,
-  ACCOUNT_REFERRALS_LINK,
   ACCOUNT_SUB_LINKS,
   ADMIN_MENU_LINKS,
   LEAGUES_TAB,
   LEFT_TABS,
   leagueNavItemsFromAuth,
 } from "../../lib/navTabs";
-import { ReferralMenuTotal } from "../account/ReferralMenuTotal";
 
 const menuItemClass =
   "block w-full px-4 py-2 text-left text-sm font-display text-slate-700 focus:outline-none data-[focus]:bg-slate-50";
@@ -37,16 +33,13 @@ const menuSubItemActiveClass =
   "block w-full px-4 py-1.5 pl-7 text-left text-sm font-display font-semibold text-slate-950 focus:outline-none data-[focus]:bg-slate-50";
 
 export const UserMenu: React.FC = () => {
-  const { user, paymentTokenBalance, balancesUnavailable, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const showAdminNav = isAdmin();
   const location = useLocation();
   const isAccountActive = accountMatch(location.pathname);
   const leagues = leagueNavItemsFromAuth(user?.userGroups);
   const liveContestsTab = LEFT_TABS[0];
-
-  const totalBalance = balancesUnavailable
-    ? null
-    : Number(formatUnits(paymentTokenBalance ?? 0n, 6)).toFixed(2);
+  const accountLabel = user?.name?.trim() || "Account";
 
   return (
     <Menu as="div" className="relative shrink-0">
@@ -57,18 +50,9 @@ export const UserMenu: React.FC = () => {
             ? "bg-slate-100 font-semibold text-slate-950"
             : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
         ].join(" ")}
-        aria-label={user?.name ? `${user.name} menu` : "Account menu"}
+        aria-label={`${accountLabel} menu`}
       >
-        {totalBalance !== null ? (
-          <span className="font-normal tabular-nums tracking-normal">${totalBalance}</span>
-        ) : (
-          <span
-            className="font-normal tabular-nums tracking-normal text-amber-800"
-            title="Could not load balance from the network"
-          >
-            —
-          </span>
-        )}
+        <span className="max-w-[10rem] truncate">{accountLabel}</span>
         <ChevronDownIcon className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />
       </MenuButton>
 
@@ -151,23 +135,7 @@ export const UserMenu: React.FC = () => {
                   onClick={close}
                 >
                   <link.Icon className="h-4 w-4 shrink-0" aria-hidden />
-                  <span className="min-w-0 flex-1">{link.label}</span>
-                  {link.to === ACCOUNT_WALLET_LINK.to ? (
-                    totalBalance !== null ? (
-                      <span className="shrink-0 font-normal tabular-nums tracking-normal">
-                        ${totalBalance}
-                      </span>
-                    ) : (
-                      <span
-                        className="shrink-0 font-normal tabular-nums tracking-normal text-amber-800"
-                        title="Could not load balance from the network"
-                      >
-                        —
-                      </span>
-                    )
-                  ) : link.to === ACCOUNT_REFERRALS_LINK.to ? (
-                    <ReferralMenuTotal />
-                  ) : null}
+                  {link.label}
                 </Link>
               )}
             </MenuItem>

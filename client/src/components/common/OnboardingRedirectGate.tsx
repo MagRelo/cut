@@ -1,26 +1,18 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { ONBOARDING_DISMISSED_KEY } from "../../lib/onboardingSettings";
-
-const EXCLUDED_PATHS = new Set(["/onboarding", "/connect"]);
+import { onboardingDecision } from "../../lib/access";
 
 /**
- * Authenticated users who have not dismissed onboarding are sent to /onboarding once.
- * Excludes `/onboarding` and `/connect` so login and the flow itself still work.
+ * Accounts stored with `onboardingDismissed: false` go to /onboarding.
+ * `/onboarding` and `/connect` stay put so login and the flow itself still work.
  */
 export function OnboardingRedirectGate({ children }: { children: React.ReactNode }) {
-  const { user, sessionPhase } = useAuth();
+  const { access } = useAuth();
   const location = useLocation();
+  const decision = onboardingDecision(access, location.pathname);
 
-  if (sessionPhase !== "ready") {
-    return <>{children}</>;
-  }
-
-  const onboardingDismissedValue = user?.settings?.[ONBOARDING_DISMISSED_KEY];
-  const shouldRedirectToOnboarding = onboardingDismissedValue === false;
-
-  if (user && shouldRedirectToOnboarding && !EXCLUDED_PATHS.has(location.pathname)) {
-    return <Navigate to="/onboarding" replace state={{ from: location }} />;
+  if (decision.kind === "redirect") {
+    return <Navigate to={decision.to} replace state={{ from: location }} />;
   }
 
   return <>{children}</>;
