@@ -1,3 +1,4 @@
+import { isDelegatePublicKey } from "@playthecut/agent";
 import { getAddress, isAddress, type Address, type Hex } from "viem";
 import { generateContestEntryId } from "../../utils/contestEntryId.js";
 import { hasOnchainEscrow } from "../../utils/hasOnchainEscrow.js";
@@ -6,16 +7,17 @@ import {
   canRemovePrimaryPosition,
   type ContestStatus,
 } from "../shared/types.js";
-import { classifySigner, kernelOwnerWallet, type StoredWalletOwner } from "./accountKey.js";
-import { unpackApproval } from "./approvalEnvelope.js";
-import { sessionKeyRefusal } from "./sessionKeyEnabled.js";
 import {
   assertJoinCalls,
   assertLeaveCalls,
   buildJoinCalls,
   buildLeaveCalls,
+  serializeBotCalls,
   type BotCall,
+  type SerializedBotCall,
 } from "./botCalls.js";
+import { readQuorumApproval } from "./quorumApproval.js";
+import { relayQuorumUserOp } from "./quorumUserOp.js";
 import type { SerializedUserOp } from "./submitSessionKeyUserOp.js";
 
 export type BotActionName = "lineupUpsert" | "join" | "leave";
@@ -54,8 +56,8 @@ export type ExecuteBotActionInput = {
   lineupId: string;
   picks: string[];
   prediction?: unknown;
-  signer: Address;
-  userOpSignature?: Hex;
+  signer: string;
+  authorizationSignature?: string;
   userOp?: SerializedUserOp;
 };
 
@@ -67,18 +69,13 @@ export type ExecuteBotActionResult =
       lineupId: string;
       userOpHash: Hex;
       userOp: SerializedUserOp;
+      calls: SerializedBotCall[];
+      authorization?: unknown;
     }
   | { ok: false; status: number; error: string };
 
 export type BotActionDeps = {
-  findDelegate: (smartWallet: Address, signer: Address) => Promise<BotDelegateRow | null>;
-  findOwner: (smartWallet: Address, chainId: number) => Promise<StoredWalletOwner | null>;
-  rememberOwner?: (smartWallet: Address, chainId: number, signer: Address) => Promise<void>;
-  sessionEnabled: (
-    smartWallet: Address,
-    permissionId: Hex,
-    chainId: number,
-  ) => Promise<boolean | "cannot-execute">;
+  findDelegate: (smartWallet: Address, signer: string) => Promise<BotDelegateRow | null>;
   loadContest: (contestId: string) => Promise<BotContest | null>;
   isGroupMember: (userId: string, userGroupId: string) => Promise<boolean>;
   findLineup: (lineupId: string) => Promise<BotLineup | null>;
@@ -107,114 +104,38 @@ export type BotActionDeps = {
     picks: string[];
     prediction?: unknown;
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
-  prepareUserOp: (input: {
-    chainId: number;
-    approval: string;
-    calls: BotCall[];
-    delegateAddress: Address;
-    smartWallet: Address;
-  }) => Promise<
-    { ok: true; userOpHash: Hex; userOp: SerializedUserOp } | { ok: false; error: string }
-  >;
-  prepareOwnerUserOp: (input: {
-    chainId: number;
-    owner: Address;
-    smartWallet: Address;
-    calls: BotCall[];
-  }) => Promise<
-    { ok: true; userOpHash: Hex; userOp: SerializedUserOp } | { ok: false; error: string }
-  >;
-  submitOwnerUserOp: (input: {
-    chainId: number;
-    owner: Address;
-    smartWallet: Address;
-    calls: BotCall[];
-    userOpSignature: Hex;
-    userOp: SerializedUserOp;
-  }) => Promise<{ ok: true; txHash: Hex } | { ok: false; error: string }>;
-  submitCalls: (input: {
-    chainId: number;
-    approval: string;
-    calls: BotCall[];
-    delegateAddress: Address;
-    smartWallet: Address;
-    userOpSignature: Hex;
-    userOp: SerializedUserOp;
-  }) => Promise<{ ok: true; txHash?: Hex } | { ok: false; error: string }>;
   log: (userId: string, action: string, error?: string) => Promise<void>;
 };
 
-async function requireEnabledSession(
+function requireEnabledSession(
   delegate: BotDelegateRow,
-  chainId: number,
-  deps: BotActionDeps,
-): Promise<{ ok: true; approval: string } | { ok: false; status: number; error: string }> {
-  let permissionId: Hex;
-  let approval: string;
-  try {
-    const envelope = unpackApproval(delegate.approval);
-    permissionId = envelope.permissionId;
-    approval = envelope.approval;
-  } catch (error) {
-    return {
-      ok: false,
-      status: 400,
-      error: error instanceof Error ? error.message : "Invalid delegate approval",
-    };
+): { ok: true; approval: string } | { ok: false; status: number; error: string } {
+  if (!readQuorumApproval(delegate.approval)) {
+    return { ok: false, status: 400, error: "Invalid delegate approval" };
   }
-  const enabled = await deps.sessionEnabled(
-    getAddress(delegate.smartWallet),
-    permissionId,
-    chainId,
-  );
-  const refusal = sessionKeyRefusal(enabled);
-  if (refusal) {
-    await deps.log(delegate.userId, "error", refusal);
-    return { ok: false, status: 403, error: refusal };
-  }
-  return { ok: true, approval };
+  return { ok: true, approval: delegate.approval };
 }
 
 export async function executeBotAction(
   input: ExecuteBotActionInput,
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
-  if (!isAddress(input.smartWallet) || !isAddress(input.signer)) {
+  if (!isAddress(input.smartWallet)) {
     return { ok: false, status: 400, error: "Invalid smart wallet" };
   }
   const smartWallet = getAddress(input.smartWallet);
-  const signer = getAddress(input.signer);
 
-  let userId: string;
-  let delegate: BotDelegateRow | null;
-  let signerRole: "owner" | "wallet" | "other";
-  const ownerRow = await deps.findOwner(smartWallet, input.chainId);
-  signerRole = classifySigner(signer, smartWallet, input.chainId, ownerRow?.ownerAddress);
-  if (signerRole === "owner" || signerRole === "wallet") {
-    if (!ownerRow) return { ok: false, status: 403, error: "No account for this wallet" };
-    if (
-      signerRole === "owner" &&
-      !ownerRow.ownerAddress &&
-      kernelOwnerWallet(signer, input.chainId) === smartWallet
-    ) {
-      await deps.rememberOwner?.(smartWallet, input.chainId, signer);
-    }
-    userId = ownerRow.userId;
-    delegate = null;
-  } else {
-    delegate = await deps.findDelegate(smartWallet, signer);
-    if (!delegate) {
-      return { ok: false, status: 403, error: "No active delegate for this signature" };
-    }
-    userId = delegate.userId;
+  if (!isDelegatePublicKey(input.signer)) {
+    return { ok: false, status: 403, error: "No active delegate for this signature" };
   }
-
-  let approval = "";
-  if (delegate) {
-    const enabled = await requireEnabledSession(delegate, input.chainId, deps);
-    if (!enabled.ok) return enabled;
-    approval = enabled.approval;
+  const delegate = await deps.findDelegate(smartWallet, input.signer);
+  if (!delegate) {
+    return { ok: false, status: 403, error: "No active delegate for this signature" };
   }
+  const userId = delegate.userId;
+  const enabled = requireEnabledSession(delegate);
+  if (!enabled.ok) return enabled;
+  const approval = enabled.approval;
 
   const contest = await deps.loadContest(input.contestId);
   if (!contest || contest.chainId !== input.chainId) {
@@ -231,18 +152,16 @@ export async function executeBotAction(
     return upsertLineup(input, userId, contest, deps);
   }
   if (input.action === "leave") {
-    return leaveAction(input, userId, delegate, contest, approval, signerRole, deps);
+    return leaveAction(input, userId, contest, approval, deps);
   }
-  return joinAction(input, userId, delegate, contest, approval, signerRole, deps);
+  return joinAction(input, userId, contest, approval, deps);
 }
 
 async function joinAction(
   input: ExecuteBotActionInput,
   userId: string,
-  delegate: BotDelegateRow | null,
   contest: BotContest,
   approval: string,
-  signerRole: "owner" | "wallet" | "other",
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
   if (!canAddPrimaryPosition(contest.status)) {
@@ -290,12 +209,10 @@ async function joinAction(
   const submitted = await submitIfNeeded(
     input,
     userId,
-    delegate,
     approval,
     calls,
     onchain,
     lineup.lineup.id,
-    signerRole,
     deps,
   );
   if (!submitted.ok || submitted.preparedUserOp) return submitted;
@@ -315,10 +232,8 @@ async function joinAction(
 async function leaveAction(
   input: ExecuteBotActionInput,
   userId: string,
-  delegate: BotDelegateRow | null,
   contest: BotContest,
   approval: string,
-  signerRole: "owner" | "wallet" | "other",
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
   if (!canRemovePrimaryPosition(contest.status)) {
@@ -355,12 +270,10 @@ async function leaveAction(
   const submitted = await submitIfNeeded(
     input,
     userId,
-    delegate,
     approval,
     calls,
     onchain,
     lineup.lineup.id,
-    signerRole,
     deps,
   );
   if (!submitted.ok || submitted.preparedUserOp) return submitted;
@@ -415,94 +328,40 @@ async function upsertLineup(
 async function submitIfNeeded(
   input: ExecuteBotActionInput,
   userId: string,
-  delegate: BotDelegateRow | null,
   approval: string,
   calls: BotCall[],
   onchain: boolean,
   lineupId: string,
-  signerRole: "owner" | "wallet" | "other",
   deps: BotActionDeps,
 ): Promise<ExecuteBotActionResult> {
   if (!onchain) return { ok: true, lineupId };
-  if (!delegate) {
-    const smartWallet = getAddress(input.smartWallet);
-    const owner = getAddress(input.signer);
-    if (signerRole !== "owner") {
-      return {
-        ok: false,
-        status: 403,
-        error: "On-chain actions from this wallet are signed by its owner key",
-      };
-    }
-    if (!input.userOpSignature || !input.userOp) {
-      const prepared = await deps.prepareOwnerUserOp({
-        chainId: input.chainId,
-        owner,
-        smartWallet,
-        calls,
-      });
-      if (!prepared.ok) {
-        await deps.log(userId, "error", prepared.error);
-        return { ok: false, status: 502, error: prepared.error };
-      }
-      return {
-        ok: true,
-        preparedUserOp: true,
-        lineupId,
-        userOpHash: prepared.userOpHash,
-        userOp: prepared.userOp,
-      };
-    }
-    const submitted = await deps.submitOwnerUserOp({
-      chainId: input.chainId,
-      owner,
-      smartWallet,
-      calls,
-      userOpSignature: input.userOpSignature,
-      userOp: input.userOp,
-    });
-    if (!submitted.ok) {
-      await deps.log(userId, "error", submitted.error);
-      return { ok: false, status: 502, error: submitted.error };
-    }
-    return { ok: true, lineupId };
-  }
   const smartWallet = getAddress(input.smartWallet);
-  const delegateAddress = getAddress(delegate.delegateAddress);
-  if (!input.userOpSignature || !input.userOp) {
-    const prepared = await deps.prepareUserOp({
-      chainId: input.chainId,
-      approval,
-      calls,
-      delegateAddress,
-      smartWallet,
-    });
-    if (!prepared.ok) {
-      await deps.log(delegate.userId, "error", prepared.error);
-      return { ok: false, status: 502, error: prepared.error };
-    }
+  const relayed = await relayQuorumUserOp({
+    approval,
+    chainId: input.chainId,
+    smartWallet,
+    calls,
+    ...(input.userOp ? { userOp: input.userOp } : {}),
+    ...(input.authorizationSignature ? { authorizationSignature: input.authorizationSignature } : {}),
+    signer: input.signer,
+  });
+  if (relayed.kind === "prepared") {
     return {
       ok: true,
       preparedUserOp: true,
       lineupId,
-      userOpHash: prepared.userOpHash,
-      userOp: prepared.userOp,
+      userOpHash: relayed.userOpHash,
+      userOp: relayed.userOp,
+      calls: serializeBotCalls(calls),
+      authorization: relayed.authorization,
     };
   }
-  const submitted = await deps.submitCalls({
-    chainId: input.chainId,
-    approval,
-    calls,
-    delegateAddress,
-    smartWallet,
-    userOpSignature: input.userOpSignature,
-    userOp: input.userOp,
-  });
-  if (!submitted.ok) {
-    await deps.log(delegate.userId, "error", submitted.error);
-    return { ok: false, status: 502, error: submitted.error };
+  if (relayed.kind === "submitted") return { ok: true, lineupId };
+  if (relayed.kind === "skip") {
+    return { ok: false, status: 400, error: "Invalid delegate approval" };
   }
-  return { ok: true, lineupId };
+  await deps.log(userId, "error", relayed.error);
+  return { ok: false, status: relayed.status, error: relayed.error };
 }
 
 async function requireLineup(

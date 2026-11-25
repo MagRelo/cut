@@ -1,3 +1,4 @@
+import { generateDelegateKey } from "@playthecut/agent";
 import { getAddress } from "viem";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -20,14 +21,17 @@ describe("POST /auth/register", () => {
     verifyBotRequest.mockResolvedValue({ ok: true, signer: SIGNER, chainId: 84532 });
   });
 
-  it("rejects a delegate naming another wallet", async () => {
+  it("rejects a body whose public key is not the signer", async () => {
     const response = await authRouter.request(`/register?smartWallet=${WALLET}`, {
       method: "POST",
       headers: { "content-type": "application/json", signature: "sig" },
-      body: JSON.stringify({ email: "agent@example.com" }),
+      body: JSON.stringify({
+        publicKey: generateDelegateKey().publicKey,
+        email: "agent@example.com",
+      }),
     });
-    expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({ error: "A delegate cannot register an account" });
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "Invalid action signature" });
     expect(registerAgentAccount).not.toHaveBeenCalled();
   });
 });

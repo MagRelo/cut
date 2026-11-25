@@ -3,9 +3,7 @@ import { useSendTransaction, useWallets } from "@privy-io/react-auth";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useAccount, useChainId, usePublicClient, useWalletClient } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
-import { encodeFunctionData, getAddress, type Abi, type Hex } from "viem";
-import { useAuth } from "../contexts/AuthContext";
-import { sendAccountCalls } from "../lib/accountKernelSend";
+import { encodeFunctionData, type Abi } from "viem";
 import { findTransferLog, type ChainTransfer } from "../lib/chainTransfer";
 import { txPhaseInFlight, type TxPhase } from "../lib/txPhase";
 import apiClient from "../utils/apiClient";
@@ -112,7 +110,6 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
 
   const queryClient = useQueryClient();
   const { address } = useAccount();
-  const { user } = useAuth();
   const chainId = useChainId();
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
@@ -146,7 +143,7 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
       queryClient.invalidateQueries({ queryKey: ["balance"] }),
       queryClient.invalidateQueries({ queryKey: ["readContract"] }),
       queryClient.invalidateQueries({ queryKey: ["readContracts"] }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.user.transactions() }),
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.user.all, "transactions"] }),
     ]);
 
   const reset = useCallback(() => {
@@ -232,35 +229,7 @@ export function useBlockchainTransaction(options?: UseBlockchainTransactionOptio
     try {
       const receipts: MinedReceipt[] = [];
 
-      const embedded = wallets.find(
-        (wallet) => wallet.type === "ethereum" && wallet.walletClientType === "privy",
-      );
-      const takenOver =
-        !!user?.walletOwner &&
-        !!user.walletAddress &&
-        !!embedded &&
-        getAddress(user.walletOwner) === getAddress(embedded.address);
-      if (takenOver) {
-        setPhase("awaitingSignature");
-        const hash = await sendAccountCalls({
-          calls: calls.map((call) => ({
-            to: call.to,
-            data: encodeFunctionData({
-              abi: call.abi as Abi,
-              functionName: call.functionName,
-              args: [...call.args] as never,
-            }) as Hex,
-          })),
-          embedded,
-          chainId,
-        });
-        setPhase("confirming");
-        const receipt = await publicClient.waitForTransactionReceipt({ hash });
-        if (receipt.status === "reverted") {
-          throw new Error("Transaction reverted");
-        }
-        receipts.push(receipt);
-      } else if (smartWalletClient) {
+      if (smartWalletClient) {
         const batchCalls = calls.map((call) => ({
           to: call.to,
           data: encodeFunctionData({

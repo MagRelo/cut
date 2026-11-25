@@ -332,6 +332,10 @@ async function sessionUserAfterProvision(
   privyUserId: string,
   chainId: number,
 ): Promise<CutAuthUser> {
+  await prisma.user.updateMany({
+    where: { privyUserId },
+    data: { lastLoginAt: new Date() },
+  });
   const session = await resolveSessionUser(privyUserId, chainId, { requireWallet: true });
   if (!session) {
     throw new Error("User missing after provision");

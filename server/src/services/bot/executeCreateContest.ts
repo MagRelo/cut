@@ -1,3 +1,4 @@
+import { isDelegatePublicKey } from "@playthecut/agent";
 import { getAddress, isAddress, type Address, type Hex } from "viem";
 import { getContestFactoryAddress, primaryDepositWeiFromSettings } from "../../lib/contractAddresses.js";
 import { prisma } from "../../lib/prisma.js";
@@ -5,18 +6,23 @@ import { isStaffUserType } from "../../middleware/admin.js";
 import { isUserGroupAdmin } from "../../utils/userGroup.js";
 import { recordPaidContest, FACTORY_CONTEST_VERIFY_MESSAGES } from "../contest/recordPaidContest.js";
 import { readFactoryCreatedContestAddress } from "../contest/verifyFactoryContestCreation.js";
-import { classifySigner, kernelOwnerWallet } from "./accountKey.js";
-import { unpackApproval } from "./approvalEnvelope.js";
-import { sessionKeyRefusal } from "./sessionKeyEnabled.js";
-import { assertCreateContestCall, buildCreateContestCall, type BotCall } from "./botCalls.js";
+import { readQuorumApproval } from "./quorumApproval.js";
+import { relayQuorumUserOp } from "./quorumUserOp.js";
+import {
+  assertCreateContestCall,
+  buildCreateContestCall,
+  serializeBotCalls,
+  type BotCall,
+  type SerializedBotCall,
+} from "./botCalls.js";
 import { createBotActionDeps } from "./botActionRuntime.js";
-import type { BotActionDeps, BotDelegateRow } from "./executeBotAction.js";
+import type { BotActionDeps } from "./executeBotAction.js";
 import type { SerializedUserOp } from "./submitSessionKeyUserOp.js";
 
 export type CreateContestActionInput = {
   chainId: number;
   smartWallet: string;
-  signer: Address;
+  signer: string;
   name: string;
   description?: string;
   eventId: string;
@@ -24,7 +30,7 @@ export type CreateContestActionInput = {
   endTime: Date;
   settings: Record<string, unknown>;
   notifyLeagueMembers?: boolean;
-  userOpSignature?: Hex;
+  authorizationSignature?: string;
   userOp?: SerializedUserOp;
 };
 
@@ -40,21 +46,12 @@ export type CreateContestActionResult =
       preparedUserOp: true;
       userOpHash: Hex;
       userOp: SerializedUserOp;
+      calls: SerializedBotCall[];
+      authorization?: unknown;
     }
   | { ok: false; status: number; error: string };
 
-export type CreateContestDeps = Pick<
-  BotActionDeps,
-  | "findDelegate"
-  | "findOwner"
-  | "rememberOwner"
-  | "sessionEnabled"
-  | "prepareUserOp"
-  | "prepareOwnerUserOp"
-  | "submitOwnerUserOp"
-  | "submitCalls"
-  | "log"
-> & {
+export type CreateContestDeps = Pick<BotActionDeps, "findDelegate" | "log"> & {
   loadUserType: (userId: string) => Promise<string | null>;
   isLeagueAdmin: (userId: string, userGroupId: string) => Promise<boolean>;
   eventExists: (eventId: string) => Promise<boolean>;
@@ -111,60 +108,23 @@ export async function executeCreateContest(
   input: CreateContestActionInput,
   deps: CreateContestDeps,
 ): Promise<CreateContestActionResult> {
-  if (!isAddress(input.smartWallet) || !isAddress(input.signer)) {
+  if (!isAddress(input.smartWallet)) {
     return { ok: false, status: 400, error: "Invalid smart wallet" };
   }
   const smartWallet = getAddress(input.smartWallet);
-  const signer = getAddress(input.signer);
 
-  let userId: string;
-  let delegate: BotDelegateRow | null;
-  const ownerRow = await deps.findOwner(smartWallet, input.chainId);
-  const signerRole = classifySigner(signer, smartWallet, input.chainId, ownerRow?.ownerAddress);
-  if (signerRole === "owner" || signerRole === "wallet") {
-    if (!ownerRow) return { ok: false, status: 403, error: "No account for this wallet" };
-    if (
-      signerRole === "owner" &&
-      !ownerRow.ownerAddress &&
-      kernelOwnerWallet(signer, input.chainId) === smartWallet
-    ) {
-      await deps.rememberOwner?.(smartWallet, input.chainId, signer);
-    }
-    userId = ownerRow.userId;
-    delegate = null;
-  } else {
-    delegate = await deps.findDelegate(smartWallet, signer);
-    if (!delegate) {
-      return { ok: false, status: 403, error: "No active delegate for this signature" };
-    }
-    userId = delegate.userId;
+  if (!isDelegatePublicKey(input.signer)) {
+    return { ok: false, status: 403, error: "No active delegate for this signature" };
   }
-
-  let approval = "";
-  if (delegate) {
-    let permissionId: Hex;
-    try {
-      const envelope = unpackApproval(delegate.approval);
-      permissionId = envelope.permissionId;
-      approval = envelope.approval;
-    } catch (error) {
-      return {
-        ok: false,
-        status: 400,
-        error: error instanceof Error ? error.message : "Invalid delegate approval",
-      };
-    }
-    const enabled = await deps.sessionEnabled(
-      getAddress(delegate.smartWallet),
-      permissionId,
-      input.chainId,
-    );
-    const refusal = sessionKeyRefusal(enabled);
-    if (refusal) {
-      await deps.log(userId, "error", refusal);
-      return { ok: false, status: 403, error: refusal };
-    }
+  const delegate = await deps.findDelegate(smartWallet, input.signer);
+  if (!delegate) {
+    return { ok: false, status: 403, error: "No active delegate for this signature" };
   }
+  const userId = delegate.userId;
+  if (!readQuorumApproval(delegate.approval)) {
+    return { ok: false, status: 400, error: "Invalid delegate approval" };
+  }
+  const approval = delegate.approval;
 
   const userType = await deps.loadUserType(userId);
   if (!userType) return { ok: false, status: 404, error: "User not found" };
@@ -213,84 +173,33 @@ export async function executeCreateContest(
   }
 
   const calls: BotCall[] = [call];
-  let txHash: Hex | undefined;
-  if (!delegate) {
-    if (signerRole !== "owner") {
-      return {
-        ok: false,
-        status: 403,
-        error: "On-chain actions from this wallet are signed by its owner key",
-      };
-    }
-    if (!input.userOpSignature || !input.userOp) {
-      const prepared = await deps.prepareOwnerUserOp({
-        chainId: input.chainId,
-        owner: signer,
-        smartWallet,
-        calls,
-      });
-      if (!prepared.ok) {
-        await deps.log(userId, "error", prepared.error);
-        return { ok: false, status: 502, error: prepared.error };
-      }
-      return {
-        ok: true,
-        preparedUserOp: true,
-        userOpHash: prepared.userOpHash,
-        userOp: prepared.userOp,
-      };
-    }
-    const submitted = await deps.submitOwnerUserOp({
-      chainId: input.chainId,
-      owner: signer,
-      smartWallet,
-      calls,
-      userOpSignature: input.userOpSignature,
-      userOp: input.userOp,
-    });
-    if (!submitted.ok) {
-      await deps.log(userId, "error", submitted.error);
-      return { ok: false, status: 502, error: submitted.error };
-    }
-    txHash = submitted.txHash;
-  } else if (!input.userOpSignature || !input.userOp) {
-    const prepared = await deps.prepareUserOp({
-      chainId: input.chainId,
-      approval,
-      calls,
-      delegateAddress: getAddress(delegate.delegateAddress),
-      smartWallet,
-    });
-    if (!prepared.ok) {
-      await deps.log(userId, "error", prepared.error);
-      return { ok: false, status: 502, error: prepared.error };
-    }
+  const relayed = await relayQuorumUserOp({
+    approval,
+    chainId: input.chainId,
+    smartWallet,
+    calls,
+    ...(input.userOp ? { userOp: input.userOp } : {}),
+    ...(input.authorizationSignature ? { authorizationSignature: input.authorizationSignature } : {}),
+    signer: input.signer,
+  });
+  if (relayed.kind === "prepared") {
     return {
       ok: true,
       preparedUserOp: true,
-      userOpHash: prepared.userOpHash,
-      userOp: prepared.userOp,
+      userOpHash: relayed.userOpHash,
+      userOp: relayed.userOp,
+      calls: serializeBotCalls(calls),
+      authorization: relayed.authorization,
     };
-  } else {
-    const submitted = await deps.submitCalls({
-      chainId: input.chainId,
-      approval,
-      calls,
-      delegateAddress: getAddress(delegate.delegateAddress),
-      smartWallet,
-      userOpSignature: input.userOpSignature,
-      userOp: input.userOp,
-    });
-    if (!submitted.ok) {
-      await deps.log(userId, "error", submitted.error);
-      return { ok: false, status: 502, error: submitted.error };
-    }
-    if (!submitted.txHash) {
-      await deps.log(userId, "error", "Contest transaction hash is missing");
-      return { ok: false, status: 502, error: "Contest transaction hash is missing" };
-    }
-    txHash = submitted.txHash;
   }
+  if (relayed.kind === "error") {
+    await deps.log(userId, "error", relayed.error);
+    return { ok: false, status: relayed.status, error: relayed.error };
+  }
+  if (relayed.kind !== "submitted") {
+    return { ok: false, status: 400, error: "Invalid delegate approval" };
+  }
+  const txHash = relayed.txHash;
 
   const created = await deps.readCreatedAddress({
     chainId: input.chainId,
@@ -318,13 +227,6 @@ export function createContestActionDeps(): CreateContestDeps {
   const actor = createBotActionDeps();
   return {
     findDelegate: actor.findDelegate,
-    findOwner: actor.findOwner,
-    ...(actor.rememberOwner ? { rememberOwner: actor.rememberOwner } : {}),
-    sessionEnabled: actor.sessionEnabled,
-    prepareUserOp: actor.prepareUserOp,
-    prepareOwnerUserOp: actor.prepareOwnerUserOp,
-    submitOwnerUserOp: actor.submitOwnerUserOp,
-    submitCalls: actor.submitCalls,
     log: actor.log,
     loadUserType: async (userId) => {
       const user = await prisma.user.findUnique({

@@ -1,38 +1,34 @@
 # Play The Cut — Account access
 
-Two ways onto an account. Pick the one that matches how the account was opened.
+One wallet. The Privy Kernel smart wallet holds the USDC. The website spends it with the signed-in Privy session. An agent spends the same address. The agent holds a P-256 key. Play The Cut registers that public key. The agent signs a Privy authorization payload. Play The Cut checks that signature and asks Privy to sign the user operation with the embedded key. Play The Cut does not hold a key that can move funds.
 
 The game, the roles, and the rest of the SDK are in [agents.md](agents.md). The route list is [spec/server/api.md](../server/api.md).
 
-## Delegate
+## Human on the web
 
-The human already has a Play The Cut account and a smart wallet. You act through a delegate. You are not the owner.
+Sign in with Privy. The account wallet is the Kernel smart wallet. There is no delegate until you add one.
 
-1. Call `generateDelegateKey()` once. Store `privateKey`. Send `address` to the human. Another key does not revoke this one. Keep using the stored key until you rotate it.
-2. The human signs in and opens Account → Settings → Delegate account control → Bring your own agent.
-3. The human pastes the address and chooses **Grant full access**.
-4. `createCutAgent({ privateKey, smartWallet, chainId })`. `smartWallet` is the address the human sends you. `origin` defaults to `https://playthecut.com`.
-5. Call `account()`. An inactive grant is `403` `"No active delegate for this signature"`.
+## Agent only
 
-A delegate can submit any call the smart wallet can, including sending the USDC in that wallet. The action API checks the shape of a join. A key that skips the API is not limited by that check. Keep the private key off Play The Cut's servers and out of chat, logs, source control, and requests to external services.
+1. Call `generateDelegateKey()` once. Store `privateKey`. The `publicKey` is what you send when a human grants you later.
+2. `createCutAgent({ privateKey, chainId })`. Leave `smartWallet` unset.
+3. `register({ email?, name?, referralCode?, color?, oddsFormat? })`. The response `smartWallet` is the Kernel address. The client keeps it.
+4. `account()`. Join, leave, and send from that wallet.
 
-The human revokes it from Account → Settings → Delegate account control. Install and revoke stay on their Privy session. The delegate signature cannot revoke itself. Revoke does not reverse a transaction that already landed.
+No email means the Privy user is `custom_auth` whose id is the public key. An email passed to `register` stays pending until `POST /api/auth/claim-email` with `{ email, code }`. The response `email` stays null and `emailPending` is true until that claim. An email already on another Cut user or Privy user is `400` with code `EMAIL_ALREADY_BOUND`. A bearer with no delegate signer gets `403` `"Sign in is required to change this email"`. After `User.email` or `lastLoginAt` is set, changing the email is `403` `"This account already has a login"`. That person signs in and grants the key from Account → Settings → Enable Agent Control.
 
-## Yield
+## Agent first, human later
 
-You opened the account. `register` stored the Kernel address this key owns. That address holds the USDC. The owner key signs. It does not hold the USDC and it does not pay gas.
+Register the same way and pass the email. The server mails a 6-digit code and does not link that inbox on Privy yet. The human calls `POST /api/auth/claim-email`, then signs in with the Privy email OTP. The login joins this user, and the Kernel stays the account wallet. After `lastLoginAt` or a claimed email, `updateProfile` cannot change the email.
 
-The email on the account is the human's login. Set it with `register` or `updateProfile` before they sign in. `account().profile.email` is `null` until then. When they sign in with that email, the site asks them to tell you to yield. `account().takeover` is `{ embeddedAddress }` while they are waiting, and `null` otherwise.
+## Human first, then an agent
 
-Yield only when the human asks, and only when `takeover` is set. Do not yield because the field appeared.
+The wallet already exists. The human pastes your `publicKey` in Account → Settings → Enable Agent Control and chooses **Grant full access**. The browser adds your key as a signer on their Privy session. After that grant, use `createCutAgent({ privateKey, smartWallet, chainId })` with the Kernel address they send you. Calls match the agent-only path.
 
-```ts
-const account = await agent.account();
-if (account.takeover) {
-  await agent.yield();
-}
-```
+The human chooses **Revoke all agent access** on that screen. `POST /api/bot/delegates/revoke` marks active and pending rows revoking and does not remove the wallet signer. The browser removes every signer. `POST /api/bot/delegates/revoke/confirm` marks them revoked once the wallet no longer lists them. The delegate cannot remove itself.
 
-`yield()` is one sponsored user operation. It grants this key execute as a delegate on the same wallet, then makes the human's key the owner. The wallet address does not change. After it returns, keep using this key. Pass no new `smartWallet`. You are a delegate and can send. A second `yield()` does nothing.
+## What the key signs
 
-Until you yield, you can still join, leave, and create contests as the owner. The human can see the account and cannot move funds.
+The same P-256 key authenticates reads and chain submissions. Chain actions stay prepare-then-sign. The server builds the user operation from the Kernel address and returns the Privy authorization payload. The SDK signs that payload. The server checks the signature against the stored key, asks Privy to sign the user operation, and submits it through the bundler and paymaster.
+
+Sponsored gas uses one allowlist for the agent and the signed-in Privy session. Allowed calls are `createContest` on the contest factory, `approve` of a stored contest and `transfer` on the payment token, the six contest entry and claim functions on a stored contest address, and `installValidations` or `uninstallValidation` on the sender.

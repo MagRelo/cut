@@ -2,22 +2,26 @@ import { getAddress } from "viem";
 import { kernelWalletAddress } from "@playthecut/agent";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { verifyBotRequest, resolveSignedAccount, findUnique, findFirst, update, findWallet } =
+const { verifyBotRequest, resolveSignedAccount, findUnique, findFirst, update, findDelegate } =
   vi.hoisted(() => ({
     verifyBotRequest: vi.fn(),
     resolveSignedAccount: vi.fn(),
     findUnique: vi.fn(),
     findFirst: vi.fn(),
     update: vi.fn(),
-    findWallet: vi.fn(),
+    findDelegate: vi.fn(),
   }));
 
 vi.mock("../services/bot/verifyBotRequest.js", () => ({ verifyBotRequest }));
 vi.mock("../services/bot/resolveSignedAccount.js", () => ({ resolveSignedAccount }));
+vi.mock("../lib/email/transport.js", () => ({
+  sendEmail: vi.fn(async () => undefined),
+}));
+
 vi.mock("../lib/prisma.js", () => ({
   prisma: {
     user: { findUnique, findFirst, update },
-    userWallet: { findFirst: findWallet },
+    botDelegate: { findFirst: findDelegate },
   },
 }));
 
@@ -63,13 +67,14 @@ describe("PUT /agent/profile", () => {
       id: "agent-1",
       name: "Ada",
       email: null,
+      pendingEmail: null,
       settings: { onboardingDismissed: false },
       privyUserId: null,
+      lastLoginAt: null,
     });
-    findWallet.mockResolvedValue({
-      publicKey: KERNEL.toLowerCase(),
-      ownerAddress: OWNER.toLowerCase(),
-    });
+    findDelegate.mockImplementation(async (args: { where: { delegateAddress: string } }) =>
+      args.where.delegateAddress === OWNER ? { id: "delegate-1" } : null,
+    );
     findFirst.mockResolvedValue(null);
     update.mockResolvedValue({
       name: "Ada",
@@ -78,13 +83,13 @@ describe("PUT /agent/profile", () => {
     });
   });
 
-  it("lets the owner set the login email", async () => {
+  it("lets the delegate set the login email before a human signs in", async () => {
     const response = await request(OWNER, { email: "Ada@Example.com" });
     expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ email: "ada@example.com", name: "Ada" });
+    expect(await response.json()).toMatchObject({ email: null, emailPending: true, name: "Ada" });
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ email: "ada@example.com" }),
+        data: expect.objectContaining({ pendingEmail: "ada@example.com" }),
       }),
     );
   });
@@ -106,10 +111,34 @@ describe("PUT /agent/profile", () => {
     );
   });
 
-  it("rejects a delegate setting the login email", async () => {
-    const response = await request(DELEGATE, { email: "ada@example.com" });
+  it("rejects email after the human has signed in", async () => {
+    findUnique.mockResolvedValue({
+      id: "agent-1",
+      name: "Ada",
+      email: null,
+      pendingEmail: null,
+      settings: { onboardingDismissed: false },
+      privyUserId: "did:privy:agent",
+      lastLoginAt: new Date(),
+    });
+    const response = await request(OWNER, { email: "ada@example.com" });
     expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({ error: "A delegate cannot set the login email" });
+    expect(await response.json()).toEqual({ error: "This account already has a login" });
     expect(update).not.toHaveBeenCalled();
+  });
+
+  it("rejects email after the address is already claimed", async () => {
+    findUnique.mockResolvedValue({
+      id: "agent-1",
+      name: "Ada",
+      email: "ada@example.com",
+      pendingEmail: null,
+      settings: { onboardingDismissed: false },
+      privyUserId: "did:privy:agent",
+      lastLoginAt: null,
+    });
+    const response = await request(OWNER, { email: "other@example.com" });
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "This account already has a login" });
   });
 });

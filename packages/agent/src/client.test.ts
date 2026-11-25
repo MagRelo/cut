@@ -1,11 +1,35 @@
-import { getAddress, recoverAddress, recoverMessageAddress, type Hex } from "viem";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it } from "vitest";
+import { joinCalls, transferCall } from "./actionCalls.js";
 import { createCutAgent, generateDelegateKey } from "./client.js";
-import { kernelWalletAddress } from "./kernelWallet.js";
+import { signPayload, verifyPayload } from "./delegateKey.js";
+import { encodeKernelExecute, type AgentCall } from "./kernelExecute.js";
+import { hashUserOp } from "./userOp.js";
 
 const SMART_WALLET = "0x1111111111111111111111111111111111111111";
-const USER_OP_HASH = `0x${"ab".repeat(32)}` as const;
+const CONTEST = "0x2222222222222222222222222222222222222222";
+
+function preparedAction(calls: AgentCall[], extra: Record<string, unknown> = {}) {
+  const userOp = { ...USER_OP, callData: encodeKernelExecute(calls) };
+  const userOpHash = hashUserOp(8453, userOp);
+  return {
+    preparedUserOp: true,
+    userOpHash,
+    userOp,
+    calls: calls.map((call) => ({ to: call.to, value: call.value.toString(), data: call.data })),
+    authorization: {
+      version: 1,
+      method: "POST",
+      url: "https://api.privy.io/v1/wallets/wallet/rpc",
+      body: { method: "secp256k1_sign", params: { hash: userOpHash } },
+      headers: { "privy-app-id": "app" },
+    },
+    ...extra,
+  };
+}
+
+function contestIdentity() {
+  return { address: CONTEST, chainId: 8453, rules: { primaryDeposit: 5 } };
+}
 const USER_OP = {
   sender: SMART_WALLET,
   nonce: "1",
@@ -16,7 +40,6 @@ const USER_OP = {
   maxFeePerGas: "1",
   maxPriorityFeePerGas: "1",
 };
-
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -26,8 +49,7 @@ function json(body: unknown, status = 200): Response {
 
 describe("createCutAgent", () => {
   it("signs a contest list that names the wallet in the query", async () => {
-    const privateKey = generatePrivateKey();
-    const account = privateKeyToAccount(privateKey);
+    const { privateKey, publicKey } = generateDelegateKey();
     const requests: Request[] = [];
     const agent = createCutAgent({
       privateKey,
@@ -48,30 +70,28 @@ describe("createCutAgent", () => {
     expect(url.searchParams.get("chainId")).toBe("8453");
     expect(url.searchParams.get("smartWallet")).toBe(SMART_WALLET);
     expect(url.searchParams.get("eventId")).toBe("event-1");
-    expect(request?.headers.get("signature-input")).toContain(
-      `keyid="eip155:8453:${account.address.toLowerCase()}"`,
-    );
-    expect(request?.headers.get("signature")).toBeTruthy();
+    expect(request?.headers.get("x-cut-public-key")).toBe(publicKey);
+    expect(request?.headers.get("x-cut-signature")).toBeTruthy();
     expect(request?.headers.get("x-cut-chain-id")).toBe("8453");
   });
 
-  it("signs the prepared user operation on a second join", async () => {
-    const privateKey = generatePrivateKey();
-    const account = privateKeyToAccount(privateKey);
+  it("signs the prepared authorization on a second join", async () => {
+    const { privateKey, publicKey } = generateDelegateKey();
     const requests: Request[] = [];
+    const calls = joinCalls({
+      chainId: 8453,
+      contest: CONTEST,
+      lineupId: "lineup-1",
+      primaryDeposit: 5,
+    });
+    const prepared = preparedAction(calls, { lineupId: "lineup-1" });
     const agent = createCutAgent({
       privateKey,
       smartWallet: SMART_WALLET,
       fetch: async (request) => {
         requests.push(request.clone());
-        if (requests.length === 1) {
-          return json({
-            preparedUserOp: true,
-            lineupId: "lineup-1",
-            userOpHash: USER_OP_HASH,
-            userOp: USER_OP,
-          });
-        }
+        if (new URL(request.url).pathname === "/api/contests/contest-1") return json(contestIdentity());
+        if (requests.filter((row) => row.method === "POST").length === 1) return json(prepared);
         return json({ ok: true, lineupId: "lineup-1" });
       },
     });
@@ -81,52 +101,139 @@ describe("createCutAgent", () => {
       lineupId: "lineup-1",
     });
 
-    expect(requests).toHaveLength(2);
-    expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/contests/contest-1/entries");
-    expect(requests[0]?.method).toBe("POST");
-    expect(requests[1]?.method).toBe("POST");
-    const firstBody = JSON.parse(await requests[0]!.text()) as { userOpSignature?: string };
-    const secondBody = JSON.parse(await requests[1]!.text()) as {
+    expect(requests).toHaveLength(3);
+    expect(new URL(requests[1]?.url ?? "").pathname).toBe("/api/contests/contest-1/entries");
+    const firstBody = JSON.parse(await requests[1]!.text()) as { authorizationSignature?: string };
+    const secondBody = JSON.parse(await requests[2]!.text()) as {
       userOp: typeof USER_OP;
-      userOpSignature: `0x${string}`;
+      authorizationSignature: string;
     };
-    expect(firstBody.userOpSignature).toBeUndefined();
-    expect(secondBody.userOp).toEqual(USER_OP);
-    expect(requests[0]?.headers.get("signature-input")).not.toBe(
-      requests[1]?.headers.get("signature-input"),
-    );
-    await expect(
-      recoverMessageAddress({
-        message: { raw: USER_OP_HASH },
-        signature: secondBody.userOpSignature,
-      }),
-    ).resolves.toBe(account.address);
+    expect(firstBody.authorizationSignature).toBeUndefined();
+    expect(secondBody.userOp.callData).toBe(prepared.userOp.callData);
+    expect(requests[1]?.headers.get("x-cut-nonce")).not.toBe(requests[2]?.headers.get("x-cut-nonce"));
+    expect(verifyPayload(publicKey, prepared.authorization, secondBody.authorizationSignature)).toBe(true);
   });
 
-  it("uses the Kernel wallet when smartWallet is omitted", async () => {
-    const privateKey = generatePrivateKey();
-    const account = privateKeyToAccount(privateKey);
-    const wallet = kernelWalletAddress(account.address, 8453);
+  it("refuses a join whose calls are not that contest", async () => {
+    const agent = createCutAgent({
+      privateKey: generateDelegateKey().privateKey,
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        if (new URL(request.url).pathname === "/api/contests/contest-1") return json(contestIdentity());
+        return json(
+          preparedAction([
+            transferCall({ chainId: 8453, to: SMART_WALLET, amount: "1" }),
+          ]),
+        );
+      },
+    });
+    await expect(agent.join({ contestId: "contest-1", lineupId: "lineup-1" })).rejects.toThrow(
+      /Refusing to sign/,
+    );
+  });
+
+  it("refuses an authorization whose hash is not the local user operation hash", async () => {
+    const agent = createCutAgent({
+      privateKey: generateDelegateKey().privateKey,
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        if (new URL(request.url).pathname === "/api/contests/contest-1") return json(contestIdentity());
+        const prepared = preparedAction(
+          joinCalls({ chainId: 8453, contest: CONTEST, lineupId: "lineup-1", primaryDeposit: 5 }),
+          { lineupId: "lineup-1" },
+        );
+        return json({
+          ...prepared,
+          userOpHash: `0x${"cd".repeat(32)}`,
+          authorization: {
+            ...prepared.authorization,
+            body: { method: "secp256k1_sign", params: { hash: `0x${"cd".repeat(32)}` } },
+          },
+        });
+      },
+    });
+    await expect(agent.join({ contestId: "contest-1", lineupId: "lineup-1" })).rejects.toThrow(
+      /Refusing to sign/,
+    );
+  });
+
+  it("refuses an authorization that does not match the user operation", async () => {
+    const agent = createCutAgent({
+      privateKey: generateDelegateKey().privateKey,
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        if (new URL(request.url).pathname === "/api/contests/contest-1") return json(contestIdentity());
+        const prepared = preparedAction(
+          joinCalls({ chainId: 8453, contest: CONTEST, lineupId: "lineup-1", primaryDeposit: 5 }),
+          { lineupId: "lineup-1" },
+        );
+        return json({
+          ...prepared,
+          authorization: { ...prepared.authorization, url: "https://evil.example/v1/wallets/wallet/rpc" },
+        });
+      },
+    });
+    await expect(agent.join({ contestId: "contest-1", lineupId: "lineup-1" })).rejects.toThrow(
+      /Refusing to sign/,
+    );
+  });
+
+  it("refuses a user operation for a different wallet", async () => {
+    const agent = createCutAgent({
+      privateKey: generateDelegateKey().privateKey,
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        if (new URL(request.url).pathname === "/api/contests/contest-1") return json(contestIdentity());
+        const prepared = preparedAction(
+          joinCalls({ chainId: 8453, contest: CONTEST, lineupId: "lineup-1", primaryDeposit: 5 }),
+          { lineupId: "lineup-1" },
+        );
+        return json({
+          ...prepared,
+          userOp: { ...prepared.userOp, sender: "0x3333333333333333333333333333333333333333" },
+        });
+      },
+    });
+    await expect(agent.join({ contestId: "contest-1", lineupId: "lineup-1" })).rejects.toThrow(
+      /Refusing to sign/,
+    );
+  });
+
+  it("uses the wallet returned by register when smartWallet is omitted", async () => {
+    const { privateKey, publicKey } = generateDelegateKey();
     const requests: Request[] = [];
     const agent = createCutAgent({
       privateKey,
       fetch: async (request) => {
         requests.push(request.clone());
+        if (new URL(request.url).pathname === "/api/auth/register") {
+          return json({
+            userId: "user-1",
+            email: null,
+            userType: "AGENT",
+            name: "Agent",
+            referralCode: "code",
+            smartWallet: SMART_WALLET,
+            created: true,
+          });
+        }
         return json({ contests: [] });
       },
     });
 
-    expect(agent.address).toBe(account.address);
-    expect(agent.smartWallet).toBe(wallet);
+    expect(agent.publicKey).toBe(publicKey);
+    expect(() => agent.smartWallet).toThrow(/Register the account/);
+    await agent.register({});
+    expect(agent.smartWallet).toBe(SMART_WALLET);
     await agent.contests();
-    const url = new URL(requests[0]?.url ?? "");
-    expect(url.searchParams.get("smartWallet")).toBe(getAddress(wallet));
+    const url = new URL(requests[1]?.url ?? "");
+    expect(url.searchParams.get("smartWallet")).toBe(SMART_WALLET);
   });
 
   it("registers without a smartWallet query", async () => {
     const requests: Request[] = [];
     const agent = createCutAgent({
-      privateKey: generatePrivateKey(),
+      privateKey: generateDelegateKey().privateKey,
       smartWallet: SMART_WALLET,
       fetch: async (request) => {
         requests.push(request.clone());
@@ -147,6 +254,7 @@ describe("createCutAgent", () => {
     expect(url.pathname).toBe("/api/auth/register");
     expect(url.search).toBe("");
     expect(JSON.parse(await requests[0]!.text())).toEqual({
+      publicKey: agent.publicKey,
       email: "agent@example.com",
       color: "#0a73eb",
       oddsFormat: "decimal",
@@ -156,7 +264,7 @@ describe("createCutAgent", () => {
   it("registers without an email", async () => {
     const requests: Request[] = [];
     const agent = createCutAgent({
-      privateKey: generatePrivateKey(),
+      privateKey: generateDelegateKey().privateKey,
       fetch: async (request) => {
         requests.push(request.clone());
         return json({
@@ -172,13 +280,13 @@ describe("createCutAgent", () => {
     });
 
     await expect(agent.register({})).resolves.toMatchObject({ email: null, created: true });
-    expect(JSON.parse(await requests[0]!.text())).toEqual({});
+    expect(JSON.parse(await requests[0]!.text())).toEqual({ publicKey: agent.publicKey });
   });
 
   it("updates a profile, joins a league, and leaves with the account user id", async () => {
     const requests: Request[] = [];
     const agent = createCutAgent({
-      privateKey: generatePrivateKey(),
+      privateKey: generateDelegateKey().privateKey,
       smartWallet: SMART_WALLET,
       fetch: async (request) => {
         requests.push(request.clone());
@@ -235,7 +343,7 @@ describe("createCutAgent", () => {
   it("defaults createContest expiryTimestamp from endDate", async () => {
     const requests: Request[] = [];
     const agent = createCutAgent({
-      privateKey: generatePrivateKey(),
+      privateKey: generateDelegateKey().privateKey,
       smartWallet: SMART_WALLET,
       fetch: async (request) => {
         requests.push(request.clone());
@@ -260,7 +368,7 @@ describe("createCutAgent", () => {
   it("records a free league contest without a user operation", async () => {
     const requests: Request[] = [];
     const agent = createCutAgent({
-      privateKey: generatePrivateKey(),
+      privateKey: generateDelegateKey().privateKey,
       smartWallet: SMART_WALLET,
       fetch: async (request) => {
         requests.push(request.clone());
@@ -297,7 +405,7 @@ describe("createCutAgent", () => {
     expect(url.pathname).toBe("/api/contests");
     expect(url.searchParams.get("smartWallet")).toBe(SMART_WALLET);
     expect(requests[0]?.headers.get("x-cut-chain-id")).toBe("8453");
-    expect(requests[0]?.headers.get("signature")).toBeTruthy();
+    expect(requests[0]?.headers.get("x-cut-signature")).toBeTruthy();
     expect(JSON.parse(await requests[0]!.text())).toEqual({
       name: "Monday",
       description: "Weekly",
@@ -311,7 +419,8 @@ describe("createCutAgent", () => {
 
   it("throws the server error", async () => {
     const agent = createCutAgent({
-      privateKey: generatePrivateKey(),
+      privateKey: generateDelegateKey().privateKey,
+      smartWallet: SMART_WALLET,
       fetch: async () => json({ error: "No active delegate for this signature" }, 403),
     });
     await expect(agent.contests()).rejects.toMatchObject({
@@ -324,7 +433,7 @@ describe("createCutAgent", () => {
   it("signs scout and tick with the wallet and cursor", async () => {
     const requests: Request[] = [];
     const agent = createCutAgent({
-      privateKey: generatePrivateKey(),
+      privateKey: generateDelegateKey().privateKey,
       smartWallet: SMART_WALLET,
       origin: "https://playthecut.com",
       fetch: async (request) => {
@@ -351,7 +460,7 @@ describe("createCutAgent", () => {
   it("creates a league on the signed wallet", async () => {
     const requests: Request[] = [];
     const agent = createCutAgent({
-      privateKey: generatePrivateKey(),
+      privateKey: generateDelegateKey().privateKey,
       smartWallet: SMART_WALLET,
       fetch: async (request) => {
         requests.push(request.clone());
@@ -379,7 +488,7 @@ describe("createCutAgent", () => {
       attachments: [],
     };
     const agent = createCutAgent({
-      privateKey: generatePrivateKey(),
+      privateKey: generateDelegateKey().privateKey,
       smartWallet: SMART_WALLET,
       fetch: async (request) => {
         requests.push(request.clone());
@@ -445,7 +554,7 @@ describe("createCutAgent", () => {
       ],
     };
     const agent = createCutAgent({
-      privateKey: generatePrivateKey(),
+      privateKey: generateDelegateKey().privateKey,
       smartWallet: SMART_WALLET,
       fetch: async (request) => {
         requests.push(request.clone());
@@ -479,7 +588,7 @@ describe("createCutAgent", () => {
     expect(raw).toContain("league");
     expect(raw).toContain('filename="meme.png"');
     expect(raw).toContain("image/png");
-    expect(requests[1]?.headers.get("signature")).toBeTruthy();
+    expect(requests[1]?.headers.get("x-cut-signature")).toBeTruthy();
   });
 
   it("reads event odds from the signed event route", async () => {
@@ -492,7 +601,7 @@ describe("createCutAgent", () => {
       players: [],
     };
     const agent = createCutAgent({
-      privateKey: generatePrivateKey(),
+      privateKey: generateDelegateKey().privateKey,
       smartWallet: SMART_WALLET,
       fetch: async (request) => {
         requests.push(request.clone());
@@ -506,82 +615,69 @@ describe("createCutAgent", () => {
     expect(url.searchParams.get("smartWallet")).toBe(SMART_WALLET);
 
     const broken = createCutAgent({
-      privateKey: generatePrivateKey(),
+      privateKey: generateDelegateKey().privateKey,
       smartWallet: SMART_WALLET,
       fetch: async () => json({ players: [] }),
     });
     await expect(broken.odds("event-1")).rejects.toMatchObject({ status: 502 });
   });
 
-  it("signs a send, then posts the user operation", async () => {
-    const privateKey = generatePrivateKey();
-    const account = privateKeyToAccount(privateKey);
+  it("signs a send, then posts the authorization", async () => {
+    const { privateKey, publicKey } = generateDelegateKey();
     const requests: Request[] = [];
+    const prepared = preparedAction([
+      transferCall({ chainId: 8453, to: "0x4444444444444444444444444444444444444444", amount: "4.50" }),
+    ]);
     const agent = createCutAgent({
       privateKey,
       smartWallet: SMART_WALLET,
       fetch: async (request) => {
         requests.push(request.clone());
-        if (requests.length === 1) {
-          return json({ preparedUserOp: true, userOpHash: USER_OP_HASH, userOp: USER_OP });
-        }
-        return json({ ok: true, txHash: `0x${"cd".repeat(32)}`, to: SMART_WALLET, amount: "4.50" });
+        if (requests.length === 1) return json(prepared);
+        return json({
+          ok: true,
+          txHash: `0x${"cd".repeat(32)}`,
+          to: "0x4444444444444444444444444444444444444444",
+          amount: "4.50",
+        });
       },
     });
 
-    await expect(agent.send({ to: SMART_WALLET, amount: "4.50" })).resolves.toMatchObject({
+    await expect(
+      agent.send({ to: "0x4444444444444444444444444444444444444444", amount: "4.50" }),
+    ).resolves.toMatchObject({
       ok: true,
       amount: "4.50",
     });
     expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/auth/transfers");
-    expect(requests[0]?.method).toBe("POST");
-    const secondBody = JSON.parse(await requests[1]!.text()) as { userOpSignature: `0x${string}` };
+    const secondBody = JSON.parse(await requests[1]!.text()) as { authorizationSignature: string };
+    expect(verifyPayload(publicKey, prepared.authorization, secondBody.authorizationSignature)).toBe(true);
+  });
+
+  it("refuses a send whose calls are not that transfer", async () => {
+    const agent = createCutAgent({
+      privateKey: generateDelegateKey().privateKey,
+      smartWallet: SMART_WALLET,
+      fetch: async () =>
+        json(
+          preparedAction([
+            transferCall({ chainId: 8453, to: SMART_WALLET, amount: "1" }),
+          ]),
+        ),
+    });
     await expect(
-      recoverMessageAddress({
-        message: { raw: USER_OP_HASH },
-        signature: secondBody.userOpSignature,
-      }),
-    ).resolves.toBe(account.address);
+      agent.send({ to: "0x4444444444444444444444444444444444444444", amount: "4.50" }),
+    ).rejects.toThrow(/Refusing to sign/);
     await expect(agent.send({ to: "not-an-address", amount: "1" })).rejects.toMatchObject({
       status: 400,
     });
   });
-
-  it("signs the yield enable digest, then the user operation", async () => {
-    const privateKey = generatePrivateKey();
-    const account = privateKeyToAccount(privateKey);
-    const enableHash = `0x${"ef".repeat(32)}` as Hex;
-    const requests: Request[] = [];
-    const agent = createCutAgent({
-      privateKey,
-      smartWallet: SMART_WALLET,
-      fetch: async (request) => {
-        requests.push(request.clone());
-        if (requests.length === 1) return json({ enableHash });
-        if (requests.length === 2) {
-          return json({ preparedUserOp: true, userOpHash: USER_OP_HASH, userOp: USER_OP });
-        }
-        return json({ ok: true, yielded: true });
-      },
-    });
-
-    await expect(agent.yield()).resolves.toBeUndefined();
-    expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/auth/yield");
-    const enableBody = JSON.parse(await requests[1]!.text()) as { enableSignature: Hex };
-    await expect(recoverAddress({ hash: enableHash, signature: enableBody.enableSignature })).resolves.toBe(
-      account.address,
-    );
-    const signed = JSON.parse(await requests[2]!.text()) as { userOpSignature: Hex; enableSignature: Hex };
-    expect(signed.enableSignature).toBe(enableBody.enableSignature);
-    await expect(
-      recoverMessageAddress({ message: { raw: USER_OP_HASH }, signature: signed.userOpSignature }),
-    ).resolves.toBe(account.address);
-  });
 });
 
 describe("generateDelegateKey", () => {
-  it("returns a key and the address a user pastes in Settings", () => {
+  it("returns a P-256 key the user pastes in Settings", () => {
     const key = generateDelegateKey();
-    expect(key.address).toBe(privateKeyToAccount(key.privateKey).address);
+    const signature = signPayload(key.privateKey, { hello: "cut" });
+    expect(verifyPayload(key.publicKey, { hello: "cut" }, signature)).toBe(true);
   });
 });

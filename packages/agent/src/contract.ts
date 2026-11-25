@@ -48,18 +48,15 @@ export const userOpSchema = z.object({
   factoryData: hexSchema.optional(),
 });
 
-/** `POST /api/auth/yield`. The first body is empty. Later steps add the signatures. */
-export const yieldSchema = z.object({
-  enableSignature: hexSchema.optional(),
-  userOpSignature: hexSchema.optional(),
-  userOp: userOpSchema.optional(),
-});
-
 const HEX_COLOR = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 export const oddsFormatSchema = z.enum(["american", "decimal", "english"]);
 
 export const registerSchema = z.object({
+  publicKey: z
+    .string()
+    .regex(/^[A-Za-z0-9+/]+={0,2}$/, "Invalid public key")
+    .refine((value) => value.length >= 80 && value.length <= 200, "Invalid public key"),
   email: z.string().trim().email("A valid email is required").optional(),
   name: z.string().trim().min(1).max(NAME_MAX_LENGTH).optional(),
   referralCode: z.string().trim().min(1).max(32).optional(),
@@ -103,7 +100,6 @@ export const createFreeContestSchema = z.object({
 });
 
 export type UserOpBody = z.infer<typeof userOpSchema>;
-export type YieldBody = z.infer<typeof yieldSchema>;
 export type RegisterBody = z.infer<typeof registerSchema>;
 export type AgentProfilePatch = z.infer<typeof agentProfileSchema>;
 export type OddsFormat = z.infer<typeof oddsFormatSchema>;
@@ -134,6 +130,8 @@ export type BotContest = {
 export type RegisteredAgent = {
   userId: string;
   email: string | null;
+  /** True when a login email is waiting on claim-email. `email` stays null until then. */
+  emailPending: boolean;
   userType: string;
   name: string;
   referralCode: string;
@@ -144,6 +142,7 @@ export type RegisteredAgent = {
 export type AgentProfile = {
   name: string;
   email: string | null;
+  emailPending: boolean;
   color: string | null;
   oddsFormat: OddsFormat | null;
 };
@@ -194,7 +193,6 @@ export type AgentAccount = {
   leagues: { id: string; name: string; role: string }[];
   referral: { code: string; url: string; totalEarned: number };
   entries: Record<string, number>;
-  takeover: { embeddedAddress: string } | null;
 };
 
 export type LeagueJoined = {

@@ -12,9 +12,7 @@ import { updateLineupById } from "../lineups/updateLineupById.js";
 import { getPublicClient } from "../shared/contractClient.js";
 import { invalidateContestLobby } from "../contests/getContestLobby.js";
 import type { BotActionDeps, BotDelegateRow, BotLineup } from "./executeBotAction.js";
-import { readSessionKeyEnabled } from "./sessionKeyEnabled.js";
-import { prepareOwnerUserOp, submitOwnerUserOp } from "./ownerUserOp.js";
-import { prepareSessionKeyUserOp, submitSessionKeyUserOp } from "./submitSessionKeyUserOp.js";
+import { storedDelegateAddress } from "./quorumApproval.js";
 
 const depositAbi = [
   {
@@ -69,30 +67,13 @@ export function createBotActionDeps(): BotActionDeps {
       const row = await prisma.botDelegate.findFirst({
         where: {
           smartWallet: smartWallet.toLowerCase(),
-          delegateAddress: signer.toLowerCase(),
+          delegateAddress: storedDelegateAddress(signer),
           status: "active",
         },
       });
       if (!row) return null;
       return toDelegate(row);
     },
-    findOwner: async (smartWallet, chainId) => {
-      return prisma.userWallet.findUnique({
-        where: { chainId_publicKey: { chainId, publicKey: smartWallet.toLowerCase() } },
-        select: { userId: true, ownerAddress: true },
-      });
-    },
-    rememberOwner: async (smartWallet, chainId, signer) => {
-      await prisma.userWallet.updateMany({
-        where: {
-          chainId,
-          publicKey: smartWallet.toLowerCase(),
-          ownerAddress: null,
-        },
-        data: { ownerAddress: signer.toLowerCase() },
-      });
-    },
-    sessionEnabled: readSessionKeyEnabled,
     loadContest: async (contestId) => {
       const contest = await prisma.contest.findUnique({ where: { id: contestId } });
       if (!contest) return null;
@@ -122,6 +103,8 @@ export function createBotActionDeps(): BotActionDeps {
           paymentToken = getAddress(onchainToken);
         } catch (error) {
           console.error("bot loadContest chain read:", error);
+          depositWei = 0n;
+          paymentToken = null;
         }
       }
       return {
@@ -221,14 +204,6 @@ export function createBotActionDeps(): BotActionDeps {
         return { ok: false, error: body.error ?? "Lineup is not editable" };
       }
       return { ok: false, error: "Lineup not found" };
-    },
-    prepareUserOp: async (input) => prepareSessionKeyUserOp(input),
-    prepareOwnerUserOp: async (input) => prepareOwnerUserOp(input),
-    submitOwnerUserOp: async (input) => submitOwnerUserOp(input),
-    submitCalls: async (input) => {
-      const result = await submitSessionKeyUserOp(input);
-      if (!result.ok) return result;
-      return { ok: true, txHash: result.txHash };
     },
     log: async (userId, action, error) => {
       await prisma.botActionLog.create({

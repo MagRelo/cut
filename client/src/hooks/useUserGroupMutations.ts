@@ -49,7 +49,7 @@ export function useCreateUserGroup() {
  */
 export function useUpdateUserGroup() {
   const queryClient = useQueryClient();
-  const { refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateUserGroupInput }) => {
@@ -57,17 +57,15 @@ export function useUpdateUserGroup() {
     },
 
     onMutate: async ({ id, data }) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.userGroups.byId(id) });
+      const viewerId = user?.id;
+      if (!viewerId) return;
+      const key = queryKeys.userGroups.byId(viewerId, id);
+      await queryClient.cancelQueries({ queryKey: key });
 
-      // Snapshot the previous value
-      const previousGroup = queryClient.getQueryData<UserGroupDetailResponse>(
-        queryKeys.userGroups.byId(id),
-      );
+      const previousGroup = queryClient.getQueryData<UserGroupDetailResponse>(key);
 
-      // Optimistically update
       if (previousGroup) {
-        queryClient.setQueryData<UserGroupDetailResponse>(queryKeys.userGroups.byId(id), (old) => {
+        queryClient.setQueryData<UserGroupDetailResponse>(key, (old) => {
           if (!old) return old;
           return {
             ...old,
@@ -77,19 +75,18 @@ export function useUpdateUserGroup() {
         });
       }
 
-      return { previousGroup };
+      return { previousGroup, key };
     },
 
-    onError: (err, { id }, context) => {
+    onError: (err, _vars, context) => {
       console.error("Failed to update user group:", err);
-      if (context?.previousGroup) {
-        queryClient.setQueryData(queryKeys.userGroups.byId(id), context.previousGroup);
+      if (context?.previousGroup && context.key) {
+        queryClient.setQueryData(context.key, context.previousGroup);
       }
     },
 
-    onSuccess: (data, { id }) => {
-      // Update cache with server data
-      queryClient.setQueryData(queryKeys.userGroups.byId(id), data);
+    onSuccess: (data, _vars, context) => {
+      if (context?.key) queryClient.setQueryData(context.key, data);
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
       void refreshUser();
     },
@@ -132,7 +129,7 @@ export function useDeleteUserGroup() {
  */
 export function useRemoveUserGroupMember() {
   const queryClient = useQueryClient();
-  const { refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   return useMutation({
     mutationFn: async ({ id, userId }: { id: string; userId: string }) => {
@@ -141,43 +138,35 @@ export function useRemoveUserGroupMember() {
       );
     },
 
-    onMutate: async ({ id, userId }) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.userGroups.members(id) });
+    onMutate: async ({ id, userId: memberId }) => {
+      const viewerId = user?.id;
+      if (!viewerId) return;
+      const key = queryKeys.userGroups.members(viewerId, id);
+      await queryClient.cancelQueries({ queryKey: key });
 
-      // Snapshot the previous value
-      const previousMembers = queryClient.getQueryData<UserGroupMembersResponse>(
-        queryKeys.userGroups.members(id),
-      );
+      const previousMembers = queryClient.getQueryData<UserGroupMembersResponse>(key);
 
-      // Optimistically remove the member
       if (previousMembers) {
-        queryClient.setQueryData<UserGroupMembersResponse>(
-          queryKeys.userGroups.members(id),
-          (old) => {
-            if (!old) return old;
-            return {
-              ...old,
-              members: old.members.filter((m) => m.userId !== userId),
-            };
-          },
-        );
+        queryClient.setQueryData<UserGroupMembersResponse>(key, (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            members: old.members.filter((m) => m.userId !== memberId),
+          };
+        });
       }
 
-      return { previousMembers };
+      return { previousMembers, key };
     },
 
-    onError: (err, { id }, context) => {
+    onError: (err, _vars, context) => {
       console.error("Failed to remove member from user group:", err);
-      if (context?.previousMembers) {
-        queryClient.setQueryData(queryKeys.userGroups.members(id), context.previousMembers);
+      if (context?.previousMembers && context.key) {
+        queryClient.setQueryData(context.key, context.previousMembers);
       }
     },
 
-    onSuccess: (_data, { id }) => {
-      // Invalidate queries to ensure fresh data
-      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.members(id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.byId(id) });
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
       void refreshUser();
     },
@@ -186,24 +175,26 @@ export function useRemoveUserGroupMember() {
 
 export function useGenerateLeagueInvite() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (userGroupId: string) => {
       return await apiClient.post<LeagueInviteResponse>(`/userGroups/${userGroupId}/invite`);
     },
     onSuccess: (data, userGroupId) => {
-      queryClient.setQueryData<UserGroupDetailResponse>(
-        queryKeys.userGroups.byId(userGroupId),
-        (old) =>
-          old
-            ? {
-                ...old,
-                inviteCode: data.inviteCode,
-                inviteUrl: data.inviteUrl,
-              }
-            : old,
+      const viewerId = user?.id;
+      if (!viewerId) return;
+      const key = queryKeys.userGroups.byId(viewerId, userGroupId);
+      queryClient.setQueryData<UserGroupDetailResponse>(key, (old) =>
+        old
+          ? {
+              ...old,
+              inviteCode: data.inviteCode,
+              inviteUrl: data.inviteUrl,
+            }
+          : old,
       );
-      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.byId(userGroupId) });
+      queryClient.invalidateQueries({ queryKey: key });
     },
     onError: (err) => {
       console.error("Failed to generate league invite:", err);

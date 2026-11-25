@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { decidePublish, decideRelease, findStageId, parseCommits, selectCommits, stageIdFromText } from "./agent-sdk-lib.mjs";
+import {
+  decidePublish,
+  decideRelease,
+  findStageId,
+  installManifest,
+  parseCommits,
+  selectCommits,
+  stageIdFromText,
+} from "./agent-sdk-lib.mjs";
 
 const hash = "abc";
 const release = { version: "0.3.19", hash };
@@ -91,6 +99,22 @@ test("commits since a release split into agent changes and everything else", () 
   assert.deepEqual(split.agent.map((commit) => commit.short), ["1111aaaa"]);
   assert.deepEqual(split.other.map((commit) => commit.subject), ["feat: wallet titles"]);
   assert.deepEqual(parseCommits(""), []);
+});
+
+test("the install manifest keeps name and dependency specifiers", () => {
+  const manifest = installManifest({
+    name: "@playthecut/agent",
+    version: "0.4.0",
+    dependencies: { canonicalize: "^2.1.0" },
+    devDependencies: { typescript: "^5.7.3" },
+    scripts: { build: "tsc" },
+  });
+  assert.deepEqual(manifest, {
+    name: "@playthecut/agent",
+    dependencies: { canonicalize: "^2.1.0" },
+    devDependencies: { typescript: "^5.7.3" },
+  });
+  assert.equal("version" in manifest, false);
 });
 
 test("stage list entries are matched by version", () => {

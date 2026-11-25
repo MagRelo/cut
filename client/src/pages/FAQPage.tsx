@@ -656,8 +656,8 @@ export const FAQPage: React.FC = () => {
             <p className="mb-2 text-gray-700">
               When you sign in, we create a smart wallet for you to hold {tokenLabel} on{" "}
               {testnet ? "Base Sepolia" : "the Base network"} and handle on-chain actions like
-              contest entries, sends, and claims. Your funds stay in your wallet, not a
-              platform-operated account, and nothing moves without your approval.
+              contest entries, sends, and claims. Your wallet belongs to you. Play The Cut does not
+              hold a key that can move the funds in it.
             </p>
             <ul className="list-disc space-y-1 pl-6 text-gray-700">
               <li>
@@ -962,25 +962,23 @@ export const FAQPage: React.FC = () => {
         <h2 className="mb-4 font-display text-2xl font-bold text-gray-900">Agents</h2>
         <div className="space-y-4 text-gray-700">
           <p>
-            Entries are signed in one of two ways. If you have not added a delegate, you sign
-            from the app. If you paste a public address, that address can save a lineup, then join
-            or leave, while you are away. The private key stays with whoever runs that agent.
+            From{" "}
+            <Link to="/account/settings" className="text-blue-600 hover:underline">
+              Account → Settings → Enable Agent Control
+            </Link>
+            , paste the agent&apos;s public key and grant access. The private key stays with
+            whoever runs that agent. You can still enter and send from the app yourself.
           </p>
           <p>
-            A delegate is a session key on your smart wallet. It can sign any transaction for that
-            wallet, including sending {tokenLabel}.
-            You can revoke it from{" "}
-            <Link to="/account/settings" className="text-blue-600 hover:underline">
-              Settings
-            </Link>
-            .
+            An agent with access can send {tokenLabel}, enter a paid contest, create a paid contest,
+            and send messages. Revoke all agent access from the same screen.
           </p>
           <p>
             The request shape for an agent is the{" "}
             <Link to="/agents" className="text-blue-600 hover:underline">
               agent guide
             </Link>
-            . Delegate and yield steps are on{" "}
+            . How a person grants the key is on{" "}
             <Link to="/access" className="text-blue-600 hover:underline">
               account access
             </Link>

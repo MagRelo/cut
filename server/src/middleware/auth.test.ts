@@ -1,3 +1,4 @@
+import { generateDelegateKey } from "@playthecut/agent";
 import { getAddress } from "viem";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -23,6 +24,7 @@ import { requireAdmin } from "./admin.js";
 
 const SIGNER = getAddress("0x1111111111111111111111111111111111111111");
 const WALLET = getAddress("0x2222222222222222222222222222222222222222");
+const KEY = generateDelegateKey();
 
 function mockContext(init: {
   authorization?: string;
@@ -55,7 +57,7 @@ function mockContext(init: {
   return { c, json, next, store };
 }
 
-describe("ERC-8128 auth", () => {
+describe("P-256 auth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     verifyBotRequest.mockResolvedValue({ ok: true, signer: SIGNER, chainId: 84532 });
@@ -66,19 +68,18 @@ describe("ERC-8128 auth", () => {
     findDelegate.mockResolvedValue(null);
   });
 
-  it("sets the wallet owner from a signature", async () => {
-    const { c, next, store } = mockContext({ signature: "sig" });
+  it("rejects an address signer", async () => {
+    const { c, json, next } = mockContext({ signature: "sig" });
     await requireAuth(c as never, next);
-    expect(next).toHaveBeenCalled();
-    expect(store.get("user")).toEqual({
-      userId: "user-1",
-      address: SIGNER.toLowerCase(),
-      chainId: 84532,
-      userType: "AGENT",
-    });
+    expect(next).not.toHaveBeenCalled();
+    expect(json).toHaveBeenCalledWith(
+      { error: "No active delegate for this signature" },
+      403,
+    );
   });
 
   it("sets the account a delegate names in the signed query", async () => {
+    verifyBotRequest.mockResolvedValue({ ok: true, signer: KEY.publicKey, chainId: 84532 });
     findDelegate.mockResolvedValue({
       smartWallet: WALLET.toLowerCase(),
       user: { id: "human-1", userType: "USER" },
@@ -88,7 +89,7 @@ describe("ERC-8128 auth", () => {
     expect(next).toHaveBeenCalled();
     expect(store.get("user")).toMatchObject({
       userId: "human-1",
-      address: WALLET.toLowerCase(),
+      address: WALLET,
       userType: "USER",
     });
   });

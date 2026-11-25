@@ -82,22 +82,22 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
   participant Caller
-  participant API as /api/bot
+  participant API as Player routes
   participant DB
   participant Chain
 
-  Caller->>API: Signed GET /contests or POST /actions
-  API->>API: ERC-8128 verify and consume nonce
-  API->>DB: User, or a delegate installed for that user
-  alt join or leave
-    API-->>Caller: prepared user operation
-    Caller->>API: Same action with userOpSignature
+  Caller->>API: Signed /api/contests, /api/agent, /api/auth, /api/lineups, or /api/userGroups
+  API->>API: Verify the P-256 x-cut signature and consume the nonce
+  API->>DB: Active delegate for that public key
+  alt paid action
+    API-->>Caller: prepared user operation and Privy authorization
+    Caller->>API: Same action with authorizationSignature
     API->>Chain: Submit that user operation
   end
 ```
 
-- **Signer:** a delegate installed for the user's wallet, or the user signing as that wallet (ERC-1271)
-- **User join and leave:** the caller signs the prepared user operation, and the server submits it
+- **Signer:** an active P-256 delegate for the user's Kernel wallet
+- **Paid join, leave, create, and send:** the caller signs the Privy authorization for that user operation, and the server submits it
 - **League contests:** included when the resolved user is a member
 - **Browser:** the user installs and revokes a delegate with a Privy session, and can still join from the app
 
@@ -233,7 +233,7 @@ Preview: `pnpm --filter server run script:email-preview contest-announcement`
 | Contest ranks / timeline | Server DB (derived from scores + chain) |
 | Deposits, entry ownership, payouts | On-chain contracts |
 | Contest status | Both — server mirrors after chain ops |
-| Delegate play | ERC-8128 signature over the HTTP request |
+| Delegate play | P-256 `x-cut-*` signature over the HTTP request |
 | Browser session | Privy |
 
 ---
@@ -255,7 +255,7 @@ Preview: `pnpm --filter server run script:email-preview contest-announcement`
 | Layer | Control |
 |-------|---------|
 | Client | Privy session, route guards, form validation |
-| API | ERC-8128 or a Privy bearer on player routes; `POST /api/auth/yield` requires a signature; Zod bodies; `requireEventEditable` |
+| API | P-256 `x-cut-*` signature or a Privy bearer on player routes; Zod bodies; `requireEventEditable` |
 | Admin | Staff role + separate batch endpoints |
 | Chain | Contract access control, oracle role on server |
 

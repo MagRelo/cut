@@ -1,17 +1,13 @@
+import { generateDelegateKey } from "@playthecut/agent";
 import { getAddress } from "viem";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { kernelWalletAddress } from "@playthecut/agent";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findUniqueWallet, updateManyWallets, findDelegate } = vi.hoisted(() => ({
-  findUniqueWallet: vi.fn(),
-  updateManyWallets: vi.fn(),
+const { findDelegate } = vi.hoisted(() => ({
   findDelegate: vi.fn(),
 }));
 
 vi.mock("../../lib/prisma.js", () => ({
   prisma: {
-    userWallet: { findUnique: findUniqueWallet, updateMany: updateManyWallets },
     botDelegate: { findFirst: findDelegate },
   },
 }));
@@ -19,6 +15,7 @@ vi.mock("../../lib/prisma.js", () => ({
 import { resolveSignedAccount } from "./resolveSignedAccount.js";
 
 const CHAIN_ID = 8453;
+const KEY = generateDelegateKey();
 
 describe("resolveSignedAccount", () => {
   beforeEach(() => {
@@ -26,16 +23,14 @@ describe("resolveSignedAccount", () => {
     findDelegate.mockResolvedValue(null);
   });
 
-  it("accepts the owner key of a stored Kernel wallet", async () => {
-    const owner = privateKeyToAccount(generatePrivateKey());
-    const wallet = kernelWalletAddress(owner.address, CHAIN_ID);
-    findUniqueWallet.mockResolvedValue({
-      publicKey: wallet.toLowerCase(),
-      ownerAddress: null,
+  it("accepts an active delegate public key", async () => {
+    const wallet = getAddress("0x1111111111111111111111111111111111111111");
+    findDelegate.mockResolvedValue({
+      smartWallet: wallet.toLowerCase(),
       user: { id: "agent-1", userType: "AGENT" },
     });
     const result = await resolveSignedAccount({
-      signer: owner.address,
+      signer: KEY.publicKey,
       chainId: CHAIN_ID,
       smartWallet: wallet,
     });
@@ -43,64 +38,55 @@ describe("resolveSignedAccount", () => {
       ok: true,
       user: {
         userId: "agent-1",
-        address: wallet.toLowerCase(),
+        address: wallet,
         chainId: CHAIN_ID,
         userType: "AGENT",
       },
     });
-    expect(findDelegate).not.toHaveBeenCalled();
-    expect(updateManyWallets).toHaveBeenCalledWith({
-      where: { chainId: CHAIN_ID, publicKey: wallet.toLowerCase(), ownerAddress: null },
-      data: { ownerAddress: owner.address.toLowerCase() },
+    expect(findDelegate).toHaveBeenCalledWith({
+      where: {
+        smartWallet: wallet.toLowerCase(),
+        delegateAddress: KEY.publicKey,
+        status: "active",
+      },
+      select: { smartWallet: true, user: { select: { id: true, userType: true } } },
     });
   });
 
-  it("uses a delegate after the stored owner is no longer the creation key", async () => {
-    const owner = privateKeyToAccount(generatePrivateKey());
-    const wallet = kernelWalletAddress(owner.address, CHAIN_ID);
-    const human = getAddress("0x3333333333333333333333333333333333333333");
-    findUniqueWallet.mockResolvedValue({
-      publicKey: wallet.toLowerCase(),
-      ownerAddress: human.toLowerCase(),
-      user: { id: "agent-1", userType: "AGENT" },
-    });
-    findDelegate.mockResolvedValue({
-      smartWallet: wallet.toLowerCase(),
-      user: { id: "agent-1", userType: "AGENT" },
-    });
+  it("rejects a public key with no active delegate", async () => {
+    const wallet = getAddress("0x1111111111111111111111111111111111111111");
     const result = await resolveSignedAccount({
-      signer: owner.address,
+      signer: KEY.publicKey,
       chainId: CHAIN_ID,
       smartWallet: wallet,
     });
-    expect(result).toMatchObject({ ok: true, user: { userId: "agent-1" } });
-    expect(findDelegate).toHaveBeenCalled();
-    expect(updateManyWallets).not.toHaveBeenCalled();
-  });
-
-  it("rejects an owner key when that Kernel wallet is not stored", async () => {
-    const owner = privateKeyToAccount(generatePrivateKey());
-    const wallet = kernelWalletAddress(owner.address, CHAIN_ID);
-    findUniqueWallet.mockResolvedValue(null);
-    const result = await resolveSignedAccount({
-      signer: owner.address,
-      chainId: CHAIN_ID,
-      smartWallet: wallet,
+    expect(result).toMatchObject({
+      ok: false,
+      status: 403,
+      error: "No active delegate for this signature",
     });
-    expect(result).toMatchObject({ ok: false, status: 403, error: "No account for this wallet" });
   });
 
-  it("still accepts a signature from the stored wallet itself", async () => {
+  it("rejects an address signer", async () => {
     const wallet = getAddress("0x2222222222222222222222222222222222222222");
-    findUniqueWallet.mockResolvedValue({
-      publicKey: wallet.toLowerCase(),
-      user: { id: "user-1", userType: "USER" },
-    });
     const result = await resolveSignedAccount({
       signer: wallet,
       chainId: CHAIN_ID,
       smartWallet: wallet,
     });
-    expect(result).toMatchObject({ ok: true, user: { userId: "user-1", address: wallet.toLowerCase() } });
+    expect(result).toMatchObject({
+      ok: false,
+      status: 403,
+      error: "No active delegate for this signature",
+    });
+    expect(findDelegate).not.toHaveBeenCalled();
+  });
+
+  it("rejects a missing smart wallet", async () => {
+    const result = await resolveSignedAccount({
+      signer: KEY.publicKey,
+      chainId: CHAIN_ID,
+    });
+    expect(result).toMatchObject({ ok: false, status: 400, error: "Invalid smart wallet" });
   });
 });

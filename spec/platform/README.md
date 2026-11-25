@@ -50,7 +50,7 @@ A user builds **one or more lineups per contest** (`Lineup.contestId`). Copy/clo
 
 | Area | Responsibility |
 |------|----------------|
-| Identity | One user, one wallet. A delegate signs for that user (ERC-8128). The user can also sign as the wallet. Privy is the browser session for the same `User` and `UserWallet` |
+| Identity | One user, one Kernel wallet. A P-256 delegate signs for that user. Privy is the browser session for the same `User` and `UserWallet`. The human enables the delegate from Account → Settings → Enable Agent Control |
 | Social | `UserGroup` / leagues, invite codes, membership roles |
 | Events API | List sports, active event, candidate pool |
 | Lineups API | Create/update roster; validate via sport plugin |
@@ -92,7 +92,7 @@ See [contracts/README.md](../contracts/README.md).
 | `/api/userGroups` | ✅ Live |
 | `/api/admin` | ✅ Live |
 | `/api/auth` | ✅ Live |
-| `/api/bot` | ✅ Live. Player routes accept ERC-8128. Delegate install stays on the Privy session |
+| `/api/bot` | ✅ Live. Player routes accept a P-256 `x-cut-*` signature. Delegate install stays on the Privy session |
 | `/api/cron` | ✅ Live |
 | `/api/unsubscribe` | ✅ Live |
 

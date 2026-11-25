@@ -1,35 +1,18 @@
 import { useState } from "react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useWallets } from "@privy-io/react-auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSigners, useWallets } from "@privy-io/react-auth";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
-import { useChainId, usePublicClient } from "wagmi";
-import { getAddress, isAddress } from "viem";
-import { base, baseSepolia } from "viem/chains";
 
 import { Button } from "../common/Button";
 import { CopyButton } from "../common/CopyToClipboard";
+import { defaultPaymentTokenSymbol } from "../../config/targetChain";
 import { BRAND_URL } from "../../lib/brand";
 import { ErrorMessage } from "../common/ErrorMessage";
-import {
-  prepareBotSessionKey,
-  prepareBotSessionRevoke,
-  type WalletCall,
-} from "../../lib/botSessionKey";
-import apiClient from "../../utils/apiClient";
-import { sendAccountCalls } from "../../lib/accountKernelSend";
+import { botDelegatesQueryKey, useBotDelegates } from "../../hooks/useActiveAgentControl";
 import { useAuth } from "../../contexts/AuthContext";
-
-type DelegateRow = {
-  delegateAddress: string;
-  status: string;
-};
-
-type DelegateResponse = {
-  delegates: DelegateRow[];
-};
-
-const queryKey = ["bot-delegates"] as const;
+import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
+import apiClient from "../../utils/apiClient";
 
 const agentPrompt = `Make me a genius on Play The Cut.
 
@@ -41,120 +24,112 @@ ${BRAND_URL}/api.md
 ${BRAND_URL}/faq#agents
 ${BRAND_URL}/llms.txt
 
-I already have an account. Follow the delegate steps in the account access page.
+Call generateDelegateKey() once, store the private key, and reply with only the public key. I will paste that key in Account → Settings → Enable Agent Control and choose Grant full access.
 
-Call generateDelegateKey() once, store the private key, and reply with only the public address.
-
-After I grant that address and send you my smart wallet, create the client with that smartWallet and call account(). Take on all six roles. Offer the suggested weekly schedule, and start it only after I say yes. If you cannot run scheduled jobs, say so and do the checks the next time we talk.
+After I grant that key and send you my smart wallet, create the client with that smartWallet and call account(). Take on all six roles. Offer the suggested weekly schedule, and start it only after I say yes. If you cannot run scheduled jobs, say so and do the checks the next time we talk.
 
 Do not spend USDC, enter a contest, create a paid contest, or message anyone unless I say yes to that action.`;
 
-function chainFor(chainId: number) {
-  if (chainId === base.id) return base;
-  if (chainId === baseSepolia.id) return baseSepolia;
-  return null;
+const PUBLIC_KEY_PREFIX = "MFkwEwYHKoZIzj0C";
+
+function agentKeyLabel(publicKey: string): string {
+  const unique = publicKey.startsWith(PUBLIC_KEY_PREFIX)
+    ? publicKey.slice(PUBLIC_KEY_PREFIX.length)
+    : publicKey;
+  return unique.replace(/=+$/, "");
+}
+
+function looksLikePublicKey(value: string): boolean {
+  return /^[A-Za-z0-9+/]+={0,2}$/.test(value) && value.length >= 80 && value.length <= 200;
 }
 
 export function BotDelegationSettings() {
-  const chainId = useChainId();
-  const publicClient = usePublicClient();
   const { wallets } = useWallets();
-  const { client: smartWalletClient, getClientForChain } = useSmartWallets();
+  const { addSigners, removeSigners } = useSigners();
+  const { client: smartWalletClient } = useSmartWallets();
   const { user } = useAuth();
+  const walletAddress = useEffectiveWalletAddress();
   const queryClient = useQueryClient();
   const [delegateInput, setDelegateInput] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [fieldError, setFieldError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
 
-  const delegates = useQuery({
-    queryKey,
-    queryFn: () => apiClient.get<DelegateResponse>("/bot/delegates", { requiresAuth: true }),
-  });
+  const delegates = useBotDelegates();
 
-  const smartWallet =
-    user?.walletOwner && user.walletAddress
-      ? user.walletAddress
-      : smartWalletClient?.account?.address;
   const embedded = wallets.find(
     (wallet) => wallet.type === "ethereum" && wallet.walletClientType === "privy",
   );
   const rows = delegates.data?.delegates ?? [];
   const active = rows.filter((row) => row.status === "active");
+  const pendingRows = rows.filter((row) => row.status === "pending");
+  const revoking = rows.filter((row) => row.status === "revoking");
 
-  async function send(chainId: number, call: WalletCall) {
-    if (!publicClient) throw new Error("Wallet is not ready");
-    const takenOver =
-      !!user?.walletOwner &&
-      !!embedded &&
-      getAddress(user.walletOwner) === getAddress(embedded.address);
-    const hash = takenOver
-      ? await sendAccountCalls({
-          calls: [{ to: call.to, data: call.data }],
-          embedded,
-          chainId,
-        })
-      : await (async () => {
-          const client = await getClientForChain({ id: chainId });
-          if (!client) throw new Error("Wallet is not ready");
-          return client.sendTransaction({
-            calls: [{ to: call.to, data: call.data, value: 0n }],
-          });
-        })();
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    if (receipt.status === "reverted") throw new Error("Transaction reverted");
-  }
-
-  async function enable(delegateAddress: string) {
-    const chain = chainFor(chainId);
-    if (!chain || !smartWallet || !embedded) {
-      throw new Error("Wallet is not ready");
-    }
-    const owner = await embedded.getEthereumProvider();
-    const installed = await prepareBotSessionKey({
-      chain,
-      owner: owner as unknown as Parameters<typeof prepareBotSessionKey>[0]["owner"],
-      ownerAddress: getAddress(embedded.address),
-      smartWallet: getAddress(smartWallet),
-      delegateAddress: getAddress(delegateAddress),
+  async function enable(publicKey: string) {
+    if (!embedded || !smartWalletClient) throw new Error("Wallet is not ready");
+    const prepared = await apiClient.post<{ quorumId: string }>(
+      "/bot/delegates/quorum",
+      { publicKey },
+      { requiresAuth: true },
+    );
+    await addSigners({
+      address: embedded.address,
+      signers: [{ signerId: prepared.quorumId }],
     });
-    if (installed.call) await send(chain.id, installed.call);
     await apiClient.post(
       "/bot/delegates",
-      {
-        delegateAddress,
-        smartWallet,
-        approval: installed.approval,
-        permissionId: installed.permissionId,
-      },
+      { publicKey, quorumId: prepared.quorumId },
       { requiresAuth: true },
     );
   }
 
-  async function revoke(delegateAddress: string) {
-    const chain = chainFor(chainId);
-    if (!chain || !smartWallet) {
-      throw new Error("Wallet is not ready");
+  async function confirmSignerRemoval() {
+    const confirmed = await apiClient.post<{ status: "revoked" | "revoking" }>(
+      "/bot/delegates/revoke/confirm",
+      {},
+      { requiresAuth: true },
+    );
+    if (confirmed.status !== "revoked") {
+      throw new Error("Removal from the wallet did not finish.");
     }
-    const call = await prepareBotSessionRevoke({
-      chain,
-      smartWallet: getAddress(smartWallet),
-      delegateAddress: getAddress(delegateAddress),
-    });
-    if (call) await send(chain.id, call);
-    await apiClient.post("/bot/delegates/revoke", { delegateAddress }, { requiresAuth: true });
   }
 
-  async function run(key: string, task: () => Promise<void>) {
+  async function removeWalletSigners() {
+    if (!embedded) throw new Error("Wallet is not ready");
+    await removeSigners({ address: embedded.address });
+    await confirmSignerRemoval();
+  }
+
+  async function revokeAll() {
+    if (!embedded) throw new Error("Wallet is not ready");
+    await apiClient.post("/bot/delegates/revoke", {}, { requiresAuth: true });
+    await removeWalletSigners();
+  }
+
+  async function run(key: string, task: () => Promise<void>, scope: "field" | "action" = "action") {
     setPending(key);
-    setError(null);
+    setFieldError(null);
+    setActionError(null);
     try {
       await task();
-      await queryClient.invalidateQueries({ queryKey });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update the delegate");
+      const message = err instanceof Error ? err.message : "Could not update agent access";
+      if (scope === "field") setFieldError(message);
+      else setActionError(message);
     } finally {
       setPending(null);
+      await queryClient.invalidateQueries({
+        queryKey: user?.id ? botDelegatesQueryKey(user.id) : ["bot-delegates"],
+      });
     }
+  }
+
+  function removeFromWallet() {
+    const confirmed = window.confirm(
+      `Revoke all agent access? Every agent will lose the ability to send ${defaultPaymentTokenSymbol()}, enter or create a paid contest, and send messages.`,
+    );
+    if (!confirmed) return;
+    void run("revoke", revokeAll);
   }
 
   return (
@@ -182,8 +157,8 @@ export function BotDelegationSettings() {
                 Warning - Experimental
               </h3>
               <p className="mt-1 text-sm leading-6 text-slate-800">
-                Bugs or compromised delegates could drain this wallet. Only use funds you can afford
-                to lose.
+                Bugs or a compromised agent could drain this wallet. Only use funds you can afford to
+                lose.
               </p>
             </div>
           </div>
@@ -192,9 +167,15 @@ export function BotDelegationSettings() {
         <h3 className="text-base font-semibold text-slate-900">Agent Instructions</h3>
 
         <p className="text-sm leading-6 text-slate-600">
-          Copy the instructions and paste them into your AI agent chat. It will guide your through
-          connecting your agent.
+          Paste this into your agent. It should reply with a public key. Paste that key here, then
+          grant access.
         </p>
+        {walletAddress ? (
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <p className="min-w-0 break-all font-mono text-xs text-slate-800">{walletAddress}</p>
+            <CopyButton text={walletAddress} idleLabel="Copy wallet address" variant="secondary" />
+          </div>
+        ) : null}
 
         <div className="mt-3">
           <CopyButton text={agentPrompt} idleLabel="Copy Agent Instructions" />
@@ -205,32 +186,40 @@ export function BotDelegationSettings() {
         className="mt-8"
         onSubmit={(event) => {
           event.preventDefault();
-          if (!isAddress(delegateInput)) {
-            setError("Enter a valid address");
+          if (!looksLikePublicKey(delegateInput)) {
+            setActionError(null);
+            setFieldError("Enter the agent's public key");
             return;
           }
-          void run("grant", async () => {
-            await enable(delegateInput);
-            setDelegateInput("");
-          });
+          void run(
+            "grant",
+            async () => {
+              await enable(delegateInput);
+              setDelegateInput("");
+            },
+            "field",
+          );
         }}
       >
         <h3 className="text-base font-semibold text-slate-900">Add an Agent</h3>
 
         <div className="mt-3">
+          <label htmlFor="agent-public-key" className="text-sm font-medium text-slate-900">
+            Public key
+          </label>
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
             <input
-              id="delegate-address"
-              name="delegateAddress"
+              id="agent-public-key"
+              name="publicKey"
               value={delegateInput}
               onChange={(event) => setDelegateInput(event.target.value.trim())}
               type="text"
-              placeholder="0x..."
+              placeholder="Public key"
               autoComplete="off"
               autoCapitalize="off"
               spellCheck={false}
-              aria-describedby="delegate-address-note"
-              aria-invalid={error ? true : undefined}
+              aria-describedby="agent-public-key-note"
+              aria-invalid={fieldError ? true : undefined}
               disabled={pending !== null}
               className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100"
             />
@@ -238,49 +227,117 @@ export function BotDelegationSettings() {
               {pending === "grant" ? "Granting…" : "Grant full access"}
             </Button>
           </div>
-          <p id="delegate-address-note" className="mt-2 text-xs leading-5 text-slate-500">
-            Double-check the address before granting access.
+          <p id="agent-public-key-note" className="mt-2 text-xs leading-5 text-slate-500">
+            This key can send {defaultPaymentTokenSymbol()}, enter a paid contest, create a paid
+            contest, and send messages.
+            Double-check the public key before granting access.
           </p>
-          {error ? <ErrorMessage message={error} className="mt-2" /> : null}
+          {fieldError ? <ErrorMessage message={fieldError} className="mt-2" /> : null}
         </div>
 
-        {active.length > 0 ? (
-          <table className="mt-6 w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-300 text-xs uppercase tracking-wide text-gray-500">
-                <th className="py-2 pr-3 font-semibold">Agent Account</th>
-                <th className="py-2 pl-3 text-right font-semibold">Access</th>
-              </tr>
-            </thead>
-            <tbody>
-              {active.map((row) => (
-                <tr key={row.delegateAddress} className="border-b border-slate-300">
-                  <td className="py-3 pr-3 align-middle">
-                    <span
-                      className="font-mono text-xs leading-5 text-slate-600"
-                      title={row.delegateAddress}
-                    >
-                      {`${row.delegateAddress.slice(0, 8)}…${row.delegateAddress.slice(-8)}`}
-                    </span>
-                  </td>
-                  <td className="py-3 pl-3 text-right align-middle">
-                    <Button
-                      type="button"
-                      variant="neutral"
-                      size="compact"
-                      disabled={pending !== null}
-                      onClick={() => {
-                        void run(row.delegateAddress, () => revoke(row.delegateAddress));
-                      }}
-                    >
-                      Revoke
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {delegates.isError ? (
+          <ErrorMessage message="Could not load agents" className="mt-4" />
         ) : null}
+        {pendingRows.length > 0 ? (
+          <div className="mt-6">
+            <p className="text-sm leading-6 text-slate-800">Grant did not finish.</p>
+            <ul className="mt-3 border-t border-slate-300">
+              {pendingRows.map((row) => (
+                <li
+                  key={row.delegateAddress}
+                  className="flex flex-col gap-3 border-b border-slate-300 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <span className="min-w-0 break-all font-mono text-xs text-slate-800">
+                    {agentKeyLabel(row.delegateAddress)}
+                  </span>
+                  <CopyButton
+                    text={row.delegateAddress}
+                    idleLabel="Copy public key"
+                    variant="secondary"
+                  />
+                  <Button
+                    type="button"
+                    variant="neutral"
+                    disabled={pending !== null}
+                    onClick={() => {
+                      void run("grant", () => enable(row.delegateAddress));
+                    }}
+                  >
+                    {pending === "grant" ? "Granting…" : "Finish granting"}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        {active.length > 0 ? (
+          <div className="mt-6">
+            <h3 className="text-base font-semibold text-slate-900">Agents with access</h3>
+            <ul className="mt-3 border-t border-slate-300">
+              {active.map((row) => (
+                <li
+                  key={row.delegateAddress}
+                  className="flex flex-col gap-3 border-b border-slate-300 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <span className="min-w-0 break-all font-mono text-xs text-slate-800">
+                    {agentKeyLabel(row.delegateAddress)}
+                  </span>
+                  <CopyButton
+                    text={row.delegateAddress}
+                    idleLabel="Copy public key"
+                    variant="secondary"
+                  />
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4">
+              <Button
+                type="button"
+                variant="neutral"
+                disabled={pending !== null}
+                onClick={removeFromWallet}
+              >
+                {pending === "revoke" ? "Revoking…" : "Revoke all agent access"}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        {revoking.length > 0 ? (
+          <div className="mt-4">
+            <p className="text-sm leading-6 text-slate-800">
+              Agents can no longer act in Play The Cut. Removal from the wallet did not finish.
+            </p>
+            <div className="mt-4">
+              <Button
+                type="button"
+                variant="neutral"
+                disabled={pending !== null}
+                onClick={() => {
+                  if (active.length > 0 || pendingRows.length > 0) {
+                    removeFromWallet();
+                    return;
+                  }
+                  void run("remove", revokeAll);
+                }}
+              >
+                {pending === "remove" ? "Removing…" : "Remove the key from the wallet"}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        {pendingRows.length > 0 && active.length === 0 && revoking.length === 0 ? (
+          <div className="mt-4">
+            <Button
+              type="button"
+              variant="neutral"
+              disabled={pending !== null}
+              onClick={removeFromWallet}
+            >
+              {pending === "revoke" ? "Revoking…" : "Remove the key from the wallet"}
+            </Button>
+          </div>
+        ) : null}
+        {actionError ? <ErrorMessage message={actionError} className="mt-2" /> : null}
       </form>
     </section>
   );

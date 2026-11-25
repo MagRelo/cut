@@ -4,7 +4,8 @@ import { prisma } from "../../lib/prisma.js";
 import { getEventCandidates } from "../events/getEventCandidates.js";
 import { primaryDepositFromSettings } from "../../utils/canDeleteLeagueContest.js";
 import { contestVisibilityWhere, listedContestStatusWhere } from "../../utils/contestListQuery.js";
-import { classifySigner, type StoredWalletOwner } from "./accountKey.js";
+import { isDelegatePublicKey } from "@playthecut/agent";
+import { storedDelegateAddress } from "./quorumApproval.js";
 
 export type BotContestListItem = {
   contestId: string;
@@ -36,8 +37,7 @@ type ContestRow = {
 };
 
 export type ListBotContestsDeps = {
-  findDelegate: (smartWallet: Address, signer: Address) => Promise<{ userId: string } | null>;
-  findOwner: (smartWallet: Address, chainId: number) => Promise<StoredWalletOwner | null>;
+  findDelegate: (smartWallet: Address, signer: string) => Promise<{ userId: string } | null>;
   loadContests: (userId: string, chainId: number, eventId?: string) => Promise<ContestRow[]>;
   loadCandidates: (sportId: string, eventId: string) => Promise<Candidate[] | null>;
 };
@@ -46,7 +46,7 @@ export async function listSignedBotContests(
   input: {
     chainId: number;
     smartWallet: string;
-    signer: Address;
+    signer: string;
     eventId?: string;
   },
   deps: ListBotContestsDeps,
@@ -54,25 +54,17 @@ export async function listSignedBotContests(
   | { ok: true; contests: BotContestListItem[] }
   | { ok: false; status: 400 | 403; error: string }
 > {
-  if (!isAddress(input.smartWallet) || !isAddress(input.signer)) {
+  if (!isAddress(input.smartWallet)) {
     return { ok: false, status: 400, error: "Invalid smart wallet" };
   }
 
   const smartWallet = getAddress(input.smartWallet);
-  const signer = getAddress(input.signer);
-  const owner = await deps.findOwner(smartWallet, input.chainId);
-  const role = classifySigner(signer, smartWallet, input.chainId, owner?.ownerAddress);
-  const actor =
-    role === "owner" || role === "wallet" ? owner : await deps.findDelegate(smartWallet, signer);
+  if (!isDelegatePublicKey(input.signer)) {
+    return { ok: false, status: 403, error: "No active delegate for this signature" };
+  }
+  const actor = await deps.findDelegate(smartWallet, input.signer);
   if (!actor) {
-    return {
-      ok: false,
-      status: 403,
-      error:
-        role === "owner" || role === "wallet"
-          ? "No account for this wallet"
-          : "No active delegate for this signature",
-    };
+    return { ok: false, status: 403, error: "No active delegate for this signature" };
   }
 
   const rows = await deps.loadContests(
@@ -113,17 +105,10 @@ export function botContestListDeps(): ListBotContestsDeps {
       const row = await prisma.botDelegate.findFirst({
         where: {
           smartWallet: smartWallet.toLowerCase(),
-          delegateAddress: signer.toLowerCase(),
+          delegateAddress: storedDelegateAddress(signer),
           status: "active",
         },
         select: { userId: true },
-      });
-      return row;
-    },
-    findOwner: async (smartWallet, chainId) => {
-      const row = await prisma.userWallet.findUnique({
-        where: { chainId_publicKey: { chainId, publicKey: smartWallet.toLowerCase() } },
-        select: { userId: true, ownerAddress: true },
       });
       return row;
     },

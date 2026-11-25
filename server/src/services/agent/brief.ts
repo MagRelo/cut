@@ -202,18 +202,7 @@ export async function getAgentAccount(actor: AgentActor) {
       totalEarned: summary.totalEarned,
     },
     entries,
-    takeover: await takeoverFor(actor),
   };
-}
-
-async function takeoverFor(actor: AgentActor): Promise<{ embeddedAddress: string } | null> {
-  const wallet = await prisma.userWallet.findFirst({
-    where: { userId: actor.userId, chainId: actor.chainId, isPrimary: true },
-    select: { pendingOwnerAddress: true },
-  });
-  const pending = wallet?.pendingOwnerAddress;
-  if (!pending) return null;
-  return { embeddedAddress: pending };
 }
 
 export async function getScoutBrief(actor: AgentActor, balanceUsdc?: number | null) {

@@ -1,19 +1,25 @@
+import { generateDelegateKey } from "@playthecut/agent";
 import { decodeFunctionData, getAddress, type Hex } from "viem";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { kernelWalletAddress } from "@playthecut/agent";
-import { describe, expect, it, vi } from "vitest";
-import { packApproval } from "./approvalEnvelope.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { buildCreateContestCall, serializeBotCalls } from "./botCalls.js";
 import { executeCreateContest, type CreateContestDeps } from "./executeCreateContest.js";
 import type { BotDelegateRow } from "./executeBotAction.js";
+import { writeQuorumApproval } from "./quorumApproval.js";
+import { relayQuorumUserOp } from "./quorumUserOp.js";
+
+vi.mock("./quorumUserOp.js", () => ({
+  relayQuorumUserOp: vi.fn(),
+}));
 
 const CHAIN_ID = 84532;
 const SMART_WALLET = getAddress("0x1111111111111111111111111111111111111111");
 const FACTORY = getAddress("0x4444444444444444444444444444444444444444");
 const CREATED = getAddress("0x5555555555555555555555555555555555555555");
 const TX = `0x${"ab".repeat(32)}` as Hex;
+const USER_OP_HASH = `0x${"cd".repeat(32)}` as Hex;
 const USER_ID = "user-1";
+const KEY = generateDelegateKey();
 
-const delegateAccount = privateKeyToAccount(generatePrivateKey());
 const USER_OP = {
   sender: SMART_WALLET,
   nonce: "1",
@@ -24,14 +30,22 @@ const USER_OP = {
   maxFeePerGas: "1",
   maxPriorityFeePerGas: "1",
 };
-const USER_OP_SIGNATURE = `0x${"22".repeat(65)}` as Hex;
+
+function approval(): string {
+  return writeQuorumApproval({
+    quorumId: "quorum-1",
+    publicKey: KEY.publicKey,
+    embeddedWalletId: "wallet-1",
+    embeddedAddress: SMART_WALLET,
+  });
+}
 
 function delegate(overrides: Partial<BotDelegateRow> = {}): BotDelegateRow {
   return {
     userId: USER_ID,
     smartWallet: SMART_WALLET.toLowerCase(),
-    delegateAddress: delegateAccount.address.toLowerCase(),
-    approval: packApproval({ approval: "serialized", permissionId: "0x5a677774" }),
+    delegateAddress: KEY.publicKey,
+    approval: approval(),
     ...overrides,
   };
 }
@@ -39,18 +53,6 @@ function delegate(overrides: Partial<BotDelegateRow> = {}): BotDelegateRow {
 function deps(partial: Partial<CreateContestDeps> = {}): CreateContestDeps {
   return {
     findDelegate: vi.fn(async () => delegate()),
-    findOwner: vi.fn(async () => null),
-    sessionEnabled: vi.fn(async () => true),
-    prepareUserOp: vi.fn(async () => ({ ok: false as const, error: "prepare was not expected" })),
-    prepareOwnerUserOp: vi.fn(async () => ({
-      ok: false as const,
-      error: "owner prepare was not expected",
-    })),
-    submitOwnerUserOp: vi.fn(async () => ({
-      ok: false as const,
-      error: "owner submit was not expected",
-    })),
-    submitCalls: vi.fn(async () => ({ ok: true as const, txHash: TX })),
     log: vi.fn(async () => undefined),
     loadUserType: vi.fn(async () => "AGENT"),
     isLeagueAdmin: vi.fn(async () => true),
@@ -69,9 +71,9 @@ function deps(partial: Partial<CreateContestDeps> = {}): CreateContestDeps {
 const input = {
   chainId: CHAIN_ID,
   smartWallet: SMART_WALLET,
-  signer: delegateAccount.address,
+  signer: KEY.publicKey,
   userOp: USER_OP,
-  userOpSignature: USER_OP_SIGNATURE,
+  authorizationSignature: "sig",
   name: "Sunday",
   eventId: "clh0000000000000000000001",
   userGroupId: "clh0000000000000000000002",
@@ -85,15 +87,37 @@ const input = {
 };
 
 describe("executeCreateContest", () => {
+  beforeEach(() => {
+    vi.mocked(relayQuorumUserOp).mockReset();
+    vi.mocked(relayQuorumUserOp).mockResolvedValue({ kind: "submitted", txHash: TX });
+  });
+
   it("prepares a user operation when the delegate has not signed", async () => {
-    const userOpHash = `0x${"cd".repeat(32)}` as Hex;
-    const used = deps({
-      prepareUserOp: vi.fn(async () => ({ ok: true as const, userOpHash, userOp: USER_OP })),
+    vi.mocked(relayQuorumUserOp).mockResolvedValue({
+      kind: "prepared",
+      userOpHash: USER_OP_HASH,
+      userOp: USER_OP,
+      authorization: { method: "POST" },
     });
-    const unsigned = { ...input, userOp: undefined, userOpSignature: undefined };
+    const used = deps();
+    const unsigned = { ...input, userOp: undefined, authorizationSignature: undefined };
     const result = await executeCreateContest(unsigned, used);
-    expect(result).toEqual({ ok: true, preparedUserOp: true, userOpHash, userOp: USER_OP });
-    expect(used.submitCalls).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      ok: true,
+      preparedUserOp: true,
+      userOpHash: USER_OP_HASH,
+      userOp: USER_OP,
+      calls: serializeBotCalls([
+        buildCreateContestCall({
+          factory: FACTORY,
+          primaryDepositAmount: 5_000_000n,
+          referralNetworkBps: 500n,
+          expiryTimestamp: 1_800_000_000n,
+          primaryDepositSecondarySubsidyBps: 0n,
+        }),
+      ]),
+      authorization: { method: "POST" },
+    });
     expect(used.recordContest).not.toHaveBeenCalled();
   });
 
@@ -101,8 +125,8 @@ describe("executeCreateContest", () => {
     const used = deps();
     const result = await executeCreateContest(input, used);
     expect(result).toEqual({ ok: true, contestId: "contest-1", address: CREATED });
-    expect(used.submitCalls).toHaveBeenCalledOnce();
-    const calls = vi.mocked(used.submitCalls).mock.calls[0]?.[0].calls;
+    expect(relayQuorumUserOp).toHaveBeenCalledOnce();
+    const calls = vi.mocked(relayQuorumUserOp).mock.calls[0]?.[0].calls;
     expect(calls?.[0]?.to).toBe(FACTORY);
     expect(calls?.[0]?.value).toBe(0n);
     expect(used.recordContest).toHaveBeenCalledWith(
@@ -125,7 +149,7 @@ describe("executeCreateContest", () => {
     };
     const result = await executeCreateContest({ ...input, endTime, settings }, used);
     expect(result).toEqual({ ok: true, contestId: "contest-1", address: CREATED });
-    const call = vi.mocked(used.submitCalls).mock.calls[0]?.[0].calls[0];
+    const call = vi.mocked(relayQuorumUserOp).mock.calls[0]?.[0].calls[0];
     expect(call).toBeDefined();
     const decoded = decodeFunctionData({
       abi: [
@@ -156,7 +180,7 @@ describe("executeCreateContest", () => {
     const used = deps();
     const result = await executeCreateContest({ ...input, userGroupId: undefined }, used);
     expect(result).toEqual({ ok: false, status: 403, error: "Forbidden" });
-    expect(used.submitCalls).not.toHaveBeenCalled();
+    expect(relayQuorumUserOp).not.toHaveBeenCalled();
   });
 
   it("rejects a paid create without a verified contest address", async () => {
@@ -172,38 +196,18 @@ describe("executeCreateContest", () => {
     expect(used.recordContest).not.toHaveBeenCalled();
   });
 
-  it("prepares a sponsored user operation when the account key creates the contest", async () => {
-    const owner = privateKeyToAccount(generatePrivateKey());
-    const wallet = kernelWalletAddress(owner.address, CHAIN_ID);
-    const userOpHash = `0x${"cd".repeat(32)}` as Hex;
-    const userOp = {
-      sender: wallet,
-      nonce: "1",
-      callData: "0x" as Hex,
-      callGasLimit: "1",
-      verificationGasLimit: "1",
-      preVerificationGas: "1",
-      maxFeePerGas: "1",
-      maxPriorityFeePerGas: "1",
-    };
-    const used = deps({
-      findDelegate: vi.fn(async () => null),
-      findOwner: vi.fn(async () => ({ userId: USER_ID })),
-      prepareOwnerUserOp: vi.fn(async () => ({ ok: true as const, userOpHash, userOp })),
-    });
+  it("rejects an address signer", async () => {
+    const used = deps();
     const result = await executeCreateContest(
-      {
-        ...input,
-        smartWallet: wallet,
-        signer: owner.address,
-        userOp: undefined,
-        userOpSignature: undefined,
-      },
+      { ...input, signer: "0x2222222222222222222222222222222222222222" },
       used,
     );
-    expect(result).toEqual({ ok: true, preparedUserOp: true, userOpHash, userOp });
-    expect(used.submitCalls).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      ok: false,
+      status: 403,
+      error: "No active delegate for this signature",
+    });
+    expect(relayQuorumUserOp).not.toHaveBeenCalled();
     expect(used.recordContest).not.toHaveBeenCalled();
-    expect(used.prepareOwnerUserOp).toHaveBeenCalledOnce();
   });
 });

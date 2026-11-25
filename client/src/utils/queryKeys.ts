@@ -16,7 +16,8 @@ export const queryKeys = {
   contests: {
     all: ["contests"] as const,
     byId: (id: string) => [...queryKeys.contests.all, id] as const,
-    byLobbyRoute: (address: string) => [...queryKeys.contests.all, "lobby", address] as const,
+    byLobbyRoute: (address: string, userId: string) =>
+      [...queryKeys.contests.all, "lobby", address, userId] as const,
     timeline: (address: string) => [...queryKeys.contests.all, "timeline", address] as const,
     commentary: (address: string) => [...queryKeys.contests.all, "commentary", address] as const,
     byEvent: (
@@ -54,16 +55,20 @@ export const queryKeys = {
   user: {
     all: ["user"] as const,
     profile: () => [...queryKeys.user.all, "profile"] as const,
-    contests: () => [...queryKeys.user.all, "contests"] as const,
-    transactions: () => [...queryKeys.user.all, "transactions"] as const,
+    contests: (userId: string) => [...queryKeys.user.all, "contests", userId] as const,
+    transactions: (userId: string) => [...queryKeys.user.all, "transactions", userId] as const,
     referralSummary: (userId: string) =>
       [...queryKeys.user.all, "referralSummary", userId] as const,
   },
   userGroups: {
     all: ["userGroups"] as const,
-    byId: (id: string) => [...queryKeys.userGroups.all, id] as const,
-    contests: (id: string) => [...queryKeys.userGroups.all, id, "contests"] as const,
-    members: (id: string) => [...queryKeys.userGroups.all, id, "members"] as const,
+    list: (userId: string) => [...queryKeys.userGroups.all, "list", userId] as const,
+    byId: (userId: string, id: string) =>
+      [...queryKeys.userGroups.all, "detail", userId, id] as const,
+    contests: (userId: string, id: string) =>
+      [...queryKeys.userGroups.all, "contests", userId, id] as const,
+    members: (userId: string, id: string) =>
+      [...queryKeys.userGroups.all, "members", userId, id] as const,
   },
   admin: {
     all: ["admin"] as const,

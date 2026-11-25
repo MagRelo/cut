@@ -12,7 +12,6 @@ import {
   parseOddsDisplayFormat,
 } from "../lib/oddsSettings";
 import type { OddsDisplayFormat } from "../lib/oddsFormat";
-
 const ACCENT_COLORS = [
   "#0a73eb",
   "#A3A3A3",
@@ -338,9 +337,9 @@ export function OnboardingPage() {
               Account Wallet
             </h1>
             <p className="text-gray-700 leading-relaxed font-display mb-6">
-              Your Play The Cut wallet is yours—you stay in control of your funds. Contests use{" "}
-              <strong>USDC</strong>, a digital dollar, on the Base network. Add USDC when
-              you&apos;re ready to play, and send it out anytime.
+              Your wallet belongs to you. Play The Cut does not hold a key that can move the funds
+              in it. Contests use <strong>USDC</strong>, a digital dollar, on the Base network. Add
+              USDC when you&apos;re ready to play, and send it out anytime.
             </p>
 
             <StepActions>

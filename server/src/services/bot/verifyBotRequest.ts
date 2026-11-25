@@ -1,29 +1,20 @@
-import {
-  createUniversalAccountVerifier,
-  ERC1271_ABI,
-  verifyRequest,
-  type GetAccountCodeFn,
-  type NonceStore,
-  type VerifySmartAccountFn,
-} from "@slicekit/erc8128";
-import { getAddress, type Address } from "viem";
+import { cutRequestPayload, isDelegatePublicKey, verifyPayload } from "@playthecut/agent";
+import { Prisma } from "@prisma/client";
+import { getAppPublicUrl } from "../../lib/appUrl.js";
 import { isSupportedChain } from "../../lib/chainConfig.js";
-import { getPublicClient } from "../shared/contractClient.js";
-import { createBotNonceStore } from "./botNonceStore.js";
+import { prisma } from "../../lib/prisma.js";
 
 const MAX_VALIDITY_SECONDS = 60 * 60;
-const ERC1271_MAGIC = "0x1626ba7e";
+const SKEW_SECONDS = 60;
 
 export type VerifyBotRequestDeps = {
-  getCode: GetAccountCodeFn;
-  verifySmartAccount: VerifySmartAccountFn;
-  nonceStore: NonceStore;
   now: () => number;
+  consumeNonce: (key: string, expiresAt: Date) => Promise<boolean>;
 };
 
 export type VerifiedBotRequest = {
   ok: true;
-  signer: Address;
+  signer: string;
   chainId: number;
 };
 
@@ -33,116 +24,95 @@ export type RejectedBotRequest = {
   error: string;
 };
 
-const FAILURES: Record<string, RejectedBotRequest> = {
-  signature_missing: { ok: false, status: 401, error: "Missing request signature" },
-  no_acceptable_signature: { ok: false, status: 401, error: "Invalid action signature" },
-  signature_input_invalid: { ok: false, status: 401, error: "Invalid action signature" },
-  signature_too_large: { ok: false, status: 401, error: "Invalid action signature" },
-  invalid_keyid: { ok: false, status: 401, error: "Invalid action signature" },
-  invalid_time: { ok: false, status: 400, error: "Invalid deadline" },
-  request_not_yet_valid: { ok: false, status: 401, error: "Action signature is not yet valid" },
-  request_expired: { ok: false, status: 401, error: "Action signature has expired" },
-  request_validity_too_long: {
-    ok: false,
-    status: 400,
-    error: "Action deadline is too far in the future",
-  },
-  invalid_nonce: { ok: false, status: 400, error: "Invalid action nonce" },
-  insufficient_coverage: { ok: false, status: 401, error: "Invalid action signature" },
-  content_digest_required: { ok: false, status: 401, error: "Request body does not match the signature" },
-  bad_content_digest: { ok: false, status: 401, error: "Request body does not match the signature" },
-  nonce_required: { ok: false, status: 401, error: "Invalid action signature" },
-  nonce_reused: { ok: false, status: 401, error: "Action nonce has already been used" },
-  replayable_not_allowed: { ok: false, status: 401, error: "Invalid action signature" },
-  unsupported_algorithm: { ok: false, status: 401, error: "Invalid action signature" },
-  bad_signature: { ok: false, status: 401, error: "Invalid action signature" },
-  principal_not_allowed: { ok: false, status: 401, error: "Invalid action signature" },
-  signature_verification_unavailable: {
-    ok: false,
-    status: 503,
-    error: "Signature verification is unavailable",
-  },
-};
-
 export function defaultBotRequestDeps(): VerifyBotRequestDeps {
   return {
-    getCode: async ({ address, chainId }) => {
-      if (!isSupportedChain(chainId)) return "unavailable";
-      try {
-        const code = await getPublicClient(chainId).getBytecode({ address });
-        return code ?? "0x";
-      } catch {
-        return "unavailable";
-      }
-    },
-    verifySmartAccount: async ({ address, chainId, digest, signature }) => {
-      if (!isSupportedChain(chainId)) return "unavailable";
-      try {
-        const result = await getPublicClient(chainId).readContract({
-          address,
-          abi: ERC1271_ABI,
-          functionName: "isValidSignature",
-          args: [digest, signature],
-        });
-        return result.toLowerCase() === ERC1271_MAGIC;
-      } catch {
-        return "unavailable";
-      }
-    },
-    nonceStore: createBotNonceStore(),
     now: () => Math.floor(Date.now() / 1000),
+    consumeNonce: async (key, expiresAt) => {
+      await prisma.botRequestNonce.deleteMany({
+        where: { expiresAt: { lt: new Date() } },
+      });
+      try {
+        await prisma.botRequestNonce.create({ data: { key, expiresAt } });
+        return true;
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+          return false;
+        }
+        throw error;
+      }
+    },
   };
 }
 
-/** Nginx terminates TLS, so Node sees `http://`. The signature covers the public `@scheme`. */
-function requestAtPublicOrigin(request: Request): Request {
-  const forwarded = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim().toLowerCase();
-  if (forwarded !== "https" && forwarded !== "http") return request;
+function reject(status: RejectedBotRequest["status"], error: string): RejectedBotRequest {
+  return { ok: false, status, error };
+}
+
+function header(request: Request, name: string): string {
+  return request.headers.get(name)?.trim() ?? "";
+}
+
+function isLoopbackHost(hostname: string): boolean {
+  const host = hostname.replace(/^\[|\]$/g, "");
+  return host === "localhost" || host === "127.0.0.1" || host === "::1";
+}
+
+/** Callers sign this deployment's public origin. A loopback request keeps its own URL. */
+export function canonicalRequestUrl(request: Request): string {
   const url = new URL(request.url);
-  if (url.protocol === `${forwarded}:`) return request;
-  url.protocol = `${forwarded}:`;
-  return new Request(url, request);
+  if (isLoopbackHost(url.hostname)) return url.toString();
+  const origin = new URL(getAppPublicUrl());
+  url.protocol = origin.protocol;
+  url.hostname = origin.hostname;
+  url.port = origin.port;
+  return url.toString();
 }
 
 export async function verifyBotRequest(
   request: Request,
   deps: VerifyBotRequestDeps = defaultBotRequestDeps(),
 ): Promise<VerifiedBotRequest | RejectedBotRequest> {
-  const result = await verifyRequest({
-    request: requestAtPublicOrigin(request),
-    verifyMessage: createUniversalAccountVerifier({
-      getCode: deps.getCode,
-      verifySmartAccount: deps.verifySmartAccount,
-    }),
-    nonceStore: deps.nonceStore,
-    policy: {
-      principal: "direct",
-      accountVerification: "universal",
-      replayable: false,
-      contentDigest: "recompute",
-      maxValiditySec: MAX_VALIDITY_SECONDS,
-      maxNonceWindowSec: MAX_VALIDITY_SECONDS,
-      now: deps.now,
-    },
+  const publicKey = header(request, "x-cut-public-key");
+  const signature = header(request, "x-cut-signature");
+  const createdRaw = header(request, "x-cut-created");
+  const expiresRaw = header(request, "x-cut-expires");
+  const nonce = header(request, "x-cut-nonce");
+  const chainRaw = header(request, "x-cut-chain-id");
+  if (!publicKey || !signature || !createdRaw || !expiresRaw || !nonce || !chainRaw) {
+    return reject(401, "Missing request signature");
+  }
+  if (!isDelegatePublicKey(publicKey)) return reject(401, "Invalid public key");
+
+  const created = Number(createdRaw);
+  const expires = Number(expiresRaw);
+  const chainId = Number(chainRaw);
+  if (!Number.isInteger(created) || !Number.isInteger(expires) || !Number.isInteger(chainId)) {
+    return reject(400, "Invalid deadline");
+  }
+  if (!isSupportedChain(chainId)) return reject(400, "Signature chain does not match the request");
+  if (expires <= created) return reject(400, "Invalid deadline");
+  if (expires - created > MAX_VALIDITY_SECONDS) {
+    return reject(400, "Action deadline is too far in the future");
+  }
+  const now = deps.now();
+  if (created > now + SKEW_SECONDS) return reject(401, "Action signature is not yet valid");
+  if (expires < now) return reject(401, "Action signature has expired");
+  if (!/^[A-Za-z0-9._~-]{8,128}$/.test(nonce)) return reject(400, "Invalid action nonce");
+
+  const body = new Uint8Array(await request.arrayBuffer());
+  const payload = cutRequestPayload({
+    method: request.method,
+    url: canonicalRequestUrl(request),
+    body,
+    chainId,
+    created,
+    expires,
+    nonce,
   });
-  if (!result.ok) {
-    return (
-      FAILURES[result.reason] ?? { ok: false, status: 401, error: "Invalid action signature" }
-    );
+  if (!verifyPayload(publicKey, payload, signature)) {
+    return reject(401, "Invalid action signature");
   }
-  if (result.delegated || result.binding !== "request-bound" || result.replay !== "non-replayable") {
-    return { ok: false, status: 401, error: "Invalid action signature" };
-  }
-  if (!isSupportedChain(result.signer.chainId)) {
-    return {
-      ok: false,
-      status: 400,
-      error: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
-    };
-  }
-  return {
-    ok: true,
-    signer: getAddress(result.signer.address),
-    chainId: result.signer.chainId,
-  };
+  const fresh = await deps.consumeNonce(`${publicKey}:${nonce}`, new Date(expires * 1000));
+  if (!fresh) return reject(401, "Action nonce has already been used");
+  return { ok: true, signer: publicKey, chainId };
 }

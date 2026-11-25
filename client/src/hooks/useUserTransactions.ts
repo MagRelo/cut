@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "../contexts/AuthContext";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 
@@ -31,8 +32,11 @@ interface UserTransactionsResponse {
 }
 
 export function useUserTransactions() {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   return useQuery({
-    queryKey: queryKeys.user.transactions(),
+    queryKey: queryKeys.user.transactions(userId ?? "anon"),
+    enabled: userId !== null,
     queryFn: async () => {
       const data = await apiClient.get<UserTransactionsResponse>("/auth/transactions", {
         requiresAuth: true,

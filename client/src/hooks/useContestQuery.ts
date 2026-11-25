@@ -44,7 +44,7 @@ export function useContestQuery(contestAddress: string | undefined) {
   const routeKey = contestAddress ? normalizeContestAddress(contestAddress) : "";
   const location = useLocation();
   const queryClient = useQueryClient();
-  const { loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const placeholderData = useMemo((): Contest | undefined => {
     if (!routeKey) return undefined;
@@ -60,7 +60,7 @@ export function useContestQuery(contestAddress: string | undefined) {
   }, [routeKey, location.state, queryClient]);
 
   return useQuery({
-    queryKey: queryKeys.contests.byLobbyRoute(routeKey),
+    queryKey: queryKeys.contests.byLobbyRoute(routeKey, user?.id ?? "anon"),
     queryFn: async () => {
       if (!routeKey) throw new Error("Contest address is required");
       const [identity, board] = await Promise.all([

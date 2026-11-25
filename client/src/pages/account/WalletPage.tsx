@@ -77,8 +77,7 @@ export function WalletPage() {
           ) : null}
 
           <p className="text-sm leading-relaxed text-gray-700">
-            Your wallet belongs to you and is secured by your email. Play The Cut never holds or
-            has access to your funds.
+            Your wallet belongs to you. Play The Cut does not hold a key that can move the funds in it.
           </p>
 
           <div>

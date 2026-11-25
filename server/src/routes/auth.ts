@@ -1,18 +1,18 @@
 import { Hono } from "hono";
 import type { Prisma } from "@prisma/client";
-import { getAddress, isAddress, isHex, type Address, type Hex } from "viem";
 import { z } from "zod";
-import { registerSchema, userOpSchema, yieldSchema } from "@playthecut/agent/contract";
+import { registerSchema, userOpSchema } from "@playthecut/agent/contract";
 import { prisma } from "../lib/prisma.js";
 import { buildAuthProfile } from "../lib/authProfile.js";
 import { getPrivyClient } from "../lib/privyClient.js";
-import { registerAgentAccount } from "../services/auth/registerAgent.js";
+import { ClaimEmailError, claimLoginEmail } from "../services/auth/claimEmail.js";
+import { AgentRegisterError, registerAgentAccount } from "../services/auth/registerAgent.js";
 import { verifyBotRequest } from "../services/bot/verifyBotRequest.js";
 import {
   authErrorResponse,
   parsePreferredChainId,
+  getOptionalPrivyUserId,
   requireAuth,
-  requirePrivySession,
   requireWalletChain,
   verifyPrivyJwt,
 } from "../middleware/auth.js";
@@ -31,10 +31,8 @@ import {
 import { recordOnchainPaymentSchema } from "../schemas/onchainPayment.js";
 import { listAccountEntries } from "../services/contests/contestSections.js";
 import { recordValueTransfer, ValueTransferError } from "../services/contest/onchainPayment.js";
-import { prepareOwnerUserOp, submitOwnerUserOp } from "../services/bot/ownerUserOp.js";
 import { createBotActionDeps } from "../services/bot/botActionRuntime.js";
 import { executeSend, recordSubmittedSend } from "../services/bot/executeSend.js";
-import { executeYield } from "../services/bot/executeYield.js";
 import type { SerializedUserOp } from "../services/bot/submitSessionKeyUserOp.js";
 
 const authRouter = new Hono();
@@ -43,7 +41,7 @@ const sendDeps = { ...createBotActionDeps(), recordSend: recordSubmittedSend };
 const transferSchema = z.object({
   to: z.string(),
   amount: z.string(),
-  userOpSignature: z.string().refine((value) => isHex(value), "Invalid signature").optional(),
+  authorizationSignature: z.string().min(1).optional(),
   userOp: userOpSchema.optional(),
 });
 
@@ -55,16 +53,15 @@ authRouter.post("/register", async (c) => {
     if (headerChain !== undefined && headerChain !== verified.chainId) {
       return c.json({ error: "Signature chain does not match the request" }, 400);
     }
-    const named = c.req.query("smartWallet")?.trim();
-    if (named && (!isAddress(named) || getAddress(named) !== verified.signer)) {
-      return c.json({ error: "A delegate cannot register an account" }, 403);
-    }
     const parsed = registerSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) {
       return c.json({ error: "Invalid request body", details: parsed.error.issues }, 400);
     }
+    if (parsed.data.publicKey !== verified.signer) {
+      return c.json({ error: "Invalid action signature" }, 401);
+    }
     const account = await registerAgentAccount({
-      signer: verified.signer,
+      publicKey: verified.signer,
       chainId: verified.chainId,
       ...(parsed.data.email ? { email: parsed.data.email } : {}),
       ...(parsed.data.name ? { name: parsed.data.name } : {}),
@@ -74,6 +71,28 @@ authRouter.post("/register", async (c) => {
     });
     return c.json(account, account.created ? 201 : 200);
   } catch (error) {
+    if (error instanceof AgentRegisterError) return c.json({ error: error.message }, error.status);
+    return authErrorResponse(c, error);
+  }
+});
+
+const claimEmailSchema = z.object({
+  email: z.string().trim().email(),
+  code: z.string().trim(),
+});
+
+authRouter.post("/claim-email", async (c) => {
+  try {
+    const parsed = claimEmailSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) {
+      return c.json({ error: "Invalid request body", details: parsed.error.issues }, 400);
+    }
+    const claimed = await claimLoginEmail(parsed.data.email, parsed.data.code);
+    return c.json(claimed);
+  } catch (error) {
+    if (error instanceof ClaimEmailError) {
+      return c.json({ error: error.message, ...(error.code ? { code: error.code } : {}) }, error.status);
+    }
     return authErrorResponse(c, error);
   }
 });
@@ -135,6 +154,13 @@ authRouter.get("/me", requireAuth, async (c) => {
   try {
     const user = c.get("user");
     const chainId = resolveChainId(parsePreferredChainId(c) ?? user.chainId);
+    const privyUserId = getOptionalPrivyUserId(c);
+    if (privyUserId) {
+      await prisma.user.updateMany({
+        where: { id: user.userId, privyUserId },
+        data: { lastLoginAt: new Date() },
+      });
+    }
 
     const profile = await buildAuthProfile(user.userId, chainId, user.address);
     if (!profile) {
@@ -145,114 +171,6 @@ authRouter.get("/me", requireAuth, async (c) => {
   } catch (error) {
     console.error("Error fetching user:", error);
     return c.json({ error: "Failed to fetch user information" }, 500);
-  }
-});
-
-const takeoverSchema = z.object({
-  embeddedAddress: z.string().refine((value) => isAddress(value), "Invalid address"),
-});
-
-const accountCallSchema = z.object({
-  calls: z
-    .array(
-      z.object({
-        to: z.string().refine((value) => isAddress(value), "Invalid address"),
-        data: z.string().refine((value) => isHex(value), "Invalid call data"),
-      }),
-    )
-    .min(1)
-    .max(8),
-  userOpSignature: z.string().refine((value) => isHex(value), "Invalid signature").optional(),
-  userOp: userOpSchema.optional(),
-});
-
-function linkedEmbedded(accounts: { type: string; address?: string; chain_type?: string }[]): string[] {
-  return accounts
-    .filter((account) => account.type === "wallet" && account.chain_type === "ethereum" && account.address)
-    .map((account) => getAddress(account.address as string).toLowerCase());
-}
-
-authRouter.post("/takeover", requireAuth, requirePrivySession, async (c) => {
-  try {
-    const user = c.get("user");
-    const privyUserId = c.get("privyUserId");
-    if (!privyUserId) return c.json({ error: "No token provided" }, 401);
-    const parsed = takeoverSchema.safeParse(await c.req.json().catch(() => null));
-    if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
-    const embedded = getAddress(parsed.data.embeddedAddress).toLowerCase();
-    const privyUser = await getPrivyClient().users()._get(privyUserId);
-    if (!linkedEmbedded(privyUser.linked_accounts).includes(embedded)) {
-      return c.json({ error: "Embedded wallet does not match this login" }, 400);
-    }
-    const wallet = await prisma.userWallet.findFirst({
-      where: { userId: user.userId, chainId: user.chainId, isPrimary: true },
-    });
-    if (!wallet?.ownerAddress) return c.json({ pending: false });
-    const taken = await prisma.userWallet.findFirst({
-      where: { publicKey: embedded, NOT: { userId: user.userId } },
-      select: { id: true },
-    });
-    if (taken) return c.json({ error: "That address already belongs to another account" }, 409);
-    if (getAddress(wallet.ownerAddress) === getAddress(embedded)) {
-      if (wallet.pendingOwnerAddress) {
-        await prisma.userWallet.update({
-          where: { id: wallet.id },
-          data: { pendingOwnerAddress: null },
-        });
-      }
-      return c.json({ pending: false });
-    }
-    await prisma.userWallet.update({
-      where: { id: wallet.id },
-      data: { pendingOwnerAddress: embedded },
-    });
-    return c.json({ pending: true });
-  } catch (error) {
-    return authErrorResponse(c, error);
-  }
-});
-
-authRouter.post("/account-calls", requireAuth, requirePrivySession, async (c) => {
-  try {
-    const user = c.get("user");
-    const privyUserId = c.get("privyUserId");
-    if (!privyUserId) return c.json({ error: "No token provided" }, 401);
-    const parsed = accountCallSchema.safeParse(await c.req.json().catch(() => null));
-    if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
-    const wallet = await prisma.userWallet.findFirst({
-      where: { userId: user.userId, chainId: user.chainId, isPrimary: true },
-    });
-    if (!wallet?.ownerAddress) {
-      return c.json({ error: "This account is not ready" }, 403);
-    }
-    const privyUser = await getPrivyClient().users()._get(privyUserId);
-    if (!linkedEmbedded(privyUser.linked_accounts).includes(wallet.ownerAddress.toLowerCase())) {
-      return c.json({ error: "This login does not own the account wallet" }, 403);
-    }
-    const calls = parsed.data.calls.map((call) => ({
-      to: getAddress(call.to),
-      data: call.data as Hex,
-      value: 0n,
-    }));
-    const op = {
-      chainId: user.chainId,
-      owner: getAddress(wallet.ownerAddress),
-      smartWallet: getAddress(wallet.publicKey),
-      calls,
-      boundAccount: true,
-      ...(parsed.data.userOpSignature ? { userOpSignature: parsed.data.userOpSignature as Hex } : {}),
-      ...(parsed.data.userOp ? { userOp: parsed.data.userOp as SerializedUserOp } : {}),
-    };
-    if (!parsed.data.userOp || !parsed.data.userOpSignature) {
-      const prepared = await prepareOwnerUserOp(op);
-      if (!prepared.ok) return c.json({ error: prepared.error }, 502);
-      return c.json({ userOpHash: prepared.userOpHash, userOp: prepared.userOp });
-    }
-    const submitted = await submitOwnerUserOp(op);
-    if (!submitted.ok) return c.json({ error: submitted.error }, 502);
-    return c.json({ txHash: submitted.txHash });
-  } catch (error) {
-    return authErrorResponse(c, error);
   }
 });
 
@@ -429,7 +347,7 @@ authRouter.post("/transfers", requireAuth, requireWalletChain, async (c) => {
   try {
     const parsed = transferSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
-    let signer: Address | undefined;
+    let signer: string | undefined;
     try {
       signer = c.get("signer");
     } catch {
@@ -444,7 +362,9 @@ authRouter.post("/transfers", requireAuth, requireWalletChain, async (c) => {
         signer,
         to: parsed.data.to,
         amount: parsed.data.amount,
-        ...(parsed.data.userOpSignature ? { userOpSignature: parsed.data.userOpSignature as Hex } : {}),
+        ...(parsed.data.authorizationSignature
+          ? { authorizationSignature: parsed.data.authorizationSignature }
+          : {}),
         ...(parsed.data.userOp ? { userOp: parsed.data.userOp as SerializedUserOp } : {}),
       },
       sendDeps,
@@ -456,51 +376,17 @@ authRouter.post("/transfers", requireAuth, requireWalletChain, async (c) => {
       );
     }
     if (result.preparedUserOp) {
-      return c.json({ preparedUserOp: true, userOpHash: result.userOpHash, userOp: result.userOp });
+      return c.json({
+        preparedUserOp: true,
+        userOpHash: result.userOpHash,
+        userOp: result.userOp,
+        ...(result.authorization ? { authorization: result.authorization } : {}),
+      });
     }
     return c.json({ ok: true, txHash: result.txHash, to: result.to, amount: result.amount });
   } catch (error) {
     console.error("Error sending transfer:", error);
     return c.json({ error: "Failed to send" }, 500);
-  }
-});
-
-authRouter.post("/yield", requireAuth, requireWalletChain, async (c) => {
-  try {
-    const parsed = yieldSchema.safeParse(await c.req.json().catch(() => null));
-    if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
-    let signer: Address | undefined;
-    try {
-      signer = c.get("signer");
-    } catch {
-      signer = undefined;
-    }
-    if (!signer) return c.json({ error: "A signature is required to yield" }, 400);
-    const user = c.get("user");
-    const result = await executeYield({
-      chainId: user.chainId,
-      smartWallet: user.address,
-      signer,
-      ...(parsed.data.enableSignature ? { enableSignature: parsed.data.enableSignature as Hex } : {}),
-      ...(parsed.data.userOpSignature ? { userOpSignature: parsed.data.userOpSignature as Hex } : {}),
-      ...(parsed.data.userOp ? { userOp: parsed.data.userOp as SerializedUserOp } : {}),
-    });
-    if (!result.ok) {
-      const status = result.status as 400 | 401 | 403 | 404 | 409 | 502 | 503;
-      return c.json({ error: result.error }, status);
-    }
-    if ("enableHash" in result) return c.json({ enableHash: result.enableHash });
-    if ("preparedUserOp" in result) {
-      return c.json({
-        preparedUserOp: true,
-        userOpHash: result.userOpHash,
-        userOp: result.userOp,
-      });
-    }
-    return c.json({ ok: true, yielded: true });
-  } catch (error) {
-    console.error("Error yielding account:", error);
-    return c.json({ error: "Failed to yield" }, 500);
   }
 });
 

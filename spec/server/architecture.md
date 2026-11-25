@@ -14,7 +14,7 @@ sequenceDiagram
 
   Client->>Hono: HTTP /api/*
   Hono->>MW: CORS, logging
-  Route->>MW: requireAuth or ERC-8128 verify
+  Route->>MW: requireAuth or P-256 x-cut verify
   Route->>Svc: business logic
   Svc->>Plugin: sport-specific ops
   Svc->>DB: queries
@@ -47,7 +47,7 @@ graph LR
 | Middleware | File | Usage |
 |------------|------|-------|
 | `requireAuth` | `middleware/auth.ts` | Privy JWT verify + DB session (read-only). Browser and delegate settings |
-| ERC-8128 verify | `services/bot/verifyBotRequest.ts` | Signed player routes. `requireAuth` and `optionalAuth` verify the request before the handler reads the body. `POST /api/auth/register` verifies in the handler |
+| P-256 `x-cut-*` verify | `services/bot/verifyBotRequest.ts` | Signed player routes. `requireAuth` and `optionalAuth` verify the request before the handler reads the body. `POST /api/auth/register` verifies in the handler |
 | `requireWalletChain` | `middleware/auth.ts` | Requires `X-Cut-Chain-Id` + primary `UserWallet` for on-chain routes |
 | `verifyPrivyJwt` | `middleware/auth.ts` | JWT only — used by `POST /auth/session` |
 | `requireAdmin` | `middleware/admin.ts` | Staff user types |
@@ -104,7 +104,7 @@ The server does not mount `/api/tournaments` or `/api/lineup`. Data cutover is `
 
 ## Security
 
-- ERC-8128 on player routes. Request-bound, single-use nonce, at most one hour. The signer is a delegate (`smartWallet` query) or the wallet (ERC-1271). Contest reads accept a bearer or a signature. `POST /api/auth/yield` requires a signature.
+- P-256 `x-cut-*` signatures on player routes. The signed URL is `APP_PUBLIC_URL` (default `https://playthecut.com`). A loopback request keeps its own host. Request-bound, single-use nonce, at most one hour. The signer is an active delegate public key (`smartWallet` query). Contest reads accept a bearer or a signature. Paid actions return a Privy `authorization` and the second call sends `authorizationSignature`.
 - Privy bearer on the browser session, wallet sync, delegate install and revoke, and admin.
 - League contests hidden from non-members (404)
 - Admin routes require staff `userType` (`ADMIN`, `SUPER_ADMIN`). `AGENT` is not staff.

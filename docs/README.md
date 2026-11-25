@@ -9,6 +9,8 @@ Production is **Base** (`8453`) with **canonical USDC**. Players add and withdra
 | Doc | Purpose |
 |-----|---------|
 | [architecture.md](platform/architecture.md) | Multi-sport platform design intent |
+| [v2-dream-client.md](platform/v2-dream-client.md) | Greenfield web client — Privy shell, one module per noun |
+| [client-architecture-plan.md](platform/client-architecture-plan.md) | Incremental map of the current `client/` tree |
 | [consensus-axis.md](platform/consensus-axis.md) | Popularity scoring — contest pick rates modulate per-pick scores |
 | [lineup-tie-breaker.md](platform/lineup-tie-breaker.md) | Tie-break prediction spec |
 | [referral-network.md](platform/referral-network.md) | On-chain referral policy |

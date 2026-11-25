@@ -25,6 +25,15 @@ const entryPoint = {
   version: "0.7" as const,
 };
 
+export function hashSerializedUserOp(chainId: number, userOp: SerializedUserOp): Hex {
+  return getUserOperationHash({
+    chainId,
+    entryPointAddress: entryPoint.address,
+    entryPointVersion: "0.7",
+    userOperation: { ...parseUserOp(userOp), signature: "0x" },
+  });
+}
+
 export type OwnerUserOpInput = {
   chainId: number;
   owner: Address;
@@ -185,17 +194,15 @@ export async function prepareOwnerUserOp(
   }
 }
 
-/** Submit the user operation the account key already signed. */
-export async function submitOwnerUserOp(
+/** Reject a user operation whose sender or calls are outside the sponsorship allowlist. */
+export async function userOpMatchesAccountCalls(
   input: OwnerUserOpInput,
-): Promise<{ ok: true; txHash: Hex } | { ok: false; error: string }> {
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const gated = await gateOwnerCalls(input);
   if (!gated.ok) return gated;
-  if (!input.userOp || !input.userOpSignature) {
-    return { ok: false, error: "Missing account key signature" };
-  }
+  if (!input.userOp) return { ok: false, error: "Missing account key signature" };
   try {
-    const owner = await ownerClient(input, input.userOpSignature);
+    const owner = await ownerClient(input, DUMMY_USER_OP_SIGNATURE);
     if ("ok" in owner) return owner;
     const callData = await owner.account.encodeCalls(callDataFor(input.calls));
     const userOp = parseUserOp(input.userOp);
@@ -205,6 +212,25 @@ export async function submitOwnerUserOp(
     if (userOp.callData !== callData) {
       return { ok: false, error: "User operation does not match this contest" };
     }
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: clientSafeErrorMessage(error, "User operation failed") };
+  }
+}
+
+/** Submit the user operation the account key already signed. */
+export async function submitOwnerUserOp(
+  input: OwnerUserOpInput,
+): Promise<{ ok: true; txHash: Hex } | { ok: false; error: string }> {
+  const matched = await userOpMatchesAccountCalls(input);
+  if (!matched.ok) return matched;
+  if (!input.userOp || !input.userOpSignature) {
+    return { ok: false, error: "Missing account key signature" };
+  }
+  try {
+    const owner = await ownerClient(input, input.userOpSignature);
+    if ("ok" in owner) return owner;
+    const userOp = parseUserOp(input.userOp);
     const signature = await owner.account.signUserOperation({
       ...userOp,
       chainId: input.chainId,

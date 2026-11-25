@@ -53,7 +53,7 @@ Use this order for a full architecture walkthrough:
 | 3 | [Server architecture](server/architecture.md) | Hono app, registries, request flow |
 | 4 | [Data models](server/data-models.md) | Prisma schema (platform) |
 | 5 | [API reference](server/api.md) | Live HTTP routes |
-| 5b | [Agent protocol](agent/agents.md) | ERC-8128 signing and `@playthecut/agent` |
+| 5b | [Agent protocol](agent/agents.md) | P-256 `x-cut-*` signing and `@playthecut/agent` |
 | 6 | [Services](server/services.md) | Business logic layout |
 | 7 | [Cron pipeline](server/cron.md) | 5-minute multi-sport job |
 | 8 | [Client architecture](client/architecture.md) | Providers, routing, sport context |

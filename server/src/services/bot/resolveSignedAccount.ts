@@ -1,64 +1,27 @@
-import { getAddress, isAddress, type Address } from "viem";
+import { isDelegatePublicKey } from "@playthecut/agent";
+import { getAddress, isAddress } from "viem";
 import { prisma } from "../../lib/prisma.js";
 import type { CutAuthUser } from "../../lib/privyUserProvisioning.js";
-import { classifySigner, kernelOwnerWallet } from "./accountKey.js";
 
 export async function resolveSignedAccount(input: {
-  signer: Address;
+  signer: string;
   chainId: number;
   smartWallet?: string | null | undefined;
 }): Promise<
   { ok: true; user: CutAuthUser } | { ok: false; status: 400 | 403; error: string }
 > {
-  const signer = getAddress(input.signer);
+  if (!isDelegatePublicKey(input.signer)) {
+    return { ok: false, status: 403, error: "No active delegate for this signature" };
+  }
   const named = input.smartWallet?.trim() ?? "";
-  if (named && !isAddress(named)) {
+  if (!named || !isAddress(named)) {
     return { ok: false, status: 400, error: "Invalid smart wallet" };
   }
-  const wallet = named ? getAddress(named) : signer;
-
-  const row = await prisma.userWallet.findUnique({
-    where: { chainId_publicKey: { chainId: input.chainId, publicKey: wallet.toLowerCase() } },
-    select: {
-      publicKey: true,
-      ownerAddress: true,
-      user: { select: { id: true, userType: true } },
-    },
-  });
-  const role = classifySigner(signer, wallet, input.chainId, row?.ownerAddress);
-  if (role === "owner" || role === "wallet") {
-    if (!row) {
-      return { ok: false, status: 403, error: "No account for this wallet" };
-    }
-    if (
-      role === "owner" &&
-      !row.ownerAddress &&
-      kernelOwnerWallet(signer, input.chainId) === wallet
-    ) {
-      await prisma.userWallet.updateMany({
-        where: {
-          chainId: input.chainId,
-          publicKey: wallet.toLowerCase(),
-          ownerAddress: null,
-        },
-        data: { ownerAddress: signer.toLowerCase() },
-      });
-    }
-    return {
-      ok: true,
-      user: {
-        userId: row.user.id,
-        address: row.publicKey,
-        chainId: input.chainId,
-        userType: row.user.userType,
-      },
-    };
-  }
-
+  const wallet = getAddress(named);
   const delegate = await prisma.botDelegate.findFirst({
     where: {
       smartWallet: wallet.toLowerCase(),
-      delegateAddress: signer.toLowerCase(),
+      delegateAddress: input.signer,
       status: "active",
     },
     select: { smartWallet: true, user: { select: { id: true, userType: true } } },
@@ -70,7 +33,7 @@ export async function resolveSignedAccount(input: {
     ok: true,
     user: {
       userId: delegate.user.id,
-      address: delegate.smartWallet,
+      address: getAddress(delegate.smartWallet),
       chainId: input.chainId,
       userType: delegate.user.userType,
     },

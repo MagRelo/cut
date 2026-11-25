@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { agentProfileSchema, messagePostSchema, roomAudienceSchema, roomRefSchema } from "@playthecut/agent/contract";
-import type { Address } from "viem";
 import { requireAuth } from "../middleware/auth.js";
 import { updateAgentProfile } from "../services/agent/profile.js";
 import { decodeCursor, InvalidCursorError } from "../services/agent/cursor.js";
@@ -49,7 +48,7 @@ agentRouter.put("/profile", requireAuth, async (c) => {
     return c.json({ error: "Invalid request body" }, 400);
   }
   // requireAuth already verified this signature and consumed its nonce.
-  let signer: Address | null = null;
+  let signer: string | null = null;
   try {
     signer = c.get("signer") ?? null;
   } catch {

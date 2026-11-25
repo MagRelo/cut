@@ -19,7 +19,6 @@ import {
 
 import { Home } from "./pages/Home";
 import { ConnectPage } from "./pages/ConnectPage";
-import { TakeoverPage } from "./pages/TakeoverPage";
 import { SettingsPage } from "./pages/account/SettingsPage";
 import { ActivityPage } from "./pages/account/ActivityPage";
 import { ReferralsPage } from "./pages/account/ReferralsPage";
@@ -40,7 +39,6 @@ import { AppLayout } from "./components/layout/AppLayout";
 
 import { ProtectedRoute } from "./components/common/ProtectedRoute";
 import { OnboardingRedirectGate } from "./components/common/OnboardingRedirectGate";
-import { TakeoverRedirectGate } from "./components/common/TakeoverRedirectGate";
 import { GlobalLoadingOverlay } from "./components/common/GlobalLoadingOverlay";
 import CreateContestPage from "./pages/ContestCreatePage";
 import { TermsOfService } from "./pages/TermsOfService";
@@ -90,7 +88,6 @@ const AppShell: React.FC = () => {
       <AppLayout>
         {/* TODO: Remove this when we're ready to go live */}
         {/* <MaintenanceOverlay /> */}
-        <TakeoverRedirectGate>
         <OnboardingRedirectGate>
           <Routes>
             <Route path="/" element={<Navigate to="/contests" replace />} />
@@ -117,14 +114,6 @@ const AppShell: React.FC = () => {
               }
             />
             <Route path="/connect" element={<ConnectPage />} />
-            <Route
-              path="/takeover"
-              element={
-                <ProtectedRoute>
-                  <TakeoverPage />
-                </ProtectedRoute>
-              }
-            />
             <Route path="/contracts" element={<ContractsPage />} />
             <Route
               path="/account"
@@ -280,7 +269,6 @@ const AppShell: React.FC = () => {
             )}
           </Routes>
         </OnboardingRedirectGate>
-        </TakeoverRedirectGate>
       </AppLayout>
       <GlobalLoadingOverlay isBlocking={isBlockingLoad} />
     </>

@@ -1,217 +1,191 @@
-import { BoundedMemoryNonceStore, signRequest, type EthHttpSigner } from "@slicekit/erc8128";
-import { createCutAgent } from "@playthecut/agent";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { describe, expect, it, vi } from "vitest";
-import { verifyBotRequest, type VerifyBotRequestDeps } from "./verifyBotRequest.js";
+import { createCutAgent, generateDelegateKey, signPayload } from "@playthecut/agent";
+import { afterEach, describe, expect, it } from "vitest";
+import { canonicalRequestUrl, verifyBotRequest, type VerifyBotRequestDeps } from "./verifyBotRequest.js";
 
-const key = generatePrivateKey();
-const account = privateKeyToAccount(key);
-const WALLET = "0x1111111111111111111111111111111111111111" as const;
-
-function signer(chainId = 8453): EthHttpSigner {
-  return {
-    chainId,
-    address: account.address,
-    signMessage: (message) => account.signMessage({ message: { raw: message } }),
-  };
-}
+const key = generateDelegateKey();
 
 function deps(partial: Partial<VerifyBotRequestDeps> = {}): VerifyBotRequestDeps {
+  const used = new Set<string>();
   return {
-    getCode: async () => "0x",
-    verifySmartAccount: vi.fn(async () => false),
-    nonceStore: new BoundedMemoryNonceStore(),
-    now: () => 1_700_000_000,
+    now: () => Math.floor(Date.now() / 1000),
+    consumeNonce: async (nonceKey) => {
+      if (used.has(nonceKey)) return false;
+      used.add(nonceKey);
+      return true;
+    },
     ...partial,
   };
 }
 
 describe("verifyBotRequest", () => {
-  it("accepts a request-bound signature", async () => {
-    const request = await signRequest(
-      "https://playthecut.com/api/bot/contests?chainId=8453&smartWallet=" + WALLET,
-      signer(),
-      { created: 1_700_000_000, expires: 1_700_000_060 },
-    );
-    const result = await verifyBotRequest(request, deps());
-    expect(result).toMatchObject({ ok: true, chainId: 8453, signer: account.address });
+  const previousPublicUrl = process.env.APP_PUBLIC_URL;
+  const previousAlias = process.env.PUBLIC_APP_URL;
+
+  afterEach(() => {
+    if (previousPublicUrl === undefined) delete process.env.APP_PUBLIC_URL;
+    else process.env.APP_PUBLIC_URL = previousPublicUrl;
+    if (previousAlias === undefined) delete process.env.PUBLIC_APP_URL;
+    else process.env.PUBLIC_APP_URL = previousAlias;
   });
 
-  it("accepts a signature from @playthecut/agent", async () => {
+  it("accepts a request from the agent SDK", async () => {
+    process.env.APP_PUBLIC_URL = "https://playthecut.com";
     let captured: Request | undefined;
     const agent = createCutAgent({
-      privateKey: key,
-      smartWallet: WALLET,
+      privateKey: key.privateKey,
+      smartWallet: "0x1111111111111111111111111111111111111111",
       origin: "https://playthecut.com",
       fetch: async (request) => {
         captured = request.clone();
         return new Response(JSON.stringify({ contests: [] }), {
-          status: 200,
           headers: { "content-type": "application/json" },
         });
       },
     });
     await agent.contests();
-    expect(captured!.headers.get("signature-input")).toContain(
-      `keyid="eip155:8453:${account.address.toLowerCase()}"`,
-    );
-    const now = Math.floor(Date.now() / 1000);
-    const result = await verifyBotRequest(captured!, deps({ now: () => now }));
-    expect(result).toMatchObject({ ok: true, chainId: 8453, signer: account.address });
-  });
-
-  it("rejects an eip8128 keyid", async () => {
-    const signed = await signRequest(
-      "https://playthecut.com/api/bot/contests?chainId=8453&smartWallet=" + WALLET,
-      signer(),
-      { created: 1_700_000_000, expires: 1_700_000_060 },
-    );
-    const headers = new Headers(signed.headers);
-    headers.set(
-      "signature-input",
-      headers.get("signature-input")!.replaceAll("eip155:", "eip8128:"),
-    );
-    const result = await verifyBotRequest(new Request(signed, { headers }), deps());
-    expect(result).toMatchObject({ ok: false, status: 401, error: "Invalid action signature" });
-  });
-
-  it("accepts an https signature that nginx forwarded as http", async () => {
-    const signed = await signRequest(
-      "https://playthecut.com/api/bot/contests?chainId=8453&smartWallet=" + WALLET,
-      signer(),
-      { created: 1_700_000_000, expires: 1_700_000_060 },
-    );
-    const headers = new Headers(signed.headers);
-    headers.set("x-forwarded-proto", "https");
-    const proxied = new Request(signed.url.replace(/^https:/, "http:"), {
-      method: signed.method,
-      headers,
-    });
-    const result = await verifyBotRequest(proxied, deps());
-    expect(result).toMatchObject({ ok: true, chainId: 8453, signer: account.address });
-  });
-
-  it("rejects that http url when the forwarded scheme is missing", async () => {
-    const signed = await signRequest(
-      "https://playthecut.com/api/bot/contests?chainId=8453&smartWallet=" + WALLET,
-      signer(),
-      { created: 1_700_000_000, expires: 1_700_000_060 },
-    );
-    const proxied = new Request(signed.url.replace(/^https:/, "http:"), {
-      method: signed.method,
-      headers: signed.headers,
-    });
-    const result = await verifyBotRequest(proxied, deps());
-    expect(result).toMatchObject({ ok: false, status: 401, error: "Invalid action signature" });
-  });
-
-  it("accepts a proxied post whose body is still covered", async () => {
-    const body = JSON.stringify({ action: "lineupUpsert", candidates: ["ep-1"] });
-    const signed = await signRequest(
-      "https://playthecut.com/api/auth/yield",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body,
-      },
-      signer(),
-      { created: 1_700_000_000, expires: 1_700_000_060 },
-    );
-    const headers = new Headers(signed.headers);
-    headers.set("x-forwarded-proto", "https");
-    const proxied = new Request(signed.url.replace(/^https:/, "http:"), {
-      method: "POST",
-      headers,
-      body: await signed.arrayBuffer(),
-    });
-    const result = await verifyBotRequest(proxied, deps());
-    expect(result).toMatchObject({ ok: true, signer: account.address });
-  });
-
-  it("rejects an expired signature", async () => {
-    const request = await signRequest(
-      "https://playthecut.com/api/bot/contests?chainId=8453",
-      signer(),
-      {
-        created: 1_700_000_000 - 120,
-        expires: 1_700_000_000 - 60,
-      },
-    );
-    const result = await verifyBotRequest(request, deps());
-    expect(result).toMatchObject({ ok: false, status: 401, error: "Action signature has expired" });
+    const result = await verifyBotRequest(captured!, deps());
+    expect(result).toMatchObject({ ok: true, signer: key.publicKey, chainId: 8453 });
   });
 
   it("rejects a reused nonce", async () => {
-    const used = deps();
-    const request = await signRequest(
-      "https://playthecut.com/api/bot/contests?chainId=8453",
-      signer(),
-      {
-        created: 1_700_000_000,
-        expires: 1_700_000_060,
+    let captured: Request | undefined;
+    const agent = createCutAgent({
+      privateKey: key.privateKey,
+      smartWallet: "0x1111111111111111111111111111111111111111",
+      origin: "https://playthecut.com",
+      fetch: async (request) => {
+        captured = request.clone();
+        return new Response(JSON.stringify({ contests: [] }), {
+          headers: { "content-type": "application/json" },
+        });
       },
-    );
-    expect((await verifyBotRequest(request.clone(), used)).ok).toBe(true);
-    const again = await verifyBotRequest(request, used);
-    expect(again).toMatchObject({ ok: false, error: "Action nonce has already been used" });
-  });
-
-  it("rejects a tampered body", async () => {
-    const signed = await signRequest(
-      "https://playthecut.com/api/auth/yield",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "lineupUpsert", candidates: ["ep-1"] }),
-      },
-      signer(),
-      { created: 1_700_000_000, expires: 1_700_000_060 },
-    );
-    const tampered = new Request(signed.url, {
-      method: signed.method,
-      headers: signed.headers,
-      body: JSON.stringify({ action: "lineupUpsert", candidates: ["ep-2"] }),
     });
-    const result = await verifyBotRequest(tampered, deps());
-    expect(result).toMatchObject({ ok: false, error: "Request body does not match the signature" });
-  });
-
-  it("rejects a signature for an unsupported chain", async () => {
-    const request = await signRequest(
-      "https://playthecut.com/api/bot/contests?chainId=1",
-      signer(1),
-      {
-        created: 1_700_000_000,
-        expires: 1_700_000_060,
-      },
-    );
-    const result = await verifyBotRequest(request, deps());
-    expect(result).toMatchObject({
+    await agent.contests();
+    const store = deps();
+    await expect(verifyBotRequest(captured!.clone(), store)).resolves.toMatchObject({ ok: true });
+    await expect(verifyBotRequest(captured!.clone(), store)).resolves.toMatchObject({
       ok: false,
-      status: 400,
-      error: "ChainId must be 8453 (Base) or 84532 (Base Sepolia)",
+      error: "Action nonce has already been used",
     });
   });
 
-  it("accepts an ERC-1271 smart wallet signature", async () => {
-    const verifySmartAccount = vi.fn(async () => true as const);
-    const request = await signRequest(
-      "https://playthecut.com/api/bot/contests?chainId=8453",
-      {
-        chainId: 8453,
-        address: WALLET,
-        signMessage: (message) => account.signMessage({ message: { raw: message } }),
+  it("rejects an expired signature", async () => {
+    const created = 1_700_000_000;
+    const payload = {
+      version: 1 as const,
+      method: "GET",
+      url: "https://playthecut.com/api/contests?chainId=8453",
+      body: "",
+      chainId: 8453,
+      created,
+      expires: created + 60,
+      nonce: "nonce-expired-1",
+    };
+    const request = new Request(payload.url, {
+      headers: {
+        "x-cut-public-key": key.publicKey,
+        "x-cut-signature": signPayload(key.privateKey, {
+          ...payload,
+          body: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        }),
+        "x-cut-created": String(created),
+        "x-cut-expires": String(created + 60),
+        "x-cut-nonce": payload.nonce,
+        "x-cut-chain-id": "8453",
       },
-      { created: 1_700_000_000, expires: 1_700_000_060 },
-    );
-    const result = await verifyBotRequest(
-      request,
-      deps({
-        getCode: async () => "0x6001600055",
-        verifySmartAccount,
-      }),
-    );
-    expect(result).toMatchObject({ ok: true, signer: WALLET });
-    expect(verifySmartAccount).toHaveBeenCalledOnce();
+    });
+    const result = await verifyBotRequest(request, deps({ now: () => created + 120 }));
+    expect(result).toMatchObject({ ok: false, error: "Action signature has expired" });
+  });
+
+  it("pins a proxied request to the configured origin and ignores a forged host", async () => {
+    process.env.APP_PUBLIC_URL = "https://playthecut.com";
+    const created = Math.floor(Date.now() / 1000);
+    const publicUrl = "https://playthecut.com/api/contests?chainId=8453";
+    const payload = {
+      version: 1 as const,
+      method: "GET",
+      url: publicUrl,
+      body: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      chainId: 8453,
+      created,
+      expires: created + 60,
+      nonce: "nonce-proxy-https",
+    };
+    const headers = {
+      "x-forwarded-proto": "https",
+      "x-forwarded-host": "evil.example",
+      "x-cut-public-key": key.publicKey,
+      "x-cut-signature": signPayload(key.privateKey, payload),
+      "x-cut-created": String(created),
+      "x-cut-expires": String(created + 60),
+      "x-cut-nonce": payload.nonce,
+      "x-cut-chain-id": "8453",
+    };
+    const request = new Request("http://10.0.0.8:3000/api/contests?chainId=8453", { headers });
+    expect(canonicalRequestUrl(request)).toBe(publicUrl);
+    await expect(verifyBotRequest(request, deps())).resolves.toMatchObject({ ok: true });
+
+    const forged = {
+      ...payload,
+      url: "https://evil.example/api/contests?chainId=8453",
+      nonce: "nonce-forged-host",
+    };
+    const mismatch = new Request("http://10.0.0.8:3000/api/contests?chainId=8453", {
+      headers: {
+        ...headers,
+        "x-cut-signature": signPayload(key.privateKey, forged),
+        "x-cut-nonce": forged.nonce,
+      },
+    });
+    expect(canonicalRequestUrl(mismatch)).toBe(publicUrl);
+    await expect(verifyBotRequest(mismatch, deps())).resolves.toMatchObject({
+      ok: false,
+      error: "Invalid action signature",
+    });
+  });
+
+  it("keeps a loopback URL and rejects a key that is not a P-256 public key", async () => {
+    const created = Math.floor(Date.now() / 1000);
+    const localUrl = "http://localhost:3000/api/contests?chainId=8453";
+    const payload = {
+      version: 1 as const,
+      method: "GET",
+      url: localUrl,
+      body: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      chainId: 8453,
+      created,
+      expires: created + 60,
+      nonce: "nonce-loopback-1",
+    };
+    const request = new Request(localUrl, {
+      headers: {
+        "x-forwarded-proto": "https",
+        "x-forwarded-host": "evil.example",
+        "x-cut-public-key": key.publicKey,
+        "x-cut-signature": signPayload(key.privateKey, payload),
+        "x-cut-created": String(created),
+        "x-cut-expires": String(created + 60),
+        "x-cut-nonce": payload.nonce,
+        "x-cut-chain-id": "8453",
+      },
+    });
+    expect(canonicalRequestUrl(request)).toBe(localUrl);
+    await expect(verifyBotRequest(request, deps())).resolves.toMatchObject({ ok: true });
+
+    const badKey = new Request(localUrl, {
+      headers: {
+        "x-cut-public-key": "0x1111111111111111111111111111111111111111",
+        "x-cut-signature": "sig",
+        "x-cut-created": String(created),
+        "x-cut-expires": String(created + 60),
+        "x-cut-nonce": "nonce-bad-key1",
+        "x-cut-chain-id": "8453",
+      },
+    });
+    await expect(verifyBotRequest(badKey, deps())).resolves.toMatchObject({
+      ok: false,
+      error: "Invalid public key",
+    });
   });
 });

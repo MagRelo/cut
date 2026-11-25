@@ -1,6 +1,6 @@
 {
   "name": "@playthecut/agent",
-  "version": "0.3.20",
+  "version": "0.4.0",
   "description": "Agent toolkit for Play the Cut (playthecut.com)",
   "homepage": "https://playthecut.com",
   "repository": {
@@ -13,6 +13,9 @@
     "agent"
   ],
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -39,11 +42,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@slicekit/erc8128": "0.4.1",
+    "canonicalize": "^2.1.0",
     "viem": "^2.47.4",
     "zod": "^4.6.6"
   },
   "devDependencies": {
+    "@types/node": "^20.19.43",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   }

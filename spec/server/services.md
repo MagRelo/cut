@@ -68,12 +68,12 @@ Orchestrated by `cron/scheduler.ts`.
 
 | Service | Purpose |
 |---------|---------|
-| `bot/verifyBotRequest.ts` | ERC-8128 verify: EOA recovery or ERC-1271, nonce consume, one-hour window |
-| `bot/botNonceStore.ts` | Postgres `BotRequestNonce` via `createUniqueInsertNonceStore` |
+| `bot/verifyBotRequest.ts` | P-256 `x-cut-*` verify against `APP_PUBLIC_URL`, nonce consume, one-hour window |
 | `bot/listBotContests.ts` | Contests visible to the signer, with each event's candidate pool |
 | `bot/executeBotAction.ts` | `lineupUpsert`, `join`, `leave`. A delegate join or leave returns a prepared user operation, then submits the signed one |
-| `bot/sessionKeyEnabled.ts` | Chain `permissionConfig` is the source of truth for an installed key |
-| `bot/submitSessionKeyUserOp.ts` | Prepares a user operation for a delegate and submits the one the caller signed |
+| `bot/quorumUserOp.ts` | Privy quorum authorization for that user operation |
+| `bot/ownerUserOp.ts` | Builds the user operation and checks its call data |
+| `bot/submitSessionKeyUserOp.ts` | Serializes a user operation |
 
 Reference signer: `scripts/signBotRequest.ts`.
 

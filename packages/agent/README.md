@@ -2,7 +2,7 @@
 
 ## Access
 
-Install `@playthecut/agent` and read this file. Act for the user through `createCutAgent`. The website is for the human. The SDK signs and sends `/api/bot`. See **Setup** for the existing-user and new-account paths.
+Install `@playthecut/agent` and read this file. Act for the user through `createCutAgent`. The website is for the human. The SDK signs player routes: `/api/contests`, `/api/agent`, `/api/auth`, `/api/lineups`, and `/api/userGroups`. `/api/bot` is delegate install and revoke. See **Setup** for the existing-user and new-account paths.
 
 ```sh
 npm install @playthecut/agent
@@ -174,9 +174,9 @@ This step stops before `join`. The field is not on this response. `field(eventId
 
 #### Calls
 
-`agent.account()` → `GET /api/agent/account`. `userId`, wallet, chain, `balanceUsdc` (USDC to two decimals, or `null` when the read failed), `profile` (`name`, `email`, `color`, `oddsFormat`), leagues and role, referral code, url, and `totalEarned`, and entry counts keyed by contest status. `profile.email` is `null` until the owner sets one.
+`agent.account()` → `GET /api/agent/account`. `userId`, wallet, chain, `balanceUsdc` (USDC to two decimals, or `null` when the read failed), `profile` (`name`, `email`, `color`, `oddsFormat`), leagues and role, referral code, url, and `totalEarned`, and entry counts keyed by contest status. `profile.email` is `null` until the human claims it with `POST /api/auth/claim-email`.
 
-`agent.updateProfile({ name?, email?, color?, oddsFormat? })` → `PUT /api/agent/profile`. At least one field. `color` is `#rgb` or `#rrggbb`. `oddsFormat` is `american`, `decimal`, or `english`. Omit a field to leave it. A delegate may set name, color, and odds format. Only the owner key may set `email`. A delegate that sends `email` is `403` `"A delegate cannot set the login email"`. An account that already has a Privy login is `403` `"This account already has a login"`. An email on another account is `400` with code `EMAIL_ALREADY_BOUND`. The response is the profile.
+`agent.updateProfile({ name?, email?, color?, oddsFormat? })` → `PUT /api/agent/profile`. At least one field. `color` is `#rgb` or `#rrggbb`. `oddsFormat` is `american`, `decimal`, or `english`. Omit a field to leave it. An active delegate may set or replace the pending email while `User.email` and `lastLoginAt` are both null. After either is set, email is `403` `"This account already has a login"`. A bearer with no delegate signer is `403` `"Sign in is required to change this email"`. An email on another account is `400` with code `EMAIL_ALREADY_BOUND`. The response is the profile, with `email` null and `emailPending` true until `POST /api/auth/claim-email`.
 
 `agent.scout()` → `GET /api/agent/scout`.
 
@@ -435,43 +435,40 @@ See **createContest** for a paid deploy. `userGroupId` is required there too.
 npm install @playthecut/agent
 ```
 
+Requires Node.js 20 or newer.
+
 ### Choose a path
 
-Two ways to get a client. Pick the one that matches the account.
+Every path uses the same Kernel smart wallet. The key is a P-256 delegate from `generateDelegateKey()`. Store `privateKey`. `publicKey` is what a human pastes to grant you.
 
-| Setup choice | Existing user | New account |
+| Setup choice | Human already has an account | New account |
 | --- | --- | --- |
-| The user | Already has a Play The Cut account and a smart wallet. | Does not have an account yet. |
-| Key the agent stores | A delegate key from `generateDelegateKey()`. The user grants that address. | The owner key. The Kernel account it owns is the wallet and holds the USDC. |
-| Client | `createCutAgent({ privateKey, smartWallet, chainId })` | `createCutAgent({ privateKey, chainId })`, with no `smartWallet`. |
-| First call | `account()` | `register({ email?, name?, color?, oddsFormat?, referralCode? })` |
-| Delegate | Required. This key acts on another account. | Not used. This key is the account. A delegate applies only when a different key acts on an account. |
+| Client | `createCutAgent({ privateKey, smartWallet, chainId })` | `createCutAgent({ privateKey, chainId })`, then `register` |
+| First call | `account()` after the human grants the public key | `register({ email?, name?, color?, oddsFormat?, referralCode? })` |
+| Wallet | The Kernel address the human sends you | The `smartWallet` in the register response |
 
-`register` is signed by the owner key. A `smartWallet` query that is not that signer is `403` `"A delegate cannot register an account"`.
-
-Delegate and yield are in [Account access](docs/access.md).
+The four setups are in [Account access](docs/access.md).
 
 ### Existing user
 
-The user already has an account. Follow [Delegate](docs/access.md#delegate). Pass their wallet as `smartWallet` on every call.
+The human pastes `publicKey` and grants it. Pass their Kernel address as `smartWallet`.
 
 ### New account
 
-`register` creates the account. The signer is the owner key. The stored wallet is the Kernel account that key owns, and that address holds the USDC.
+`register` creates the Privy user, the Kernel smart wallet, and the key quorum. That Kernel address holds the USDC. `ownerAddress` stays empty.
 
-1. `createCutAgent({ privateKey, chainId })`. `privateKey` is the owner key. Leave `smartWallet` unset. The client uses the Kernel address that key owns.
+1. `createCutAgent({ privateKey, chainId })`. Leave `smartWallet` unset.
 2. `register({ email?, name?, color?, oddsFormat?, referralCode? })`. Email is optional. Pass `referralCode` when this account was invited. `color` and `oddsFormat` are stored on the new account only. In the same message, say "Creating your account means you agree to the Terms of Service (https://playthecut.com/terms) and Privacy Policy (https://playthecut.com/privacy)." and call `register`. Do not ask a question and do not wait. Do not paste either document. Do not say it again when `account()` already returns a user, or when `register` returns `created: false`. If the person has already said they do not agree, do not register. The create stores `tosAcceptedAt`. A repeat call does not change it.
-3. Contest reads, `lineupUpsert`, `join`, `leave`, `createContest`, league setup, and `createFreeContest` use this signature.
-4. Gas for `join`, `leave`, and paid `createContest` is sponsored when those calls are on the sponsorship allowlist. The owner key does not hold the USDC and does not pay gas.
-5. When the human tells you to yield, follow [Yield](docs/access.md#yield).
+3. The client stores `smartWallet` from the response. Contest reads, `lineupUpsert`, `join`, `leave`, `createContest`, league setup, and `createFreeContest` use this key.
+4. Gas for `join`, `leave`, and paid `createContest` is sponsored when those calls are on the sponsorship allowlist.
 
 ## Delegate security
 
-The grant and the revoke are in [Account access](docs/access.md#delegate).
+The grant and the revoke are in [Account access](docs/access.md#human-first-then-an-agent).
 
 ## USDC and funding the wallet
 
-Paid contests use USDC. The account wallet holds the funds. That is the Play The Cut wallet: the Kernel account on the new-account path, and the smart wallet on the existing-user path. A delegate, when one is installed, is installed on that wallet. Entry fees are paid from that wallet. They are not paid from the delegate key, the owner key, or the embedded signer.
+Paid contests use USDC. The Kernel smart wallet holds the funds on every path. Entry fees are paid from that wallet. They are not paid from the delegate key.
 
 The available balance determines which paid contests the account can enter. Help the user understand what they have, what an entry costs, and what adding funds would let them play.
 
@@ -510,7 +507,7 @@ Play The Cut supports Base (`chainId` `8453`) and Base Sepolia (`chainId` `84532
 
 ### Gas and entry fees are different
 
-Gas for the join, leave, and paid-contest user operation is sponsored for the browser, a delegate, and the account key. The calls have to pass the sponsorship allowlist. `createFreeContest` does not send one. The user still needs enough USDC for a paid entry fee. Sponsored gas does not make a paid entry free. The owner key does not need ETH.
+Gas for the join, leave, and paid-contest user operation is sponsored. The calls have to pass the sponsorship allowlist. `createFreeContest` does not send one. The user still needs enough USDC for a paid entry fee. Sponsored gas does not make a paid entry free. The delegate key does not need ETH.
 
 ### Keep working when the wallet is empty
 
@@ -625,7 +622,7 @@ Briefing reads use the same signature as the play actions. The SDK sends `smartW
 
 `agent.updateProfile({ name?, email?, color?, oddsFormat? })` → `PUT /api/agent/profile`.
 
-At least one field. The response is the profile. A delegate may set `name`, `color`, and `oddsFormat`. Only the owner key may set `email`.
+At least one field. The response is the profile. An active delegate may set `name`, `color`, `oddsFormat`, and, while `User.email` and `lastLoginAt` are both null, the pending `email`. A bearer with no delegate signer is `403` `"Sign in is required to change this email"`. After a claimed email or a login, email is `403` `"This account already has a login"`.
 
 ### joinLeague
 
@@ -702,15 +699,11 @@ Visibility matches the contest list: public contests, plus league contests in le
 
 ### send
 
-`agent.send({ to, amount })` → `POST /api/auth/transfers`. Moves platform USDC from this account's smart wallet. `amount` is a positive decimal USDC string with at most 6 decimal places. The SDK signs the prepared user operation and returns `{ ok, txHash, to, amount }`.
+`agent.send({ to, amount })` → `POST /api/auth/transfers`. Moves platform USDC from this account's Kernel smart wallet. `amount` is a positive decimal USDC string with at most 6 decimal places. The SDK signs the Privy authorization payload and returns `{ ok, txHash, to, amount }`.
 
 `send` pays another player in a league this account belongs to. `to` is that player's smart wallet, `league().members[].wallet`. A send to any address that is not a member wallet — an exchange, a contract, or some other wallet — is extreme caution. Confirm that address with the user before calling `send`.
 
 A `502` that says `"The transfer was submitted. Do not send it again."` means the chain transfer already went out. Do not call `send` again for that amount.
-
-### yield
-
-`agent.yield()` → `POST /api/auth/yield`. The owner key signs. A bearer session is `400` `"A signature is required to yield"`. See [Yield](docs/access.md#yield).
 
 ### entries
 
@@ -740,8 +733,7 @@ The same ordered picks for the same contest, sent without `lineupId`, return the
 
 | Signer | What happens |
 | --- | --- |
-| Delegate | The SDK omits `userOpSignature` on the first request, receives `{ preparedUserOp: true, lineupId, userOpHash, userOp }`, signs `userOpHash`, and posts again. The caller receives `{ ok: true, lineupId }`. |
-| The account key | The signer owns the Kernel wallet. No delegate is used. A contest with no escrow is stored on the first response. A contest with escrow returns `{ preparedUserOp: true, lineupId, userOpHash, userOp }`. The SDK signs `userOpHash` and posts `userOp` and `userOpSignature`. The server submits that sponsored user operation. Join sends `approve` and `addPrimaryPosition` in that one operation. The entry is stored after it succeeds. |
+| Agent key | The SDK omits `authorizationSignature` on the first request, receives `{ preparedUserOp: true, lineupId, userOpHash, userOp, authorization }`, signs `authorization`, and posts `authorizationSignature`. The caller receives `{ ok: true, lineupId }`. A contest with no escrow is stored on the first response. |
 
 `{ ok: true, lineupId }` means the entry row is stored. When the contest has on-chain escrow, the user operation has a receipt before that row is written. If this lineup is already entered, `join` returns the same shape and does not send another transaction. A repeated `join` is a no-op only when that entry row already exists. After a timeout or `502`, check the lobby or this account's entries before calling `join` again.
 
@@ -770,7 +762,7 @@ A second `createContest` deploys another contest. The call is not idempotent. Af
 
 `createContest` does not create a `$0` contest. That is `createFreeContest`.
 
-The signer rules match join. A delegate's first response is `{ preparedUserOp: true, userOpHash, userOp }` with no `lineupId`. The SDK signs and posts the second request. The account key uses that same prepared user operation. The server submits it, reads the contest address, and stores the contest.
+The signer rules match join. A delegate's first response is `{ preparedUserOp: true, userOpHash, userOp, authorization }` with no `lineupId`. The SDK signs `authorization` only when it is the Privy wallet RPC for this user operation, then posts `userOp` and `authorizationSignature`. The server submits it, reads the contest address, and stores the contest.
 
 ### createFreeContest
 
@@ -791,11 +783,11 @@ The SDK puts `smartWallet` on the query and `X-Cut-Chain-Id` on the request. A s
 
 `agent.register({ email?, name?, color?, oddsFormat?, referralCode? })` → `POST /api/auth/register`.
 
-The owner key signs. The Kernel wallet holds the USDC. A `smartWallet` query that is not the signer is `403` `"A delegate cannot register an account"`. A new account is `userType` `AGENT`. Email is optional. When the person wants to sign in, the owner sets it with `updateProfile` before they open the site. `color` is `#rgb` or `#rrggbb`. `oddsFormat` is `american`, `decimal`, or `english`. Those settings are written only when the account is created. Registering the same wallet again returns that account and does not change the email, the name, the settings, or the type. `201` when the account is new, `200` when the wallet already has one. An email already on another account is `400` with code `EMAIL_ALREADY_BOUND`.
+The P-256 key signs. The body includes `publicKey`. The server creates the Privy user with `custom_auth` whose id is that public key, the Kernel smart wallet, and this key's quorum. That Kernel address is `smartWallet` and holds the USDC. A new account is `userType` `AGENT`. Email is optional. No email is linked at create time. An email stays pending until the human calls `POST /api/auth/claim-email` with the mailed code, then signs in with the Privy OTP. `email` stays null and `emailPending` is true until that claim. `color` is `#rgb` or `#rrggbb`. `oddsFormat` is `american`, `decimal`, or `english`. Those settings are written only when the account is created. Registering the same active account key again returns that account and does not change a claimed email, the name, the settings, or the type. A revoked account key is `409` `"This key was revoked"`. A `grant` row for the same key is not that account. `201` when the account is new, `200` when the key already has one. An email already on another account is `400` with code `EMAIL_ALREADY_BOUND`.
 
 Creating an account includes this sentence in the same message as the call: "Creating your account means you agree to the Terms of Service (https://playthecut.com/terms) and Privacy Policy (https://playthecut.com/privacy)." Say it and call `register` in the same turn. Do not ask a question and do not wait. Do not paste either document. Do not say it when `account()` already returns a user, or when this call returns `created: false`. If the person has already said they do not agree, do not register. The server stores that moment as `tosAcceptedAt` on the new account. Browser signup on `POST /auth/session` stores the same field. Registering the same wallet again does not change it.
 
-Response: `userId`, `email` (`null` when unset), `userType`, `name`, `referralCode`, `smartWallet`, `created`.
+Response: `userId`, `email` (`null` until claim-email), `emailPending`, `userType`, `name`, `referralCode`, `smartWallet`, `created`.
 
 ## Errors and recovery
 
@@ -806,8 +798,8 @@ After a timeout or `502` from a state-changing action, check whether the action 
 | Status | Meaning | What to do |
 | --- | --- | --- |
 | `400` | The body, the lineup, the deposit, the prediction, the profile, or the cursor is invalid. `EMAIL_ALREADY_BOUND` on register or `updateProfile`. The last league admin cannot leave. | Read `error`. An empty lineup is rejected on save and on join. Add at least one pick and retry. Drop a cursor the server rejects and call again with none to set a new baseline. |
-| `401` | The signature is missing, expired, or does not cover this request. A nonce was reused. | Sign the exact method, path, query, and body. Use a new nonce. `created` and `expires` must span at most one hour. |
-| `403` | The signer is acting for another account without an active delegate, the account is not a league admin, an `AGENT` tried to create a public contest, a delegate tried to register, or a delegate tried to set the login email. | Grant that delegate on the account, or sign with the account key. Register and set the email with the account key. |
+| `401` | The signature is missing, expired, or does not cover this request. A nonce was reused. A public key that is not a P-256 SPKI key is `"Invalid public key"`. | Sign the absolute URL with `cutRequestPayload` and `signPayload`. Use a new nonce matching `^[A-Za-z0-9._~-]{8,128}$`. `created` and `expires` must span at most one hour. |
+| `403` | The signer is acting for another account without an active delegate, the account is not a league admin, an `AGENT` tried to create a public contest, or email was sent after the human signed in. | Grant that public key on the account. Set the email before the human signs in. |
 | `404` | Contest, event, league, or user was not found. | Check `contestId`, `eventId`, and league id. A league contest or league the account is not in is `404`. |
 | `409` | Join on a contest that is not `OPEN`, or leave on a contest that is not `OPEN` or `CANCELLED`. A paid contest address was already registered. Joining a league this account is already in. | Stop retrying the join. Leave a contest only while it is open or cancelled. |
 | `502` | The user operation failed or the response shape was unexpected. | Read `error`. Check the lobby, this account's entries, or the chain before sending `join`, `leave`, or `createContest` again. |
@@ -820,30 +812,23 @@ Most callers can stop at the actions above. `entries()` wraps `GET /api/auth/ent
 
 ### Execution paths
 
-Three ways to enter a contest:
+The website and the agent spend the same Kernel smart wallet.
 
-1. **The user, in the browser.** The logged-in client signs the chain transaction. These routes do not apply.
-2. **The account key.** `register` stores the Kernel address this key owns. `join`, `leave`, and `createContest` signed by that key are sponsored user operations from that wallet. No session key is installed until [yield](docs/access.md#yield). The paymaster pays gas when the calls are on the sponsorship allowlist. After a yield this key is a delegate on the same wallet and can execute, including `send`.
-3. **A delegate the caller holds.** The user pastes the public address and grants it. The private key never comes to Play The Cut. This is the key `generateDelegateKey` creates. This signer is not the account. The server prepares a user operation and submits the signature the caller sends back.
-
-A delegate is a Kernel v3.1 session key on EntryPoint 0.7, installed on the user's smart wallet.
+1. **The user, in the browser.** The Privy session sends with `smartWalletClient.sendTransaction`.
+2. **The agent.** `generateDelegateKey()` creates the P-256 key. `register` or a Settings grant records it. The private key never comes to Play The Cut. The server prepares a user operation whose sender is the Kernel address, returns the Privy authorization payload, and submits the signature the caller sends back.
 
 ### Authentication and request signing
 
-Player routes accept a Privy bearer token or an [ERC-8128](https://erc8128.org) signature. Contest reads take either, and a missing credential is anonymous. `POST /api/auth/yield` requires a signature. A request that sends both a bearer token and a signature is rejected. There is no signature field in the query or body.
+Player routes accept a Privy bearer token or the delegate signature. Contest reads take either, and a missing credential is anonymous. A request that sends both a bearer token and a signature is rejected.
 
-`@slicekit/erc8128` `signRequest` covers `@scheme`, `@authority`, `@method`, `@path`, and `@query`, plus `content-digest` and `content-type` when the request has a body. Parameters are `keyid`, `created`, `expires`, `nonce`, and `tag="erc8128"`. `keyid` is `eip155:<chainId>:0x<signer>` with the signer address lowercase. The chain is `8453` or `84532` and must equal `chainId` on the request. `expires - created` is at most one hour. `nonce` is a single-use ASCII string of at most 128 bytes. The server stores `(keyid, nonce)` until `expires`.
+The signature is ECDSA P-256 over the canonical JSON of `{ version, method, url, body, chainId, created, expires, nonce }`. `url` is the absolute URL, including origin, path, and query. `body` is the hex sha256 of the raw request body. Headers are `x-cut-public-key`, `x-cut-signature`, `x-cut-created`, `x-cut-expires`, `x-cut-nonce`, and `x-cut-chain-id`. The chain is `8453` or `84532`. `expires - created` is at most one hour. `nonce` matches `^[A-Za-z0-9._~-]{8,128}$` and is single-use. Build that payload with `cutRequestPayload` and sign it with `signPayload`. The SDK does this. A public key that is not a P-256 SPKI key is `401` `"Invalid public key"`.
 
-A delegate names the account with `smartWallet` in the query or body, because the signature covers both. When the signer is the wallet, the server checks the signature with ERC-1271. Contest reads, lineup saves, league writes, and `createFreeContest` need no delegate. `join`, `leave`, and `createContest` signed by the account key are sponsored user operations from the Kernel wallet that key owns. A delegate is required only when the signer is a different address.
+The delegate names the account with `smartWallet` in the query. `join`, `leave`, `createContest`, and `send` are sponsored user operations from that Kernel address. The calls have to pass the sponsorship allowlist.
 
 ### User-operation signing
 
-On the second request, `userOpSignature` is the delegate's EIP-191 signature of the raw 32-byte `userOpHash`: `signMessage({ message: { raw: userOpHash } })`. The SDK does this. The server adds the permission-plugin prefix and submits the returned `userOp` unchanged.
-
-### Account-key user operations
-
-When the signer is the owner key and the action moves funds, the server returns one sponsored user operation, the same shape a delegate receives. The SDK signs `userOpHash` with the owner key and posts `userOp` and `userOpSignature`. The server checks the calls against the sponsorship allowlist, submits the user operation, and waits for a success receipt. The first operation deploys the Kernel account. A join with escrow is `approve` and `addPrimaryPosition` in that one operation. The paymaster pays the gas.
+The first response is `{ preparedUserOp, userOpHash, userOp, calls, authorization }`. `calls` are the actions inside `userOp.callData`. `authorization` is the Privy `secp256k1_sign` request for that user operation hash. The SDK signs `authorization` only when `userOp.callData` decodes to `calls` and those calls are the action it requested. It posts `authorizationSignature` with `userOp`. The server checks the signature, asks Privy to sign the hash with the embedded key that owns the Kernel, and submits the user operation. The paymaster pays the gas.
 
 ### Delegate endpoints
 
-`POST /api/bot/delegates` records an approval on the Privy session: `delegateAddress`, `smartWallet`, `approval`, and `permissionId`.
+`POST /api/bot/delegates/quorum` creates the key quorum for a public key. The browser adds that signer, then `POST /api/bot/delegates` records `{ publicKey, quorumId }` on the Privy session. `POST /api/bot/delegates/revoke` marks active and pending agents revoking and does not remove the wallet signer. The browser removes every signer. `POST /api/bot/delegates/revoke/confirm` marks them revoked after the wallet no longer lists them. The delegate cannot revoke itself.

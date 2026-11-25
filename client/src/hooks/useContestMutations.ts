@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useAuth } from "../contexts/AuthContext";
 import { queryKeys } from "../utils/queryKeys";
 import apiClient from "../utils/apiClient";
 import {
@@ -24,8 +25,8 @@ interface LeaveContestParams {
 
 type DirectorySnapshot = Array<[readonly unknown[], ContestDirectoryResponse | undefined]>;
 
-function lobbyQueryKey(routeKey: string) {
-  return queryKeys.contests.byLobbyRoute(normalizeContestAddress(routeKey));
+function lobbyQueryKey(routeKey: string, userId: string) {
+  return queryKeys.contests.byLobbyRoute(normalizeContestAddress(routeKey), userId);
 }
 
 function snapshotDirectoryCaches(queryClient: QueryClient): DirectorySnapshot {
@@ -119,6 +120,7 @@ export function useCreateContest() {
 
 export function useJoinContest() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ contestId, lineupId, entryId }: JoinContestParams) => {
@@ -129,7 +131,9 @@ export function useJoinContest() {
     },
 
     onMutate: async ({ contestRouteKey, contestId, lineupId }) => {
-      const lobbyKey = lobbyQueryKey(contestRouteKey);
+      const viewerId = user?.id;
+      if (!viewerId) return;
+      const lobbyKey = lobbyQueryKey(contestRouteKey, viewerId);
       await queryClient.cancelQueries({ queryKey: lobbyKey });
       await queryClient.cancelQueries({
         queryKey: [...queryKeys.contests.all, "directory"],
@@ -179,14 +183,15 @@ export function useJoinContest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.lineups.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.user.contests() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.user.transactions() });
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.user.all, "contests"] });
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.user.all, "transactions"] });
     },
   });
 }
 
 export function useLeaveContest() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ contestId, contestLineupId }: LeaveContestParams) => {
@@ -194,7 +199,9 @@ export function useLeaveContest() {
     },
 
     onMutate: async ({ contestRouteKey, contestLineupId }) => {
-      const lobbyKey = lobbyQueryKey(contestRouteKey);
+      const viewerId = user?.id;
+      if (!viewerId) return;
+      const lobbyKey = lobbyQueryKey(contestRouteKey, viewerId);
       await queryClient.cancelQueries({ queryKey: lobbyKey });
       await queryClient.cancelQueries({
         queryKey: [...queryKeys.contests.all, "directory"],
@@ -234,8 +241,8 @@ export function useLeaveContest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.lineups.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.user.contests() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.user.transactions() });
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.user.all, "contests"] });
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.user.all, "transactions"] });
     },
   });
 }
@@ -249,7 +256,10 @@ export function useDeleteLeagueContest(leagueId: string) {
     },
 
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.contests(leagueId) });
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.userGroups.all, "contests"],
+        predicate: (query) => query.queryKey.at(-1) === leagueId,
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.contests.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.lineups.all });
     },

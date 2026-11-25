@@ -16,6 +16,8 @@ model User {
   id                        String    @id @default(cuid())
   privyUserId               String?   @unique
   email                     String?   @unique
+  /// Login email requested by an agent. Empty until claim-email proves the inbox.
+  pendingEmail              String?
   phone                     String?   @unique
   password                  String?
   name                      String
@@ -53,6 +55,7 @@ model User {
   referredUsers                User[]                        @relation("UserReferrals")
 
   @@index([email])
+  @@index([pendingEmail])
   @@index([phone])
   @@index([verificationCode])
   @@index([referredByUserId])
@@ -81,15 +84,18 @@ model UserWallet {
   @@index([publicKey])
 }
 
-// A Kernel session key the user installed. The private key stays with the caller.
+// A P-256 public key for this wallet. The private key stays with the caller.
+// BotDelegate_account_key is the partial unique index on delegateAddress where kind = 'account'. Keep that index.
 model BotDelegate {
   id              String    @id @default(cuid())
   userId          String
   smartWallet     String
   delegateAddress String
-  /// active | revoked
+  /// account | grant. account is the key that opened the user. grant is a key the human added.
+  kind            String    @default("grant")
+  /// active | pending | revoking | revoked
   status          String
-  /// Serialized permission account plus the installed validator address.
+  /// Privy key quorum for the delegate: quorum id, public key, and embedded wallet.
   approval        String
   createdAt       DateTime  @default(now())
   revokedAt       DateTime?

@@ -1,5 +1,5 @@
 import { Context, Hono, type Next } from "hono";
-import { type Address, type Hex } from "viem";
+import { type Address } from "viem";
 import type { Prisma } from "@prisma/client";
 import { predictionNumericValue } from "../utils/sportPrediction.js";
 import { prisma } from "../lib/prisma.js";
@@ -82,7 +82,7 @@ const contestRouter = new Hono();
 const botActionDeps = createBotActionDeps();
 const createContestDeps = createContestActionDeps();
 
-function requestSigner(c: Context): Address | undefined {
+function requestSigner(c: Context): string | undefined {
   try {
     return c.get("signer");
   } catch {
@@ -103,6 +103,9 @@ function actionResponse(
       ...("lineupId" in result ? { lineupId: result.lineupId } : {}),
       userOpHash: result.userOpHash,
       userOp: result.userOp,
+      ...("authorization" in result && result.authorization
+        ? { authorization: result.authorization }
+        : {}),
     });
   }
   if ("contestId" in result) {
@@ -513,7 +516,9 @@ contestRouter.post("/", requireAuth, async (c) => {
           endTime,
           settings: (settings ?? {}) as Record<string, unknown>,
           ...(notifyLeagueMembers !== undefined ? { notifyLeagueMembers } : {}),
-          ...(body.userOpSignature ? { userOpSignature: body.userOpSignature as Hex } : {}),
+          ...(body.authorizationSignature
+            ? { authorizationSignature: body.authorizationSignature }
+            : {}),
           ...(body.userOp ? { userOp: body.userOp as SerializedUserOp } : {}),
         },
         createContestDeps,
@@ -560,7 +565,7 @@ async function joinContestEntry(c: Context) {
       const contestId = c.req.param("id");
       const signer = requestSigner(c);
       const userOp = (body as { userOp?: SerializedUserOp }).userOp;
-      const userOpSignature = (body as { userOpSignature?: Hex }).userOpSignature;
+      const authorizationSignature = (body as { authorizationSignature?: string }).authorizationSignature;
       if (signer || userOp) {
         const result = await executeBotAction(
           {
@@ -571,7 +576,7 @@ async function joinContestEntry(c: Context) {
             lineupId,
             picks: [],
             signer: signer ?? (user.address as Address),
-            ...(userOpSignature ? { userOpSignature } : {}),
+            ...(authorizationSignature ? { authorizationSignature } : {}),
             ...(userOp ? { userOp } : {}),
           },
           botActionDeps,
@@ -828,7 +833,7 @@ async function leaveContestEntry(c: Context) {
       const signer = requestSigner(c);
       const raw = (await c.req.json().catch(() => null)) as {
         userOp?: SerializedUserOp;
-        userOpSignature?: Hex;
+        authorizationSignature?: string;
       } | null;
       if (signer || raw?.userOp) {
         const linked = await prisma.contestLineup.findFirst({
@@ -844,7 +849,9 @@ async function leaveContestEntry(c: Context) {
             lineupId: linked?.lineupId ?? contestLineupId,
             picks: [],
             signer: signer ?? (user.address as Address),
-            ...(raw?.userOpSignature ? { userOpSignature: raw.userOpSignature } : {}),
+            ...(raw?.authorizationSignature
+              ? { authorizationSignature: raw.authorizationSignature }
+              : {}),
             ...(raw?.userOp ? { userOp: raw.userOp } : {}),
           },
           botActionDeps,

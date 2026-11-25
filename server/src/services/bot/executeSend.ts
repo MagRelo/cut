@@ -10,10 +10,10 @@ import {
   type TransactionReceipt,
 } from "viem";
 import { getPaymentTokenAddress } from "../../lib/contractAddresses.js";
-import { kernelOwnerWallet, classifySigner } from "./accountKey.js";
-import { unpackApproval } from "./approvalEnvelope.js";
-import { sessionKeyRefusal } from "./sessionKeyEnabled.js";
-import type { BotCall } from "./botCalls.js";
+import { isDelegatePublicKey } from "@playthecut/agent";
+import { relayQuorumUserOp } from "./quorumUserOp.js";
+import { readQuorumApproval } from "./quorumApproval.js";
+import { serializeBotCalls, type BotCall, type SerializedBotCall } from "./botCalls.js";
 import type { BotActionDeps, BotDelegateRow } from "./executeBotAction.js";
 import type { SerializedUserOp } from "./submitSessionKeyUserOp.js";
 import { recordValueTransfer, ValueTransferError } from "../contest/onchainPayment.js";
@@ -22,18 +22,7 @@ import { loadTransactionReceipt } from "../contest/verifyValueTransferReceipt.js
 const USDC_DECIMALS = 6;
 const RESEND_WARNING = "The transfer was submitted. Do not send it again.";
 
-export type SendDeps = Pick<
-  BotActionDeps,
-  | "findDelegate"
-  | "findOwner"
-  | "rememberOwner"
-  | "sessionEnabled"
-  | "prepareUserOp"
-  | "prepareOwnerUserOp"
-  | "submitOwnerUserOp"
-  | "submitCalls"
-  | "log"
-> & {
+export type SendDeps = Pick<BotActionDeps, "findDelegate" | "log"> & {
   recordSend: (input: {
     userId: string;
     chainId: number;
@@ -47,15 +36,22 @@ export type SendDeps = Pick<
 export type ExecuteSendInput = {
   chainId: number;
   smartWallet: string;
-  signer: Address;
+  signer: string;
   to: string;
   amount: string;
-  userOpSignature?: Hex;
+  authorizationSignature?: string;
   userOp?: SerializedUserOp;
 };
 
 export type ExecuteSendResult =
-  | { ok: true; preparedUserOp: true; userOpHash: Hex; userOp: SerializedUserOp }
+  | {
+      ok: true;
+      preparedUserOp: true;
+      userOpHash: Hex;
+      userOp: SerializedUserOp;
+      calls: SerializedBotCall[];
+      authorization?: unknown;
+    }
   | { ok: true; txHash: Hex; to: Address; amount: string; preparedUserOp?: undefined }
   | { ok: false; status: number; error: string; txHash?: Hex };
 
@@ -105,39 +101,20 @@ function transferCall(token: Address, to: Address, amountWei: bigint): BotCall {
   };
 }
 
-async function enabledApproval(
+function enabledApproval(
   delegate: BotDelegateRow,
-  chainId: number,
-  deps: SendDeps,
-): Promise<{ ok: true; approval: string } | { ok: false; status: number; error: string }> {
-  let permissionId: Hex;
-  let approval: string;
-  try {
-    const envelope = unpackApproval(delegate.approval);
-    permissionId = envelope.permissionId;
-    approval = envelope.approval;
-  } catch (error) {
-    return {
-      ok: false,
-      status: 400,
-      error: error instanceof Error ? error.message : "Invalid delegate approval",
-    };
+): { ok: true; approval: string } | { ok: false; status: number; error: string } {
+  if (!readQuorumApproval(delegate.approval)) {
+    return { ok: false, status: 400, error: "Invalid delegate approval" };
   }
-  const enabled = await deps.sessionEnabled(getAddress(delegate.smartWallet), permissionId, chainId);
-  const refusal = sessionKeyRefusal(enabled);
-  if (refusal) {
-    await deps.log(delegate.userId, "error", refusal);
-    return { ok: false, status: 403, error: refusal };
-  }
-  return { ok: true, approval };
+  return { ok: true, approval: delegate.approval };
 }
 
 export async function executeSend(input: ExecuteSendInput, deps: SendDeps): Promise<ExecuteSendResult> {
-  if (!isAddress(input.smartWallet) || !isAddress(input.signer) || !isAddress(input.to)) {
+  if (!isAddress(input.smartWallet) || !isAddress(input.to)) {
     return { ok: false, status: 400, error: "Invalid wallet address" };
   }
   const smartWallet = getAddress(input.smartWallet);
-  const signer = getAddress(input.signer);
   const to = getAddress(input.to);
   if (to === smartWallet) return { ok: false, status: 400, error: "Cannot send to the same wallet" };
   const amountWei = parseSendAmount(input.amount);
@@ -145,102 +122,54 @@ export async function executeSend(input: ExecuteSendInput, deps: SendDeps): Prom
   const token = getPaymentTokenAddress(input.chainId);
   if (!token) return { ok: false, status: 503, error: "Payment token is not configured" };
 
-  const ownerRow = await deps.findOwner(smartWallet, input.chainId);
-  const signerRole = classifySigner(signer, smartWallet, input.chainId, ownerRow?.ownerAddress);
-  let userId: string;
-  let delegate: BotDelegateRow | null;
-  if (signerRole === "owner" || signerRole === "wallet") {
-    if (!ownerRow) return { ok: false, status: 403, error: "No account for this wallet" };
-    if (
-      signerRole === "owner" &&
-      !ownerRow.ownerAddress &&
-      kernelOwnerWallet(signer, input.chainId) === smartWallet
-    ) {
-      await deps.rememberOwner?.(smartWallet, input.chainId, signer);
-    }
-    userId = ownerRow.userId;
-    delegate = null;
-  } else {
-    delegate = await deps.findDelegate(smartWallet, signer);
-    if (!delegate) return { ok: false, status: 403, error: "No active delegate for this signature" };
-    userId = delegate.userId;
+  if (!isDelegatePublicKey(input.signer)) {
+    return { ok: false, status: 403, error: "No active delegate for this signature" };
   }
-
-  let approval = "";
-  if (delegate) {
-    const enabled = await enabledApproval(delegate, input.chainId, deps);
-    if (!enabled.ok) return enabled;
-    approval = enabled.approval;
-  }
+  const delegate = await deps.findDelegate(smartWallet, input.signer);
+  if (!delegate) return { ok: false, status: 403, error: "No active delegate for this signature" };
+  const userId = delegate.userId;
+  const enabled = enabledApproval(delegate);
+  if (!enabled.ok) return enabled;
+  const approval = enabled.approval;
 
   const calls = [transferCall(token, to, amountWei)];
   const amount = input.amount.trim();
 
-  if (!delegate) {
-    if (signerRole !== "owner") {
-      return { ok: false, status: 403, error: "On-chain actions from this wallet are signed by its owner key" };
-    }
-    if (!input.userOpSignature || !input.userOp) {
-      const prepared = await deps.prepareOwnerUserOp({ chainId: input.chainId, owner: signer, smartWallet, calls });
-      if (!prepared.ok) {
-        await deps.log(userId, "error", prepared.error);
-        return { ok: false, status: 502, error: prepared.error };
-      }
-      return { ok: true, preparedUserOp: true, userOpHash: prepared.userOpHash, userOp: prepared.userOp };
-    }
-    const submitted = await deps.submitOwnerUserOp({
-      chainId: input.chainId,
-      owner: signer,
-      smartWallet,
-      calls,
-      userOpSignature: input.userOpSignature,
-      userOp: input.userOp,
-    });
-    if (!submitted.ok) {
-      await deps.log(userId, "error", submitted.error);
-      return { ok: false, status: 502, error: submitted.error };
-    }
-    return finish(deps, { userId, chainId: input.chainId, from: smartWallet, to, amountWei, amount, txHash: submitted.txHash });
-  }
-
-  if (!input.userOpSignature || !input.userOp) {
-    const prepared = await deps.prepareUserOp({
-      chainId: input.chainId,
-      approval,
-      calls,
-      delegateAddress: getAddress(delegate.delegateAddress),
-      smartWallet,
-    });
-    if (!prepared.ok) {
-      await deps.log(userId, "error", prepared.error);
-      return { ok: false, status: 502, error: prepared.error };
-    }
-    return { ok: true, preparedUserOp: true, userOpHash: prepared.userOpHash, userOp: prepared.userOp };
-  }
-
-  const submitted = await deps.submitCalls({
-    chainId: input.chainId,
+  const relayed = await relayQuorumUserOp({
     approval,
-    calls,
-    delegateAddress: getAddress(delegate.delegateAddress),
-    smartWallet,
-    userOpSignature: input.userOpSignature,
-    userOp: input.userOp,
-  });
-  if (!submitted.ok || !submitted.txHash) {
-    const error = submitted.ok ? "User operation failed" : submitted.error;
-    await deps.log(userId, "error", error);
-    return { ok: false, status: 502, error };
-  }
-  return finish(deps, {
-    userId,
     chainId: input.chainId,
-    from: smartWallet,
-    to,
-    amountWei,
-    amount,
-    txHash: submitted.txHash,
+    smartWallet,
+    calls,
+    ...(input.userOp ? { userOp: input.userOp } : {}),
+    ...(input.authorizationSignature ? { authorizationSignature: input.authorizationSignature } : {}),
+    signer: input.signer,
   });
+  if (relayed.kind === "prepared") {
+    return {
+      ok: true,
+      preparedUserOp: true,
+      userOpHash: relayed.userOpHash,
+      userOp: relayed.userOp,
+      calls: serializeBotCalls(calls),
+      authorization: relayed.authorization,
+    };
+  }
+  if (relayed.kind === "submitted") {
+    return finish(deps, {
+      userId,
+      chainId: input.chainId,
+      from: smartWallet,
+      to,
+      amountWei,
+      amount,
+      txHash: relayed.txHash,
+    });
+  }
+  if (relayed.kind === "skip") {
+    return { ok: false, status: 400, error: "Invalid delegate approval" };
+  }
+  await deps.log(userId, "error", relayed.error);
+  return { ok: false, status: relayed.status, error: relayed.error };
 }
 
 async function finish(

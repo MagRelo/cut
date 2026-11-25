@@ -48,6 +48,20 @@ export type BotCall = {
   value: bigint;
 };
 
+export type SerializedBotCall = {
+  to: Address;
+  value: string;
+  data: Hex;
+};
+
+export function serializeBotCalls(calls: BotCall[]): SerializedBotCall[] {
+  return calls.map((call) => ({
+    to: call.to,
+    value: call.value.toString(),
+    data: call.data,
+  }));
+}
+
 export function buildJoinCalls(input: {
   paymentToken: Address;
   contest: Address;

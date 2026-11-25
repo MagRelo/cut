@@ -11,6 +11,7 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 
 ### User
 - Privy-linked (`privyUserId`), profile, `settings` JSON
+- `pendingEmail` holds an inbox until `POST /api/auth/claim-email`. `User.email` stays empty until that claim.
 - `userType`: `USER` (default), `TEST`, `ADMIN`, `SUPER_ADMIN`, `PUBLIC`, `AGENT`
 - Privy dashboard test emails (`test-…@privy.io`) provision as `TEST`. Existing `USER` rows with those emails are promoted to `TEST`. Staff types are not changed.
 - Referral fields: `referralCode` (opaque `?ref=` invite code, unique), `referrerAddress`, `referralGroupId`, `referredByUserId`, etc.
@@ -19,8 +20,7 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 ### UserWallet
 - `chainId` + `publicKey` (unique per chain)
 - `isPrimary` for default wallet
-- `ownerAddress`: current ECDSA root. Empty on a browser wallet. The account key until a human takes the account over.
-- `pendingOwnerAddress`: embedded address recorded while that human is waiting for the agent to yield. Cleared when the yield lands.
+- `ownerAddress` and `pendingOwnerAddress` are stored columns. The live account doors do not write them.
 
 ### UserGroup (league)
 - **No sport field** — cross-sport by design
@@ -30,16 +30,16 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 - `role`: `ADMIN` | `MEMBER`
 
 ### BotDelegate
-- Session key the user installs on `smartWallet`: `delegateAddress`, `status` (`active` | `revoked`). The private key stays with the caller.
-- `approval` is the serialized permission account plus the permission id
-- Unique per user and delegate address
+- P-256 public key on `delegateAddress`. `kind` is `account` (the key that opened the user) or `grant` (a key the human added). `status` is `pending`, `active`, or `revoked`. The private key stays with the caller.
+- `approval` stores the Privy quorum id and, once the signer is on the wallet, the embedded wallet id and address
+- Unique per user and delegate address. One `account` row per public key.
 
 ### BotActionLog
 - `action`: `delegate` | `revoke` | `lineupUpsert` | `join` | `leave` | `error`
 - Records that an action happened. Lineup, contest, and transaction hash stay on their own rows
 
 ### BotRequestNonce
-- Primary key is the ERC-8128 replay key (`keyid` + nonce)
+- Primary key is the replay key (`publicKey` + nonce)
 - `expiresAt` is how long that nonce stays consumed
 
 ---

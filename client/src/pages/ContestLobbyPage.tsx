@@ -84,7 +84,7 @@ export const ContestLobby: React.FC = () => {
   }, [contest, commentary]);
   const routeKey = contestAddress ? normalizeContestAddress(contestAddress) : "";
   useContestLiveClock(isContestSectionClock(contestForView), [
-    queryKeys.contests.byLobbyRoute(routeKey),
+    queryKeys.contests.byLobbyRoute(routeKey, user?.id ?? "anon"),
     queryKeys.contests.timeline(routeKey),
     queryKeys.contests.commentary(routeKey),
   ]);

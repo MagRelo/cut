@@ -206,10 +206,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const user: AuthUser | null = sessionPhase === "ready" ? (profileQuery.data ?? null) : null;
 
   const paymentTokenAddress = getContractAddress(currentChainId ?? 0, "paymentTokenAddress");
-  const balanceAddress =
-    user?.walletOwner && user.walletAddress
-      ? (user.walletAddress as `0x${string}`)
-      : (smartWalletClient?.account?.address ?? address);
+  const balanceAddress = (user?.walletAddress ??
+    smartWalletClient?.account?.address ??
+    address) as `0x${string}` | undefined;
 
   const paymentBalanceEnabled = !!balanceAddress && !!paymentTokenAddress && !!user;
 
@@ -395,6 +394,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         query.queryKey[0] === "user" &&
         query.queryKey[1] !== "profile",
     });
+    queryClient.removeQueries({ queryKey: ["userGroups"] });
+    queryClient.removeQueries({ queryKey: ["bot-delegates"] });
+    queryClient.removeQueries({ queryKey: ["stream"] });
+    queryClient.removeQueries({ queryKey: [...queryKeys.contests.all, "lobby"] });
   }, [queryClient]);
 
   /** End Privy + wagmi without clearing `serverSessionError` (so Connect can show why signup failed). */
@@ -483,6 +486,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       void queryClient.invalidateQueries({ queryKey: ["balance"] });
       void preloadLineups(queryClient, id);
+    }
+    if (userIdentityChanged) {
+      queryClient.removeQueries({ queryKey: ["userGroups"] });
+      queryClient.removeQueries({ queryKey: ["bot-delegates"] });
+      queryClient.removeQueries({ queryKey: ["stream"] });
+      queryClient.removeQueries({ queryKey: [...queryKeys.contests.all, "lobby"] });
+      queryClient.removeQueries({ queryKey: [...queryKeys.user.all, "transactions"] });
     }
   }, [user?.id, queryClient]);
 

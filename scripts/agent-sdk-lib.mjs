@@ -139,6 +139,22 @@ export function selectCommits(commits, agentShas) {
   return { agent, other };
 }
 
+/** Docker install layer. Name and dependency specifiers only, so a version bump does not redo install. */
+export function installManifest(pkg) {
+  return {
+    name: pkg.name,
+    dependencies: pkg.dependencies ?? {},
+    devDependencies: pkg.devDependencies ?? {},
+  };
+}
+
+export function syncInstallManifest(pkg = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"))) {
+  return writeIfChanged(
+    join(packageDir, "package.install.json"),
+    `${JSON.stringify(installManifest(pkg), null, 2)}\n`,
+  );
+}
+
 export function writeRelease(version, hash, staged) {
   const body = { version, hash, git: releaseGit() };
   if (staged) body.staged = staged;
@@ -301,6 +317,7 @@ export function listStaged(name, token) {
 }
 
 export async function prepareAgentRelease() {
+  syncInstallManifest();
   const written = syncAgentDocs();
   const pkgPath = join(packageDir, "package.json");
   const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));

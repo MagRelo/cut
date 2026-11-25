@@ -1,11 +1,12 @@
 {
   "name": "@playthecut/agent",
   "dependencies": {
-    "@slicekit/erc8128": "0.4.1",
+    "canonicalize": "^2.1.0",
     "viem": "^2.47.4",
     "zod": "^4.6.6"
   },
   "devDependencies": {
+    "@types/node": "^20.19.43",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   }

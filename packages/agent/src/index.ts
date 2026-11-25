@@ -1,4 +1,12 @@
 export { createCutAgent, generateDelegateKey, CutAgentError } from "./client.js";
+export {
+  cutRequestPayload,
+  hashBody,
+  isDelegatePublicKey,
+  publicKeyFromPrivate,
+  signPayload,
+  verifyPayload,
+} from "./delegateKey.js";
 export type { RoomFile } from "./client.js";
 export { kernelWalletAddress } from "./kernelWallet.js";
 export type {

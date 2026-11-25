@@ -31,7 +31,7 @@ declare module "hono" {
       userType: string;
     };
     privyUserId?: string;
-    signer?: `0x${string}`;
+    signer?: string;
   }
 }
 
@@ -90,7 +90,9 @@ export async function verifyPrivyJwt(c: Context, next: Next): Promise<Response |
 }
 
 function hasRequestSignature(c: Context): boolean {
-  return Boolean(c.req.header("signature") || c.req.header("signature-input"));
+  return Boolean(
+    c.req.header("signature") || c.req.header("signature-input") || c.req.header("x-cut-signature"),
+  );
 }
 
 function rejectMixedCredentials(c: Context): void {
@@ -201,7 +203,7 @@ export const requireAuth = async (c: Context, next: Next): Promise<Response | vo
   }
 };
 
-/** Sets `user` when a Bearer token or an ERC-8128 signature is present; continues without a user otherwise. */
+/** Sets `user` when a Bearer token or a P-256 `x-cut-*` signature is present; continues without a user otherwise. */
 export const optionalAuth = async (c: Context, next: Next): Promise<Response | void> => {
   try {
     const result = await authenticateRequest(c, { requireUser: false });

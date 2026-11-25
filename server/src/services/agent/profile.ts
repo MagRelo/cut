@@ -1,18 +1,19 @@
 import { Prisma } from "@prisma/client";
-import { getAddress, type Address } from "viem";
 import type { AgentProfile, AgentProfilePatch, OddsFormat } from "@playthecut/agent/contract";
 import { prisma } from "../../lib/prisma.js";
+import { ClaimEmailError, issueEmailClaim } from "../auth/claimEmail.js";
+import { ReferralProvisionError } from "../../lib/privyUserProvisioning.js";
 import { mergeUserSettings } from "../../schemas/user.js";
-import { classifySigner } from "../bot/accountKey.js";
 
 const ODDS: readonly OddsFormat[] = ["american", "decimal", "english"];
 
 export function profileFromUser(user: {
   name: string | null;
   email: string | null;
+  pendingEmail?: string | null;
   settings: unknown;
 } | null): AgentProfile {
-  if (!user) return { name: "", email: null, color: null, oddsFormat: null };
+  if (!user) return { name: "", email: null, emailPending: false, color: null, oddsFormat: null };
   const settings =
     user.settings && typeof user.settings === "object" && !Array.isArray(user.settings)
       ? (user.settings as Record<string, unknown>)
@@ -23,6 +24,7 @@ export function profileFromUser(user: {
   return {
     name: user.name ?? "",
     email: user.email,
+    emailPending: !user.email && Boolean(user.pendingEmail),
     color,
     oddsFormat,
   };
@@ -30,40 +32,48 @@ export function profileFromUser(user: {
 
 export type ProfileUpdateResult =
   | { ok: true; profile: AgentProfile }
-  | { ok: false; status: 400 | 403 | 404; error: string; code?: string };
+  | { ok: false; status: 400 | 403 | 404 | 503; error: string; code?: string };
 
 export async function updateAgentProfile(input: {
   userId: string;
   address: string;
   chainId: number;
-  signer: Address | null;
+  signer: string | null;
   patch: AgentProfilePatch;
 }): Promise<ProfileUpdateResult> {
   const user = await prisma.user.findUnique({
     where: { id: input.userId },
-    select: { id: true, name: true, email: true, settings: true, privyUserId: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      pendingEmail: true,
+      settings: true,
+      privyUserId: true,
+      lastLoginAt: true,
+    },
   });
   if (!user) return { ok: false, status: 404, error: "User not found" };
 
-  if (input.patch.email !== undefined) {
-    const denied = await emailDenied(input, user.privyUserId);
-    if (denied) return denied;
-  }
-
   const email = input.patch.email?.trim().toLowerCase();
-  if (email) {
-    const taken = await prisma.user.findFirst({
-      where: { email: { equals: email, mode: "insensitive" }, NOT: { id: user.id } },
-      select: { id: true },
-    });
-    if (taken) {
-      return {
-        ok: false,
-        status: 400,
-        error: "This email is already linked to another account",
-        code: "EMAIL_ALREADY_BOUND",
-      };
+  let pendingEmail = user.pendingEmail;
+  if (input.patch.email !== undefined) {
+    const denied = await emailDenied(input, user);
+    if (denied) return denied;
+    if (!email) return { ok: false, status: 400, error: "A valid email is required" };
+    try {
+      await issueEmailClaim(user.id, email);
+    } catch (error) {
+      if (error instanceof ReferralProvisionError) {
+        return { ok: false, status: 400, error: error.message, code: error.code };
+      }
+      if (error instanceof ClaimEmailError) {
+        return { ok: false, status: error.status, error: error.message };
+      }
+      const message = error instanceof Error ? error.message : "Could not send the login code";
+      return { ok: false, status: 400, error: message };
     }
+    pendingEmail = email;
   }
 
   const settings =
@@ -74,39 +84,46 @@ export async function updateAgentProfile(input: {
         })
       : undefined;
 
+  if (input.patch.name === undefined && settings === undefined) {
+    return {
+      ok: true,
+      profile: profileFromUser({ ...user, pendingEmail }),
+    };
+  }
+
   const updated = await prisma.user.update({
     where: { id: user.id },
     data: {
       ...(input.patch.name !== undefined ? { name: input.patch.name } : {}),
-      ...(email ? { email } : {}),
       ...(settings !== undefined ? { settings: settings as Prisma.InputJsonValue } : {}),
     },
-    select: { name: true, email: true, settings: true },
+    select: { name: true, email: true, pendingEmail: true, settings: true },
   });
-  return { ok: true, profile: profileFromUser(updated) };
+  return {
+    ok: true,
+    profile: profileFromUser({
+      ...updated,
+      email: user.email,
+      pendingEmail: updated.pendingEmail ?? pendingEmail,
+    }),
+  };
 }
 
 async function emailDenied(
-  input: { userId: string; address: string; chainId: number; signer: Address | null },
-  privyUserId: string | null,
+  input: { userId: string; signer: string | null },
+  user: { email: string | null; lastLoginAt: Date | null },
 ): Promise<ProfileUpdateResult | null> {
   if (!input.signer) {
-    return { ok: false, status: 403, error: "A delegate cannot set the login email" };
+    return { ok: false, status: 403, error: "Sign in is required to change this email" };
   }
-  const wallet = await prisma.userWallet.findFirst({
-    where: {
-      userId: input.userId,
-      chainId: input.chainId,
-      publicKey: input.address.toLowerCase(),
-    },
-    select: { publicKey: true, ownerAddress: true },
+  const delegate = await prisma.botDelegate.findFirst({
+    where: { userId: input.userId, delegateAddress: input.signer, status: "active" },
+    select: { id: true },
   });
-  const account = wallet ? getAddress(wallet.publicKey) : getAddress(input.address);
-  const role = classifySigner(input.signer, account, input.chainId, wallet?.ownerAddress);
-  if (role !== "owner") {
-    return { ok: false, status: 403, error: "A delegate cannot set the login email" };
+  if (!delegate) {
+    return { ok: false, status: 403, error: "Sign in is required to change this email" };
   }
-  if (privyUserId) {
+  if (user.email || user.lastLoginAt) {
     return { ok: false, status: 403, error: "This account already has a login" };
   }
   return null;

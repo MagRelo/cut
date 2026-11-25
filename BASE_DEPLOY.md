@@ -62,7 +62,7 @@ Keep MockUSDC. Do **not** run `deploy:contracts:sepolia` — that redeploys Mock
 
 | Contract                         | Address                                      |
 | -------------------------------- | -------------------------------------------- |
-| MockUSDC (`paymentTokenAddress`) | `0x6662473494b64c6aec18E703E839AF26d371f570` |
+| MockUSDC (`paymentTokenAddress`) | `0x55dd6A268439607711471B6EB353045eeE680549` |
 | ContestFactory                   | `0xfFE5ab468Feb2CcD02f3A96d3e750d451e115E4d` |
 | ReferralGraph                    | `0x3dcF689FE19941eA24e52F89E74B617939459d61` |
 | RewardCalculator                 | `0x0Dde8b39B100124E74b62195031F1C937b9795a3` |

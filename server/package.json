@@ -67,17 +67,18 @@
     "script:contest-feed": "NODE_NO_WARNINGS=1 tsx src/scripts/contestFeed.ts",
     "script:stream-bootstrap": "tsx src/scripts/streamBootstrap.ts",
     "script:stream-backfill-contest": "tsx src/scripts/streamBackfillContest.ts",
-    "script:sign-bot-request": "tsx src/scripts/signBotRequest.ts"
+    "script:sign-bot-request": "tsx src/scripts/signBotRequest.ts",
+    "script:four-paths": "tsx src/scripts/fourPaths.ts"
   },
   "dependencies": {
     "@cursor/sdk": "^1.0.23",
     "@cut/secondary-pricing": "workspace:*",
-    "@playthecut/agent": "workspace:*",
     "@cut/sport-commodities": "workspace:*",
     "@cut/sport-f1": "workspace:*",
     "@cut/sport-pga-golf": "workspace:*",
     "@cut/sport-sdk": "workspace:*",
     "@hono/node-server": "^1.19.3",
+    "@playthecut/agent": "workspace:*",
     "@prisma/client": "^5.10.0",
     "@privy-io/node": "^0.11.0",
     "@slicekit/erc8128": "0.4.1",
@@ -109,6 +110,7 @@
     "@types/node": "^20.19.23",
     "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^1.3.1",
+    "playwright": "^1.65.1",
     "prisma": "^5.10.0",
     "tsx": "^4.7.1",
     "typescript": "^5.3.3",
