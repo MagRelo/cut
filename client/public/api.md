@@ -283,13 +283,13 @@ The product name is league. The path is `/api/userGroups`. Client pages are `/le
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/delegates` | either | Delegates for the account. |
-| POST | `/delegates/quorum` | privy | Create a key quorum for a pasted public key and store a pending delegate. |
-| POST | `/delegates` | privy | Record `{ publicKey, quorumId }` after the browser adds that signer. |
+| GET | `/delegates` | either | Delegates for the account. Each row has `delegateAddress`, `smartWallet`, `status` (`active`, `pending`, `revoking`, or `revoked`), `kind` (`account` or `grant`), `label` (a short name, or `null`), `quorumId`, `createdAt`, and `revokedAt`. |
+| POST | `/delegates/quorum` | privy | Create a key quorum for a pasted public key and store a pending delegate. Body: `publicKey`, optional `label` (max 40). A blank label is stored as null. Omitting `label` leaves a stored name in place. |
+| POST | `/delegates` | privy | Record `{ publicKey, quorumId }` after the browser adds that signer. Optional `label` (max 40) sets the name. Omitting it leaves the stored name. |
 | POST | `/delegates/revoke` | privy | Mark active and pending agents revoking. This route does not remove the wallet signer. The browser removes every signer, then `POST /delegates/revoke/confirm` marks them revoked once the wallet no longer lists them. The delegate cannot revoke itself. |
 | POST | `/delegates/revoke/confirm` | privy | Mark revoking agents revoked after the wallet no longer lists their signers. A signer that is still listed leaves the rows revoking. |
 
 Contest list, lineup save, join, leave, and contest create are the contest and lineup routes. A delegate signer must be an active `BotDelegate`. The first join, leave, paid create, or send returns a prepared user operation and the Privy authorization payload. The caller signs that payload and posts `authorizationSignature`. The server asks Privy to sign the user operation and submits it. The calls have to pass the sponsorship allowlist.
 
-**POST `/delegates` body:** `publicKey`, `quorumId`. The Kernel address must be the signed-in account's wallet.
+**POST `/delegates` body:** `publicKey`, `quorumId`, optional `label`. The Kernel address must be the signed-in account's wallet.
 

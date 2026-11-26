@@ -5,7 +5,7 @@ export function AgentsPage() {
   return (
     <>
       <Breadcrumbs
-        items={[{ label: "Account", path: "/account" }, { label: "Agents" }]}
+        items={[{ label: "Account", path: "/account" }, { label: "AI Agents" }]}
         className="mb-2"
       />
       <BotDelegationSettings />

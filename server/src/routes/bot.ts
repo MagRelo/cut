@@ -16,13 +16,23 @@ import { readQuorumId } from "../services/bot/quorumApproval.js";
 
 const botRouter = new Hono();
 
+const labelSchema = z
+  .string()
+  .trim()
+  .max(40)
+  .nullable()
+  .optional()
+  .transform((value) => (value === "" ? null : value));
+
 const quorumSchema = z.object({
   publicKey: z.string().refine((value) => isDelegatePublicKey(value), "Invalid public key"),
+  label: labelSchema,
 });
 
 const enableSchema = z.object({
   publicKey: z.string().refine((value) => isDelegatePublicKey(value), "Invalid public key"),
   quorumId: z.string().min(1),
+  label: labelSchema,
 });
 
 function embeddedWalletId(accounts: readonly object[]): string | null {
@@ -54,6 +64,8 @@ botRouter.get("/delegates", requireAuth, async (c) => {
       delegateAddress: true,
       smartWallet: true,
       status: true,
+      kind: true,
+      label: true,
       approval: true,
       createdAt: true,
       revokedAt: true,
@@ -64,6 +76,8 @@ botRouter.get("/delegates", requireAuth, async (c) => {
       delegateAddress: row.delegateAddress,
       smartWallet: row.smartWallet,
       status: row.status,
+      kind: row.kind,
+      label: row.label,
       quorumId: readQuorumId(row.approval),
       createdAt: row.createdAt,
       revokedAt: row.revokedAt,
@@ -82,6 +96,7 @@ botRouter.post("/delegates/quorum", requireAuth, requirePrivySession, async (c) 
       userId: user.userId,
       smartWallet: user.address,
       publicKey: parsed.data.publicKey,
+      label: parsed.data.label,
       createQuorum: async (publicKey) => {
         const quorum = await getPrivyClient().keyQuorums().create({
           public_keys: [publicKey],
@@ -130,6 +145,7 @@ botRouter.post("/delegates", requireAuth, requirePrivySession, async (c) => {
       accountAddress: user.address,
       publicKey: parsed.data.publicKey,
       quorumId,
+      label: parsed.data.label,
       linkedAccounts: privyUser.linked_accounts,
       signerInstalled: installed,
     });

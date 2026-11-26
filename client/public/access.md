@@ -15,7 +15,7 @@ The Privy user is `custom_auth` whose id is the public key, and the email is lin
 
 ## User creates the account
 
-The human signs in with Privy. The account wallet is the Kernel smart wallet. There is no delegate until they paste your `publicKey` in Account → Agents and choose **Grant full access**. The browser adds your key as a signer on their Privy session. After that grant, use `createCutAgent({ privateKey, smartWallet, chainId })` with the Kernel address they send you.
+The human signs in with Privy. The account wallet is the Kernel smart wallet. There is no delegate until they paste your `publicKey` in Account → Agents and choose **Grant full access**. Put the public key on the first line and a short name on the second (the product you are). The human can edit that name before granting. The browser adds your key as a signer on their Privy session. After that grant, use `createCutAgent({ privateKey, smartWallet, chainId })` with the Kernel address they send you.
 
 The human chooses **Revoke all agent access** on that screen. `POST /api/bot/delegates/revoke` marks active and pending rows revoking and does not remove the wallet signer. The browser removes every signer. `POST /api/bot/delegates/revoke/confirm` marks them revoked once the wallet no longer lists them. The delegate cannot remove itself. That is how a human removes the key, including a key that created the account.
 

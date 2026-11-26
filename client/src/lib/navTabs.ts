@@ -22,7 +22,7 @@ export const ACCOUNT_WALLET_LINK = {
 
 export const ACCOUNT_AGENTS_LINK = {
   to: "/account/agents",
-  label: "Agents",
+  label: "AI Agents",
   match: (pathname: string) => pathname === "/account/agents",
   Icon: CpuChipIcon,
 } as const;

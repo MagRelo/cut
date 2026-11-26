@@ -1,4 +1,4 @@
-import { getAddress } from "viem";
+import { getAddress, isAddress } from "viem";
 import { prisma } from "../../lib/prisma.js";
 import { walletsFromPrivyUser } from "../auth/registerAgent.js";
 import { readQuorumId, writeQuorumApproval } from "./quorumApproval.js";
@@ -23,10 +23,16 @@ export class DelegateRouteError extends Error {
 
 const REMOVAL_UNFINISHED = "Removal from the wallet has not finished";
 
+function labelWrite(label: string | null | undefined): { label: string | null } | Record<string, never> {
+  if (label === undefined) return {};
+  return { label };
+}
+
 export async function prepareDelegateQuorum(input: {
   userId: string;
   smartWallet: string;
   publicKey: string;
+  label?: string | null;
   createQuorum: (publicKey: string) => Promise<{ id: string }>;
 }): Promise<{ quorumId: string }> {
   const existing = await prisma.botDelegate.findUnique({
@@ -38,6 +44,12 @@ export async function prepareDelegateQuorum(input: {
   if (existing?.status === "active" || existing?.status === "pending") {
     const quorumId = readQuorumId(existing.approval);
     if (!quorumId) throw new DelegateRouteError(400, "Start again. The key was not ready to add.");
+    if (input.label !== undefined) {
+      await prisma.botDelegate.update({
+        where: { userId_delegateAddress: { userId: input.userId, delegateAddress: input.publicKey } },
+        data: { label: input.label },
+      });
+    }
     return { quorumId };
   }
   const quorum = await input.createQuorum(input.publicKey);
@@ -49,6 +61,7 @@ export async function prepareDelegateQuorum(input: {
       smartWallet: input.smartWallet.toLowerCase(),
       delegateAddress: input.publicKey,
       kind: "grant",
+      label: input.label ?? null,
       status: "pending",
       approval,
     },
@@ -57,6 +70,7 @@ export async function prepareDelegateQuorum(input: {
       status: "pending",
       approval,
       revokedAt: null,
+      ...labelWrite(input.label),
     },
   });
   return { quorumId: quorum.id };
@@ -67,6 +81,7 @@ export async function enableDelegate(input: {
   accountAddress: string;
   publicKey: string;
   quorumId: string;
+  label?: string | null;
   linkedAccounts: LinkedAccount[];
   signerInstalled: boolean;
 }): Promise<{ status: "active"; delegateAddress: string }> {
@@ -88,8 +103,16 @@ export async function enableDelegate(input: {
   } catch {
     throw new DelegateRouteError(503, "Your wallet is not ready. Try again.");
   }
-  if (getAddress(wallets.kernel) !== getAddress(input.accountAddress)) {
-    throw new DelegateRouteError(403, "Smart wallet does not match the signed-in account");
+  if (isAddress(input.accountAddress)) {
+    if (getAddress(wallets.kernel) !== getAddress(input.accountAddress)) {
+      throw new DelegateRouteError(403, "Smart wallet does not match the signed-in account");
+    }
+  } else {
+    const wallet = await prisma.userWallet.findFirst({
+      where: { userId: input.userId, isPrimary: true, publicKey: wallets.kernel.toLowerCase() },
+      select: { id: true },
+    });
+    if (!wallet) throw new DelegateRouteError(503, "Your wallet is not ready. Try again.");
   }
   if (!input.signerInstalled) {
     throw new DelegateRouteError(400, "The key was not added to your wallet. Try again.");
@@ -107,6 +130,7 @@ export async function enableDelegate(input: {
       status: "active",
       approval,
       revokedAt: null,
+      ...labelWrite(input.label),
     },
   });
   await prisma.botActionLog.create({

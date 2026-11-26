@@ -9,6 +9,10 @@ export function botDelegatesQueryKey(userId: string) {
 export type BotDelegateRow = {
   delegateAddress: string;
   status: string;
+  kind: string;
+  label: string | null;
+  createdAt: string;
+  revokedAt: string | null;
   smartWallet?: string;
   quorumId?: string | null;
 };

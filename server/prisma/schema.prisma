@@ -93,6 +93,8 @@ model BotDelegate {
   delegateAddress String
   /// account | grant. account is the key that opened the user. grant is a key the human added.
   kind            String    @default("grant")
+  /// Short name from the grant paste. Empty when the human did not set one.
+  label           String?
   /// active | pending | revoking | revoked
   status          String
   /// Privy key quorum for the delegate: quorum id, public key, and embedded wallet.

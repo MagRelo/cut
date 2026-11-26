@@ -439,7 +439,7 @@ Requires Node.js 20 or newer.
 
 ### Choose a path
 
-Every path uses the same Kernel smart wallet. The key is a P-256 delegate from `generateDelegateKey()`. Store `privateKey`. `publicKey` is what a human pastes to grant you.
+Every path uses the same Kernel smart wallet. The key is a P-256 delegate from `generateDelegateKey()`. Store `privateKey`. `publicKey` is what a human pastes to grant you, on the first line, with a short name on the second (the product you are). The human can edit that name before granting.
 
 | Setup choice | Human already has an account | New account |
 | --- | --- | --- |
@@ -831,4 +831,4 @@ The first response is `{ preparedUserOp, userOpHash, userOp, calls, authorizatio
 
 ### Delegate endpoints
 
-`POST /api/bot/delegates/quorum` creates the key quorum for a public key. The browser adds that signer, then `POST /api/bot/delegates` records `{ publicKey, quorumId }` on the Privy session. `POST /api/bot/delegates/revoke` marks active and pending agents revoking and does not remove the wallet signer. The browser removes every signer. `POST /api/bot/delegates/revoke/confirm` marks them revoked after the wallet no longer lists them. The delegate cannot revoke itself.
+`POST /api/bot/delegates/quorum` creates the key quorum for a public key. Optional `label` is a name of at most 40 characters. The browser adds that signer, then `POST /api/bot/delegates` records `{ publicKey, quorumId }` on the Privy session, with the same optional `label`. Omitting `label` leaves a stored name in place. `POST /api/bot/delegates/revoke` marks active and pending agents revoking and does not remove the wallet signer. The browser removes every signer. `POST /api/bot/delegates/revoke/confirm` marks them revoked after the wallet no longer lists them. The delegate cannot revoke itself.

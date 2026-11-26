@@ -1,19 +1,21 @@
 import { getAddress } from "viem";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findUnique, findMany, upsert, update, updateMany, create } = vi.hoisted(() => ({
+const { findUnique, findMany, upsert, update, updateMany, create, findWallet } = vi.hoisted(() => ({
   findUnique: vi.fn(),
   findMany: vi.fn(),
   upsert: vi.fn(),
   update: vi.fn(),
   updateMany: vi.fn(),
   create: vi.fn(),
+  findWallet: vi.fn(),
 }));
 
 vi.mock("../../lib/prisma.js", () => ({
   prisma: {
     botDelegate: { findUnique, findMany, upsert, update, updateMany },
     botActionLog: { create },
+    userWallet: { findFirst: findWallet },
   },
 }));
 
@@ -66,6 +68,44 @@ describe("delegate quorum", () => {
       }),
     ).rejects.toMatchObject({ status: 409, message: "Removal from the wallet has not finished" });
     expect(createQuorum).not.toHaveBeenCalled();
+  });
+
+  it("stores a label when preparing a new key", async () => {
+    findUnique.mockResolvedValue(null);
+    const createQuorum = vi.fn().mockResolvedValue({ id: "quorum-1" });
+    await prepareDelegateQuorum({
+      userId: "user-1",
+      smartWallet: WALLET,
+      publicKey: PUBLIC_KEY,
+      label: "Claude",
+      createQuorum,
+    });
+    expect(upsert).toHaveBeenCalledWith({
+      where: { userId_delegateAddress: { userId: "user-1", delegateAddress: PUBLIC_KEY } },
+      create: expect.objectContaining({ label: "Claude", status: "pending", kind: "grant" }),
+      update: expect.objectContaining({ label: "Claude", status: "pending", revokedAt: null }),
+    });
+  });
+
+  it("updates the label on a pending key without minting another quorum", async () => {
+    findUnique.mockResolvedValue({
+      status: "pending",
+      approval: JSON.stringify({ quorumId: "quorum-1", publicKey: PUBLIC_KEY }),
+    });
+    const createQuorum = vi.fn();
+    await prepareDelegateQuorum({
+      userId: "user-1",
+      smartWallet: WALLET,
+      publicKey: PUBLIC_KEY,
+      label: "Cursor",
+      createQuorum,
+    });
+    expect(createQuorum).not.toHaveBeenCalled();
+    expect(upsert).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledWith({
+      where: { userId_delegateAddress: { userId: "user-1", delegateAddress: PUBLIC_KEY } },
+      data: { label: "Cursor" },
+    });
   });
 
   it("returns the stored quorum for an active key and does not mint another", async () => {
@@ -205,5 +245,111 @@ describe("delegate quorum", () => {
         }),
       }),
     });
+    expect(update.mock.calls[0]?.[0].data).not.toHaveProperty("label");
+  });
+
+  it("rejects an empty account address when this user has no matching wallet", async () => {
+    findUnique.mockResolvedValue({
+      id: "row-1",
+      status: "pending",
+      approval: JSON.stringify({ quorumId: "quorum-1", publicKey: PUBLIC_KEY }),
+    });
+    findWallet.mockResolvedValue(null);
+    await expect(
+      enableDelegate({
+        userId: "user-1",
+        accountAddress: "",
+        publicKey: PUBLIC_KEY,
+        quorumId: "quorum-1",
+        linkedAccounts: [
+          {
+            type: "wallet",
+            id: "embedded-1",
+            address: EMBEDDED,
+            chain_type: "ethereum",
+            connector_type: "embedded",
+          },
+          { type: "smart_wallet", address: WALLET },
+        ],
+        signerInstalled: true,
+      }),
+    ).rejects.toMatchObject({ status: 503, message: "Your wallet is not ready. Try again." });
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("enables when the session has no chain wallet but this user owns the kernel", async () => {
+    findUnique.mockResolvedValue({
+      id: "row-1",
+      status: "pending",
+      approval: JSON.stringify({ quorumId: "quorum-1", publicKey: PUBLIC_KEY }),
+    });
+    findWallet.mockResolvedValue({ id: "wallet-1" });
+    await enableDelegate({
+      userId: "user-1",
+      accountAddress: "",
+      publicKey: PUBLIC_KEY,
+      quorumId: "quorum-1",
+      linkedAccounts: [
+        {
+          type: "wallet",
+          id: "embedded-1",
+          address: EMBEDDED,
+          chain_type: "ethereum",
+          connector_type: "embedded",
+        },
+        { type: "smart_wallet", address: WALLET },
+      ],
+      signerInstalled: true,
+    });
+    expect(findWallet).toHaveBeenCalledWith({
+      where: { userId: "user-1", isPrimary: true, publicKey: WALLET.toLowerCase() },
+      select: { id: true },
+    });
+    expect(update).toHaveBeenCalledWith({
+      where: { id: "row-1" },
+      data: expect.objectContaining({ status: "active" }),
+    });
+  });
+
+  it("writes a label when enabling and leaves a stored label when the name is omitted", async () => {
+    findUnique.mockResolvedValue({
+      id: "row-1",
+      status: "pending",
+      approval: JSON.stringify({ quorumId: "quorum-1", publicKey: PUBLIC_KEY }),
+    });
+    const linkedAccounts = [
+      {
+        type: "wallet",
+        id: "embedded-1",
+        address: EMBEDDED,
+        chain_type: "ethereum",
+        connector_type: "embedded",
+      },
+      { type: "smart_wallet", address: WALLET },
+    ];
+    await enableDelegate({
+      userId: "user-1",
+      accountAddress: WALLET,
+      publicKey: PUBLIC_KEY,
+      quorumId: "quorum-1",
+      label: "Claude",
+      linkedAccounts,
+      signerInstalled: true,
+    });
+    expect(update).toHaveBeenCalledWith({
+      where: { id: "row-1" },
+      data: expect.objectContaining({ status: "active", label: "Claude" }),
+    });
+
+    update.mockClear();
+    await enableDelegate({
+      userId: "user-1",
+      accountAddress: WALLET,
+      publicKey: PUBLIC_KEY,
+      quorumId: "quorum-1",
+      linkedAccounts,
+      signerInstalled: true,
+    });
+    expect(update.mock.calls[0]?.[0].data).not.toHaveProperty("label");
   });
 });
