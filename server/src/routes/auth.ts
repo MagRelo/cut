@@ -55,6 +55,8 @@ authRouter.post("/register", async (c) => {
     }
     const parsed = registerSchema.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) {
+      const emailIssue = parsed.error.issues.find((issue) => issue.path[0] === "email");
+      if (emailIssue) return c.json({ error: "A valid email is required" }, 400);
       return c.json({ error: "Invalid request body", details: parsed.error.issues }, 400);
     }
     if (parsed.data.publicKey !== verified.signer) {
@@ -63,7 +65,7 @@ authRouter.post("/register", async (c) => {
     const account = await registerAgentAccount({
       publicKey: verified.signer,
       chainId: verified.chainId,
-      ...(parsed.data.email ? { email: parsed.data.email } : {}),
+      email: parsed.data.email,
       ...(parsed.data.name ? { name: parsed.data.name } : {}),
       ...(parsed.data.referralCode ? { referralCode: parsed.data.referralCode } : {}),
       ...(parsed.data.color ? { color: parsed.data.color } : {}),

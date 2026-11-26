@@ -57,7 +57,7 @@ export const registerSchema = z.object({
     .string()
     .regex(/^[A-Za-z0-9+/]+={0,2}$/, "Invalid public key")
     .refine((value) => value.length >= 80 && value.length <= 200, "Invalid public key"),
-  email: z.string().trim().email("A valid email is required").optional(),
+  email: z.string("A valid email is required").trim().email("A valid email is required"),
   name: z.string().trim().min(1).max(NAME_MAX_LENGTH).optional(),
   referralCode: z.string().trim().min(1).max(32).optional(),
   color: z.string().regex(HEX_COLOR, "Invalid color").optional(),

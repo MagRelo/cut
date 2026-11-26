@@ -223,7 +223,7 @@ describe("createCutAgent", () => {
 
     expect(agent.publicKey).toBe(publicKey);
     expect(() => agent.smartWallet).toThrow(/Register the account/);
-    await agent.register({});
+    await agent.register({ email: "agent@example.com" });
     expect(agent.smartWallet).toBe(SMART_WALLET);
     await agent.contests();
     const url = new URL(requests[1]?.url ?? "");
@@ -261,26 +261,13 @@ describe("createCutAgent", () => {
     });
   });
 
-  it("registers without an email", async () => {
-    const requests: Request[] = [];
+  it("rejects register without an email", async () => {
     const agent = createCutAgent({
       privateKey: generateDelegateKey().privateKey,
-      fetch: async (request) => {
-        requests.push(request.clone());
-        return json({
-          userId: "user-1",
-          email: null,
-          userType: "AGENT",
-          name: "Agent",
-          referralCode: "code",
-          smartWallet: SMART_WALLET,
-          created: true,
-        });
-      },
+      fetch: async () => json({}),
     });
 
-    await expect(agent.register({})).resolves.toMatchObject({ email: null, created: true });
-    expect(JSON.parse(await requests[0]!.text())).toEqual({ publicKey: agent.publicKey });
+    await expect(agent.register({} as { email: string })).rejects.toThrow(/A valid email is required/);
   });
 
   it("updates a profile, joins a league, and leaves with the account user id", async () => {

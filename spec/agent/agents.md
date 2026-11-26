@@ -174,9 +174,9 @@ This step stops before `join`. The field is not on this response. `field(eventId
 
 #### Calls
 
-`agent.account()` → `GET /api/agent/account`. `userId`, wallet, chain, `balanceUsdc` (USDC to two decimals, or `null` when the read failed), `profile` (`name`, `email`, `color`, `oddsFormat`), leagues and role, referral code, url, and `totalEarned`, and entry counts keyed by contest status. `profile.email` is `null` until the human claims it with `POST /api/auth/claim-email`.
+`agent.account()` → `GET /api/agent/account`. `userId`, wallet, chain, `balanceUsdc` (USDC to two decimals, or `null` when the read failed), `profile` (`name`, `email`, `color`, `oddsFormat`), leagues and role, referral code, url, and `totalEarned`, and entry counts keyed by contest status. `profile.email` is the inbox linked at register.
 
-`agent.updateProfile({ name?, email?, color?, oddsFormat? })` → `PUT /api/agent/profile`. At least one field. `color` is `#rgb` or `#rrggbb`. `oddsFormat` is `american`, `decimal`, or `english`. Omit a field to leave it. An active delegate may set or replace the pending email while `User.email` and `lastLoginAt` are both null. After either is set, email is `403` `"This account already has a login"`. A bearer with no delegate signer is `403` `"Sign in is required to change this email"`. An email on another account is `400` with code `EMAIL_ALREADY_BOUND`. The response is the profile, with `email` null and `emailPending` true until `POST /api/auth/claim-email`.
+`agent.updateProfile({ name?, email?, color?, oddsFormat? })` → `PUT /api/agent/profile`. At least one field. `color` is `#rgb` or `#rrggbb`. `oddsFormat` is `american`, `decimal`, or `english`. Omit a field to leave it. Email is set at register. A bearer with no delegate signer is `403` `"Sign in is required to change this email"`. After `User.email` or `lastLoginAt` is set, email is `403` `"This account already has a login"`. When neither is set, email is `400` `"Email is set when the account is created"`.
 
 `agent.scout()` → `GET /api/agent/scout`.
 
@@ -444,7 +444,7 @@ Every path uses the same Kernel smart wallet. The key is a P-256 delegate from `
 | Setup choice | Human already has an account | New account |
 | --- | --- | --- |
 | Client | `createCutAgent({ privateKey, smartWallet, chainId })` | `createCutAgent({ privateKey, chainId })`, then `register` |
-| First call | `account()` after the human grants the public key | `register({ email?, name?, color?, oddsFormat?, referralCode? })` |
+| First call | `account()` after the human grants the public key | `register({ email, name?, color?, oddsFormat?, referralCode? })` |
 | Wallet | The Kernel address the human sends you | The `smartWallet` in the register response |
 
 The four setups are in [Account access](access.md).
@@ -458,7 +458,7 @@ The human pastes `publicKey` and grants it. Pass their Kernel address as `smartW
 `register` creates the Privy user, the Kernel smart wallet, and the key quorum. That Kernel address holds the USDC. `ownerAddress` stays empty.
 
 1. `createCutAgent({ privateKey, chainId })`. Leave `smartWallet` unset.
-2. `register({ email?, name?, color?, oddsFormat?, referralCode? })`. Email is optional. Pass `referralCode` when this account was invited. `color` and `oddsFormat` are stored on the new account only. In the same message, say "Creating your account means you agree to the Terms of Service (https://playthecut.com/terms) and Privacy Policy (https://playthecut.com/privacy)." and call `register`. Do not ask a question and do not wait. Do not paste either document. Do not say it again when `account()` already returns a user, or when `register` returns `created: false`. If the person has already said they do not agree, do not register. The create stores `tosAcceptedAt`. A repeat call does not change it.
+2. `register({ email, name?, color?, oddsFormat?, referralCode? })`. Email is required. Pass `referralCode` when this account was invited. `color` and `oddsFormat` are stored on the new account only. In the same message, say "Creating your account means you agree to the Terms of Service (https://playthecut.com/terms) and Privacy Policy (https://playthecut.com/privacy)." and call `register`. Do not ask a question and do not wait. Do not paste either document. Do not say it again when `account()` already returns a user, or when `register` returns `created: false`. If the person has already said they do not agree, do not register. The create stores `tosAcceptedAt`. A repeat call does not change it.
 3. The client stores `smartWallet` from the response. Contest reads, `lineupUpsert`, `join`, `leave`, `createContest`, league setup, and `createFreeContest` use this key.
 4. Gas for `join`, `leave`, and paid `createContest` is sponsored when those calls are on the sponsorship allowlist.
 
@@ -622,7 +622,7 @@ Briefing reads use the same signature as the play actions. The SDK sends `smartW
 
 `agent.updateProfile({ name?, email?, color?, oddsFormat? })` → `PUT /api/agent/profile`.
 
-At least one field. The response is the profile. An active delegate may set `name`, `color`, `oddsFormat`, and, while `User.email` and `lastLoginAt` are both null, the pending `email`. A bearer with no delegate signer is `403` `"Sign in is required to change this email"`. After a claimed email or a login, email is `403` `"This account already has a login"`.
+At least one field. The response is the profile. An active delegate may set `name`, `color`, and `oddsFormat`. Email is set at register. A bearer with no delegate signer is `403` `"Sign in is required to change this email"`. After `User.email` or a login, email is `403` `"This account already has a login"`. When neither is set, email is `400` `"Email is set when the account is created"`.
 
 ### joinLeague
 
@@ -781,13 +781,13 @@ The SDK puts `smartWallet` on the query and `X-Cut-Chain-Id` on the request. A s
 
 ### register
 
-`agent.register({ email?, name?, color?, oddsFormat?, referralCode? })` → `POST /api/auth/register`.
+`agent.register({ email, name?, color?, oddsFormat?, referralCode? })` → `POST /api/auth/register`.
 
-The P-256 key signs. The body includes `publicKey`. The server creates the Privy user with `custom_auth` whose id is that public key, the Kernel smart wallet, and this key's quorum. That Kernel address is `smartWallet` and holds the USDC. A new account is `userType` `AGENT`. Email is optional. No email is linked at create time. An email stays pending until the human calls `POST /api/auth/claim-email` with the mailed code, then signs in with the Privy OTP. `email` stays null and `emailPending` is true until that claim. `color` is `#rgb` or `#rrggbb`. `oddsFormat` is `american`, `decimal`, or `english`. Those settings are written only when the account is created. Registering the same active account key again returns that account and does not change a claimed email, the name, the settings, or the type. A revoked account key is `409` `"This key was revoked"`. A `grant` row for the same key is not that account. `201` when the account is new, `200` when the key already has one. An email already on another account is `400` with code `EMAIL_ALREADY_BOUND`.
+The P-256 key signs. The body includes `publicKey`. The server creates the Privy user with `custom_auth` whose id is that public key, the email, the Kernel smart wallet, and this key's quorum. That Kernel address is `smartWallet` and holds the USDC. A new account is `userType` `AGENT`. Email is required and is linked on Privy at create. `User.email` is that inbox and `emailPending` is false. A missing email is `400` `"A valid email is required"`. The human signs in later with the Privy email OTP. `color` is `#rgb` or `#rrggbb`. `oddsFormat` is `american`, `decimal`, or `english`. Those settings are written only when the account is created. Registering the same active account key again returns that account and does not change the email, the name, the settings, or the type. A revoked account key is `409` `"This key was revoked"`. A `grant` row for the same key is not that account. `201` when the account is new, `200` when the key already has one. An email already on another account is `400` with code `EMAIL_ALREADY_BOUND`.
 
 Creating an account includes this sentence in the same message as the call: "Creating your account means you agree to the Terms of Service (https://playthecut.com/terms) and Privacy Policy (https://playthecut.com/privacy)." Say it and call `register` in the same turn. Do not ask a question and do not wait. Do not paste either document. Do not say it when `account()` already returns a user, or when this call returns `created: false`. If the person has already said they do not agree, do not register. The server stores that moment as `tosAcceptedAt` on the new account. Browser signup on `POST /auth/session` stores the same field. Registering the same wallet again does not change it.
 
-Response: `userId`, `email` (`null` until claim-email), `emailPending`, `userType`, `name`, `referralCode`, `smartWallet`, `created`.
+Response: `userId`, `email`, `emailPending` (false on a new account), `userType`, `name`, `referralCode`, `smartWallet`, `created`.
 
 ## Errors and recovery
 

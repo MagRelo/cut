@@ -83,15 +83,11 @@ describe("PUT /agent/profile", () => {
     });
   });
 
-  it("lets the delegate set the login email before a human signs in", async () => {
+  it("rejects a login email after the account is created", async () => {
     const response = await request(OWNER, { email: "Ada@Example.com" });
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ email: null, emailPending: true, name: "Ada" });
-    expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ pendingEmail: "ada@example.com" }),
-      }),
-    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "Email is set when the account is created" });
+    expect(update).not.toHaveBeenCalled();
   });
 
   it("lets a delegate set the display name and color", async () => {

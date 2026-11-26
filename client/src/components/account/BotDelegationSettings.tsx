@@ -43,6 +43,10 @@ function looksLikePublicKey(value: string): boolean {
   return /^[A-Za-z0-9+/]+={0,2}$/.test(value) && value.length >= 80 && value.length <= 200;
 }
 
+function signerAlreadyAdded(err: unknown): boolean {
+  return err instanceof Error && /duplicate signer/i.test(err.message);
+}
+
 export function BotDelegationSettings() {
   const { wallets } = useWallets();
   const { addSigners, removeSigners } = useSigners();
@@ -72,10 +76,14 @@ export function BotDelegationSettings() {
       { publicKey },
       { requiresAuth: true },
     );
-    await addSigners({
-      address: embedded.address,
-      signers: [{ signerId: prepared.quorumId }],
-    });
+    try {
+      await addSigners({
+        address: embedded.address,
+        signers: [{ signerId: prepared.quorumId }],
+      });
+    } catch (err) {
+      if (!signerAlreadyAdded(err)) throw err;
+    }
     await apiClient.post(
       "/bot/delegates",
       { publicKey, quorumId: prepared.quorumId },
@@ -164,14 +172,18 @@ export function BotDelegationSettings() {
       className="rounded-lg border border-slate-200 bg-white p-6 font-display shadow-sm sm:p-8"
       aria-labelledby="delegate-heading"
     >
-      <h1 className="mb-4 flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
+      <h1
+        id="delegate-heading"
+        className="mb-4 flex items-center gap-2 font-display text-xl font-semibold text-gray-900"
+      >
         <CpuChipIcon className="h-6 w-6 shrink-0" aria-hidden />
         Agents
       </h1>
 
       <div className="max-w-3xl">
         <p className="text-sm leading-6 text-slate-600">
-          Use a personal agent to handle research, reminders, finding contests, etc.
+          Give an agent control of your account. Agents can handle research, reminders, finding
+          contests, etc.
         </p>
 
         <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -205,8 +217,108 @@ export function BotDelegationSettings() {
         </div>
       </div>
 
+      {delegates.isError ? (
+        <ErrorMessage message="Could not load agents" className="mt-4" />
+      ) : null}
+      {delegates.isSuccess || rows.length > 0 ? (
+        <ul aria-label="Agents" className="border-t border-slate-300">
+          {rows.length === 0 ? (
+            <li className="border-b border-slate-300 py-3 text-sm leading-6 text-slate-800">
+              no agents
+            </li>
+          ) : (
+            rows.map((row) => {
+              const publicKey = agentKeyLabel(row.delegateAddress);
+              return (
+                <li
+                  key={row.delegateAddress}
+                  className="flex flex-col gap-3 border-b border-slate-300 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <span className="break-all font-mono text-xs text-slate-800">{publicKey}</span>
+                    {row.status === "pending" ? (
+                      <p className="mt-1 text-sm leading-6 text-slate-800">Grant did not finish.</p>
+                    ) : null}
+                    {row.status === "revoking" ? (
+                      <p className="mt-1 text-sm leading-6 text-slate-800">
+                        Removal from the wallet did not finish.
+                      </p>
+                    ) : null}
+                  </div>
+                  {row.status === "pending" ? (
+                    <Button
+                      type="button"
+                      variant="neutral"
+                      disabled={pending !== null}
+                      onClick={() => {
+                        void run("grant", () => enable(row.delegateAddress));
+                      }}
+                    >
+                      {pending === "grant" ? "Granting…" : "Finish granting"}
+                    </Button>
+                  ) : null}
+                </li>
+              );
+            })
+          )}
+        </ul>
+      ) : null}
+      {active.length > 0 ? (
+        <div className="mt-4">
+          <Button
+            type="button"
+            variant="neutral"
+            disabled={pending !== null}
+            onClick={() => setRevokeWarning("active")}
+          >
+            Revoke all agent access
+          </Button>
+          {revokeWarningPanel("active")}
+        </div>
+      ) : null}
+      {revoking.length > 0 ? (
+        <div className="mt-4">
+          <p className="text-sm leading-6 text-slate-800">
+            Agents can no longer act in Play The Cut.
+          </p>
+          <div className="mt-4">
+            <Button
+              type="button"
+              variant="neutral"
+              disabled={pending !== null}
+              onClick={() => {
+                if (active.length > 0 || pendingRows.length > 0) {
+                  setRevokeWarning("stuck");
+                  return;
+                }
+                void run("remove", revokeAll);
+              }}
+            >
+              {pending === "remove" ? "Removing…" : "Remove the key from the wallet"}
+            </Button>
+            {revokeWarningPanel("stuck")}
+          </div>
+        </div>
+      ) : null}
+      {pendingRows.length > 0 && active.length === 0 && revoking.length === 0 ? (
+        <div className="mt-4">
+          <Button
+            type="button"
+            variant="neutral"
+            disabled={pending !== null}
+            onClick={() => setRevokeWarning("pending")}
+          >
+            Remove the key from the wallet
+          </Button>
+          {revokeWarningPanel("pending")}
+        </div>
+      ) : null}
+      {actionError ? <ErrorMessage message={actionError} className="mt-2" /> : null}
+
+      <h2 className="mt-8 text-base font-semibold text-slate-900">Add an Agent</h2>
+
       <form
-        className="mt-8"
+        className="mt-3"
         onSubmit={(event) => {
           event.preventDefault();
           if (!looksLikePublicKey(delegateInput)) {
@@ -224,143 +336,34 @@ export function BotDelegationSettings() {
           );
         }}
       >
-        <h3 className="text-base font-semibold text-slate-900">Add an Agent</h3>
-
-        <div className="mt-3">
-          <label htmlFor="agent-public-key" className="text-sm font-medium text-slate-900">
-            Public key
-          </label>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <input
-              id="agent-public-key"
-              name="publicKey"
-              value={delegateInput}
-              onChange={(event) => setDelegateInput(event.target.value.trim())}
-              type="text"
-              placeholder="Public key"
-              autoComplete="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              aria-describedby="agent-public-key-note"
-              aria-invalid={fieldError ? true : undefined}
-              disabled={pending !== null}
-              className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100"
-            />
-            <Button type="submit" disabled={pending !== null} className="w-full sm:w-auto">
-              {pending === "grant" ? "Granting…" : "Grant full access"}
-            </Button>
-          </div>
-          <p id="agent-public-key-note" className="mt-2 text-xs leading-5 text-slate-500">
-            This key can send {defaultPaymentTokenSymbol()}, enter a paid contest, create a paid
-            contest, and send messages. Double-check the public key before granting access.
-          </p>
-          {fieldError ? <ErrorMessage message={fieldError} className="mt-2" /> : null}
+        <label htmlFor="agent-public-key" className="text-sm font-medium text-slate-900">
+          Ask your agent for its key, then paste it here:
+        </label>
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <input
+            id="agent-public-key"
+            name="publicKey"
+            value={delegateInput}
+            onChange={(event) => setDelegateInput(event.target.value.trim())}
+            type="text"
+            placeholder="Agent Key"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            aria-describedby="agent-public-key-note"
+            aria-invalid={fieldError ? true : undefined}
+            disabled={pending !== null}
+            className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100"
+          />
+          <Button type="submit" disabled={pending !== null} className="w-full sm:w-auto">
+            {pending === "grant" ? "Granting…" : "Grant full access"}
+          </Button>
         </div>
-
-        {delegates.isError ? (
-          <ErrorMessage message="Could not load agents" className="mt-4" />
-        ) : null}
-        {pendingRows.length > 0 ? (
-          <div className="mt-6">
-            <p className="text-sm leading-6 text-slate-800">Grant did not finish.</p>
-            <ul className="mt-3 border-t border-slate-300">
-              {pendingRows.map((row) => {
-                const publicKey = agentKeyLabel(row.delegateAddress);
-                return (
-                  <li
-                    key={row.delegateAddress}
-                    className="flex flex-col gap-3 border-b border-slate-300 py-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <span className="min-w-0 break-all font-mono text-xs text-slate-800">
-                      {publicKey}
-                    </span>
-                    <CopyButton text={publicKey} idleLabel="Copy public key" variant="secondary" />
-                    <Button
-                      type="button"
-                      variant="neutral"
-                      disabled={pending !== null}
-                      onClick={() => {
-                        void run("grant", () => enable(row.delegateAddress));
-                      }}
-                    >
-                      {pending === "grant" ? "Granting…" : "Finish granting"}
-                    </Button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ) : null}
-        {active.length > 0 ? (
-          <div className="mt-6">
-            <h3 className="text-base font-semibold text-slate-900">Agents with access</h3>
-            <ul className="mt-3 border-t border-slate-300">
-              {active.map((row) => {
-                const publicKey = agentKeyLabel(row.delegateAddress);
-                return (
-                  <li
-                    key={row.delegateAddress}
-                    className="flex flex-col gap-3 border-b border-slate-300 py-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <span className="min-w-0 break-all font-mono text-xs text-slate-800">
-                      {publicKey}
-                    </span>
-                    <CopyButton text={publicKey} idleLabel="Copy public key" variant="secondary" />
-                  </li>
-                );
-              })}
-            </ul>
-            <div className="mt-4">
-              <Button
-                type="button"
-                variant="neutral"
-                disabled={pending !== null}
-                onClick={() => setRevokeWarning("active")}
-              >
-                Revoke all agent access
-              </Button>
-              {revokeWarningPanel("active")}
-            </div>
-          </div>
-        ) : null}
-        {revoking.length > 0 ? (
-          <div className="mt-4">
-            <p className="text-sm leading-6 text-slate-800">
-              Agents can no longer act in Play The Cut. Removal from the wallet did not finish.
-            </p>
-            <div className="mt-4">
-              <Button
-                type="button"
-                variant="neutral"
-                disabled={pending !== null}
-                onClick={() => {
-                  if (active.length > 0 || pendingRows.length > 0) {
-                    setRevokeWarning("stuck");
-                    return;
-                  }
-                  void run("remove", revokeAll);
-                }}
-              >
-                {pending === "remove" ? "Removing…" : "Remove the key from the wallet"}
-              </Button>
-              {revokeWarningPanel("stuck")}
-            </div>
-          </div>
-        ) : null}
-        {pendingRows.length > 0 && active.length === 0 && revoking.length === 0 ? (
-          <div className="mt-4">
-            <Button
-              type="button"
-              variant="neutral"
-              disabled={pending !== null}
-              onClick={() => setRevokeWarning("pending")}
-            >
-              Remove the key from the wallet
-            </Button>
-            {revokeWarningPanel("pending")}
-          </div>
-        ) : null}
-        {actionError ? <ErrorMessage message={actionError} className="mt-2" /> : null}
+        <p id="agent-public-key-note" className="mt-2 text-xs leading-5 text-slate-500">
+          This key can send {defaultPaymentTokenSymbol()}, enter a paid contest, create a paid
+          contest, and send messages. Double-check the public key before granting access.
+        </p>
+        {fieldError ? <ErrorMessage message={fieldError} className="mt-2" /> : null}
       </form>
     </section>
   );

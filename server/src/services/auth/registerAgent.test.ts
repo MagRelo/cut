@@ -120,8 +120,8 @@ describe("registerAgentAccount", () => {
     });
     expect(account).toMatchObject({
       userId: "agent-1",
-      email: null,
-      emailPending: true,
+      email: "agent@example.com",
+      emailPending: false,
       userType: "AGENT",
       created: true,
       smartWallet: KERNEL,
@@ -131,7 +131,10 @@ describe("registerAgentAccount", () => {
     );
     expect(userCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        linked_accounts: [{ type: "custom_auth", custom_user_id: KEY.publicKey }],
+        linked_accounts: [
+          { type: "custom_auth", custom_user_id: KEY.publicKey },
+          { type: "email", address: "agent@example.com" },
+        ],
         wallets: [
           expect.objectContaining({
             chain_type: "ethereum",
@@ -146,6 +149,7 @@ describe("registerAgentAccount", () => {
         data: expect.objectContaining({
           privyUserId: "did:privy:agent",
           userType: "AGENT",
+          email: "agent@example.com",
           wallets: {
             create: {
               chainId: 84532,
@@ -159,28 +163,16 @@ describe("registerAgentAccount", () => {
     expect(createUser.mock.calls[0]?.[0].data.wallets.create.ownerAddress).toBeUndefined();
   });
 
-  it("links a custom auth id when there is no email", async () => {
-    createUser.mockResolvedValue({
-      id: "agent-1",
-      email: null,
-      userType: "AGENT",
-      name: "Ada",
-      referralCode: "ABCD2345",
-    });
-    const account = await registerAgentAccount({
-      publicKey: KEY.publicKey,
-      chainId: 84532,
-      name: "Ada",
-      color: "#0a73eb",
-      oddsFormat: "decimal",
-    });
-    expect(account.email).toBeNull();
-    expect(account.emailPending).toBe(false);
-    expect(userCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        linked_accounts: [{ type: "custom_auth", custom_user_id: KEY.publicKey }],
+  it("rejects register without an email", async () => {
+    await expect(
+      registerAgentAccount({
+        publicKey: KEY.publicKey,
+        chainId: 84532,
+        name: "Ada",
       }),
-    );
+    ).rejects.toMatchObject({ status: 400, message: "A valid email is required" });
+    expect(userCreate).not.toHaveBeenCalled();
+    expect(createUser).not.toHaveBeenCalled();
   });
 
   it("rejects an email that already belongs to another account", async () => {
@@ -233,7 +225,7 @@ describe("registerAgentAccount", () => {
 
   it("opens a new account when the key is only a grant on someone else", async () => {
     findFirstDelegate.mockResolvedValue(null);
-    userCreate.mockResolvedValue(privyUser());
+    userCreate.mockResolvedValue(privyUser("grant@example.com"));
     createUser.mockResolvedValue({
       id: "agent-2",
       email: null,
@@ -245,8 +237,14 @@ describe("registerAgentAccount", () => {
     const account = await registerAgentAccount({
       publicKey: KEY.publicKey,
       chainId: 84532,
+      email: "grant@example.com",
     });
-    expect(account).toMatchObject({ created: true, userId: "agent-2", emailPending: false });
+    expect(account).toMatchObject({
+      created: true,
+      userId: "agent-2",
+      email: "grant@example.com",
+      emailPending: false,
+    });
   });
 
   it("rejects a revoked account key", async () => {
@@ -269,9 +267,13 @@ describe("registerAgentAccount", () => {
   });
 
   it("reuses the Privy user when the Cut row was not saved", async () => {
-    getByCustomAuthID.mockResolvedValue(privyUser());
+    getByCustomAuthID.mockResolvedValue(privyUser("ada@example.com"));
     walletGet.mockResolvedValue({ additional_signers: [{ signer_id: "quorum-existing" }] });
-    const account = await registerAgentAccount({ publicKey: KEY.publicKey, chainId: 84532 });
+    const account = await registerAgentAccount({
+      publicKey: KEY.publicKey,
+      chainId: 84532,
+      email: "ada@example.com",
+    });
     expect(account).toMatchObject({ userId: "agent-1", created: true, smartWallet: KERNEL });
     expect(userCreate).not.toHaveBeenCalled();
     expect(quorumCreate).not.toHaveBeenCalled();
@@ -288,6 +290,18 @@ describe("registerAgentAccount", () => {
     );
   });
 
+  it("rejects a reused Privy user that does not have this email", async () => {
+    getByCustomAuthID.mockResolvedValue(privyUser());
+    await expect(
+      registerAgentAccount({
+        publicKey: KEY.publicKey,
+        chainId: 84532,
+        email: "ada@example.com",
+      }),
+    ).rejects.toMatchObject({ status: 409, message: "This key is already registered" });
+    expect(createUser).not.toHaveBeenCalled();
+  });
+
   it("returns 409 when the account key insert conflicts", async () => {
     createUser.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError("Unique constraint", {
@@ -296,7 +310,11 @@ describe("registerAgentAccount", () => {
       }),
     );
     await expect(
-      registerAgentAccount({ publicKey: KEY.publicKey, chainId: 84532 }),
+      registerAgentAccount({
+        publicKey: KEY.publicKey,
+        chainId: 84532,
+        email: "ada@example.com",
+      }),
     ).rejects.toMatchObject({ status: 409, message: "This key is already registered" });
   });
 });

@@ -125,7 +125,7 @@ export type CutAgent = {
     input?: { since?: string; include?: Array<"timeline" | "commentary" | "standings"> },
   ): Promise<unknown>;
   register(input: {
-    email?: string;
+    email: string;
     name?: string;
     referralCode?: string;
     color?: string;

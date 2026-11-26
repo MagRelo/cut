@@ -1,8 +1,6 @@
 import { Prisma } from "@prisma/client";
 import type { AgentProfile, AgentProfilePatch, OddsFormat } from "@playthecut/agent/contract";
 import { prisma } from "../../lib/prisma.js";
-import { ClaimEmailError, issueEmailClaim } from "../auth/claimEmail.js";
-import { ReferralProvisionError } from "../../lib/privyUserProvisioning.js";
 import { mergeUserSettings } from "../../schemas/user.js";
 
 const ODDS: readonly OddsFormat[] = ["american", "decimal", "english"];
@@ -55,25 +53,10 @@ export async function updateAgentProfile(input: {
   });
   if (!user) return { ok: false, status: 404, error: "User not found" };
 
-  const email = input.patch.email?.trim().toLowerCase();
-  let pendingEmail = user.pendingEmail;
   if (input.patch.email !== undefined) {
     const denied = await emailDenied(input, user);
     if (denied) return denied;
-    if (!email) return { ok: false, status: 400, error: "A valid email is required" };
-    try {
-      await issueEmailClaim(user.id, email);
-    } catch (error) {
-      if (error instanceof ReferralProvisionError) {
-        return { ok: false, status: 400, error: error.message, code: error.code };
-      }
-      if (error instanceof ClaimEmailError) {
-        return { ok: false, status: error.status, error: error.message };
-      }
-      const message = error instanceof Error ? error.message : "Could not send the login code";
-      return { ok: false, status: 400, error: message };
-    }
-    pendingEmail = email;
+    return { ok: false, status: 400, error: "Email is set when the account is created" };
   }
 
   const settings =
@@ -87,7 +70,7 @@ export async function updateAgentProfile(input: {
   if (input.patch.name === undefined && settings === undefined) {
     return {
       ok: true,
-      profile: profileFromUser({ ...user, pendingEmail }),
+      profile: profileFromUser(user),
     };
   }
 
@@ -101,11 +84,7 @@ export async function updateAgentProfile(input: {
   });
   return {
     ok: true,
-    profile: profileFromUser({
-      ...updated,
-      email: user.email,
-      pendingEmail: updated.pendingEmail ?? pendingEmail,
-    }),
+    profile: profileFromUser(updated),
   };
 }
 

@@ -10,7 +10,7 @@
  * The client must be Base Sepolia (`VITE_TARGET_CHAIN=testnet`). Port 5173 is the
  * mainnet `pnpm dev` client, so this script uses the Sepolia client on 5174.
  * It stops unless that page says Base Sepolia.
- * Path 3 emails a Play The Cut claim code, then a Privy OTP, to PATH3_EMAIL and waits for both on stdin.
+ * Path 3 links PATH3_EMAIL on the Privy user at register, then a Privy OTP, and waits for the OTP on stdin.
  */
 
 import "dotenv/config";
@@ -86,17 +86,6 @@ async function readCode(prompt: string): Promise<string> {
   }
 }
 
-async function claimEmail(email: string, code: string): Promise<void> {
-  const response = await fetch(`${ORIGIN}/api/auth/claim-email`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email, code }),
-  });
-  if (!response.ok) {
-    fail(`claim-email failed: ${response.status} ${await response.text()}`);
-  }
-}
-
 async function main(): Promise<void> {
   if (!PATH3_EMAIL) fail("PATH3_EMAIL is not set");
   const [first, second] = await testLogins();
@@ -114,7 +103,10 @@ async function main(): Promise<void> {
       chainId: CHAIN_ID,
       origin: ORIGIN,
     });
-    const path2 = await path2Agent.register({});
+    const [path2Local, path2Domain] = PATH3_EMAIL.split("@");
+    const path2 = await path2Agent.register({
+      email: `${path2Local}+path2-${Date.now()}@${path2Domain}`,
+    });
     if (!path2.created) fail("Path 2 register did not create an account");
     const path2Wallet = getAddress(path2.smartWallet);
     await mint(path2Wallet);
@@ -152,8 +144,8 @@ async function main(): Promise<void> {
       throw error;
     }
     if (!path3.created) fail("Path 3 register did not create an account");
-    if (path3.email != null || !path3.emailPending) {
-      fail("Path 3 email was linked before the claim code");
+    if (path3.email?.toLowerCase() !== PATH3_EMAIL.toLowerCase() || path3.emailPending) {
+      fail("Path 3 email was not linked at register");
     }
     const path3Wallet = getAddress(path3.smartWallet);
     await mint(path3Wallet);
@@ -161,8 +153,6 @@ async function main(): Promise<void> {
     await agentSend(path3Key.privateKey, path3Wallet, path1Wallet);
 
     await browser.signOut();
-    const claimCode = await readCode(`Enter the Play The Cut code sent to ${PATH3_EMAIL}: `);
-    await claimEmail(PATH3_EMAIL, claimCode);
     await browser.signIn(PATH3_EMAIL, () =>
       readCode(`Enter the Privy code sent to ${PATH3_EMAIL}: `),
     );

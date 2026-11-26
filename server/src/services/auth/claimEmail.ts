@@ -63,7 +63,7 @@ export async function linkPrivyEmail(privyUserId: string, email: string): Promis
   throw new ClaimEmailError(400, "Could not link the login email");
 }
 
-/** Store a pending login email and mail a 6-digit code. Does not link Privy. */
+/** Store a pending email and mail a 6-digit code for the agent to claim. Does not link Privy. */
 export async function issueEmailClaim(userId: string, email: string): Promise<void> {
   const normalized = email.trim().toLowerCase();
   if (await emailTaken(normalized, userId)) {
@@ -84,8 +84,8 @@ export async function issueEmailClaim(userId: string, email: string): Promise<vo
   try {
     await sendEmail({
       to: normalized,
-      subject: "Your Play The Cut login code",
-      html: `<p>Your Play The Cut code is <strong>${code}</strong>. It expires in 15 minutes.</p><p>Enter it on the site before you sign in. This code does not sign you in by itself.</p>`,
+      subject: "Give this code to your Play The Cut agent",
+      html: `<p>Your agent asked to link this email to a Play The Cut account.</p><p>Give your agent this code: <strong>${code}</strong>.</p><p>It expires in 15 minutes. Your agent sends the code to Play The Cut to finish linking the email.</p>`,
       skipUnsubscribe: true,
     });
   } catch (error) {

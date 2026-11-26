@@ -12,14 +12,14 @@ Sign in with Privy. The account wallet is the Kernel smart wallet. There is no d
 
 1. Call `generateDelegateKey()` once. Store `privateKey`. The `publicKey` is what you send when a human grants you later.
 2. `createCutAgent({ privateKey, chainId })`. Leave `smartWallet` unset.
-3. `register({ email?, name?, referralCode?, color?, oddsFormat? })`. The response `smartWallet` is the Kernel address. The client keeps it.
+3. `register({ email, name?, referralCode?, color?, oddsFormat? })`. The response `smartWallet` is the Kernel address. The client keeps it.
 4. `account()`. Join, leave, and send from that wallet.
 
-No email means the Privy user is `custom_auth` whose id is the public key. An email passed to `register` stays pending until `POST /api/auth/claim-email` with `{ email, code }`. The response `email` stays null and `emailPending` is true until that claim. An email already on another Cut user or Privy user is `400` with code `EMAIL_ALREADY_BOUND`. A bearer with no delegate signer gets `403` `"Sign in is required to change this email"`. After `User.email` or `lastLoginAt` is set, changing the email is `403` `"This account already has a login"`. That person signs in and grants the key from Account → Agents.
+The Privy user is `custom_auth` whose id is the public key, and the email is linked on that user at create. `User.email` is that inbox. `emailPending` is false. A missing email is `400` `"A valid email is required"`. An email already on another Cut user or Privy user is `400` with code `EMAIL_ALREADY_BOUND`. `updateProfile` cannot replace the email. A bearer with no delegate signer gets `403` `"Sign in is required to change this email"`. After `User.email` or `lastLoginAt` is set, changing the email is `403` `"This account already has a login"`. When neither is set, email is `400` `"Email is set when the account is created"`.
 
 ## Agent first, human later
 
-Register the same way and pass the email. The server mails a 6-digit code and does not link that inbox on Privy yet. The human calls `POST /api/auth/claim-email`, then signs in with the Privy email OTP. The login joins this user, and the Kernel stays the account wallet. After `lastLoginAt` or a claimed email, `updateProfile` cannot change the email.
+Register the same way, including the email. The inbox is a Privy login immediately. The human signs in with the Privy email OTP. The login joins this user, and the Kernel stays the account wallet. `updateProfile` cannot change the email.
 
 ## Human first, then an agent
 

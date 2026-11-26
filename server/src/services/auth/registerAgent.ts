@@ -11,7 +11,6 @@ import { ReferralProvisionError } from "../../lib/privyUserProvisioning.js";
 import { mergeUserSettings } from "../../schemas/user.js";
 import { getPrivyClient } from "../../lib/privyClient.js";
 import { writeQuorumApproval } from "../bot/quorumApproval.js";
-import { ClaimEmailError, issueEmailClaim } from "./claimEmail.js";
 
 type PrivyLinkedAccount = {
   type: string;
@@ -20,6 +19,11 @@ type PrivyLinkedAccount = {
   chain_type?: string;
   connector_type?: string;
 };
+
+function linkedEmail(accounts: PrivyLinkedAccount[]): string | null {
+  const match = accounts.find((account) => account.type === "email" && account.address);
+  return match?.address?.trim().toLowerCase() ?? null;
+}
 
 export function walletsFromPrivyUser(accounts: PrivyLinkedAccount[]): {
   kernel: Address;
@@ -121,7 +125,7 @@ function emailAlreadyBound(error: unknown): boolean {
 export async function registerAgentAccount(input: {
   publicKey: string;
   chainId: number;
-  email?: string;
+  email: string;
   name?: string;
   referralCode?: string;
   color?: string;
@@ -130,7 +134,7 @@ export async function registerAgentAccount(input: {
   if (!isDelegatePublicKey(input.publicKey)) {
     throw new AgentRegisterError(400, "Invalid public key");
   }
-  const email = input.email?.trim().toLowerCase();
+  const email = input.email?.trim().toLowerCase() ?? "";
   const existingDelegate = await prisma.botDelegate.findFirst({
     where: { delegateAddress: input.publicKey, kind: "account" },
     select: {
@@ -163,35 +167,22 @@ export async function registerAgentAccount(input: {
     if (!wallet) {
       throw new AgentRegisterError(409, "This key is already registered");
     }
-    const account = await existingAgent(existingDelegate.user, getAddress(wallet.publicKey));
-    if (
-      email &&
-      !existingDelegate.user.email &&
-      existingDelegate.user.pendingEmail === email
-    ) {
-      try {
-        await issueEmailClaim(existingDelegate.user.id, email);
-      } catch (error) {
-        if (error instanceof ClaimEmailError) {
-          throw new AgentRegisterError(error.status, error.message);
-        }
-        throw error;
-      }
-    }
-    return account;
+    return existingAgent(existingDelegate.user, getAddress(wallet.publicKey));
   }
 
-  if (email) {
-    const taken = await prisma.user.findFirst({
-      where: { email: { equals: email, mode: "insensitive" } },
-      select: { id: true },
-    });
-    if (taken) {
-      throw new ReferralProvisionError(
-        "EMAIL_ALREADY_BOUND",
-        "This email is already linked to another account",
-      );
-    }
+  if (!email) {
+    throw new AgentRegisterError(400, "A valid email is required");
+  }
+
+  const taken = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (taken) {
+    throw new ReferralProvisionError(
+      "EMAIL_ALREADY_BOUND",
+      "This email is already linked to another account",
+    );
   }
 
   const privy = getPrivyClient();
@@ -204,6 +195,9 @@ export async function registerAgentAccount(input: {
     created = null;
   }
   if (created) {
+    if (linkedEmail(created.linked_accounts) !== email) {
+      throw new AgentRegisterError(409, "This key is already registered");
+    }
     const existingWallets = walletsFromPrivyUser(created.linked_accounts);
     const wallet = await privy.wallets().get(existingWallets.embeddedWalletId);
     const signerId = wallet.additional_signers[0]?.signer_id;
@@ -218,7 +212,10 @@ export async function registerAgentAccount(input: {
     quorumId = quorum.id;
     try {
       created = await privy.users().create({
-        linked_accounts: [{ type: "custom_auth", custom_user_id: input.publicKey }],
+        linked_accounts: [
+          { type: "custom_auth", custom_user_id: input.publicKey },
+          { type: "email", address: email },
+        ],
         wallets: [
           {
             chain_type: "ethereum",
@@ -228,7 +225,7 @@ export async function registerAgentAccount(input: {
         ],
       });
     } catch (error) {
-      if (email && emailAlreadyBound(error)) {
+      if (emailAlreadyBound(error)) {
         throw new ReferralProvisionError(
           "EMAIL_ALREADY_BOUND",
           "This email is already linked to another account",
@@ -264,6 +261,7 @@ export async function registerAgentAccount(input: {
     user = await prisma.user.create({
     data: {
       name,
+      email,
       privyUserId: created.id,
       userType: "AGENT",
       settings: mergeUserSettings(
@@ -313,19 +311,8 @@ export async function registerAgentAccount(input: {
     throw error;
   }
 
-  if (email) {
-    try {
-      await issueEmailClaim(user.id, email);
-    } catch (error) {
-      if (error instanceof ClaimEmailError) {
-        throw new AgentRegisterError(error.status, error.message);
-      }
-      throw error;
-    }
-  }
-
   return registeredAgent(
-    { ...user, pendingEmail: email ?? null, email: null },
+    { ...user, email, pendingEmail: null },
     wallets.kernel,
     true,
     user.referralCode ?? referralCode,
