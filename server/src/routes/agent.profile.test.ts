@@ -83,10 +83,10 @@ describe("PUT /agent/profile", () => {
     });
   });
 
-  it("rejects a login email after the account is created", async () => {
+  it("rejects a body that only sends an email", async () => {
     const response = await request(OWNER, { email: "Ada@Example.com" });
     expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({ error: "Email is set when the account is created" });
+    expect(await response.json()).toEqual({ error: "No profile fields to update" });
     expect(update).not.toHaveBeenCalled();
   });
 
@@ -105,36 +105,5 @@ describe("PUT /agent/profile", () => {
         data: expect.objectContaining({ name: "Sunday" }),
       }),
     );
-  });
-
-  it("rejects email after the human has signed in", async () => {
-    findUnique.mockResolvedValue({
-      id: "agent-1",
-      name: "Ada",
-      email: null,
-      pendingEmail: null,
-      settings: { onboardingDismissed: false },
-      privyUserId: "did:privy:agent",
-      lastLoginAt: new Date(),
-    });
-    const response = await request(OWNER, { email: "ada@example.com" });
-    expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({ error: "This account already has a login" });
-    expect(update).not.toHaveBeenCalled();
-  });
-
-  it("rejects email after the address is already claimed", async () => {
-    findUnique.mockResolvedValue({
-      id: "agent-1",
-      name: "Ada",
-      email: "ada@example.com",
-      pendingEmail: null,
-      settings: { onboardingDismissed: false },
-      privyUserId: "did:privy:agent",
-      lastLoginAt: null,
-    });
-    const response = await request(OWNER, { email: "other@example.com" });
-    expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({ error: "This account already has a login" });
   });
 });

@@ -217,9 +217,9 @@ export function BotDelegationSettings() {
         </div>
       </div>
 
-      {delegates.isError ? (
-        <ErrorMessage message="Could not load agents" className="mt-4" />
-      ) : null}
+      <h3 className="mb-2 mt-8 text-base font-semibold text-slate-900">Active Agents</h3>
+
+      {delegates.isError ? <ErrorMessage message="Could not load agents" className="mt-4" /> : null}
       {delegates.isSuccess || rows.length > 0 ? (
         <ul aria-label="Agents" className="border-t border-slate-300">
           {rows.length === 0 ? (

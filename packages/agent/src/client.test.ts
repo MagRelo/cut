@@ -297,7 +297,7 @@ describe("createCutAgent", () => {
     });
 
     await expect(
-      agent.updateProfile({ name: "Ada", email: "ada@example.com", oddsFormat: "american" }),
+      agent.updateProfile({ name: "Ada", oddsFormat: "american" }),
     ).resolves.toMatchObject({ email: "ada@example.com" });
     await expect(agent.joinLeague({ inviteCode: " INVITE " })).resolves.toEqual({
       id: "league-1",
@@ -310,7 +310,6 @@ describe("createCutAgent", () => {
     expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/agent/profile");
     expect(JSON.parse(await requests[0]!.text())).toEqual({
       name: "Ada",
-      email: "ada@example.com",
       oddsFormat: "american",
     });
 

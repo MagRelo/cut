@@ -67,8 +67,7 @@
     "script:contest-feed": "NODE_NO_WARNINGS=1 tsx src/scripts/contestFeed.ts",
     "script:stream-bootstrap": "tsx src/scripts/streamBootstrap.ts",
     "script:stream-backfill-contest": "tsx src/scripts/streamBackfillContest.ts",
-    "script:sign-bot-request": "tsx src/scripts/signBotRequest.ts",
-    "script:four-paths": "tsx src/scripts/fourPaths.ts"
+    "script:sign-bot-request": "tsx src/scripts/signBotRequest.ts"
   },
   "dependencies": {
     "@cursor/sdk": "^1.0.23",

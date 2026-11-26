@@ -45,6 +45,8 @@ agentRouter.get("/account", requireAuth, async (c) => {
 agentRouter.put("/profile", requireAuth, async (c) => {
   const parsed = agentProfileSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) {
+    const empty = parsed.error.issues.find((issue) => issue.message === "No profile fields to update");
+    if (empty) return c.json({ error: empty.message }, 400);
     return c.json({ error: "Invalid request body" }, 400);
   }
   // requireAuth already verified this signature and consumed its nonce.
@@ -62,12 +64,7 @@ agentRouter.put("/profile", requireAuth, async (c) => {
     signer,
     patch: parsed.data,
   });
-  if (!result.ok) {
-    return c.json(
-      result.code ? { error: result.error, code: result.code } : { error: result.error },
-      result.status,
-    );
-  }
+  if (!result.ok) return c.json({ error: result.error }, result.status);
   return c.json(result.profile);
 });
 

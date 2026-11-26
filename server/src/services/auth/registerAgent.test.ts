@@ -103,7 +103,6 @@ describe("registerAgentAccount", () => {
     createUser.mockResolvedValue({
       id: "agent-1",
       email: null,
-      pendingEmail: null,
       userType: "AGENT",
       name: "Ada",
       referralCode: "ABCD2345",
@@ -121,7 +120,6 @@ describe("registerAgentAccount", () => {
     expect(account).toMatchObject({
       userId: "agent-1",
       email: "agent@example.com",
-      emailPending: false,
       userType: "AGENT",
       created: true,
       smartWallet: KERNEL,
@@ -196,7 +194,6 @@ describe("registerAgentAccount", () => {
       user: {
         id: "agent-1",
         email: "first@example.com",
-        pendingEmail: null,
         userType: "AGENT",
         name: "Ada",
         referralCode: "ABCD2345",
@@ -210,7 +207,6 @@ describe("registerAgentAccount", () => {
     });
     expect(account).toMatchObject({
       email: "first@example.com",
-      emailPending: false,
       smartWallet: KERNEL,
       created: false,
     });
@@ -229,7 +225,6 @@ describe("registerAgentAccount", () => {
     createUser.mockResolvedValue({
       id: "agent-2",
       email: null,
-      pendingEmail: null,
       userType: "AGENT",
       name: "Ada",
       referralCode: "ABCD2345",
@@ -243,7 +238,6 @@ describe("registerAgentAccount", () => {
       created: true,
       userId: "agent-2",
       email: "grant@example.com",
-      emailPending: false,
     });
   });
 
@@ -253,9 +247,8 @@ describe("registerAgentAccount", () => {
       userId: "agent-1",
       user: {
         id: "agent-1",
-        email: null,
-        pendingEmail: null,
-        userType: "AGENT",
+      email: null,
+      userType: "AGENT",
         name: "Ada",
         referralCode: "ABCD2345",
       },

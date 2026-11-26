@@ -133,7 +133,6 @@ export type CutAgent = {
   }): Promise<RegisteredAgent>;
   updateProfile(input: {
     name?: string;
-    email?: string;
     color?: string;
     oddsFormat?: "american" | "decimal" | "english";
   }): Promise<AgentProfile>;

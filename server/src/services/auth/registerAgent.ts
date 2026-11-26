@@ -67,7 +67,6 @@ async function mintTestnetUsdc(address: string, chainId: number): Promise<void> 
 type StoredAgent = {
   id: string;
   email: string | null;
-  pendingEmail: string | null;
   userType: RegisteredAgent["userType"];
   name: string | null;
   referralCode: string | null;
@@ -77,7 +76,6 @@ function registeredAgent(user: StoredAgent, smartWallet: string, created: boolea
   return {
     userId: user.id,
     email: user.email,
-    emailPending: !user.email && Boolean(user.pendingEmail),
     userType: user.userType,
     name: user.name ?? "",
     referralCode,
@@ -145,7 +143,6 @@ export async function registerAgentAccount(input: {
         select: {
           id: true,
           email: true,
-          pendingEmail: true,
           userType: true,
           name: true,
           referralCode: true,
@@ -298,7 +295,6 @@ export async function registerAgentAccount(input: {
     select: {
       id: true,
       email: true,
-      pendingEmail: true,
       userType: true,
       name: true,
       referralCode: true,
@@ -312,7 +308,7 @@ export async function registerAgentAccount(input: {
   }
 
   return registeredAgent(
-    { ...user, email, pendingEmail: null },
+    { ...user, email },
     wallets.kernel,
     true,
     user.referralCode ?? referralCode,

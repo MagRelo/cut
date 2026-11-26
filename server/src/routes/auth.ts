@@ -5,7 +5,6 @@ import { registerSchema, userOpSchema } from "@playthecut/agent/contract";
 import { prisma } from "../lib/prisma.js";
 import { buildAuthProfile } from "../lib/authProfile.js";
 import { getPrivyClient } from "../lib/privyClient.js";
-import { ClaimEmailError, claimLoginEmail } from "../services/auth/claimEmail.js";
 import { AgentRegisterError, registerAgentAccount } from "../services/auth/registerAgent.js";
 import { verifyBotRequest } from "../services/bot/verifyBotRequest.js";
 import {
@@ -74,27 +73,6 @@ authRouter.post("/register", async (c) => {
     return c.json(account, account.created ? 201 : 200);
   } catch (error) {
     if (error instanceof AgentRegisterError) return c.json({ error: error.message }, error.status);
-    return authErrorResponse(c, error);
-  }
-});
-
-const claimEmailSchema = z.object({
-  email: z.string().trim().email(),
-  code: z.string().trim(),
-});
-
-authRouter.post("/claim-email", async (c) => {
-  try {
-    const parsed = claimEmailSchema.safeParse(await c.req.json().catch(() => null));
-    if (!parsed.success) {
-      return c.json({ error: "Invalid request body", details: parsed.error.issues }, 400);
-    }
-    const claimed = await claimLoginEmail(parsed.data.email, parsed.data.code);
-    return c.json(claimed);
-  } catch (error) {
-    if (error instanceof ClaimEmailError) {
-      return c.json({ error: error.message, ...(error.code ? { code: error.code } : {}) }, error.status);
-    }
     return authErrorResponse(c, error);
   }
 });

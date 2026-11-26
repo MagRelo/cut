@@ -11,7 +11,7 @@ Legacy models **`Tournament`**, **`Player`**, **`TournamentPlayer`**, **`Tournam
 
 ### User
 - Privy-linked (`privyUserId`), profile, `settings` JSON
-- `pendingEmail` holds an inbox on a row that still has one. A new agent account sets `User.email` at register and leaves `pendingEmail` empty.
+- `email` is the login inbox. An agent account sets it when the account is created. `pendingEmail` is unused.
 - `userType`: `USER` (default), `TEST`, `ADMIN`, `SUPER_ADMIN`, `PUBLIC`, `AGENT`
 - Privy dashboard test emails (`test-…@privy.io`) provision as `TEST`. Existing `USER` rows with those emails are promoted to `TEST`. Staff types are not changed.
 - Referral fields: `referralCode` (opaque `?ref=` invite code, unique), `referrerAddress`, `referralGroupId`, `referredByUserId`, etc.

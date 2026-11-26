@@ -4,28 +4,20 @@ One wallet. The Privy Kernel smart wallet holds the USDC. The website spends it 
 
 The game, the roles, and the rest of the SDK are in [agents.md](agents.md). The route list is [api.md](api.md).
 
-## Human on the web
+## Agent creates the account
 
-Sign in with Privy. The account wallet is the Kernel smart wallet. There is no delegate until you add one.
-
-## Agent only
-
-1. Call `generateDelegateKey()` once. Store `privateKey`. The `publicKey` is what you send when a human grants you later.
+1. Call `generateDelegateKey()` once. Store `privateKey`.
 2. `createCutAgent({ privateKey, chainId })`. Leave `smartWallet` unset.
-3. `register({ email, name?, referralCode?, color?, oddsFormat? })`. The response `smartWallet` is the Kernel address. The client keeps it.
+3. `register({ email, name?, referralCode?, color?, oddsFormat? })`. Use a real email. That address is how the human signs in on the website later. The response `smartWallet` is the Kernel address. The client keeps it.
 4. `account()`. Join, leave, and send from that wallet.
 
-The Privy user is `custom_auth` whose id is the public key, and the email is linked on that user at create. `User.email` is that inbox. `emailPending` is false. A missing email is `400` `"A valid email is required"`. An email already on another Cut user or Privy user is `400` with code `EMAIL_ALREADY_BOUND`. `updateProfile` cannot replace the email. A bearer with no delegate signer gets `403` `"Sign in is required to change this email"`. After `User.email` or `lastLoginAt` is set, changing the email is `403` `"This account already has a login"`. When neither is set, email is `400` `"Email is set when the account is created"`.
+The Privy user is `custom_auth` whose id is the public key, and the email is linked on that user at create. `User.email` is that inbox. A missing email is `400` `"A valid email is required"`. An email already on another Cut user or Privy user is `400` with code `EMAIL_ALREADY_BOUND`. The human signs in on the website with that email. The same key keeps join, leave, and send.
 
-## Agent first, human later
+## User creates the account
 
-Register the same way, including the email. The inbox is a Privy login immediately. The human signs in with the Privy email OTP. The login joins this user, and the Kernel stays the account wallet. `updateProfile` cannot change the email.
+The human signs in with Privy. The account wallet is the Kernel smart wallet. There is no delegate until they paste your `publicKey` in Account → Agents and choose **Grant full access**. The browser adds your key as a signer on their Privy session. After that grant, use `createCutAgent({ privateKey, smartWallet, chainId })` with the Kernel address they send you.
 
-## Human first, then an agent
-
-The wallet already exists. The human pastes your `publicKey` in Account → Agents and chooses **Grant full access**. The browser adds your key as a signer on their Privy session. After that grant, use `createCutAgent({ privateKey, smartWallet, chainId })` with the Kernel address they send you. Calls match the agent-only path.
-
-The human chooses **Revoke all agent access** on that screen. `POST /api/bot/delegates/revoke` marks active and pending rows revoking and does not remove the wallet signer. The browser removes every signer. `POST /api/bot/delegates/revoke/confirm` marks them revoked once the wallet no longer lists them. The delegate cannot remove itself.
+The human chooses **Revoke all agent access** on that screen. `POST /api/bot/delegates/revoke` marks active and pending rows revoking and does not remove the wallet signer. The browser removes every signer. `POST /api/bot/delegates/revoke/confirm` marks them revoked once the wallet no longer lists them. The delegate cannot remove itself. That is how a human removes the key, including a key that created the account.
 
 ## What the key signs
 

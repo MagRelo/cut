@@ -67,16 +67,12 @@ export const registerSchema = z.object({
 export const agentProfileSchema = z
   .object({
     name: z.string().trim().min(1).max(NAME_MAX_LENGTH).optional(),
-    email: z.string().trim().email("A valid email is required").optional(),
     color: z.string().regex(HEX_COLOR, "Invalid color").optional(),
     oddsFormat: oddsFormatSchema.optional(),
   })
   .refine(
     (value) =>
-      value.name !== undefined ||
-      value.email !== undefined ||
-      value.color !== undefined ||
-      value.oddsFormat !== undefined,
+      value.name !== undefined || value.color !== undefined || value.oddsFormat !== undefined,
     { message: "No profile fields to update" },
   );
 
@@ -130,8 +126,6 @@ export type BotContest = {
 export type RegisteredAgent = {
   userId: string;
   email: string | null;
-  /** True when a login email is waiting on claim-email. `email` stays null until then. */
-  emailPending: boolean;
   userType: string;
   name: string;
   referralCode: string;
@@ -142,7 +136,6 @@ export type RegisteredAgent = {
 export type AgentProfile = {
   name: string;
   email: string | null;
-  emailPending: boolean;
   color: string | null;
   oddsFormat: OddsFormat | null;
 };
