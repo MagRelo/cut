@@ -45,7 +45,7 @@ function mobileSubItemClass(active: boolean) {
   ].join(" ");
 }
 
-const mobileInsetListClass = "ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-slate-200";
+const mobileInsetListClass = "ml-2 mt-0.5 flex flex-col gap-0.5";
 
 export const MobileNavMenu: React.FC = () => {
   const [open, setOpen] = useState(false);
