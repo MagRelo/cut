@@ -963,8 +963,8 @@ export const FAQPage: React.FC = () => {
         <div className="space-y-4 text-gray-700">
           <p>
             From{" "}
-            <Link to="/account/settings" className="text-blue-600 hover:underline">
-              Account → Settings → Enable Agent Control
+            <Link to="/account/agents" className="text-blue-600 hover:underline">
+              Account → Agents
             </Link>
             , paste the agent&apos;s public key and grant access. The private key stays with
             whoever runs that agent. You can still enter and send from the app yourself.

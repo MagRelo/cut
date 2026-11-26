@@ -1,4 +1,4 @@
-import { ClockIcon, Cog6ToothIcon, WalletIcon } from "@heroicons/react/24/outline";
+import { ClockIcon, Cog6ToothIcon, CpuChipIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { TreeIcon } from "../components/common/TreeIcon";
 import type { Location } from "react-router-dom";
 import { adminMatch, contestsMatch, leaguesMatch, userGroupsMatch } from "./navRoutes";
@@ -18,6 +18,13 @@ export const ACCOUNT_WALLET_LINK = {
   label: "Wallet",
   match: (pathname: string) => pathname === "/account/funds",
   Icon: WalletIcon,
+} as const;
+
+export const ACCOUNT_AGENTS_LINK = {
+  to: "/account/agents",
+  label: "Agents",
+  match: (pathname: string) => pathname === "/account/agents",
+  Icon: CpuChipIcon,
 } as const;
 
 export const ACCOUNT_SETTINGS_LINK = {
@@ -55,6 +62,7 @@ export const ACCOUNT_SUB_LINKS = [
   ACCOUNT_WALLET_LINK,
   ACCOUNT_REFERRALS_LINK,
   ACCOUNT_ACTIVITY_LINK,
+  ACCOUNT_AGENTS_LINK,
   ACCOUNT_SETTINGS_LINK,
 ] as const;
 
@@ -93,7 +101,7 @@ export const LEFT_TABS: NavTab[] = [
   {
     key: "contests",
     to: "/contests",
-    label: "Live Contests",
+    label: "Contests",
     match: contestsMatch,
     liveDot: true,
   },

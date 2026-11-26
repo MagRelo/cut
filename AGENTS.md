@@ -38,7 +38,7 @@ contest settlement.
 ### Logging in during dev (Privy test accounts)
 A delegate plays through signed contest, lineup, and send requests
 (P-256 `x-cut-*`). See `spec/agent/agents.md`. The browser still gates the user's own actions behind Privy
-email OTP login, which is also how the user enables a delegate from Account → Settings → Enable Agent Control. For that browser login, use
+email OTP login, which is also how the user enables a delegate from Account → Agents. For that browser login, use
 Privy **test accounts**:
 1. App owner enables it once in the Privy Dashboard: **User management → Authentication →
    Advanced → Enable test accounts** (the app already has `email_auth` on and `localhost:5173`

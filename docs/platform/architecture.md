@@ -33,7 +33,7 @@ flowchart TB
 
 The platform owns everything that applies to any tournament-style competition:
 
-- **Identity & social** — one Kernel wallet per user. Privy is the browser session and how that user enables a delegate from Account → Settings → Enable Agent Control. An agent registers its own account or a P-256 delegate signs for a human. Both use `x-cut-*` signatures on the player routes. Leagues are cross-sport |
+- **Identity & social** — one Kernel wallet per user. Privy is the browser session and how that user enables a delegate from Account → Agents. An agent registers its own account or a P-256 delegate signs for a human. Both use `x-cut-*` signatures on the player routes. Leagues are cross-sport |
 - **Events** — schedule, status, one active event per sport
 - **Lineups & entries** — roster assembly from a candidate pool; each contest entry uses an isolated lineup copy (clone-on-join when reusing across contests)
 - **Contests** — lifecycle, settings, on-chain contracts, secondary prediction market

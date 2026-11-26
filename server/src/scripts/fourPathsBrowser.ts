@@ -94,8 +94,8 @@ export class CutBrowser {
   }
 
   async grant(publicKey: string): Promise<void> {
-    await this.page.goto(`${this.origin}/account/settings`, { waitUntil: "domcontentloaded" });
-    await this.page.locator("#delegate-address").fill(publicKey);
+    await this.page.goto(`${this.origin}/account/agents`, { waitUntil: "domcontentloaded" });
+    await this.page.locator("#agent-public-key").fill(publicKey);
     await this.page.getByRole("button", { name: "Grant full access" }).click();
     const shown = `${publicKey.slice(0, 8)}…${publicKey.slice(-8)}`;
     const granted = this.page.getByText(shown);

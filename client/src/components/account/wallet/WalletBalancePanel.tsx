@@ -11,6 +11,26 @@ function useWalletBalance() {
   return { formatted, balancesUnavailable, refetchBalances };
 }
 
+/** Balance shown on the right of the Wallet account-menu link. */
+export function NavWalletBalance() {
+  const {
+    paymentTokenBalance,
+    paymentTokenDecimals,
+    balancesUnavailable,
+    balancesLoading,
+  } = useAuth();
+  const decimals = paymentTokenDecimals ?? PAYMENT_TOKEN_DECIMALS;
+  const text = balancesUnavailable
+    ? "—"
+    : balancesLoading || paymentTokenBalance == null
+      ? null
+      : `$${Number(formatUnits(paymentTokenBalance, decimals)).toFixed(2)}`;
+
+  if (text == null) return null;
+
+  return <span className="shrink-0 text-right font-display text-sm tabular-nums">{text}</span>;
+}
+
 export function WalletHeaderBalance() {
   const { formatted, balancesUnavailable, refetchBalances } = useWalletBalance();
 

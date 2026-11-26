@@ -6,7 +6,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import apiRoutes from "./routes/api.js";
-import { resolveAllowedOrigins } from "./lib/corsOrigins.js";
+import { resolveAllowedOrigins, resolveRequestOrigin } from "./lib/corsOrigins.js";
 import { cacheControlForStaticPath } from "./lib/staticCacheControl.js";
 import { resolvePageMetadata, type PageMetadata } from "./lib/pageMetadata.js";
 import {
@@ -103,10 +103,12 @@ app.use(
 
 // CORS only on /api. On static files it adds `Vary: Origin` + credentials, which
 // stops Chrome from disk-caching logos (memory cache only, ~minutes).
+// Fail closed at boot when production ALLOWED_ORIGINS is missing or includes localhost.
+resolveAllowedOrigins();
 app.use(
   "/api/*",
   cors({
-    origin: resolveAllowedOrigins(),
+    origin: (origin, c) => resolveRequestOrigin(origin, c.req.path),
     credentials: true,
   }),
 );

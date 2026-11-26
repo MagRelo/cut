@@ -13,8 +13,11 @@ import {
   STORE_TAGLINE,
 } from "../../lib/brand";
 import { signInReturnFrom } from "../../lib/navRoutes";
+import { NavWalletBalance } from "../account/wallet/WalletBalancePanel";
 import {
+  ACCOUNT_AGENTS_LINK,
   ACCOUNT_SUB_LINKS,
+  ACCOUNT_WALLET_LINK,
   ADMIN_MENU_LINKS,
   LEAGUES_TAB,
   LEFT_TABS,
@@ -46,6 +49,14 @@ function mobileSubItemClass(active: boolean) {
 }
 
 const mobileInsetListClass = "ml-2 mt-0.5 flex flex-col gap-0.5";
+
+const mobileAccountLinks = [
+  ACCOUNT_WALLET_LINK,
+  ACCOUNT_AGENTS_LINK,
+  ...ACCOUNT_SUB_LINKS.filter(
+    (link) => link.to !== ACCOUNT_WALLET_LINK.to && link.to !== ACCOUNT_AGENTS_LINK.to,
+  ),
+];
 
 export const MobileNavMenu: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -186,7 +197,7 @@ export const MobileNavMenu: React.FC = () => {
                               </p>
 
                               <div className={mobileInsetListClass}>
-                                {ACCOUNT_SUB_LINKS.map((link) => (
+                                {mobileAccountLinks.map((link) => (
                                   <Link
                                     key={link.to}
                                     to={link.to}
@@ -194,10 +205,13 @@ export const MobileNavMenu: React.FC = () => {
                                     aria-current={
                                       link.match(location.pathname) ? "page" : undefined
                                     }
-                                    className={`${mobileSubItemClass(link.match(location.pathname))} inline-flex w-full items-center gap-2`}
+                                    className={`${mobileSubItemClass(link.match(location.pathname))} !flex w-full items-center justify-between gap-3`}
                                   >
-                                    <link.Icon className="h-4 w-4 shrink-0" aria-hidden />
-                                    {link.label}
+                                    <span className="inline-flex min-w-0 items-center gap-2">
+                                      <link.Icon className="h-4 w-4 shrink-0" aria-hidden />
+                                      {link.label}
+                                    </span>
+                                    {link.to === ACCOUNT_WALLET_LINK.to ? <NavWalletBalance /> : null}
                                   </Link>
                                 ))}
                               </div>

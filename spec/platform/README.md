@@ -50,7 +50,7 @@ A user builds **one or more lineups per contest** (`Lineup.contestId`). Copy/clo
 
 | Area | Responsibility |
 |------|----------------|
-| Identity | One user, one Kernel wallet. A P-256 delegate signs for that user. Privy is the browser session for the same `User` and `UserWallet`. The human enables the delegate from Account → Settings → Enable Agent Control |
+| Identity | One user, one Kernel wallet. A P-256 delegate signs for that user. Privy is the browser session for the same `User` and `UserWallet`. The human enables the delegate from Account → Agents |
 | Social | `UserGroup` / leagues, invite codes, membership roles |
 | Events API | List sports, active event, candidate pool |
 | Lineups API | Create/update roster; validate via sport plugin |

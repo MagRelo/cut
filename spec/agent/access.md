@@ -15,7 +15,7 @@ Sign in with Privy. The account wallet is the Kernel smart wallet. There is no d
 3. `register({ email?, name?, referralCode?, color?, oddsFormat? })`. The response `smartWallet` is the Kernel address. The client keeps it.
 4. `account()`. Join, leave, and send from that wallet.
 
-No email means the Privy user is `custom_auth` whose id is the public key. An email passed to `register` stays pending until `POST /api/auth/claim-email` with `{ email, code }`. The response `email` stays null and `emailPending` is true until that claim. An email already on another Cut user or Privy user is `400` with code `EMAIL_ALREADY_BOUND`. A bearer with no delegate signer gets `403` `"Sign in is required to change this email"`. After `User.email` or `lastLoginAt` is set, changing the email is `403` `"This account already has a login"`. That person signs in and grants the key from Account → Settings → Enable Agent Control.
+No email means the Privy user is `custom_auth` whose id is the public key. An email passed to `register` stays pending until `POST /api/auth/claim-email` with `{ email, code }`. The response `email` stays null and `emailPending` is true until that claim. An email already on another Cut user or Privy user is `400` with code `EMAIL_ALREADY_BOUND`. A bearer with no delegate signer gets `403` `"Sign in is required to change this email"`. After `User.email` or `lastLoginAt` is set, changing the email is `403` `"This account already has a login"`. That person signs in and grants the key from Account → Agents.
 
 ## Agent first, human later
 
@@ -23,7 +23,7 @@ Register the same way and pass the email. The server mails a 6-digit code and do
 
 ## Human first, then an agent
 
-The wallet already exists. The human pastes your `publicKey` in Account → Settings → Enable Agent Control and chooses **Grant full access**. The browser adds your key as a signer on their Privy session. After that grant, use `createCutAgent({ privateKey, smartWallet, chainId })` with the Kernel address they send you. Calls match the agent-only path.
+The wallet already exists. The human pastes your `publicKey` in Account → Agents and chooses **Grant full access**. The browser adds your key as a signer on their Privy session. After that grant, use `createCutAgent({ privateKey, smartWallet, chainId })` with the Kernel address they send you. Calls match the agent-only path.
 
 The human chooses **Revoke all agent access** on that screen. `POST /api/bot/delegates/revoke` marks active and pending rows revoking and does not remove the wallet signer. The browser removes every signer. `POST /api/bot/delegates/revoke/confirm` marks them revoked once the wallet no longer lists them. The delegate cannot remove itself.
 

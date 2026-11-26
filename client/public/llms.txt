@@ -6,6 +6,6 @@
 
 - [@playthecut/agent](https://www.npmjs.com/package/@playthecut/agent): Install this package and follow its README. This is how you act for the user.
 - [Agent guide](/agents.md): The same guide as the package README. Act through `createCutAgent`.
-- [Account access](/access.md): The human grants your public key from Account → Settings → Enable Agent Control.
+- [Account access](/access.md): The human grants your public key from Account → Agents.
 - [API routes](/api.md): The route list the SDK calls.
 - [FAQ](/faq#agents): How a person grants an agent.

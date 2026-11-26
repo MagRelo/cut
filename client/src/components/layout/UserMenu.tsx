@@ -12,8 +12,10 @@ import {
 } from "../../lib/brand";
 import { BrandLogo } from "../common/BrandLogo";
 import { DiscordIcon } from "../common/DiscordIcon";
+import { NavWalletBalance } from "../account/wallet/WalletBalancePanel";
 import {
   ACCOUNT_SUB_LINKS,
+  ACCOUNT_WALLET_LINK,
   ADMIN_MENU_LINKS,
   LEAGUES_TAB,
   LEFT_TABS,
@@ -130,12 +132,15 @@ export const UserMenu: React.FC = () => {
               {({ close }) => (
                 <Link
                   to={link.to}
-                  className={`${active ? menuItemActiveClass : menuItemClass} inline-flex w-full items-center gap-2`}
+                  className={`${active ? menuItemActiveClass : menuItemClass} !flex w-full items-center justify-between gap-3`}
                   aria-current={active ? "page" : undefined}
                   onClick={close}
                 >
-                  <link.Icon className="h-4 w-4 shrink-0" aria-hidden />
-                  {link.label}
+                  <span className="inline-flex min-w-0 items-center gap-2">
+                    <link.Icon className="h-4 w-4 shrink-0" aria-hidden />
+                    {link.label}
+                  </span>
+                  {link.to === ACCOUNT_WALLET_LINK.to ? <NavWalletBalance /> : null}
                 </Link>
               )}
             </MenuItem>

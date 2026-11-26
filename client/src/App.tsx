@@ -20,6 +20,7 @@ import {
 import { Home } from "./pages/Home";
 import { ConnectPage } from "./pages/ConnectPage";
 import { SettingsPage } from "./pages/account/SettingsPage";
+import { AgentsPage } from "./pages/account/AgentsPage";
 import { ActivityPage } from "./pages/account/ActivityPage";
 import { ReferralsPage } from "./pages/account/ReferralsPage";
 import { WalletPage } from "./pages/account/WalletPage";
@@ -124,6 +125,14 @@ const AppShell: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/account/agents"
+              element={
+                <ProtectedRoute>
+                  <AgentsPage />
                 </ProtectedRoute>
               }
             />

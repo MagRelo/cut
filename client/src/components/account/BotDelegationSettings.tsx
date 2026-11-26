@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { CpuChipIcon } from "@heroicons/react/24/outline";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSigners, useWallets } from "@privy-io/react-auth";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
@@ -11,7 +12,6 @@ import { BRAND_URL } from "../../lib/brand";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { botDelegatesQueryKey, useBotDelegates } from "../../hooks/useActiveAgentControl";
 import { useAuth } from "../../contexts/AuthContext";
-import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
 import apiClient from "../../utils/apiClient";
 
 const agentPrompt = `Make me a genius on Play The Cut.
@@ -24,7 +24,7 @@ ${BRAND_URL}/api.md
 ${BRAND_URL}/faq#agents
 ${BRAND_URL}/llms.txt
 
-Call generateDelegateKey() once, store the private key, and reply with only the public key. I will paste that key in Account → Settings → Enable Agent Control and choose Grant full access.
+Call generateDelegateKey() once, store the private key, and reply with only the public key. I will paste that key in Account → Agents and choose Grant full access.
 
 After I grant that key and send you my smart wallet, create the client with that smartWallet and call account(). Take on all six roles. Offer the suggested weekly schedule, and start it only after I say yes. If you cannot run scheduled jobs, say so and do the checks the next time we talk.
 
@@ -48,12 +48,12 @@ export function BotDelegationSettings() {
   const { addSigners, removeSigners } = useSigners();
   const { client: smartWalletClient } = useSmartWallets();
   const { user } = useAuth();
-  const walletAddress = useEffectiveWalletAddress();
   const queryClient = useQueryClient();
   const [delegateInput, setDelegateInput] = useState("");
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
+  const [revokeWarning, setRevokeWarning] = useState<null | "active" | "pending" | "stuck">(null);
 
   const delegates = useBotDelegates();
 
@@ -124,12 +124,39 @@ export function BotDelegationSettings() {
     }
   }
 
-  function removeFromWallet() {
-    const confirmed = window.confirm(
-      `Revoke all agent access? Every agent will lose the ability to send ${defaultPaymentTokenSymbol()}, enter or create a paid contest, and send messages.`,
+  function revokeWarningPanel(source: "active" | "pending" | "stuck") {
+    if (revokeWarning !== source) return null;
+    return (
+      <>
+        <div role="note" className="mt-4 border border-orange-500 px-4 py-3 sm:px-5">
+          <div className="flex items-start gap-3">
+            <ExclamationTriangleIcon
+              className="mt-0.5 h-5 w-5 shrink-0 text-orange-600"
+              aria-hidden
+            />
+            <div>
+              <h3 className="text-sm font-semibold text-orange-600">Revoke all agent access</h3>
+              <p className="mt-1 text-sm leading-6 text-slate-800">
+                Every agent will lose the ability to send {defaultPaymentTokenSymbol()}, enter or
+                create a paid contest, and send messages.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-4">
+          <Button
+            type="button"
+            variant="neutral"
+            disabled={pending !== null}
+            onClick={() => {
+              void run("revoke", revokeAll);
+            }}
+          >
+            {pending === "revoke" ? "Revoking…" : "Revoke all agent access"}
+          </Button>
+        </div>
+      </>
     );
-    if (!confirmed) return;
-    void run("revoke", revokeAll);
   }
 
   return (
@@ -137,10 +164,23 @@ export function BotDelegationSettings() {
       className="rounded-lg border border-slate-200 bg-white p-6 font-display shadow-sm sm:p-8"
       aria-labelledby="delegate-heading"
     >
+      <h1 className="mb-4 flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
+        <CpuChipIcon className="h-6 w-6 shrink-0" aria-hidden />
+        Agents
+      </h1>
+
       <div className="max-w-3xl">
-        <h2 id="delegate-heading" className="font-display text-lg font-semibold text-gray-700">
-          Enable Agent Control
-        </h2>
+        <p className="text-sm leading-6 text-slate-600">
+          Use a personal agent to handle research, reminders, finding contests, etc.
+        </p>
+
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Copy and paste these instructions into your agent:
+        </p>
+
+        <div className="mt-3">
+          <CopyButton text={agentPrompt} idleLabel="Copy Agent Instructions" />
+        </div>
 
         <div
           role="note"
@@ -157,28 +197,11 @@ export function BotDelegationSettings() {
                 Warning - Experimental
               </h3>
               <p className="mt-1 text-sm leading-6 text-slate-800">
-                Bugs or a compromised agent could drain this wallet. Only use funds you can afford to
-                lose.
+                Bugs or a compromised agent could drain this wallet. Only use funds you can afford
+                to lose.
               </p>
             </div>
           </div>
-        </div>
-
-        <h3 className="text-base font-semibold text-slate-900">Agent Instructions</h3>
-
-        <p className="text-sm leading-6 text-slate-600">
-          Paste this into your agent. It should reply with a public key. Paste that key here, then
-          grant access.
-        </p>
-        {walletAddress ? (
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <p className="min-w-0 break-all font-mono text-xs text-slate-800">{walletAddress}</p>
-            <CopyButton text={walletAddress} idleLabel="Copy wallet address" variant="secondary" />
-          </div>
-        ) : null}
-
-        <div className="mt-3">
-          <CopyButton text={agentPrompt} idleLabel="Copy Agent Instructions" />
         </div>
       </div>
 
@@ -229,8 +252,7 @@ export function BotDelegationSettings() {
           </div>
           <p id="agent-public-key-note" className="mt-2 text-xs leading-5 text-slate-500">
             This key can send {defaultPaymentTokenSymbol()}, enter a paid contest, create a paid
-            contest, and send messages.
-            Double-check the public key before granting access.
+            contest, and send messages. Double-check the public key before granting access.
           </p>
           {fieldError ? <ErrorMessage message={fieldError} className="mt-2" /> : null}
         </div>
@@ -242,31 +264,30 @@ export function BotDelegationSettings() {
           <div className="mt-6">
             <p className="text-sm leading-6 text-slate-800">Grant did not finish.</p>
             <ul className="mt-3 border-t border-slate-300">
-              {pendingRows.map((row) => (
-                <li
-                  key={row.delegateAddress}
-                  className="flex flex-col gap-3 border-b border-slate-300 py-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <span className="min-w-0 break-all font-mono text-xs text-slate-800">
-                    {agentKeyLabel(row.delegateAddress)}
-                  </span>
-                  <CopyButton
-                    text={row.delegateAddress}
-                    idleLabel="Copy public key"
-                    variant="secondary"
-                  />
-                  <Button
-                    type="button"
-                    variant="neutral"
-                    disabled={pending !== null}
-                    onClick={() => {
-                      void run("grant", () => enable(row.delegateAddress));
-                    }}
+              {pendingRows.map((row) => {
+                const publicKey = agentKeyLabel(row.delegateAddress);
+                return (
+                  <li
+                    key={row.delegateAddress}
+                    className="flex flex-col gap-3 border-b border-slate-300 py-3 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    {pending === "grant" ? "Granting…" : "Finish granting"}
-                  </Button>
-                </li>
-              ))}
+                    <span className="min-w-0 break-all font-mono text-xs text-slate-800">
+                      {publicKey}
+                    </span>
+                    <CopyButton text={publicKey} idleLabel="Copy public key" variant="secondary" />
+                    <Button
+                      type="button"
+                      variant="neutral"
+                      disabled={pending !== null}
+                      onClick={() => {
+                        void run("grant", () => enable(row.delegateAddress));
+                      }}
+                    >
+                      {pending === "grant" ? "Granting…" : "Finish granting"}
+                    </Button>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ) : null}
@@ -274,31 +295,31 @@ export function BotDelegationSettings() {
           <div className="mt-6">
             <h3 className="text-base font-semibold text-slate-900">Agents with access</h3>
             <ul className="mt-3 border-t border-slate-300">
-              {active.map((row) => (
-                <li
-                  key={row.delegateAddress}
-                  className="flex flex-col gap-3 border-b border-slate-300 py-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <span className="min-w-0 break-all font-mono text-xs text-slate-800">
-                    {agentKeyLabel(row.delegateAddress)}
-                  </span>
-                  <CopyButton
-                    text={row.delegateAddress}
-                    idleLabel="Copy public key"
-                    variant="secondary"
-                  />
-                </li>
-              ))}
+              {active.map((row) => {
+                const publicKey = agentKeyLabel(row.delegateAddress);
+                return (
+                  <li
+                    key={row.delegateAddress}
+                    className="flex flex-col gap-3 border-b border-slate-300 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <span className="min-w-0 break-all font-mono text-xs text-slate-800">
+                      {publicKey}
+                    </span>
+                    <CopyButton text={publicKey} idleLabel="Copy public key" variant="secondary" />
+                  </li>
+                );
+              })}
             </ul>
             <div className="mt-4">
               <Button
                 type="button"
                 variant="neutral"
                 disabled={pending !== null}
-                onClick={removeFromWallet}
+                onClick={() => setRevokeWarning("active")}
               >
-                {pending === "revoke" ? "Revoking…" : "Revoke all agent access"}
+                Revoke all agent access
               </Button>
+              {revokeWarningPanel("active")}
             </div>
           </div>
         ) : null}
@@ -314,7 +335,7 @@ export function BotDelegationSettings() {
                 disabled={pending !== null}
                 onClick={() => {
                   if (active.length > 0 || pendingRows.length > 0) {
-                    removeFromWallet();
+                    setRevokeWarning("stuck");
                     return;
                   }
                   void run("remove", revokeAll);
@@ -322,6 +343,7 @@ export function BotDelegationSettings() {
               >
                 {pending === "remove" ? "Removing…" : "Remove the key from the wallet"}
               </Button>
+              {revokeWarningPanel("stuck")}
             </div>
           </div>
         ) : null}
@@ -331,10 +353,11 @@ export function BotDelegationSettings() {
               type="button"
               variant="neutral"
               disabled={pending !== null}
-              onClick={removeFromWallet}
+              onClick={() => setRevokeWarning("pending")}
             >
-              {pending === "revoke" ? "Revoking…" : "Remove the key from the wallet"}
+              Remove the key from the wallet
             </Button>
+            {revokeWarningPanel("pending")}
           </div>
         ) : null}
         {actionError ? <ErrorMessage message={actionError} className="mt-2" /> : null}

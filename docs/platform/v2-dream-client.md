@@ -25,7 +25,7 @@ Eight jobs. Nothing else ships in `client/`.
 | **Lobby** | `/contest/:key` | Lineups, contest, winner pool (buy/sell), feed, results. Lineup builder lives here. |
 | **Create** | `/contests/create`, `/leagues/:id/contests/create` | One settings model, two layouts (public vs league defaults). |
 | **Leagues** | `/leagues`, `/leagues/:id`, join-by-code | Cross-sport groups. Sport is a badge on each contest. |
-| **Account** | `/account/funds`, `/activity`, `/referrals`, `/settings` | Wallet send/receive, history, referral tree, display settings, **Enable Agent Control**. |
+| **Account** | `/account/funds`, `/activity`, `/referrals`, `/agents`, `/settings` | Wallet send/receive, history, referral tree, agents, display settings. |
 | **Field** | `/sports/:sportId/events/:eventId/leaderboard` | Share URL for a participant. Not a hub. |
 | **Admin** | `/admin/*` | Staff. Same primitives, same APIs, gated. |
 
