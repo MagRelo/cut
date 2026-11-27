@@ -232,8 +232,8 @@ export function BotDelegationSettings() {
 
       <div className="max-w-3xl">
         <p className="text-sm leading-6 text-slate-600">
-          If you have an AI agent (e.g. ChatGPT, Claude, Muse, Grok, etc.) you can use it to enhance
-          your experience. Here are a few of the things it can do for you:
+          If you have an AI agent (ChatGPT, Claude, Muse, Grok, etc.) you can use it to enhance your
+          experience. Here are a few of the things it can do for you:
         </p>
         <ul className="ml-4 mt-2 list-inside list-disc text-sm leading-6 text-slate-600">
           <li>Find & enter contests</li>
