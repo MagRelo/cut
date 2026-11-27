@@ -9,6 +9,7 @@ import {
   contestWithLineups,
   contestWithTimeline,
 } from "../../../test/fixtures/contestLobby";
+import { ContestState } from "../../../chain/contestState";
 import { ContestLobbyView } from "./ContestLobbyView";
 
 const meta = {
@@ -30,6 +31,7 @@ export const OpenPreRound: Story = {
   args: {
     contest: contestFixtures.open,
     viewModel: contestLobbyViewModels.openPreRound,
+    contestStateOnChain: ContestState.OPEN,
   },
 };
 

@@ -1,12 +1,15 @@
 import React, { useMemo } from "react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-import { useBalance, useReadContract } from "wagmi";
-import { erc20Abi, formatUnits } from "viem";
+import { formatUnits } from "viem";
 import { Modal } from "../common/Modal";
 import type { Contest } from "../../types/contest";
-import ContestContract from "../../utils/contracts/ContestController.json";
 import { useAuth } from "../../contexts/AuthContext";
 import { defaultPaymentTokenSymbol } from "../../config/targetChain";
+import { useContestChain, type ContestChainSnapshot } from "../../chain/useContestChain";
+import {
+  usePaymentTokenBalance,
+  usePaymentTokenMetadata,
+} from "../../chain/usePaymentTokenBalance";
 import { Link } from "react-router-dom";
 import { contestStatusValueClass, formatContestStatus } from "../../lib/contestStatus";
 import { effectiveContestStatus } from "../../lib/lineupEditable";
@@ -29,89 +32,30 @@ interface ContestPayoutsModalProps {
   contest: Contest;
 }
 
-function ContestContractDetailsSection({ contest, isOpen }: { contest: Contest; isOpen: boolean }) {
-  const chainId = contest?.chainId as 8453 | 84532 | undefined;
-  const readsEnabled = !!contest?.address && isOpen;
+function ContestContractDetailsSection({
+  contest,
+  snapshot,
+  escrowValue,
+  escrowDecimals,
+  escrowSymbol,
+  tokenSymbol: tokenSymbolProp,
+  tokenDecimals: tokenDecimalsProp,
+}: {
+  contest: Contest;
+  snapshot: ContestChainSnapshot;
+  escrowValue?: bigint;
+  escrowDecimals?: number;
+  escrowSymbol?: string;
+  tokenSymbol?: string;
+  tokenDecimals?: number;
+}) {
+  const contractState = snapshot.state;
+  const primarySideBalance = snapshot.primarySideBalance;
+  const totalSecondaryLiquidity = snapshot.totalSecondaryLiquidity;
+  const primaryDepositSecondarySubsidyBps = snapshot.primaryDepositSecondarySubsidyBps;
 
-  const paymentTokenOnChain = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "paymentToken",
-    args: [],
-    chainId,
-    query: { enabled: readsEnabled },
-  }).data as `0x${string}` | undefined;
-
-  const fallbackPaymentTokenAddress = contest?.settings?.paymentTokenAddress as
-    | `0x${string}`
-    | undefined;
-
-  const paymentTokenAddress = paymentTokenOnChain ?? fallbackPaymentTokenAddress;
-
-  const paymentTokenSymbol = useReadContract({
-    address: paymentTokenAddress as `0x${string}` | undefined,
-    abi: erc20Abi,
-    functionName: "symbol",
-    args: [],
-    chainId,
-    query: { enabled: !!paymentTokenAddress && readsEnabled },
-  }).data as string | undefined;
-
-  const paymentTokenDecimals = useReadContract({
-    address: paymentTokenAddress as `0x${string}` | undefined,
-    abi: erc20Abi,
-    functionName: "decimals",
-    args: [],
-    chainId,
-    query: { enabled: !!paymentTokenAddress && readsEnabled },
-  }).data as number | undefined;
-
-  const { data: contractBalance } = useBalance({
-    address: contest?.address as `0x${string}`,
-    token: paymentTokenAddress as `0x${string}` | undefined,
-    chainId,
-    query: { enabled: readsEnabled && !!paymentTokenAddress },
-  });
-
-  const contractState = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "state",
-    args: [],
-    chainId,
-    query: { enabled: readsEnabled },
-  }).data as number | undefined;
-
-  const primarySideBalance = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "getPrimarySideBalance",
-    args: [],
-    chainId,
-    query: { enabled: readsEnabled },
-  }).data as bigint | undefined;
-
-  const totalSecondaryLiquidity = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "totalSecondaryLiquidity",
-    args: [],
-    chainId,
-    query: { enabled: readsEnabled },
-  }).data as bigint | undefined;
-
-  const primaryDepositSecondarySubsidyBps = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "primaryDepositSecondarySubsidyBps",
-    args: [],
-    chainId,
-    query: { enabled: readsEnabled },
-  }).data as bigint | undefined;
-
-  const tokenDecimals = paymentTokenDecimals ?? contractBalance?.decimals ?? 18;
-  const tokenSymbol =
-    paymentTokenSymbol ?? contractBalance?.symbol ?? contest?.settings?.paymentTokenSymbol ?? "";
+  const tokenDecimals = tokenDecimalsProp ?? escrowDecimals ?? snapshot.paymentDecimals;
+  const tokenSymbol = tokenSymbolProp ?? escrowSymbol ?? contest?.settings?.paymentTokenSymbol ?? "";
 
   const formatTokenAmount = (
     value?: bigint,
@@ -189,15 +133,15 @@ function ContestContractDetailsSection({ contest, isOpen }: { contest: Contest; 
           <span className="font-semibold text-gray-900">{inviteNetworkPercent.toFixed(2)}%</span>
         </div>
 
-        {contractBalance?.value !== undefined && (
+        {escrowValue !== undefined && (
           <div className="flex items-center justify-between">
             <span className="text-gray-600">Balance</span>
             <span className="font-semibold text-gray-900">
-              {formatTokenAmount(contractBalance.value, {
+              {formatTokenAmount(escrowValue, {
                 fractionDigits: 4,
-                decimals: contractBalance.decimals,
+                decimals: escrowDecimals ?? tokenDecimals,
               })}{" "}
-              {tokenSymbol || contractBalance.symbol || resolvedTokenSymbol}
+              {tokenSymbol || escrowSymbol || resolvedTokenSymbol}
             </span>
           </div>
         )}
@@ -233,43 +177,25 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
   const { paymentTokenSymbol, paymentTokenDecimals } = useAuth();
   const tokenDecimals = paymentTokenDecimals ?? 6;
   const tokenLabel = paymentTokenSymbol ?? defaultPaymentTokenSymbol();
-  const chainId = contest?.chainId as 8453 | 84532 | undefined;
   const referralNetworkBps = Math.max(
     0,
     Math.min(10000, contest?.settings?.referralNetworkBps ?? contest?.settings?.oracleFeeBps ?? 0),
   );
-
-  const {
-    data: primaryPrizePool,
-    isLoading: isLoadingPrimary,
-    isError: isErrorPrimary,
-    refetch: refetchPrimaryPrizePool,
-  } = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "primaryPrizePool",
-    args: [],
-    chainId,
-    query: {
-      enabled: !!contest?.address && isOpen,
-    },
+  const readsEnabled = Boolean(contest?.address && isOpen);
+  const snapshot = useContestChain(contest, { enabled: readsEnabled });
+  const tokenMetadata = usePaymentTokenMetadata({
+    token: snapshot.paymentTokenAddress,
+    chainId: contest.chainId,
+    enabled: readsEnabled && Boolean(snapshot.paymentTokenAddress),
   });
-
-  const {
-    data: totalSecondaryLiquidity,
-    isLoading: isLoadingSecondaryLiquidity,
-    isError: isErrorSecondaryLiquidity,
-    refetch: refetchTotalSecondaryLiquidity,
-  } = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "totalSecondaryLiquidity",
-    args: [],
-    chainId,
-    query: {
-      enabled: !!contest?.address && isOpen,
-    },
+  const escrow = usePaymentTokenBalance({
+    address: contest.address ? (contest.address as `0x${string}`) : undefined,
+    token: snapshot.paymentTokenAddress,
+    chainId: contest.chainId,
+    enabled: readsEnabled && Boolean(snapshot.paymentTokenAddress),
   });
+  const primaryPrizePool = snapshot.primaryPrizePool;
+  const totalSecondaryLiquidity = snapshot.totalSecondaryLiquidity;
 
   const entryCount = contest?.contestLineups?.length ?? 0;
   const isLargeContest = entryCount >= 10;
@@ -286,7 +212,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
 
   const primaryPrizePoolData = useMemo(() => {
     const grossTotal = primaryPrizePool
-      ? Number(formatUnits(primaryPrizePool as bigint, tokenDecimals))
+      ? Number(formatUnits(primaryPrizePool, tokenDecimals))
       : 0;
     const netTotal = (grossTotal * (10000 - referralNetworkBps)) / 10000;
     return { grossTotal, netTotal };
@@ -294,7 +220,7 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
 
   const secondaryLiquidityData = useMemo(() => {
     const grossTotal = totalSecondaryLiquidity
-      ? Number(formatUnits(totalSecondaryLiquidity as bigint, tokenDecimals))
+      ? Number(formatUnits(totalSecondaryLiquidity, tokenDecimals))
       : 0;
     const netTotal = (grossTotal * (10000 - referralNetworkBps)) / 10000;
     return { grossTotal, netTotal };
@@ -303,12 +229,13 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
   const totalPrizePool = primaryPrizePoolData.grossTotal + secondaryLiquidityData.grossTotal;
   const networkBonusTotal = (totalPrizePool * referralNetworkBps) / 10000;
 
-  const isLoading = isLoadingPrimary || isLoadingSecondaryLiquidity;
+  const isLoading = snapshot.isLoading;
   const readsFailed =
-    !!contest?.address && isOpen && !isLoading && (isErrorPrimary || isErrorSecondaryLiquidity);
+    readsEnabled &&
+    !isLoading &&
+    (snapshot.failed.primaryPrizePool || snapshot.failed.totalSecondaryLiquidity);
 
-  const refetchPayoutReads = () =>
-    void Promise.all([refetchPrimaryPrizePool(), refetchTotalSecondaryLiquidity()]);
+  const refetchPayoutReads = () => void snapshot.refetch();
 
   const formatCurrency = (value: number) => `$${Math.round(value).toLocaleString()}`;
 
@@ -357,7 +284,15 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
                 </p>
               </div>
             </div>
-            <ContestContractDetailsSection contest={contest} isOpen={isOpen} />
+            <ContestContractDetailsSection
+              contest={contest}
+              snapshot={snapshot}
+              escrowValue={escrow.value}
+              escrowDecimals={escrow.decimals}
+              escrowSymbol={escrow.symbol}
+              tokenSymbol={tokenMetadata.symbol}
+              tokenDecimals={tokenMetadata.decimals}
+            />
           </ContestPayoutLayout>
         ) : (
           <ContestPayoutLayout>
@@ -479,7 +414,15 @@ export const ContestPayoutsModal: React.FC<ContestPayoutsModalProps> = ({
               </ContestPayoutDividedRows>
             </ContestPayoutSection>
 
-            <ContestContractDetailsSection contest={contest} isOpen={isOpen} />
+            <ContestContractDetailsSection
+              contest={contest}
+              snapshot={snapshot}
+              escrowValue={escrow.value}
+              escrowDecimals={escrow.decimals}
+              escrowSymbol={escrow.symbol}
+              tokenSymbol={tokenMetadata.symbol}
+              tokenDecimals={tokenMetadata.decimals}
+            />
           </ContestPayoutLayout>
         )}
       </div>

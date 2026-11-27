@@ -7,11 +7,11 @@ import {
   useCallback,
   useRef,
 } from "react";
-import { useAccount, useSwitchChain, useDisconnect, useBalance, useReadContract } from "wagmi";
+import { useAccount, useSwitchChain, useDisconnect } from "wagmi";
 import { usePrivy, useLogin } from "@privy-io/react-auth";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { erc20Abi } from "viem";
+import { usePaymentTokenBalance, usePaymentTokenMetadata } from "../chain/usePaymentTokenBalance";
 import { usePostHog } from "posthog-js/react";
 import { captureAccountFirstFunded, captureAuthSessionSynced } from "../lib/analytics/posthog";
 import { ApiError, apiErrorMessage, isApiError } from "../utils/apiError";
@@ -176,36 +176,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const paymentBalanceEnabled = !!balanceAddress && !!paymentTokenAddress && !!user;
 
   const {
-    data: paymentTokenBalanceData,
+    value: paymentTokenBalanceValue,
     isLoading: paymentBalanceLoading,
     isError: paymentBalanceIsError,
     refetch: refetchPaymentTokenBalance,
-  } = useBalance({
+  } = usePaymentTokenBalance({
     address: balanceAddress,
-    token: paymentTokenAddress as `0x${string}`,
-    query: {
-      enabled: paymentBalanceEnabled,
-    },
+    token: paymentTokenAddress,
+    chainId: currentChainId,
+    enabled: paymentBalanceEnabled,
   });
 
-  const { data: paymentTokenSymbol } = useReadContract({
-    address: paymentTokenAddress as `0x${string}`,
-    abi: erc20Abi,
-    functionName: "symbol",
-    query: {
-      enabled: !!paymentTokenAddress,
-      staleTime: Infinity,
-    },
-  });
-
-  const { data: paymentTokenDecimals } = useReadContract({
-    address: paymentTokenAddress as `0x${string}`,
-    abi: erc20Abi,
-    functionName: "decimals",
-    query: {
-      enabled: !!paymentTokenAddress,
-      staleTime: Infinity,
-    },
+  const { symbol: paymentTokenSymbol, decimals: paymentTokenDecimals } = usePaymentTokenMetadata({
+    token: paymentTokenAddress,
+    chainId: currentChainId,
   });
 
   const balancesLoading = paymentBalanceLoading;
@@ -218,8 +202,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refetchPaymentTokenBalance]);
 
   const combinedSpendableWei = useMemo(() => {
-    return paymentTokenBalanceData?.value ?? 0n;
-  }, [paymentTokenBalanceData?.value]);
+    return paymentTokenBalanceValue ?? 0n;
+  }, [paymentTokenBalanceValue]);
 
   const combinedPrevRef = useRef<bigint | null>(null);
   const syncedUserIdRef = useRef<string | null>(null);
@@ -254,7 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       captureAccountFirstFunded(posthog, {
         user_id: user.id,
         chain_id: user.chainId,
-        payment_balance_wei: (paymentTokenBalanceData?.value ?? 0n).toString(),
+        payment_balance_wei: (paymentTokenBalanceValue ?? 0n).toString(),
       });
     }
     combinedPrevRef.current = combinedSpendableWei;
@@ -265,7 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     balancesLoading,
     balancesUnavailable,
     combinedSpendableWei,
-    paymentTokenBalanceData?.value,
+    paymentTokenBalanceValue,
   ]);
 
   // Keep apiClient in sync with the Privy JWT and the wagmi chain for Authorization and X-Cut-Chain-Id.
@@ -450,10 +434,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshUser,
       logout,
       isAdmin,
-      paymentTokenBalance: paymentTokenBalanceData?.value,
+      paymentTokenBalance: paymentTokenBalanceValue,
       paymentTokenAddress,
-      paymentTokenSymbol: paymentTokenSymbol as string | undefined,
-      paymentTokenDecimals: paymentTokenDecimals as number | undefined,
+      paymentTokenSymbol,
+      paymentTokenDecimals,
       balancesLoading,
       balancesUnavailable,
       refetchBalances,
@@ -470,7 +454,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshUser,
       logout,
       isAdmin,
-      paymentTokenBalanceData?.value,
+      paymentTokenBalanceValue,
       paymentTokenAddress,
       paymentTokenSymbol,
       paymentTokenDecimals,

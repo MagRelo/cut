@@ -4,19 +4,18 @@ import { Button } from "../common/Button";
 import { TxButton } from "../common/TxButton";
 import { usePostHog } from "posthog-js/react";
 import { formatUnits } from "viem";
-import { useBalance, useReadContract } from "wagmi";
-import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
 import {
-  contestPaymentDecimals,
   hasEnoughTokenBalance,
   parseContestAmountFromHuman,
 } from "../../lib/paymentTokenSpend";
-import ContestContract from "../../utils/contracts/ContestController.json";
 import { simulateAddSecondaryPosition, type SecondaryPoolSnapshot } from "@cut/secondary-pricing";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { useAuth } from "../../contexts/AuthContext";
-import { useAddPrediction } from "../../hooks/useSpectatorOperations";
-import type { BatchTransactionStatusData } from "../../hooks/useBlockchainTransaction";
+import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
+import { useBuyPool } from "../../chain/verbs";
+import { useContestChain } from "../../chain/useContestChain";
+import { useContestSpendableBalance } from "../../chain/useContestSpendableBalance";
+import type { BatchTransactionStatusData } from "../../chain/transaction";
 import apiClient from "../../utils/apiClient";
 import { useOddsFormat } from "../../hooks/useOddsFormat";
 import { incrementalGlobalClaimDelta } from "../../utils/secondaryPurchasePreview";
@@ -74,35 +73,23 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
   const location = useLocation();
   const posthog = usePostHog();
   const balanceAddress = useEffectiveWalletAddress();
-  const { paymentTokenBalance, user, balancesUnavailable, refetchBalances } = useAuth();
+  const { user } = useAuth();
+  const snapshot = useContestChain(contest, { enabled: Boolean(contest.address) });
+  const contestPaymentToken = snapshot.paymentTokenAddress;
+  const contestAmountDecimals = snapshot.paymentDecimals;
+  const {
+    spendable: spendableForContest,
+    unavailable: balancesUnavailable,
+    refetch: refetchBalances,
+  } = useContestSpendableBalance({
+      contestToken: contestPaymentToken,
+      contestChainId: contest.chainId,
+      enabled: Boolean(contest.address && user),
+    });
   const [amount, setAmount] = useState<string>("10");
   const [error, setError] = useState<string | null>(null);
 
   const secondaryActionsLocked = areSecondaryActionsLocked(contest.status);
-
-  const { data: contestPaymentTokenOnChain } = useReadContract({
-    address: contest.address as `0x${string}` | undefined,
-    abi: ContestContract.abi,
-    functionName: "paymentToken",
-    query: { enabled: !!contest.address },
-  });
-
-  const contestPaymentToken =
-    (typeof contestPaymentTokenOnChain === "string"
-      ? contestPaymentTokenOnChain
-      : contest.settings?.paymentTokenAddress) ?? "";
-
-  const contestAmountDecimals = contestPaymentDecimals(contest.chainId, contestPaymentToken);
-
-  const { data: contestTokenBalanceData } = useBalance({
-    address: balanceAddress,
-    token: contestPaymentToken as `0x${string}`,
-    query: {
-      enabled: !!balanceAddress && !!contestPaymentToken && !!user,
-    },
-  });
-
-  const spendableForContest = contestTokenBalanceData?.value ?? paymentTokenBalance ?? 0n;
 
   const lineupForEntry = useMemo(
     () => contest.contestLineups?.find((l) => l.entryId === entryId) ?? null,
@@ -187,7 +174,15 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
       purchaseAmountDisplay: fmtWei(amountBigInt),
       incrementalNetDisplay: incrementalWei === null ? "—" : fmtWei(incrementalWei),
     };
-  }, [amount, selectedEntryInfo, poolSnapshot, totalSecondaryLiquidityBefore]);
+  }, [
+    amount,
+    selectedEntryInfo,
+    poolSnapshot,
+    totalSecondaryLiquidityBefore,
+    contest.chainId,
+    contestPaymentToken,
+    contestAmountDecimals,
+  ]);
 
   const metricsReady = Boolean(poolSnapshot) && totalSecondaryLiquidityBefore !== undefined;
 
@@ -235,7 +230,7 @@ export const PredictionEntryForm: React.FC<PredictionEntryFormProps> = ({
     isProcessing,
     error: transactionError,
     createAddPredictionCalls,
-  } = useAddPrediction({
+  } = useBuyPool({
     onSuccess: async (data) => {
       const statusData = data as BatchTransactionStatusData;
       const lastReceipt = statusData.receipts[statusData.receipts.length - 1];

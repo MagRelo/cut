@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
-import { useContestPredictionData } from "../../hooks/useContestPredictionData";
+import { useContestEntries } from "../../chain/useContestEntries";
 import { useEventScope } from "../../contexts/EventScopeContext";
 import { type Contest, areSecondaryActionsLocked } from "../../types/contest";
 import { useOddsFormat } from "../../hooks/useOddsFormat";
@@ -44,13 +44,7 @@ export const PredictionLineupsList: React.FC<PredictionLineupsListProps> = ({ co
     secondaryTotalFunds,
     poolSnapshot,
     paymentDecimals,
-  } = useContestPredictionData({
-    contestAddress: contest.address ?? "",
-    entryIds,
-    enabled: true,
-    chainId: contest.chainId,
-    paymentTokenAddress: contest.settings?.paymentTokenAddress,
-  });
+  } = useContestEntries(contest, entryIds);
 
   const canOpenLineupModal = canPredict && !secondaryActionsLocked;
 

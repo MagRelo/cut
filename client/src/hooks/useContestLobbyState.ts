@@ -1,8 +1,7 @@
 import { useMemo } from "react";
-import { useReadContract } from "wagmi";
 import { type Contest } from "../types/contest";
 import { type ContestLobbyViewModel } from "../types/contestLobby";
-import ContestContract from "../utils/contracts/ContestController.json";
+import { useContestChain } from "../chain/useContestChain";
 import {
   deriveContestLobbyViewModel,
   type DeriveContestLobbyViewModelInput,
@@ -22,42 +21,25 @@ export function useContestLobbyState(
   const contestEvent = useContestEvent(contest);
   const { periodDisplay, eventShell } = contestEvent;
   const isContestDataPending = options.isContestDataPending ?? false;
-
-  const { data: contestStateOnChain, isLoading: isChainStateLoading } = useReadContract({
-    address: contest?.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "state",
-    chainId: contest?.chainId as 8453 | 84532 | undefined,
-    query: {
-      enabled: Boolean(contest?.address),
-    },
-  });
+  const snapshot = useContestChain(contest, { enabled: Boolean(contest?.address) });
+  const contestStateOnChain = snapshot.state;
 
   const viewModel = useMemo(() => {
     if (!contest || !eventShell) return null;
 
     const input: DeriveContestLobbyViewModelInput = {
-      contestStateOnChain:
-        contestStateOnChain !== undefined ? Number(contestStateOnChain) : undefined,
+      contestStateOnChain,
       hasWallet,
       periodDisplay: periodDisplay ?? undefined,
       isContestDataPending,
     };
 
     return deriveContestLobbyViewModel(contest, input);
-  }, [
-    contest,
-    contestStateOnChain,
-    hasWallet,
-    eventShell,
-    periodDisplay,
-    isContestDataPending,
-  ]);
+  }, [contest, contestStateOnChain, hasWallet, eventShell, periodDisplay, isContestDataPending]);
 
   return {
     viewModel,
-    isChainStateLoading,
-    contestStateOnChain:
-      contestStateOnChain !== undefined ? Number(contestStateOnChain) : undefined,
+    isChainStateLoading: snapshot.isLoading,
+    contestStateOnChain,
   };
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { canAddPrimaryPosition, canRemovePrimaryPosition } from "../types/contest";
 import { readContestSurfaces } from "../lib/contestSurfaces";
 import { deriveContestLobbyViewModel } from "./deriveContestLobbyViewModel";
-import { ContestState } from "./useContestPredictionData";
+import { ContestState } from "../chain/contestState";
 import { contestFixtures } from "../test/fixtures/contestLobby";
 
 describe("contract-aligned primary helpers", () => {

@@ -1,32 +1,29 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePostHog } from "posthog-js/react";
-import { useBalance, useReadContract } from "wagmi";
-import { useEffectiveWalletAddress } from "./useEffectiveWalletAddress";
 import type { Contest } from "../types/contest";
 import { useAuth } from "../contexts/AuthContext";
+import { useEffectiveWalletAddress } from "./useEffectiveWalletAddress";
 import { useLineupData } from "./useLineupData";
 import { useJoinContest, useLeaveContest } from "./useContestMutations";
-import {
-  useJoinContest as useJoinContestBlockchain,
-  useLeaveContest as useLeaveContestBlockchain,
-} from "./useContestantOperations";
+import { useChainJoinContest, useChainLeaveContest } from "../chain/verbs";
+import { useContestChain } from "../chain/useContestChain";
+import { useContestSpendableBalance } from "../chain/useContestSpendableBalance";
 import { generateEntryId } from "../utils/entryIdUtils";
 import { captureContestEntryRecorded } from "../lib/analytics/posthog";
-import type { BatchTransactionStatusData } from "./useBlockchainTransaction";
+import type { BatchTransactionStatusData } from "../chain/transaction";
 import { txPhaseInFlight, type TxPhase } from "../lib/txPhase";
 import { hasEnoughTokenBalance } from "../lib/paymentTokenSpend";
 import {
   platformLineupEventParticipantIds,
   platformLineupPrediction,
 } from "../lib/lineupUtils";
-import ContestContract from "../utils/contracts/ContestController.json";
 import { contestRouteKey, hasOnchainEscrow } from "../lib/hasOnchainEscrow";
 import { useSportRosterRules } from "./useSportRosterRules";
 
 export function useContestLineupEntry(contest: Contest) {
   const posthog = usePostHog();
   const balanceAddress = useEffectiveWalletAddress();
-  const { user, paymentTokenBalance, balancesUnavailable } = useAuth();
+  const { user } = useAuth();
   const joinContest = useJoinContest();
   const leaveContest = useLeaveContest();
   const { lineups } = useLineupData({ eventId: contest.eventId });
@@ -57,41 +54,16 @@ export function useContestLineupEntry(contest: Contest) {
     return map;
   }, [userContestLineups]);
 
-  const { data: primaryDepositRaw, isPending: isPrimaryDepositLoadingOnChain } = useReadContract({
-    address: contest.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "primaryDepositAmount",
-    args: [],
-    query: { enabled: onchain },
-  });
-  const isPrimaryDepositLoading = onchain && isPrimaryDepositLoadingOnChain;
-  const contestantDepositAmount =
-    typeof primaryDepositRaw === "bigint" ? primaryDepositRaw : undefined;
-
-  const { data: contestPaymentTokenOnChain } = useReadContract({
-    address: contest.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "paymentToken",
-    args: [],
-    query: {
-      enabled: Boolean(onchain && contest.address),
-    },
-  });
-
-  const contestPaymentToken =
-    (typeof contestPaymentTokenOnChain === "string"
-      ? contestPaymentTokenOnChain
-      : contest.settings?.paymentTokenAddress) ?? "";
-
-  const { data: contestTokenBalanceData } = useBalance({
-    address: balanceAddress,
-    token: contestPaymentToken as `0x${string}`,
-    query: {
-      enabled: Boolean(onchain && balanceAddress && contestPaymentToken && user),
-    },
-  });
-
-  const spendableForContest = contestTokenBalanceData?.value ?? paymentTokenBalance ?? 0n;
+  const snapshot = useContestChain(contest, { enabled: onchain });
+  const isPrimaryDepositLoading = onchain && snapshot.isLoading;
+  const contestantDepositAmount = snapshot.primaryDepositAmount;
+  const contestPaymentToken = snapshot.paymentTokenAddress;
+  const { spendable: spendableForContest, unavailable: balancesUnavailable } =
+    useContestSpendableBalance({
+      contestToken: contestPaymentToken,
+      contestChainId: contest.chainId,
+      enabled: onchain && Boolean(user),
+    });
 
   const hasEnoughBalance = useMemo(() => {
     if (!onchain) return true;
@@ -131,7 +103,7 @@ export function useContestLineupEntry(contest: Contest) {
     error: joinError,
     retrySave: retryJoinSave,
     createJoinContestCalls,
-  } = useJoinContestBlockchain({
+  } = useChainJoinContest({
     onSuccess: async (statusData: BatchTransactionStatusData) => {
       if (pendingAction?.type !== "join" || !pendingAction.lineupId || !pendingAction.entryId) {
         throw new Error("Join did not finish saving");
@@ -162,7 +134,7 @@ export function useContestLineupEntry(contest: Contest) {
     error: leaveError,
     retrySave: retryLeaveSave,
     createLeaveContestCalls,
-  } = useLeaveContestBlockchain({
+  } = useChainLeaveContest({
     onSuccess: async () => {
       if (pendingAction?.type !== "leave" || !pendingAction.lineupId) {
         throw new Error("Leave did not finish saving");

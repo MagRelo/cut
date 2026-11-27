@@ -2,8 +2,9 @@ import React, { useState, useMemo } from "react";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { TxButton } from "../common/TxButton";
-import { useWithdrawPrediction } from "../../hooks/useSpectatorOperations";
-import { ContestState, useContestPredictionData } from "../../hooks/useContestPredictionData";
+import { useSellPool } from "../../chain/verbs";
+import { ContestState } from "../../chain/contestState";
+import { useContestEntries } from "../../chain/useContestEntries";
 import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
 import { type Contest } from "../../types/contest";
 import { useOddsFormat } from "../../hooks/useOddsFormat";
@@ -31,12 +32,8 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
   }, [contest.contestLineups]);
 
   // Fetch prediction data
-  const { entryData, canWithdraw, contestState, isLoading } = useContestPredictionData({
-    contestAddress: contest.address ?? "",
-    entryIds,
+  const { entryData, canWithdraw, contestState, isLoading } = useContestEntries(contest, entryIds, {
     enabled: !!userAddress,
-    chainId: contest.chainId,
-    paymentTokenAddress: contest.settings?.paymentTokenAddress,
   });
 
   const isCancelled = contestState === ContestState.CANCELLED;
@@ -53,7 +50,7 @@ export const PredictionPositionsList: React.FC<PredictionPositionsListProps> = (
     phase,
     error: transactionError,
     createWithdrawPredictionCalls,
-  } = useWithdrawPrediction();
+  } = useSellPool();
 
   const handleWithdraw = async (entryId: string, tokenAmount: bigint, paymentAmount: bigint) => {
     if (phase === "recordFailed" && withdrawingEntryId === entryId) {

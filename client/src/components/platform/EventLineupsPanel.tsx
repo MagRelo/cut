@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { Button } from "../common/Button";
-import { useReadContract } from "wagmi";
 import { canAddPrimaryPosition, type Contest } from "../../types/contest";
 import type { AuthUser } from "../../contexts/AuthContext";
 import type { ContestLineup, PlatformLineupListItem } from "../../types/lineup";
@@ -12,7 +11,6 @@ import { useSportRosterRules } from "../../hooks/useSportRosterRules";
 import { eventDisplayNameFromMetadata } from "../../lib/eventMetadata";
 import { eventStatusForSport } from "../../sports/eventPresentation";
 import { readContestSurfaces } from "../../lib/contestSurfaces";
-import ContestContract from "../../utils/contracts/ContestController.json";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { PageSection } from "../layout/PageSection";
 import { SignInPrompt } from "../auth/SignInPrompt";
@@ -58,6 +56,8 @@ export interface EventLineupsPanelProps {
   eventId: string;
   eventMetadata?: unknown;
   isAuthenticated: boolean;
+  /** On-chain `ContestController.state` from the lobby snapshot. */
+  contestStateOnChain?: number;
 }
 
 export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
@@ -66,6 +66,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
   eventId,
   eventMetadata,
   isAuthenticated,
+  contestStateOnChain,
 }) => {
   const { loading: isAuthLoading, user } = useAuth();
   const rosterRules = useSportRosterRules(sportId);
@@ -84,24 +85,13 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
   const [createError, setCreateError] = useState<string | null>(null);
   const [copyingLineupId, setCopyingLineupId] = useState<string | null>(null);
 
-  const { data: contestStateOnChain } = useReadContract({
-    address: contest.address as `0x${string}`,
-    abi: ContestContract.abi,
-    functionName: "state",
-    chainId: contest.chainId as 8453 | 84532 | undefined,
-    query: { enabled: Boolean(contest.address) },
-  });
-
   const eventStatus = useMemo(
     () => eventStatusForSport(sportId, eventMetadata),
     [sportId, eventMetadata],
   );
   const contestSurfaces = useMemo(
     () =>
-      readContestSurfaces(
-        contest.status,
-        contestStateOnChain !== undefined ? Number(contestStateOnChain) : undefined,
-      ),
+      readContestSurfaces(contest.status, contestStateOnChain),
     [contest.status, contestStateOnChain],
   );
   const isLineupEditable = canAddPrimaryPosition(contestSurfaces.joinStatus);
@@ -286,9 +276,7 @@ export const EventLineupsPanel: React.FC<EventLineupsPanelProps> = ({
                 contest={contest}
                 lineupId={row.id}
                 entry={contestEntry}
-                contestStateOnChain={
-                  contestStateOnChain !== undefined ? Number(contestStateOnChain) : undefined
-                }
+                contestStateOnChain={contestStateOnChain}
               />
             </div>
           ))}

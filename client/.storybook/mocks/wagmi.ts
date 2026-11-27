@@ -22,9 +22,23 @@ export function useReadContract(options?: { functionName?: string }) {
   };
 }
 
-export function useReadContracts() {
+function contestScalarResult(functionName?: string): bigint | number | string | undefined {
+  if (functionName === "primaryPrizePool") return BigInt(500) * BigInt(10 ** 18);
+  if (functionName === "totalSecondaryLiquidity") return 250n * 10n ** 18n;
+  if (functionName === "state") return 1;
+  if (functionName === "getPrimarySideBalance") return BigInt(100) * BigInt(10 ** 18);
+  if (functionName === "paymentToken") return "0x0000000000000000000000000000000000000001";
+  if (functionName === "primaryDepositSecondarySubsidyBps") return 0n;
+  return undefined;
+}
+
+export function useReadContracts(options?: { contracts?: Array<{ functionName?: string }> }) {
+  const contracts = options?.contracts ?? [];
   return {
-    data: [],
+    data: contracts.map((contract) => ({
+      status: "success" as const,
+      result: contestScalarResult(contract.functionName),
+    })),
     isLoading: false,
     isError: false,
     refetch: noopRefetch,

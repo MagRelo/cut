@@ -9,7 +9,7 @@ import {
 import { ContestLobbyView } from "../components/contest/lobby/ContestLobbyView";
 import { ContestLobbyLoadingShell } from "../components/contest/lobby/ContestLobbyLoadingShell";
 import { deriveContestLobbyViewModel } from "../hooks/deriveContestLobbyViewModel";
-import { ContestState } from "../hooks/useContestPredictionData";
+import { ContestState } from "../chain/contestState";
 
 /**
  * Full page stories use `ContestLobbyView` with derived view models (same as the wired page).
@@ -37,6 +37,7 @@ export const OpenEnterContest: Story = {
       contestStateOnChain: ContestState.OPEN,
       hasWallet: true,
     }),
+    contestStateOnChain: ContestState.OPEN,
   },
 };
 

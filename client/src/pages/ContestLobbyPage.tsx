@@ -165,6 +165,7 @@ export const ContestLobby: React.FC = () => {
       isContestDataPending={isContestDataPending}
       timelineData={timelineData}
       isTimelineLoading={isTimelinePending}
+      contestStateOnChain={contestStateOnChain}
     />
   );
 };

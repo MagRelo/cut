@@ -33,6 +33,7 @@ export interface ContestLobbyViewProps {
   isContestDataPending?: boolean;
   timelineData?: TimelineData;
   isTimelineLoading?: boolean;
+  contestStateOnChain?: number;
 }
 
 /** True when dropping a temporary min-height would not pull the window upward. */
@@ -66,6 +67,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
   isContestDataPending = false,
   timelineData,
   isTimelineLoading = false,
+  contestStateOnChain,
 }) => {
   const [searchParams] = useSearchParams();
   const initialTabIndex = useMemo(() => {
@@ -228,6 +230,7 @@ export const ContestLobbyView: React.FC<ContestLobbyViewProps> = ({
                     eventId={contest.eventId}
                     eventMetadata={contest.event?.metadata}
                     isAuthenticated={isAuthenticated}
+                    contestStateOnChain={contestStateOnChain}
                   />
                 </TabPanel>
               ) : null}

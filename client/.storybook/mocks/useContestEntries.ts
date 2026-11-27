@@ -3,31 +3,23 @@ import {
   MOCK_SECONDARY_TOTAL_FUNDS,
   MOCK_SECONDARY_TOTAL_FUNDS_FORMATTED,
 } from "../../src/test/fixtures/contestPredictionMock";
+import { ContestState } from "../../src/chain/contestState";
 
-export enum ContestState {
-  OPEN = 0,
-  ACTIVE = 1,
-  LOCKED = 2,
-  SETTLED = 3,
-  CANCELLED = 4,
-}
-
-interface StorybookPredictionOptions {
-  contestAddress?: string;
-  entryIds?: string[];
-  enabled?: boolean;
-  chainId?: number;
+interface StorybookContest {
+  address?: string | null;
 }
 
 const noopRefetch = async () => undefined;
 
 const DEFAULT_ENTRY_IDS = ["1", "2", "3", "4"];
 
-export function useContestPredictionData(options: StorybookPredictionOptions = {}) {
-  const entryIds =
-    options.entryIds && options.entryIds.length > 0 ? options.entryIds : DEFAULT_ENTRY_IDS;
-
-  const entryData = buildMockPredictionEntryData(entryIds);
+export function useContestEntries(
+  _contest?: StorybookContest | null,
+  entryIds: string[] = [],
+  _options?: { enabled?: boolean },
+) {
+  const ids = entryIds.length > 0 ? entryIds : DEFAULT_ENTRY_IDS;
+  const entryData = buildMockPredictionEntryData(ids);
 
   return {
     contestState: ContestState.ACTIVE,

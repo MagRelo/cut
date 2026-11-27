@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ContestState } from "../hooks/useContestPredictionData";
+import { ContestState } from "../chain/contestState";
 import { readContestSurfaces } from "./contestSurfaces";
 
 describe("readContestSurfaces", () => {

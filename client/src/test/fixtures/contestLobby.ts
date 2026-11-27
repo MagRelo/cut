@@ -1,6 +1,6 @@
 import { PGA_GOLF_PERIOD_RULES } from "@cut/sport-pga-golf";
 import { deriveContestLobbyViewModel } from "../../hooks/deriveContestLobbyViewModel";
-import { ContestState } from "../../hooks/useContestPredictionData";
+import { ContestState } from "../../chain/contestState";
 import {
   type Contest,
   type ContestSettings,

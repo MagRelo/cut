@@ -5,7 +5,7 @@ import { Button } from "../../common/Button";
 import { ErrorMessage } from "../../common/ErrorMessage";
 import { TxButton } from "../../common/TxButton";
 import { useEffectiveWalletAddress } from "../../../hooks/useEffectiveWalletAddress";
-import { useTransferTokens } from "../../../hooks/useTokenOperations";
+import { useSendUsdc } from "../../../chain/verbs";
 import { useAuth } from "../../../contexts/AuthContext";
 import { defaultPaymentTokenSymbol, isTargetTestnet } from "../../../config/targetChain";
 import { PAYMENT_TOKEN_DECIMALS } from "../../../lib/paymentTokenSpend";
@@ -69,7 +69,7 @@ export const Send = ({ initialRecipientAddress, lockRecipient = false }: SendPro
     error: transactionError,
     reset,
     createTransferCalls,
-  } = useTransferTokens();
+  } = useSendUsdc();
 
   const handleMaxSend = () => {
     if (balancesUnavailable) return;

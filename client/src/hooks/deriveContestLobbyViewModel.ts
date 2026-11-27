@@ -5,7 +5,7 @@ import {
   type ContestLobbyViewModel,
   type PredictionsPanelMode,
 } from "../types/contestLobby";
-import { ContestState } from "./useContestPredictionData";
+import { ContestState } from "../chain/contestState";
 import { hasOnchainEscrow } from "../lib/hasOnchainEscrow";
 
 export { deriveContestLobbyPhase } from "../lib/contestSurfaces";

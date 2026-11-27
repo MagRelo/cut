@@ -4,8 +4,8 @@ import { decodeEventLog } from "viem";
 
 import { type Contest, type CreateContestInput } from "../types/contest";
 import { useCreateContest as useCreateContestMutation } from "./useContestMutations";
-import { useCreateContest } from "./useContestFactory";
-import type { BatchTransactionStatusData } from "./useBlockchainTransaction";
+import { useChainCreateContest } from "../chain/verbs";
+import type { BatchTransactionStatusData } from "../chain/transaction";
 import ContestFactoryContract from "../utils/contracts/ContestFactory.json";
 import { getContractAddress } from "../utils/blockchainUtils.tsx";
 import { buildCreateContestFactoryCallParams } from "../lib/contestCreation";
@@ -42,7 +42,7 @@ export function useCreateContestSubmission(options?: UseCreateContestSubmissionO
     isFailed,
     error: transactionError,
     createContestCalls,
-  } = useCreateContest({
+  } = useChainCreateContest({
     onSuccess: async (statusData: BatchTransactionStatusData) => {
       const pendingFromTx = pendingContestForApiRef.current;
       if (!pendingFromTx) return;

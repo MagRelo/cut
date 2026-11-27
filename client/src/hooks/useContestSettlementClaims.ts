@@ -4,7 +4,7 @@ import { useReadContracts } from "wagmi";
 
 import ContestContract from "../utils/contracts/ContestController.json";
 import { useAuth } from "../contexts/AuthContext";
-import { useContestPredictionData } from "./useContestPredictionData";
+import { useContestEntries } from "../chain/useContestEntries";
 import { useEffectiveWalletAddress } from "./useEffectiveWalletAddress";
 import type { Contest } from "../types/contest";
 import { readContestSurfaces } from "../lib/contestSurfaces";
@@ -81,12 +81,8 @@ export function useContestSettlementClaims(
     isSettled && contestAddress && entryIds.length > 0 && supportedChainId,
   );
 
-  const predictionData = useContestPredictionData({
-    contestAddress,
-    entryIds,
+  const predictionData = useContestEntries(contest, entryIds, {
     enabled: enabledPredictionReads,
-    chainId: supportedChainId,
-    paymentTokenAddress: contest?.settings?.paymentTokenAddress,
   });
 
   const { entryData, isLoading: predictionLoading, paymentDecimals } = predictionData;

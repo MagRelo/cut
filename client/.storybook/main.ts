@@ -21,8 +21,8 @@ const config: StorybookConfig = {
         replacement: path.resolve(dirname, "./mocks/wagmi.ts"),
       },
       {
-        find: path.resolve(dirname, "../src/hooks/useContestPredictionData.ts"),
-        replacement: path.resolve(dirname, "./mocks/useContestPredictionData.ts"),
+        find: path.resolve(dirname, "../src/chain/useContestEntries.ts"),
+        replacement: path.resolve(dirname, "./mocks/useContestEntries.ts"),
       },
       {
         find: path.resolve(dirname, "../src/hooks/useLineupData.ts"),

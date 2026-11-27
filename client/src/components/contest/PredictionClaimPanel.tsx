@@ -3,8 +3,8 @@ import { ErrorMessage } from "../common/ErrorMessage";
 import { LoadingSpinnerSmall } from "../common/LoadingSpinnerSmall";
 import { TxButton } from "../common/TxButton";
 import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress";
-import { useClaimPredictionPayout } from "../../hooks/useSpectatorOperations";
-import { useContestPredictionData } from "../../hooks/useContestPredictionData";
+import { useClaimSecondaryPayout } from "../../chain/verbs";
+import { useContestEntries } from "../../chain/useContestEntries";
 import { type Contest } from "../../types/contest";
 import { contestLineupDisplayName } from "../../lib/candidateUtils";
 
@@ -27,12 +27,8 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
   }, [contest.contestLineups]);
 
   // Fetch prediction data
-  const { entryData, canClaim, isLoading } = useContestPredictionData({
-    contestAddress: contest.address ?? "",
-    entryIds,
+  const { entryData, canClaim, isLoading } = useContestEntries(contest, entryIds, {
     enabled: !!userAddress,
-    chainId: contest.chainId,
-    paymentTokenAddress: contest.settings?.paymentTokenAddress,
   });
 
   // Filter to only show entries where user has a position
@@ -65,7 +61,7 @@ export const PredictionClaimPanel: React.FC<PredictionClaimPanelProps> = ({ cont
     phase,
     error: transactionError,
     createClaimPredictionPayoutCalls,
-  } = useClaimPredictionPayout();
+  } = useClaimSecondaryPayout();
 
   const handleClaim = async (entryId: string) => {
     if (phase === "recordFailed" && claimingEntryId === entryId) {
