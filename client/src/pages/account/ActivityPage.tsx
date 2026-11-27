@@ -3,7 +3,6 @@ import { Breadcrumbs } from "../../components/common/Breadcrumbs";
 import { ActivityList } from "../../components/account/ActivityList";
 import {
   AccountPanelHeading,
-  accountPanelClassName,
   accountPanelIconClassName,
 } from "../../components/account/AccountPanel";
 
@@ -14,12 +13,10 @@ export function ActivityPage() {
         items={[{ label: "Account", path: "/account" }, { label: "Activity" }]}
         className="mb-2"
       />
-      <div className={accountPanelClassName}>
-        <AccountPanelHeading icon={<ClockIcon className={accountPanelIconClassName} aria-hidden />}>
-          Activity
-        </AccountPanelHeading>
-        <ActivityList />
-      </div>
+      <AccountPanelHeading icon={<ClockIcon className={accountPanelIconClassName} aria-hidden />}>
+        Activity
+      </AccountPanelHeading>
+      <ActivityList />
     </>
   );
 }

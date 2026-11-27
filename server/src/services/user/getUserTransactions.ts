@@ -27,6 +27,8 @@ export type UserTransaction = {
 
 type ActivityLineup = {
   id: string;
+  /** Platform lineup id. Entry payments store this, not ContestLineup.id. */
+  lineupId: string;
   createdAt: Date;
   contestId: string;
   contest: {
@@ -83,12 +85,12 @@ export function assembleUserTransactions(
   predictions: ActivityPrediction[],
   payments: ActivityPayment[],
 ): UserTransaction[] {
-  const entryLineupIds = new Set<string>();
+  const entryKeys = new Set<string>();
   const wagerKeys = new Set<string>();
   for (const payment of payments) {
     const meta = readMeta(payment.metadata);
-    if (payment.kind === "ENTRY" && typeof meta.lineupId === "string") {
-      entryLineupIds.add(meta.lineupId);
+    if (payment.kind === "ENTRY" && payment.contestId && typeof meta.lineupId === "string") {
+      entryKeys.add(`${payment.contestId}:${meta.lineupId}`);
     }
     if (payment.kind === "WAGER" && payment.contestId && typeof meta.entryId === "string") {
       wagerKeys.add(`${payment.contestId}:${meta.entryId}`);
@@ -98,7 +100,10 @@ export function assembleUserTransactions(
   const rows: UserTransaction[] = [];
 
   for (const lineup of lineups) {
-    if (entryLineupIds.has(lineup.id)) continue;
+    const covered =
+      entryKeys.has(`${lineup.contestId}:${lineup.lineupId}`) ||
+      entryKeys.has(`${lineup.contestId}:${lineup.id}`);
+    if (covered) continue;
     const settings = lineup.contest.settings as { primaryDeposit?: number } | null;
     const primaryDeposit = settings?.primaryDeposit;
     const amount =
@@ -241,8 +246,9 @@ export async function getUserTransactions(userId: string): Promise<UserTransacti
   const [lineups, predictions, payments] = await Promise.all([
     prisma.contestLineup.findMany({
       where: { userId },
-      select: {
+        select: {
         id: true,
+        lineupId: true,
         createdAt: true,
         contestId: true,
         contest: {

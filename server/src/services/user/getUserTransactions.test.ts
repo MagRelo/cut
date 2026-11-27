@@ -9,7 +9,7 @@ describe("assembleUserTransactions", () => {
     const rows = assembleUserTransactions(
       [
         lineup("free-lineup", "2026-01-01T00:00:00.000Z", 0),
-        lineup("paid-lineup", "2026-01-02T00:00:00.000Z", 10),
+        lineup("paid-lineup", "2026-01-02T00:00:00.000Z", 10, "paid-roster"),
       ],
       [],
       [
@@ -17,7 +17,7 @@ describe("assembleUserTransactions", () => {
           id: "entry-1",
           kind: "ENTRY",
           createdAt: "2026-01-02T00:00:01.000Z",
-          metadata: { lineupId: "paid-lineup", direction: "out" },
+          metadata: { lineupId: "paid-roster", direction: "out" },
         }),
       ],
     );
@@ -95,9 +95,10 @@ describe("assembleUserTransactions", () => {
   });
 });
 
-function lineup(id: string, createdAt: string, primaryDeposit: number) {
+function lineup(id: string, createdAt: string, primaryDeposit: number, platformLineupId?: string) {
   return {
     id,
+    lineupId: platformLineupId ?? id,
     createdAt: new Date(createdAt),
     contestId: "contest-1",
     contest: {
