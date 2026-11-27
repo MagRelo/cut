@@ -232,13 +232,12 @@ export function BotDelegationSettings() {
 
       <div className="max-w-3xl">
         <p className="text-sm leading-6 text-slate-600">
-          If you have an AI agent (ChatGPT, Claude, Muse, Grok, etc.) you can use it to enhance your
-          experience. Here are a few of the things it can do for you:
+          You can use an AI agent (ChatGPT, Claude, Muse, Grok, etc.) to control your account. Here
+          are a few of the things it can do:
         </p>
         <ul className="ml-4 mt-2 list-inside list-disc text-sm leading-6 text-slate-600">
-          <li>Find & enter contests</li>
-          <li>Research players & update your lineups</li>
-          <li>Set reminders</li>
+          <li>Research players & tournaments</li>
+          <li>Update your lineups & enter contests</li>
           <li>Make & settle sidebets</li>
         </ul>
 
