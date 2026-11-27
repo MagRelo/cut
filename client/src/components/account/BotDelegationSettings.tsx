@@ -245,13 +245,13 @@ export function BotDelegationSettings() {
         <ul className={`ml-4 mt-2 list-inside list-disc ${accountBodyClassName}`}>
           <li>Research players & tournaments</li>
           <li>Update your lineups & enter contests</li>
-          <li>Send & receive money from your account</li>
-          <li>Make & settle sidebets</li>
+          <li>Organize leagues</li>
+          <li>Make & settle side bets</li>
         </ul>
 
         <p className={`mt-3 ${accountBodyClassName}`}>
           Just point your agent at "playthecut.com" and it will walk you through connecting your
-          account!
+          account.
         </p>
 
         {/* <div
