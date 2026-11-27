@@ -9,6 +9,7 @@ Production is **Base** (`8453`) with **canonical USDC**. Players add and withdra
 | Doc | Purpose |
 |-----|---------|
 | [architecture.md](platform/architecture.md) | Multi-sport platform design intent |
+| [agent-onboarding.md](platform/agent-onboarding.md) | Agent-first path: homepage discovery, `llms.txt`, and `@playthecut/agent` |
 | [v2-dream-client.md](platform/v2-dream-client.md) | Greenfield web client — Privy shell, one module per noun |
 | [client-architecture-plan.md](platform/client-architecture-plan.md) | Incremental map of the current `client/` tree |
 | [consensus-axis.md](platform/consensus-axis.md) | Popularity scoring — contest pick rates modulate per-pick scores |

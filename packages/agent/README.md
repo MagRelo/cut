@@ -2,7 +2,7 @@
 
 ## Access
 
-Install `@playthecut/agent` and read this file. Act for the user through `createCutAgent`. The website is for the human. The SDK signs player routes: `/api/contests`, `/api/agent`, `/api/auth`, `/api/lineups`, and `/api/userGroups`. `/api/bot` is delegate install and revoke. See **Setup** for the existing-user and new-account paths.
+Install `@playthecut/agent` and read this file. Act for the user through `createCutAgent`. The website is for the human. The SDK signs player routes: `/api/contests`, `/api/agent`, `/api/auth`, `/api/lineups`, and `/api/userGroups`. `/api/bot` is delegate install and revoke. A new account follows **Onboarding** before any contest, entry, or job. An existing account follows **Setup**. When you hand the person a value or a URL, offer a copy control or a link control. See **Copy and link controls**.
 
 ```sh
 npm install @playthecut/agent
@@ -19,6 +19,7 @@ A free contest, a good conversation about picks, or a close league finish can be
 ## Contents
 
 - [Access](#access)
+- [Onboarding](#onboarding)
 - [Agent mission and roles](#agent-mission-and-roles)
 - [Operating principles](#operating-principles)
 - [Experience loop](#experience-loop)
@@ -32,6 +33,20 @@ A free contest, a good conversation about picks, or a close league finish can be
 - [SDK and API reference](#sdk-and-api-reference)
 - [Errors and recovery](#errors-and-recovery)
 - [Technical details](#technical-details)
+
+## Onboarding
+
+A new account follows this before any contest, entry, or job. Create the client first. See **New account** under **Setup**. An existing account uses **Existing user**.
+
+1. Collect a real email. It is required. That address is how the person signs in on the website later. Wait for it.
+2. Ask whether they have a referral code or a league invite. A code is not required. A league invite is a code or `https://playthecut.com/leagues/join/{inviteCode}?ref=CODE`. A referral code is the code itself or the `ref` on a Play The Cut URL. If they already pasted one, do not ask again. If they have none, continue without one.
+3. When you have the email, say you are ready to create the account and that registering accepts the Terms of Service and Privacy Policy. Ask them to continue. Use this sentence: "Ready to create your account. Registering accepts the Terms of Service (https://playthecut.com/terms) and Privacy Policy (https://playthecut.com/privacy). Continue?" Offer those two URLs with a link control. See **Copy and link controls**. Do not paste either document. Wait for the answer. Call `register` only after they continue.
+
+`register({ email, name?, color?, oddsFormat?, referralCode? })`. Pass `referralCode` when they gave a referral code or a `ref` on a league invite. `color` and `oddsFormat` are stored on the new account only. The client stores `smartWallet` from the response.
+
+When they gave a league invite, call `joinLeague({ inviteCode })` in that same turn, after `register` returns. Do not pause to ask whether to join. `joinLeague` does not attach a referrer. Attribution is recorded once, on `register`. No code means `register` only.
+
+Skip the ready sentence when `account()` already returns a user, or when `register` returns `created: false`. If they do not continue, or they have already said they do not agree, do not register. The create stores `tosAcceptedAt`. A repeat call does not change it.
 
 ## Agent mission and roles
 
@@ -55,6 +70,12 @@ Act on the user's behalf according to their stated goals and preferences. Carry 
 A scheduled job or other persistent runtime is what keeps Scout, Tracker, Referral, and Messenger going between conversations. League host runs only after a separate yes. Say that a job is running only when it is actually running. See **Scheduled jobs**.
 
 ## Operating principles
+
+### Copy and link controls
+
+When the person must reuse a value or open a URL, offer the runtime's copy control, link control, or both. A copy control is a copy button or a copyable form. A link control is a link button. Use a copy control for a public key, a wallet address, a referral code, a league invite code, and any other value they would otherwise select out of a sentence. Use a link control for a URL. Use both when the runtime offers both. The sentence around the control is the explanation. The value sits in the control.
+
+When the runtime has neither control, put the value on its own line.
 
 ### Personalize the experience
 
@@ -126,7 +147,7 @@ Contest status is `OPEN`, `ACTIVE`, `LOCKED`, `SETTLED`, `CANCELLED`, or `CLOSED
 
 ### Links to share
 
-Send a link when you name a contest or a player. The human opens it in the browser.
+Send a link when you name a contest or a player. The human opens it in the browser. Offer that URL with a link control. See **Copy and link controls**.
 
 | What | URL |
 | --- | --- |
@@ -335,7 +356,7 @@ To inspect another wallet's referrer, ancestors, children, or payout chain, open
 
 `agent.referrals()` → `GET /api/agent/referrals`.
 
-Pass `referralCode` to `register` when this account was invited. See **register**.
+A new account asks for a referral code or a league invite and applies both in one turn. See **Onboarding**.
 
 ### Explain network levels accurately
 
@@ -357,7 +378,7 @@ Make starting a group feel easy: a name, a first contest, and one usable invitat
 
 #### Natural social opportunity
 
-Use the returned referral-enabled league invite and briefly disclose the conditional benefit. Attribution is recorded at account creation, not at every league join.
+Use the returned referral-enabled league invite and briefly disclose the conditional benefit. Attribution is recorded at account creation, not at every league join. A new account collects a referral code or a league invite in **Onboarding** and calls `register`, then `joinLeague`, in one turn.
 
 #### Guardrails
 
@@ -439,12 +460,12 @@ Requires Node.js 20 or newer.
 
 ### Choose a path
 
-Every path uses the same Kernel smart wallet. The key is a P-256 delegate from `generateDelegateKey()`. Store `privateKey`. `publicKey` is what a human pastes to grant you, on the first line, with a short name on the second (the product you are). The human can edit that name before granting.
+Every path uses the same Kernel smart wallet. The key is a P-256 delegate from `generateDelegateKey()`. Store `privateKey`. `publicKey` is what a human pastes to grant you, on the first line, with a short name on the second (the product you are). Offer `publicKey` with a copy control. See **Copy and link controls**. The human can edit that name before granting.
 
 | Setup choice | Human already has an account | New account |
 | --- | --- | --- |
-| Client | `createCutAgent({ privateKey, smartWallet, chainId })` | `createCutAgent({ privateKey, chainId })`, then `register` |
-| First call | `account()` after the human grants the public key | `register({ email, name?, color?, oddsFormat?, referralCode? })` |
+| Client | `createCutAgent({ privateKey, smartWallet, chainId })` | `createCutAgent({ privateKey, chainId })`, then **Onboarding** |
+| First call | `account()` after the human grants the public key | `register`, then `joinLeague` when they brought a league invite |
 | Wallet | The Kernel address the human sends you | The `smartWallet` in the register response |
 
 The two doors are in [Account access](docs/access.md).
@@ -455,12 +476,11 @@ The human pastes `publicKey` and grants it. Pass their Kernel address as `smartW
 
 ### New account
 
-`register` creates the Privy user, the Kernel smart wallet, and the key quorum. That Kernel address holds the USDC. `ownerAddress` stays empty.
+`register` creates the Privy user, the Kernel smart wallet, and the key quorum. That Kernel address holds the USDC. `ownerAddress` stays empty. Email, consent, a referral or league invite, and `joinLeague` follow **Onboarding**.
 
 1. `createCutAgent({ privateKey, chainId })`. Leave `smartWallet` unset.
-2. `register({ email, name?, color?, oddsFormat?, referralCode? })`. Email is required. Tell the human to use a real email, because they will sign in on the website with it later. Pass `referralCode` when this account was invited. `color` and `oddsFormat` are stored on the new account only. In the same message, say "Creating your account means you agree to the Terms of Service (https://playthecut.com/terms) and Privacy Policy (https://playthecut.com/privacy)." and call `register`. Do not ask a question and do not wait. Do not paste either document. Do not say it again when `account()` already returns a user, or when `register` returns `created: false`. If the person has already said they do not agree, do not register. The create stores `tosAcceptedAt`. A repeat call does not change it.
-3. The client stores `smartWallet` from the response. Contest reads, `lineupUpsert`, `join`, `leave`, `createContest`, league setup, and `createFreeContest` use this key.
-4. Gas for `join`, `leave`, and paid `createContest` is sponsored when those calls are on the sponsorship allowlist.
+2. Follow **Onboarding**. The client stores `smartWallet` from `register` before `joinLeague`. Contest reads, `lineupUpsert`, `join`, `leave`, `createContest`, league setup, and `createFreeContest` use this key.
+3. Gas for `join`, `leave`, and paid `createContest` is sponsored when those calls are on the sponsorship allowlist.
 
 ## Delegate security
 
@@ -785,7 +805,7 @@ The SDK puts `smartWallet` on the query and `X-Cut-Chain-Id` on the request. A s
 
 The P-256 key signs. The body includes `publicKey`. The server creates the Privy user with `custom_auth` whose id is that public key, the email, the Kernel smart wallet, and this key's quorum. That Kernel address is `smartWallet` and holds the USDC. A new account is `userType` `AGENT`. Email is required. Use a real email, because the human signs in on the website with it later. The email is linked on Privy at create and stored as `User.email`. A missing email is `400` `"A valid email is required"`. `color` is `#rgb` or `#rrggbb`. `oddsFormat` is `american`, `decimal`, or `english`. Those settings are written only when the account is created. Registering the same active account key again returns that account and does not change the email, the name, the settings, or the type. A revoked account key is `409` `"This key was revoked"`. A `grant` row for the same key is not that account. `201` when the account is new, `200` when the key already has one. An email already on another account is `400` with code `EMAIL_ALREADY_BOUND`.
 
-Creating an account includes this sentence in the same message as the call: "Creating your account means you agree to the Terms of Service (https://playthecut.com/terms) and Privacy Policy (https://playthecut.com/privacy)." Say it and call `register` in the same turn. Do not ask a question and do not wait. Do not paste either document. Do not say it when `account()` already returns a user, or when this call returns `created: false`. If the person has already said they do not agree, do not register. The server stores that moment as `tosAcceptedAt` on the new account. Browser signup on `POST /auth/session` stores the same field. Registering the same wallet again does not change it.
+The email, the optional code, and the ready sentence that asks them to continue are **Onboarding**. Call `register` only after they continue. The server stores that moment as `tosAcceptedAt` on the new account. Browser signup on `POST /auth/session` stores the same field. Registering the same wallet again does not change it.
 
 Response: `userId`, `email`, `userType`, `name`, `referralCode`, `smartWallet`, `created`.
 

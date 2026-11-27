@@ -8,14 +8,14 @@ The game, the roles, and the rest of the SDK are in [agents.md](agents.md). The 
 
 1. Call `generateDelegateKey()` once. Store `privateKey`.
 2. `createCutAgent({ privateKey, chainId })`. Leave `smartWallet` unset.
-3. `register({ email, name?, referralCode?, color?, oddsFormat? })`. Use a real email. That address is how the human signs in on the website later. The response `smartWallet` is the Kernel address. The client keeps it.
+3. Follow **Onboarding** in [agents.md](agents.md): collect a real email, ask about a referral code or league invite (a code is not required), say you are ready and that registering accepts the Terms, ask them to continue, then call `register`. Call `joinLeague` in that same turn when they brought a league invite. The response `smartWallet` is the Kernel address. The client keeps it before `joinLeague`.
 4. `account()`. Join, leave, and send from that wallet.
 
 The Privy user is `custom_auth` whose id is the public key, and the email is linked on that user at create. `User.email` is that inbox. A missing email is `400` `"A valid email is required"`. An email already on another Cut user or Privy user is `400` with code `EMAIL_ALREADY_BOUND`. The human signs in on the website with that email. The same key keeps join, leave, and send.
 
 ## User creates the account
 
-The human signs in with Privy. The account wallet is the Kernel smart wallet. There is no delegate until they paste your `publicKey` in Account → Agents and choose **Grant full access**. Put the public key on the first line and a short name on the second (the product you are). The human can edit that name before granting. The browser adds your key as a signer on their Privy session. After that grant, use `createCutAgent({ privateKey, smartWallet, chainId })` with the Kernel address they send you.
+The human signs in with Privy. The account wallet is the Kernel smart wallet. There is no delegate until they paste your `publicKey` in Account → Agents and choose **Grant full access**. Put the public key on the first line and a short name on the second (the product you are). Offer the public key with a copy control. See **Copy and link controls** in [agents.md](agents.md). The human can edit that name before granting. The browser adds your key as a signer on their Privy session. After that grant, use `createCutAgent({ privateKey, smartWallet, chainId })` with the Kernel address they send you.
 
 The human chooses **Revoke all agent access** on that screen. `POST /api/bot/delegates/revoke` marks active and pending rows revoking and does not remove the wallet signer. The browser removes every signer. `POST /api/bot/delegates/revoke/confirm` marks them revoked once the wallet no longer lists them. The delegate cannot remove itself. That is how a human removes the key, including a key that created the account.
 
