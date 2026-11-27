@@ -28,8 +28,11 @@ const menuItemClass =
 const menuItemActiveClass =
   "block w-full px-4 py-2 text-left text-sm font-display font-semibold text-slate-950 focus:outline-none data-[focus]:bg-slate-50";
 
+const menuAccountItemClass =
+  "block w-full px-4 py-2 text-left text-sm font-display text-slate-900 focus:outline-none data-[focus]:bg-slate-50";
+
 const menuSubItemClass =
-  "block w-full px-4 py-1.5 pl-7 text-left text-sm font-display text-slate-600 focus:outline-none data-[focus]:bg-slate-50";
+  "block w-full px-4 py-1.5 pl-7 text-left text-sm font-display text-slate-900 focus:outline-none data-[focus]:bg-slate-50";
 
 const menuSubItemActiveClass =
   "block w-full px-4 py-1.5 pl-7 text-left text-sm font-display font-semibold text-slate-950 focus:outline-none data-[focus]:bg-slate-50";
@@ -132,7 +135,7 @@ export const UserMenu: React.FC = () => {
               {({ close }) => (
                 <Link
                   to={link.to}
-                  className={`${active ? menuItemActiveClass : menuItemClass} !flex w-full items-center justify-between gap-3`}
+                  className={`${active ? menuItemActiveClass : menuAccountItemClass} !flex w-full items-center justify-between gap-3`}
                   aria-current={active ? "page" : undefined}
                   onClick={close}
                 >

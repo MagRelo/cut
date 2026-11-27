@@ -44,7 +44,7 @@ function mobileSubItemClass(active: boolean) {
     "block w-full rounded-md px-3 py-2 text-left text-sm font-display transition-colors",
     active
       ? "bg-slate-100 font-semibold text-slate-950"
-      : "text-slate-700 hover:bg-slate-50 hover:text-slate-900",
+      : "text-slate-900 hover:bg-slate-50 hover:text-slate-950",
   ].join(" ");
 }
 
