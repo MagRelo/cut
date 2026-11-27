@@ -5,7 +5,12 @@ import { useEffectiveWalletAddress } from "../../hooks/useEffectiveWalletAddress
 import { Button } from "../../components/common/Button";
 import { CopyButton } from "../../components/common/CopyToClipboard";
 import { Breadcrumbs } from "../../components/common/Breadcrumbs";
-import { PageSection } from "../../components/layout/PageSection";
+import {
+  AccountPanelHeading,
+  accountPanelClassName,
+  accountPanelIconClassName,
+  accountSectionHeadingClassName,
+} from "../../components/account/AccountPanel";
 import { DisplaySettings } from "../../components/account/DisplaySettings";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -26,8 +31,8 @@ const AccountInfo = ({
   accountIdAddress: string | undefined;
 }) => {
   return (
-    <PageSection variant="card" className="!p-6">
-      <h2 className="mb-3 font-display text-lg font-semibold text-gray-700">Account Information</h2>
+    <section className={accountPanelClassName}>
+      <h2 className={accountSectionHeadingClassName}>Account Information</h2>
 
       <div className="space-y-3 pl-3">
         {userEmail ? (
@@ -75,7 +80,7 @@ const AccountInfo = ({
           </div>
         </div>
       )}
-    </PageSection>
+    </section>
   );
 };
 
@@ -90,10 +95,9 @@ export function SettingsPage() {
         items={[{ label: "Account", path: "/account" }, { label: "Settings" }]}
         className="mb-2"
       />
-      <h1 className="mb-2 flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
-        <Cog6ToothIcon className="h-6 w-6 shrink-0" aria-hidden />
+      <AccountPanelHeading icon={<Cog6ToothIcon className={accountPanelIconClassName} aria-hidden />}>
         Settings
-      </h1>
+      </AccountPanelHeading>
 
       <div className="space-y-4">
         <DisplaySettings />

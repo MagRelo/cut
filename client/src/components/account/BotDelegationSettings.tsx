@@ -6,6 +6,17 @@ import { useSigners, useWallets } from "@privy-io/react-auth";
 import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 
 import { Button } from "../common/Button";
+import {
+  AccountPanelHeading,
+  accountBodyClassName,
+  accountFieldControlClassName,
+  accountFieldStackClassName,
+  accountPanelClassName,
+  accountPanelIconClassName,
+  accountPanelRuleClassName,
+  accountSectionHeadingClassName,
+  accountSectionTitleClassName,
+} from "./AccountPanel";
 import { defaultPaymentTokenSymbol } from "../../config/targetChain";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { botDelegatesQueryKey, useBotDelegates } from "../../hooks/useActiveAgentControl";
@@ -218,31 +229,28 @@ export function BotDelegationSettings() {
   }
 
   return (
-    <section
-      className="rounded-lg border border-slate-200 bg-white p-6 font-display shadow-sm"
-      aria-labelledby="delegate-heading"
-    >
-      <h1
+    <section className={accountPanelClassName} aria-labelledby="delegate-heading">
+      <AccountPanelHeading
         id="delegate-heading"
-        className="mb-4 flex items-center gap-2 font-display text-xl font-semibold text-gray-900"
+        icon={<CpuChipIcon className={accountPanelIconClassName} aria-hidden />}
       >
-        <CpuChipIcon className="h-6 w-6 shrink-0" aria-hidden />
         AI Agents
-      </h1>
+      </AccountPanelHeading>
 
       <div className="max-w-3xl">
-        <p className="text-sm leading-6 text-slate-600">
-          You can use an AI agent (ChatGPT, Claude, Muse, Grok, etc.) to control your account. Here
+        <p className={accountBodyClassName}>
+          You can use any AI agent (ChatGPT, Claude, Muse, Grok, etc.) to pilot your account. Here
           are a few of the things it can do:
         </p>
-        <ul className="ml-4 mt-2 list-inside list-disc text-sm leading-6 text-slate-600">
+        <ul className={`ml-4 mt-2 list-inside list-disc ${accountBodyClassName}`}>
           <li>Research players & tournaments</li>
           <li>Update your lineups & enter contests</li>
+          <li>Send & receive money from your account</li>
           <li>Make & settle sidebets</li>
         </ul>
 
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          Just tell your agent about Play the Cut and it will walk you through connecting your
+        <p className={`mt-3 ${accountBodyClassName}`}>
+          Just point your agent at "playthecut.com" and it will walk you through connecting your
           account!
         </p>
 
@@ -268,11 +276,11 @@ export function BotDelegationSettings() {
           </div>
         </div> */}
 
-        <hr className="my-6 border-slate-300" />
+        <hr className={accountPanelRuleClassName} />
       </div>
 
-      <div className="mb-3 mt-8 flex items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold text-slate-900">Active Agents</h3>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className={accountSectionTitleClassName}>Active Agents</h2>
         <Button
           type="button"
           variant="neutral"
@@ -376,12 +384,11 @@ export function BotDelegationSettings() {
       ) : null}
       {actionError ? <ErrorMessage message={actionError} className="mt-2" /> : null}
 
-      <hr className="my-6 border-slate-300" />
+      <hr className={accountPanelRuleClassName} />
 
-      <h2 className="mt-8 text-lg font-semibold text-slate-900">Add an Agent</h2>
+      <h2 className={accountSectionHeadingClassName}>Add an Agent</h2>
 
       <form
-        className="mt-3"
         onSubmit={(event) => {
           event.preventDefault();
           if (!looksLikePublicKey(delegateInput)) {
@@ -401,47 +408,53 @@ export function BotDelegationSettings() {
           );
         }}
       >
-        <label htmlFor="agent-public-key" className="text-sm font-medium text-slate-900">
-          Ask your agent for its key, then paste it here:
-        </label>
-        <input
-          id="agent-public-key"
-          name="publicKey"
-          value={delegateInput}
-          onChange={(event) => onDelegateInput(event.target.value)}
-          onPaste={(event) => {
-            const text = event.clipboardData.getData("text");
-            if (!text.includes("\n")) return;
-            event.preventDefault();
-            const parsed = parseAgentPaste(text);
-            setDelegateInput(parsed.publicKey);
-            if (parsed.label) setLabelInput(parsed.label);
-          }}
-          type="text"
-          placeholder="Agent Key"
-          autoComplete="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          aria-describedby="agent-public-key-note"
-          aria-invalid={fieldError ? true : undefined}
-          disabled={pending !== null}
-          className="mt-3 h-10 w-full rounded-lg border border-slate-300 bg-white px-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100"
-        />
-        <label htmlFor="agent-name" className="mt-3 block text-sm font-medium text-slate-900">
-          Name
-        </label>
-        <input
-          id="agent-name"
-          name="label"
-          value={labelInput}
-          onChange={(event) => setLabelInput(event.target.value.slice(0, 40))}
-          type="text"
-          placeholder="Claude, Cursor, …"
-          maxLength={40}
-          autoComplete="off"
-          disabled={pending !== null}
-          className="mt-3 h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100"
-        />
+        <div className={accountFieldStackClassName}>
+          <div>
+            <label htmlFor="agent-public-key" className="block text-sm font-medium text-slate-900">
+              Ask your agent for its key, then paste it here:
+            </label>
+            <input
+              id="agent-public-key"
+              name="publicKey"
+              value={delegateInput}
+              onChange={(event) => onDelegateInput(event.target.value)}
+              onPaste={(event) => {
+                const text = event.clipboardData.getData("text");
+                if (!text.includes("\n")) return;
+                event.preventDefault();
+                const parsed = parseAgentPaste(text);
+                setDelegateInput(parsed.publicKey);
+                if (parsed.label) setLabelInput(parsed.label);
+              }}
+              type="text"
+              placeholder="Agent Key"
+              autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              aria-describedby="agent-public-key-note"
+              aria-invalid={fieldError ? true : undefined}
+              disabled={pending !== null}
+              className={`${accountFieldControlClassName} h-10 w-full rounded-lg border border-slate-300 bg-white px-3 font-mono text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100`}
+            />
+          </div>
+          <div>
+            <label htmlFor="agent-name" className="block text-sm font-medium text-slate-900">
+              Name
+            </label>
+            <input
+              id="agent-name"
+              name="label"
+              value={labelInput}
+              onChange={(event) => setLabelInput(event.target.value.slice(0, 40))}
+              type="text"
+              placeholder="Claude, Cursor, …"
+              maxLength={40}
+              autoComplete="off"
+              disabled={pending !== null}
+              className={`${accountFieldControlClassName} h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-100`}
+            />
+          </div>
+        </div>
         <Button type="submit" disabled={pending !== null} className="mt-3 w-full sm:w-auto">
           {pending === "grant" ? "Granting…" : "Grant full access"}
         </Button>

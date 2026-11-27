@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "../common/Button";
 import { ErrorMessage } from "../common/ErrorMessage";
-import { PageSection } from "../layout/PageSection";
+import {
+  accountFieldControlClassName,
+  accountFieldStackClassName,
+  accountPanelClassName,
+  accountSectionHeadingClassName,
+} from "./AccountPanel";
 import { useAuth } from "../../contexts/AuthContext";
 import { ODDS_FORMAT_OPTIONS, parseOddsDisplayFormat } from "../../lib/oddsSettings";
 
@@ -70,11 +75,11 @@ export function DisplaySettings() {
   };
 
   return (
-    <PageSection variant="card" className="!p-6">
-      <h2 className="mb-3 font-display text-lg font-semibold text-gray-700">User Display</h2>
+    <section className={accountPanelClassName}>
+      <h2 className={accountSectionHeadingClassName}>User Display</h2>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="space-y-4 pl-3">
+      <form onSubmit={handleSubmit} className={accountFieldStackClassName}>
+        <div className={`${accountFieldStackClassName} pl-3`}>
           <div>
             <label
               htmlFor="name"
@@ -87,7 +92,7 @@ export function DisplaySettings() {
               id="name"
               value={draft.name}
               onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
-              className="mt-1 block w-full rounded-sm border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+              className={`${accountFieldControlClassName} block w-full rounded-sm border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-gray-100`}
               placeholder="Enter your name"
             />
           </div>
@@ -99,7 +104,7 @@ export function DisplaySettings() {
             >
               Color
             </label>
-            <div className="mt-3 grid grid-cols-5 gap-3">
+            <div className={`${accountFieldControlClassName} grid grid-cols-5 gap-3`}>
               {[
                 "#0a73eb",
                 "#A3A3A3",
@@ -142,7 +147,7 @@ export function DisplaySettings() {
               Odds Format
             </span>
             <div
-              className="mt-3 grid grid-cols-3 gap-4 p-1"
+              className={`${accountFieldControlClassName} grid grid-cols-3 gap-4 p-1`}
               role="radiogroup"
               aria-labelledby="oddsFormat-label"
             >
@@ -197,6 +202,6 @@ export function DisplaySettings() {
           </div>
         </div>
       </form>
-    </PageSection>
+    </section>
   );
 }

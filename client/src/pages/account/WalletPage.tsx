@@ -3,6 +3,13 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { Tab, TabPanel, TabList, TabGroup } from "@headlessui/react";
 import { ExclamationTriangleIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { Breadcrumbs } from "../../components/common/Breadcrumbs";
+import {
+  AccountPanelHeading,
+  accountBodyClassName,
+  accountPanelClassName,
+  accountPanelIconClassName,
+  accountSectionHeadingClassName,
+} from "../../components/account/AccountPanel";
 import { Receive } from "../../components/account/wallet/Receive";
 import { Send } from "../../components/account/wallet/Send";
 import { WalletHeaderBalance } from "../../components/account/wallet/WalletBalancePanel";
@@ -50,16 +57,15 @@ export function WalletPage() {
         className="mb-2"
       />
 
-      <div className="overflow-hidden rounded-md border border-slate-300 bg-white p-6 font-display shadow-sm">
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
-            <WalletIcon className="h-6 w-6 shrink-0" aria-hidden />
-            Wallet
-          </h1>
-          <WalletHeaderBalance />
-        </div>
+      <div className={`${accountPanelClassName} overflow-hidden`}>
+        <AccountPanelHeading
+          icon={<WalletIcon className={accountPanelIconClassName} aria-hidden />}
+          aside={<WalletHeaderBalance />}
+        >
+          Wallet
+        </AccountPanelHeading>
 
-        <div className="mt-6 space-y-6">
+        <div className="space-y-6">
           {showTestnetWarning ? (
             <div className="border border-slate-900 px-3 py-3" role="note">
               <div className="flex items-center gap-2">
@@ -76,13 +82,13 @@ export function WalletPage() {
             </div>
           ) : null}
 
-          <p className="text-sm leading-relaxed text-gray-700">
+          <p className={accountBodyClassName}>
             Your wallet belongs to you. Play The Cut does not hold or control your funds.
           </p>
 
           <div>
-            <h2 className="font-medium text-gray-900">Powered by {tokenSymbol}</h2>
-            <p className="mt-1 text-sm leading-relaxed text-gray-700">
+            <h2 className={accountSectionHeadingClassName}>Powered by {tokenSymbol}</h2>
+            <p className={accountBodyClassName}>
               Play The Cut uses {tokenSymbol} - a digital dollar - for all contest entries and
               payouts. You can buy {tokenSymbol} through Coinbase, Kraken, Robinhood, and other
               supported exchanges and wallets.
@@ -90,8 +96,8 @@ export function WalletPage() {
           </div>
 
           <div>
-            <h2 className="font-medium text-gray-900">Receive and Send {tokenSymbol}</h2>
-            <p className="mb-3 mt-1 text-sm leading-relaxed text-gray-700">
+            <h2 className={accountSectionHeadingClassName}>Receive and Send {tokenSymbol}</h2>
+            <p className={`mb-3 ${accountBodyClassName}`}>
               You can receive and send {tokenSymbol} to and from your account wallet at any time.
             </p>
 

@@ -11,6 +11,11 @@ import {
   type ReferralSummaryNode,
 } from "../../hooks/useUserReferralSummary";
 import { formatReferralEarned } from "../../lib/formatReferralEarned";
+import {
+  AccountPanelHeading,
+  accountBodyClassName,
+  accountPanelIconClassName,
+} from "./AccountPanel";
 
 const cardClassName =
   "max-w-md overflow-hidden rounded-lg border border-slate-300 bg-gradient-to-tl from-slate-100 via-white to-white shadow-md shadow-slate-900/10 ring-1 ring-black/5";
@@ -122,11 +127,12 @@ export function ReferralNetworkPanelView({
   return (
     <div className={cardClassName}>
       <div className="p-6">
-        <h1 className="flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
-          <TreeIcon className="h-6 w-6 shrink-0 text-green-700" aria-hidden />
+        <AccountPanelHeading
+          icon={<TreeIcon className={`${accountPanelIconClassName} text-green-700`} aria-hidden />}
+        >
           Referral Rewards
-        </h1>
-        <div className="mt-3 space-y-3 font-display text-sm leading-relaxed text-gray-700">
+        </AccountPanelHeading>
+        <div className={`space-y-3 font-display ${accountBodyClassName}`}>
           <p>
             Play The Cut is different—<b>no fees, no ads</b>. We grow by referrals - players
             supporting players.
