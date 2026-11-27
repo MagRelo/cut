@@ -16,14 +16,14 @@ const cardClassName =
   "max-w-md overflow-hidden rounded-lg border border-slate-300 bg-gradient-to-tl from-slate-100 via-white to-white shadow-md shadow-slate-900/10 ring-1 ring-black/5";
 
 function SectionLabel({ children }: { children: ReactNode }) {
-  return <p className={`${walletSpecLabelClassName} px-4 pt-3`}>{children}</p>;
+  return <p className={`${walletSpecLabelClassName} px-6 pt-4`}>{children}</p>;
 }
 
 function EarningsSection({ loading, totalEarned }: { loading: boolean; totalEarned: number }) {
   const earnedClass = totalEarned > 0 ? "text-green-700" : "text-gray-900";
 
   return (
-    <div className="px-4 py-4">
+    <div className="px-6 py-6">
       <p className={walletSpecLabelClassName}>lifetime Referral Rewards</p>
       {loading ? (
         <div className="mt-1 h-6 w-24 animate-pulse rounded bg-gray-200" aria-busy="true" />
@@ -44,7 +44,7 @@ function LinkSection({ url }: { url: string }) {
   return (
     <div className="">
       <SectionLabel>Your Referral Link</SectionLabel>
-      <div className="grid grid-cols-2 gap-2 p-3 pt-2">
+      <div className="grid grid-cols-2 gap-2 px-6 pb-2 pt-2">
         <CopyButton
           text={url}
           variant="secondary"
@@ -91,7 +91,7 @@ function NetworkSection({
     <div className="border-t border-slate-300 bg-slate-50 pb-6">
       <SectionLabel>Your Referral Network</SectionLabel>
 
-      <div className="pl-8 pr-6 pt-2">
+      <div className="pl-10 pr-6 pt-2">
         {!loading && error ? (
           <ErrorMessage message={error} />
         ) : loading ? (
@@ -121,7 +121,7 @@ export function ReferralNetworkPanelView({
 }: ReferralNetworkPanelViewProps) {
   return (
     <div className={cardClassName}>
-      <div className="px-4 pb-4 pt-4">
+      <div className="p-6">
         <h1 className="flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
           <TreeIcon className="h-6 w-6 shrink-0 text-green-700" aria-hidden />
           Referral Rewards

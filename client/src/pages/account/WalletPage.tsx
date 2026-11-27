@@ -50,8 +50,8 @@ export function WalletPage() {
         className="mb-2"
       />
 
-      <div className="overflow-hidden rounded-md border border-slate-300 bg-white font-display shadow-sm">
-        <div className="flex items-center justify-between gap-4 px-4 py-4">
+      <div className="overflow-hidden rounded-md border border-slate-300 bg-white p-6 font-display shadow-sm">
+        <div className="flex items-center justify-between gap-4">
           <h1 className="flex items-center gap-2 font-display text-xl font-semibold text-gray-900">
             <WalletIcon className="h-6 w-6 shrink-0" aria-hidden />
             Wallet
@@ -59,7 +59,7 @@ export function WalletPage() {
           <WalletHeaderBalance />
         </div>
 
-        <div className="space-y-6 px-4 pb-4">
+        <div className="mt-6 space-y-6">
           {showTestnetWarning ? (
             <div className="border border-slate-900 px-3 py-3" role="note">
               <div className="flex items-center gap-2">
@@ -77,7 +77,7 @@ export function WalletPage() {
           ) : null}
 
           <p className="text-sm leading-relaxed text-gray-700">
-            Your wallet belongs to you. Play The Cut does not hold a key that can move the funds in it.
+            Your wallet belongs to you. Play The Cut does not hold or control your funds.
           </p>
 
           <div>
@@ -99,12 +99,16 @@ export function WalletPage() {
               <TabGroup selectedIndex={selectedIndex} onChange={handleTabChange}>
                 <TabList className={tabListClassName()}>
                   <Tab
-                    className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                    className={({ selected }: { selected: boolean }) =>
+                      tabButtonClassName(selected)
+                    }
                   >
                     Receive
                   </Tab>
                   <Tab
-                    className={({ selected }: { selected: boolean }) => tabButtonClassName(selected)}
+                    className={({ selected }: { selected: boolean }) =>
+                      tabButtonClassName(selected)
+                    }
                   >
                     Send
                   </Tab>

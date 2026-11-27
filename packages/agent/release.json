@@ -1,5 +1,10 @@
 {
-  "version": "0.4.2",
-  "hash": "1306e49cdd8d604be20b5be9f4ed8f336131ca3c007e230aa46739e7a7fe09fc",
-  "git": "98c67df897d1ace741317dbd82bd1404aaea1b79"
+  "version": "0.4.3",
+  "hash": "d3b32bd65ec4e5e86995889bf1535fd3570dfdb336d8b05a0c39bad6e44f0259",
+  "git": "e3d67057ef1ebf8820ed17fee9d425864d0c7678",
+  "staged": {
+    "version": "0.4.3",
+    "hash": "d3b32bd65ec4e5e86995889bf1535fd3570dfdb336d8b05a0c39bad6e44f0259",
+    "id": "52304205-c6b9-4b1f-9614-52853e228c6d"
+  }
 }

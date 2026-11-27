@@ -96,7 +96,7 @@ botRouter.post("/delegates/quorum", requireAuth, requirePrivySession, async (c) 
       userId: user.userId,
       smartWallet: user.address,
       publicKey: parsed.data.publicKey,
-      label: parsed.data.label,
+      ...(parsed.data.label !== undefined ? { label: parsed.data.label } : {}),
       createQuorum: async (publicKey) => {
         const quorum = await getPrivyClient().keyQuorums().create({
           public_keys: [publicKey],
@@ -145,7 +145,7 @@ botRouter.post("/delegates", requireAuth, requirePrivySession, async (c) => {
       accountAddress: user.address,
       publicKey: parsed.data.publicKey,
       quorumId,
-      label: parsed.data.label,
+      ...(parsed.data.label !== undefined ? { label: parsed.data.label } : {}),
       linkedAccounts: privyUser.linked_accounts,
       signerInstalled: installed,
     });

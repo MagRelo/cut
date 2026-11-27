@@ -85,7 +85,7 @@ const TxnDescription: React.FC<{ txn: UserTransaction }> = ({ txn }) => {
 function ActivityRow({ txn }: { txn: UserTransaction }) {
   const amount = formatAmount(txn);
   return (
-    <div className="flex items-start justify-between gap-3 py-3.5">
+    <div className="flex items-start justify-between gap-3 py-3.5 first:pt-0">
       <div className="min-w-0">
         <p className="text-sm font-medium text-gray-900">{TYPE_LABELS[txn.type]}</p>
         <p className="mt-0.5 text-xs tabular-nums text-gray-500">{formatDate(txn.createdAt)}</p>
@@ -152,10 +152,10 @@ export function ActivityList() {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-slate-300 text-xs uppercase tracking-wide text-gray-500">
-              <th className="py-2 pr-3 font-semibold">Date</th>
-              <th className="py-2 pr-3 font-semibold">Type</th>
-              <th className="py-2 pr-3 font-semibold">Description</th>
-              <th className="py-2 pl-3 text-right font-semibold">Amount</th>
+              <th className="pb-2 pr-3 font-semibold">Date</th>
+              <th className="pb-2 pr-3 font-semibold">Type</th>
+              <th className="pb-2 pr-3 font-semibold">Description</th>
+              <th className="pb-2 pl-3 text-right font-semibold">Amount</th>
             </tr>
           </thead>
           <tbody>

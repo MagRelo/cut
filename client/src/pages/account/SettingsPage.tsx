@@ -26,7 +26,7 @@ const AccountInfo = ({
   accountIdAddress: string | undefined;
 }) => {
   return (
-    <PageSection variant="card">
+    <PageSection variant="card" className="!p-6">
       <h2 className="mb-3 font-display text-lg font-semibold text-gray-700">Account Information</h2>
 
       <div className="space-y-3 pl-3">

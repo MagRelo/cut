@@ -219,7 +219,7 @@ export function BotDelegationSettings() {
 
   return (
     <section
-      className="rounded-lg border border-slate-200 bg-white p-6 font-display shadow-sm sm:p-8"
+      className="rounded-lg border border-slate-200 bg-white p-6 font-display shadow-sm"
       aria-labelledby="delegate-heading"
     >
       <h1
@@ -232,8 +232,8 @@ export function BotDelegationSettings() {
 
       <div className="max-w-3xl">
         <p className="text-sm leading-6 text-slate-600">
-          If you have an AI agent (e.g. ChatGPT, Claude, Muse, Grok, etc.) you can connect it to
-          your account. Here are a few of the things it can do:
+          If you have an AI agent (e.g. ChatGPT, Claude, Muse, Grok, etc.) you can use it to enhance
+          your experience. Here are a few of the things it can do for you:
         </p>
         <ul className="ml-4 mt-2 list-inside list-disc text-sm leading-6 text-slate-600">
           <li>Find & enter contests</li>
