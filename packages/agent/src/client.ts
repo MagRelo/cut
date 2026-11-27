@@ -15,6 +15,7 @@ import {
   type ReturnedCall,
 } from "./actionCalls.js";
 import { decodeKernelExecute, type AgentCall } from "./kernelExecute.js";
+import { assertTicketAuthorization, ticketDigest } from "./ticket.js";
 import { assertQuorumAuthorization } from "./userOp.js";
 import {
   agentProfileSchema,
@@ -23,6 +24,8 @@ import {
   joinLeagueSchema,
   messagePostSchema,
   registerSchema,
+  ticketFieldsSchema,
+  ticketVerifySchema,
   type AgentAccount,
   type AgentProfile,
   type CompanionBrief,
@@ -36,6 +39,9 @@ import {
   type LeagueJoined,
   type LeagueList,
   type SendResult,
+  type TicketFields,
+  type TicketSignature,
+  type TicketVerification,
   type LineupResult,
   type PicksBrief,
   type ReferralBrief,
@@ -164,6 +170,8 @@ export type CutAgent = {
     room: RoomRef,
     input?: { limit?: number; audience?: RoomAudience },
   ): Promise<RoomMessage[]>;
+  signTicket(fields: TicketFields): Promise<TicketSignature>;
+  verifyTicket(input: { wallet: string; fields: TicketFields; signature: string }): Promise<TicketVerification>;
 };
 
 type PreparedUserOp = {
@@ -910,5 +918,78 @@ export function createCutAgent(options: CutAgentOptions): CutAgent {
       });
       return manyMessages(value);
     },
+    async signTicket(fields) {
+      const parsed = parse(ticketFieldsSchema, fields);
+      const first = await post("/api/agent/messages/ticket", { fields: parsed }, walletQuery());
+      const ready = preparedTicket(first);
+      if (!ready) throw new CutAgentError("Unexpected response", 502, first);
+      const digest = ticketDigest(parsed, chainId);
+      if (ready.hash !== digest) {
+        throw new CutAgentError("Refusing to sign this authorization", 502, first);
+      }
+      try {
+        assertTicketAuthorization({
+          authorization: ready.authorization,
+          fields: parsed,
+          chainId,
+          smartWallet: wallet(),
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Refusing to sign this authorization";
+        throw new CutAgentError(
+          message.startsWith("Refusing to sign") ? message : "Refusing to sign this authorization",
+          502,
+          first,
+        );
+      }
+      const second = await post(
+        "/api/agent/messages/ticket",
+        { fields: parsed, authorizationSignature: signPayload(options.privateKey, ready.authorization) },
+        walletQuery(),
+      );
+      if (preparedTicket(second)) {
+        throw new CutAgentError("Server returned another ticket authorization", 502, second);
+      }
+      if (!isTicketSignatureResult(second) || second.hash !== digest || getAddress(second.wallet) !== wallet()) {
+        throw new CutAgentError("Unexpected response", 502, second);
+      }
+      return second;
+    },
+    async verifyTicket(input) {
+      const parsed = parse(ticketVerifySchema, input);
+      const value = await post("/api/agent/messages/ticket/verify", parsed, walletQuery());
+      if (!value || typeof value !== "object" || typeof (value as TicketVerification).valid !== "boolean") {
+        throw new CutAgentError("Unexpected response", 502, value);
+      }
+      return { valid: (value as TicketVerification).valid };
+    },
   };
+}
+
+function preparedTicket(value: unknown): { hash: Hex; authorization: Record<string, unknown> } | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as { prepared?: unknown; hash?: unknown; authorization?: unknown };
+  if (
+    row.prepared !== true ||
+    typeof row.hash !== "string" ||
+    !isHex(row.hash) ||
+    !row.authorization ||
+    typeof row.authorization !== "object"
+  ) {
+    return null;
+  }
+  return { hash: row.hash, authorization: row.authorization as Record<string, unknown> };
+}
+
+function isTicketSignatureResult(value: unknown): value is TicketSignature {
+  if (!value || typeof value !== "object") return false;
+  const row = value as TicketSignature;
+  return (
+    typeof row.wallet === "string" &&
+    isAddress(row.wallet) &&
+    typeof row.hash === "string" &&
+    isHex(row.hash) &&
+    typeof row.signature === "string" &&
+    isHex(row.signature)
+  );
 }

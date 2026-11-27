@@ -5,6 +5,7 @@ import { Marked } from "marked";
 const FILES = {
   agents: "/agents.md",
   access: "/access.md",
+  spitshake: "/spitshake.md",
   api: "/api.md",
 } as const;
 
@@ -54,6 +55,7 @@ function siteHref(href: string): string {
   const hash = hashAt === -1 ? "" : trimmed.slice(hashAt);
   if (path === "agents.md" || path === "/agents.md") return `/agents${hash}`;
   if (path === "access.md" || path === "/access.md" || path === "docs/access.md") return `/access${hash}`;
+  if (path === "spitshake.md" || path === "/spitshake.md" || path === "docs/spitshake.md") return `/spitshake${hash}`;
   if (path === "api.md" || path === "/api.md" || path === "docs/api.md") return `/docs/api${hash}`;
   return "#";
 }

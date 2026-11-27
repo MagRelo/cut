@@ -104,6 +104,7 @@ const AppShell: React.FC = () => {
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/agents" element={<AgentDocPage page="agents" />} />
             <Route path="/access" element={<AgentDocPage page="access" />} />
+            <Route path="/spitshake" element={<AgentDocPage page="spitshake" />} />
             <Route path="/docs/api" element={<AgentDocPage page="api" />} />
             <Route path="/guides/start-a-league" element={<LeagueStarterGuidePage />} />
             <Route

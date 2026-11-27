@@ -1,12 +1,26 @@
+import { getAddress } from "viem";
 import { describe, expect, it } from "vitest";
 import { joinCalls, transferCall } from "./actionCalls.js";
 import { createCutAgent, generateDelegateKey } from "./client.js";
 import { signPayload, verifyPayload } from "./delegateKey.js";
 import { encodeKernelExecute, type AgentCall } from "./kernelExecute.js";
+import { kernelSignTypedData, ticketDigest, wrapKernelSignature } from "./ticket.js";
 import { hashUserOp } from "./userOp.js";
 
 const SMART_WALLET = "0x1111111111111111111111111111111111111111";
 const CONTEST = "0x2222222222222222222222222222222222222222";
+const TICKET = {
+  partyA: "Ada",
+  partyB: "",
+  proposition: "Scottie wins",
+  partyAPosition: "yes",
+  partyBPosition: "no",
+  partyAStake: "1000000",
+  partyBStake: "1000000",
+  total: "2000000",
+  price: "even",
+  terms: "Sunday",
+};
 
 function preparedAction(calls: AgentCall[], extra: Record<string, unknown> = {}) {
   const userOp = { ...USER_OP, callData: encodeKernelExecute(calls) };
@@ -656,6 +670,90 @@ describe("createCutAgent", () => {
     ).rejects.toThrow(/Refusing to sign/);
     await expect(agent.send({ to: "not-an-address", amount: "1" })).rejects.toMatchObject({
       status: 400,
+    });
+  });
+
+  it("signs a ticket authorization, then returns the smart-wallet signature", async () => {
+    const { privateKey, publicKey } = generateDelegateKey();
+    const requests: Request[] = [];
+    const wallet = getAddress(SMART_WALLET);
+    const hash = ticketDigest(TICKET, 8453);
+    const authorization = {
+      version: 1,
+      method: "POST",
+      url: "https://api.privy.io/v1/wallets/wallet/rpc",
+      body: {
+        method: "eth_signTypedData_v4",
+        params: { typed_data: kernelSignTypedData(hash, 8453, wallet) },
+      },
+      headers: { "privy-app-id": "app" },
+    };
+    const signature = wrapKernelSignature(`0x${"ab".repeat(65)}`);
+    const agent = createCutAgent({
+      privateKey,
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        requests.push(request.clone());
+        if (requests.length === 1) return json({ prepared: true, hash, authorization });
+        return json({ wallet, hash, signature });
+      },
+    });
+
+    await expect(agent.signTicket(TICKET)).resolves.toEqual({ wallet, hash, signature });
+
+    expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/agent/messages/ticket");
+    const firstBody = JSON.parse(await requests[0]!.text()) as { authorizationSignature?: string };
+    const secondBody = JSON.parse(await requests[1]!.text()) as { authorizationSignature: string };
+    expect(firstBody.authorizationSignature).toBeUndefined();
+    expect(verifyPayload(publicKey, authorization, secondBody.authorizationSignature)).toBe(true);
+  });
+
+  it("refuses a ticket authorization whose typed data is a different hash", async () => {
+    const hash = ticketDigest(TICKET, 8453);
+    const typed = kernelSignTypedData(hash, 8453, getAddress(SMART_WALLET));
+    const agent = createCutAgent({
+      privateKey: generateDelegateKey().privateKey,
+      smartWallet: SMART_WALLET,
+      fetch: async () =>
+        json({
+          prepared: true,
+          hash,
+          authorization: {
+            version: 1,
+            method: "POST",
+            url: "https://api.privy.io/v1/wallets/wallet/rpc",
+            body: {
+              method: "eth_signTypedData_v4",
+              params: {
+                typed_data: { ...typed, message: { hash: `0x${"cd".repeat(32)}` } },
+              },
+            },
+            headers: { "privy-app-id": "app" },
+          },
+        }),
+    });
+    await expect(agent.signTicket(TICKET)).rejects.toThrow(/Refusing to sign/);
+  });
+
+  it("checks a ticket signature against the wallet named in the message", async () => {
+    const requests: Request[] = [];
+    const agent = createCutAgent({
+      privateKey: generateDelegateKey().privateKey,
+      smartWallet: SMART_WALLET,
+      fetch: async (request) => {
+        requests.push(request.clone());
+        return json({ valid: true });
+      },
+    });
+    const signature = wrapKernelSignature(`0x${"ab".repeat(65)}`);
+    await expect(
+      agent.verifyTicket({ wallet: SMART_WALLET, fields: TICKET, signature }),
+    ).resolves.toEqual({ valid: true });
+    expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/agent/messages/ticket/verify");
+    expect(JSON.parse(await requests[0]!.text())).toEqual({
+      wallet: SMART_WALLET,
+      fields: TICKET,
+      signature,
     });
   });
 });

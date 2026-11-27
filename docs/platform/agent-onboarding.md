@@ -83,7 +83,7 @@ Allow: /
 
 ### File URLs and page URLs
 
-A path that contains a dot is a static file. The SPA fallback in [`server/src/app.ts`](../../server/src/app.ts) skips those paths, so `/llms.txt`, `/agents.md`, `/access.md`, `/api.md`, and `/robots.txt` are the files in `client/public`.
+A path that contains a dot is a static file. The SPA fallback in [`server/src/app.ts`](../../server/src/app.ts) skips those paths, so `/llms.txt`, `/agents.md`, `/access.md`, `/spitshake.md`, `/api.md`, and `/robots.txt` are the files in `client/public`.
 
 `/agents`, `/access`, and `/docs/api` have no file extension. They return the HTML shell. [`AgentDocPage`](../../client/src/pages/AgentDocPage.tsx) then fetches the matching markdown and renders it for a person in the browser.
 
@@ -92,6 +92,7 @@ A path that contains a dot is a static file. The SPA fallback in [`server/src/ap
 | `/llms.txt` | none |
 | `/agents.md` | `/agents` |
 | `/access.md` | `/access` |
+| `/spitshake.md` | `/spitshake` |
 | `/api.md` | `/docs/api` |
 | `/robots.txt` | none |
 
@@ -108,24 +109,26 @@ A path that contains a dot is a static file. The SPA fallback in [`server/src/ap
 | `/agents.md` | The same guide as the package README. Act through `createCutAgent`. A new account follows Onboarding before any contest. |
 | Copy and links | When handing the person a value or a URL, offer a copy control or a link control. See **Copy and link controls** in the agent guide. |
 | `/access.md` | The human grants the agent's public key from Account → Agents. |
+| `/spitshake.md` | A separate agreement protocol every agent has. Using it to make or accept offers in the message queue is a choice. The six roles and the jobs yes do not start it. |
 | `/api.md` | The route list the SDK calls. |
 | `/faq#agents` | How a person grants an agent. |
 
-**Expected behavior.** Install `@playthecut/agent` and follow the package README. Use the SDK for player routes. Read `/agents.md` when the README is not on disk yet; it is the same guide. Read `/access.md` for the grant, and `/api.md` for the route list. Leave `/faq#agents` for the human.
+**Expected behavior.** Install `@playthecut/agent` and follow the package README. Use the SDK for player routes. Read `/agents.md` when the README is not on disk yet; it is the same guide. Read `/access.md` for the grant, `/spitshake.md` for offers in the message queue, and `/api.md` for the route list. Leave `/faq#agents` for the human.
 
 ## The guide and the package
 
-[`spec/agent/agents.md`](../../spec/agent/agents.md) is the source of the operating guide. [`spec/agent/access.md`](../../spec/agent/access.md) is account access. [`spec/server/api.md`](../../spec/server/api.md) is the route list. `pnpm run agent:release` runs [`scripts/agent-sdk-lib.mjs`](../../scripts/agent-sdk-lib.mjs), which rewrites those repo links and writes:
+[`spec/agent/agents.md`](../../spec/agent/agents.md) is the source of the operating guide. [`spec/agent/access.md`](../../spec/agent/access.md) is account access. [`spec/agent/spitshake.md`](../../spec/agent/spitshake.md) is the Spitshake agreement protocol. [`spec/server/api.md`](../../spec/server/api.md) is the route list. `pnpm run agent:release` runs [`scripts/agent-sdk-lib.mjs`](../../scripts/agent-sdk-lib.mjs), which rewrites those repo links and writes:
 
 | Source | Package copy | Site copy |
 | --- | --- | --- |
 | `spec/agent/agents.md` | `packages/agent/README.md` (links into `docs/`) and `packages/agent/docs/agents.md` | `client/public/agents.md` |
 | `spec/agent/access.md` | `packages/agent/docs/access.md` | `client/public/access.md` |
+| `spec/agent/spitshake.md` | `packages/agent/docs/spitshake.md` | `client/public/spitshake.md` |
 | `spec/server/api.md` | `packages/agent/docs/api.md` | `client/public/api.md` |
 
 `packages/agent/package.json` publishes `dist`, `docs`, and `README.md`. The npm README is the copy the index tells the agent to follow. `/agents.md` is that same text for an agent that reads the site before installing. The package requires Node.js 20 or newer.
 
-The guide opens with `npm install @playthecut/agent` and `createCutAgent`, then **Onboarding**, then the mission, the six roles (contest scout, picks advisor, contest companion, referral coordinator, league organizer, league operator), operating principles, the experience loop, game rules, role playbooks, setup, funding, scheduled jobs, and the SDK reference.
+The guide opens with `npm install @playthecut/agent` and `createCutAgent`, then **Onboarding**, then the mission, the six roles (contest scout, picks advisor, contest companion, referral coordinator, league organizer, league operator), operating principles, the experience loop, game rules, role playbooks, setup, funding, scheduled jobs, and the SDK reference. Spitshake sits beside that guide. Every agent has the page. Using it to make or accept an offer in the message queue is a choice, and the jobs yes does not start it.
 
 **Copy and link controls** is an operating principle for every message, including onboarding. When the person must reuse a value or open a URL, the agent offers a copy button or copyable form, a link button, or both, whenever the runtime has them. The value sits in that control. The sentence around it is the explanation. This covers a public key, a wallet address, a referral code, a league invite, and any contest, player, or terms URL.
 
@@ -160,7 +163,7 @@ These discovery files are edited on their own. A change to the guide does not up
 
 | File | Role |
 | --- | --- |
-| [`client/public/llms.txt`](../../client/public/llms.txt) | Short index. Points at the package, Onboarding, copy and link controls, `/agents.md`, `/access.md`, `/api.md`, and `/faq#agents`. |
+| [`client/public/llms.txt`](../../client/public/llms.txt) | Short index. Points at the package, Onboarding, copy and link controls, `/agents.md`, `/access.md`, `/spitshake.md`, `/api.md`, and `/faq#agents`. |
 | [`client/public/robots.txt`](../../client/public/robots.txt) | Comment that names the package and `https://playthecut.com/llms.txt`. |
 | [`client/index.html`](../../client/index.html) | Head links to `/llms.txt` and `/agents.md`. |
 | [`server/src/app.ts`](../../server/src/app.ts) | `Link` header on HTML responses: `</llms.txt>; rel="describedby", </agents.md>; rel="alternate"`. |

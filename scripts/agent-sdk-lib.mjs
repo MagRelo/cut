@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 export const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const specPath = join(root, "spec/agent/agents.md");
 export const accessSpecPath = join(root, "spec/agent/access.md");
+export const spitshakeSpecPath = join(root, "spec/agent/spitshake.md");
 export const apiSpecPath = join(root, "spec/server/api.md");
 export const packageDir = join(root, "packages/agent");
 export const releasePath = join(packageDir, "release.json");
@@ -18,9 +19,14 @@ const accessRouteLink = "[spec/server/api.md](../server/api.md)";
 
 /** Package README links into docs/. The other agents pages sit beside api.md. */
 export const copies = [
-  { target: join(packageDir, "README.md"), routeHref: "docs/api.md", accessHref: "docs/access.md" },
-  { target: join(packageDir, "docs/agents.md"), routeHref: "api.md", accessHref: "access.md" },
-  { target: join(root, "client/public/agents.md"), routeHref: "api.md", accessHref: "access.md" },
+  { target: join(packageDir, "README.md"), routeHref: "docs/api.md", accessHref: "docs/access.md", spitshakeHref: "docs/spitshake.md" },
+  { target: join(packageDir, "docs/agents.md"), routeHref: "api.md", accessHref: "access.md", spitshakeHref: "spitshake.md" },
+  { target: join(root, "client/public/agents.md"), routeHref: "api.md", accessHref: "access.md", spitshakeHref: "spitshake.md" },
+];
+
+export const spitshakeCopies = [
+  { target: join(packageDir, "docs/spitshake.md") },
+  { target: join(root, "client/public/spitshake.md") },
 ];
 
 export const accessCopies = [
@@ -33,7 +39,7 @@ export const apiCopies = [
   { target: join(root, "client/public/api.md"), agentsHref: "agents.md" },
 ];
 
-export function packagedAgents(spec, routeHref, accessHref = "access.md") {
+export function packagedAgents(spec, routeHref, accessHref = "access.md", spitshakeHref = "spitshake.md") {
   const text = spec.toString("utf8");
   if (!text.includes(repoRouteLink)) {
     throw new Error("spec/agent/agents.md is missing the link to spec/server/api.md");
@@ -42,8 +48,14 @@ export function packagedAgents(spec, routeHref, accessHref = "access.md") {
     text
       .replaceAll(repoRouteLink, `[${routeHref}](${routeHref})`)
       .replaceAll("](access.md#", `](${accessHref}#`)
-      .replaceAll("](access.md)", `](${accessHref})`),
+      .replaceAll("](access.md)", `](${accessHref})`)
+      .replaceAll("](spitshake.md#", `](${spitshakeHref}#`)
+      .replaceAll("](spitshake.md)", `](${spitshakeHref})`),
   );
+}
+
+export function packagedSpitshake(spec) {
+  return Buffer.from(spec);
 }
 
 export function packagedAccess(spec, routeHref) {
@@ -66,8 +78,14 @@ export function writeIfChanged(target, body) {
 export function syncAgentDocs() {
   const written = [];
   const agentsSpec = readFileSync(specPath);
-  for (const { target, routeHref, accessHref } of copies) {
-    if (writeIfChanged(target, packagedAgents(agentsSpec, routeHref, accessHref))) {
+  for (const { target, routeHref, accessHref, spitshakeHref } of copies) {
+    if (writeIfChanged(target, packagedAgents(agentsSpec, routeHref, accessHref, spitshakeHref))) {
+      written.push(relative(root, target));
+    }
+  }
+  const spitshakeSpec = readFileSync(spitshakeSpecPath);
+  for (const { target } of spitshakeCopies) {
+    if (writeIfChanged(target, packagedSpitshake(spitshakeSpec))) {
       written.push(relative(root, target));
     }
   }
@@ -107,6 +125,7 @@ export const agentReleasePaths = [
   ":(exclude)packages/agent/src/**/*.test.ts",
   "spec/agent/agents.md",
   "spec/agent/access.md",
+  "spec/agent/spitshake.md",
   "spec/server/api.md",
 ];
 
@@ -376,7 +395,7 @@ function sourceFiles(dir) {
 
 export function contentHash() {
   const hash = createHash("sha256");
-  const files = [specPath, accessSpecPath, apiSpecPath, ...sourceFiles(join(packageDir, "src"))].sort();
+  const files = [specPath, accessSpecPath, spitshakeSpecPath, apiSpecPath, ...sourceFiles(join(packageDir, "src"))].sort();
   for (const file of files) {
     hash.update(relative(root, file).split("\\").join("/"));
     hash.update("\0");

@@ -982,7 +982,11 @@ export const FAQPage: React.FC = () => {
             <Link to="/access" className="text-blue-600 hover:underline">
               account access
             </Link>
-            .
+            . Offers between users follow{" "}
+            <Link to="/spitshake" className="text-blue-600 hover:underline">
+              Spitshake
+            </Link>
+            , which every agent can read.
           </p>
         </div>
       </PageSection>

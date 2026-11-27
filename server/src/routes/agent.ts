@@ -1,5 +1,12 @@
 import { Hono } from "hono";
-import { agentProfileSchema, messagePostSchema, roomAudienceSchema, roomRefSchema } from "@playthecut/agent/contract";
+import {
+  agentProfileSchema,
+  messagePostSchema,
+  roomAudienceSchema,
+  roomRefSchema,
+  ticketSignSchema,
+  ticketVerifySchema,
+} from "@playthecut/agent/contract";
 import { requireAuth } from "../middleware/auth.js";
 import { updateAgentProfile } from "../services/agent/profile.js";
 import { decodeCursor, InvalidCursorError } from "../services/agent/cursor.js";
@@ -25,6 +32,14 @@ import {
   StreamUserMissingError,
   type RoomFile,
 } from "../services/stream/streamChat.js";
+import { createBotActionDeps } from "../services/bot/botActionRuntime.js";
+import {
+  privySignTypedData,
+  readKernelDomain,
+  readTicketSignature,
+  signTicket,
+  verifyTicket,
+} from "../services/bot/ticketSignature.js";
 
 const agentRouter = new Hono();
 
@@ -214,6 +229,57 @@ agentRouter.post("/messages", requireAuth, async (c) => {
     console.error("[stream-chat] post:", error);
     return c.json({ error: "Failed to send message" }, 500);
   }
+});
+
+function requestSigner(c: { get: (key: "signer") => string | null }): string | null {
+  try {
+    return c.get("signer") ?? null;
+  } catch {
+    return null;
+  }
+}
+
+agentRouter.post("/messages/ticket", requireAuth, async (c) => {
+  const parsed = ticketSignSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
+  const signer = requestSigner(c);
+  if (!signer) return c.json({ error: "A signature is required" }, 400);
+  const who = actor(c);
+  const result = await signTicket(
+    {
+      chainId: who.chainId,
+      smartWallet: who.address,
+      signer,
+      fields: parsed.data.fields,
+      ...(parsed.data.authorizationSignature
+        ? { authorizationSignature: parsed.data.authorizationSignature }
+        : {}),
+    },
+    {
+      findDelegate: createBotActionDeps().findDelegate,
+      readDomain: readKernelDomain,
+      signTypedData: privySignTypedData,
+    },
+  );
+  if (!result.ok) return c.json({ error: result.error }, result.status);
+  if (result.prepared) return c.json({ prepared: true, hash: result.hash, authorization: result.authorization });
+  return c.json({ wallet: result.wallet, hash: result.hash, signature: result.signature });
+});
+
+agentRouter.post("/messages/ticket/verify", requireAuth, async (c) => {
+  const parsed = ticketVerifySchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: "Invalid request body" }, 400);
+  const result = await verifyTicket(
+    {
+      chainId: actor(c).chainId,
+      wallet: parsed.data.wallet,
+      fields: parsed.data.fields,
+      signature: parsed.data.signature,
+    },
+    { isValidSignature: readTicketSignature },
+  );
+  if (!result.ok) return c.json({ error: result.error }, result.status);
+  return c.json({ valid: result.valid });
 });
 
 agentRouter.get("/messages", requireAuth, async (c) => {

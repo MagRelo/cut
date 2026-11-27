@@ -360,3 +360,41 @@ export type RoomMessage = {
   createdAt: string;
   attachments: RoomAttachment[];
 };
+
+const ticketStakeSchema = z.union([
+  z.number().int().nonnegative().refine((value) => Number.isSafeInteger(value), "Stake is too large"),
+  z.string().regex(/^(0|[1-9]\d*)$/, "Stake must be a whole number of base units"),
+]).transform((value) => (typeof value === "number" ? String(value) : value));
+
+export const ticketFieldsSchema = z
+  .object({
+    partyA: z.string().trim().min(1).max(200),
+    partyB: z.string().max(200),
+    proposition: z.string().trim().min(1).max(500),
+    partyAPosition: z.string().trim().min(1).max(80),
+    partyBPosition: z.string().trim().min(1).max(80),
+    partyAStake: ticketStakeSchema,
+    partyBStake: ticketStakeSchema,
+    total: ticketStakeSchema,
+    price: z.string().trim().min(1).max(80),
+    terms: z.string().trim().min(1).max(500),
+  })
+  .refine(
+    (fields) => BigInt(fields.partyAStake) + BigInt(fields.partyBStake) === BigInt(fields.total),
+    "Total must equal the two stakes",
+  );
+
+export const ticketSignSchema = z.object({
+  fields: ticketFieldsSchema,
+  authorizationSignature: z.string().trim().min(1).optional(),
+});
+
+export const ticketVerifySchema = z.object({
+  wallet: z.string().trim().min(1),
+  fields: ticketFieldsSchema,
+  signature: z.string().trim().min(1),
+});
+
+export type TicketFields = z.infer<typeof ticketFieldsSchema>;
+export type TicketSignature = { wallet: string; hash: string; signature: string };
+export type TicketVerification = { valid: boolean };

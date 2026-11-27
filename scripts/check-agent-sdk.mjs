@@ -11,9 +11,12 @@ import {
   packagedAccess,
   packagedAgents,
   packagedApi,
+  packagedSpitshake,
   releasePath,
   root,
   specPath,
+  spitshakeCopies,
+  spitshakeSpecPath,
 } from "./agent-sdk-lib.mjs";
 
 function requireCopy(target, expected, label) {
@@ -31,12 +34,16 @@ function requireCopy(target, expected, label) {
 }
 
 const agentsSpec = readFileSync(specPath);
-for (const { target, routeHref, accessHref } of copies) {
-  requireCopy(target, packagedAgents(agentsSpec, routeHref, accessHref), "spec/agent/agents.md");
+for (const { target, routeHref, accessHref, spitshakeHref } of copies) {
+  requireCopy(target, packagedAgents(agentsSpec, routeHref, accessHref, spitshakeHref), "spec/agent/agents.md");
 }
 const accessSpec = readFileSync(accessSpecPath);
 for (const { target, routeHref } of accessCopies) {
   requireCopy(target, packagedAccess(accessSpec, routeHref), "spec/agent/access.md");
+}
+const spitshakeSpec = readFileSync(spitshakeSpecPath);
+for (const { target } of spitshakeCopies) {
+  requireCopy(target, packagedSpitshake(spitshakeSpec), "spec/agent/spitshake.md");
 }
 const api = readFileSync(apiSpecPath);
 for (const { target, agentsHref } of apiCopies) {

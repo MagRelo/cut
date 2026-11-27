@@ -9,6 +9,18 @@ export {
 } from "./delegateKey.js";
 export type { RoomFile } from "./client.js";
 export { kernelWalletAddress } from "./kernelWallet.js";
+export {
+  assertTicketAuthorization,
+  kernelDomain,
+  kernelSignTypedData,
+  sameKernelDomain,
+  ticketDigest,
+  wrapKernelSignature,
+  KERNEL_DOMAIN_NAME,
+  KERNEL_DOMAIN_VERSION,
+  KERNEL_ECDSA_VALIDATOR,
+} from "./ticket.js";
+export type { KernelDomain, KernelSignTypedData } from "./ticket.js";
 export type {
   CreateContestInput,
   CreateFreeContestInput,
@@ -45,5 +57,8 @@ export type {
   RegisteredAgent,
   ScoutBrief,
   SendResult,
+  TicketFields,
+  TicketSignature,
+  TicketVerification,
   TickBrief,
 } from "./contract.js";
