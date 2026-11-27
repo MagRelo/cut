@@ -9,8 +9,6 @@ export type NavTab = {
   label: string;
   match: (pathname: string) => boolean;
   state?: Location["state"];
-  /** Small live indicator dot (e.g. blue circle) before the label. */
-  liveDot?: boolean;
 };
 
 export const ACCOUNT_WALLET_LINK = {
@@ -103,7 +101,6 @@ export const LEFT_TABS: NavTab[] = [
     to: "/contests",
     label: "Contests",
     match: contestsMatch,
-    liveDot: true,
   },
 ];
 

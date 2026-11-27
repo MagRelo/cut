@@ -43,7 +43,7 @@ export const UserMenu: React.FC = () => {
   const location = useLocation();
   const isAccountActive = accountMatch(location.pathname);
   const leagues = leagueNavItemsFromAuth(user?.userGroups);
-  const liveContestsTab = LEFT_TABS[0];
+  const contestsTab = LEFT_TABS[0];
   const accountLabel = user?.name?.trim() || "Account";
 
   return (
@@ -67,19 +67,16 @@ export const UserMenu: React.FC = () => {
       >
         <MenuItem>
           {({ close }) => {
-            const active = liveContestsTab.match(location.pathname);
+            const active = contestsTab.match(location.pathname);
             return (
               <Link
-                to={liveContestsTab.to}
-                state={liveContestsTab.state}
-                className={`${active ? menuItemActiveClass : menuItemClass} inline-flex items-center gap-2`}
+                to={contestsTab.to}
+                state={contestsTab.state}
+                className={active ? menuItemActiveClass : menuItemClass}
                 aria-current={active ? "page" : undefined}
                 onClick={close}
               >
-                {liveContestsTab.liveDot ? (
-                  <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-hidden />
-                ) : null}
-                {liveContestsTab.label}
+                {contestsTab.label}
               </Link>
             );
           }}

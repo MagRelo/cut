@@ -48,7 +48,7 @@ function mobileSubItemClass(active: boolean) {
   ].join(" ");
 }
 
-const mobileInsetListClass = "ml-2 mt-0.5 flex flex-col gap-0.5";
+const mobileInsetListClass = "ml-4 mt-0.5 flex flex-col gap-0.5";
 
 const mobileAccountLinks = [
   ACCOUNT_WALLET_LINK,
@@ -141,14 +141,8 @@ export const MobileNavMenu: React.FC = () => {
                             state={tab.state}
                             onClick={closeMenu}
                             aria-current={tab.match(location.pathname) ? "page" : undefined}
-                            className={`${mobileNavItemClass(tab.match(location.pathname))} inline-flex items-center gap-2`}
+                            className={mobileNavItemClass(tab.match(location.pathname))}
                           >
-                            {tab.liveDot ? (
-                              <span
-                                className="h-2 w-2 shrink-0 rounded-full bg-blue-500"
-                                aria-hidden
-                              />
-                            ) : null}
                             {tab.label}
                           </Link>
                         ))}
@@ -211,7 +205,9 @@ export const MobileNavMenu: React.FC = () => {
                                       <link.Icon className="h-4 w-4 shrink-0" aria-hidden />
                                       {link.label}
                                     </span>
-                                    {link.to === ACCOUNT_WALLET_LINK.to ? <NavWalletBalance /> : null}
+                                    {link.to === ACCOUNT_WALLET_LINK.to ? (
+                                      <NavWalletBalance />
+                                    ) : null}
                                   </Link>
                                 ))}
                               </div>
